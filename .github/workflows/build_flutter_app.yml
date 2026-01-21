@@ -1,0 +1,512 @@
+name: Build Flutter App (Android Platform)
+
+# 触发：release 分支的 push 与 PR，及以 v 开头的 tag；也支持手动触发
+on:
+  push:
+    branches: ["release"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["release"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    environment: "Cloudflare R2"
+    # 使用策略矩阵，为不同平台并行执行此作业
+    strategy:
+      matrix:
+        # Ubuntu: Android
+        os: [ubuntu-latest]
+    
+    # 根据矩阵中的 os 变量选择运行器
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # 步骤 1: 检出您的仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步骤 2: 设置 Flutter 环境
+      # 使用 subosito/flutter-action，并指定版本和开启缓存
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.7' # 对齐版本
+          channel: 'stable'       # 使用稳定版通道
+          cache: true             # 开启缓存以加速后续构建
+
+      # 步骤 3: 获取 Flutter 依赖包
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+      # 步骤 4: 运行代码分析与测试（忽略 Warning 以及 Error）
+      - name: Run analysis 
+        run: |
+          flutter analyze --no-fatal-warnings --no-fatal-infos
+          flutter test
+
+      # Notify Feishu: build start (only once from Linux runner)
+      - name: Notify Feishu (build start)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/92c65e716e24f163f0106711c3e396ff}"
+          # Derive version independent of earlier steps
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            IS_OFFICIAL_RELEASE=true
+          else
+            VERSION="0.0.0-$(date +%Y%m%d)-${GITHUB_SHA::7}"
+            IS_OFFICIAL_RELEASE=false
+          fi
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          # Create unified JSON payload with all fields
+          JSON=$(cat <<EOF
+          {
+            "event": "build_start",
+            "status": "start",
+            "title": "CI 构建开始",
+            "version": "${VERSION}",
+            "is_official_release": ${IS_OFFICIAL_RELEASE},
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_url": "${RUN_URL}",
+            "ref": "${GITHUB_REF}",
+            "ref_name": "${GITHUB_REF_NAME}",
+            "sha": "${GITHUB_SHA}",
+            "actor": "${GITHUB_ACTOR}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "downloads": {
+              "apk_url": null,
+              "aab_url": null,
+              "windows_portable_url": null,
+              "windows_installer_url": null
+            },
+            "changelog": {
+              "release_log": null,
+              "user_changelog": null
+            },
+            "error_message": null,
+            "build_job_status": null,
+            "release_notes_job_status": null,
+            "user_changelog_job_status": null
+          }
+          EOF
+          )
+
+          curl -s -X POST -H "Content-Type: application/json" -d "$JSON" "$WEBHOOK_URL" || true
+
+      # 步骤 5: 构建 Android APK (仅在 Linux 运行器上执行)
+      - name: Build Android APK
+        if: runner.os == 'Linux'
+        run: flutter build apk --release
+
+      # 步骤 6: 构建 Android App Bundle (AAB)
+      - name: Build Android App Bundle
+        if: runner.os == 'Linux'
+        run: flutter build appbundle --release
+
+      # Linux: 提取版本号（若以 tag v* 触发则使用 tag）
+      - name: Extract version from tag (Linux)
+        if: runner.os == 'Linux' && startsWith(github.ref, 'refs/tags/v')
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          echo "APP_VERSION=$ver" >> "$GITHUB_ENV"
+        shell: bash
+
+      # Linux: 未使用 tag 时设置回退版本（日期+短 SHA）
+      - name: Set fallback version (Linux)
+        if: runner.os == 'Linux' && (!startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          date=$(date +%Y%m%d)
+          sha="${GITHUB_SHA::7}"
+          echo "APP_VERSION=0.0.0-$date-$sha" >> "$GITHUB_ENV"
+        shell: bash
+
+      # --- 上传构建产物 ---
+      # 将构建好的文件保存为 "Artifacts"，方便下载
+
+      # 步骤 8: 上传 APK 文件
+      - name: Upload APK artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: (release)android_apk - ${{ env.APP_VERSION }}
+          # 兼容不同 Flutter 版本的 APK 输出路径
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/apk/release/app-release.apk
+
+      # 上传 AAB
+      - name: Upload AAB artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: (release)android_aab - ${{ env.APP_VERSION }}
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      # 将 Android 构建产物上传到 Cloudflare R2（Linux 运行器）
+      - name: Upload to Cloudflare R2 (Android)
+        if: runner.os == 'Linux'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_EC2_METADATA_DISABLED: true
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          # 优先使用 APP_VERSION；否则按规则计算
+          if [[ -n "${APP_VERSION:-}" ]]; then
+            VERSION="${APP_VERSION}"
+          else
+            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+              VERSION="${GITHUB_REF_NAME#v}"
+            else
+              VERSION="0.0.0-$(date +%Y%m%d)-${GITHUB_SHA::7}"
+            fi
+          fi
+          echo "Uploading Android artifacts for version: ${VERSION}"
+          # 确保 awscli 可用
+          if ! command -v aws >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y awscli
+          fi
+          # 上传 APK（兼容不同输出路径）
+          if compgen -G "build/app/outputs/flutter-apk/*.apk" > /dev/null; then
+            aws s3 cp build/app/outputs/flutter-apk \
+              s3://${R2_BUCKET}/releases/${VERSION}/android/apk/ \
+              --recursive --exclude "*" --include "*.apk" \
+              --endpoint-url "${ENDPOINT}" --only-show-errors
+          fi
+          if [[ -f "build/app/outputs/apk/release/app-release.apk" ]]; then
+            aws s3 cp build/app/outputs/apk/release/app-release.apk \
+              s3://${R2_BUCKET}/releases/${VERSION}/android/apk/ \
+              --endpoint-url "${ENDPOINT}" --only-show-errors
+          fi
+          # 上传 AAB
+          if [[ -f "build/app/outputs/bundle/release/app-release.aab" ]]; then
+            aws s3 cp build/app/outputs/bundle/release/app-release.aab \
+              s3://${R2_BUCKET}/releases/${VERSION}/android/aab/ \
+              --endpoint-url "${ENDPOINT}" --only-show-errors
+          fi
+
+          # Print direct links to GitHub Step Summary
+          BASE_URL="https://r2.foofish.blog"
+          shopt -s nullglob
+          declare -A SEEN
+          for f in build/app/outputs/flutter-apk/*.apk build/app/outputs/apk/release/app-release.apk; do
+            [ -f "$f" ] || continue
+            name="$(basename "$f")"
+            if [[ -n "${SEEN[$name]:-}" ]]; then continue; fi
+            SEEN[$name]=1
+            key="releases/${VERSION}/android/apk/${name}"
+            url="${BASE_URL}/${key}"
+            url="${url//\(/%28}"
+            url="${url//\)/%29}"
+            echo "APK: ${url}" | tee -a "$GITHUB_STEP_SUMMARY"
+          done
+          if [[ -f "build/app/outputs/bundle/release/app-release.aab" ]]; then
+            key="releases/${VERSION}/android/aab/app-release.aab"
+            url="${BASE_URL}/${key}"
+            echo "AAB: ${url}" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+
+  release_notes:
+    name: Generate Release Notes
+    runs-on: ubuntu-latest
+    environment: "OpenAI"
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-compile --disable-pip-version-check openai==1.* requests
+
+      - name: Generate release notes with improved LLM
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        run: |
+          # Try improved version first, fallback to original if it fails
+          python script/generate_release_notes_improved.py --output release_notes.md || \
+          python script/generate_release_notes.py --output release_notes.md
+      - name: Upload release notes (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: release_notes
+          path: release_notes.md
+
+      - name: Comment on PR with notes
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('release_notes.md', 'utf8');
+            const pr = context.payload.pull_request.number;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body
+            });
+
+      - name: Create GitHub Release from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: release_notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  user_changelog:
+    name: Generate User Changelog
+    runs-on: ubuntu-latest
+    environment: "OpenAI"
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-compile --disable-pip-version-check openai==1.* requests
+
+      - name: Generate user-facing changelog with improved LLM
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+        run: |
+          # Try improved version first, fallback to original if it fails
+          python script/generate_user_changelog_improved.py --output user_changelog.md || \
+          python script/generate_user_changelog.py --output user_changelog.md
+
+      - name: Upload user changelog (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: user_changelog
+          path: user_changelog.md
+
+  notify_completion:
+    name: Notify Build Completion
+    needs: [build, release_notes, user_changelog]
+    if: always()
+    runs-on: ubuntu-latest
+    environment: "Cloudflare R2"
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Determine build status
+        id: status
+        run: |
+          # Check build job status
+          BUILD_STATUS="${{ needs.build.result }}"
+          RELEASE_NOTES_STATUS="${{ needs.release_notes.result }}"
+          USER_CHANGELOG_STATUS="${{ needs.user_changelog.result }}"
+
+          echo "Build status: $BUILD_STATUS"
+          echo "Release notes status: $RELEASE_NOTES_STATUS"
+          echo "User changelog status: $USER_CHANGELOG_STATUS"
+
+          if [[ "$BUILD_STATUS" == "success" ]]; then
+            echo "overall_status=success" >> $GITHUB_OUTPUT
+            echo "title=CI 构建成功" >> $GITHUB_OUTPUT
+          else
+            echo "overall_status=failure" >> $GITHUB_OUTPUT
+            echo "title=CI 构建失败" >> $GITHUB_OUTPUT
+          fi
+
+          # Determine version
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            echo "is_official_release=true" >> $GITHUB_OUTPUT
+          else
+            VERSION="0.0.0-$(date +%Y%m%d)-${GITHUB_SHA::7}"
+            echo "is_official_release=false" >> $GITHUB_OUTPUT
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download Windows URLs
+        if: steps.status.outputs.overall_status == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-urls
+          path: ./windows-urls/
+        continue-on-error: true
+
+      - name: Prepare download URLs
+        id: urls
+        if: steps.status.outputs.overall_status == 'success'
+        run: |
+          VERSION="${{ steps.status.outputs.version }}"
+          BASE_URL="https://release.foofish.work"
+
+          # Android URLs
+          echo "apk_url=${BASE_URL}/releases/${VERSION}/android/apk/app-release.apk" >> $GITHUB_OUTPUT
+          echo "aab_url=${BASE_URL}/releases/${VERSION}/android/aab/app-release.aab" >> $GITHUB_OUTPUT
+
+          # Windows URLs - try to read from artifact first, fallback to default
+          WINDOWS_PORTABLE_URL="${BASE_URL}/releases/${VERSION}/windows/windows-portable-${VERSION}.zip"
+          WINDOWS_INSTALLER_URL="${BASE_URL}/releases/${VERSION}/windows/installer/"
+
+          if [[ -f "./windows-urls/windows-urls.json" ]]; then
+            echo "Reading Windows URLs from artifact..."
+            # Extract URLs from JSON using jq if available, otherwise use fallback
+            if command -v jq >/dev/null 2>&1; then
+              PORTABLE_FROM_JSON=$(jq -r '.windows_portable_url // empty' "./windows-urls/windows-urls.json")
+              INSTALLER_FROM_JSON=$(jq -r '.windows_installer_url // empty' "./windows-urls/windows-urls.json")
+
+              if [[ -n "$PORTABLE_FROM_JSON" && "$PORTABLE_FROM_JSON" != "null" ]]; then
+                WINDOWS_PORTABLE_URL="$PORTABLE_FROM_JSON"
+              fi
+              if [[ -n "$INSTALLER_FROM_JSON" && "$INSTALLER_FROM_JSON" != "null" ]]; then
+                WINDOWS_INSTALLER_URL="$INSTALLER_FROM_JSON"
+              fi
+            fi
+          fi
+
+          echo "windows_portable_url=${WINDOWS_PORTABLE_URL}" >> $GITHUB_OUTPUT
+          echo "windows_installer_url=${WINDOWS_INSTALLER_URL}" >> $GITHUB_OUTPUT
+
+      - name: Prepare changelog content
+        id: changelog
+        run: |
+          RELEASE_LOG=""
+          USER_CHANGELOG=""
+
+          if [[ -f "release_notes.md" ]]; then
+            RELEASE_LOG=$(cat release_notes.md | jq -Rs .)
+          else
+            RELEASE_LOG='""'
+          fi
+
+          if [[ -f "user_changelog.md" ]]; then
+            USER_CHANGELOG=$(cat user_changelog.md | jq -Rs .)
+          else
+            USER_CHANGELOG='""'
+          fi
+
+          echo "release_log=$RELEASE_LOG" >> $GITHUB_OUTPUT
+          echo "user_changelog=$USER_CHANGELOG" >> $GITHUB_OUTPUT
+
+      - name: Send Feishu notification
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        run: |
+          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/92c65e716e24f163f0106711c3e396ff}"
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          if [[ "${{ steps.status.outputs.overall_status }}" == "success" ]]; then
+            # Success notification with unified JSON structure
+            JSON=$(cat <<EOF
+          {
+            "event": "build_complete",
+            "status": "success",
+            "title": "${{ steps.status.outputs.title }}",
+            "version": "${{ steps.status.outputs.version }}",
+            "is_official_release": ${{ steps.status.outputs.is_official_release }},
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_url": "${RUN_URL}",
+            "ref": "${GITHUB_REF}",
+            "ref_name": "${GITHUB_REF_NAME}",
+            "sha": "${GITHUB_SHA}",
+            "actor": "${GITHUB_ACTOR}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "downloads": {
+              "apk_url": "${{ steps.urls.outputs.apk_url }}",
+              "aab_url": "${{ steps.urls.outputs.aab_url }}",
+              "windows_portable_url": "${{ steps.urls.outputs.windows_portable_url }}",
+              "windows_installer_url": "${{ steps.urls.outputs.windows_installer_url }}"
+            },
+            "changelog": {
+              "release_log": ${{ steps.changelog.outputs.release_log }},
+              "user_changelog": ${{ steps.changelog.outputs.user_changelog }}
+            },
+            "error_message": null,
+            "build_job_status": null,
+            "release_notes_job_status": null,
+            "user_changelog_job_status": null
+          }
+          EOF
+          )
+          else
+            # Failure notification with unified JSON structure
+            JSON=$(cat <<EOF
+          {
+            "event": "build_complete",
+            "status": "failure",
+            "title": "${{ steps.status.outputs.title }}",
+            "version": "${{ steps.status.outputs.version }}",
+            "is_official_release": ${{ steps.status.outputs.is_official_release }},
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "${GITHUB_WORKFLOW}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_url": "${RUN_URL}",
+            "ref": "${GITHUB_REF}",
+            "ref_name": "${GITHUB_REF_NAME}",
+            "sha": "${GITHUB_SHA}",
+            "actor": "${GITHUB_ACTOR}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "downloads": {
+              "apk_url": null,
+              "aab_url": null,
+              "windows_portable_url": null,
+              "windows_installer_url": null
+            },
+            "changelog": {
+              "release_log": null,
+              "user_changelog": null
+            },
+            "error_message": "构建过程中发生错误，请查看 Actions 日志获取详细信息",
+            "build_job_status": "${{ needs.build.result }}",
+            "release_notes_job_status": "${{ needs.release_notes.result }}",
+            "user_changelog_job_status": "${{ needs.user_changelog.result }}"
+          }
+          EOF
+          )
+          fi
+
+          echo "Sending notification to Feishu..."
+          curl -s -X POST -H "Content-Type: application/json" -d "$JSON" "$WEBHOOK_URL" || true
