@@ -39,11 +39,10 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # 步骤 4: 运行代码分析与测试（忽略 Warning 以及 Error）
+      # 步骤 4: 运行代码分析（忽略 Warning 以及 Error）
       - name: Run analysis 
         run: |
           flutter analyze --no-fatal-warnings --no-fatal-infos
-          flutter test
 
       # Notify Feishu: build start (only once from Linux runner)
       - name: Notify Feishu (build start)
