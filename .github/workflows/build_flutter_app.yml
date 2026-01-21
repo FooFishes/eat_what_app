@@ -52,7 +52,7 @@ jobs:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
           set -euo pipefail
-          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/92c65e716e24f163f0106711c3e396ff}"
+          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/5c1b8137d545aa53908e71776b235bae}"
           # Derive version independent of earlier steps
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF_NAME#v}"
@@ -199,7 +199,7 @@ jobs:
           fi
 
           # Print direct links to GitHub Step Summary
-          BASE_URL="https://r2.foofish.blog"
+          BASE_URL="https://release.foofish.work"
           shopt -s nullglob
           declare -A SEEN
           for f in build/app/outputs/flutter-apk/*.apk build/app/outputs/apk/release/app-release.apk; do
@@ -384,29 +384,6 @@ jobs:
           echo "apk_url=${BASE_URL}/releases/${VERSION}/android/apk/app-release.apk" >> $GITHUB_OUTPUT
           echo "aab_url=${BASE_URL}/releases/${VERSION}/android/aab/app-release.aab" >> $GITHUB_OUTPUT
 
-          # Windows URLs - try to read from artifact first, fallback to default
-          WINDOWS_PORTABLE_URL="${BASE_URL}/releases/${VERSION}/windows/windows-portable-${VERSION}.zip"
-          WINDOWS_INSTALLER_URL="${BASE_URL}/releases/${VERSION}/windows/installer/"
-
-          if [[ -f "./windows-urls/windows-urls.json" ]]; then
-            echo "Reading Windows URLs from artifact..."
-            # Extract URLs from JSON using jq if available, otherwise use fallback
-            if command -v jq >/dev/null 2>&1; then
-              PORTABLE_FROM_JSON=$(jq -r '.windows_portable_url // empty' "./windows-urls/windows-urls.json")
-              INSTALLER_FROM_JSON=$(jq -r '.windows_installer_url // empty' "./windows-urls/windows-urls.json")
-
-              if [[ -n "$PORTABLE_FROM_JSON" && "$PORTABLE_FROM_JSON" != "null" ]]; then
-                WINDOWS_PORTABLE_URL="$PORTABLE_FROM_JSON"
-              fi
-              if [[ -n "$INSTALLER_FROM_JSON" && "$INSTALLER_FROM_JSON" != "null" ]]; then
-                WINDOWS_INSTALLER_URL="$INSTALLER_FROM_JSON"
-              fi
-            fi
-          fi
-
-          echo "windows_portable_url=${WINDOWS_PORTABLE_URL}" >> $GITHUB_OUTPUT
-          echo "windows_installer_url=${WINDOWS_INSTALLER_URL}" >> $GITHUB_OUTPUT
-
       - name: Prepare changelog content
         id: changelog
         run: |
@@ -432,7 +409,7 @@ jobs:
         env:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
         run: |
-          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/92c65e716e24f163f0106711c3e396ff}"
+          WEBHOOK_URL="${FEISHU_WEBHOOK_URL:-https://www.feishu.cn/flow/api/trigger-webhook/5c1b8137d545aa53908e71776b235bae}"
           RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
           if [[ "${{ steps.status.outputs.overall_status }}" == "success" ]]; then
@@ -455,9 +432,7 @@ jobs:
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "downloads": {
               "apk_url": "${{ steps.urls.outputs.apk_url }}",
-              "aab_url": "${{ steps.urls.outputs.aab_url }}",
-              "windows_portable_url": "${{ steps.urls.outputs.windows_portable_url }}",
-              "windows_installer_url": "${{ steps.urls.outputs.windows_installer_url }}"
+              "aab_url": "${{ steps.urls.outputs.aab_url }}"
             },
             "changelog": {
               "release_log": ${{ steps.changelog.outputs.release_log }},
@@ -490,9 +465,7 @@ jobs:
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "downloads": {
               "apk_url": null,
-              "aab_url": null,
-              "windows_portable_url": null,
-              "windows_installer_url": null
+              "aab_url": null
             },
             "changelog": {
               "release_log": null,
