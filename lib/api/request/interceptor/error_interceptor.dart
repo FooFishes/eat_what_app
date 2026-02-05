@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:eat_what_app/core/constant/biz_code.dart';
+import '../../exception/business_exception.dart';
 
 class ErrorInterceptor extends Interceptor {
   @override
@@ -9,22 +11,17 @@ class ErrorInterceptor extends Interceptor {
     if (response.data is Map<String, dynamic>) {
       final data = response.data as Map<String, dynamic>;
       final code = data['code'] as int? ?? 0;
-      
-      if (code != 0) {
+
+      if (code != BizCode.success.code) {
         final message = data['message'] as String? ?? '业务错误';
-        return handler.reject(
-          DioException(
-            requestOptions: response.requestOptions,
-            response: response,
-            type: DioExceptionType.badResponse,
-            error: RequestError.business(
-              BusinessException(
-                code: code,
-                message: message,
-                uri: response.requestOptions.uri.toString(),
-              ),
-            ),
-          ),
+        // 直接抛出 BusinessException
+        throw BusinessException(
+          code: code,
+          message: message,
+          uri: response.requestOptions.uri.toString(),
+          timestamp:
+              data['timestamp'] as int? ??
+              DateTime.now().millisecondsSinceEpoch,
         );
       }
     }
@@ -48,9 +45,6 @@ class ErrorInterceptor extends Interceptor {
         err = err.copyWith(error: RequestError.receiveTimeout(err));
         break;
       case DioExceptionType.badResponse:
-        // 如果是业务异常, 不再重复处理
-        final requestError = err.error as RequestError; 
-        if (requestError.code > 0) break;
         err = err.copyWith(error: RequestError.badResponse(err));
         break;
       default:
@@ -58,22 +52,6 @@ class ErrorInterceptor extends Interceptor {
     }
     super.onError(err, handler);
   }
-}
-
-/// 业务异常 (HTTP 200 但业务码非0)
-class BusinessException implements Exception {
-  final int code;
-  final String message;
-  final String uri;
-
-  BusinessException({
-    required this.code,
-    required this.message,
-    required this.uri,
-  });
-
-  @override
-  String toString() => 'BusinessException: [$code] $message (at $uri)';
 }
 
 /// 请求异常
@@ -126,14 +104,6 @@ class RequestError {
       message:
           '错误码${error.response?.statusCode ?? 500}'
           ' at ${error.requestOptions.uri}',
-      timestamp: DateTime.now().millisecondsSinceEpoch,
-    );
-  }
-
-  factory RequestError.business(BusinessException error) {
-    return RequestError(
-      code: error.code,
-      message: '${error.message} at ${error.uri}',
       timestamp: DateTime.now().millisecondsSinceEpoch,
     );
   }

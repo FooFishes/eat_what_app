@@ -1,26 +1,38 @@
 import 'package:dio/dio.dart';
+import '../../../core/constant/no_auth_urls.dart';
+import '../../../util/token_util.dart';
+import '../../../core/constant/biz_code.dart';
 
 class AuthInterceptor extends Interceptor {
-  final String? token;
-
-  AuthInterceptor({this.token});
+  AuthInterceptor();
 
   @override
-  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    // TODO: Implement read token from storage
-    if (token != null) {
-      options.headers['sa-token'] = '$token';
+  void onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    if (NoAuthUrls.contains(options.path)) {
+      return handler.next(options);
     }
-    super.onRequest(options, handler);
+    final token = await TokenUtil.getToken();
+    if (token != null) {
+      options.headers['sa-token'] = token;
+    }
+    return handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    final data = response.data as Map<String, dynamic>;
-    final code = data['code'] as int;
-    if (code > 20000 && code < 30000) {
-      return handler.next(response);
+    if (response.data is Map<String, dynamic>) {
+      final data = response.data as Map<String, dynamic>;
+      final code = data['code'] as int? ?? 0;
+      // 如果是认证相关错误，清除 Token
+      final bizCode = BizCode.fromCode(code);
+      if (bizCode != null && bizCode.isAuthError) {
+        TokenUtil.deleteToken();
+      }
     }
-    super.onResponse(response, handler);
+    // 继续传递给下一个拦截器（ErrorInterceptor 会统一处理业务异常）
+    handler.next(response);
   }
 }
