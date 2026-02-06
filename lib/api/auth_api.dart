@@ -9,16 +9,37 @@ import 'package:dio/dio.dart';
 class AuthApi {
   static final RequestClient client = RequestClient.instance;
 
-  static Future<bool> checkUsername(String username) async {
+  static Future<Result<void>> checkUsername(String username) async {
     try {
       final params = {'username': username};
-      await client.get(Urls.checkUsername, queryParameters: params);
-      return true;
+      await client.post(Urls.checkUsername, queryParameters: params);
+      return Result.success(null);
     } on BusinessException catch (e) {
       if (e.code == BizCode.usernameExists.code) {
-        return false;
+        return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> register(String account, String password) async {
+    try {
+      final body = {'username': account, 'password': password, 'device': 'APP'};
+      final response = await client.post(Urls.register, data: body);
+      final data = response as Map<String, dynamic>;
+      final token = data['tokenValue'] as String;
+      TokenUtil.saveToken(token);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.usernameExists.code ||
+          e.code == BizCode.wrongVerificationCode.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
     }
   }
 
@@ -34,6 +55,163 @@ class AuthApi {
       if (e.code == BizCode.wrongPassword.code ||
           e.code == BizCode.userDisabled.code ||
           e.code == BizCode.userNotFound.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> logout() async {
+    try {
+      await client.post(Urls.logout);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.notLogin.code ||
+          e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code ||
+          e.code == BizCode.userNotFound.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> sduPost() async {
+    try {
+      await client.post(Urls.sdu);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> sduGet() async {
+    try {
+      await client.get(Urls.sdu);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> callback() async {
+    try {
+      final token = await TokenUtil.getToken();
+      final params = {'token': token};
+      await client.get(Urls.callback, queryParameters: params);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> sendEmail(String email) async {
+    try {
+      final params = {'email': email};
+      await client.get(Urls.sendEmail, queryParameters: params);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code ||
+          e.code == BizCode.userNotFound.code ||
+          e.code == BizCode.userDisabled.code ||
+          e.code == BizCode.emailAlreadyVerified.code ||
+          e.code == BizCode.invalidEmailFormat.code ||
+          e.code == BizCode.onlySduEmailAllowed.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> verifyEmail() async {
+    try {
+      final token = await TokenUtil.getToken();
+      final params = {'token': token};
+      await client.get(Urls.verifyEmail, queryParameters: params);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> authGetCode(String mobile) async {
+    try {
+      final params = {'mobile': mobile};
+      await client.post(Urls.authGetCode, queryParameters: params);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.notLogin.code ||
+          e.code == BizCode.tokenExpired.code ||
+          e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.userNotFound.code ||
+          e.code == BizCode.userDisabled.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> changePassword(String oldPassword, String newPassword) async {
+    try {
+      final body = {'oldPassword': oldPassword, 'newPassword': newPassword};
+      await client.post(Urls.changePassword, data: body);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.notLogin.code ||
+          e.code == BizCode.tokenExpired.code ||
+          e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.userNotFound.code ||
+          e.code == BizCode.userDisabled.code ||
+          e.code == BizCode.wrongPassword.code ||
+          e.code == BizCode.wrongVerificationCode.code) {
+        return Result.error(ErrorSource.client, e.message);
+      }
+      rethrow;
+    } on DioException catch (_) {
+      return Result.network();
+    }
+  }
+
+  static Future<Result<void>> verify() async {
+    try {
+      await client.get(Urls.verify);
+      return Result.success(null);
+    } on BusinessException catch (e) {
+      if (e.code == BizCode.invalidToken.code ||
+          e.code == BizCode.tokenExpired.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
