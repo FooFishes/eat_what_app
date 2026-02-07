@@ -9,14 +9,14 @@ import 'package:dio/dio.dart';
 class AuthApi {
   static final RequestClient client = RequestClient.instance;
 
-  static Future<Result<void>> checkUsername(String username) async {
+  static Future<Result<bool>> checkUsername(String username) async {
     try {
       final params = {'username': username};
       await client.post(Urls.checkUsername, queryParameters: params);
-      return Result.success(null);
+      return Result.success(true);
     } on BusinessException catch (e) {
       if (e.code == BizCode.usernameExists.code) {
-        return Result.error(ErrorSource.client, e.message);
+        return Result.success(false);
       }
       rethrow;
     } on DioException catch (_) {
@@ -33,8 +33,7 @@ class AuthApi {
       TokenUtil.saveToken(token);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.usernameExists.code ||
-          e.code == BizCode.wrongVerificationCode.code) {
+      if (e.code == BizCode.usernameExists.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
@@ -52,9 +51,9 @@ class AuthApi {
       TokenUtil.saveToken(token);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.wrongPassword.code ||
+      if (e.code == BizCode.userNotFound.code ||
           e.code == BizCode.userDisabled.code ||
-          e.code == BizCode.userNotFound.code) {
+          e.code == BizCode.wrongPassword.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
@@ -68,57 +67,7 @@ class AuthApi {
       await client.post(Urls.logout);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.notLogin.code ||
-          e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code ||
-          e.code == BizCode.userNotFound.code) {
-        return Result.error(ErrorSource.client, e.message);
-      }
-      rethrow;
-    } on DioException catch (_) {
-      return Result.network();
-    }
-  }
-
-  static Future<Result<void>> sduPost() async {
-    try {
-      await client.post(Urls.sdu);
-      return Result.success(null);
-    } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code) {
-        return Result.error(ErrorSource.client, e.message);
-      }
-      rethrow;
-    } on DioException catch (_) {
-      return Result.network();
-    }
-  }
-
-  static Future<Result<void>> sduGet() async {
-    try {
-      await client.get(Urls.sdu);
-      return Result.success(null);
-    } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code) {
-        return Result.error(ErrorSource.client, e.message);
-      }
-      rethrow;
-    } on DioException catch (_) {
-      return Result.network();
-    }
-  }
-
-  static Future<Result<void>> callback() async {
-    try {
-      final token = await TokenUtil.getToken();
-      final params = {'token': token};
-      await client.get(Urls.callback, queryParameters: params);
-      return Result.success(null);
-    } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code) {
+      if (e.code == BizCode.userNotFound.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
@@ -133,9 +82,7 @@ class AuthApi {
       await client.get(Urls.sendEmail, queryParameters: params);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code ||
-          e.code == BizCode.userNotFound.code ||
+      if (e.code == BizCode.userNotFound.code ||
           e.code == BizCode.userDisabled.code ||
           e.code == BizCode.emailAlreadyVerified.code ||
           e.code == BizCode.invalidEmailFormat.code ||
@@ -155,8 +102,8 @@ class AuthApi {
       await client.get(Urls.verifyEmail, queryParameters: params);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code) {
+      if (e.code == BizCode.userNotFound.code ||
+          e.code == BizCode.userDisabled.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
@@ -171,10 +118,7 @@ class AuthApi {
       await client.post(Urls.authGetCode, queryParameters: params);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.notLogin.code ||
-          e.code == BizCode.tokenExpired.code ||
-          e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.userNotFound.code ||
+      if (e.code == BizCode.userNotFound.code ||
           e.code == BizCode.userDisabled.code) {
         return Result.error(ErrorSource.client, e.message);
       }
@@ -184,16 +128,16 @@ class AuthApi {
     }
   }
 
-  static Future<Result<void>> changePassword(String oldPassword, String newPassword) async {
+  static Future<Result<void>> changePassword(
+    String oldPassword,
+    String newPassword,
+  ) async {
     try {
       final body = {'oldPassword': oldPassword, 'newPassword': newPassword};
       await client.post(Urls.changePassword, data: body);
       return Result.success(null);
     } on BusinessException catch (e) {
-      if (e.code == BizCode.notLogin.code ||
-          e.code == BizCode.tokenExpired.code ||
-          e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.userNotFound.code ||
+      if (e.code == BizCode.userNotFound.code ||
           e.code == BizCode.userDisabled.code ||
           e.code == BizCode.wrongPassword.code ||
           e.code == BizCode.wrongVerificationCode.code) {
@@ -205,13 +149,18 @@ class AuthApi {
     }
   }
 
-  static Future<Result<void>> verify() async {
+  static Future<Result<bool>> verify() async {
     try {
-      await client.get(Urls.verify);
-      return Result.success(null);
+      final response = await client.get(Urls.verify);
+      final data = response as List<String>;
+      if (data.isEmpty) {
+        return Result.success(false);
+      } else {
+        return Result.success(true);
+      }
     } on BusinessException catch (e) {
-      if (e.code == BizCode.invalidToken.code ||
-          e.code == BizCode.tokenExpired.code) {
+      if (e.code == BizCode.userNotFound.code ||
+          e.code == BizCode.userDisabled.code) {
         return Result.error(ErrorSource.client, e.message);
       }
       rethrow;
