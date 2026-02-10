@@ -148,12 +148,4 @@ enum BizCode {
   String toString() => 'BizCode($code, $message)';
 }
 
-enum ErrorCategory {
-  param,
-  auth,
-  user,
-  business,
-  external,
-  system,
-  unknown,
-}
+enum ErrorCategory { param, auth, user, business, external, system, unknown }

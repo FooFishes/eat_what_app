@@ -24,3 +24,23 @@ abstract class ApiResponse<T> with _$ApiResponse<T> {
   bool get isSuccess => code == BizCode.success.code;
   bool get requireReLogin => BizCode.requireReLogin(code);
 }
+
+@Freezed(genericArgumentFactories: true)
+abstract class PaginatedData<T> with _$PaginatedData<T> {
+  const factory PaginatedData({
+    required int code,
+    required List<T> items,
+    required int totalPages,
+    required int totalItems,
+    required bool hasNext,
+  }) = _PaginatedData<T>;
+
+  const PaginatedData._();
+
+  bool get isEmpty => items.isEmpty;
+
+  factory PaginatedData.fromJson(
+    Map<String, dynamic> json,
+    T Function(Object?) fromJsonT,
+  ) => _$PaginatedDataFromJson(json, fromJsonT);
+}
