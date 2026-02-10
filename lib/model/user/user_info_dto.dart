@@ -1,12 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part 'user.freezed.dart';
-part 'user.g.dart';
+part 'user_info_dto.freezed.dart';
+part 'user_info_dto.g.dart';
 
 @freezed
-abstract class User with _$User {
-  const factory User({
-    required String id,
+abstract class UserInfoDto with _$UserInfoDto {
+  const factory UserInfoDto({
+    required int id,
     required String userName,
     required String avatar,
     required String email,
@@ -18,7 +18,8 @@ abstract class User with _$User {
     required String verifiedEmail,
     required int createdAt,
     required int updatedAt,
-  }) = _User;
+  }) = _UserInfoDto;
 
-  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  factory UserInfoDto.fromJson(Map<String, dynamic> json) =>
+      _$UserInfoDtoFromJson(json);
 }
