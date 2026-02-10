@@ -123,21 +123,37 @@ enum BizCode {
     }
   }
 
-  /// 获取错误大类（A 位）
-  int get category => code ~/ 10000;
+  /// 获取错误分类
+  static ErrorCategory getErrorCategory(int code) {
+    int category = code ~/ 10000;
+    return switch (category) {
+      1 => ErrorCategory.param,
+      2 => ErrorCategory.auth,
+      3 => ErrorCategory.user,
+      4 => ErrorCategory.business,
+      5 => ErrorCategory.external,
+      9 => ErrorCategory.system,
+      _ => ErrorCategory.unknown,
+    };
+  }
 
-  /// 是否为认证相关错误
-  bool get isAuthError => category == 2;
-
-  /// 是否为用户相关错误
-  bool get isUserError => category == 3;
-
-  /// 是否为业务逻辑错误
-  bool get isBusinessError => category == 4;
-
-  /// 是否为系统错误
-  bool get isSystemError => category == 9;
+  /// 是否需要重新登录
+  static bool requireReLogin(int code) {
+    return code == notLogin.code ||
+        code == invalidToken.code ||
+        code == tokenExpired.code;
+  }
 
   @override
   String toString() => 'BizCode($code, $message)';
+}
+
+enum ErrorCategory {
+  param,
+  auth,
+  user,
+  business,
+  external,
+  system,
+  unknown,
 }

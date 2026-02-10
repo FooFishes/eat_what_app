@@ -1,36 +1,26 @@
-class ApiResponse<T> {
-  final int code;
-  final String message;
-  final T data;
-  final int timestamp;
+import 'package:eat_what_app/core/constant/biz_code.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  ApiResponse({
-    required this.code,
-    required this.message,
-    required this.data,
-    required this.timestamp,
-  });
+part 'api_response.freezed.dart';
+part 'api_response.g.dart';
+
+@Freezed(genericArgumentFactories: true)
+abstract class ApiResponse<T> with _$ApiResponse<T> {
+  const factory ApiResponse({
+    required int code,
+    @JsonKey(name: 'msg', defaultValue: '') required String message,
+    T? data,
+    required int timestamp,
+  }) = _ApiResponse<T>;
 
   factory ApiResponse.fromJson(
-    Map<String, dynamic> json, {
-    T Function(Map<String, dynamic> json)? fromJsonT,
-  }) {
-    return ApiResponse(
-      code: json['code'],
-      message: json['message'],
-      data: fromJsonT?.call(json['data']) ?? json['data'],
-      timestamp: json['timestamp'],
-    );
-  }
+    Map<String, dynamic> json,
+    T Function(Object?) fromJsonT,
+  ) => _$ApiResponseFromJson(json, fromJsonT);
 
-  Map<String, dynamic> toJson({
-    Map<String, dynamic>? Function(T value)? toJsonT,
-  }) {
-    return {
-      'code': code,
-      'message': message,
-      'data': toJsonT?.call(data) ?? data,
-      'timestamp': timestamp,
-    };
-  }
+  // 私有构造器用于正常生成 getters
+  const ApiResponse._();
+
+  bool get isSuccess => code == BizCode.success.code;
+  bool get requireReLogin => BizCode.requireReLogin(code);
 }
