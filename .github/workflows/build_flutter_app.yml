@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         # Ubuntu: Android
-        os: [self-hosted]
+        os: [ubuntu-latest]
     
     # 根据矩阵中的 os 变量选择运行器
     runs-on: ${{ matrix.os }}
