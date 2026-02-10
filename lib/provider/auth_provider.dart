@@ -27,7 +27,7 @@ class Auth extends _$Auth {
   }
 
   Future<void> logout() async {
-    await SecureStorageUtil.delete(_tokenKey);
     state = AsyncValue.data(null);
+    await SecureStorageUtil.delete(_tokenKey);
   }
 }

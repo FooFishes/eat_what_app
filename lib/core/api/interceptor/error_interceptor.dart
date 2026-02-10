@@ -16,16 +16,18 @@ class ErrorInterceptor extends Interceptor {
   ) {
     final data = response.data;
     if (data is! Map<String, dynamic>) {
+      handler.next(response);
       return;
     }
 
     final code = data['code'] as int?;
 
     if (code == null || code == BizCode.success.code) {
+      handler.next(response);
       return;
     }
 
-    final message = data['msg'] as String;
+    final message = data['msg'] as String? ?? '';
     final category = BizCode.getErrorCategory(code);
     final exception = BusinessException(
       code: code,
@@ -38,7 +40,9 @@ class ErrorInterceptor extends Interceptor {
     }
 
     if (_shouldReportToSentry(code)) {
-      _reportBusinessError(exception, response);
+      // fire-and-forget 
+      // 使用 .ignore() 忽略结果
+      _reportBusinessError(exception, response).ignore();
     }
 
     handler.reject(
@@ -49,8 +53,7 @@ class ErrorInterceptor extends Interceptor {
         type: DioExceptionType.badResponse,
       ),
     );
-
-    handler.next(response);
+    return;
   }
 
   @override

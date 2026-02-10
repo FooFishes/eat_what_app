@@ -26,9 +26,9 @@ sealed class ApiException implements Exception {
         if (code != null) {
           scope.setTag('business_code', code.toString());
         }
-        extra?.forEach((key, value) {
-          scope.setContexts('details', {key: value});
-        });
+        if (extra != null && extra.isNotEmpty) {
+          scope.setContexts('details', extra);
+        }
       },
     );
   }

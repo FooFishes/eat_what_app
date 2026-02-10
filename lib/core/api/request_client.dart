@@ -3,12 +3,12 @@ import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry_dio/sentry_dio.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import '../constant/urls.dart';
 import '../error/api_exception.dart';
 import 'interceptor/auth_interceptor.dart';
 import 'interceptor/error_interceptor.dart';
 
 class RequestClient {
-  final String baseUrl = 'https://api.example.com';
   late final Dio _dio;
 
   RequestClient({
@@ -16,6 +16,7 @@ class RequestClient {
     required void Function() onRequireReLogin,
   }) : _dio = Dio(
          BaseOptions(
+           baseUrl: Urls.baseUrl,
            connectTimeout: const Duration(seconds: 10),
            receiveTimeout: const Duration(seconds: 10),
            sendTimeout: const Duration(seconds: 10),
