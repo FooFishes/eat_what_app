@@ -1,3 +1,4 @@
+import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../util/secure_storage_util.dart';
 
@@ -21,13 +22,54 @@ class Auth extends _$Auth {
     return await SecureStorageUtil.get(_tokenKey);
   }
 
-  Future<void> login(String token) async {
-    await SecureStorageUtil.save(_tokenKey, token);
-    state = AsyncValue.data(token);
+  Future<void> login(String account, String password) async {
+    state = const AsyncLoading();
+
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.login(account, password);
+
+    result.when(
+      success: (token) async {
+        await SecureStorageUtil.save(_tokenKey, token);
+        state = AsyncValue.data(token);
+      },
+      failure: (error) {
+        state = AsyncValue.error(error, StackTrace.current);
+      },
+    );
+  }
+
+  Future<void> register(String account, String password) async {
+    state = const AsyncLoading();
+
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.register(account, password);
+
+    result.when(
+      success: (token) async {
+        await SecureStorageUtil.save(_tokenKey, token);
+        state = AsyncValue.data(token);
+      },
+      failure: (error) {
+        state = AsyncValue.error(error, StackTrace.current);
+      },
+    );
   }
 
   Future<void> logout() async {
-    state = AsyncValue.data(null);
-    await SecureStorageUtil.delete(_tokenKey);
+    state = const AsyncLoading();
+
+    final repo = ref.read(authRepositoryProvider);
+    final result = await repo.logout();
+
+    result.when(
+      success: (_) async {
+        await SecureStorageUtil.delete(_tokenKey);
+        state = const AsyncValue.data(null);
+      },
+      failure: (error) {
+        state = AsyncValue.error(error, StackTrace.current);
+      },
+    );
   }
 }
