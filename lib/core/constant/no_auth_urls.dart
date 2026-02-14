@@ -7,6 +7,7 @@ class NoAuthUrls {
   static const List<String> urls = [checkUsername, register, login];
 
   static bool contains(String url) {
-    return urls.any((element) => url.contains(element));
+    final path = Uri.tryParse(url)?.path ?? url;
+    return urls.contains(path);
   }
 }

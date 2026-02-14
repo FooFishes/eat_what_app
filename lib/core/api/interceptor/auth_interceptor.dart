@@ -15,7 +15,7 @@ class AuthInterceptor extends Interceptor {
       return handler.next(options);
     }
     final token = await getToken();
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       options.headers['sa-token'] = token;
     }
     return handler.next(options);

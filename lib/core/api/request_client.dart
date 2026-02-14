@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:flutter/foundation.dart';
-import 'package:sentry_dio/sentry_dio.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+
 import '../constant/urls.dart';
+import '../error/api_error_handler.dart';
 import '../error/api_exception.dart';
 import 'interceptor/auth_interceptor.dart';
 import 'interceptor/error_interceptor.dart';
@@ -19,7 +21,7 @@ class RequestClient {
            baseUrl: Urls.baseUrl,
            connectTimeout: const Duration(seconds: 10),
            receiveTimeout: const Duration(seconds: 10),
-           sendTimeout: const Duration(seconds: 10),
+           sendTimeout: kIsWeb ? null : const Duration(seconds: 10),
          ),
        ) {
     _setupInterceptors(getToken: getToken, onRequireReLogin: onRequireReLogin);
@@ -29,7 +31,11 @@ class RequestClient {
     required Future<String?> Function() getToken,
     required void Function() onRequireReLogin,
   }) {
+    _dio.interceptors.add(AuthInterceptor(getToken: getToken));
+    _dio.interceptors.add(ErrorInterceptor(onRequireReLogin: onRequireReLogin));
+
     if (kDebugMode) {
+      // Put logger at the end so request headers include auth headers set by interceptors.
       _dio.interceptors.add(
         LogInterceptor(
           requestBody: true,
@@ -39,17 +45,6 @@ class RequestClient {
         ),
       );
     }
-    _dio.interceptors.add(AuthInterceptor(getToken: getToken));
-    _dio.interceptors.add(ErrorInterceptor(onRequireReLogin: onRequireReLogin));
-
-    // Sentry 最后添加，防止被其他配置覆盖
-    _dio.addSentry(
-      captureFailedRequests: true,
-      failedRequestStatusCodes: [
-        SentryStatusCode.range(400, 404),
-        SentryStatusCode.range(500, 599),
-      ],
-    );
   }
 
   // ========== 请求方法（返回 Result，不抛异常）==========
@@ -132,39 +127,61 @@ class RequestClient {
   // ========== 内部方法 ==========
 
   Future<T> _request<T>(
-    Future<Response> Function() request, {
+    Future<Response<dynamic>> Function() request, {
     T Function(dynamic json)? fromJson,
   }) async {
+    Response<dynamic>? response;
     try {
-      final response = await request();
-      final responseData = response.data;
-
-      if (responseData is Map<String, dynamic>) {
-        final data = responseData['data'];
-        if (fromJson != null && data != null) {
-          return fromJson(data);
-        }
-        return data as T;
-      }
-
-      return responseData as T;
-    } on DioException catch (e) {
-      if (e.error is ApiException) throw e.error as ApiException;
-      throw NetworkException.fromDioException(e);
-    } catch (e, stackTrace) {
-      throw ParseException(
-        message: '数据解析失败: $e',
-        originalError: e,
+      response = await request();
+      return _parseResponseData(response.data, fromJson: fromJson);
+    } on ApiException {
+      rethrow;
+    } on DioException catch (error) {
+      throw ApiErrorHandler.fromDioException(error);
+    } catch (error, stackTrace) {
+      final parseException = ParseException(
+        message: '数据解析失败，请稍后重试',
+        originalError: error,
         stackTrace: stackTrace,
       );
+
+      ApiErrorHandler.addNetworkBreadcrumb(
+        phase: 'response_parse',
+        exception: parseException,
+        requestOptions: response?.requestOptions,
+        response: response,
+      );
+      ApiErrorHandler.report(
+        parseException,
+        phase: 'response_parse',
+        requestOptions: response?.requestOptions,
+        response: response,
+      ).ignore();
+
+      throw parseException;
     }
+  }
+
+  T _parseResponseData<T>(
+    dynamic responseData, {
+    T Function(dynamic json)? fromJson,
+  }) {
+    if (responseData is Map<String, dynamic>) {
+      final data = responseData['data'];
+      if (fromJson != null && data != null) {
+        return fromJson(data);
+      }
+      return data as T;
+    }
+
+    return responseData as T;
   }
 
   Future<Result<T>> _safeRequest<T>(Future<T> Function() request) async {
     try {
       return Success(await request());
-    } on ApiException catch (e) {
-      return Failure(e);
+    } on ApiException catch (error) {
+      return Failure(error);
     }
   }
 }

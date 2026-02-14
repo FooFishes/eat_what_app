@@ -1,5 +1,7 @@
+import 'package:eat_what_app/core/error/api_exception.dart';
 import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+
 import '../util/secure_storage_util.dart';
 
 part 'auth_provider.g.dart';
@@ -19,7 +21,7 @@ class Auth extends _$Auth {
     if (currentState is AsyncData<String?>) {
       return currentState.value;
     }
-    return await SecureStorageUtil.get(_tokenKey);
+    return SecureStorageUtil.get(_tokenKey);
   }
 
   Future<void> login(String account, String password) async {
@@ -34,7 +36,7 @@ class Auth extends _$Auth {
         state = AsyncValue.data(token);
       },
       failure: (error) {
-        state = AsyncValue.error(error, StackTrace.current);
+        state = AsyncValue.error(error, _resolveStackTrace(error));
       },
     );
   }
@@ -51,25 +53,34 @@ class Auth extends _$Auth {
         state = AsyncValue.data(token);
       },
       failure: (error) {
-        state = AsyncValue.error(error, StackTrace.current);
+        state = AsyncValue.error(error, _resolveStackTrace(error));
       },
     );
   }
 
   Future<void> logout() async {
-    state = const AsyncLoading();
-
     final repo = ref.read(authRepositoryProvider);
     final result = await repo.logout();
 
     result.when(
       success: (_) async {
-        await SecureStorageUtil.delete(_tokenKey);
-        state = const AsyncValue.data(null);
+        await clearSession();
       },
       failure: (error) {
-        state = AsyncValue.error(error, StackTrace.current);
+        state = AsyncValue.error(error, _resolveStackTrace(error));
       },
     );
+  }
+
+  Future<void> clearSession() async {
+    await SecureStorageUtil.delete(_tokenKey);
+    state = const AsyncValue.data(null);
+  }
+
+  StackTrace _resolveStackTrace(Object error) {
+    if (error is ApiException && error.stackTrace != null) {
+      return error.stackTrace!;
+    }
+    return StackTrace.current;
   }
 }

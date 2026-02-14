@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:eat_what_app/core/constant/biz_code.dart';
+import 'package:eat_what_app/core/error/api_error_handler.dart';
 import 'package:eat_what_app/core/error/api_exception.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 class ErrorInterceptor extends Interceptor {
+  static const Duration _reLoginCooldown = Duration(seconds: 1);
+  static const String _sentryReportedKey = '_network_error_reported';
+
   final void Function() _onRequireReLogin;
+  DateTime? _lastReLoginAt;
 
   ErrorInterceptor({required void Function() onRequireReLogin})
     : _onRequireReLogin = onRequireReLogin;
@@ -14,136 +20,159 @@ class ErrorInterceptor extends Interceptor {
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) {
-    final data = response.data;
-    if (data is! Map<String, dynamic>) {
+    final payload = response.data;
+    if (payload is! Map<String, dynamic>) {
       handler.next(response);
       return;
     }
 
-    final code = data['code'] as int?;
-
-    if (code == null || code == BizCode.success.code) {
-      handler.next(response);
-      return;
-    }
-
-    final message = data['msg'] as String? ?? '';
-    final category = BizCode.getErrorCategory(code);
-    final exception = BusinessException(
-      code: code,
-      message: message,
-      category: category,
-    );
-
-    if (BizCode.requireReLogin(code)) {
-      _onRequireReLogin();
-    }
-
-    if (_shouldReportToSentry(code)) {
-      // fire-and-forget 
-      // 使用 .ignore() 忽略结果
-      _reportBusinessError(exception, response).ignore();
-    }
-
-    handler.reject(
-      DioException(
+    final code = _readBusinessCode(payload);
+    if (code == null) {
+      final exception = ParseException(
+        message: '响应格式错误：缺少业务码 code',
+        originalError: payload,
+      );
+      _captureAndReject(
+        exception: exception,
+        phase: 'response_parse',
         requestOptions: response.requestOptions,
         response: response,
-        error: exception,
-        type: DioExceptionType.badResponse,
-      ),
+        handler: handler,
+      );
+      return;
+    }
+
+    if (code == BizCode.success.code) {
+      handler.next(response);
+      return;
+    }
+
+    final exception = BusinessException(
+      code: code,
+      message: _readBusinessMessage(payload),
+      category: BizCode.getErrorCategory(code),
+      originalError: payload,
     );
-    return;
+
+    _handleReLogin(code);
+
+    _captureAndReject(
+      exception: exception,
+      phase: 'business_error',
+      requestOptions: response.requestOptions,
+      response: response,
+      handler: handler,
+    );
   }
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    final apiException = _convertToApiException(err);
+    final exception = ApiErrorHandler.fromDioException(err);
+    final alreadyReported = _wasReported(err.requestOptions);
 
-    Sentry.addBreadcrumb(
-      Breadcrumb(
-        category: 'http',
-        message: 'Request failed: ${err.requestOptions.path}',
-        level: SentryLevel.error,
-        data: {
-          'method': err.requestOptions.method,
-          'url': err.requestOptions.uri.toString(),
-          'error_type': apiException.runtimeType.toString(),
-        },
-      ),
-    );
+    if (!alreadyReported) {
+      ApiErrorHandler.addNetworkBreadcrumb(
+        phase: 'transport_error',
+        exception: exception,
+        requestOptions: err.requestOptions,
+        response: err.response,
+        dioException: err,
+      );
+
+      if (ApiErrorHandler.shouldReport(exception)) {
+        _markAsReported(err.requestOptions);
+        ApiErrorHandler.report(
+          exception,
+          phase: 'transport_error',
+          requestOptions: err.requestOptions,
+          response: err.response,
+          dioException: err,
+        ).ignore();
+      }
+    }
 
     handler.reject(
       DioException(
         requestOptions: err.requestOptions,
         response: err.response,
-        error: apiException,
+        error: exception,
         type: err.type,
         stackTrace: err.stackTrace,
       ),
     );
   }
 
-  ApiException _convertToApiException(DioException err) {
-    if (err.error is ApiException) {
-      return err.error as ApiException;
+  int? _readBusinessCode(Map<String, dynamic> payload) {
+    final rawCode = payload['code'];
+    if (rawCode is int) {
+      return rawCode;
+    }
+    return null;
+  }
+
+  String _readBusinessMessage(Map<String, dynamic> payload) {
+    final rawMessage = payload['msg'];
+    if (rawMessage is String && rawMessage.trim().isNotEmpty) {
+      return rawMessage;
+    }
+    return '请求失败，请稍后重试';
+  }
+
+  void _handleReLogin(int code) {
+    if (!BizCode.requireReLogin(code)) {
+      return;
     }
 
-    if (err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.connectionError) {
-      return NetworkException.fromDioException(err);
+    final now = DateTime.now();
+    final last = _lastReLoginAt;
+    if (last != null && now.difference(last) < _reLoginCooldown) {
+      return;
     }
 
-    final statusCode = err.response?.statusCode;
-    if (statusCode != null) {
-      return ServerException(
-        statusCode: statusCode,
-        message: _getHttpErrorMessage(statusCode),
-        originalError: err,
-        stackTrace: err.stackTrace,
-      );
+    _lastReLoginAt = now;
+    _onRequireReLogin();
+  }
+
+  void _captureAndReject({
+    required ApiException exception,
+    required String phase,
+    required RequestOptions requestOptions,
+    required Response<dynamic> response,
+    required ResponseInterceptorHandler handler,
+  }) {
+    ApiErrorHandler.addNetworkBreadcrumb(
+      phase: phase,
+      exception: exception,
+      requestOptions: requestOptions,
+      response: response,
+    );
+
+    if (ApiErrorHandler.shouldReport(exception)) {
+      _markAsReported(requestOptions);
+      ApiErrorHandler.report(
+        exception,
+        phase: phase,
+        requestOptions: requestOptions,
+        response: response,
+      ).ignore();
     }
 
-    return NetworkException(
-      message: err.message ?? '未知网络错误',
-      originalError: err,
-      stackTrace: err.stackTrace,
+    handler.reject(
+      DioException(
+        requestOptions: requestOptions,
+        response: response,
+        error: exception,
+        type: DioExceptionType.badResponse,
+        stackTrace: exception.stackTrace,
+      ),
     );
   }
 
-  String _getHttpErrorMessage(int statusCode) => switch (statusCode) {
-    400 => '请求参数错误',
-    401 => '未授权，请重新登录',
-    403 => '拒绝访问',
-    404 => '请求的资源不存在',
-    500 => '服务器内部错误',
-    502 => '网关错误',
-    503 => '服务暂不可用',
-    504 => '网关超时',
-    _ => '服务器错误 ($statusCode)',
-  };
-
-  bool _shouldReportToSentry(int code) {
-    final ignoredCodes = [];
-    return !ignoredCodes.contains(code);
+  bool _wasReported(RequestOptions requestOptions) {
+    return requestOptions.extra[_sentryReportedKey] == true;
   }
 
-  Future<void> _reportBusinessError(
-    BusinessException e,
-    Response response,
-  ) async {
-    await Sentry.captureException(
-      e,
-      withScope: (scope) {
-        scope.setTag('business_code', e.code.toString());
-        scope.setTag('error_category', e.category.name);
-        scope.setContexts('request', {
-          'url': response.requestOptions.uri.toString(),
-          'method': response.requestOptions.method,
-        });
-      },
-    );
+  void _markAsReported(RequestOptions requestOptions) {
+    requestOptions.extra[_sentryReportedKey] = true;
   }
 }

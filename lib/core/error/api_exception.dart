@@ -2,7 +2,6 @@
 
 import 'package:dio/dio.dart';
 import 'package:eat_what_app/core/constant/biz_code.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 sealed class ApiException implements Exception {
   final String message;
@@ -16,22 +15,6 @@ sealed class ApiException implements Exception {
     this.originalError,
     this.stackTrace,
   });
-
-  Future<void> reportToSentry({Map<String, dynamic>? extra}) async {
-    await Sentry.captureException(
-      this,
-      stackTrace: stackTrace,
-      withScope: (scope) {
-        scope.setTag('error_type', runtimeType.toString());
-        if (code != null) {
-          scope.setTag('business_code', code.toString());
-        }
-        if (extra != null && extra.isNotEmpty) {
-          scope.setContexts('details', extra);
-        }
-      },
-    );
-  }
 }
 
 class BusinessException extends ApiException {
@@ -62,12 +45,12 @@ class NetworkException extends ApiException {
 
   factory NetworkException.fromDioException(DioException e) {
     final message = switch (e.type) {
-      DioExceptionType.connectionTimeout => '连接超时',
-      DioExceptionType.sendTimeout => '请求超时',
-      DioExceptionType.receiveTimeout => '响应超时',
-      DioExceptionType.connectionError => '网络连接失败',
+      DioExceptionType.connectionTimeout => '连接超时，请稍后重试',
+      DioExceptionType.sendTimeout => '请求发送超时，请稍后重试',
+      DioExceptionType.receiveTimeout => '响应超时，请稍后重试',
+      DioExceptionType.connectionError => '网络连接失败，请检查网络',
       DioExceptionType.cancel => '请求已取消',
-      _ => '网络异常',
+      _ => '网络异常，请稍后重试',
     };
     return NetworkException(
       message: message,

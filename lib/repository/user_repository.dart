@@ -8,7 +8,7 @@ class UserRepository {
   final RequestClient _api;
   UserRepository(this._api);
 
-  Future<Result<UserInfoDto>> getUserInfo() async {
+  Future<Result<UserInfoDto>> getUserInfo() {
     return _api.get<UserInfoDto>(
       Urls.userInfo,
       fromJson: (json) => UserInfoDto.fromJson(json as Map<String, dynamic>),

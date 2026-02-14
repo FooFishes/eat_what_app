@@ -11,7 +11,7 @@ RequestClient api(Ref ref) {
   return RequestClient(
     getToken: () => ref.read(authProvider.notifier).getToken(),
     onRequireReLogin: () {
-      ref.read(authProvider.notifier).logout().ignore();
+      ref.read(authProvider.notifier).clearSession().ignore();
     },
   );
 }

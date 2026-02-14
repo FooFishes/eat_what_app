@@ -1,23 +1,39 @@
+import 'package:dio/dio.dart';
+import 'package:eat_what_app/core/constant/biz_code.dart';
+
 import 'api_exception.dart';
-import '/core/constant/biz_code.dart';
+
+const String kDefaultErrorMessage = '操作失败，请稍后重试';
 
 extension ApiExceptionExt on ApiException {
   /// 用户友好的错误消息
   String get userMessage => switch (this) {
-    BusinessException e => e.message,
-    NetworkException _ => '网络连接失败，请检查网络',
-    ServerException e =>
-      e.statusCode >= 500 ? '服务器开小差了，请稍后重试' : '请求失败 (${e.statusCode})',
-    ParseException _ => '数据异常，请联系客服',
+    BusinessException e =>
+      e.message.isNotEmpty ? e.message : kDefaultErrorMessage,
+    NetworkException e => e.message,
+    ServerException e => e.message,
+    ParseException _ => '数据解析异常，请稍后重试',
   };
 
   /// 是否可重试
-  bool get isRetryable =>
-      this is NetworkException ||
-      (this is ServerException && (this as ServerException).statusCode >= 500);
+  bool get isRetryable => switch (this) {
+    NetworkException e => e.dioExceptionType != DioExceptionType.cancel,
+    ServerException e => e.statusCode >= 500,
+    _ => false,
+  };
 
   /// 是否需要重新登录
   bool get needsReLogin =>
       this is BusinessException &&
       BizCode.requireReLogin((this as BusinessException).code!);
+}
+
+String resolveUserMessage(
+  Object error, {
+  String fallback = kDefaultErrorMessage,
+}) {
+  if (error is ApiException) {
+    return error.userMessage;
+  }
+  return fallback;
 }
