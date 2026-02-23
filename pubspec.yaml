@@ -19,6 +19,8 @@ dependencies:
   sentry_dio: ^9.12.0
   go_router: ^14.8.1
   url_launcher: ^6.3.2
+  flutter_svg: ^2.2.3
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1
@@ -32,7 +34,8 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/login_header.png
+    - assets/images/
+    - assets/icons/
 
 sentry:
   auth_token: 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

@@ -89,16 +89,14 @@ class _ToastOverlayState extends State<_ToastOverlay>
     reverseCurve: Curves.easeInCubic,
   );
 
-  late final Animation<Offset> _slide = Tween<Offset>(
-    begin: const Offset(0, -0.2),
-    end: Offset.zero,
-  ).animate(
-    CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
-    ),
-  );
+  late final Animation<Offset> _slide =
+      Tween<Offset>(begin: const Offset(0, -0.2), end: Offset.zero).animate(
+        CurvedAnimation(
+          parent: _controller,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        ),
+      );
 
   Timer? _timer;
   bool _isClosing = false;
