@@ -1,6 +1,7 @@
 import 'package:eat_what_app/repository/auth_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../repository/user_repository.dart';
+import '../repository/location_repository.dart';
 import 'api_provider.dart';
 
 part 'repository_provider.g.dart';
@@ -13,4 +14,9 @@ AuthRepository authRepository(Ref ref) {
 @riverpod
 UserRepository userRepository(Ref ref) {
   return UserRepository(ref.read(apiProvider));
+}
+
+@riverpod
+LocationRepository locationRepository(Ref ref) {
+  return LocationRepository(ref.read(apiProvider));
 }

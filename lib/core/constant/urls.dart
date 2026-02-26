@@ -9,4 +9,6 @@ class Urls {
   static const String changePassword = '/auth/changePassword';
   static const String verify = '/auth/verify';
   static const String sendEmail = '/auth/sendEmail';
+  static const String provinces = '/location/provinces';
+  static const String cities = '/location/provinces';
 }

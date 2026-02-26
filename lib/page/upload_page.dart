@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
@@ -6,24 +7,20 @@ import 'dart:ui' as ui;
 import '../../core/theme/app_colors.dart';
 import '../../core/error/app_error_presenter.dart';
 import '../../widget/app_toast.dart';
-
-/// 省份城市示例数据
-final Map<String, List<String>> _provinceCityData = {
-  '北京市': ['东城区', '西城区', '朝阳区', '海淀区'],
-  '上海市': ['黄浦区', '徐汇区', '长宁区', '静安区'],
-  '广东省': ['广州市', '深圳市', '珠海市', '佛山市'],
-};
+import '../../model/location/province_dto.dart';
+import '../../model/location/city_dto.dart';
+import '../../provider/repository_provider.dart';
 
 /// 上传页面
 /// 包含两个子页面：Campus页面和New Year页面
-class UploadPage extends StatefulWidget {
+class UploadPage extends ConsumerStatefulWidget {
   const UploadPage({super.key});
 
   @override
-  State<UploadPage> createState() => _UploadPageState();
+  ConsumerState<UploadPage> createState() => _UploadPageState();
 }
 
-class _UploadPageState extends State<UploadPage> {
+class _UploadPageState extends ConsumerState<UploadPage> {
   /// 是否选中Campus选项卡
   bool _isCampusSelected = true;
 
@@ -46,10 +43,56 @@ class _UploadPageState extends State<UploadPage> {
   int _currentPageIndex = 0;
 
   /// 选中的省份
-  String? _selectedProvince;
+  ProvinceDto? _selectedProvince;
 
   /// 选中的城市
-  String? _selectedCity;
+  CityDto? _selectedCity;
+
+  /// 省份列表
+  List<ProvinceDto> _provinces = [];
+
+  /// 城市列表
+  List<CityDto> _cities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProvinces();
+  }
+
+  Future<void> _loadProvinces() async {
+    final repo = ref.read(locationRepositoryProvider);
+    final result = await repo.getProvinces();
+    result.when(
+      success: (data) {
+        setState(() {
+          _provinces = data;
+        });
+      },
+      failure: (error) {
+        if (mounted) {
+          AppErrorPresenter.showErrorToast(context, error);
+        }
+      },
+    );
+  }
+
+  Future<void> _loadCities(int provinceId) async {
+    final repo = ref.read(locationRepositoryProvider);
+    final result = await repo.getCities(provinceId);
+    result.when(
+      success: (data) {
+        setState(() {
+          _cities = data;
+        });
+      },
+      failure: (error) {
+        if (mounted) {
+          AppErrorPresenter.showErrorToast(context, error);
+        }
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -971,28 +1014,42 @@ class _UploadPageState extends State<UploadPage> {
 
   /// 选择图片方法构建省份下拉选择器组件
   Widget _buildProvinceDropdown() {
-    return _buildDropdownContainer(
-      DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          hint: Text(
-            '请选择省份',
-            style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+    return GestureDetector(
+      onTap: () {
+        if (_provinces.isEmpty) {
+          _loadProvinces();
+        }
+      },
+      child: _buildDropdownContainer(
+        DropdownButtonHideUnderline(
+          child: DropdownButton<ProvinceDto>(
+            hint: Text(
+              _provinces.isEmpty ? '点击加载省份' : '请选择省份',
+              style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+            ),
+            value: _selectedProvince,
+            isExpanded: true,
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+            items: _provinces.map((ProvinceDto province) {
+              return DropdownMenuItem<ProvinceDto>(
+                value: province,
+                child: Text(
+                  province.name,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              );
+            }).toList(),
+            onChanged: (ProvinceDto? newValue) {
+              setState(() {
+                _selectedProvince = newValue;
+                _selectedCity = null;
+                _cities = [];
+                if (newValue != null) {
+                  _loadCities(newValue.id);
+                }
+              });
+            },
           ),
-          value: _selectedProvince,
-          isExpanded: true,
-          icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-          items: _provinceCityData.keys.map((String province) {
-            return DropdownMenuItem<String>(
-              value: province,
-              child: Text(province, style: const TextStyle(fontSize: 14)),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedProvince = newValue;
-              _selectedCity = null;
-            });
-          },
         ),
       ),
     );
@@ -1000,33 +1057,38 @@ class _UploadPageState extends State<UploadPage> {
 
   /// 构建城市下拉选择器组件
   Widget _buildCityDropdown() {
-    final cities = _selectedProvince != null
-        ? _provinceCityData[_selectedProvince] ?? []
-        : <String>[];
-
-    return _buildDropdownContainer(
-      DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          hint: Text(
-            '请选择城市',
-            style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+    return GestureDetector(
+      onTap: () {
+        if (_selectedProvince != null && _cities.isEmpty) {
+          _loadCities(_selectedProvince!.id);
+        }
+      },
+      child: _buildDropdownContainer(
+        DropdownButtonHideUnderline(
+          child: DropdownButton<CityDto>(
+            hint: Text(
+              _selectedProvince == null
+                  ? '请先选择省份'
+                  : (_cities.isEmpty ? '点击加载城市' : '请选择城市'),
+              style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+            ),
+            value: _selectedCity,
+            isExpanded: true,
+            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+            items: _cities.map((CityDto city) {
+              return DropdownMenuItem<CityDto>(
+                value: city,
+                child: Text(city.name, style: const TextStyle(fontSize: 14)),
+              );
+            }).toList(),
+            onChanged: _selectedProvince != null
+                ? (CityDto? newValue) {
+                    setState(() {
+                      _selectedCity = newValue;
+                    });
+                  }
+                : null,
           ),
-          value: _selectedCity,
-          isExpanded: true,
-          icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-          items: cities.map((String city) {
-            return DropdownMenuItem<String>(
-              value: city,
-              child: Text(city, style: const TextStyle(fontSize: 14)),
-            );
-          }).toList(),
-          onChanged: _selectedProvince != null
-              ? (String? newValue) {
-                  setState(() {
-                    _selectedCity = newValue;
-                  });
-                }
-              : null,
         ),
       ),
     );
