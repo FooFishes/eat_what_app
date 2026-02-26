@@ -138,3 +138,97 @@ final class LocationRepositoryProvider
 
 String _$locationRepositoryHash() =>
     r'92fac264e31bf1317d5cf11e88341bfa447b98bb';
+
+@ProviderFor(activityRepository)
+final activityRepositoryProvider = ActivityRepositoryProvider._();
+
+final class ActivityRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ActivityRepository,
+          ActivityRepository,
+          ActivityRepository
+        >
+    with $Provider<ActivityRepository> {
+  ActivityRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activityRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$activityRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ActivityRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ActivityRepository create(Ref ref) {
+    return activityRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ActivityRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ActivityRepository>(value),
+    );
+  }
+}
+
+String _$activityRepositoryHash() =>
+    r'5e3dfd34fa6977c60a60d58484fd84901613794d';
+
+@ProviderFor(uploadRepository)
+final uploadRepositoryProvider = UploadRepositoryProvider._();
+
+final class UploadRepositoryProvider
+    extends
+        $FunctionalProvider<
+          UploadRepository,
+          UploadRepository,
+          UploadRepository
+        >
+    with $Provider<UploadRepository> {
+  UploadRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'uploadRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$uploadRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<UploadRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UploadRepository create(Ref ref) {
+    return uploadRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UploadRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UploadRepository>(value),
+    );
+  }
+}
+
+String _$uploadRepositoryHash() => r'3d9bda8fc2e92293cdd05f4293d4d95a583593d5';
