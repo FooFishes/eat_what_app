@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:eat_what_app/core/error/plateform_exception.dart';
+import 'package:eat_what_app/core/error/platform_exception.dart';
 import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';

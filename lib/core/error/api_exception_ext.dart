@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:eat_what_app/core/constant/biz_code.dart';
-import 'package:eat_what_app/core/error/plateform_exception.dart';
+import 'package:eat_what_app/core/error/platform_exception.dart';
 
 import 'api_exception.dart';
 

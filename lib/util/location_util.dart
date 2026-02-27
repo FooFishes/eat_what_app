@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:eat_what_app/core/error/plateform_exception.dart';
+import 'package:eat_what_app/core/error/platform_exception.dart';
 import 'package:eat_what_app/model/location/province.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
