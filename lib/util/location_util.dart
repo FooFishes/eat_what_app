@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:eat_what_app/core/error/plateform_exception.dart';
 import 'package:eat_what_app/model/location/province.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,10 +9,19 @@ class LocationUtil {
   static Future<Province?> getLocalProvince() async {
     //获取权限
     bool hasPermisson = await getPermission();
-    if (!hasPermisson) return null;
+    if (!hasPermisson) {
+      throw LocationException(
+        message: "无定位权限",
+        type: LocationExceptionType.permissionDenied,
+      );
+    }
 
-    Position position = await Geolocator.getCurrentPosition(
-      timeLimit: Duration(seconds: 6),
+    Position position = await Geolocator.getCurrentPosition().timeout(
+      Duration(seconds: 6),
+      onTimeout: () => throw LocationException(
+        message: "获取定位超时",
+        type: LocationExceptionType.timeout,
+      ),
     );
     List<Placemark> placemarks =
         await placemarkFromCoordinates(

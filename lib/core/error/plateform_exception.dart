@@ -12,9 +12,13 @@ sealed class PlatformException implements Exception {
 }
 
 class LocationException extends PlatformException {
+  final LocationExceptionType type;
   const LocationException({
+    required this.type,
     required super.message,
     super.originalError,
     super.stackTrace,
   });
 }
+
+enum LocationExceptionType { timeout, permissionDenied, unknown }

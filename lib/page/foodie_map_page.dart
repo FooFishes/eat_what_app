@@ -9,6 +9,7 @@ import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/activity/regional_food.dart';
 import 'package:eat_what_app/model/location/province.dart';
 import 'package:eat_what_app/util/location_util.dart';
+import 'package:eat_what_app/widget/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:eat_what_app/model/location/province_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -229,12 +230,26 @@ class _FoodieMapPageState extends ConsumerState<FoodieMapPage> {
     try {
       Province? province = await LocationUtil.getLocalProvince();
       return province?.id;
-    } on TimeoutException catch (_) {
+    } on LocationException catch (e) {
       if (mounted) {
-        AppErrorPresenter.showErrorToast(
-          context,
-          LocationException(message: "定位超时"),
-        );
+        switch (e.type) {
+          case LocationExceptionType.timeout:
+            AppErrorPresenter.showErrorToast(
+              context,
+              LocationException(
+                message: "定位超时",
+                type: LocationExceptionType.timeout,
+              ),
+            );
+          case LocationExceptionType.permissionDenied:
+            AppErrorPresenter.showMessageToast(
+              context,
+              "获取您的位置需开启定位权限",
+              type: AppToastType.warning,
+            );
+          case _:
+            AppErrorPresenter.showErrorToast(context, e);
+        }
       }
       return null;
     } catch (e) {
