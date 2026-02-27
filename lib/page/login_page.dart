@@ -24,22 +24,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final TextEditingController _accountController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  late bool _isLoginMode;
+  bool get _isLoginMode => widget.initialIsLoginMode;
   bool _agreePrivacyPolicy = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isLoginMode = widget.initialIsLoginMode;
-  }
-
-  @override
-  void didUpdateWidget(covariant LoginPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initialIsLoginMode != widget.initialIsLoginMode) {
-      _isLoginMode = widget.initialIsLoginMode;
-    }
-  }
 
   @override
   void dispose() {
@@ -261,9 +247,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _toggleAuthMode() {
-    setState(() {
-      _isLoginMode = !_isLoginMode;
-    });
+    context.go(_isLoginMode ? '/register' : '/login');
   }
 
   Future<void> _onSubmit() async {
@@ -318,7 +302,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
           ),
-          Image.asset('images/login_header.png', fit: BoxFit.cover),
+          Image.asset('assets/images/login_header.png', fit: BoxFit.cover),
         ],
       ),
     );

@@ -2,7 +2,7 @@ import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:eat_what_app/core/api/request_client.dart';
 import 'package:eat_what_app/core/constant/urls.dart';
 import 'package:eat_what_app/model/activity/page_result_activity_food_dto.dart';
-import 'package:eat_what_app/model/province/province_dto.dart';
+import 'package:eat_what_app/model/location/province_dto.dart';
 
 class FoodieMapRepository {
   final RequestClient _api;
@@ -22,7 +22,7 @@ class FoodieMapRepository {
     int page,
     int pageSize,
   ) {
-    String url = Urls.activityFoods.replaceAll(
+    String url = Urls.provinceActivityFoods.replaceAll(
       "{provinceId}",
       provinceId.toString(),
     );

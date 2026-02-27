@@ -7,10 +7,10 @@ import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/activity/regional_food.dart';
-import 'package:eat_what_app/model/province/province.dart';
+import 'package:eat_what_app/model/location/province.dart';
 import 'package:eat_what_app/util/location_util.dart';
 import 'package:flutter/material.dart';
-import 'package:eat_what_app/model/province/province_dto.dart';
+import 'package:eat_what_app/model/location/province_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

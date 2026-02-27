@@ -10,6 +10,9 @@ class Urls {
   static const String verify = '/auth/verify';
   static const String sendEmail = '/auth/sendEmail';
   static const String provinces = '/api/location/provinces';
-  static const String activityFoods = '/activity/{provinceId}/foods';
+  static const String activityFoods = '/activity/foods';
+  static const String uploadPresign = '/upload/presign';
+  static const String uploadPresignBatch = '/upload/presign/batch';
+  static const String provinceActivityFoods = '/activity/{provinceId}/foods';
   static const String likes = '/activity/likes';
 }

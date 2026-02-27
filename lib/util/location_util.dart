@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:eat_what_app/model/province/province.dart';
+import 'package:eat_what_app/model/location/province.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 

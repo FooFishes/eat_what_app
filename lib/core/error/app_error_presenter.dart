@@ -20,11 +20,6 @@ final class AppErrorPresenter {
     AppToastType type = AppToastType.info,
     Duration duration = const Duration(seconds: 2),
   }) {
-    AppToast.show(
-      context,
-      message: message,
-      type: type,
-      duration: duration,
-    );
+    AppToast.show(context, message: message, type: type, duration: duration);
   }
 }
