@@ -407,7 +407,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(25),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -668,6 +668,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
             ),
           ),
           const SizedBox(height: 20),
+
+          /* 后端没有实现上传店铺名称
           // 可选项：店铺名称
           _buildFormField(
             '店铺名称',
@@ -675,8 +677,9 @@ class _UploadPageState extends ConsumerState<UploadPage> {
             _buildInputField('请输入店铺名称', controller: _shopNameController),
           ),
           const SizedBox(height: 20),
+           */
           _buildFinishButton(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 210),
         ],
       ),
     );
@@ -1082,93 +1085,103 @@ class _UploadPageState extends ConsumerState<UploadPage> {
     );
   }
 
-  /// 选择图片方法构建省份下拉选择器组件
-  Widget _buildProvinceDropdown() {
+  /// 构建通用下拉选择器组件
+  /// [T] 下拉框数据类型
+  /// [value] 当前选中的值
+  /// [items] 下拉选项列表
+  /// [hintText] 提示文字
+  /// [isLoading] 是否正在加载
+  /// [isEmpty] 数据是否为空
+  /// [onTapEmpty] 当数据为空且未加载时的点击回调
+  /// [onChanged] 选项变化回调
+  /// [itemBuilder] 选项构建器
+  Widget _buildDropdown<T>({
+    required T? value,
+    required List<T> items,
+    required String hintText,
+    required bool isLoading,
+    required bool isEmpty,
+    VoidCallback? onTapEmpty,
+    required ValueChanged<T?>? onChanged,
+    required Widget Function(T item) itemBuilder,
+  }) {
     return GestureDetector(
       onTap: () {
-        if (_provinces.isEmpty && !_isLoadingProvinces) {
-          _loadProvinces();
+        if (isEmpty && !isLoading && onTapEmpty != null) {
+          onTapEmpty();
         }
       },
       child: _buildDropdownContainer(
         DropdownButtonHideUnderline(
-          child: DropdownButton<ProvinceDto>(
+          child: DropdownButton<T>(
             hint: Text(
-              _isLoadingProvinces
-                  ? '加载中...'
-                  : (_provinces.isEmpty ? '点击加载省份' : '请选择省份'),
+              isLoading ? '加载中...' : (isEmpty ? '点击加载' : hintText),
               style: const TextStyle(color: AppColors.textHint, fontSize: 14),
             ),
-            value: _selectedProvince,
+            value: value,
             isExpanded: true,
             icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-            menuMaxHeight: 250,
-            items: _provinces.map((province) {
-              return DropdownMenuItem<ProvinceDto>(
-                value: province,
-                child: Text(
-                  province.name,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              );
+            menuMaxHeight: 300,
+            items: items.map((item) {
+              return DropdownMenuItem<T>(value: item, child: itemBuilder(item));
             }).toList(),
-            onChanged: _isLoadingProvinces
-                ? null
-                : (ProvinceDto? newValue) {
-                    setState(() {
-                      _selectedProvince = newValue;
-                      _selectedCity = null;
-                      _cities = [];
-                      if (newValue != null) {
-                        _loadCities(newValue.id);
-                      }
-                    });
-                  },
+            onChanged: isLoading ? null : onChanged,
           ),
         ),
       ),
     );
   }
 
+  /// 选择图片方法构建省份下拉选择器组件
+  Widget _buildProvinceDropdown() {
+    return _buildDropdown<ProvinceDto>(
+      value: _selectedProvince,
+      items: _provinces,
+      hintText: '请选择省份',
+      isLoading: _isLoadingProvinces,
+      isEmpty: _provinces.isEmpty,
+      onTapEmpty: () {
+        if (_provinces.isEmpty && !_isLoadingProvinces) {
+          _loadProvinces();
+        }
+      },
+      onChanged: (ProvinceDto? newValue) {
+        setState(() {
+          _selectedProvince = newValue;
+          _selectedCity = null;
+          _cities = [];
+          if (newValue != null) {
+            _loadCities(newValue.id);
+          }
+        });
+      },
+      itemBuilder: (province) =>
+          Text(province.name, style: const TextStyle(fontSize: 14)),
+    );
+  }
+
   /// 构建城市下拉选择器组件
   Widget _buildCityDropdown() {
-    return GestureDetector(
-      onTap: () {
+    return _buildDropdown<CityDto>(
+      value: _selectedCity,
+      items: _cities,
+      hintText: _selectedProvince == null ? '请先选择省份' : '请选择城市',
+      isLoading: _isLoadingCities,
+      isEmpty: _selectedProvince == null || _cities.isEmpty,
+      onTapEmpty: () {
         if (_selectedProvince != null && _cities.isEmpty && !_isLoadingCities) {
           _loadCities(_selectedProvince!.id);
         }
       },
-      child: _buildDropdownContainer(
-        DropdownButtonHideUnderline(
-          child: DropdownButton<CityDto>(
-            hint: Text(
-              _selectedProvince == null
-                  ? '请先选择省份'
-                  : (_isLoadingCities
-                        ? '加载中...'
-                        : (_cities.isEmpty ? '点击加载城市' : '请选择城市')),
-              style: const TextStyle(color: AppColors.textHint, fontSize: 14),
-            ),
-            value: _selectedCity,
-            isExpanded: true,
-            icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-            menuMaxHeight: 250,
-            items: _cities.map((city) {
-              return DropdownMenuItem<CityDto>(
-                value: city,
-                child: Text(city.name, style: const TextStyle(fontSize: 14)),
-              );
-            }).toList(),
-            onChanged: _selectedProvince != null && !_isLoadingCities
-                ? (CityDto? newValue) {
-                    setState(() {
-                      _selectedCity = newValue;
-                    });
-                  }
-                : null,
-          ),
-        ),
-      ),
+      onChanged: _selectedProvince != null && !_isLoadingCities
+          ? (CityDto? newValue) {
+              setState(() {
+                _selectedCity = newValue;
+              });
+            }
+          : null,
+      itemBuilder: (city) =>
+          Text(city.name, style: const TextStyle(fontSize: 14)),
     );
   }
 
@@ -1180,9 +1193,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _handleFinish,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _isLoading
-              ? AppColors.accentRed.withAlpha(77)
-              : AppColors.accentRed,
+          backgroundColor: AppColors.accentRed,
+          disabledBackgroundColor: AppColors.accentRed.withValues(alpha: 0.72),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(33),
@@ -1191,11 +1203,11 @@ class _UploadPageState extends ConsumerState<UploadPage> {
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
               )
             : const Text(
