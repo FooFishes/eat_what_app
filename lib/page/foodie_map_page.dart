@@ -1,24 +1,27 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:eat_what_app/core/error/plateform_exception.dart';
+import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:eat_what_app/core/api/model/result.dart';
-import 'package:eat_what_app/core/error/api_exception.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/activity/regional_food.dart';
 import 'package:eat_what_app/model/province/province.dart';
+import 'package:eat_what_app/util/location_util.dart';
 import 'package:flutter/material.dart';
 import 'package:eat_what_app/model/province/province_dto.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class FoodieMapPage extends StatefulWidget {
+class FoodieMapPage extends ConsumerStatefulWidget {
   const FoodieMapPage({super.key});
 
   @override
-  State<FoodieMapPage> createState() => _FoodieMapPageState();
+  ConsumerState<FoodieMapPage> createState() => _FoodieMapPageState();
 }
 
-class _FoodieMapPageState extends State<FoodieMapPage> {
+class _FoodieMapPageState extends ConsumerState<FoodieMapPage> {
   int? localProvinceId;
   int? selectedProvinceId; //选择的省份 用于省份条UI及时更新
   int? committedProvinceId; //确认选择的省份 防抖处理
@@ -82,7 +85,7 @@ class _FoodieMapPageState extends State<FoodieMapPage> {
       return Scaffold(
         body: SafeArea(
           child: FeatureTitle(
-            "Foodie Map",
+            "美食地图",
             child: Center(child: _buildLoadingIndicator(isLarge: true)),
           ),
         ),
@@ -144,7 +147,7 @@ class _FoodieMapPageState extends State<FoodieMapPage> {
     return Scaffold(
       body: SafeArea(
         child: FeatureTitle(
-          "Foodie Map",
+          "美食地图",
           child: Column(
             children: [
               _FoodieMapHeader(localProvinceId),
@@ -177,7 +180,11 @@ class _FoodieMapPageState extends State<FoodieMapPage> {
         )
         .toList(); //显示使用短名称
 
-    if (id == null) return newList;
+    if (id == null ||
+        Province.fromId(id) == null ||
+        Province.fromId(id)!.isNotMainland) {
+      return newList;
+    }
 
     newList.removeWhere((item) => item.id == id); //当前定位放在第一个
     newList.insert(
@@ -219,29 +226,29 @@ class _FoodieMapPageState extends State<FoodieMapPage> {
   }
 
   Future<int?> _locate() async {
-    //TODO: 获取当前定位的省份id
-    await Future.delayed(Duration(milliseconds: 300));
-    return 8;
+    try {
+      Province? province = await LocationUtil.getLocalProvince();
+      return province?.id;
+    } on TimeoutException catch (_) {
+      if (mounted) {
+        AppErrorPresenter.showErrorToast(
+          context,
+          LocationException(message: "定位超时"),
+        );
+      }
+      return null;
+    } catch (e) {
+      if (mounted) {
+        AppErrorPresenter.showErrorToast(context, e);
+      }
+      return null;
+    }
   }
 
   Future<Result<List<ProvinceDto>>> _fetchProvinces() async {
-    //TODO: 获取省份列表
-    await Future.delayed(Duration(milliseconds: 5000));
-
-    int type = 4;
-    switch (type) {
-      case 1:
-        return Success([ProvinceDto(id: 1, name: "北京市")]);
-      case 2:
-        return Success([]);
-      case 3:
-        return Failure(NetworkException(message: "网络错误"));
-      case _:
-        String json =
-            "[{\"id\":1,\"name\":\"北京市\"},{\"id\":2,\"name\":\"天津市\"},{\"id\":3,\"name\":\"河北省\"},{\"id\":4,\"name\":\"山西省\"},{\"id\":5,\"name\":\"内蒙古自治区\"},{\"id\":6,\"name\":\"辽宁省\"},{\"id\":7,\"name\":\"吉林省\"},{\"id\":8,\"name\":\"黑龙江省\"},{\"id\":9,\"name\":\"上海市\"},{\"id\":10,\"name\":\"江苏省\"},{\"id\":11,\"name\":\"浙江省\"},{\"id\":12,\"name\":\"安徽省\"},{\"id\":13,\"name\":\"福建省\"},{\"id\":14,\"name\":\"江西省\"},{\"id\":15,\"name\":\"山东省\"},{\"id\":16,\"name\":\"河南省\"},{\"id\":17,\"name\":\"湖北省\"},{\"id\":18,\"name\":\"湖南省\"},{\"id\":19,\"name\":\"广东省\"},{\"id\":20,\"name\":\"广西壮族自治区\"},{\"id\":21,\"name\":\"海南省\"},{\"id\":22,\"name\":\"重庆市\"},{\"id\":23,\"name\":\"四川省\"},{\"id\":24,\"name\":\"贵州省\"},{\"id\":25,\"name\":\"云南省\"},{\"id\":26,\"name\":\"西藏自治区\"},{\"id\":27,\"name\":\"陕西省\"},{\"id\":28,\"name\":\"甘肃省\"},{\"id\":29,\"name\":\"青海省\"},{\"id\":30,\"name\":\"宁夏回族自治区\"},{\"id\":31,\"name\":\"新疆维吾尔自治区\"}]";
-        final decoded = jsonDecode(json) as List<dynamic>;
-        return Success(decoded.map((e) => ProvinceDto.fromJson(e)).toList());
-    }
+    final repo = ref.read(foodieMapRepositoryProvider);
+    var provinces = await repo.getProvinces();
+    return provinces;
   }
 }
 
@@ -335,9 +342,12 @@ class _FoodieMapHeader extends StatelessWidget {
   }
 
   Widget _buildChinaMap(int? provinceId) {
-    String? code = provinceId == null
+    Province? province = provinceId == null
         ? null
-        : Province.fromId(provinceId)?.code;
+        : Province.fromId(provinceId);
+    String? code = (province != null && province.isInChina)
+        ? province.code
+        : null;
     String path = code == null
         ? "assets/images/china_map/base.png"
         : "assets/images/china_map/$code.png";
@@ -358,7 +368,11 @@ class FeatureTitle extends StatelessWidget {
         children: [
           child,
           InkWell(
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              if (context.canPop()) {
+                context.pop();
+              }
+            },
             child: Image.asset("assets/images/firework.png", height: 50),
           ),
 
@@ -412,7 +426,12 @@ class _ProvincesBar extends StatelessWidget {
             margin: EdgeInsets.fromLTRB(5, 10, 5, 10),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppColors.textPrimary, width: 1),
+                side: BorderSide(
+                  color: isSelected
+                      ? AppColors.accentRed
+                      : AppColors.textPrimary,
+                  width: 1,
+                ),
               ),
               onPressed: () {
                 if (isSelected) return;
@@ -433,16 +452,16 @@ class _ProvincesBar extends StatelessWidget {
   }
 }
 
-class _FoodList extends StatefulWidget {
+class _FoodList extends ConsumerStatefulWidget {
   final int provinceId;
 
   const _FoodList(this.provinceId, {super.key});
 
   @override
-  State<_FoodList> createState() => _FoodListState();
+  ConsumerState<_FoodList> createState() => _FoodListState();
 }
 
-class _FoodListState extends State<_FoodList> {
+class _FoodListState extends ConsumerState<_FoodList> {
   static const debounceDuration = Duration(microseconds: 300);
   static const pageSize = 10;
 
@@ -564,6 +583,7 @@ class _FoodListState extends State<_FoodList> {
 
     return Expanded(
       child: ListView.builder(
+        physics: AlwaysScrollableScrollPhysics(),
         controller: _scrollController,
         itemCount: _regionalFoods.length + 1,
         itemBuilder: (context, index) {
@@ -580,51 +600,41 @@ class _FoodListState extends State<_FoodList> {
   }
 
   Future<(List<RegionalFood>, bool)> _fetchFoods(
-    //TODO: 分页获取美食列表
     int page,
     int pageSize,
     int provinceId,
   ) async {
     List<RegionalFood> regionalFoods = [];
-    bool hasNext;
-
-    int total = provinceId % 2 == 0 ? 0 : 17;
-    if (provinceId % 3 == 0) total = 2;
-
-    await Future.delayed(Duration(milliseconds: 1000));
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = total - 1 < page * pageSize - 1
-        ? total - 1
-        : page * pageSize - 1;
-    for (int i = startIndex; i <= endIndex; i++) {
-      String description =
-          "虽然都喜欢吃黏糊麻辣烫，但是我觉得老式麻辣烫更胜一筹。麻辣烫就应该配炸串，14岁第一次吃炸菜卷，我惊为天人。还有就是，宏宝莱降价";
-      String url = "https://img95.699pic.com/photo/50093/6813.jpg_wh860.jpg";
-      int id = i + provinceId * 1000;
-      var item = RegionalFood(
-        id: id,
-        foodName: "老式麻辣烫 炸串",
-        accountName: "矩阵合同没纠纷",
-        accountId: 1,
-        description: description,
-        isLiked: id % 2 == 0,
-        url: url,
-      );
-      regionalFoods.add(item);
-    }
-    hasNext = endIndex < total - 1;
+    bool hasNext = true;
+    final repo = ref.read(foodieMapRepositoryProvider);
+    var result = await repo.getActivityFoodsByProvinceId(
+      provinceId,
+      page,
+      pageSize,
+    );
+    result.when(
+      success: (data) {
+        regionalFoods = data.items
+            .map((e) => RegionalFood.fromActivityFoodDto(e))
+            .toList();
+        hasNext = data.hasNext;
+      },
+      failure: (error) {
+        throw error;
+      },
+    );
     return (regionalFoods, hasNext);
   }
 }
 
-class _FoodItem extends StatefulWidget {
+class _FoodItem extends ConsumerStatefulWidget {
   final int id;
   final String foodName;
   final int accountId;
   final String accountName;
   final String description;
   final bool isLiked;
-  final String url;
+  final String? url;
 
   const _FoodItem({
     required this.id,
@@ -646,10 +656,10 @@ class _FoodItem extends StatefulWidget {
       url = obj.url;
 
   @override
-  State<_FoodItem> createState() => _FoodItemState();
+  ConsumerState<_FoodItem> createState() => _FoodItemState();
 }
 
-class _FoodItemState extends State<_FoodItem> {
+class _FoodItemState extends ConsumerState<_FoodItem> {
   late bool isLiked;
 
   late bool enable;
@@ -687,25 +697,32 @@ class _FoodItemState extends State<_FoodItem> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: CachedNetworkImage(
-                    imageUrl: widget.url,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Center(
-                      child: Text(
-                        "图片加载失败",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.labelMedium?.copyWith(),
-                      ),
-                    ),
-                  ),
+                  child: widget.url == null
+                      ? Center(
+                          child: Text(
+                            "暂无图片",
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: widget.url!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: Text(
+                              "图片加载失败",
+                              style: Theme.of(
+                                context,
+                              ).textTheme.labelMedium?.copyWith(),
+                            ),
+                          ),
+                        ),
                 ),
               ),
               SizedBox(width: 10),
@@ -809,15 +826,13 @@ class _FoodItemState extends State<_FoodItem> {
   }
 
   Future<Result<void>> _like(int id) async {
-    //待实现: 点赞
-    await Future.delayed(Duration(milliseconds: 500));
-    return Success(null);
+    final repo = ref.read(foodieMapRepositoryProvider);
+    return await repo.like("food", id);
   }
 
   Future<Result<void>> _disLike(int id) async {
-    //待实现: 取消点赞
-    await Future.delayed(Duration(milliseconds: 500));
-    return Success(null);
+    final repo = ref.read(foodieMapRepositoryProvider);
+    return await repo.disLike("food", id);
   }
 }
 

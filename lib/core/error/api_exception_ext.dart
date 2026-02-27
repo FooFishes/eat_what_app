@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:eat_what_app/core/constant/biz_code.dart';
+import 'package:eat_what_app/core/error/plateform_exception.dart';
 
 import 'api_exception.dart';
 
@@ -34,6 +35,9 @@ String resolveUserMessage(
 }) {
   if (error is ApiException) {
     return error.userMessage;
+  }
+  if (error is PlatformException) {
+    return error.message;
   }
   return fallback;
 }
