@@ -1,5 +1,5 @@
 enum Province {
-  //仅包含内地省份
+  //中国大陆省级行政区（id与后端对应）
   beijing(1, "北京市", "北京", "Beijing", "BJ"),
   tianjin(2, "天津市", "天津", "Tianjin", "TJ"),
   hebei(3, "河北省", "河北", "Hebei", "HE"),
@@ -30,7 +30,15 @@ enum Province {
   gansu(28, "甘肃省", "甘肃", "Gansu", "GS"),
   qinghai(29, "青海省", "青海", "Qinghai", "QH"),
   ningxia(30, "宁夏回族自治区", "宁夏", "Ningxia", "NX"),
-  xinjiang(31, "新疆维吾尔自治区", "新疆", "Xinjiang", "XJ");
+  xinjiang(31, "新疆维吾尔自治区", "新疆", "Xinjiang", "XJ"),
+
+  //以下枚举值仅用于移动端内部
+  //港澳台地区
+  hongKong(1001, "香港特别行政区", "香港", "Hong Kong", "HK"),
+  macao(1002, "澳门特别行政区", "澳门", "Macao", "MO"),
+  taiwan(1003, "台湾省", "台湾", "Taiwan", "TW"),
+  //国外
+  foreign(999, "国外", "国外", "overseas", "ZZ");
 
   final int id;
   final String name;
@@ -46,4 +54,23 @@ enum Province {
       return null;
     }
   }
+
+  //模糊匹配 shortName被包含即可
+  static Province? fromName(String name) {
+    try {
+      return Province.values.firstWhere((e) => name.contains(e.shortName));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isMainland => !isForeign && !isMHT;
+
+  bool get isNotMainland => !isMainland;
+
+  bool get isInChina => !isForeign;
+
+  bool get isMHT => this == macao || this == hongKong || this == taiwan;
+
+  bool get isForeign => this == foreign;
 }
