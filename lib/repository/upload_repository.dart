@@ -18,14 +18,12 @@ class UploadRepository {
     required String biz,
     required List<Map<String, dynamic>> files,
   }) {
-    final body = {
-      'biz': biz,
-      'files': files,
-    };
+    final body = {'biz': biz, 'files': files};
     return _api.post<PresignBatchUploadRespDTO>(
       Urls.uploadPresignBatch,
       data: body,
-      fromJson: (json) => PresignBatchUploadRespDTO.fromJson(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          PresignBatchUploadRespDTO.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -40,11 +38,7 @@ class UploadRepository {
       await _dio.put(
         putUrl,
         data: fileBytes,
-        options: Options(
-          headers: {
-            'Content-Type': contentType,
-          },
-        ),
+        options: Options(headers: {'Content-Type': contentType}),
       );
 
       return Success(null);
@@ -52,10 +46,7 @@ class UploadRepository {
       return Failure(ApiErrorHandler.fromDioException(error));
     } catch (error) {
       return Failure(
-        ParseException(
-          message: '上传文件失败: $error',
-          originalError: error,
-        ),
+        ParseException(message: '上传文件失败: $error', originalError: error),
       );
     }
   }

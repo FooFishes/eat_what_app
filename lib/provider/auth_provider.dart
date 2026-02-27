@@ -1,6 +1,5 @@
 import 'package:eat_what_app/core/error/api_exception.dart';
 import 'package:eat_what_app/provider/repository_provider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../util/secure_storage_util.dart';
@@ -33,7 +32,6 @@ class Auth extends _$Auth {
 
     result.when(
       success: (token) async {
-        debugPrint(token);
         await SecureStorageUtil.save(_tokenKey, token);
         state = AsyncValue.data(token);
       },
