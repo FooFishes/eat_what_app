@@ -16,7 +16,7 @@ class AuthInterceptor extends Interceptor {
     }
     final token = await getToken();
     if (token != null && token.isNotEmpty) {
-      options.headers['sa-token'] = token;
+      options.headers['satoken'] = 'Bearer $token';
     }
     return handler.next(options);
   }

@@ -9,4 +9,8 @@ class Urls {
   static const String changePassword = '/auth/changePassword';
   static const String verify = '/auth/verify';
   static const String sendEmail = '/auth/sendEmail';
+  static const String provinces = '/api/location/provinces';
+  static const String activityFoods = '/activity/foods';
+  static const String uploadPresign = '/upload/presign';
+  static const String uploadPresignBatch = '/upload/presign/batch';
 }

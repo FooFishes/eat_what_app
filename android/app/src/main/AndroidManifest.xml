@@ -3,6 +3,16 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 网络状态权限：允许 Sentry 检查网络连接状态 -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 相机权限：允许应用拍摄照片 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 图片读取权限：允许应用读取媒体库中的图片(Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- 视频读取权限：允许应用读取媒体库中的视频(Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- 存储读取权限：允许应用读取外部存储中的文件(Android 12及以下) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- 存储写入权限：允许应用写入外部存储中的文件(Android 9及以下) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     
     <application
         android:label="eat_what_app"
