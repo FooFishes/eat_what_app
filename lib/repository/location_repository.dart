@@ -1,9 +1,8 @@
 import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:eat_what_app/core/api/request_client.dart';
+import 'package:eat_what_app/core/constant/urls.dart';
 import 'package:eat_what_app/model/location/city_dto.dart';
 import 'package:eat_what_app/model/location/province_dto.dart';
-
-import '../core/constant/urls.dart';
 
 class LocationRepository {
   final RequestClient _api;
@@ -20,7 +19,7 @@ class LocationRepository {
 
   Future<Result<List<CityDto>>> getCities(int provinceId) {
     return _api.get<List<CityDto>>(
-      '${Urls.cities}/$provinceId/cities',
+      '${Urls.provinces}/$provinceId/cities',
       fromJson: (json) => (json as List)
           .map((item) => CityDto.fromJson(item as Map<String, dynamic>))
           .toList(),

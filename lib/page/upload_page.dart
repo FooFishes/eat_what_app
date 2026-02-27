@@ -54,6 +54,24 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   /// 城市列表
   List<CityDto> _cities = [];
 
+  /// 菜品名称控制器
+  final TextEditingController _foodNameController = TextEditingController();
+
+  /// 菜品描述控制器
+  final TextEditingController _descriptionController = TextEditingController();
+
+  /// 店铺名称控制器
+  final TextEditingController _shopNameController = TextEditingController();
+
+  /// 是否正在加载
+  bool _isLoading = false;
+
+  /// 是否正在加载省份
+  bool _isLoadingProvinces = false;
+
+  /// 是否正在加载城市
+  bool _isLoadingCities = false;
+
   @override
   void initState() {
     super.initState();
@@ -61,13 +79,28 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   }
 
   Future<void> _loadProvinces() async {
+    if (_isLoadingProvinces || _provinces.isNotEmpty) return;
+
+    setState(() {
+      _isLoadingProvinces = true;
+    });
+
     final repo = ref.read(locationRepositoryProvider);
     final result = await repo.getProvinces();
+
+    if (mounted) {
+      setState(() {
+        _isLoadingProvinces = false;
+      });
+    }
+
     result.when(
-      success: (data) {
-        setState(() {
-          _provinces = data;
-        });
+      success: (provinces) {
+        if (mounted) {
+          setState(() {
+            _provinces = provinces;
+          });
+        }
       },
       failure: (error) {
         if (mounted) {
@@ -78,13 +111,28 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   }
 
   Future<void> _loadCities(int provinceId) async {
+    if (_isLoadingCities) return;
+
+    setState(() {
+      _isLoadingCities = true;
+    });
+
     final repo = ref.read(locationRepositoryProvider);
     final result = await repo.getCities(provinceId);
+
+    if (mounted) {
+      setState(() {
+        _isLoadingCities = false;
+      });
+    }
+
     result.when(
-      success: (data) {
-        setState(() {
-          _cities = data;
-        });
+      success: (cities) {
+        if (mounted) {
+          setState(() {
+            _cities = cities;
+          });
+        }
       },
       failure: (error) {
         if (mounted) {
@@ -101,6 +149,9 @@ class _UploadPageState extends ConsumerState<UploadPage> {
     _pageController.dispose();
     _selectedProvince = null;
     _selectedCity = null;
+    _foodNameController.dispose();
+    _descriptionController.dispose();
+    _shopNameController.dispose();
     super.dispose();
   }
 
@@ -579,10 +630,18 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           ),
           const SizedBox(height: 30),
           // 必填项：菜品名称
-          _buildFormField('菜品名称', true, _buildInputField('请输入菜品名称')),
+          _buildFormField(
+            '菜品名称',
+            true,
+            _buildInputField('请输入菜品名称', controller: _foodNameController),
+          ),
           const SizedBox(height: 20),
           // 可选项：菜品描述
-          _buildFormField('菜品描述', false, _buildTextArea('请输入菜品描述')),
+          _buildFormField(
+            '菜品描述',
+            false,
+            _buildTextArea('请输入菜品描述', controller: _descriptionController),
+          ),
           const SizedBox(height: 20),
           // 必填项：菜品照片
           _buildFormField('菜品照片', true, _buildPhotoUploadArea()),
@@ -610,7 +669,11 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           ),
           const SizedBox(height: 20),
           // 可选项：店铺名称
-          _buildFormField('店铺名称', false, _buildInputField('请输入店铺名称')),
+          _buildFormField(
+            '店铺名称',
+            false,
+            _buildInputField('请输入店铺名称', controller: _shopNameController),
+          ),
           const SizedBox(height: 20),
           _buildFinishButton(),
           const SizedBox(height: 10),
@@ -668,7 +731,11 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 构建单行输入框组件
   /// [hintText] 提示文字
-  Widget _buildInputField(String hintText) {
+  /// [controller] 文本控制器
+  Widget _buildInputField(
+    String hintText, {
+    TextEditingController? controller,
+  }) {
     return Container(
       height: 36,
       decoration: BoxDecoration(
@@ -676,6 +743,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
@@ -699,7 +767,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 构建多行文本域组件
   /// [hintText] 提示文字
-  Widget _buildTextArea(String hintText) {
+  /// [controller] 文本控制器
+  Widget _buildTextArea(String hintText, {TextEditingController? controller}) {
     return Container(
       height: 116,
       decoration: BoxDecoration(
@@ -707,6 +776,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
         borderRadius: BorderRadius.circular(25),
       ),
       child: TextField(
+        controller: controller,
         maxLines: null,
         decoration: InputDecoration(
           hintText: hintText,
@@ -1016,7 +1086,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   Widget _buildProvinceDropdown() {
     return GestureDetector(
       onTap: () {
-        if (_provinces.isEmpty) {
+        if (_provinces.isEmpty && !_isLoadingProvinces) {
           _loadProvinces();
         }
       },
@@ -1024,13 +1094,16 @@ class _UploadPageState extends ConsumerState<UploadPage> {
         DropdownButtonHideUnderline(
           child: DropdownButton<ProvinceDto>(
             hint: Text(
-              _provinces.isEmpty ? '点击加载省份' : '请选择省份',
+              _isLoadingProvinces
+                  ? '加载中...'
+                  : (_provinces.isEmpty ? '点击加载省份' : '请选择省份'),
               style: const TextStyle(color: AppColors.textHint, fontSize: 14),
             ),
             value: _selectedProvince,
             isExpanded: true,
             icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-            items: _provinces.map((ProvinceDto province) {
+            menuMaxHeight: 250,
+            items: _provinces.map((province) {
               return DropdownMenuItem<ProvinceDto>(
                 value: province,
                 child: Text(
@@ -1039,16 +1112,18 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                 ),
               );
             }).toList(),
-            onChanged: (ProvinceDto? newValue) {
-              setState(() {
-                _selectedProvince = newValue;
-                _selectedCity = null;
-                _cities = [];
-                if (newValue != null) {
-                  _loadCities(newValue.id);
-                }
-              });
-            },
+            onChanged: _isLoadingProvinces
+                ? null
+                : (ProvinceDto? newValue) {
+                    setState(() {
+                      _selectedProvince = newValue;
+                      _selectedCity = null;
+                      _cities = [];
+                      if (newValue != null) {
+                        _loadCities(newValue.id);
+                      }
+                    });
+                  },
           ),
         ),
       ),
@@ -1059,7 +1134,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   Widget _buildCityDropdown() {
     return GestureDetector(
       onTap: () {
-        if (_selectedProvince != null && _cities.isEmpty) {
+        if (_selectedProvince != null && _cities.isEmpty && !_isLoadingCities) {
           _loadCities(_selectedProvince!.id);
         }
       },
@@ -1069,19 +1144,22 @@ class _UploadPageState extends ConsumerState<UploadPage> {
             hint: Text(
               _selectedProvince == null
                   ? '请先选择省份'
-                  : (_cities.isEmpty ? '点击加载城市' : '请选择城市'),
+                  : (_isLoadingCities
+                        ? '加载中...'
+                        : (_cities.isEmpty ? '点击加载城市' : '请选择城市')),
               style: const TextStyle(color: AppColors.textHint, fontSize: 14),
             ),
             value: _selectedCity,
             isExpanded: true,
             icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-            items: _cities.map((CityDto city) {
+            menuMaxHeight: 250,
+            items: _cities.map((city) {
               return DropdownMenuItem<CityDto>(
                 value: city,
                 child: Text(city.name, style: const TextStyle(fontSize: 14)),
               );
             }).toList(),
-            onChanged: _selectedProvince != null
+            onChanged: _selectedProvince != null && !_isLoadingCities
                 ? (CityDto? newValue) {
                     setState(() {
                       _selectedCity = newValue;
@@ -1100,21 +1178,199 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       width: double.infinity,
       height: 66,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: _isLoading ? null : _handleFinish,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accentRed,
+          backgroundColor: _isLoading
+              ? AppColors.accentRed.withAlpha(77)
+              : AppColors.accentRed,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(33),
           ),
           elevation: 0,
         ),
-        child: const Text(
-          'Finish',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Finish',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
       ),
     );
+  }
+
+  /// 处理Finish按钮点击
+  Future<void> _handleFinish() async {
+    final validationError = _validateForm();
+    if (validationError != null) {
+      if (mounted) {
+        AppErrorPresenter.showMessageToast(
+          context,
+          validationError,
+          type: AppToastType.warning,
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final foodName = _foodNameController.text.trim();
+    final description = _descriptionController.text.trim();
+
+    try {
+      final uploadRepo = ref.read(uploadRepositoryProvider);
+
+      final fileInfos = <Map<String, dynamic>>[];
+      for (var i = 0; i < _selectedImages.length; i++) {
+        final file = _selectedImages[i];
+        final fileName = file.path.split(Platform.pathSeparator).last;
+        final fileBytes = await file.readAsBytes();
+        final contentType = _getMimeType(fileName);
+
+        fileInfos.add({
+          'fileName': fileName,
+          'contentType': contentType,
+          'fileSize': fileBytes.length,
+        });
+      }
+
+      final presignResult = await uploadRepo.presignBatchUpload(
+        biz: 'activity',
+        files: fileInfos,
+      );
+
+      if (!presignResult.isSuccess) {
+        if (mounted) {
+          AppErrorPresenter.showErrorToast(context, presignResult.error!);
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final presignData = presignResult.data!;
+      final uploadedKeys = <String>[];
+
+      for (var i = 0; i < _selectedImages.length; i++) {
+        final file = _selectedImages[i];
+        final presignInfo = presignData.files[i];
+        final contentType = _getMimeType(
+          file.path.split(Platform.pathSeparator).last,
+        );
+
+        final uploadResult = await uploadRepo.uploadFileToPresignedUrl(
+          putUrl: presignInfo.putUrl,
+          file: file,
+          contentType: contentType,
+        );
+
+        if (!uploadResult.isSuccess) {
+          if (mounted) {
+            AppErrorPresenter.showErrorToast(context, uploadResult.error!);
+          }
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+
+        uploadedKeys.add(presignInfo.key);
+      }
+
+      final activityRepo = ref.read(activityRepositoryProvider);
+      final createResult = await activityRepo.createActivityFood(
+        foodName: foodName,
+        description: description.isEmpty ? null : description,
+        provinceId: _selectedProvince!.id,
+        cityId: _selectedCity!.id,
+        pictureUrl: uploadedKeys,
+      );
+
+      if (!createResult.isSuccess) {
+        if (mounted) {
+          AppErrorPresenter.showErrorToast(context, createResult.error!);
+        }
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      if (mounted) {
+        AppErrorPresenter.showMessageToast(
+          context,
+          '发布成功！',
+          type: AppToastType.success,
+        );
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        AppErrorPresenter.showMessageToast(
+          context,
+          '上传失败: $e',
+          type: AppToastType.error,
+        );
+      }
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 根据文件名获取MIME类型
+  String _getMimeType(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      default:
+        return 'image/jpeg';
+    }
+  }
+
+  /// 验证表单
+  String? _validateForm() {
+    if (_foodNameController.text.trim().isEmpty) {
+      return '请输入菜品名称';
+    }
+
+    if (_selectedImages.isEmpty) {
+      return '请至少上传一张菜品照片';
+    }
+
+    if (_selectedProvince == null) {
+      return '请选择省份';
+    }
+
+    if (_selectedCity == null) {
+      return '请选择城市';
+    }
+
+    return null;
   }
 }
 

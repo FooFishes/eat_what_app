@@ -6,9 +6,9 @@ part of 'create_activity_food_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_CreateActivityFoodDto _$CreateActivityFoodDtoFromJson(
+_CreateActivityFoodDTO _$CreateActivityFoodDTOFromJson(
   Map<String, dynamic> json,
-) => _CreateActivityFoodDto(
+) => _CreateActivityFoodDTO(
   foodName: json['foodName'] as String,
   description: json['description'] as String?,
   provinceId: (json['provinceId'] as num).toInt(),
@@ -18,8 +18,8 @@ _CreateActivityFoodDto _$CreateActivityFoodDtoFromJson(
       .toList(),
 );
 
-Map<String, dynamic> _$CreateActivityFoodDtoToJson(
-  _CreateActivityFoodDto instance,
+Map<String, dynamic> _$CreateActivityFoodDTOToJson(
+  _CreateActivityFoodDTO instance,
 ) => <String, dynamic>{
   'foodName': instance.foodName,
   'description': instance.description,

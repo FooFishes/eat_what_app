@@ -13,22 +13,22 @@ part of 'create_activity_food_dto.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
-mixin _$CreateActivityFoodDto {
+mixin _$CreateActivityFoodDTO {
 
  String get foodName; String? get description; int get provinceId; int get cityId; List<String> get pictureUrl;
-/// Create a copy of CreateActivityFoodDto
+/// Create a copy of CreateActivityFoodDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$CreateActivityFoodDtoCopyWith<CreateActivityFoodDto> get copyWith => _$CreateActivityFoodDtoCopyWithImpl<CreateActivityFoodDto>(this as CreateActivityFoodDto, _$identity);
+$CreateActivityFoodDTOCopyWith<CreateActivityFoodDTO> get copyWith => _$CreateActivityFoodDTOCopyWithImpl<CreateActivityFoodDTO>(this as CreateActivityFoodDTO, _$identity);
 
-  /// Serializes this CreateActivityFoodDto to a JSON map.
+  /// Serializes this CreateActivityFoodDTO to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateActivityFoodDto&&(identical(other.foodName, foodName) || other.foodName == foodName)&&(identical(other.description, description) || other.description == description)&&(identical(other.provinceId, provinceId) || other.provinceId == provinceId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.pictureUrl, pictureUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateActivityFoodDTO&&(identical(other.foodName, foodName) || other.foodName == foodName)&&(identical(other.description, description) || other.description == description)&&(identical(other.provinceId, provinceId) || other.provinceId == provinceId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other.pictureUrl, pictureUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,15 +37,15 @@ int get hashCode => Object.hash(runtimeType,foodName,description,provinceId,city
 
 @override
 String toString() {
-  return 'CreateActivityFoodDto(foodName: $foodName, description: $description, provinceId: $provinceId, cityId: $cityId, pictureUrl: $pictureUrl)';
+  return 'CreateActivityFoodDTO(foodName: $foodName, description: $description, provinceId: $provinceId, cityId: $cityId, pictureUrl: $pictureUrl)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $CreateActivityFoodDtoCopyWith<$Res>  {
-  factory $CreateActivityFoodDtoCopyWith(CreateActivityFoodDto value, $Res Function(CreateActivityFoodDto) _then) = _$CreateActivityFoodDtoCopyWithImpl;
+abstract mixin class $CreateActivityFoodDTOCopyWith<$Res>  {
+  factory $CreateActivityFoodDTOCopyWith(CreateActivityFoodDTO value, $Res Function(CreateActivityFoodDTO) _then) = _$CreateActivityFoodDTOCopyWithImpl;
 @useResult
 $Res call({
  String foodName, String? description, int provinceId, int cityId, List<String> pictureUrl
@@ -56,14 +56,14 @@ $Res call({
 
 }
 /// @nodoc
-class _$CreateActivityFoodDtoCopyWithImpl<$Res>
-    implements $CreateActivityFoodDtoCopyWith<$Res> {
-  _$CreateActivityFoodDtoCopyWithImpl(this._self, this._then);
+class _$CreateActivityFoodDTOCopyWithImpl<$Res>
+    implements $CreateActivityFoodDTOCopyWith<$Res> {
+  _$CreateActivityFoodDTOCopyWithImpl(this._self, this._then);
 
-  final CreateActivityFoodDto _self;
-  final $Res Function(CreateActivityFoodDto) _then;
+  final CreateActivityFoodDTO _self;
+  final $Res Function(CreateActivityFoodDTO) _then;
 
-/// Create a copy of CreateActivityFoodDto
+/// Create a copy of CreateActivityFoodDTO
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? foodName = null,Object? description = freezed,Object? provinceId = null,Object? cityId = null,Object? pictureUrl = null,}) {
   return _then(_self.copyWith(
@@ -79,8 +79,8 @@ as List<String>,
 }
 
 
-/// Adds pattern-matching-related methods to [CreateActivityFoodDto].
-extension CreateActivityFoodDtoPatterns on CreateActivityFoodDto {
+/// Adds pattern-matching-related methods to [CreateActivityFoodDTO].
+extension CreateActivityFoodDTOPatterns on CreateActivityFoodDTO {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -93,10 +93,10 @@ extension CreateActivityFoodDtoPatterns on CreateActivityFoodDto {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CreateActivityFoodDto value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CreateActivityFoodDTO value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto() when $default != null:
+case _CreateActivityFoodDTO() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -115,10 +115,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CreateActivityFoodDto value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CreateActivityFoodDTO value)  $default,){
 final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto():
+case _CreateActivityFoodDTO():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -136,10 +136,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CreateActivityFoodDto value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CreateActivityFoodDTO value)?  $default,){
 final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto() when $default != null:
+case _CreateActivityFoodDTO() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -159,7 +159,7 @@ return $default(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String foodName,  String? description,  int provinceId,  int cityId,  List<String> pictureUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto() when $default != null:
+case _CreateActivityFoodDTO() when $default != null:
 return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_that.pictureUrl);case _:
   return orElse();
 
@@ -180,7 +180,7 @@ return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_
 
 @optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String foodName,  String? description,  int provinceId,  int cityId,  List<String> pictureUrl)  $default,) {final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto():
+case _CreateActivityFoodDTO():
 return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_that.pictureUrl);case _:
   throw StateError('Unexpected subclass');
 
@@ -200,7 +200,7 @@ return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String foodName,  String? description,  int provinceId,  int cityId,  List<String> pictureUrl)?  $default,) {final _that = this;
 switch (_that) {
-case _CreateActivityFoodDto() when $default != null:
+case _CreateActivityFoodDTO() when $default != null:
 return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_that.pictureUrl);case _:
   return null;
 
@@ -212,9 +212,9 @@ return $default(_that.foodName,_that.description,_that.provinceId,_that.cityId,_
 /// @nodoc
 @JsonSerializable()
 
-class _CreateActivityFoodDto implements CreateActivityFoodDto {
-  const _CreateActivityFoodDto({required this.foodName, this.description, required this.provinceId, required this.cityId, required final  List<String> pictureUrl}): _pictureUrl = pictureUrl;
-  factory _CreateActivityFoodDto.fromJson(Map<String, dynamic> json) => _$CreateActivityFoodDtoFromJson(json);
+class _CreateActivityFoodDTO implements CreateActivityFoodDTO {
+  const _CreateActivityFoodDTO({required this.foodName, this.description, required this.provinceId, required this.cityId, required final  List<String> pictureUrl}): _pictureUrl = pictureUrl;
+  factory _CreateActivityFoodDTO.fromJson(Map<String, dynamic> json) => _$CreateActivityFoodDTOFromJson(json);
 
 @override final  String foodName;
 @override final  String? description;
@@ -228,20 +228,20 @@ class _CreateActivityFoodDto implements CreateActivityFoodDto {
 }
 
 
-/// Create a copy of CreateActivityFoodDto
+/// Create a copy of CreateActivityFoodDTO
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$CreateActivityFoodDtoCopyWith<_CreateActivityFoodDto> get copyWith => __$CreateActivityFoodDtoCopyWithImpl<_CreateActivityFoodDto>(this, _$identity);
+_$CreateActivityFoodDTOCopyWith<_CreateActivityFoodDTO> get copyWith => __$CreateActivityFoodDTOCopyWithImpl<_CreateActivityFoodDTO>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$CreateActivityFoodDtoToJson(this, );
+  return _$CreateActivityFoodDTOToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateActivityFoodDto&&(identical(other.foodName, foodName) || other.foodName == foodName)&&(identical(other.description, description) || other.description == description)&&(identical(other.provinceId, provinceId) || other.provinceId == provinceId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other._pictureUrl, _pictureUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateActivityFoodDTO&&(identical(other.foodName, foodName) || other.foodName == foodName)&&(identical(other.description, description) || other.description == description)&&(identical(other.provinceId, provinceId) || other.provinceId == provinceId)&&(identical(other.cityId, cityId) || other.cityId == cityId)&&const DeepCollectionEquality().equals(other._pictureUrl, _pictureUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -250,15 +250,15 @@ int get hashCode => Object.hash(runtimeType,foodName,description,provinceId,city
 
 @override
 String toString() {
-  return 'CreateActivityFoodDto(foodName: $foodName, description: $description, provinceId: $provinceId, cityId: $cityId, pictureUrl: $pictureUrl)';
+  return 'CreateActivityFoodDTO(foodName: $foodName, description: $description, provinceId: $provinceId, cityId: $cityId, pictureUrl: $pictureUrl)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$CreateActivityFoodDtoCopyWith<$Res> implements $CreateActivityFoodDtoCopyWith<$Res> {
-  factory _$CreateActivityFoodDtoCopyWith(_CreateActivityFoodDto value, $Res Function(_CreateActivityFoodDto) _then) = __$CreateActivityFoodDtoCopyWithImpl;
+abstract mixin class _$CreateActivityFoodDTOCopyWith<$Res> implements $CreateActivityFoodDTOCopyWith<$Res> {
+  factory _$CreateActivityFoodDTOCopyWith(_CreateActivityFoodDTO value, $Res Function(_CreateActivityFoodDTO) _then) = __$CreateActivityFoodDTOCopyWithImpl;
 @override @useResult
 $Res call({
  String foodName, String? description, int provinceId, int cityId, List<String> pictureUrl
@@ -269,17 +269,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$CreateActivityFoodDtoCopyWithImpl<$Res>
-    implements _$CreateActivityFoodDtoCopyWith<$Res> {
-  __$CreateActivityFoodDtoCopyWithImpl(this._self, this._then);
+class __$CreateActivityFoodDTOCopyWithImpl<$Res>
+    implements _$CreateActivityFoodDTOCopyWith<$Res> {
+  __$CreateActivityFoodDTOCopyWithImpl(this._self, this._then);
 
-  final _CreateActivityFoodDto _self;
-  final $Res Function(_CreateActivityFoodDto) _then;
+  final _CreateActivityFoodDTO _self;
+  final $Res Function(_CreateActivityFoodDTO) _then;
 
-/// Create a copy of CreateActivityFoodDto
+/// Create a copy of CreateActivityFoodDTO
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? foodName = null,Object? description = freezed,Object? provinceId = null,Object? cityId = null,Object? pictureUrl = null,}) {
-  return _then(_CreateActivityFoodDto(
+  return _then(_CreateActivityFoodDTO(
 foodName: null == foodName ? _self.foodName : foodName // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,provinceId: null == provinceId ? _self.provinceId : provinceId // ignore: cast_nullable_to_non_nullable

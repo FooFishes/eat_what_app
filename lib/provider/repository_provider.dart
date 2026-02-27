@@ -1,8 +1,8 @@
-import 'package:eat_what_app/repository/auth_repository.dart';
-import 'package:eat_what_app/repository/user_repository.dart';
-import 'package:eat_what_app/repository/location_repository.dart';
 import 'package:eat_what_app/repository/activity_repository.dart';
+import 'package:eat_what_app/repository/auth_repository.dart';
+import 'package:eat_what_app/repository/location_repository.dart';
 import 'package:eat_what_app/repository/upload_repository.dart';
+import 'package:eat_what_app/repository/user_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'api_provider.dart';
 
@@ -24,11 +24,11 @@ LocationRepository locationRepository(Ref ref) {
 }
 
 @riverpod
-ActivityRepository activityRepository(Ref ref) {
-  return ActivityRepository(ref.read(apiProvider));
+UploadRepository uploadRepository(Ref ref) {
+  return UploadRepository(ref.read(apiProvider));
 }
 
 @riverpod
-UploadRepository uploadRepository(Ref ref) {
-  return UploadRepository(ref.read(apiProvider));
+ActivityRepository activityRepository(Ref ref) {
+  return ActivityRepository(ref.read(apiProvider));
 }
