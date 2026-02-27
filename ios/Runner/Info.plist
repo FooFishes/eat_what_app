@@ -51,5 +51,7 @@
 	<string>需要访问相册来选择菜品照片</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>需要权限将照片保存到相册</string>
+	<key>NSLocationWhenInUseUsageDescription</key> 
+	<string>此应用需要访问您的位置</string>
 </dict>
 </plist>

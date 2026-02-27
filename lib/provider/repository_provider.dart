@@ -1,4 +1,5 @@
 import 'package:eat_what_app/repository/activity_repository.dart';
+import 'package:eat_what_app/repository/foodie_map_repository.dart';
 import 'package:eat_what_app/repository/auth_repository.dart';
 import 'package:eat_what_app/repository/location_repository.dart';
 import 'package:eat_what_app/repository/upload_repository.dart';
@@ -31,4 +32,9 @@ UploadRepository uploadRepository(Ref ref) {
 @riverpod
 ActivityRepository activityRepository(Ref ref) {
   return ActivityRepository(ref.read(apiProvider));
+}
+
+@riverpod
+FoodieMapRepository foodieMapRepository(Ref ref) {
+  return FoodieMapRepository(ref.read(apiProvider));
 }
