@@ -90,3 +90,51 @@ final class UserRepositoryProvider
 }
 
 String _$userRepositoryHash() => r'd8aac2f48aa3e99dc4ce17ebce5e51d6e3d1564f';
+
+@ProviderFor(foodieMapRepository)
+final foodieMapRepositoryProvider = FoodieMapRepositoryProvider._();
+
+final class FoodieMapRepositoryProvider
+    extends
+        $FunctionalProvider<
+          FoodieMapRepository,
+          FoodieMapRepository,
+          FoodieMapRepository
+        >
+    with $Provider<FoodieMapRepository> {
+  FoodieMapRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'foodieMapRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$foodieMapRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<FoodieMapRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FoodieMapRepository create(Ref ref) {
+    return foodieMapRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FoodieMapRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FoodieMapRepository>(value),
+    );
+  }
+}
+
+String _$foodieMapRepositoryHash() =>
+    r'e748a99bfa36a41b5625cabeb03e2525f53b29e3';
