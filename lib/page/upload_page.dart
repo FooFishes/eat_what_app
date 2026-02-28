@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/error/app_error_presenter.dart';
-import '../../widget/app_toast.dart';
-import '../../model/location/province_dto.dart';
-import '../../model/location/city_dto.dart';
-import '../../provider/repository_provider.dart';
+import 'package:eat_what_app/core/theme/app_colors.dart';
+import 'package:eat_what_app/widget/app_toast.dart';
+import 'package:eat_what_app/model/location/province_dto.dart';
+import 'package:eat_what_app/model/location/city_dto.dart';
+import 'package:eat_what_app/provider/repository_provider.dart';
+import 'package:eat_what_app/core/error/app_error_presenter.dart';
+import 'package:eat_what_app/provider/navigation_bar_provider.dart';
 
 /// 上传页面
 /// 包含两个子页面：Campus页面和New Year页面
@@ -28,6 +30,9 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 是否点击了Enter按钮
   bool _hasClickedEnter = false;
+
+  /// 是否已经根据路由参数初始化过
+  bool _hasInitializedFromRoute = false;
 
   /// 图片选择器实例
   final ImagePicker _picker = ImagePicker();
@@ -78,6 +83,25 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   void initState() {
     super.initState();
     _loadProvinces();
+  }
+
+  void _updateFromRouteParams() {
+    final uri = GoRouterState.of(context).uri;
+    final tab = uri.queryParameters['tab'];
+    final shouldShowNewYear = tab == 'new_year';
+    final shouldBeCampusSelected = !shouldShowNewYear;
+
+    if (_isCampusSelected != shouldBeCampusSelected) {
+      setState(() {
+        _isCampusSelected = shouldBeCampusSelected;
+      });
+    }
+
+    if (shouldShowNewYear) {
+      ref.read(navigationBarProvider.notifier).hideNavigationBar();
+    } else {
+      ref.read(navigationBarProvider.notifier).showNavigationBar();
+    }
   }
 
   Future<void> _loadProvinces() async {
@@ -159,15 +183,17 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasInitializedFromRoute) {
+      _hasInitializedFromRoute = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateFromRouteParams();
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('上传页')),
       body: Padding(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 125,
-        ),
+        padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
         child: Column(
           children: [
             _buildToggleSwitch(),
@@ -230,8 +256,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                 left: -16,
                 child: Image.asset(
                   'assets/images/firework_left.png',
-                  width: 56,
-                  height: 49,
+                  width: 59,
+                  height: 51,
                 ),
               ),
           ],
@@ -246,7 +272,14 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   Widget _buildToggleOption(String label, bool isCampus) {
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _isCampusSelected = isCampus),
+        onTap: () {
+          setState(() => _isCampusSelected = isCampus);
+          if (isCampus) {
+            ref.read(navigationBarProvider.notifier).showNavigationBar();
+          } else {
+            ref.read(navigationBarProvider.notifier).hideNavigationBar();
+          }
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
@@ -681,7 +714,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           const SizedBox(height: 20),
            */
           _buildFinishButton(),
-          const SizedBox(height: 210),
+          const SizedBox(height: 10),
         ],
       ),
     );
@@ -954,9 +987,6 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        margin: EdgeInsets.only(
-          bottom: 100 + MediaQuery.of(context).padding.bottom,
-        ),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),

@@ -1,4 +1,6 @@
+import 'package:eat_what_app/page/activity_home_page.dart';
 import 'package:eat_what_app/page/forgot_password_page.dart';
+import 'package:eat_what_app/page/foodie_map_page.dart';
 import 'package:eat_what_app/page/home_page.dart';
 import 'package:eat_what_app/page/login_page.dart';
 import 'package:eat_what_app/page/main_page.dart';
@@ -49,6 +51,58 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   return FadeTransition(opacity: animation, child: child);
+                },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/activity_home',
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            transitionDuration: const Duration(milliseconds: 300),
+            child: const ActivityHomePage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOut,
+                          ),
+                        ),
+                    child: child,
+                  );
+                },
+          );
+        },
+      ),
+      GoRoute(
+        path: '/foodie_map',
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            transitionDuration: const Duration(milliseconds: 300),
+            child: const FoodieMapPage(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(1.0, 0.0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeInOut,
+                          ),
+                        ),
+                    child: child,
+                  );
                 },
           );
         },

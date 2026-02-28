@@ -2,14 +2,16 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// 轮播图内置卡片数据模型
 class CarouselData {
   final String imagePath; // 支持 http 开头的网图或本地 asset 路径
   final String? title;
   final String? content;
+  final String? route; // 点击跳转的路由路径
 
-  CarouselData({required this.imagePath, this.title, this.content});
+  CarouselData({required this.imagePath, this.title, this.content, this.route});
 }
 
 class StackedCarousel extends StatefulWidget {
@@ -351,15 +353,27 @@ class _StackedCarouselState extends State<StackedCarousel>
                           1.0,
                         );
 
+                        final currentData = widget.data?[dataIndex];
+                        final hasRoute = currentData?.route != null;
+
                         return Positioned.fill(
                           child: Opacity(
                             opacity: topOpacity,
-                            child: Transform.translate(
-                              offset: _dragOffset,
-                              child: Transform.rotate(
-                                angle: _dragAngle,
-                                alignment: Alignment.bottomCenter,
-                                child: cardChild,
+                            child: GestureDetector(
+                              onTap: hasRoute
+                                  ? () {
+                                      if (currentData?.route != null) {
+                                        context.go(currentData!.route!);
+                                      }
+                                    }
+                                  : null,
+                              child: Transform.translate(
+                                offset: _dragOffset,
+                                child: Transform.rotate(
+                                  angle: _dragAngle,
+                                  alignment: Alignment.bottomCenter,
+                                  child: cardChild,
+                                ),
                               ),
                             ),
                           ),
