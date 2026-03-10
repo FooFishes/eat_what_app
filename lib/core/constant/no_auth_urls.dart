@@ -1,10 +1,11 @@
-class NoAuthUrls {
-  // Auth Endpoints
-  static const String checkUsername = '/auth/checkUsername';
-  static const String register = '/auth/register';
-  static const String login = '/auth/login';
+import 'urls.dart';
 
-  static const List<String> urls = [checkUsername, register, login];
+class NoAuthUrls {
+  static const List<String> urls = [
+    Urls.checkUsername,
+    Urls.register,
+    Urls.login,
+  ];
 
   static bool contains(String url) {
     final path = Uri.tryParse(url)?.path ?? url;

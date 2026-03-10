@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eat_what_app/core/error/platform_exception.dart';
 import 'package:eat_what_app/provider/repository_provider.dart';
+import 'package:eat_what_app/repository/foodie_map_repository.dart';
 import 'package:eat_what_app/core/api/model/result.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
@@ -261,7 +262,7 @@ class _FoodieMapPageState extends ConsumerState<FoodieMapPage> {
   }
 
   Future<Result<List<ProvinceDto>>> _fetchProvinces() async {
-    final repo = ref.read(foodieMapRepositoryProvider);
+    final repo = ref.read(locationRepositoryProvider);
     var provinces = await repo.getProvinces();
     return provinces;
   }
@@ -842,12 +843,12 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
 
   Future<Result<void>> _like(int id) async {
     final repo = ref.read(foodieMapRepositoryProvider);
-    return await repo.like("food", id);
+    return await repo.like(LikeTargetType.food, id);
   }
 
   Future<Result<void>> _disLike(int id) async {
     final repo = ref.read(foodieMapRepositoryProvider);
-    return await repo.disLike("food", id);
+    return await repo.disLike(LikeTargetType.food, id);
   }
 }
 

@@ -12,7 +12,14 @@ class UploadRepository {
   final RequestClient _api;
   final Dio _dio;
 
-  UploadRepository(this._api) : _dio = Dio();
+  UploadRepository(this._api)
+    : _dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
   Future<Result<PresignBatchUploadRespDTO>> presignBatchUpload({
     required String biz,
