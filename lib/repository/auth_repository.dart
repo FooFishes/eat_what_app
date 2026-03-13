@@ -1,47 +1,67 @@
-import 'package:eat_what_app/core/api/model/result.dart';
+import 'package:eat_what_app/core/api/api_parser.dart';
 import 'package:eat_what_app/core/api/request_client.dart';
-
-import '../core/constant/urls.dart';
+import 'package:eat_what_app/core/constant/urls.dart';
+import 'package:eat_what_app/core/error/api_exception.dart';
+import 'package:eat_what_app/model/auth/auth_request.dart';
+import 'package:eat_what_app/model/auth/change_password_request.dart';
+import 'package:eat_what_app/model/auth/token_response.dart';
 
 class AuthRepository {
   final RequestClient _api;
-  AuthRepository(this._api);
 
-  Future<Result<void>> checkUsername(String username) {
-    final body = {'username': username};
-    return _api.post<void>(Urls.checkUsername, data: body);
+  const AuthRepository(this._api);
+
+  Future<void> checkUsername(String username) async {
+    await _api.postVoid(Urls.checkUsername, data: {'username': username});
   }
 
-  Future<Result<String>> register(String username, String password) {
-    final body = {'username': username, 'password': password, 'device': 'APP'};
-    return _api.post<String>(Urls.register, data: body, fromJson: _parseToken);
+  Future<String> register(AuthRequest request) async {
+    final response = await _api.post<TokenResponse>(
+      Urls.register,
+      data: request.toJson(),
+      parser: (data) => ApiParser.parseObject(data, TokenResponse.fromJson),
+    );
+
+    final token = response?.tokenValue;
+    if (token == null || token.isEmpty) {
+      throw const ParseException(message: '注册响应缺少 token');
+    }
+
+    return token;
   }
 
-  Future<Result<String>> login(String account, String password) {
-    final body = {'username': account, 'password': password, 'device': 'APP'};
-    return _api.post<String>(Urls.login, data: body, fromJson: _parseToken);
+  Future<String> login(AuthRequest request) async {
+    final response = await _api.post<TokenResponse>(
+      Urls.login,
+      data: request.toJson(),
+      parser: (data) => ApiParser.parseObject(data, TokenResponse.fromJson),
+    );
+
+    final token = response?.tokenValue;
+    if (token == null || token.isEmpty) {
+      throw const ParseException(message: '登录响应缺少 token');
+    }
+
+    return token;
   }
 
-  Future<Result<void>> logout() {
-    return _api.post<void>(Urls.logout);
+  Future<void> logout() async {
+    await _api.postVoid(Urls.logout);
   }
 
-  Future<Result<void>> changePassword(String oldPassword, String newPassword) {
-    final body = {'oldPassword': oldPassword, 'newPassword': newPassword};
-    return _api.post<void>(Urls.changePassword, data: body);
+  Future<void> changePassword(ChangePasswordRequest request) async {
+    await _api.postVoid(Urls.changePassword, data: request.toJson());
   }
 
-  Future<Result<bool>> verify() {
-    return _api.post<bool>(Urls.verify, fromJson: (json) => json != null);
+  Future<bool> verify() async {
+    final result = await _api.post<bool>(
+      Urls.verify,
+      parser: (data) => data != null,
+    );
+    return result ?? false;
   }
 
-  Future<Result<void>> sendEmail(String email) {
-    final body = {'email': email};
-    return _api.post<void>(Urls.sendEmail, data: body);
-  }
-
-  String _parseToken(dynamic json) {
-    final map = json as Map<String, dynamic>;
-    return map['tokenValue'] as String;
+  Future<void> sendEmail(String email) async {
+    await _api.postVoid(Urls.sendEmail, data: {'email': email});
   }
 }

@@ -1,28 +1,38 @@
-import 'package:eat_what_app/core/api/model/result.dart';
+import 'package:eat_what_app/core/api/api_parser.dart';
 import 'package:eat_what_app/core/api/request_client.dart';
 import 'package:eat_what_app/core/constant/urls.dart';
-import 'package:eat_what_app/model/location/city_dto.dart';
-import 'package:eat_what_app/model/location/province_dto.dart';
+import 'package:eat_what_app/core/error/api_exception.dart';
+import 'package:eat_what_app/model/location/city_response.dart';
+import 'package:eat_what_app/model/location/province_response.dart';
 
 class LocationRepository {
   final RequestClient _api;
-  LocationRepository(this._api);
 
-  Future<Result<List<ProvinceDto>>> getProvinces() {
-    return _api.get<List<ProvinceDto>>(
+  const LocationRepository(this._api);
+
+  Future<List<ProvinceResponse>> getProvinces() async {
+    final result = await _api.get<List<ProvinceResponse>>(
       Urls.provinces,
-      fromJson: (json) => (json as List)
-          .map((item) => ProvinceDto.fromJson(item as Map<String, dynamic>))
-          .toList(),
+      parser: (data) => ApiParser.parseList(data, ProvinceResponse.fromJson),
     );
+
+    if (result == null) {
+      throw const ParseException(message: '省份列表为空');
+    }
+
+    return result;
   }
 
-  Future<Result<List<CityDto>>> getCities(int provinceId) {
-    return _api.get<List<CityDto>>(
-      '${Urls.provinces}/$provinceId/cities',
-      fromJson: (json) => (json as List)
-          .map((item) => CityDto.fromJson(item as Map<String, dynamic>))
-          .toList(),
+  Future<List<CityResponse>> getCities(int provinceId) async {
+    final result = await _api.get<List<CityResponse>>(
+      Urls.cities(provinceId),
+      parser: (data) => ApiParser.parseList(data, CityResponse.fromJson),
     );
+
+    if (result == null) {
+      throw const ParseException(message: '城市列表为空');
+    }
+
+    return result;
   }
 }

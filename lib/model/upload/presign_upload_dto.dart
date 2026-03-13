@@ -1,26 +1,78 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:image_picker/image_picker.dart';
 
-part 'presign_upload_dto.freezed.dart';
-part 'presign_upload_dto.g.dart';
+class PresignUploadRequest {
+  final String fileName;
+  final String contentType;
+  final int fileSize;
 
-@freezed
-abstract class PresignUploadRespDTO with _$PresignUploadRespDTO {
-  const factory PresignUploadRespDTO({
-    required String putUrl,
-    required String key,
-    required int expireAt,
-  }) = _PresignUploadRespDTO;
+  const PresignUploadRequest({
+    required this.fileName,
+    required this.contentType,
+    required this.fileSize,
+  });
 
-  factory PresignUploadRespDTO.fromJson(Map<String, dynamic> json) =>
-      _$PresignUploadRespDTOFromJson(json);
+  static Future<PresignUploadRequest> fromXFile(
+    XFile file, {
+    required String contentType,
+  }) async {
+    final fileName = file.name;
+    return PresignUploadRequest(
+      fileName: fileName,
+      contentType: contentType,
+      fileSize: await file.length(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'fileName': fileName,
+      'contentType': contentType,
+      'fileSize': fileSize,
+    };
+  }
 }
 
-@freezed
-abstract class PresignBatchUploadRespDTO with _$PresignBatchUploadRespDTO {
-  const factory PresignBatchUploadRespDTO({
-    required List<PresignUploadRespDTO> files,
-  }) = _PresignBatchUploadRespDTO;
+class PresignBatchUploadRequest {
+  final String biz;
+  final List<PresignUploadRequest> files;
 
-  factory PresignBatchUploadRespDTO.fromJson(Map<String, dynamic> json) =>
-      _$PresignBatchUploadRespDTOFromJson(json);
+  const PresignBatchUploadRequest({required this.biz, required this.files});
+
+  Map<String, dynamic> toJson() {
+    return {'biz': biz, 'files': files.map((item) => item.toJson()).toList()};
+  }
+}
+
+class PresignUploadResponse {
+  final String putUrl;
+  final String key;
+  final int expireAt;
+
+  const PresignUploadResponse({
+    required this.putUrl,
+    required this.key,
+    required this.expireAt,
+  });
+
+  factory PresignUploadResponse.fromJson(Map<String, dynamic> json) {
+    return PresignUploadResponse(
+      putUrl: json['putUrl'] as String,
+      key: json['key'] as String,
+      expireAt: json['expireAt'] as int,
+    );
+  }
+}
+
+class PresignBatchUploadResponse {
+  final List<PresignUploadResponse> files;
+
+  const PresignBatchUploadResponse({required this.files});
+
+  factory PresignBatchUploadResponse.fromJson(Map<String, dynamic> json) {
+    return PresignBatchUploadResponse(
+      files: (json['files'] as List<dynamic>)
+          .map((e) => PresignUploadResponse.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }
