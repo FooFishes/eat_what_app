@@ -1,5 +1,5 @@
 import 'package:eat_what_app/core/error/api_exception.dart';
-import 'package:eat_what_app/model/auth/auth_respuest.dart';
+import 'package:eat_what_app/model/auth/auth_request.dart';
 import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -31,7 +31,7 @@ class Auth extends _$Auth {
     try {
       final repo = ref.read(authRepositoryProvider);
       final token = await repo.login(
-        AuthRespuest(account: account, password: password),
+        AuthRequest(account: account, password: password),
       );
       await SecureStorageUtil.save(_tokenKey, token);
       state = AsyncValue.data(token);
@@ -46,7 +46,7 @@ class Auth extends _$Auth {
     try {
       final repo = ref.read(authRepositoryProvider);
       final token = await repo.register(
-        AuthRespuest(account: account, password: password),
+        AuthRequest(account: account, password: password),
       );
       await SecureStorageUtil.save(_tokenKey, token);
       state = AsyncValue.data(token);

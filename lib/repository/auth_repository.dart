@@ -2,7 +2,7 @@ import 'package:eat_what_app/core/api/api_parser.dart';
 import 'package:eat_what_app/core/api/request_client.dart';
 import 'package:eat_what_app/core/constant/urls.dart';
 import 'package:eat_what_app/core/error/api_exception.dart';
-import 'package:eat_what_app/model/auth/auth_respuest.dart';
+import 'package:eat_what_app/model/auth/auth_request.dart';
 import 'package:eat_what_app/model/auth/change_password_request.dart';
 import 'package:eat_what_app/model/auth/token_response.dart';
 
@@ -15,7 +15,7 @@ class AuthRepository {
     await _api.postVoid(Urls.checkUsername, data: {'username': username});
   }
 
-  Future<String> register(AuthRespuest request) async {
+  Future<String> register(AuthRequest request) async {
     final response = await _api.post<TokenResponse>(
       Urls.register,
       data: request.toJson(),
@@ -30,7 +30,7 @@ class AuthRepository {
     return token;
   }
 
-  Future<String> login(AuthRespuest request) async {
+  Future<String> login(AuthRequest request) async {
     final response = await _api.post<TokenResponse>(
       Urls.login,
       data: request.toJson(),
@@ -58,7 +58,7 @@ class AuthRepository {
       Urls.verify,
       parser: (data) => data != null,
     );
-    return result ?? true;
+    return result ?? false;
   }
 
   Future<void> sendEmail(String email) async {
