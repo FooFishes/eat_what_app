@@ -15,4 +15,16 @@ class Urls {
   static const String uploadPresignBatch = '/upload/presign/batch';
   static const String provinceActivityFoods = '/activity/{provinceId}/foods';
   static const String likes = '/activity/likes';
+
+  // No auth URLs
+  static const List<String> noAuthUrls = [checkUsername, register, login];
+
+  static bool isNoAuth(String url) {
+    final path = Uri.tryParse(url)?.path ?? url;
+    return noAuthUrls.contains(path);
+  }
+
+  static String cities(int provinceId) {
+    return '$provinces/$provinceId/cities';
+  }
 }

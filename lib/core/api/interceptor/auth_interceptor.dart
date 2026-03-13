@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../constant/no_auth_urls.dart';
+import '../../constant/urls.dart';
 
 class AuthInterceptor extends Interceptor {
   final Future<String?> Function() getToken;
@@ -11,7 +11,7 @@ class AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (NoAuthUrls.contains(options.path)) {
+    if (Urls.isNoAuth(options.path)) {
       return handler.next(options);
     }
     final token = await getToken();

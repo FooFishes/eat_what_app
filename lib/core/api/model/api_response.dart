@@ -1,46 +1,41 @@
-import 'package:eat_what_app/core/constant/biz_code.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
+class ApiResponse<T> {
+  final int code;
+  final String msg;
+  final T? data;
+  final int timestamp;
 
-part 'api_response.freezed.dart';
-part 'api_response.g.dart';
-
-@Freezed(genericArgumentFactories: true)
-abstract class ApiResponse<T> with _$ApiResponse<T> {
-  const factory ApiResponse({
-    required int code,
-    @JsonKey(name: 'msg', defaultValue: '') required String message,
-    T? data,
-    required int timestamp,
-  }) = _ApiResponse<T>;
+  const ApiResponse({
+    required this.code,
+    required this.msg,
+    required this.data,
+    required this.timestamp,
+  });
 
   factory ApiResponse.fromJson(
     Map<String, dynamic> json,
-    T Function(Object?) fromJsonT,
-  ) => _$ApiResponseFromJson(json, fromJsonT);
-
-  // 私有构造器用于正常生成 getters
-  const ApiResponse._();
-
-  bool get isSuccess => code == BizCode.success.code;
-  bool get requireReLogin => BizCode.requireReLogin(code);
+    T Function(Object?) parseData,
+  ) {
+    return ApiResponse(
+      code: json['code'] as int,
+      msg: (json['msg'] as String?)?.trim() ?? '',
+      data: parseData(json['data']),
+      timestamp: json['timestamp'] as int,
+    );
+  }
 }
 
-@Freezed(genericArgumentFactories: true)
-abstract class PaginatedData<T> with _$PaginatedData<T> {
-  const factory PaginatedData({
-    required int code,
-    required List<T> items,
-    required int totalPages,
-    required int totalItems,
-    required bool hasNext,
-  }) = _PaginatedData<T>;
+class PaginatedData<T> {
+  final int currentPage;
+  final List<T> items;
+  final int totalPages;
+  final int totalItems;
+  final bool hasNext;
 
-  const PaginatedData._();
-
-  bool get isEmpty => items.isEmpty;
-
-  factory PaginatedData.fromJson(
-    Map<String, dynamic> json,
-    T Function(Object?) fromJsonT,
-  ) => _$PaginatedDataFromJson(json, fromJsonT);
+  const PaginatedData({
+    required this.currentPage,
+    required this.items,
+    required this.totalPages,
+    required this.totalItems,
+    required this.hasNext,
+  });
 }

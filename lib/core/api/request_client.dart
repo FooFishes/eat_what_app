@@ -1,187 +1,201 @@
-import 'dart:async';
-
 import 'package:dio/dio.dart';
-import 'package:eat_what_app/core/api/model/result.dart';
+import 'package:eat_what_app/core/api/api_parser.dart';
+import 'package:eat_what_app/core/api/interceptor/auth_interceptor.dart';
+import 'package:eat_what_app/core/api/interceptor/error_interceptor.dart';
+import 'package:eat_what_app/core/constant/urls.dart';
+import 'package:eat_what_app/core/error/api_error_handler.dart';
+import 'package:eat_what_app/core/error/api_exception.dart';
 import 'package:flutter/foundation.dart';
 
-import '../constant/urls.dart';
-import '../error/api_error_handler.dart';
-import '../error/api_exception.dart';
-import 'interceptor/auth_interceptor.dart';
-import 'interceptor/error_interceptor.dart';
+/// data 部分的解析器, 入参已经是 {code, msg, data} 中的 data
+typedef DataParser<T> = T Function(Object? data);
 
 class RequestClient {
-  late final Dio _dio;
+  final Dio _dio;
+  final Future<void> Function()? _clearSession;
 
-  RequestClient({
-    required Future<String?> Function() getToken,
-    required void Function() onRequireReLogin,
-  }) : _dio = Dio(
-         BaseOptions(
-           baseUrl: Urls.baseUrl,
-           connectTimeout: const Duration(seconds: 10),
-           receiveTimeout: const Duration(seconds: 10),
-           sendTimeout: kIsWeb ? null : const Duration(seconds: 10),
-         ),
-       ) {
-    _setupInterceptors(getToken: getToken, onRequireReLogin: onRequireReLogin);
-  }
+  RequestClient._(this._dio, this._clearSession);
 
-  void _setupInterceptors({
+  factory RequestClient({
     required Future<String?> Function() getToken,
-    required void Function() onRequireReLogin,
+    required Future<void> Function() clearSession,
   }) {
-    _dio.interceptors.add(AuthInterceptor(getToken: getToken));
-    _dio.interceptors.add(ErrorInterceptor(onRequireReLogin: onRequireReLogin));
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: Urls.baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+    dio.interceptors.add(AuthInterceptor(getToken: getToken));
+    dio.interceptors.add(ErrorInterceptor());
 
     if (kDebugMode) {
-      // Put logger at the end so request headers include auth headers set by interceptors.
-      _dio.interceptors.add(
+      dio.interceptors.add(
         LogInterceptor(
-          requestBody: true,
-          responseBody: true,
           requestHeader: true,
+          requestBody: true,
           responseHeader: true,
+          responseBody: true,
         ),
       );
     }
+
+    return RequestClient._(dio, clearSession);
   }
 
-  // ========== 请求方法（返回 Result，不抛异常）==========
+  factory RequestClient.raw({BaseOptions? options}) {
+    final dio = Dio(
+      options ??
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 20),
+            receiveTimeout: const Duration(seconds: 20),
+            sendTimeout: const Duration(seconds: 20),
+          ),
+    );
 
-  Future<Result<T>> get<T>(
+    dio.interceptors.add(ErrorInterceptor());
+
+    if (kDebugMode) {
+      dio.interceptors.add(
+        LogInterceptor(
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: true,
+          responseBody: true,
+        ),
+      );
+    }
+
+    return RequestClient._(dio, null);
+  }
+
+  // ── 标准业务接口 (自动解析 code/msg/data) ──────────────
+
+  Future<T?> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,
-    T Function(dynamic json)? fromJson,
-  }) => _safeRequest(
-    () =>
-        getOrThrow(path, queryParameters: queryParameters, fromJson: fromJson),
-  );
-
-  Future<Result<T>> post<T>(
-    String path, {
-    dynamic data,
-    T Function(dynamic json)? fromJson,
-  }) => _safeRequest(() => postOrThrow(path, data: data, fromJson: fromJson));
-
-  Future<Result<T>> put<T>(
-    String path, {
-    dynamic data,
-    T Function(dynamic json)? fromJson,
-  }) => _safeRequest(() => putOrThrow(path, data: data, fromJson: fromJson));
-
-  Future<Result<T>> delete<T>(
-    String path, {
-    dynamic data,
-    T Function(dynamic json)? fromJson,
-  }) => _safeRequest(() => deleteOrThrow(path, data: data, fromJson: fromJson));
-
-  // ========== 请求方法（抛异常）==========
-
-  Future<T> getOrThrow<T>(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-    T Function(dynamic json)? fromJson,
+    required DataParser<T> parser,
     Options? options,
-  }) => _request(
-    () => _dio.get(path, queryParameters: queryParameters, options: options),
-    fromJson: fromJson,
-  );
+  }) async {
+    return _request<T>(
+      () => _dio.get(path, queryParameters: queryParameters, options: options),
+      parser: parser,
+    );
+  }
 
-  Future<T> postOrThrow<T>(
+  Future<T?> post<T>(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
-    T Function(dynamic json)? fromJson,
+    required DataParser<T> parser,
     Options? options,
-  }) => _request(
-    () => _dio.post(
-      path,
-      data: data,
-      queryParameters: queryParameters,
-      options: options,
-    ),
-    fromJson: fromJson,
-  );
+  }) async {
+    return _request<T>(
+      () => _dio.post(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      ),
+      parser: parser,
+    );
+  }
 
-  Future<T> putOrThrow<T>(
+  Future<T?> put<T>(
     String path, {
     dynamic data,
-    T Function(dynamic json)? fromJson,
+    required DataParser<T> parser,
     Options? options,
-  }) => _request(
-    () => _dio.put(path, data: data, options: options),
-    fromJson: fromJson,
-  );
+  }) async {
+    return _request<T>(
+      () => _dio.put(path, data: data, options: options),
+      parser: parser,
+    );
+  }
 
-  Future<T> deleteOrThrow<T>(
+  Future<T?> delete<T>(
     String path, {
     dynamic data,
-    T Function(dynamic json)? fromJson,
+    required DataParser<T> parser,
     Options? options,
-  }) => _request(
-    () => _dio.delete(path, data: data, options: options),
-    fromJson: fromJson,
-  );
+  }) async {
+    return _request<T>(
+      () => _dio.delete(path, data: data, options: options),
+      parser: parser,
+    );
+  }
 
-  // ========== 内部方法 ==========
+  /// 不关心返回值, 只确认业务码成功
+  Future<void> postVoid(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    await _request<Object?>(
+      () => _dio.post(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      ),
+      parser: (_) => null,
+    );
+  }
 
-  Future<T> _request<T>(
-    Future<Response<dynamic>> Function() request, {
-    T Function(dynamic json)? fromJson,
+  Future<void> deleteVoid(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    await _request<Object?>(
+      () => _dio.delete(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      ),
+      parser: (_) => null,
+    );
+  }
+
+  // ── Raw 接口 (不经过 code/msg/data 解析) ──────────────
+
+  Future<void> putRaw(String url, {dynamic data, Options? options}) async {
+    try {
+      await _dio.put(url, data: data, options: options);
+    } on DioException catch (error) {
+      throw ApiErrorHandler.fromDioException(error);
+    }
+  }
+
+  // ── 内部实现 ──────────────────────────────────────────
+
+  Future<T?> _request<T>(
+    Future<Response<dynamic>> Function() send, {
+    required DataParser<T> parser,
   }) async {
     Response<dynamic>? response;
     try {
-      response = await request();
-      return _parseResponseData(response.data, fromJson: fromJson);
+      response = await send();
+      return ApiParser.unwrap<T>(response.data, parser: parser);
+    } on AuthException {
+      await _clearSession?.call();
+      rethrow;
     } on ApiException {
       rethrow;
     } on DioException catch (error) {
       throw ApiErrorHandler.fromDioException(error);
     } catch (error, stackTrace) {
-      final parseException = ParseException(
-        message: '数据解析失败，请稍后重试',
+      throw ParseException(
+        message: '网络响应解析失败，请稍后重试',
         originalError: error,
         stackTrace: stackTrace,
       );
-
-      ApiErrorHandler.addNetworkBreadcrumb(
-        phase: 'response_parse',
-        exception: parseException,
-        requestOptions: response?.requestOptions,
-        response: response,
-      );
-      ApiErrorHandler.report(
-        parseException,
-        phase: 'response_parse',
-        requestOptions: response?.requestOptions,
-        response: response,
-      ).ignore();
-
-      throw parseException;
-    }
-  }
-
-  T _parseResponseData<T>(
-    dynamic responseData, {
-    T Function(dynamic json)? fromJson,
-  }) {
-    if (responseData is Map<String, dynamic>) {
-      final data = responseData['data'];
-      if (fromJson != null && data != null) {
-        return fromJson(data);
-      }
-      return data as T;
-    }
-
-    return responseData as T;
-  }
-
-  Future<Result<T>> _safeRequest<T>(Future<T> Function() request) async {
-    try {
-      return Success(await request());
-    } on ApiException catch (error) {
-      return Failure(error);
     }
   }
 }

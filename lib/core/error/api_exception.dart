@@ -90,3 +90,13 @@ class ParseException extends ApiException {
   @override
   String toString() => 'ParseException(message: $message)';
 }
+
+class AuthException extends BusinessException {
+  const AuthException({
+    required super.code,
+    required super.message,
+    required super.category,
+    super.originalError,
+    super.stackTrace,
+  });
+}

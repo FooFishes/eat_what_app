@@ -1,17 +1,17 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:eat_what_app/controller/upload_page_controller.dart';
+import 'package:eat_what_app/core/error/app_error_presenter.dart';
+import 'package:eat_what_app/core/theme/app_colors.dart';
+import 'package:eat_what_app/model/location/city_response.dart';
+import 'package:eat_what_app/model/location/province_response.dart';
+import 'package:eat_what_app/widget/app_toast.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-import '../../core/theme/app_colors.dart';
-import '../../core/error/app_error_presenter.dart';
-import '../../widget/app_toast.dart';
-import '../../model/location/province_dto.dart';
-import '../../model/location/city_dto.dart';
-import '../../provider/repository_provider.dart';
 
 /// 上传页面
 /// 包含两个子页面：Campus页面和New Year页面
@@ -33,28 +33,19 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   final ImagePicker _picker = ImagePicker();
 
   /// 已选择的图片文件列表
-  List<File> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
+
+  /// 已选择的图片原始字节列表（用于跨平台显示）
+  final List<Uint8List> _imageBytes = [];
 
   /// 图片尺寸信息列表
-  List<ui.Image> _imageInfos = [];
+  final List<ui.Image> _imageInfos = [];
 
   /// 轮播图控制器
   final PageController _pageController = PageController();
 
   /// 当前轮播页面索引
   int _currentPageIndex = 0;
-
-  /// 选中的省份
-  ProvinceDto? _selectedProvince;
-
-  /// 选中的城市
-  CityDto? _selectedCity;
-
-  /// 省份列表
-  List<ProvinceDto> _provinces = [];
-
-  /// 城市列表
-  List<CityDto> _cities = [];
 
   /// 菜品名称控制器
   final TextEditingController _foodNameController = TextEditingController();
@@ -65,92 +56,12 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   /// 店铺名称控制器
   final TextEditingController _shopNameController = TextEditingController();
 
-  /// 是否正在加载
-  bool _isLoading = false;
-
-  /// 是否正在加载省份
-  bool _isLoadingProvinces = false;
-
-  /// 是否正在加载城市
-  bool _isLoadingCities = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProvinces();
-  }
-
-  Future<void> _loadProvinces() async {
-    if (_isLoadingProvinces || _provinces.isNotEmpty) return;
-
-    setState(() {
-      _isLoadingProvinces = true;
-    });
-
-    final repo = ref.read(locationRepositoryProvider);
-    final result = await repo.getProvinces();
-
-    if (mounted) {
-      setState(() {
-        _isLoadingProvinces = false;
-      });
-    }
-
-    result.when(
-      success: (provinces) {
-        if (mounted) {
-          setState(() {
-            _provinces = provinces;
-          });
-        }
-      },
-      failure: (error) {
-        if (mounted) {
-          AppErrorPresenter.showErrorToast(context, error);
-        }
-      },
-    );
-  }
-
-  Future<void> _loadCities(int provinceId) async {
-    if (_isLoadingCities) return;
-
-    setState(() {
-      _isLoadingCities = true;
-    });
-
-    final repo = ref.read(locationRepositoryProvider);
-    final result = await repo.getCities(provinceId);
-
-    if (mounted) {
-      setState(() {
-        _isLoadingCities = false;
-      });
-    }
-
-    result.when(
-      success: (cities) {
-        if (mounted) {
-          setState(() {
-            _cities = cities;
-          });
-        }
-      },
-      failure: (error) {
-        if (mounted) {
-          AppErrorPresenter.showErrorToast(context, error);
-        }
-      },
-    );
-  }
-
   @override
   void dispose() {
     _selectedImages.clear();
+    _imageBytes.clear();
     _imageInfos.clear();
     _pageController.dispose();
-    _selectedProvince = null;
-    _selectedCity = null;
     _foodNameController.dispose();
     _descriptionController.dispose();
     _shopNameController.dispose();
@@ -159,6 +70,24 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<UploadPageState>(uploadPageControllerProvider, (
+      UploadPageState? previous,
+      UploadPageState next,
+    ) {
+      final feedback = next.feedback;
+      if (feedback == null || feedback.id == previous?.feedback?.id) {
+        return;
+      }
+
+      _handleUploadFeedback(feedback);
+
+      if (feedback.kind == UploadPageFeedbackKind.success) {
+        _resetLocalForm();
+      }
+
+      ref.read(uploadPageControllerProvider.notifier).clearFeedback();
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('上传页')),
       body: Padding(
@@ -834,7 +763,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(25),
-              child: Image.file(_selectedImages[index], fit: BoxFit.cover),
+              child: Image.memory(_imageBytes[index], fit: BoxFit.cover),
             ),
           ),
           Positioned(
@@ -931,7 +860,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            _ImagePreviewPage(images: _selectedImages, initialIndex: index),
+            _ImagePreviewPage(imageBytes: _imageBytes, initialIndex: index),
       ),
     );
   }
@@ -946,6 +875,13 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           type: AppToastType.warning,
         );
       }
+      return;
+    }
+
+    // On web, permission_handler is not supported —
+    // the browser manages permissions natively via the file picker.
+    if (kIsWeb) {
+      await _pickFromGallery();
       return;
     }
 
@@ -997,23 +933,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                 Navigator.pop(context);
                 final status = await Permission.photos.request();
                 if (status.isGranted) {
-                  final List<XFile> images = await _picker.pickMultiImage(
-                    imageQuality: 80,
-                  );
-                  if (images.isNotEmpty) {
-                    final remainingSlots = 9 - _selectedImages.length;
-                    final imagesToAdd = images.take(remainingSlots).toList();
-                    for (var image in imagesToAdd) {
-                      await _handleSelectedImage(image);
-                    }
-                    if (images.length > remainingSlots && context.mounted) {
-                      AppErrorPresenter.showMessageToast(
-                        context,
-                        '最多只能上传9张照片，已添加前$remainingSlots张',
-                        type: AppToastType.warning,
-                      );
-                    }
-                  }
+                  await _pickFromGallery();
                 } else {
                   if (context.mounted) {
                     AppErrorPresenter.showMessageToast(
@@ -1036,6 +956,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   void _removeImage(int index) {
     setState(() {
       _selectedImages.removeAt(index);
+      _imageBytes.removeAt(index);
       _imageInfos.removeAt(index);
       if (_currentPageIndex >= _selectedImages.length) {
         _currentPageIndex = _selectedImages.isNotEmpty
@@ -1069,9 +990,31 @@ class _UploadPageState extends ConsumerState<UploadPage> {
     final img = frame.image;
 
     setState(() {
-      _selectedImages.add(File(image.path));
+      _selectedImages.add(image);
+      _imageBytes.add(bytes);
       _imageInfos.add(img);
     });
+  }
+
+  /// 从相册选择图片（共用逻辑，适用于 Web 和 Native）
+  Future<void> _pickFromGallery() async {
+    final List<XFile> images = await _picker.pickMultiImage(
+      imageQuality: 80,
+    );
+    if (images.isNotEmpty) {
+      final remainingSlots = 9 - _selectedImages.length;
+      final imagesToAdd = images.take(remainingSlots).toList();
+      for (final image in imagesToAdd) {
+        await _handleSelectedImage(image);
+      }
+      if (images.length > remainingSlots && mounted) {
+        AppErrorPresenter.showMessageToast(
+          context,
+          '最多只能上传9张照片，已添加前$remainingSlots张',
+          type: AppToastType.warning,
+        );
+      }
+    }
   }
 
   /// 构建下拉框容器
@@ -1136,27 +1079,21 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 选择图片方法构建省份下拉选择器组件
   Widget _buildProvinceDropdown() {
-    return _buildDropdown<ProvinceDto>(
-      value: _selectedProvince,
-      items: _provinces,
+    final uploadState = ref.watch(uploadPageControllerProvider);
+    final controller = ref.read(uploadPageControllerProvider.notifier);
+
+    return _buildDropdown<ProvinceResponse>(
+      value: uploadState.selectedProvince,
+      items: uploadState.provinces,
       hintText: '请选择省份',
-      isLoading: _isLoadingProvinces,
-      isEmpty: _provinces.isEmpty,
+      isLoading: uploadState.isLoadingProvinces,
+      isEmpty: uploadState.provinces.isEmpty,
       onTapEmpty: () {
-        if (_provinces.isEmpty && !_isLoadingProvinces) {
-          _loadProvinces();
+        if (uploadState.provinces.isEmpty && !uploadState.isLoadingProvinces) {
+          controller.loadProvinces();
         }
       },
-      onChanged: (ProvinceDto? newValue) {
-        setState(() {
-          _selectedProvince = newValue;
-          _selectedCity = null;
-          _cities = [];
-          if (newValue != null) {
-            _loadCities(newValue.id);
-          }
-        });
-      },
+      onChanged: controller.selectProvince,
       itemBuilder: (province) =>
           Text(province.name, style: const TextStyle(fontSize: 14)),
     );
@@ -1164,23 +1101,26 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 构建城市下拉选择器组件
   Widget _buildCityDropdown() {
-    return _buildDropdown<CityDto>(
-      value: _selectedCity,
-      items: _cities,
-      hintText: _selectedProvince == null ? '请先选择省份' : '请选择城市',
-      isLoading: _isLoadingCities,
-      isEmpty: _selectedProvince == null || _cities.isEmpty,
+    final uploadState = ref.watch(uploadPageControllerProvider);
+    final controller = ref.read(uploadPageControllerProvider.notifier);
+
+    return _buildDropdown<CityResponse>(
+      value: uploadState.selectedCity,
+      items: uploadState.cities,
+      hintText: uploadState.selectedProvince == null ? '请先选择省份' : '请选择城市',
+      isLoading: uploadState.isLoadingCities,
+      isEmpty: uploadState.selectedProvince == null || uploadState.cities.isEmpty,
       onTapEmpty: () {
-        if (_selectedProvince != null && _cities.isEmpty && !_isLoadingCities) {
-          _loadCities(_selectedProvince!.id);
+        final province = uploadState.selectedProvince;
+        if (province != null &&
+            uploadState.cities.isEmpty &&
+            !uploadState.isLoadingCities) {
+          controller.loadCities(province.id);
         }
       },
-      onChanged: _selectedProvince != null && !_isLoadingCities
-          ? (CityDto? newValue) {
-              setState(() {
-                _selectedCity = newValue;
-              });
-            }
+      onChanged: uploadState.selectedProvince != null &&
+              !uploadState.isLoadingCities
+          ? controller.selectCity
           : null,
       itemBuilder: (city) =>
           Text(city.name, style: const TextStyle(fontSize: 14)),
@@ -1189,11 +1129,15 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 构建完成按钮组件
   Widget _buildFinishButton() {
+    final isSubmitting = ref.watch(
+      uploadPageControllerProvider.select((state) => state.isSubmitting),
+    );
+
     return SizedBox(
       width: double.infinity,
       height: 66,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleFinish,
+        onPressed: isSubmitting ? null : _handleFinish,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentRed,
           disabledBackgroundColor: AppColors.accentRed.withValues(alpha: 0.72),
@@ -1203,7 +1147,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           ),
           elevation: 0,
         ),
-        child: _isLoading
+        child: isSubmitting
             ? const SizedBox(
                 width: 22,
                 height: 22,
@@ -1222,178 +1166,60 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 处理Finish按钮点击
   Future<void> _handleFinish() async {
-    final validationError = _validateForm();
-    if (validationError != null) {
-      if (mounted) {
-        AppErrorPresenter.showMessageToast(
-          context,
-          validationError,
-          type: AppToastType.warning,
-        );
-      }
+    await ref.read(uploadPageControllerProvider.notifier).submit(
+      foodName: _foodNameController.text,
+      description: _descriptionController.text,
+      images: List<XFile>.from(_selectedImages),
+    );
+  }
+
+  void _handleUploadFeedback(UploadPageFeedback feedback) {
+    if (!mounted) {
+      return;
+    }
+
+    final toastType = switch (feedback.kind) {
+      UploadPageFeedbackKind.success => AppToastType.success,
+      UploadPageFeedbackKind.warning => AppToastType.warning,
+      UploadPageFeedbackKind.error => AppToastType.error,
+    };
+
+    AppErrorPresenter.showMessageToast(
+      context,
+      feedback.content,
+      type: toastType,
+    );
+  }
+
+  void _resetLocalForm() {
+    if (!mounted) {
       return;
     }
 
     setState(() {
-      _isLoading = true;
+      _selectedImages.clear();
+      _imageBytes.clear();
+      _imageInfos.clear();
+      _foodNameController.clear();
+      _descriptionController.clear();
+      _shopNameController.clear();
+      _currentPageIndex = 0;
     });
 
-    final foodName = _foodNameController.text.trim();
-    final description = _descriptionController.text.trim();
-
-    try {
-      final uploadRepo = ref.read(uploadRepositoryProvider);
-
-      final fileInfos = <Map<String, dynamic>>[];
-      for (var i = 0; i < _selectedImages.length; i++) {
-        final file = _selectedImages[i];
-        final fileName = file.path.split(Platform.pathSeparator).last;
-        final fileBytes = await file.readAsBytes();
-        final contentType = _getMimeType(fileName);
-
-        fileInfos.add({
-          'fileName': fileName,
-          'contentType': contentType,
-          'fileSize': fileBytes.length,
-        });
-      }
-
-      final presignResult = await uploadRepo.presignBatchUpload(
-        biz: 'activity',
-        files: fileInfos,
-      );
-
-      if (!presignResult.isSuccess) {
-        if (mounted) {
-          AppErrorPresenter.showErrorToast(context, presignResult.error!);
-        }
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final presignData = presignResult.data!;
-      final uploadedKeys = <String>[];
-
-      for (var i = 0; i < _selectedImages.length; i++) {
-        final file = _selectedImages[i];
-        final presignInfo = presignData.files[i];
-        final contentType = _getMimeType(
-          file.path.split(Platform.pathSeparator).last,
-        );
-
-        final uploadResult = await uploadRepo.uploadFileToPresignedUrl(
-          putUrl: presignInfo.putUrl,
-          file: file,
-          contentType: contentType,
-        );
-
-        if (!uploadResult.isSuccess) {
-          if (mounted) {
-            AppErrorPresenter.showErrorToast(context, uploadResult.error!);
-          }
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
-
-        uploadedKeys.add(presignInfo.key);
-      }
-
-      final activityRepo = ref.read(activityRepositoryProvider);
-      final createResult = await activityRepo.createActivityFood(
-        foodName: foodName,
-        description: description.isEmpty ? null : description,
-        provinceId: _selectedProvince!.id,
-        cityId: _selectedCity!.id,
-        pictureUrl: uploadedKeys,
-      );
-
-      if (!createResult.isSuccess) {
-        if (mounted) {
-          AppErrorPresenter.showErrorToast(context, createResult.error!);
-        }
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
-
-      if (mounted) {
-        AppErrorPresenter.showMessageToast(
-          context,
-          '发布成功！',
-          type: AppToastType.success,
-        );
-      }
-
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        AppErrorPresenter.showMessageToast(
-          context,
-          '上传失败: $e',
-          type: AppToastType.error,
-        );
-      }
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// 根据文件名获取MIME类型
-  String _getMimeType(String fileName) {
-    final extension = fileName.split('.').last.toLowerCase();
-    switch (extension) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'gif':
-        return 'image/gif';
-      case 'webp':
-        return 'image/webp';
-      case 'bmp':
-        return 'image/bmp';
-      default:
-        return 'image/jpeg';
-    }
-  }
-
-  /// 验证表单
-  String? _validateForm() {
-    if (_foodNameController.text.trim().isEmpty) {
-      return '请输入菜品名称';
+    if (_pageController.hasClients) {
+      _pageController.jumpToPage(0);
     }
 
-    if (_selectedImages.isEmpty) {
-      return '请至少上传一张菜品照片';
-    }
-
-    if (_selectedProvince == null) {
-      return '请选择省份';
-    }
-
-    if (_selectedCity == null) {
-      return '请选择城市';
-    }
-
-    return null;
+    ref.read(uploadPageControllerProvider.notifier).resetSelections();
   }
 }
 
 /// 图片预览页面
 class _ImagePreviewPage extends StatefulWidget {
-  final List<File> images;
+  final List<Uint8List> imageBytes;
   final int initialIndex;
 
-  const _ImagePreviewPage({required this.images, required this.initialIndex});
+  const _ImagePreviewPage({required this.imageBytes, required this.initialIndex});
 
   @override
   State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
@@ -1424,13 +1250,13 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          '${_currentIndex + 1}/${widget.images.length}',
+          '${_currentIndex + 1}/${widget.imageBytes.length}',
           style: const TextStyle(color: Colors.white),
         ),
       ),
       body: PageView.builder(
         controller: _pageController,
-        itemCount: widget.images.length,
+        itemCount: widget.imageBytes.length,
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -1441,7 +1267,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Image.file(widget.images[index], fit: BoxFit.contain),
+              child: Image.memory(widget.imageBytes[index], fit: BoxFit.contain),
             ),
           );
         },

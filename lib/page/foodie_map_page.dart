@@ -1,163 +1,103 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:eat_what_app/core/error/platform_exception.dart';
-import 'package:eat_what_app/provider/repository_provider.dart';
-import 'package:eat_what_app/core/api/model/result.dart';
+import 'package:eat_what_app/controller/foodie_map_page_controller.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/activity/regional_food.dart';
 import 'package:eat_what_app/model/location/province.dart';
-import 'package:eat_what_app/util/location_util.dart';
+import 'package:eat_what_app/model/location/province_response.dart';
 import 'package:eat_what_app/widget/app_toast.dart';
 import 'package:flutter/material.dart';
-import 'package:eat_what_app/model/location/province_dto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class FoodieMapPage extends ConsumerStatefulWidget {
+class FoodieMapPage extends ConsumerWidget {
   const FoodieMapPage({super.key});
 
   @override
-  ConsumerState<FoodieMapPage> createState() => _FoodieMapPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<FoodieMapPageState>(foodieMapPageControllerProvider, (
+      FoodieMapPageState? previous,
+      FoodieMapPageState next,
+    ) {
+      final feedback = next.feedback;
+      if (feedback == null || feedback.id == previous?.feedback?.id) {
+        return;
+      }
 
-class _FoodieMapPageState extends ConsumerState<FoodieMapPage> {
-  int? localProvinceId;
-  int? selectedProvinceId; //选择的省份 用于省份条UI及时更新
-  int? committedProvinceId; //确认选择的省份 防抖处理
-  late List<ProvinceDto> provinces;
-
-  late bool _isInitialLoading;
-
-  late bool _isProvincesBarLoading;
-  late bool _hasProvincesBarError;
-
-  Timer? _debounceTimer;
-  static const debounceDuration = Duration(milliseconds: 300);
-
-  @override
-  void initState() {
-    super.initState();
-    _isInitialLoading = true;
-    _hasProvincesBarError = false;
-    _isProvincesBarLoading = true;
-
-    Future<int?> localProvinceIdFuture = _locate();
-    Future<Result<List<ProvinceDto>>> provincesFuture = _fetchProvinces();
-
-    Future.wait([localProvinceIdFuture, provincesFuture]).then((values) {
-      if (!mounted) return;
-      localProvinceId = values[0] as int?;
-      var result = values[1] as Result<List<ProvinceDto>>;
-
-      result.when(
-        success: (data) {
-          _hasProvincesBarError = false;
-          provinces = generateDisplayProvinces(data, localProvinceId);
-          selectedProvinceId = provinces.isEmpty ? null : provinces[0].id;
-          committedProvinceId = selectedProvinceId;
-        },
-        failure: (error) {
-          _hasProvincesBarError = true;
-          provinces = [];
-          selectedProvinceId = null;
-          committedProvinceId = null;
-          AppErrorPresenter.showErrorToast(context, error);
-        },
-      );
-
-      _isProvincesBarLoading = false;
-      setState(() {
-        _isInitialLoading = false;
-      });
+      _showFeedback(context, feedback);
+      ref.read(foodieMapPageControllerProvider.notifier).clearFeedback();
     });
-  }
 
-  @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    super.dispose();
-  }
+    final pageState = ref.watch(foodieMapPageControllerProvider);
+    final controller = ref.read(foodieMapPageControllerProvider.notifier);
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isInitialLoading) {
+    if (pageState.isInitialLoading) {
       return Scaffold(
         body: SafeArea(
           child: FeatureTitle(
-            "美食地图",
+            '美食地图',
             child: Center(child: _buildLoadingIndicator(isLarge: true)),
           ),
         ),
       );
     }
 
-    Widget provincesBar;
-    if (_isProvincesBarLoading) {
+    final Widget provincesBar;
+    if (pageState.isLoadingProvinces) {
       provincesBar = SizedBox(
         height: 60,
         width: double.infinity,
         child: Center(child: _buildLoadingIndicator()),
       );
-    } else if (_hasProvincesBarError) {
+    } else if (pageState.hasProvincesError) {
       provincesBar = SizedBox(
         height: 60,
         width: double.infinity,
         child: Center(
           child: _buildRetryMessage(
             context,
-            message: "省份加载失败",
-            hint: "点击重试",
-            onPressed: _loadProvinces,
+            message: '省份加载失败',
+            hint: '点击重试',
+            onPressed: controller.retryLoadProvinces,
           ),
         ),
       );
-    } else if (provinces.isEmpty) {
+    } else if (pageState.provinces.isEmpty) {
       provincesBar = SizedBox(
         height: 60,
         width: double.infinity,
         child: Center(
           child: _buildRetryMessage(
             context,
-            message: "暂无省份发布过美食",
-            hint: "点击刷新",
-            onPressed: _loadProvinces,
+            message: '暂无省份发布过美食',
+            hint: '点击刷新',
+            onPressed: controller.retryLoadProvinces,
           ),
         ),
       );
     } else {
       provincesBar = _ProvincesBar(
-        provinces: provinces,
-        selectedProvinceId: selectedProvinceId,
-        onChanged: (newProvinceId) {
-          setState(() {
-            selectedProvinceId = newProvinceId;
-            committedProvinceId = null;
-          });
-          _debounce(() {
-            if (!mounted) return;
-            setState(() {
-              committedProvinceId = newProvinceId;
-            });
-          }, debounceDuration);
-        },
+        provinces: pageState.provinces,
+        selectedProvinceId: pageState.selectedProvinceId,
+        onChanged: controller.selectProvince,
       );
     }
 
     return Scaffold(
       body: SafeArea(
         child: FeatureTitle(
-          "美食地图",
+          '美食地图',
           child: Column(
             children: [
-              _FoodieMapHeader(localProvinceId),
+              _FoodieMapHeader(pageState.localProvinceId),
               provincesBar,
-              committedProvinceId == null
-                  ? Spacer()
+              pageState.committedProvinceId == null
+                  ? const Spacer()
                   : _FoodList(
-                      committedProvinceId!,
-                      key: ValueKey(committedProvinceId),
+                      key: ValueKey<int>(pageState.committedProvinceId!),
+                      provinceId: pageState.committedProvinceId!,
                     ),
             ],
           ),
@@ -166,104 +106,17 @@ class _FoodieMapPageState extends ConsumerState<FoodieMapPage> {
     );
   }
 
-  void _debounce(VoidCallback callback, Duration duration) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(duration, callback);
-  }
+  void _showFeedback(BuildContext context, FoodieMapFeedback feedback) {
+    final toastType = switch (feedback.kind) {
+      FoodieMapFeedbackKind.warning => AppToastType.warning,
+      FoodieMapFeedbackKind.error => AppToastType.error,
+    };
 
-  List<ProvinceDto> generateDisplayProvinces(List<ProvinceDto> list, int? id) {
-    var newList = list
-        .map(
-          (item) => ProvinceDto(
-            id: item.id,
-            name: Province.fromId(item.id)?.shortName ?? item.name,
-          ),
-        )
-        .toList(); //显示使用短名称
-
-    if (id == null ||
-        Province.fromId(id) == null ||
-        Province.fromId(id)!.isNotMainland) {
-      return newList;
-    }
-
-    newList.removeWhere((item) => item.id == id); //当前定位放在第一个
-    newList.insert(
-      0,
-      ProvinceDto(id: id, name: Province.fromId(id)?.shortName ?? "未知省份"),
+    AppErrorPresenter.showMessageToast(
+      context,
+      feedback.content,
+      type: toastType,
     );
-    return newList;
-  }
-
-  Future<void> _loadProvinces() async {
-    if (!mounted) return;
-    if (_isProvincesBarLoading) return;
-
-    setState(() {
-      _isProvincesBarLoading = true;
-    });
-
-    var result = await _fetchProvinces();
-    if (!mounted) return;
-    result.when(
-      success: (data) {
-        _hasProvincesBarError = false;
-        provinces = generateDisplayProvinces(data, localProvinceId);
-        selectedProvinceId = provinces.isEmpty ? null : provinces[0].id;
-        committedProvinceId = selectedProvinceId;
-      },
-      failure: (error) {
-        _hasProvincesBarError = true;
-        provinces = [];
-        selectedProvinceId = null;
-        committedProvinceId = null;
-        AppErrorPresenter.showErrorToast(context, error);
-      },
-    );
-
-    setState(() {
-      _isProvincesBarLoading = false;
-    });
-  }
-
-  Future<int?> _locate() async {
-    try {
-      Province? province = await LocationUtil.getLocalProvince();
-      return province?.id;
-    } on LocationException catch (e) {
-      if (mounted) {
-        switch (e.type) {
-          case LocationExceptionType.timeout:
-            AppErrorPresenter.showErrorToast(
-              context,
-              LocationException(
-                message: "定位超时",
-                type: LocationExceptionType.timeout,
-              ),
-            );
-          case LocationExceptionType.permissionDenied:
-            AppErrorPresenter.showMessageToast(
-              context,
-              "获取您的位置需开启定位权限",
-              type: AppToastType.warning,
-            );
-          case _:
-            AppErrorPresenter.showErrorToast(context, e);
-        }
-      }
-      return null;
-    } catch (e) {
-      if (mounted) {
-        AppErrorPresenter.showErrorToast(context, e);
-      }
-      return null;
-    }
-  }
-
-  Future<Result<List<ProvinceDto>>> _fetchProvinces() async {
-    final repo = ref.read(foodieMapRepositoryProvider);
-    var provinces = await repo.getProvinces();
-    return provinces;
   }
 }
 
@@ -274,7 +127,7 @@ class _FoodieMapHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget locationWidget;
+    final Widget locationWidget;
 
     if (provinceId == null) {
       locationWidget = Positioned(
@@ -284,9 +137,13 @@ class _FoodieMapHeader extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Icon(Icons.location_on, size: 30, color: AppColors.primaryStrong),
+            const Icon(
+              Icons.location_on,
+              size: 30,
+              color: AppColors.primaryStrong,
+            ),
             Text(
-              "未获取到当前位置",
+              '未获取到当前位置',
               style: Theme.of(
                 context,
               ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -295,12 +152,11 @@ class _FoodieMapHeader extends StatelessWidget {
         ),
       );
     } else {
-      String name = Province.fromId(provinceId!)?.shortName ?? "未知省份";
-      double nameLeftPadding = switch (name.length) {
-        //根据省份字数决定padding
-        <= 2 => 50,
-        == 3 => 40,
-        _ => 0,
+      final name = Province.fromId(provinceId!)?.shortName ?? '未知省份';
+      final nameLeftPadding = switch (name.length) {
+        <= 2 => 50.0,
+        3 => 40.0,
+        _ => 0.0,
       };
       locationWidget = Positioned(
         left: 20,
@@ -314,13 +170,13 @@ class _FoodieMapHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Icon(
+                const Icon(
                   Icons.location_on,
                   size: 30,
                   color: AppColors.primaryStrong,
                 ),
                 Text(
-                  "当前所在地：",
+                  '当前所在地：',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -357,15 +213,11 @@ class _FoodieMapHeader extends StatelessWidget {
   }
 
   Widget _buildChinaMap(int? provinceId) {
-    Province? province = provinceId == null
-        ? null
-        : Province.fromId(provinceId);
-    String? code = (province != null && province.isInChina)
-        ? province.code
-        : null;
-    String path = code == null
-        ? "assets/images/china_map/base.png"
-        : "assets/images/china_map/$code.png";
+    final province = provinceId == null ? null : Province.fromId(provinceId);
+    final code = (province != null && province.isInChina) ? province.code : null;
+    final path = code == null
+        ? 'assets/images/china_map/base.png'
+        : 'assets/images/china_map/$code.png';
     return Image.asset(path, height: 170);
   }
 }
@@ -388,14 +240,12 @@ class FeatureTitle extends StatelessWidget {
                 context.pop();
               }
             },
-            child: Image.asset("assets/images/firework.png", height: 50),
+            child: Image.asset('assets/images/firework.png', height: 50),
           ),
-
           Positioned(
             left: 30,
             top: 30,
             right: 10,
-
             child: Align(
               alignment: Alignment.topLeft,
               child: FittedBox(
@@ -416,8 +266,8 @@ class FeatureTitle extends StatelessWidget {
 
 class _ProvincesBar extends StatelessWidget {
   final int? selectedProvinceId;
-  final List<ProvinceDto> provinces;
-  final void Function(int) onChanged;
+  final List<ProvinceResponse> provinces;
+  final ValueChanged<int> onChanged;
 
   const _ProvincesBar({
     required this.provinces,
@@ -434,11 +284,10 @@ class _ProvincesBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: provinces.length,
         itemBuilder: (context, index) {
-          int currentId = provinces[index].id;
-          String currentName = provinces[index].name;
-          bool isSelected = (currentId == selectedProvinceId);
+          final current = provinces[index];
+          final isSelected = current.id == selectedProvinceId;
           return Container(
-            margin: EdgeInsets.fromLTRB(5, 10, 5, 10),
+            margin: const EdgeInsets.fromLTRB(5, 10, 5, 10),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
@@ -448,12 +297,9 @@ class _ProvincesBar extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              onPressed: () {
-                if (isSelected) return;
-                onChanged(currentId);
-              },
+              onPressed: isSelected ? null : () => onChanged(current.id),
               child: Text(
-                currentName,
+                current.name,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: isSelected ? AppColors.accentRed : null,
                   fontWeight: FontWeight.w600,
@@ -470,37 +316,22 @@ class _ProvincesBar extends StatelessWidget {
 class _FoodList extends ConsumerStatefulWidget {
   final int provinceId;
 
-  const _FoodList(this.provinceId, {super.key});
+  const _FoodList({required this.provinceId, super.key});
 
   @override
   ConsumerState<_FoodList> createState() => _FoodListState();
 }
 
 class _FoodListState extends ConsumerState<_FoodList> {
-  static const debounceDuration = Duration(microseconds: 300);
-  static const pageSize = 10;
+  static const Duration _debounceDuration = Duration(milliseconds: 300);
 
-  final List<RegionalFood> _regionalFoods = [];
   final ScrollController _scrollController = ScrollController();
-
-  late bool _isLoading;
-  late bool _hasError;
-
-  late int _currentPage; //当前已加载的页数
-  late bool _hasNext;
-
   Timer? _debounceTimer;
-
   double _lastScrollPosition = 0;
 
   @override
   void initState() {
     super.initState();
-    _currentPage = 0;
-    _isLoading = false;
-    _hasNext = true;
-    _hasError = false;
-    _loadNextPage();
     _scrollController.addListener(_onScroll);
   }
 
@@ -511,196 +342,138 @@ class _FoodListState extends ConsumerState<_FoodList> {
     super.dispose();
   }
 
-  void _onScroll() {
-    double currentScrollPosition = _scrollController.position.pixels;
-    if (currentScrollPosition > _lastScrollPosition &&
-        currentScrollPosition >=
-            _scrollController.position.maxScrollExtent - 150) {
-      _debounce(_loadNextPage, debounceDuration);
-    }
-    _lastScrollPosition = currentScrollPosition;
-  }
-
-  Future<void> _loadNextPage() async {
-    if (!mounted) return;
-    if (_isLoading || !_hasNext) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      var (loadedRegionalFoods, hasNext) = await _fetchFoods(
-        _currentPage + 1,
-        pageSize,
-        widget.provinceId,
-      );
-      _regionalFoods.addAll(loadedRegionalFoods);
-      _hasNext = hasNext;
-      _hasError = false;
-      _currentPage++;
-    } catch (error) {
-      AppErrorPresenter.showErrorToast(context, error);
-      _hasError = true;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _debounce(VoidCallback callback, Duration duration) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(duration, callback);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_regionalFoods.isEmpty) {
-      if (_isLoading) {
+    final provider = foodieMapFoodListControllerProvider(widget.provinceId);
+
+    ref.listen<FoodieMapFoodListState>(provider, (
+      FoodieMapFoodListState? previous,
+      FoodieMapFoodListState next,
+    ) {
+      final feedback = next.feedback;
+      if (feedback == null || feedback.id == previous?.feedback?.id) {
+        return;
+      }
+
+      final toastType = switch (feedback.kind) {
+        FoodieMapFeedbackKind.warning => AppToastType.warning,
+        FoodieMapFeedbackKind.error => AppToastType.error,
+      };
+      AppErrorPresenter.showMessageToast(
+        context,
+        feedback.content,
+        type: toastType,
+      );
+      ref.read(provider.notifier).clearFeedback();
+    });
+
+    final listState = ref.watch(provider);
+    final controller = ref.read(provider.notifier);
+
+    if (listState.foods.isEmpty) {
+      if (listState.isLoading) {
         return Expanded(
           child: Align(
-            alignment: Alignment(0, -0.3),
+            alignment: const Alignment(0, -0.3),
             child: _buildLoadingIndicator(isLarge: true),
           ),
         );
       }
-      if (_hasError) {
+      if (listState.hasError) {
         return Expanded(
           child: Align(
-            alignment: Alignment(0, -0.3),
+            alignment: const Alignment(0, -0.3),
             child: _buildRetryMessage(
               context,
-              message: "加载失败",
-              hint: "点击重试",
-              onPressed: _loadNextPage,
+              message: '加载失败',
+              hint: '点击重试',
+              onPressed: controller.refresh,
             ),
           ),
         );
       }
       return Expanded(
         child: Align(
-          alignment: Alignment(0, -0.3),
+          alignment: const Alignment(0, -0.3),
           child: _buildRetryMessage(
             context,
-            message: "还没有人上传该地区的美食哦",
-            hint: "点击刷新",
-            onPressed: () async {
-              _hasNext = true;
-              _loadNextPage();
-            },
+            message: '还没有人上传该地区的美食哦',
+            hint: '点击刷新',
+            onPressed: controller.refresh,
           ),
         ),
       );
     }
 
+    final itemCount =
+        listState.foods.length +
+        (listState.isLoading && listState.foods.isNotEmpty ? 1 : 0);
+
     return Expanded(
       child: ListView.builder(
-        physics: AlwaysScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         controller: _scrollController,
-        itemCount: _regionalFoods.length + 1,
+        itemCount: itemCount,
         itemBuilder: (context, index) {
-          if (index < _regionalFoods.length) {
-            return _FoodItem.fromObject(_regionalFoods[index]);
-          } else if (_hasNext) {
-            return Center(child: _buildLoadingIndicator());
-          } else {
-            return SizedBox(height: 5);
+          if (index < listState.foods.length) {
+            final food = listState.foods[index];
+            return _FoodItem(
+              food: food,
+              isLiking: listState.pendingLikeIds.contains(food.id),
+              onPressed: () => controller.toggleLike(food.id),
+            );
           }
+          return Center(child: _buildLoadingIndicator());
         },
       ),
     );
   }
 
-  Future<(List<RegionalFood>, bool)> _fetchFoods(
-    int page,
-    int pageSize,
-    int provinceId,
-  ) async {
-    List<RegionalFood> regionalFoods = [];
-    bool hasNext = true;
-    final repo = ref.read(foodieMapRepositoryProvider);
-    var result = await repo.getActivityFoodsByProvinceId(
-      provinceId,
-      page,
-      pageSize,
-    );
-    result.when(
-      success: (data) {
-        regionalFoods = data.items
-            .map((e) => RegionalFood.fromActivityFoodDto(e))
-            .toList();
-        hasNext = data.hasNext;
-      },
-      failure: (error) {
-        throw error;
-      },
-    );
-    return (regionalFoods, hasNext);
+  void _onScroll() {
+    final currentScrollPosition = _scrollController.position.pixels;
+    if (currentScrollPosition > _lastScrollPosition &&
+        currentScrollPosition >=
+            _scrollController.position.maxScrollExtent - 150) {
+      _debounce(() {
+        ref
+            .read(foodieMapFoodListControllerProvider(widget.provinceId).notifier)
+            .loadNextPage();
+      }, _debounceDuration);
+    }
+    _lastScrollPosition = currentScrollPosition;
+  }
+
+  void _debounce(VoidCallback callback, Duration duration) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(duration, callback);
   }
 }
 
-class _FoodItem extends ConsumerStatefulWidget {
-  final int id;
-  final String foodName;
-  final int accountId;
-  final String accountName;
-  final String description;
-  final bool isLiked;
-  final String? url;
+class _FoodItem extends StatelessWidget {
+  final RegionalFood food;
+  final bool isLiking;
+  final VoidCallback? onPressed;
 
   const _FoodItem({
-    required this.id,
-    required this.foodName,
-    required this.accountName,
-    required this.accountId,
-    required this.description,
-    required this.isLiked,
-    required this.url,
+    required this.food,
+    required this.isLiking,
+    required this.onPressed,
   });
-
-  _FoodItem.fromObject(RegionalFood obj)
-    : id = obj.id,
-      foodName = obj.foodName,
-      accountName = obj.accountName,
-      accountId = obj.accountId,
-      description = obj.description,
-      isLiked = obj.isLiked,
-      url = obj.url;
-
-  @override
-  ConsumerState<_FoodItem> createState() => _FoodItemState();
-}
-
-class _FoodItemState extends ConsumerState<_FoodItem> {
-  late bool isLiked;
-
-  late bool enable;
-  static const timeoutDuration = Duration(milliseconds: 300);
-
-  @override
-  void initState() {
-    super.initState();
-    isLiked = widget.isLiked;
-    enable = true;
-  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Color(0xFFF3EDD1),
+        color: const Color(0xFFF3EDD1),
         borderRadius: BorderRadius.circular(23),
       ),
       height: 135,
       width: double.infinity,
-      margin: EdgeInsets.fromLTRB(15, 5, 15, 5),
-      padding: EdgeInsets.all(10),
+      margin: const EdgeInsets.fromLTRB(15, 5, 15, 5),
+      padding: const EdgeInsets.all(10),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          double maxHeight = constraints.maxHeight;
+          final maxHeight = constraints.maxHeight;
           return Row(
             children: [
               Container(
@@ -712,17 +485,17 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: widget.url == null
+                  child: food.url == null
                       ? Center(
                           child: Text(
-                            "暂无图片",
+                            '暂无图片',
                             style: Theme.of(context).textTheme.labelMedium,
                           ),
                         )
                       : CachedNetworkImage(
-                          imageUrl: widget.url!,
+                          imageUrl: food.url!,
                           fit: BoxFit.cover,
-                          placeholder: (context, url) => Center(
+                          placeholder: (context, url) => const Center(
                             child: SizedBox(
                               width: 20,
                               height: 20,
@@ -731,16 +504,14 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
                           ),
                           errorWidget: (context, url, error) => Center(
                             child: Text(
-                              "图片加载失败",
-                              style: Theme.of(
-                                context,
-                              ).textTheme.labelMedium?.copyWith(),
+                              '图片加载失败',
+                              style: Theme.of(context).textTheme.labelMedium,
                             ),
                           ),
                         ),
                 ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,7 +523,7 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
                             alignment: Alignment.centerLeft,
                             child: FittedBox(
                               child: Text(
-                                widget.foodName,
+                                food.foodName,
                                 style: Theme.of(context).textTheme.bodyLarge
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
@@ -766,12 +537,14 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
                           width: 30,
                           height: 30,
                           child: IconButton(
-                            onPressed: _onPressed,
-                            padding: EdgeInsets.all(0),
+                            onPressed: isLiking ? null : onPressed,
+                            padding: EdgeInsets.zero,
                             icon: Icon(
                               size: 25,
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              color: isLiked
+                              food.isLiked
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: food.isLiked
                                   ? AppColors.accentRed
                                   : AppColors.textSecondary,
                             ),
@@ -780,19 +553,19 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
                       ],
                     ),
                     Text(
-                      widget.description,
+                      food.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Spacer(),
+                    const Spacer(),
                     FittedBox(
                       child: Text(
-                        widget.accountName,
+                        food.accountName,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Color(0xFFAAAAAA),
+                          color: const Color(0xFFAAAAAA),
                         ),
                       ),
                     ),
@@ -805,57 +578,13 @@ class _FoodItemState extends ConsumerState<_FoodItem> {
       ),
     );
   }
-
-  void _onPressed() {
-    _throttle(() async {
-      if (!mounted) return;
-      setState(() {
-        isLiked = !isLiked;
-      });
-      Result<void> result = isLiked
-          ? await _like(widget.id)
-          : await _disLike(widget.id);
-      result.when(
-        success: (_) {},
-        failure: (error) {
-          if (!mounted) return;
-          setState(() {
-            isLiked = !isLiked;
-          });
-          AppErrorPresenter.showErrorToast(context, error);
-        },
-      );
-    }, timeoutDuration);
-  }
-
-  void _throttle(Future<void> Function() callback, Duration duration) {
-    if (!enable) return;
-    enable = false;
-    Future.wait([callback(), Future.delayed(duration)])
-        .then((_) {
-          enable = true;
-        })
-        .catchError((error, stackTrace) {
-          enable = true;
-        });
-  }
-
-  Future<Result<void>> _like(int id) async {
-    final repo = ref.read(foodieMapRepositoryProvider);
-    return await repo.like("food", id);
-  }
-
-  Future<Result<void>> _disLike(int id) async {
-    final repo = ref.read(foodieMapRepositoryProvider);
-    return await repo.disLike("food", id);
-  }
 }
 
 Widget _buildLoadingIndicator({bool isLarge = false}) {
-  double side = isLarge ? 50 : 20;
-  double strokeWidth = isLarge ? 5 : 3;
+  final side = isLarge ? 50.0 : 20.0;
+  final strokeWidth = isLarge ? 5.0 : 3.0;
   return Padding(
-    padding: EdgeInsets.all(5),
+    padding: const EdgeInsets.all(5),
     child: SizedBox(
       height: side,
       width: side,

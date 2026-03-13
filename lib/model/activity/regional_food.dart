@@ -1,4 +1,4 @@
-import 'package:eat_what_app/model/activity/activity_food_dto.dart';
+import 'package:eat_what_app/model/activity/activity_food_response.dart';
 
 class RegionalFood {
   final int id;
@@ -19,14 +19,34 @@ class RegionalFood {
     required this.url,
   });
 
-  RegionalFood.fromActivityFoodDto(ActivityFoodDto dto)
+  RegionalFood.fromActivityFoodResponse(ActivityFoodResponse response)
     : this(
-        id: dto.id,
-        foodName: dto.foodName,
-        accountName: dto.uploaderName,
-        accountId: dto.accountId,
-        description: dto.description,
-        isLiked: dto.isLiked,
-        url: dto.pictureUrl.isNotEmpty ? dto.pictureUrl.first : null,
+        id: response.id,
+        foodName: response.foodName,
+        accountName: response.uploaderName,
+        accountId: response.accountId,
+        description: response.description,
+        isLiked: response.isLiked,
+        url: response.pictureUrl.isNotEmpty ? response.pictureUrl.first : null,
       );
+
+  RegionalFood copyWith({
+    int? id,
+    String? foodName,
+    String? accountName,
+    int? accountId,
+    String? description,
+    String? url,
+    bool? isLiked,
+  }) {
+    return RegionalFood(
+      id: id ?? this.id,
+      foodName: foodName ?? this.foodName,
+      accountName: accountName ?? this.accountName,
+      accountId: accountId ?? this.accountId,
+      description: description ?? this.description,
+      isLiked: isLiked ?? this.isLiked,
+      url: url ?? this.url,
+    );
+  }
 }
