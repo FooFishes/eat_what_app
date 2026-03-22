@@ -175,6 +175,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
   Widget _buildToggleOption(String label, bool isCampus) {
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () => setState(() => _isCampusSelected = isCampus),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -261,6 +262,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           bottom: 4,
           child: ElevatedButton(
             onPressed: () => setState(() => _hasClickedEnter = true),
+
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -998,9 +1000,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 从相册选择图片（共用逻辑，适用于 Web 和 Native）
   Future<void> _pickFromGallery() async {
-    final List<XFile> images = await _picker.pickMultiImage(
-      imageQuality: 80,
-    );
+    final List<XFile> images = await _picker.pickMultiImage(imageQuality: 80);
     if (images.isNotEmpty) {
       final remainingSlots = 9 - _selectedImages.length;
       final imagesToAdd = images.take(remainingSlots).toList();
@@ -1109,7 +1109,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       items: uploadState.cities,
       hintText: uploadState.selectedProvince == null ? '请先选择省份' : '请选择城市',
       isLoading: uploadState.isLoadingCities,
-      isEmpty: uploadState.selectedProvince == null || uploadState.cities.isEmpty,
+      isEmpty:
+          uploadState.selectedProvince == null || uploadState.cities.isEmpty,
       onTapEmpty: () {
         final province = uploadState.selectedProvince;
         if (province != null &&
@@ -1118,8 +1119,8 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           controller.loadCities(province.id);
         }
       },
-      onChanged: uploadState.selectedProvince != null &&
-              !uploadState.isLoadingCities
+      onChanged:
+          uploadState.selectedProvince != null && !uploadState.isLoadingCities
           ? controller.selectCity
           : null,
       itemBuilder: (city) =>
@@ -1166,11 +1167,13 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 处理Finish按钮点击
   Future<void> _handleFinish() async {
-    await ref.read(uploadPageControllerProvider.notifier).submit(
-      foodName: _foodNameController.text,
-      description: _descriptionController.text,
-      images: List<XFile>.from(_selectedImages),
-    );
+    await ref
+        .read(uploadPageControllerProvider.notifier)
+        .submit(
+          foodName: _foodNameController.text,
+          description: _descriptionController.text,
+          images: List<XFile>.from(_selectedImages),
+        );
   }
 
   void _handleUploadFeedback(UploadPageFeedback feedback) {
@@ -1219,7 +1222,10 @@ class _ImagePreviewPage extends StatefulWidget {
   final List<Uint8List> imageBytes;
   final int initialIndex;
 
-  const _ImagePreviewPage({required this.imageBytes, required this.initialIndex});
+  const _ImagePreviewPage({
+    required this.imageBytes,
+    required this.initialIndex,
+  });
 
   @override
   State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
@@ -1267,7 +1273,10 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Image.memory(widget.imageBytes[index], fit: BoxFit.contain),
+              child: Image.memory(
+                widget.imageBytes[index],
+                fit: BoxFit.contain,
+              ),
             ),
           );
         },

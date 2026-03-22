@@ -19,7 +19,7 @@ Future<void> main() async {
       options.replay.sessionSampleRate = 1.0;
 
       // 开启调试模式，查看详细的 SDK 诊断输出
-      options.debug = true;
+      options.debug = false;
       // 设置诊断级别为最详细
       options.diagnosticLevel = SentryLevel.debug;
       // 捕获所有未处理的异步错误

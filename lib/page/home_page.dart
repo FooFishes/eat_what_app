@@ -147,7 +147,7 @@ class HomePage extends ConsumerWidget {
               },
               child: const Text('退出登录'),
             ),
-            const SizedBox(height: 40), // 底部留白
+            const SizedBox(height: 120), // 底部留白
           ],
         ),
       ),
