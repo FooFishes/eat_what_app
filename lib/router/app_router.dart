@@ -1,3 +1,4 @@
+import 'package:eat_what_app/page/auth_page.dart';
 import 'package:eat_what_app/page/forgot_password_page.dart';
 import 'package:eat_what_app/page/home_page.dart';
 import 'package:eat_what_app/page/login_page.dart';
@@ -6,6 +7,7 @@ import 'package:eat_what_app/page/map_page.dart';
 import 'package:eat_what_app/page/profile_page.dart';
 import 'package:eat_what_app/page/restaurant_page.dart';
 import 'package:eat_what_app/page/upload_page.dart';
+import 'package:eat_what_app/page/webview_auth_page.dart';
 import 'package:eat_what_app/provider/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +22,11 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) {
           return const _SplashPage();
         },
+      ),
+      GoRoute(path: '/auth', builder: (context, state) => const AuthPage()),
+      GoRoute(
+        path: '/webview-auth',
+        builder: (context, state) => const WebviewAuthPage(),
       ),
       GoRoute(
         path: '/login',

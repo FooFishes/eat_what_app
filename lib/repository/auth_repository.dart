@@ -54,14 +54,21 @@ class AuthRepository {
   }
 
   Future<bool> verify() async {
-    final result = await _api.post<bool>(
+    final result = await _api.get<bool>(
       Urls.verify,
-      parser: (data) => data != null,
+      parser: (data) {
+        if (data is List) return data.isNotEmpty;
+        return false;
+      },
     );
     return result ?? false;
   }
 
   Future<void> sendEmail(String email) async {
-    await _api.postVoid(Urls.sendEmail, data: {'email': email});
+    await _api.get(
+      Urls.sendEmail,
+      queryParameters: {'email': email},
+      parser: (_) => null,
+    );
   }
 }

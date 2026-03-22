@@ -59,10 +59,25 @@ class Auth extends _$Auth {
     try {
       final repo = ref.read(authRepositoryProvider);
       await repo.logout();
-      await clearSession();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, _resolveStackTrace(error, stackTrace));
+    } finally {
+      await clearSession();
     }
+  }
+
+  Future<bool> checkVerifyStatus() async {
+    try {
+      final repo = ref.read(authRepositoryProvider);
+      return await repo.verify();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> sendVerifyEmail(String email) async {
+    final repo = ref.read(authRepositoryProvider);
+    await repo.sendEmail(email);
   }
 
   Future<void> clearSession() async {

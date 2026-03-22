@@ -20,6 +20,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   static const Color _hintTextColor = Color(0xFF9A9A9A);
   static const Color _loginButtonColor = _inputBorderColor;
   static const Color _privacyHighlightColor = Color(0xFFFF8C2A);
+  static const double headerPercentage = 0.33;
 
   final TextEditingController _accountController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -53,6 +54,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final double maxHeight = constraints.maxHeight;
@@ -63,8 +65,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     width: double.infinity,
-                    constraints: BoxConstraints(minHeight: maxHeight * 0.66),
-                    padding: const EdgeInsets.fromLTRB(36, 36, 28, 36),
+                    constraints: BoxConstraints(
+                      maxHeight: maxHeight * (1 - headerPercentage),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(36, 36, 28, 0),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
                       borderRadius: BorderRadius.vertical(
@@ -102,7 +106,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             enabled: !isSubmitting,
                             obscureText: true,
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 14),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
@@ -141,7 +145,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 14),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -195,6 +199,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               ),
                             ],
                           ),
+                          SizedBox(height: 200),
                         ],
                       ),
                     ),
@@ -280,12 +285,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   void _goForgotPassword() {
-    context.go('/forgot-password');
+    context.push('/forgot-password');
   }
 
   Widget _buildHeader(BoxConstraints constraints) {
     final double maxHeight = constraints.maxHeight;
-    final double headerHeight = maxHeight * 0.38;
+    final double headerHeight = maxHeight * headerPercentage;
     return SizedBox(
       width: double.infinity,
       height: headerHeight,

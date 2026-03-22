@@ -15,6 +15,7 @@ class Urls {
   static const String uploadPresignBatch = '/upload/presign/batch';
   static const String provinceActivityFoods = '/activity/{provinceId}/foods';
   static const String likes = '/activity/likes';
+  static const String sduAuth = '/auth/sdu';
 
   // No auth URLs
   static const List<String> noAuthUrls = [checkUsername, register, login];
