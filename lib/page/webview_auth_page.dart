@@ -6,11 +6,30 @@ import 'package:go_router/go_router.dart';
 
 import '../provider/auth_provider.dart';
 
-class WebviewAuthPage extends ConsumerWidget {
+class WebviewAuthPage extends ConsumerStatefulWidget {
   const WebviewAuthPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WebviewAuthPage> createState() => _WebviewAuthPageState();
+}
+
+class _WebviewAuthPageState extends ConsumerState<WebviewAuthPage> {
+  bool _hasPopped = false;
+
+  void _checkAndPop(WebUri? url) {
+    if (url == null || _hasPopped) return;
+    final urlStr = url.toString();
+    if (urlStr.contains('/callback')) {
+      _hasPopped = true;
+      final hasToken = url.queryParameters.containsKey('token');
+      if (mounted) {
+        context.pop(hasToken);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final token = ref.watch(authProvider).value;
 
     return Scaffold(
@@ -21,12 +40,14 @@ class WebviewAuthPage extends ConsumerWidget {
           headers: token != null ? {'satoken': 'Bearer $token'} : null,
         ),
         initialSettings: InAppWebViewSettings(javaScriptEnabled: true),
+        onLoadStart: (controller, url) async {
+          _checkAndPop(url);
+        },
+        onUpdateVisitedHistory: (controller, url, isReload) async {
+          _checkAndPop(url);
+        },
         onLoadStop: (controller, url) async {
-          if (url == null) return;
-          final urlStr = url.toString();
-          if (urlStr.contains('/callback')) {
-            context.pop();
-          }
+          _checkAndPop(url);
         },
       ),
     );

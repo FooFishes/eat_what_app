@@ -21,6 +21,7 @@ class HomePage extends ConsumerWidget {
           '今日推荐',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32),
         ),
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -28,7 +29,7 @@ class HomePage extends ConsumerWidget {
             const SizedBox(height: 10),
             // === 顶部的主轮播图 ===
             StackedCarousel(
-              height: 240,
+              height: 200,
               data: [
                 CarouselData(
                   imagePath:
@@ -59,7 +60,7 @@ class HomePage extends ConsumerWidget {
                   // 左侧：活动入口 (类似 StackedCarousel)
                   Expanded(
                     child: StackedCarousel(
-                      height: 250,
+                      height: 200,
                       horizontalPadding: 16.0,
                       stackedCardAngle: pi / 30,
                       data: [
