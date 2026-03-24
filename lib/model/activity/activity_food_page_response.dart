@@ -20,9 +20,8 @@ class ActivityFoodPageResponse {
       currentPage: (json['currentPage'] as num).toInt(),
       items: (json['items'] as List<dynamic>)
           .map(
-            (item) => ActivityFoodResponse.fromJson(
-              item as Map<String, dynamic>,
-            ),
+            (item) =>
+                ActivityFoodResponse.fromJson(item as Map<String, dynamic>),
           )
           .toList(),
       totalPages: (json['totalPages'] as num).toInt(),

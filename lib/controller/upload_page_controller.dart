@@ -111,10 +111,7 @@ class UploadPageController extends _$UploadPageController {
 
     try {
       final provinces = await ref.read(uploadRepositoryProvider).getProvinces();
-      state = state.copyWith(
-        isLoadingProvinces: false,
-        provinces: provinces,
-      );
+      state = state.copyWith(isLoadingProvinces: false, provinces: provinces);
     } catch (error) {
       state = state.copyWith(
         isLoadingProvinces: false,
@@ -151,9 +148,9 @@ class UploadPageController extends _$UploadPageController {
     );
 
     try {
-      final cities = await ref.read(uploadRepositoryProvider).getCities(
-        provinceId,
-      );
+      final cities = await ref
+          .read(uploadRepositoryProvider)
+          .getCities(provinceId);
       if (requestId != _cityRequestSeed) {
         return;
       }
@@ -222,13 +219,15 @@ class UploadPageController extends _$UploadPageController {
     state = state.copyWith(isSubmitting: true);
 
     try {
-      await ref.read(uploadRepositoryProvider).publishActivityFood(
-        foodName: trimmedFoodName,
-        description: description,
-        provinceId: province.id,
-        cityId: city.id,
-        images: List<XFile>.unmodifiable(images),
-      );
+      await ref
+          .read(uploadRepositoryProvider)
+          .publishActivityFood(
+            foodName: trimmedFoodName,
+            description: description,
+            provinceId: province.id,
+            cityId: city.id,
+            images: List<XFile>.unmodifiable(images),
+          );
 
       state = state.copyWith(
         isSubmitting: false,

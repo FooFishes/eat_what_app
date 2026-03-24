@@ -6,6 +6,7 @@ import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/location/city_response.dart';
 import 'package:eat_what_app/model/location/province_response.dart';
+import 'package:eat_what_app/page/restaurant_search_page.dart';
 import 'package:eat_what_app/widget/app_toast.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -25,9 +26,6 @@ class UploadPage extends ConsumerStatefulWidget {
 class _UploadPageState extends ConsumerState<UploadPage> {
   /// 是否选中Campus选项卡
   bool _isCampusSelected = true;
-
-  /// 是否点击了Enter按钮
-  bool _hasClickedEnter = false;
 
   /// 图片选择器实例
   final ImagePicker _picker = ImagePicker();
@@ -89,13 +87,13 @@ class _UploadPageState extends ConsumerState<UploadPage> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('上传页')),
+      appBar: AppBar(title: const Text('上传页'), centerTitle: false),
       body: Padding(
         padding: const EdgeInsets.only(
           left: 16,
           right: 16,
           top: 16,
-          bottom: 125,
+          bottom: 16,
         ),
         child: Column(
           children: [
@@ -198,350 +196,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
 
   /// 构建Campus子页面
   Widget _buildCampusSubPage() {
-    // 示例店铺数据列表
-    final shops = [
-      {
-        'name': '袁记云饺（高新万达店）',
-        'rating': 5.0,
-        'collection': '200+人次收藏该店铺',
-        'monthly': '月售500+',
-      },
-      {
-        'name': '袁记云饺（软件园内店）',
-        'rating': 5.0,
-        'collection': '200+人次收藏该店铺',
-        'monthly': '月售500+',
-      },
-      {
-        'name': '袁记云饺（章丘区店）',
-        'rating': 5.0,
-        'collection': '200+人次收藏该店铺',
-        'monthly': '月售500+',
-      },
-    ];
-
-    return Column(
-      children: [
-        _buildSearchBar(),
-        const SizedBox(height: 5),
-        Expanded(
-          // 未点击Enter时显示说明卡片，点击后显示店铺列表
-          child: _hasClickedEnter
-              ? _buildShopList(shops)
-              : _buildInstructionCard(),
-        ),
-      ],
-    );
-  }
-
-  /// 构建搜索栏组件
-  Widget _buildSearchBar() {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(30),
-          ),
-          padding: const EdgeInsets.only(right: 80),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: '请输入店铺名称',
-              hintStyle: TextStyle(color: AppColors.textHint),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          right: 8,
-          top: 4,
-          bottom: 4,
-          child: ElevatedButton(
-            onPressed: () => setState(() => _hasClickedEnter = true),
-
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: const Text('Enter'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 构建说明卡片组件
-  Widget _buildInstructionCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Center(
-                  child: Transform.rotate(
-                    angle: -0.05,
-                    child: _buildNewYearCard(),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'HOW',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 48,
-                        decoration: TextDecoration.underline,
-                        decorationColor: AppColors.primary,
-                      ),
-                    ),
-                    _buildStepCard('搜索店铺名称，判断是否已被上传', 'Step1', true),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildStepCard(
-            '如果是已被上传的店铺，你只能添加新菜品\n如果店铺未上传，你需要添加新店铺并添加菜品哦',
-            'Step2',
-            false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建新年专题卡片组件
-  Widget _buildNewYearCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-          children: const [
-            TextSpan(text: '新年将至\n我们还添加了\n'),
-            TextSpan(
-              text: '新年专题',
-              style: TextStyle(color: AppColors.accentRed),
-            ),
-            TextSpan(text: '哦\n欢迎来体验'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 构建步骤卡片组件
-  /// [text] 步骤的详细说明文字
-  /// [label] 步骤标签
-  /// [isRight] 标签是否显示在右侧，false则显示在左侧
-  Widget _buildStepCard(String text, String label, bool isRight) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
-          margin: const EdgeInsets.only(top: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border, width: 2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
-          ),
-        ),
-        Positioned(
-          top: 0,
-          right: isRight ? 16 : null,
-          left: isRight ? null : 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            color: AppColors.surface,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 构建店铺列表组件
-  /// [shops] 店铺数据列表
-  Widget _buildShopList(List<Map<String, dynamic>> shops) {
-    return Column(
-      children: [
-        _buildAddShopButton(),
-        Expanded(
-          child: ListView.builder(
-            itemCount: shops.length,
-            itemBuilder: (context, index) => _buildShopItem(shops[index]),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 构建添加店铺按钮组件
-  Widget _buildAddShopButton() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      height: 50,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            '没有找到你想的店铺？点击添加',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建单个店铺项组件
-  /// [shop] 店铺数据
-  Widget _buildShopItem(Map<String, dynamic> shop) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 0.5),
-      ),
-      child: Row(
-        children: [
-          _buildShopLogo(),
-          const SizedBox(width: 12),
-          Expanded(child: _buildShopInfo(shop)),
-        ],
-      ),
-    );
-  }
-
-  /// 构建店铺Logo组件
-  Widget _buildShopLogo() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Text(
-          '袁记云饺',
-          style: TextStyle(
-            color: AppColors.primaryStrong,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  /// 构建店铺信息组件
-  /// [shop] 店铺数据
-  /// 显示店铺名称、评分、收藏数和月售量
-  Widget _buildShopInfo(Map<String, dynamic> shop) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          shop['name'],
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Icon(Icons.star, color: Colors.yellow[600], size: 14),
-            const SizedBox(width: 4),
-            Text(
-              '${shop['rating']}',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          shop['collection'],
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
-        ),
-        Text(
-          shop['monthly'],
-          style: TextStyle(color: AppColors.textTertiary, fontSize: 12),
-        ),
-      ],
-    );
+    return const RestaurantSearchPage();
   }
 
   /// 构建New Year子页面
@@ -612,7 +267,7 @@ class _UploadPageState extends ConsumerState<UploadPage> {
           const SizedBox(height: 20),
            */
           _buildFinishButton(),
-          const SizedBox(height: 210),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -892,9 +547,6 @@ class _UploadPageState extends ConsumerState<UploadPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        margin: EdgeInsets.only(
-          bottom: 100 + MediaQuery.of(context).padding.bottom,
-        ),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -947,7 +599,6 @@ class _UploadPageState extends ConsumerState<UploadPage> {
                 }
               },
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),

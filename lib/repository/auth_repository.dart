@@ -12,7 +12,10 @@ class AuthRepository {
   const AuthRepository(this._api);
 
   Future<void> checkUsername(String username) async {
-    await _api.postVoid(Urls.checkUsername, data: {'username': username});
+    await _api.postVoid(
+      Urls.checkUsername,
+      queryParameters: {'username': username},
+    );
   }
 
   Future<String> register(AuthRequest request) async {

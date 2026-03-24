@@ -22,7 +22,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('认证页面')),
+      appBar: AppBar(title: Text('认证页面'), centerTitle: false),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -149,12 +149,12 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 
   Future<void> _openMobileAuthPage() async {
     final result = await context.push('/webview-auth');
-    
+
     if (result == true) {
       await checkVerifyStatus();
     } else if (result == false) {
       if (!mounted) return;
-      
+
       setState(() {
         isLoading = true;
       });
@@ -162,7 +162,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       bool success = false;
       for (int i = 0; i < 3; i++) {
         await Future.delayed(const Duration(seconds: 1));
-        final status = await ref.read(authProvider.notifier).checkVerifyStatus();
+        final status = await ref
+            .read(authProvider.notifier)
+            .checkVerifyStatus();
         if (status) {
           success = true;
           break;
@@ -174,7 +176,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           isVerified = success;
           isLoading = false;
         });
-        
+
         if (!success) {
           AppErrorPresenter.showErrorToast(context, '认证超时或失败，请重试');
         }
@@ -209,7 +211,8 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
 
   Future<void> _sendEmail() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+    if (email.isEmpty ||
+        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       AppErrorPresenter.showErrorToast(context, '请输入有效的邮箱地址');
       return;
     }
@@ -246,11 +249,13 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Theme.of(context).dialogBackgroundColor,
+          color:
+              Theme.of(context).dialogTheme.backgroundColor ??
+              Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -262,19 +267,12 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
           children: [
             const Text(
               "山大邮箱验证",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               "请输入您的山大邮箱地址进行身份认证，我们将向该邮箱发送一封验证邮件。",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.5),
             ),
             const SizedBox(height: 24),
             TextField(
@@ -283,17 +281,26 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
               decoration: InputDecoration(
                 hintText: "example@mail.sdu.edu.cn",
                 hintStyle: TextStyle(color: Colors.grey.shade400),
-                prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade500),
+                prefixIcon: Icon(
+                  Icons.email_outlined,
+                  color: Colors.grey.shade500,
+                ),
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1.5),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).primaryColor,
+                    width: 1.5,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -306,10 +313,17 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: Text(
                     "取消",
@@ -320,8 +334,13 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _sendEmail,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
                   child: _isLoading

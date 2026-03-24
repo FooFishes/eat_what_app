@@ -14,6 +14,47 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<String?> authState = ref.watch(authProvider);
+    final mainCarouselData = <CarouselData>[
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '麻辣香锅',
+        content: '超大份量，校园必吃推荐',
+      ),
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '新年美食专题',
+      ),
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '人气披萨',
+        content: '手工现烤，拉丝浓郁',
+      ),
+    ];
+    final topicCarouselData = <CarouselData>[
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '新年美食专题',
+      ),
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '火锅狂欢',
+      ),
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '火锅狂欢',
+      ),
+      CarouselData(
+        imagePath:
+            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        title: '火锅狂欢',
+      ),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -30,25 +71,9 @@ class HomePage extends ConsumerWidget {
             // === 顶部的主轮播图 ===
             StackedCarousel(
               height: 200,
-              data: [
-                CarouselData(
-                  imagePath:
-                      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                  title: '麻辣香锅',
-                  content: '超大份量，校园必吃推荐',
-                ),
-                CarouselData(
-                  imagePath:
-                      'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                  title: '新年美食专题',
-                ),
-                CarouselData(
-                  imagePath:
-                      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                  title: '人气披萨',
-                  content: '手工现烤，拉丝浓郁',
-                ),
-              ],
+              data: mainCarouselData,
+              onItemTap: (index) =>
+                  _handleCarouselTap(context, mainCarouselData[index]),
             ),
             const SizedBox(height: 10),
 
@@ -63,28 +88,9 @@ class HomePage extends ConsumerWidget {
                       height: 200,
                       horizontalPadding: 16.0,
                       stackedCardAngle: pi / 30,
-                      data: [
-                        CarouselData(
-                          imagePath:
-                              'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                          title: '新年美食专题',
-                        ),
-                        CarouselData(
-                          imagePath:
-                              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                          title: '火锅狂欢',
-                        ),
-                        CarouselData(
-                          imagePath:
-                              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                          title: '火锅狂欢',
-                        ),
-                        CarouselData(
-                          imagePath:
-                              'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                          title: '火锅狂欢',
-                        ),
-                      ],
+                      data: topicCarouselData,
+                      onItemTap: (index) =>
+                          _handleCarouselTap(context, topicCarouselData[index]),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -148,10 +154,15 @@ class HomePage extends ConsumerWidget {
               },
               child: const Text('退出登录'),
             ),
-            const SizedBox(height: 120), // 底部留白
           ],
         ),
       ),
     );
+  }
+
+  void _handleCarouselTap(BuildContext context, CarouselData item) {
+    if (item.title == '新年美食专题') {
+      context.push('/foodie_map');
+    }
   }
 }

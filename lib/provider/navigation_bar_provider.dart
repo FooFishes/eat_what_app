@@ -11,15 +11,15 @@ class NavigationBar extends _$NavigationBar {
     return const NavigationBarState(isNavigationBarVisible: true);
   }
 
-  void hideNavigationBar() {
+  Future<void> hideNavigationBar() async {
     state = state.copyWith(isNavigationBarVisible: false);
   }
 
-  void showNavigationBar() {
+  Future<void> showNavigationBar() async {
     state = state.copyWith(isNavigationBarVisible: true);
   }
 
-  void toggleVisibility() {
+  Future<void> toggleVisibility() async {
     state = state.copyWith(
       isNavigationBarVisible: !state.isNavigationBarVisible,
     );

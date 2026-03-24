@@ -104,8 +104,7 @@ final class ApiParser {
       );
     }
 
-    final items =
-        itemsRaw.map((item) => fromJson(requireMap(item))).toList();
+    final items = itemsRaw.map((item) => fromJson(requireMap(item))).toList();
 
     return PaginatedData<T>(
       currentPage: currentPage,

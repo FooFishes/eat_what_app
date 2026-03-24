@@ -65,23 +65,17 @@ class FoodieMapPageState {
       isInitialLoading: isInitialLoading ?? this.isInitialLoading,
       isLoadingProvinces: isLoadingProvinces ?? this.isLoadingProvinces,
       hasProvincesError: hasProvincesError ?? this.hasProvincesError,
-      localProvinceId: identical(
-        localProvinceId,
-        _foodieMapLocalProvinceIdUnset,
-      )
+      localProvinceId:
+          identical(localProvinceId, _foodieMapLocalProvinceIdUnset)
           ? this.localProvinceId
           : localProvinceId as int?,
       provinces: provinces ?? this.provinces,
-      selectedProvinceId: identical(
-        selectedProvinceId,
-        _foodieMapSelectedProvinceIdUnset,
-      )
+      selectedProvinceId:
+          identical(selectedProvinceId, _foodieMapSelectedProvinceIdUnset)
           ? this.selectedProvinceId
           : selectedProvinceId as int?,
-      committedProvinceId: identical(
-        committedProvinceId,
-        _foodieMapCommittedProvinceIdUnset,
-      )
+      committedProvinceId:
+          identical(committedProvinceId, _foodieMapCommittedProvinceIdUnset)
           ? this.committedProvinceId
           : committedProvinceId as int?,
       feedback: identical(feedback, _foodieMapFeedbackUnset)
@@ -217,7 +211,9 @@ class FoodieMapPageController extends _$FoodieMapPageController {
     );
 
     try {
-      final provinces = await ref.read(foodieMapRepositoryProvider).getProvinces();
+      final provinces = await ref
+          .read(foodieMapRepositoryProvider)
+          .getProvinces();
       if (_isDisposed) {
         return;
       }
@@ -290,10 +286,7 @@ class FoodieMapPageController extends _$FoodieMapPageController {
     displayProvinces.removeWhere((province) => province.id == localProvinceId);
     displayProvinces.insert(
       0,
-      ProvinceResponse(
-        id: localProvinceId,
-        name: localProvince.shortName,
-      ),
+      ProvinceResponse(id: localProvinceId, name: localProvince.shortName),
     );
     return displayProvinces;
   }

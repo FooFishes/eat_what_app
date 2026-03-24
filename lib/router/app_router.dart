@@ -1,10 +1,17 @@
 import 'package:eat_what_app/page/auth_page.dart';
+import 'package:eat_what_app/page/add_food_page.dart';
+import 'package:eat_what_app/page/add_restaurant_page.dart';
+import 'package:eat_what_app/page/foodie_map_page.dart';
 import 'package:eat_what_app/page/forgot_password_page.dart';
 import 'package:eat_what_app/page/home_page.dart';
 import 'package:eat_what_app/page/login_page.dart';
 import 'package:eat_what_app/page/main_page.dart';
 import 'package:eat_what_app/page/map_page.dart';
+import 'package:eat_what_app/page/profile_history_page.dart';
+import 'package:eat_what_app/page/profile_info_page.dart';
 import 'package:eat_what_app/page/profile_page.dart';
+import 'package:eat_what_app/page/profile_tag_library_page.dart';
+import 'package:eat_what_app/page/restaurant_detail_page.dart';
 import 'package:eat_what_app/page/restaurant_page.dart';
 import 'package:eat_what_app/page/upload_page.dart';
 import 'package:eat_what_app/page/webview_auth_page.dart';
@@ -60,6 +67,32 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
           );
         },
       ),
+      GoRoute(
+        path: '/foodie_map',
+        builder: (BuildContext context, GoRouterState state) {
+          return const FoodieMapPage();
+        },
+      ),
+      GoRoute(
+        path: '/restaurant/:id',
+        builder: (BuildContext context, GoRouterState state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return RestaurantDetailPage(restaurantId: id);
+        },
+      ),
+      GoRoute(
+        path: '/upload/restaurant/add',
+        builder: (BuildContext context, GoRouterState state) {
+          return const AddRestaurantPage();
+        },
+      ),
+      GoRoute(
+        path: '/upload/restaurant/:restaurantId/add-food',
+        builder: (BuildContext context, GoRouterState state) {
+          final restaurantId = int.parse(state.pathParameters['restaurantId']!);
+          return AddFoodPage(restaurantId: restaurantId);
+        },
+      ),
       StatefulShellRoute(
         builder:
             (
@@ -67,7 +100,10 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
               GoRouterState state,
               StatefulNavigationShell navigationShell,
             ) {
-              return MainPage(navigationShell: navigationShell);
+              return MainPage(
+                navigationShell: navigationShell,
+                currentLocation: state.matchedLocation,
+              );
             },
         navigatorContainerBuilder:
             (
@@ -128,6 +164,26 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 builder: (BuildContext context, GoRouterState state) {
                   return const ProfilePage();
                 },
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'info',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const ProfileInfoPage();
+                    },
+                  ),
+                  GoRoute(
+                    path: 'history',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const ProfileHistoryPage();
+                    },
+                  ),
+                  GoRoute(
+                    path: 'tags',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const ProfileTagLibraryPage();
+                    },
+                  ),
+                ],
               ),
             ],
           ),

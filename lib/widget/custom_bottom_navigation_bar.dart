@@ -21,7 +21,9 @@ class CustomBottomNavigationBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final double safeBottom = MediaQuery.paddingOf(context).bottom.clamp(0.0, 12.0);
+    final double safeBottom = MediaQuery.paddingOf(
+      context,
+    ).bottom.clamp(0.0, 12.0);
 
     return Container(
       width: double.infinity,
@@ -36,9 +38,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
               final int itemCount = items.length;
               final int safeIndex = currentIndex < 0
                   ? 0
-                  : (currentIndex >= itemCount
-                        ? itemCount - 1
-                        : currentIndex);
+                  : (currentIndex >= itemCount ? itemCount - 1 : currentIndex);
               final double itemWidth = constraints.maxWidth / itemCount;
               const double highlightWidth = 65.0;
               const double highlightHeight = 65.0;

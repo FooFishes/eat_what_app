@@ -9,8 +9,13 @@ import 'package:go_router/go_router.dart';
 
 class MainPage extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
+  final String currentLocation;
 
-  const MainPage({super.key, required this.navigationShell});
+  const MainPage({
+    super.key,
+    required this.navigationShell,
+    required this.currentLocation,
+  });
 
   static const List<_BottomTabItemData> _tabs = <_BottomTabItemData>[
     _BottomTabItemData(label: '首页', iconAsset: 'assets/icons/home.svg'),
@@ -22,44 +27,45 @@ class MainPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool isNavigationBarVisible = ref.watch(
+    final bool isNavigationBarVisibleByProvider = ref.watch(
       navigationBarProvider.select((s) => s.isNavigationBarVisible),
     );
+    final bool shouldHideNavigationBarForRoute = _shouldHideNavigationBar(
+      currentLocation,
+    );
+    final bool isNavigationBarVisible =
+        isNavigationBarVisibleByProvider && !shouldHideNavigationBarForRoute;
     final int currentIndex = navigationShell.currentIndex;
 
     return Scaffold(
-      extendBody: true,
-      body: Stack(
-        children: [
-          navigationShell,
-          Positioned(
-            right: 0,
-            bottom: 0,
-            left: 0,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              offset: isNavigationBarVisible ? Offset.zero : const Offset(0, 1),
-              child: AnimatedOpacity(
-                opacity: isNavigationBarVisible ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 220),
-                child: CustomBottomNavigationBar(
-                  currentIndex: currentIndex,
-                  items: List<Widget>.generate(_tabs.length, (index) {
-                    return _buildItem(
-                      ref: ref,
-                      item: _tabs[index],
-                      index: index,
-                      isSelected: currentIndex == index,
-                    );
-                  }),
-                ),
-              ),
-            ),
+      extendBody: false,
+      body: navigationShell,
+      bottomNavigationBar: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        height: isNavigationBarVisible
+            ? 100.0 + MediaQuery.paddingOf(context).bottom.clamp(0.0, 12.0)
+            : 0.0,
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: CustomBottomNavigationBar(
+            currentIndex: currentIndex,
+            items: List<Widget>.generate(_tabs.length, (index) {
+              return _buildItem(
+                ref: ref,
+                item: _tabs[index],
+                index: index,
+                isSelected: currentIndex == index,
+              );
+            }),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  bool _shouldHideNavigationBar(String location) {
+    return location.startsWith('/profile/');
   }
 
   Widget _buildItem({

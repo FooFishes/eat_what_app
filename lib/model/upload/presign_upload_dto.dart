@@ -4,22 +4,26 @@ class PresignUploadRequest {
   final String fileName;
   final String contentType;
   final int fileSize;
+  final String? biz;
 
   const PresignUploadRequest({
     required this.fileName,
     required this.contentType,
     required this.fileSize,
+    this.biz,
   });
 
   static Future<PresignUploadRequest> fromXFile(
     XFile file, {
     required String contentType,
+    String? biz,
   }) async {
     final fileName = file.name;
     return PresignUploadRequest(
       fileName: fileName,
       contentType: contentType,
       fileSize: await file.length(),
+      biz: biz,
     );
   }
 
@@ -28,6 +32,7 @@ class PresignUploadRequest {
       'fileName': fileName,
       'contentType': contentType,
       'fileSize': fileSize,
+      if (biz != null) 'biz': biz,
     };
   }
 }

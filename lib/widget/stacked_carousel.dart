@@ -27,6 +27,8 @@ class StackedCarousel extends StatefulWidget {
   final Color activeIndicatorColor;
   // 滑动图片的回调
   final ValueChanged<int>? onPageChanged;
+  // 点击当前卡片的回调
+  final ValueChanged<int>? onItemTap;
 
   // （仅简易用法生效）内置卡片的圆角
   final double borderRadius;
@@ -48,6 +50,7 @@ class StackedCarousel extends StatefulWidget {
     this.height = 200,
     this.activeIndicatorColor = const Color(0xFFFCA048),
     this.onPageChanged,
+    this.onItemTap,
     this.borderRadius = 16.0,
     this.horizontalPadding = 30.0,
     this.stackedCardAngle,
@@ -314,6 +317,7 @@ class _StackedCarouselState extends State<StackedCarousel>
             onHorizontalDragStart: _onHorizontalDragStart,
             onHorizontalDragUpdate: _onHorizontalDragUpdate,
             onHorizontalDragEnd: _onHorizontalDragEnd,
+            onTap: () => widget.onItemTap?.call(_currentIndex),
             behavior: HitTestBehavior.opaque,
             child: SizedBox(
               height: widget.height,

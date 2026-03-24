@@ -214,7 +214,9 @@ class _FoodieMapHeader extends StatelessWidget {
 
   Widget _buildChinaMap(int? provinceId) {
     final province = provinceId == null ? null : Province.fromId(provinceId);
-    final code = (province != null && province.isInChina) ? province.code : null;
+    final code = (province != null && province.isInChina)
+        ? province.code
+        : null;
     final path = code == null
         ? 'assets/images/china_map/base.png'
         : 'assets/images/china_map/$code.png';
@@ -436,7 +438,9 @@ class _FoodListState extends ConsumerState<_FoodList> {
             _scrollController.position.maxScrollExtent - 150) {
       _debounce(() {
         ref
-            .read(foodieMapFoodListControllerProvider(widget.provinceId).notifier)
+            .read(
+              foodieMapFoodListControllerProvider(widget.provinceId).notifier,
+            )
             .loadNextPage();
       }, _debounceDuration);
     }

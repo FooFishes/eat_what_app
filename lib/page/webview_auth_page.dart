@@ -33,7 +33,7 @@ class _WebviewAuthPageState extends ConsumerState<WebviewAuthPage> {
     final token = ref.watch(authProvider).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('统一认证界面')),
+      appBar: AppBar(title: const Text('统一认证界面'), centerTitle: false),
       body: InAppWebView(
         initialUrlRequest: URLRequest(
           url: WebUri(Urls.baseUrl + Urls.sduAuth),
