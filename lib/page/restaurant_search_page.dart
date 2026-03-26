@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eat_what_app/core/api/model/api_response.dart';
+import 'package:eat_what_app/core/constant/restaurant_mock.dart';
 import 'package:eat_what_app/core/constant/urls.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/restaurant/restaurant.dart';
@@ -7,6 +8,7 @@ import 'package:eat_what_app/provider/repository_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RestaurantSearchPage extends ConsumerStatefulWidget {
   const RestaurantSearchPage({super.key});
@@ -17,22 +19,46 @@ class RestaurantSearchPage extends ConsumerStatefulWidget {
 }
 
 class _RestaurantSearchPageState extends ConsumerState<RestaurantSearchPage> {
+  static const String _howHintSeenKey = 'restaurant_search_how_hint_seen';
+
   final TextEditingController _searchController = TextEditingController();
   List<Restaurant> _items = const [];
   bool _isLoading = true;
   bool _hasSearched = false;
+  bool _shouldShowIntroHint = false;
   Object? _error;
 
   @override
   void initState() {
     super.initState();
     Future.microtask(_loadInitialSearch);
+    Future.microtask(_initHowHint);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initHowHint() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final seen = prefs.getBool(_howHintSeenKey) ?? false;
+      if (seen) {
+        return;
+      }
+
+      await prefs.setBool(_howHintSeenKey, true);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _shouldShowIntroHint = true;
+      });
+    } catch (_) {
+      // Ignore local persistence failures and keep the page usable.
+    }
   }
 
   Future<void> _loadInitialSearch() async {
@@ -45,7 +71,13 @@ class _RestaurantSearchPageState extends ConsumerState<RestaurantSearchPage> {
     try {
       final page = await ref
           .read(restaurantRepositoryProvider)
-          .searchRestaurants('', page: 1, pageSize: 20);
+          .searchRestaurants(
+            '',
+            gcjLng: RestaurantMock.gcjLng,
+            gcjLat: RestaurantMock.gcjLat,
+            page: 1,
+            pageSize: 20,
+          );
       if (!mounted) {
         return;
       }
@@ -65,6 +97,12 @@ class _RestaurantSearchPageState extends ConsumerState<RestaurantSearchPage> {
   }
 
   Future<void> _search() async {
+    if (_shouldShowIntroHint) {
+      setState(() {
+        _shouldShowIntroHint = false;
+      });
+    }
+
     final keyword = _searchController.text.trim();
     if (keyword.isEmpty) {
       await _loadInitialSearch();
@@ -80,7 +118,13 @@ class _RestaurantSearchPageState extends ConsumerState<RestaurantSearchPage> {
     try {
       final PaginatedData<Restaurant> page = await ref
           .read(restaurantRepositoryProvider)
-          .searchRestaurants(keyword, page: 1, pageSize: 20);
+          .searchRestaurants(
+            keyword,
+            gcjLng: RestaurantMock.gcjLng,
+            gcjLat: RestaurantMock.gcjLat,
+            page: 1,
+            pageSize: 20,
+          );
       if (!mounted) {
         return;
       }
@@ -117,7 +161,9 @@ class _RestaurantSearchPageState extends ConsumerState<RestaurantSearchPage> {
       children: [
         _buildSearchBar(),
         const SizedBox(height: 14),
-        if (!_hasSearched && _searchController.text.trim().isEmpty)
+        if (_shouldShowIntroHint &&
+            !_hasSearched &&
+            _searchController.text.trim().isEmpty)
           _buildIntroCard(),
         const SizedBox(height: 12),
         _buildAddBar(),

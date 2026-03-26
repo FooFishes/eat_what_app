@@ -7,7 +7,7 @@ import 'package:eat_what_app/model/upload/presign_upload_dto.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImageUploadRepository {
-  static const String _foodsBiz = 'FOODS';
+  static const String _foodsBiz = 'foods';
 
   final RequestClient _api;
   final RequestClient _rawApi;

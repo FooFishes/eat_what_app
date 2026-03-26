@@ -242,7 +242,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
           '菜品上传完成',
           type: AppToastType.success,
         );
-        context.go('/restaurant/${widget.restaurantId}');
+        context.pop();
         return;
       }
 

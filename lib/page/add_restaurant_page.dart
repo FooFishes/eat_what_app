@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:eat_what_app/core/constant/restaurant_mock.dart';
 import 'package:eat_what_app/core/error/app_error_presenter.dart';
 import 'package:eat_what_app/core/theme/app_colors.dart';
 import 'package:eat_what_app/model/restaurant/restaurant.dart';
@@ -20,10 +21,6 @@ class AddRestaurantPage extends ConsumerStatefulWidget {
 }
 
 class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
-  static const double _mockLng = 117.0653;
-  static const double _mockLat = 36.6726;
-  static const int _mockHubId = 1;
-
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -129,9 +126,9 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
         name: name,
         address: address,
         cityId: null,
-        gcjLng: _mockLng,
-        gcjLat: _mockLat,
-        hubId: _mockHubId,
+        gcjLng: RestaurantMock.gcjLng,
+        gcjLat: RestaurantMock.gcjLat,
+        hubId: RestaurantMock.hubId,
         poi: 'SDU_${DateTime.now().millisecondsSinceEpoch}',
         pictureUrl: imageKeys,
       );

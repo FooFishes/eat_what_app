@@ -58,7 +58,13 @@ class RestaurantRepository {
   }
 
   Future<Restaurant?> resolveCreatedRestaurant(RestaurantDTO dto) async {
-    final result = await searchRestaurants(dto.name, page: 1, pageSize: 20);
+    final result = await searchRestaurants(
+      dto.name,
+      gcjLng: dto.gcjLng,
+      gcjLat: dto.gcjLat,
+      page: 1,
+      pageSize: 20,
+    );
 
     for (final restaurant in result.items) {
       final sameName = restaurant.name == dto.name;
