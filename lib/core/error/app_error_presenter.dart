@@ -1,4 +1,4 @@
-import 'package:eat_what_app/widget/app_toast.dart';
+import 'package:eat_what_app/shared/presentation/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 
 import 'api_exception_ext.dart';
