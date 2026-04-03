@@ -27,6 +27,11 @@ dependencies:
   geocoding: ^4.0.0
   flutter_inappwebview: ^6.1.5
   shared_preferences: ^2.5.3
+  flutter_bmflocation: ^3.8.4
+  flutter_baidu_mapapi_base: '>=3.8.0 <3.9.0'
+  flutter_baidu_mapapi_map: '>=3.8.0 <3.9.0'
+  flutter_baidu_mapapi_search: '>=3.8.0 <3.9.0'
+  flutter_baidu_mapapi_utils: '>=3.8.0 <3.9.0'
 
 dev_dependencies:
   sentry_dart_plugin: ^3.2.1

@@ -6,6 +6,7 @@ import 'package:eat_what_app/core/constant/urls.dart';
 import 'package:eat_what_app/core/error/api_error_handler.dart';
 import 'package:eat_what_app/core/error/api_exception.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sentry_dio/sentry_dio.dart';
 
 /// data 部分的解析器, 入参已经是 {code, msg, data} 中的 data
 typedef DataParser<T> = T Function(Object? data);
@@ -43,6 +44,9 @@ class RequestClient {
       );
     }
 
+    // addSentry() must be called last — it wraps adapter & transformer.
+    dio.addSentry();
+
     return RequestClient._(dio, clearSession);
   }
 
@@ -56,6 +60,7 @@ class RequestClient {
           ),
     );
 
+
     dio.interceptors.add(ErrorInterceptor());
 
     if (kDebugMode) {
@@ -68,6 +73,9 @@ class RequestClient {
         ),
       );
     }
+
+    // addSentry() must be called last — it wraps adapter & transformer.
+    dio.addSentry();
 
     return RequestClient._(dio, null);
   }
@@ -186,16 +194,32 @@ class RequestClient {
     } on AuthException {
       await _clearSession?.call();
       rethrow;
-    } on ApiException {
+    } on ApiException catch (e) {
+      // transport 层错误已经由 ErrorInterceptor 上报，这里只上报解析层错误
+      if (e is ParseException) {
+        ApiErrorHandler.report(
+          e,
+          phase: 'data_parse',
+          requestOptions: response?.requestOptions,
+          response: response,
+        ).ignore();
+      }
       rethrow;
     } on DioException catch (error) {
       throw ApiErrorHandler.fromDioException(error);
     } catch (error, stackTrace) {
-      throw ParseException(
+      final parseError = ParseException(
         message: '网络响应解析失败，请稍后重试',
         originalError: error,
         stackTrace: stackTrace,
       );
+      ApiErrorHandler.report(
+        parseError,
+        phase: 'data_parse',
+        requestOptions: response?.requestOptions,
+        response: response,
+      ).ignore();
+      throw parseError;
     }
   }
 }

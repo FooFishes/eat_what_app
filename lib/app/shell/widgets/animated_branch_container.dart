@@ -5,10 +5,12 @@ class AnimatedBranchContainer extends StatefulWidget {
     super.key,
     required this.currentIndex,
     required this.children,
+    this.nonAnimatedIndexes = const <int>{},
   });
 
   final int currentIndex;
   final List<Widget> children;
+  final Set<int> nonAnimatedIndexes;
 
   @override
   State<AnimatedBranchContainer> createState() =>
@@ -64,6 +66,16 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
   @override
   Widget build(BuildContext context) {
     final isAnimating = _controller.isAnimating;
+    final shouldBypassAnimation =
+        widget.nonAnimatedIndexes.contains(widget.currentIndex) ||
+        widget.nonAnimatedIndexes.contains(_previousIndex);
+
+    if (shouldBypassAnimation) {
+      return IndexedStack(
+        index: widget.currentIndex,
+        children: widget.children,
+      );
+    }
 
     return AnimatedBuilder(
       animation: _controller,

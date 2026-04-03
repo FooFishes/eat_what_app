@@ -1,5 +1,33 @@
 PODS:
+  - BaiduMapKit/Base (6.6.2)
+  - BaiduMapKit/Map (6.6.2):
+    - BaiduMapKit/Base
+  - BaiduMapKit/Search (6.6.2):
+    - BaiduMapKit/Base
+  - BaiduMapKit/Utils (6.6.2):
+    - BaiduMapKit/Base
+  - BMKLocationKit (2.1.4)
+  - device_info_plus (0.0.1):
+    - Flutter
   - Flutter (1.0.0)
+  - flutter_baidu_mapapi_base (3.8.0):
+    - BaiduMapKit/Utils (= 6.6.2)
+    - Flutter
+  - flutter_baidu_mapapi_map (3.7.2):
+    - BaiduMapKit/Map (= 6.6.2)
+    - Flutter
+    - flutter_baidu_mapapi_base
+  - flutter_baidu_mapapi_search (3.8.0):
+    - BaiduMapKit/Search (= 6.6.2)
+    - Flutter
+    - flutter_baidu_mapapi_base
+  - flutter_baidu_mapapi_utils (3.8.0):
+    - BaiduMapKit/Utils (= 6.6.2)
+    - Flutter
+    - flutter_baidu_mapapi_base
+  - flutter_bmflocation (3.7.0):
+    - BMKLocationKit (~> 2.1.4)
+    - Flutter
   - flutter_inappwebview_ios (0.0.1):
     - Flutter
     - flutter_inappwebview_ios/Core (= 0.0.1)
@@ -37,7 +65,13 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
+  - flutter_baidu_mapapi_base (from `.symlinks/plugins/flutter_baidu_mapapi_base/ios`)
+  - flutter_baidu_mapapi_map (from `.symlinks/plugins/flutter_baidu_mapapi_map/ios`)
+  - flutter_baidu_mapapi_search (from `.symlinks/plugins/flutter_baidu_mapapi_search/ios`)
+  - flutter_baidu_mapapi_utils (from `.symlinks/plugins/flutter_baidu_mapapi_utils/ios`)
+  - flutter_bmflocation (from `.symlinks/plugins/flutter_bmflocation/ios`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - geocoding_ios (from `.symlinks/plugins/geocoding_ios/ios`)
@@ -52,12 +86,26 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - BaiduMapKit
+    - BMKLocationKit
     - OrderedSet
     - Sentry
 
 EXTERNAL SOURCES:
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
     :path: Flutter
+  flutter_baidu_mapapi_base:
+    :path: ".symlinks/plugins/flutter_baidu_mapapi_base/ios"
+  flutter_baidu_mapapi_map:
+    :path: ".symlinks/plugins/flutter_baidu_mapapi_map/ios"
+  flutter_baidu_mapapi_search:
+    :path: ".symlinks/plugins/flutter_baidu_mapapi_search/ios"
+  flutter_baidu_mapapi_utils:
+    :path: ".symlinks/plugins/flutter_baidu_mapapi_utils/ios"
+  flutter_bmflocation:
+    :path: ".symlinks/plugins/flutter_bmflocation/ios"
   flutter_inappwebview_ios:
     :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
   flutter_secure_storage_darwin:
@@ -82,7 +130,15 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
+  BaiduMapKit: 4d550ad25eca16aa49586c736456984125b92d8a
+  BMKLocationKit: e4dfa3690b325ea0ca0c6211d91f5784d4486c60
+  device_info_plus: 335f3ce08d2e174b9fdc3db3db0f4e3b1f66bd89
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_baidu_mapapi_base: 68abadce7e52b64892f67233f36fa3e997ec3d56
+  flutter_baidu_mapapi_map: e1578b111800a666811bfd25e053510c3011e2fc
+  flutter_baidu_mapapi_search: 5aad89380f9e9abf84e92e647cb924181690db6f
+  flutter_baidu_mapapi_utils: 3b70b478ef4e7524bd52e1a1ff9f443e4d6ab3af
+  flutter_bmflocation: cba076b59d7ea08b8d88c7e1980204cf909b374a
   flutter_inappwebview_ios: b89ba3482b96fb25e00c967aae065701b66e9b99
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   geocoding_ios: 33776c9ebb98d037b5e025bb0e7537f6dd19646e

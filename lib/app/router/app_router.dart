@@ -21,6 +21,7 @@ import 'package:eat_what_app/features/upload/presentation/pages/upload_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'app_router.g.dart';
 
@@ -28,6 +29,7 @@ part 'app_router.g.dart';
 GoRouter appRouter(Ref ref) {
   final router = GoRouter(
     initialLocation: RoutePaths.splash,
+    observers: [SentryNavigatorObserver()],
     routes: <RouteBase>[
       GoRoute(
         path: RoutePaths.splash,
@@ -99,6 +101,7 @@ GoRouter appRouter(Ref ref) {
           return AnimatedBranchContainer(
             currentIndex: navigationShell.currentIndex,
             children: children,
+            nonAnimatedIndexes: const <int>{1},
           );
         },
         branches: <StatefulShellBranch>[
@@ -209,4 +212,3 @@ class _SplashPage extends StatelessWidget {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
-
