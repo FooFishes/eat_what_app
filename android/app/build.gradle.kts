@@ -7,7 +7,8 @@ plugins {
 
 android {
     namespace = "com.example.eat_what_app"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14 requires compileSdk 37.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
