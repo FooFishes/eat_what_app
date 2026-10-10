@@ -48,7 +48,7 @@ abstract class _$FoodieMapViewModel extends $Notifier<FoodieMapPageState> {
   FoodieMapPageState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<FoodieMapPageState, FoodieMapPageState>;
     final element =
         ref.element
@@ -58,7 +58,7 @@ abstract class _$FoodieMapViewModel extends $Notifier<FoodieMapPageState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -149,7 +149,7 @@ abstract class _$FoodieMapFoodListViewModel
   FoodieMapFoodListState build(int provinceId);
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<FoodieMapFoodListState, FoodieMapFoodListState>;
     final element =
@@ -160,6 +160,6 @@ abstract class _$FoodieMapFoodListViewModel
               Object?,
               Object?
             >;
-    element.handleCreate(ref, () => build(_$args));
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

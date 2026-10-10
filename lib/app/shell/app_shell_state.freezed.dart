@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'app_shell_state.dart';
@@ -9,6 +9,7 @@ part of 'app_shell_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $AppShellStateCopyWith<AppShellState> get copyWith => _$AppShellStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppShellState&&(identical(other.isNavigationBarVisible, isNavigationBarVisible) || other.isNavigationBarVisible == isNavigationBarVisible));
+  final _this = this as AppShellState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppShellState&&(identical(other.isNavigationBarVisible, _this.isNavigationBarVisible) || other.isNavigationBarVisible == _this.isNavigationBarVisible));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isNavigationBarVisible);
+int get hashCode {
+  final _this = this as AppShellState;
+  return Object.hash(runtimeType,_this.isNavigationBarVisible);
+}
 
 @override
 String toString() {
-  return 'AppShellState(isNavigationBarVisible: $isNavigationBarVisible)';
+  final _this = this as AppShellState;
+  return 'AppShellState(isNavigationBarVisible: ${_this.isNavigationBarVisible})';
 }
 
 
@@ -63,7 +69,7 @@ class _$AppShellStateCopyWithImpl<$Res>
 /// Create a copy of AppShellState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isNavigationBarVisible = null,}) {
-  return _then(_self.copyWith(
+  return _then(AppShellState(
 isNavigationBarVisible: null == isNavigationBarVisible ? _self.isNavigationBarVisible : isNavigationBarVisible // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -221,16 +227,18 @@ _$AppShellStateCopyWith<_AppShellState> get copyWith => __$AppShellStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppShellState&&(identical(other.isNavigationBarVisible, isNavigationBarVisible) || other.isNavigationBarVisible == isNavigationBarVisible));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppShellState&&(identical(other.isNavigationBarVisible, isNavigationBarVisible) || other.isNavigationBarVisible == isNavigationBarVisible));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isNavigationBarVisible);
+int get hashCode {
+    return Object.hash(runtimeType,isNavigationBarVisible);
+}
 
 @override
 String toString() {
-  return 'AppShellState(isNavigationBarVisible: $isNavigationBarVisible)';
+    return 'AppShellState(isNavigationBarVisible: $isNavigationBarVisible)';
 }
 
 

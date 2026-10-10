@@ -104,7 +104,7 @@ abstract class _$ProfileHistoryViewModel
   ProfileHistoryState build(String targetType);
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<ProfileHistoryState, ProfileHistoryState>;
     final element =
         ref.element
@@ -114,6 +114,6 @@ abstract class _$ProfileHistoryViewModel
               Object?,
               Object?
             >;
-    element.handleCreate(ref, () => build(_$args));
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

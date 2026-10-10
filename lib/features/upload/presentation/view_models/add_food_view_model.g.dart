@@ -47,7 +47,7 @@ abstract class _$AddFoodViewModel extends $Notifier<AddFoodState> {
   AddFoodState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AddFoodState, AddFoodState>;
     final element =
         ref.element
@@ -57,6 +57,6 @@ abstract class _$AddFoodViewModel extends $Notifier<AddFoodState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

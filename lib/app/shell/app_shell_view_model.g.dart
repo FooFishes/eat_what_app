@@ -47,7 +47,7 @@ abstract class _$AppShellViewModel extends $Notifier<AppShellState> {
   AppShellState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AppShellState, AppShellState>;
     final element =
         ref.element
@@ -57,6 +57,6 @@ abstract class _$AppShellViewModel extends $Notifier<AppShellState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

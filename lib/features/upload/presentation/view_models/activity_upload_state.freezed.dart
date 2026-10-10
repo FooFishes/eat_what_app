@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'activity_upload_state.dart';
@@ -9,6 +9,7 @@ part of 'activity_upload_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ActivityUploadFeedbackCopyWith<ActivityUploadFeedback> get copyWith => _$Activi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityUploadFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
+  final _this = this as ActivityUploadFeedback;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityUploadFeedback&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.content, _this.content) || other.content == _this.content));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,content);
+int get hashCode {
+  final _this = this as ActivityUploadFeedback;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.content);
+}
 
 @override
 String toString() {
-  return 'ActivityUploadFeedback(id: $id, kind: $kind, content: $content)';
+  final _this = this as ActivityUploadFeedback;
+  return 'ActivityUploadFeedback(id: ${_this.id}, kind: ${_this.kind}, content: ${_this.content})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ActivityUploadFeedbackCopyWithImpl<$Res>
 /// Create a copy of ActivityUploadFeedback
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? content = null,}) {
-  return _then(_self.copyWith(
+  return _then(ActivityUploadFeedback(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as ActivityUploadFeedbackKind,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -225,16 +231,18 @@ _$ActivityUploadFeedbackCopyWith<_ActivityUploadFeedback> get copyWith => __$Act
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityUploadFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityUploadFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,content);
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,content);
+}
 
 @override
 String toString() {
-  return 'ActivityUploadFeedback(id: $id, kind: $kind, content: $content)';
+    return 'ActivityUploadFeedback(id: $id, kind: $kind, content: $content)';
 }
 
 
@@ -288,16 +296,21 @@ $ActivityUploadStateCopyWith<ActivityUploadState> get copyWith => _$ActivityUplo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityUploadState&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.isLoadingCities, isLoadingCities) || other.isLoadingCities == isLoadingCities)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other.provinces, provinces)&&const DeepCollectionEquality().equals(other.cities, cities)&&(identical(other.selectedProvince, selectedProvince) || other.selectedProvince == selectedProvince)&&(identical(other.selectedCity, selectedCity) || other.selectedCity == selectedCity)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+  final _this = this as ActivityUploadState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ActivityUploadState&&(identical(other.isLoadingProvinces, _this.isLoadingProvinces) || other.isLoadingProvinces == _this.isLoadingProvinces)&&(identical(other.isLoadingCities, _this.isLoadingCities) || other.isLoadingCities == _this.isLoadingCities)&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&const DeepCollectionEquality().equals(other.provinces, _this.provinces)&&const DeepCollectionEquality().equals(other.cities, _this.cities)&&(identical(other.selectedProvince, _this.selectedProvince) || other.selectedProvince == _this.selectedProvince)&&(identical(other.selectedCity, _this.selectedCity) || other.selectedCity == _this.selectedCity)&&(identical(other.feedback, _this.feedback) || other.feedback == _this.feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingProvinces,isLoadingCities,isSubmitting,const DeepCollectionEquality().hash(provinces),const DeepCollectionEquality().hash(cities),selectedProvince,selectedCity,feedback);
+int get hashCode {
+  final _this = this as ActivityUploadState;
+  return Object.hash(runtimeType,_this.isLoadingProvinces,_this.isLoadingCities,_this.isSubmitting,const DeepCollectionEquality().hash(_this.provinces),const DeepCollectionEquality().hash(_this.cities),_this.selectedProvince,_this.selectedCity,_this.feedback);
+}
 
 @override
 String toString() {
-  return 'ActivityUploadState(isLoadingProvinces: $isLoadingProvinces, isLoadingCities: $isLoadingCities, isSubmitting: $isSubmitting, provinces: $provinces, cities: $cities, selectedProvince: $selectedProvince, selectedCity: $selectedCity, feedback: $feedback)';
+  final _this = this as ActivityUploadState;
+  return 'ActivityUploadState(isLoadingProvinces: ${_this.isLoadingProvinces}, isLoadingCities: ${_this.isLoadingCities}, isSubmitting: ${_this.isSubmitting}, provinces: ${_this.provinces}, cities: ${_this.cities}, selectedProvince: ${_this.selectedProvince}, selectedCity: ${_this.selectedCity}, feedback: ${_this.feedback})';
 }
 
 
@@ -326,7 +339,7 @@ class _$ActivityUploadStateCopyWithImpl<$Res>
 /// Create a copy of ActivityUploadState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoadingProvinces = null,Object? isLoadingCities = null,Object? isSubmitting = null,Object? provinces = null,Object? cities = null,Object? selectedProvince = freezed,Object? selectedCity = freezed,Object? feedback = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ActivityUploadState(
 isLoadingProvinces: null == isLoadingProvinces ? _self.isLoadingProvinces : isLoadingProvinces // ignore: cast_nullable_to_non_nullable
 as bool,isLoadingCities: null == isLoadingCities ? _self.isLoadingCities : isLoadingCities // ignore: cast_nullable_to_non_nullable
 as bool,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
@@ -488,7 +501,7 @@ return $default(_that.isLoadingProvinces,_that.isLoadingCities,_that.isSubmittin
 
 
 class _ActivityUploadState implements ActivityUploadState {
-  const _ActivityUploadState({this.isLoadingProvinces = false, this.isLoadingCities = false, this.isSubmitting = false, final  List<ProvinceResponse> provinces = const [], final  List<CityResponse> cities = const [], this.selectedProvince, this.selectedCity, this.feedback}): _provinces = provinces,_cities = cities;
+  const _ActivityUploadState({this.isLoadingProvinces = false, this.isLoadingCities = false, this.isSubmitting = false,  List<ProvinceResponse> provinces = const [],  List<CityResponse> cities = const [], this.selectedProvince, this.selectedCity, this.feedback}): _provinces = provinces,_cities = cities;
   
 
 @override@JsonKey() final  bool isLoadingProvinces;
@@ -522,16 +535,18 @@ _$ActivityUploadStateCopyWith<_ActivityUploadState> get copyWith => __$ActivityU
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityUploadState&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.isLoadingCities, isLoadingCities) || other.isLoadingCities == isLoadingCities)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other._provinces, _provinces)&&const DeepCollectionEquality().equals(other._cities, _cities)&&(identical(other.selectedProvince, selectedProvince) || other.selectedProvince == selectedProvince)&&(identical(other.selectedCity, selectedCity) || other.selectedCity == selectedCity)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ActivityUploadState&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.isLoadingCities, isLoadingCities) || other.isLoadingCities == isLoadingCities)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other.provinces, _provinces)&&const DeepCollectionEquality().equals(other.cities, _cities)&&(identical(other.selectedProvince, selectedProvince) || other.selectedProvince == selectedProvince)&&(identical(other.selectedCity, selectedCity) || other.selectedCity == selectedCity)&&(identical(other.feedback, feedback) || other.feedback == feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingProvinces,isLoadingCities,isSubmitting,const DeepCollectionEquality().hash(_provinces),const DeepCollectionEquality().hash(_cities),selectedProvince,selectedCity,feedback);
+int get hashCode {
+    return Object.hash(runtimeType,isLoadingProvinces,isLoadingCities,isSubmitting,const DeepCollectionEquality().hash(_provinces),const DeepCollectionEquality().hash(_cities),selectedProvince,selectedCity,feedback);
+}
 
 @override
 String toString() {
-  return 'ActivityUploadState(isLoadingProvinces: $isLoadingProvinces, isLoadingCities: $isLoadingCities, isSubmitting: $isSubmitting, provinces: $provinces, cities: $cities, selectedProvince: $selectedProvince, selectedCity: $selectedCity, feedback: $feedback)';
+    return 'ActivityUploadState(isLoadingProvinces: $isLoadingProvinces, isLoadingCities: $isLoadingCities, isSubmitting: $isSubmitting, provinces: $provinces, cities: $cities, selectedProvince: $selectedProvince, selectedCity: $selectedCity, feedback: $feedback)';
 }
 
 

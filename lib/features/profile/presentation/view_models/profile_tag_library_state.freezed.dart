@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profile_tag_library_state.dart';
@@ -9,6 +9,7 @@ part of 'profile_tag_library_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ProfileTagLibraryStateCopyWith<ProfileTagLibraryState> get copyWith => _$Profil
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileTagLibraryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.systemTags, systemTags)&&const DeepCollectionEquality().equals(other.customTags, customTags)&&const DeepCollectionEquality().equals(other.error, error));
+  final _this = this as ProfileTagLibraryState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileTagLibraryState&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&const DeepCollectionEquality().equals(other.systemTags, _this.systemTags)&&const DeepCollectionEquality().equals(other.customTags, _this.customTags)&&const DeepCollectionEquality().equals(other.error, _this.error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,const DeepCollectionEquality().hash(systemTags),const DeepCollectionEquality().hash(customTags),const DeepCollectionEquality().hash(error));
+int get hashCode {
+  final _this = this as ProfileTagLibraryState;
+  return Object.hash(runtimeType,_this.isLoading,const DeepCollectionEquality().hash(_this.systemTags),const DeepCollectionEquality().hash(_this.customTags),const DeepCollectionEquality().hash(_this.error));
+}
 
 @override
 String toString() {
-  return 'ProfileTagLibraryState(isLoading: $isLoading, systemTags: $systemTags, customTags: $customTags, error: $error)';
+  final _this = this as ProfileTagLibraryState;
+  return 'ProfileTagLibraryState(isLoading: ${_this.isLoading}, systemTags: ${_this.systemTags}, customTags: ${_this.customTags}, error: ${_this.error})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ProfileTagLibraryStateCopyWithImpl<$Res>
 /// Create a copy of ProfileTagLibraryState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoading = null,Object? systemTags = null,Object? customTags = null,Object? error = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProfileTagLibraryState(
 isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,systemTags: null == systemTags ? _self.systemTags : systemTags // ignore: cast_nullable_to_non_nullable
 as List<FoodTagSummaryVO>,customTags: null == customTags ? _self.customTags : customTags // ignore: cast_nullable_to_non_nullable
@@ -208,7 +214,7 @@ return $default(_that.isLoading,_that.systemTags,_that.customTags,_that.error);c
 
 
 class _ProfileTagLibraryState implements ProfileTagLibraryState {
-  const _ProfileTagLibraryState({this.isLoading = true, final  List<FoodTagSummaryVO> systemTags = const [], final  List<FoodTagSummaryVO> customTags = const [], this.error}): _systemTags = systemTags,_customTags = customTags;
+  const _ProfileTagLibraryState({this.isLoading = true,  List<FoodTagSummaryVO> systemTags = const [],  List<FoodTagSummaryVO> customTags = const [], this.error}): _systemTags = systemTags,_customTags = customTags;
   
 
 @override@JsonKey() final  bool isLoading;
@@ -238,16 +244,18 @@ _$ProfileTagLibraryStateCopyWith<_ProfileTagLibraryState> get copyWith => __$Pro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileTagLibraryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other._systemTags, _systemTags)&&const DeepCollectionEquality().equals(other._customTags, _customTags)&&const DeepCollectionEquality().equals(other.error, error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileTagLibraryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.systemTags, _systemTags)&&const DeepCollectionEquality().equals(other.customTags, _customTags)&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,const DeepCollectionEquality().hash(_systemTags),const DeepCollectionEquality().hash(_customTags),const DeepCollectionEquality().hash(error));
+int get hashCode {
+    return Object.hash(runtimeType,isLoading,const DeepCollectionEquality().hash(_systemTags),const DeepCollectionEquality().hash(_customTags),const DeepCollectionEquality().hash(error));
+}
 
 @override
 String toString() {
-  return 'ProfileTagLibraryState(isLoading: $isLoading, systemTags: $systemTags, customTags: $customTags, error: $error)';
+    return 'ProfileTagLibraryState(isLoading: $isLoading, systemTags: $systemTags, customTags: $customTags, error: $error)';
 }
 
 

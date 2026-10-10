@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'add_food_state.dart';
@@ -9,6 +9,7 @@ part of 'add_food_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $AddFoodStateCopyWith<AddFoodState> get copyWith => _$AddFoodStateCopyWithImpl<A
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddFoodState&&(identical(other.isLoadingTags, isLoadingTags) || other.isLoadingTags == isLoadingTags)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other.systemTags, systemTags));
+  final _this = this as AddFoodState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddFoodState&&(identical(other.isLoadingTags, _this.isLoadingTags) || other.isLoadingTags == _this.isLoadingTags)&&(identical(other.isSubmitting, _this.isSubmitting) || other.isSubmitting == _this.isSubmitting)&&const DeepCollectionEquality().equals(other.systemTags, _this.systemTags));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingTags,isSubmitting,const DeepCollectionEquality().hash(systemTags));
+int get hashCode {
+  final _this = this as AddFoodState;
+  return Object.hash(runtimeType,_this.isLoadingTags,_this.isSubmitting,const DeepCollectionEquality().hash(_this.systemTags));
+}
 
 @override
 String toString() {
-  return 'AddFoodState(isLoadingTags: $isLoadingTags, isSubmitting: $isSubmitting, systemTags: $systemTags)';
+  final _this = this as AddFoodState;
+  return 'AddFoodState(isLoadingTags: ${_this.isLoadingTags}, isSubmitting: ${_this.isSubmitting}, systemTags: ${_this.systemTags})';
 }
 
 
@@ -63,7 +69,7 @@ class _$AddFoodStateCopyWithImpl<$Res>
 /// Create a copy of AddFoodState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoadingTags = null,Object? isSubmitting = null,Object? systemTags = null,}) {
-  return _then(_self.copyWith(
+  return _then(AddFoodState(
 isLoadingTags: null == isLoadingTags ? _self.isLoadingTags : isLoadingTags // ignore: cast_nullable_to_non_nullable
 as bool,isSubmitting: null == isSubmitting ? _self.isSubmitting : isSubmitting // ignore: cast_nullable_to_non_nullable
 as bool,systemTags: null == systemTags ? _self.systemTags : systemTags // ignore: cast_nullable_to_non_nullable
@@ -208,7 +214,7 @@ return $default(_that.isLoadingTags,_that.isSubmitting,_that.systemTags);case _:
 
 
 class _AddFoodState implements AddFoodState {
-  const _AddFoodState({this.isLoadingTags = true, this.isSubmitting = false, final  List<FoodTagSummaryVO> systemTags = const []}): _systemTags = systemTags;
+  const _AddFoodState({this.isLoadingTags = true, this.isSubmitting = false,  List<FoodTagSummaryVO> systemTags = const []}): _systemTags = systemTags;
   
 
 @override@JsonKey() final  bool isLoadingTags;
@@ -231,16 +237,18 @@ _$AddFoodStateCopyWith<_AddFoodState> get copyWith => __$AddFoodStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddFoodState&&(identical(other.isLoadingTags, isLoadingTags) || other.isLoadingTags == isLoadingTags)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other._systemTags, _systemTags));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddFoodState&&(identical(other.isLoadingTags, isLoadingTags) || other.isLoadingTags == isLoadingTags)&&(identical(other.isSubmitting, isSubmitting) || other.isSubmitting == isSubmitting)&&const DeepCollectionEquality().equals(other.systemTags, _systemTags));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingTags,isSubmitting,const DeepCollectionEquality().hash(_systemTags));
+int get hashCode {
+    return Object.hash(runtimeType,isLoadingTags,isSubmitting,const DeepCollectionEquality().hash(_systemTags));
+}
 
 @override
 String toString() {
-  return 'AddFoodState(isLoadingTags: $isLoadingTags, isSubmitting: $isSubmitting, systemTags: $systemTags)';
+    return 'AddFoodState(isLoadingTags: $isLoadingTags, isSubmitting: $isSubmitting, systemTags: $systemTags)';
 }
 
 

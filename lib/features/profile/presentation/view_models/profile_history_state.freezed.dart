@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profile_history_state.dart';
@@ -9,6 +9,7 @@ part of 'profile_history_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ProfileHistoryStateCopyWith<ProfileHistoryState> get copyWith => _$ProfileHisto
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileHistoryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&const DeepCollectionEquality().equals(other.error, error));
+  final _this = this as ProfileHistoryState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileHistoryState&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.isLoadingMore, _this.isLoadingMore) || other.isLoadingMore == _this.isLoadingMore)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.hasNext, _this.hasNext) || other.hasNext == _this.hasNext)&&(identical(other.currentPage, _this.currentPage) || other.currentPage == _this.currentPage)&&(identical(other.totalItems, _this.totalItems) || other.totalItems == _this.totalItems)&&const DeepCollectionEquality().equals(other.error, _this.error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,isLoadingMore,const DeepCollectionEquality().hash(items),hasNext,currentPage,totalItems,const DeepCollectionEquality().hash(error));
+int get hashCode {
+  final _this = this as ProfileHistoryState;
+  return Object.hash(runtimeType,_this.isLoading,_this.isLoadingMore,const DeepCollectionEquality().hash(_this.items),_this.hasNext,_this.currentPage,_this.totalItems,const DeepCollectionEquality().hash(_this.error));
+}
 
 @override
 String toString() {
-  return 'ProfileHistoryState(isLoading: $isLoading, isLoadingMore: $isLoadingMore, items: $items, hasNext: $hasNext, currentPage: $currentPage, totalItems: $totalItems, error: $error)';
+  final _this = this as ProfileHistoryState;
+  return 'ProfileHistoryState(isLoading: ${_this.isLoading}, isLoadingMore: ${_this.isLoadingMore}, items: ${_this.items}, hasNext: ${_this.hasNext}, currentPage: ${_this.currentPage}, totalItems: ${_this.totalItems}, error: ${_this.error})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ProfileHistoryStateCopyWithImpl<$Res>
 /// Create a copy of ProfileHistoryState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoading = null,Object? isLoadingMore = null,Object? items = null,Object? hasNext = null,Object? currentPage = null,Object? totalItems = null,Object? error = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProfileHistoryState(
 isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isLoadingMore: null == isLoadingMore ? _self.isLoadingMore : isLoadingMore // ignore: cast_nullable_to_non_nullable
 as bool,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.isLoading,_that.isLoadingMore,_that.items,_that.hasNext,_t
 
 
 class _ProfileHistoryState implements ProfileHistoryState {
-  const _ProfileHistoryState({this.isLoading = false, this.isLoadingMore = false, final  List<BrowseHistoryItemResponse> items = const [], this.hasNext = false, this.currentPage = 0, this.totalItems = 0, this.error}): _items = items;
+  const _ProfileHistoryState({this.isLoading = false, this.isLoadingMore = false,  List<BrowseHistoryItemResponse> items = const [], this.hasNext = false, this.currentPage = 0, this.totalItems = 0, this.error}): _items = items;
   
 
 @override@JsonKey() final  bool isLoading;
@@ -238,16 +244,18 @@ _$ProfileHistoryStateCopyWith<_ProfileHistoryState> get copyWith => __$ProfileHi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileHistoryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&const DeepCollectionEquality().equals(other.error, error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileHistoryState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,isLoadingMore,const DeepCollectionEquality().hash(_items),hasNext,currentPage,totalItems,const DeepCollectionEquality().hash(error));
+int get hashCode {
+    return Object.hash(runtimeType,isLoading,isLoadingMore,const DeepCollectionEquality().hash(_items),hasNext,currentPage,totalItems,const DeepCollectionEquality().hash(error));
+}
 
 @override
 String toString() {
-  return 'ProfileHistoryState(isLoading: $isLoading, isLoadingMore: $isLoadingMore, items: $items, hasNext: $hasNext, currentPage: $currentPage, totalItems: $totalItems, error: $error)';
+    return 'ProfileHistoryState(isLoading: $isLoading, isLoadingMore: $isLoadingMore, items: $items, hasNext: $hasNext, currentPage: $currentPage, totalItems: $totalItems, error: $error)';
 }
 
 

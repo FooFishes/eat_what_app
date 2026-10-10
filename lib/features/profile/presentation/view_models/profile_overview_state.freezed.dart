@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profile_overview_state.dart';
@@ -9,6 +9,7 @@ part of 'profile_overview_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ProfileOverviewStateCopyWith<ProfileOverviewState> get copyWith => _$ProfileOve
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileOverviewState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&(identical(other.stats, stats) || other.stats == stats)&&const DeepCollectionEquality().equals(other.error, error));
+  final _this = this as ProfileOverviewState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileOverviewState&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.userInfo, _this.userInfo) || other.userInfo == _this.userInfo)&&(identical(other.stats, _this.stats) || other.stats == _this.stats)&&const DeepCollectionEquality().equals(other.error, _this.error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,userInfo,stats,const DeepCollectionEquality().hash(error));
+int get hashCode {
+  final _this = this as ProfileOverviewState;
+  return Object.hash(runtimeType,_this.isLoading,_this.userInfo,_this.stats,const DeepCollectionEquality().hash(_this.error));
+}
 
 @override
 String toString() {
-  return 'ProfileOverviewState(isLoading: $isLoading, userInfo: $userInfo, stats: $stats, error: $error)';
+  final _this = this as ProfileOverviewState;
+  return 'ProfileOverviewState(isLoading: ${_this.isLoading}, userInfo: ${_this.userInfo}, stats: ${_this.stats}, error: ${_this.error})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ProfileOverviewStateCopyWithImpl<$Res>
 /// Create a copy of ProfileOverviewState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoading = null,Object? userInfo = freezed,Object? stats = freezed,Object? error = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProfileOverviewState(
 isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,userInfo: freezed == userInfo ? _self.userInfo : userInfo // ignore: cast_nullable_to_non_nullable
 as UserInfoResponse?,stats: freezed == stats ? _self.stats : stats // ignore: cast_nullable_to_non_nullable
@@ -226,16 +232,18 @@ _$ProfileOverviewStateCopyWith<_ProfileOverviewState> get copyWith => __$Profile
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileOverviewState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&(identical(other.stats, stats) || other.stats == stats)&&const DeepCollectionEquality().equals(other.error, error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileOverviewState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&(identical(other.stats, stats) || other.stats == stats)&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,userInfo,stats,const DeepCollectionEquality().hash(error));
+int get hashCode {
+    return Object.hash(runtimeType,isLoading,userInfo,stats,const DeepCollectionEquality().hash(error));
+}
 
 @override
 String toString() {
-  return 'ProfileOverviewState(isLoading: $isLoading, userInfo: $userInfo, stats: $stats, error: $error)';
+    return 'ProfileOverviewState(isLoading: $isLoading, userInfo: $userInfo, stats: $stats, error: $error)';
 }
 
 

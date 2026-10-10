@@ -50,7 +50,7 @@ abstract class _$RestaurantSearchViewModel
   RestaurantSearchState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<RestaurantSearchState, RestaurantSearchState>;
     final element =
         ref.element
@@ -60,6 +60,6 @@ abstract class _$RestaurantSearchViewModel
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

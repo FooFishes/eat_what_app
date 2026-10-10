@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'restaurant_search_state.dart';
@@ -9,6 +9,7 @@ part of 'restaurant_search_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $RestaurantSearchStateCopyWith<RestaurantSearchState> get copyWith => _$Restaura
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestaurantSearchState&&(identical(other.isLoadingHint, isLoadingHint) || other.isLoadingHint == isLoadingHint)&&(identical(other.shouldShowIntroHint, shouldShowIntroHint) || other.shouldShowIntroHint == shouldShowIntroHint)&&(identical(other.isSearching, isSearching) || other.isSearching == isSearching)&&(identical(other.keyword, keyword) || other.keyword == keyword)&&const DeepCollectionEquality().equals(other.results, results)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
+  final _this = this as RestaurantSearchState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestaurantSearchState&&(identical(other.isLoadingHint, _this.isLoadingHint) || other.isLoadingHint == _this.isLoadingHint)&&(identical(other.shouldShowIntroHint, _this.shouldShowIntroHint) || other.shouldShowIntroHint == _this.shouldShowIntroHint)&&(identical(other.isSearching, _this.isSearching) || other.isSearching == _this.isSearching)&&(identical(other.keyword, _this.keyword) || other.keyword == _this.keyword)&&const DeepCollectionEquality().equals(other.results, _this.results)&&(identical(other.hasSearched, _this.hasSearched) || other.hasSearched == _this.hasSearched));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingHint,shouldShowIntroHint,isSearching,keyword,const DeepCollectionEquality().hash(results),hasSearched);
+int get hashCode {
+  final _this = this as RestaurantSearchState;
+  return Object.hash(runtimeType,_this.isLoadingHint,_this.shouldShowIntroHint,_this.isSearching,_this.keyword,const DeepCollectionEquality().hash(_this.results),_this.hasSearched);
+}
 
 @override
 String toString() {
-  return 'RestaurantSearchState(isLoadingHint: $isLoadingHint, shouldShowIntroHint: $shouldShowIntroHint, isSearching: $isSearching, keyword: $keyword, results: $results, hasSearched: $hasSearched)';
+  final _this = this as RestaurantSearchState;
+  return 'RestaurantSearchState(isLoadingHint: ${_this.isLoadingHint}, shouldShowIntroHint: ${_this.shouldShowIntroHint}, isSearching: ${_this.isSearching}, keyword: ${_this.keyword}, results: ${_this.results}, hasSearched: ${_this.hasSearched})';
 }
 
 
@@ -63,7 +69,7 @@ class _$RestaurantSearchStateCopyWithImpl<$Res>
 /// Create a copy of RestaurantSearchState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoadingHint = null,Object? shouldShowIntroHint = null,Object? isSearching = null,Object? keyword = null,Object? results = null,Object? hasSearched = null,}) {
-  return _then(_self.copyWith(
+  return _then(RestaurantSearchState(
 isLoadingHint: null == isLoadingHint ? _self.isLoadingHint : isLoadingHint // ignore: cast_nullable_to_non_nullable
 as bool,shouldShowIntroHint: null == shouldShowIntroHint ? _self.shouldShowIntroHint : shouldShowIntroHint // ignore: cast_nullable_to_non_nullable
 as bool,isSearching: null == isSearching ? _self.isSearching : isSearching // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.isLoadingHint,_that.shouldShowIntroHint,_that.isSearching,
 
 
 class _RestaurantSearchState implements RestaurantSearchState {
-  const _RestaurantSearchState({this.isLoadingHint = false, this.shouldShowIntroHint = false, this.isSearching = false, this.keyword = '', final  List<Restaurant> results = const [], this.hasSearched = false}): _results = results;
+  const _RestaurantSearchState({this.isLoadingHint = false, this.shouldShowIntroHint = false, this.isSearching = false, this.keyword = '',  List<Restaurant> results = const [], this.hasSearched = false}): _results = results;
   
 
 @override@JsonKey() final  bool isLoadingHint;
@@ -237,16 +243,18 @@ _$RestaurantSearchStateCopyWith<_RestaurantSearchState> get copyWith => __$Resta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestaurantSearchState&&(identical(other.isLoadingHint, isLoadingHint) || other.isLoadingHint == isLoadingHint)&&(identical(other.shouldShowIntroHint, shouldShowIntroHint) || other.shouldShowIntroHint == shouldShowIntroHint)&&(identical(other.isSearching, isSearching) || other.isSearching == isSearching)&&(identical(other.keyword, keyword) || other.keyword == keyword)&&const DeepCollectionEquality().equals(other._results, _results)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestaurantSearchState&&(identical(other.isLoadingHint, isLoadingHint) || other.isLoadingHint == isLoadingHint)&&(identical(other.shouldShowIntroHint, shouldShowIntroHint) || other.shouldShowIntroHint == shouldShowIntroHint)&&(identical(other.isSearching, isSearching) || other.isSearching == isSearching)&&(identical(other.keyword, keyword) || other.keyword == keyword)&&const DeepCollectionEquality().equals(other.results, _results)&&(identical(other.hasSearched, hasSearched) || other.hasSearched == hasSearched));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoadingHint,shouldShowIntroHint,isSearching,keyword,const DeepCollectionEquality().hash(_results),hasSearched);
+int get hashCode {
+    return Object.hash(runtimeType,isLoadingHint,shouldShowIntroHint,isSearching,keyword,const DeepCollectionEquality().hash(_results),hasSearched);
+}
 
 @override
 String toString() {
-  return 'RestaurantSearchState(isLoadingHint: $isLoadingHint, shouldShowIntroHint: $shouldShowIntroHint, isSearching: $isSearching, keyword: $keyword, results: $results, hasSearched: $hasSearched)';
+    return 'RestaurantSearchState(isLoadingHint: $isLoadingHint, shouldShowIntroHint: $shouldShowIntroHint, isSearching: $isSearching, keyword: $keyword, results: $results, hasSearched: $hasSearched)';
 }
 
 

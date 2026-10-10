@@ -51,7 +51,7 @@ abstract class _$ProfileTagLibraryViewModel
   ProfileTagLibraryState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<ProfileTagLibraryState, ProfileTagLibraryState>;
     final element =
@@ -62,6 +62,6 @@ abstract class _$ProfileTagLibraryViewModel
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

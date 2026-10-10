@@ -96,7 +96,7 @@ abstract class _$RestaurantDetailViewModel
   RestaurantDetailState build(int restaurantId);
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<RestaurantDetailState, RestaurantDetailState>;
     final element =
         ref.element
@@ -106,6 +106,6 @@ abstract class _$RestaurantDetailViewModel
               Object?,
               Object?
             >;
-    element.handleCreate(ref, () => build(_$args));
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'foodie_map_state.dart';
@@ -9,6 +9,7 @@ part of 'foodie_map_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $FoodieMapFeedbackCopyWith<FoodieMapFeedback> get copyWith => _$FoodieMapFeedbac
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
+  final _this = this as FoodieMapFeedback;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapFeedback&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.content, _this.content) || other.content == _this.content));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,content);
+int get hashCode {
+  final _this = this as FoodieMapFeedback;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.content);
+}
 
 @override
 String toString() {
-  return 'FoodieMapFeedback(id: $id, kind: $kind, content: $content)';
+  final _this = this as FoodieMapFeedback;
+  return 'FoodieMapFeedback(id: ${_this.id}, kind: ${_this.kind}, content: ${_this.content})';
 }
 
 
@@ -63,7 +69,7 @@ class _$FoodieMapFeedbackCopyWithImpl<$Res>
 /// Create a copy of FoodieMapFeedback
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? content = null,}) {
-  return _then(_self.copyWith(
+  return _then(FoodieMapFeedback(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as FoodieMapFeedbackKind,content: null == content ? _self.content : content // ignore: cast_nullable_to_non_nullable
@@ -225,16 +231,18 @@ _$FoodieMapFeedbackCopyWith<_FoodieMapFeedback> get copyWith => __$FoodieMapFeed
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapFeedback&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.content, content) || other.content == content));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,content);
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,content);
+}
 
 @override
 String toString() {
-  return 'FoodieMapFeedback(id: $id, kind: $kind, content: $content)';
+    return 'FoodieMapFeedback(id: $id, kind: $kind, content: $content)';
 }
 
 
@@ -288,16 +296,21 @@ $FoodieMapPageStateCopyWith<FoodieMapPageState> get copyWith => _$FoodieMapPageS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapPageState&&(identical(other.isInitialLoading, isInitialLoading) || other.isInitialLoading == isInitialLoading)&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.hasProvincesError, hasProvincesError) || other.hasProvincesError == hasProvincesError)&&(identical(other.localProvinceId, localProvinceId) || other.localProvinceId == localProvinceId)&&const DeepCollectionEquality().equals(other.provinces, provinces)&&(identical(other.selectedProvinceId, selectedProvinceId) || other.selectedProvinceId == selectedProvinceId)&&(identical(other.committedProvinceId, committedProvinceId) || other.committedProvinceId == committedProvinceId)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+  final _this = this as FoodieMapPageState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapPageState&&(identical(other.isInitialLoading, _this.isInitialLoading) || other.isInitialLoading == _this.isInitialLoading)&&(identical(other.isLoadingProvinces, _this.isLoadingProvinces) || other.isLoadingProvinces == _this.isLoadingProvinces)&&(identical(other.hasProvincesError, _this.hasProvincesError) || other.hasProvincesError == _this.hasProvincesError)&&(identical(other.localProvinceId, _this.localProvinceId) || other.localProvinceId == _this.localProvinceId)&&const DeepCollectionEquality().equals(other.provinces, _this.provinces)&&(identical(other.selectedProvinceId, _this.selectedProvinceId) || other.selectedProvinceId == _this.selectedProvinceId)&&(identical(other.committedProvinceId, _this.committedProvinceId) || other.committedProvinceId == _this.committedProvinceId)&&(identical(other.feedback, _this.feedback) || other.feedback == _this.feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isInitialLoading,isLoadingProvinces,hasProvincesError,localProvinceId,const DeepCollectionEquality().hash(provinces),selectedProvinceId,committedProvinceId,feedback);
+int get hashCode {
+  final _this = this as FoodieMapPageState;
+  return Object.hash(runtimeType,_this.isInitialLoading,_this.isLoadingProvinces,_this.hasProvincesError,_this.localProvinceId,const DeepCollectionEquality().hash(_this.provinces),_this.selectedProvinceId,_this.committedProvinceId,_this.feedback);
+}
 
 @override
 String toString() {
-  return 'FoodieMapPageState(isInitialLoading: $isInitialLoading, isLoadingProvinces: $isLoadingProvinces, hasProvincesError: $hasProvincesError, localProvinceId: $localProvinceId, provinces: $provinces, selectedProvinceId: $selectedProvinceId, committedProvinceId: $committedProvinceId, feedback: $feedback)';
+  final _this = this as FoodieMapPageState;
+  return 'FoodieMapPageState(isInitialLoading: ${_this.isInitialLoading}, isLoadingProvinces: ${_this.isLoadingProvinces}, hasProvincesError: ${_this.hasProvincesError}, localProvinceId: ${_this.localProvinceId}, provinces: ${_this.provinces}, selectedProvinceId: ${_this.selectedProvinceId}, committedProvinceId: ${_this.committedProvinceId}, feedback: ${_this.feedback})';
 }
 
 
@@ -326,7 +339,7 @@ class _$FoodieMapPageStateCopyWithImpl<$Res>
 /// Create a copy of FoodieMapPageState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isInitialLoading = null,Object? isLoadingProvinces = null,Object? hasProvincesError = null,Object? localProvinceId = freezed,Object? provinces = null,Object? selectedProvinceId = freezed,Object? committedProvinceId = freezed,Object? feedback = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FoodieMapPageState(
 isInitialLoading: null == isInitialLoading ? _self.isInitialLoading : isInitialLoading // ignore: cast_nullable_to_non_nullable
 as bool,isLoadingProvinces: null == isLoadingProvinces ? _self.isLoadingProvinces : isLoadingProvinces // ignore: cast_nullable_to_non_nullable
 as bool,hasProvincesError: null == hasProvincesError ? _self.hasProvincesError : hasProvincesError // ignore: cast_nullable_to_non_nullable
@@ -488,7 +501,7 @@ return $default(_that.isInitialLoading,_that.isLoadingProvinces,_that.hasProvinc
 
 
 class _FoodieMapPageState implements FoodieMapPageState {
-  const _FoodieMapPageState({this.isInitialLoading = true, this.isLoadingProvinces = false, this.hasProvincesError = false, this.localProvinceId, final  List<ProvinceResponse> provinces = const [], this.selectedProvinceId, this.committedProvinceId, this.feedback}): _provinces = provinces;
+  const _FoodieMapPageState({this.isInitialLoading = true, this.isLoadingProvinces = false, this.hasProvincesError = false, this.localProvinceId,  List<ProvinceResponse> provinces = const [], this.selectedProvinceId, this.committedProvinceId, this.feedback}): _provinces = provinces;
   
 
 @override@JsonKey() final  bool isInitialLoading;
@@ -516,16 +529,18 @@ _$FoodieMapPageStateCopyWith<_FoodieMapPageState> get copyWith => __$FoodieMapPa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapPageState&&(identical(other.isInitialLoading, isInitialLoading) || other.isInitialLoading == isInitialLoading)&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.hasProvincesError, hasProvincesError) || other.hasProvincesError == hasProvincesError)&&(identical(other.localProvinceId, localProvinceId) || other.localProvinceId == localProvinceId)&&const DeepCollectionEquality().equals(other._provinces, _provinces)&&(identical(other.selectedProvinceId, selectedProvinceId) || other.selectedProvinceId == selectedProvinceId)&&(identical(other.committedProvinceId, committedProvinceId) || other.committedProvinceId == committedProvinceId)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapPageState&&(identical(other.isInitialLoading, isInitialLoading) || other.isInitialLoading == isInitialLoading)&&(identical(other.isLoadingProvinces, isLoadingProvinces) || other.isLoadingProvinces == isLoadingProvinces)&&(identical(other.hasProvincesError, hasProvincesError) || other.hasProvincesError == hasProvincesError)&&(identical(other.localProvinceId, localProvinceId) || other.localProvinceId == localProvinceId)&&const DeepCollectionEquality().equals(other.provinces, _provinces)&&(identical(other.selectedProvinceId, selectedProvinceId) || other.selectedProvinceId == selectedProvinceId)&&(identical(other.committedProvinceId, committedProvinceId) || other.committedProvinceId == committedProvinceId)&&(identical(other.feedback, feedback) || other.feedback == feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isInitialLoading,isLoadingProvinces,hasProvincesError,localProvinceId,const DeepCollectionEquality().hash(_provinces),selectedProvinceId,committedProvinceId,feedback);
+int get hashCode {
+    return Object.hash(runtimeType,isInitialLoading,isLoadingProvinces,hasProvincesError,localProvinceId,const DeepCollectionEquality().hash(_provinces),selectedProvinceId,committedProvinceId,feedback);
+}
 
 @override
 String toString() {
-  return 'FoodieMapPageState(isInitialLoading: $isInitialLoading, isLoadingProvinces: $isLoadingProvinces, hasProvincesError: $hasProvincesError, localProvinceId: $localProvinceId, provinces: $provinces, selectedProvinceId: $selectedProvinceId, committedProvinceId: $committedProvinceId, feedback: $feedback)';
+    return 'FoodieMapPageState(isInitialLoading: $isInitialLoading, isLoadingProvinces: $isLoadingProvinces, hasProvincesError: $hasProvincesError, localProvinceId: $localProvinceId, provinces: $provinces, selectedProvinceId: $selectedProvinceId, committedProvinceId: $committedProvinceId, feedback: $feedback)';
 }
 
 
@@ -596,16 +611,21 @@ $FoodieMapFoodListStateCopyWith<FoodieMapFoodListState> get copyWith => _$Foodie
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapFoodListState&&const DeepCollectionEquality().equals(other.foods, foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasError, hasError) || other.hasError == hasError)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.pendingLikeIds, pendingLikeIds)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+  final _this = this as FoodieMapFoodListState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FoodieMapFoodListState&&const DeepCollectionEquality().equals(other.foods, _this.foods)&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.hasError, _this.hasError) || other.hasError == _this.hasError)&&(identical(other.hasNext, _this.hasNext) || other.hasNext == _this.hasNext)&&(identical(other.currentPage, _this.currentPage) || other.currentPage == _this.currentPage)&&const DeepCollectionEquality().equals(other.pendingLikeIds, _this.pendingLikeIds)&&(identical(other.feedback, _this.feedback) || other.feedback == _this.feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(foods),isLoading,hasError,hasNext,currentPage,const DeepCollectionEquality().hash(pendingLikeIds),feedback);
+int get hashCode {
+  final _this = this as FoodieMapFoodListState;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.foods),_this.isLoading,_this.hasError,_this.hasNext,_this.currentPage,const DeepCollectionEquality().hash(_this.pendingLikeIds),_this.feedback);
+}
 
 @override
 String toString() {
-  return 'FoodieMapFoodListState(foods: $foods, isLoading: $isLoading, hasError: $hasError, hasNext: $hasNext, currentPage: $currentPage, pendingLikeIds: $pendingLikeIds, feedback: $feedback)';
+  final _this = this as FoodieMapFoodListState;
+  return 'FoodieMapFoodListState(foods: ${_this.foods}, isLoading: ${_this.isLoading}, hasError: ${_this.hasError}, hasNext: ${_this.hasNext}, currentPage: ${_this.currentPage}, pendingLikeIds: ${_this.pendingLikeIds}, feedback: ${_this.feedback})';
 }
 
 
@@ -634,7 +654,7 @@ class _$FoodieMapFoodListStateCopyWithImpl<$Res>
 /// Create a copy of FoodieMapFoodListState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? foods = null,Object? isLoading = null,Object? hasError = null,Object? hasNext = null,Object? currentPage = null,Object? pendingLikeIds = null,Object? feedback = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(FoodieMapFoodListState(
 foods: null == foods ? _self.foods : foods // ignore: cast_nullable_to_non_nullable
 as List<RegionalFood>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,hasError: null == hasError ? _self.hasError : hasError // ignore: cast_nullable_to_non_nullable
@@ -795,7 +815,7 @@ return $default(_that.foods,_that.isLoading,_that.hasError,_that.hasNext,_that.c
 
 
 class _FoodieMapFoodListState implements FoodieMapFoodListState {
-  const _FoodieMapFoodListState({final  List<RegionalFood> foods = const [], this.isLoading = true, this.hasError = false, this.hasNext = true, this.currentPage = 0, final  Set<int> pendingLikeIds = const {}, this.feedback}): _foods = foods,_pendingLikeIds = pendingLikeIds;
+  const _FoodieMapFoodListState({ List<RegionalFood> foods = const [], this.isLoading = true, this.hasError = false, this.hasNext = true, this.currentPage = 0,  Set<int> pendingLikeIds = const {}, this.feedback}): _foods = foods,_pendingLikeIds = pendingLikeIds;
   
 
  final  List<RegionalFood> _foods;
@@ -828,16 +848,18 @@ _$FoodieMapFoodListStateCopyWith<_FoodieMapFoodListState> get copyWith => __$Foo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapFoodListState&&const DeepCollectionEquality().equals(other._foods, _foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasError, hasError) || other.hasError == hasError)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other._pendingLikeIds, _pendingLikeIds)&&(identical(other.feedback, feedback) || other.feedback == feedback));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FoodieMapFoodListState&&const DeepCollectionEquality().equals(other.foods, _foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.hasError, hasError) || other.hasError == hasError)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.pendingLikeIds, _pendingLikeIds)&&(identical(other.feedback, feedback) || other.feedback == feedback));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_foods),isLoading,hasError,hasNext,currentPage,const DeepCollectionEquality().hash(_pendingLikeIds),feedback);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_foods),isLoading,hasError,hasNext,currentPage,const DeepCollectionEquality().hash(_pendingLikeIds),feedback);
+}
 
 @override
 String toString() {
-  return 'FoodieMapFoodListState(foods: $foods, isLoading: $isLoading, hasError: $hasError, hasNext: $hasNext, currentPage: $currentPage, pendingLikeIds: $pendingLikeIds, feedback: $feedback)';
+    return 'FoodieMapFoodListState(foods: $foods, isLoading: $isLoading, hasError: $hasError, hasNext: $hasNext, currentPage: $currentPage, pendingLikeIds: $pendingLikeIds, feedback: $feedback)';
 }
 
 

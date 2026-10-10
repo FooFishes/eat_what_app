@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'restaurant_detail_state.dart';
@@ -9,6 +9,7 @@ part of 'restaurant_detail_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $RestaurantDetailStateCopyWith<RestaurantDetailState> get copyWith => _$Restaura
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestaurantDetailState&&(identical(other.restaurant, restaurant) || other.restaurant == restaurant)&&const DeepCollectionEquality().equals(other.foods, foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.error, error));
+  final _this = this as RestaurantDetailState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestaurantDetailState&&(identical(other.restaurant, _this.restaurant) || other.restaurant == _this.restaurant)&&const DeepCollectionEquality().equals(other.foods, _this.foods)&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.isLoadingMore, _this.isLoadingMore) || other.isLoadingMore == _this.isLoadingMore)&&(identical(other.hasNext, _this.hasNext) || other.hasNext == _this.hasNext)&&(identical(other.currentPage, _this.currentPage) || other.currentPage == _this.currentPage)&&const DeepCollectionEquality().equals(other.error, _this.error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,restaurant,const DeepCollectionEquality().hash(foods),isLoading,isLoadingMore,hasNext,currentPage,const DeepCollectionEquality().hash(error));
+int get hashCode {
+  final _this = this as RestaurantDetailState;
+  return Object.hash(runtimeType,_this.restaurant,const DeepCollectionEquality().hash(_this.foods),_this.isLoading,_this.isLoadingMore,_this.hasNext,_this.currentPage,const DeepCollectionEquality().hash(_this.error));
+}
 
 @override
 String toString() {
-  return 'RestaurantDetailState(restaurant: $restaurant, foods: $foods, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasNext: $hasNext, currentPage: $currentPage, error: $error)';
+  final _this = this as RestaurantDetailState;
+  return 'RestaurantDetailState(restaurant: ${_this.restaurant}, foods: ${_this.foods}, isLoading: ${_this.isLoading}, isLoadingMore: ${_this.isLoadingMore}, hasNext: ${_this.hasNext}, currentPage: ${_this.currentPage}, error: ${_this.error})';
 }
 
 
@@ -63,7 +69,7 @@ class _$RestaurantDetailStateCopyWithImpl<$Res>
 /// Create a copy of RestaurantDetailState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? restaurant = freezed,Object? foods = null,Object? isLoading = null,Object? isLoadingMore = null,Object? hasNext = null,Object? currentPage = null,Object? error = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(RestaurantDetailState(
 restaurant: freezed == restaurant ? _self.restaurant : restaurant // ignore: cast_nullable_to_non_nullable
 as Restaurant?,foods: null == foods ? _self.foods : foods // ignore: cast_nullable_to_non_nullable
 as List<FoodVO>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.restaurant,_that.foods,_that.isLoading,_that.isLoadingMore
 
 
 class _RestaurantDetailState implements RestaurantDetailState {
-  const _RestaurantDetailState({this.restaurant, final  List<FoodVO> foods = const [], this.isLoading = true, this.isLoadingMore = false, this.hasNext = false, this.currentPage = 1, this.error}): _foods = foods;
+  const _RestaurantDetailState({this.restaurant,  List<FoodVO> foods = const [], this.isLoading = true, this.isLoadingMore = false, this.hasNext = false, this.currentPage = 1, this.error}): _foods = foods;
   
 
 @override final  Restaurant? restaurant;
@@ -238,16 +244,18 @@ _$RestaurantDetailStateCopyWith<_RestaurantDetailState> get copyWith => __$Resta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestaurantDetailState&&(identical(other.restaurant, restaurant) || other.restaurant == restaurant)&&const DeepCollectionEquality().equals(other._foods, _foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.error, error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestaurantDetailState&&(identical(other.restaurant, restaurant) || other.restaurant == restaurant)&&const DeepCollectionEquality().equals(other.foods, _foods)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingMore, isLoadingMore) || other.isLoadingMore == isLoadingMore)&&(identical(other.hasNext, hasNext) || other.hasNext == hasNext)&&(identical(other.currentPage, currentPage) || other.currentPage == currentPage)&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,restaurant,const DeepCollectionEquality().hash(_foods),isLoading,isLoadingMore,hasNext,currentPage,const DeepCollectionEquality().hash(error));
+int get hashCode {
+    return Object.hash(runtimeType,restaurant,const DeepCollectionEquality().hash(_foods),isLoading,isLoadingMore,hasNext,currentPage,const DeepCollectionEquality().hash(error));
+}
 
 @override
 String toString() {
-  return 'RestaurantDetailState(restaurant: $restaurant, foods: $foods, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasNext: $hasNext, currentPage: $currentPage, error: $error)';
+    return 'RestaurantDetailState(restaurant: $restaurant, foods: $foods, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasNext: $hasNext, currentPage: $currentPage, error: $error)';
 }
 
 

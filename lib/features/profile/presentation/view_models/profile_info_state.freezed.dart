@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'profile_info_state.dart';
@@ -9,6 +9,7 @@ part of 'profile_info_state.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ProfileInfoStateCopyWith<ProfileInfoState> get copyWith => _$ProfileInfoStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileInfoState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingLocations, isLoadingLocations) || other.isLoadingLocations == isLoadingLocations)&&(identical(other.isUploadingAvatar, isUploadingAvatar) || other.isUploadingAvatar == isUploadingAvatar)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&const DeepCollectionEquality().equals(other.provinces, provinces)&&const DeepCollectionEquality().equals(other.cities, cities)&&const DeepCollectionEquality().equals(other.error, error));
+  final _this = this as ProfileInfoState;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileInfoState&&(identical(other.isLoading, _this.isLoading) || other.isLoading == _this.isLoading)&&(identical(other.isLoadingLocations, _this.isLoadingLocations) || other.isLoadingLocations == _this.isLoadingLocations)&&(identical(other.isUploadingAvatar, _this.isUploadingAvatar) || other.isUploadingAvatar == _this.isUploadingAvatar)&&(identical(other.userInfo, _this.userInfo) || other.userInfo == _this.userInfo)&&const DeepCollectionEquality().equals(other.provinces, _this.provinces)&&const DeepCollectionEquality().equals(other.cities, _this.cities)&&const DeepCollectionEquality().equals(other.error, _this.error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,isLoadingLocations,isUploadingAvatar,userInfo,const DeepCollectionEquality().hash(provinces),const DeepCollectionEquality().hash(cities),const DeepCollectionEquality().hash(error));
+int get hashCode {
+  final _this = this as ProfileInfoState;
+  return Object.hash(runtimeType,_this.isLoading,_this.isLoadingLocations,_this.isUploadingAvatar,_this.userInfo,const DeepCollectionEquality().hash(_this.provinces),const DeepCollectionEquality().hash(_this.cities),const DeepCollectionEquality().hash(_this.error));
+}
 
 @override
 String toString() {
-  return 'ProfileInfoState(isLoading: $isLoading, isLoadingLocations: $isLoadingLocations, isUploadingAvatar: $isUploadingAvatar, userInfo: $userInfo, provinces: $provinces, cities: $cities, error: $error)';
+  final _this = this as ProfileInfoState;
+  return 'ProfileInfoState(isLoading: ${_this.isLoading}, isLoadingLocations: ${_this.isLoadingLocations}, isUploadingAvatar: ${_this.isUploadingAvatar}, userInfo: ${_this.userInfo}, provinces: ${_this.provinces}, cities: ${_this.cities}, error: ${_this.error})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ProfileInfoStateCopyWithImpl<$Res>
 /// Create a copy of ProfileInfoState
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? isLoading = null,Object? isLoadingLocations = null,Object? isUploadingAvatar = null,Object? userInfo = freezed,Object? provinces = null,Object? cities = null,Object? error = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ProfileInfoState(
 isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isLoadingLocations: null == isLoadingLocations ? _self.isLoadingLocations : isLoadingLocations // ignore: cast_nullable_to_non_nullable
 as bool,isUploadingAvatar: null == isUploadingAvatar ? _self.isUploadingAvatar : isUploadingAvatar // ignore: cast_nullable_to_non_nullable
@@ -211,7 +217,7 @@ return $default(_that.isLoading,_that.isLoadingLocations,_that.isUploadingAvatar
 
 
 class _ProfileInfoState implements ProfileInfoState {
-  const _ProfileInfoState({this.isLoading = true, this.isLoadingLocations = false, this.isUploadingAvatar = false, this.userInfo, final  List<ProvinceResponse> provinces = const [], final  List<CityResponse> cities = const [], this.error}): _provinces = provinces,_cities = cities;
+  const _ProfileInfoState({this.isLoading = true, this.isLoadingLocations = false, this.isUploadingAvatar = false, this.userInfo,  List<ProvinceResponse> provinces = const [],  List<CityResponse> cities = const [], this.error}): _provinces = provinces,_cities = cities;
   
 
 @override@JsonKey() final  bool isLoading;
@@ -244,16 +250,18 @@ _$ProfileInfoStateCopyWith<_ProfileInfoState> get copyWith => __$ProfileInfoStat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileInfoState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingLocations, isLoadingLocations) || other.isLoadingLocations == isLoadingLocations)&&(identical(other.isUploadingAvatar, isUploadingAvatar) || other.isUploadingAvatar == isUploadingAvatar)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&const DeepCollectionEquality().equals(other._provinces, _provinces)&&const DeepCollectionEquality().equals(other._cities, _cities)&&const DeepCollectionEquality().equals(other.error, error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileInfoState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isLoadingLocations, isLoadingLocations) || other.isLoadingLocations == isLoadingLocations)&&(identical(other.isUploadingAvatar, isUploadingAvatar) || other.isUploadingAvatar == isUploadingAvatar)&&(identical(other.userInfo, userInfo) || other.userInfo == userInfo)&&const DeepCollectionEquality().equals(other.provinces, _provinces)&&const DeepCollectionEquality().equals(other.cities, _cities)&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,isLoadingLocations,isUploadingAvatar,userInfo,const DeepCollectionEquality().hash(_provinces),const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(error));
+int get hashCode {
+    return Object.hash(runtimeType,isLoading,isLoadingLocations,isUploadingAvatar,userInfo,const DeepCollectionEquality().hash(_provinces),const DeepCollectionEquality().hash(_cities),const DeepCollectionEquality().hash(error));
+}
 
 @override
 String toString() {
-  return 'ProfileInfoState(isLoading: $isLoading, isLoadingLocations: $isLoadingLocations, isUploadingAvatar: $isUploadingAvatar, userInfo: $userInfo, provinces: $provinces, cities: $cities, error: $error)';
+    return 'ProfileInfoState(isLoading: $isLoading, isLoadingLocations: $isLoadingLocations, isUploadingAvatar: $isUploadingAvatar, userInfo: $userInfo, provinces: $provinces, cities: $cities, error: $error)';
 }
 
 
