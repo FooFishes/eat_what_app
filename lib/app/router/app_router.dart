@@ -202,11 +202,10 @@ GoRouter appRouter(Ref ref) {
 }
 
 class _SplashPage extends StatelessWidget {
-  const _SplashPage();
+  const new();
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }
-

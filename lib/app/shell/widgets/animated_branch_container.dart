@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AnimatedBranchContainer extends StatefulWidget {
-  const AnimatedBranchContainer({
-    super.key,
-    required this.currentIndex,
-    required this.children,
-  });
+  const new({super.key, required this.currentIndex, required this.children});
 
   final int currentIndex;
   final List<Widget> children;

@@ -1,29 +1,16 @@
-class TokenResponse {
-  final bool isLogin;
-  final String loginDeviceType;
-  final int loginId;
-  final String loginType;
-  final String tag;
-  final int tokenActiveTimeout;
-  final String tokenName;
-  final int tokenSessionTimeout;
-  final int tokenTimeout;
-  final String tokenValue;
-
-  TokenResponse({
-    required this.isLogin,
-    required this.loginDeviceType,
-    required this.loginId,
-    required this.loginType,
-    required this.tag,
-    required this.tokenActiveTimeout,
-    required this.tokenName,
-    required this.tokenSessionTimeout,
-    required this.tokenTimeout,
-    required this.tokenValue,
-  });
-
-  factory TokenResponse.fromJson(Map<String, dynamic> json) {
+class TokenResponse({
+  required final bool isLogin,
+  required final String loginDeviceType,
+  required final int loginId,
+  required final String loginType,
+  required final String tag,
+  required final int tokenActiveTimeout,
+  required final String tokenName,
+  required final int tokenSessionTimeout,
+  required final int tokenTimeout,
+  required final String tokenValue,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     final rawLoginId = json['loginId'];
     return TokenResponse(
       isLogin: json['isLogin'] as bool,

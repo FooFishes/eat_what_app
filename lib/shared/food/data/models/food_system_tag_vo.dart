@@ -1,17 +1,10 @@
-class FoodSystemTagVO {
-  final int id;
-  final String name;
-  final int count;
-  final bool taggedByMe;
-
-  const FoodSystemTagVO({
-    required this.id,
-    required this.name,
-    required this.count,
-    required this.taggedByMe,
-  });
-
-  factory FoodSystemTagVO.fromJson(Map<String, dynamic> json) {
+class const FoodSystemTagVO({
+  required final int id,
+  required final String name,
+  required final int count,
+  required final bool taggedByMe,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return FoodSystemTagVO(
       id: (json['id'] as num?)?.toInt() ?? 0,
       name: (json['name'] as String?)?.trim() ?? '',

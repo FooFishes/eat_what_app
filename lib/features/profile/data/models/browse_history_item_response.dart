@@ -1,22 +1,14 @@
 import 'package:eat_what_app/shared/food/data/models/food_vo.dart';
 import 'package:eat_what_app/features/restaurant/data/models/restaurant.dart';
 
-class BrowseHistoryItemResponse {
-  final String targetType;
-  final int targetId;
-  final int viewedAt;
-  final Restaurant? restaurant;
-  final FoodVO? food;
-
-  const BrowseHistoryItemResponse({
-    required this.targetType,
-    required this.targetId,
-    required this.viewedAt,
-    this.restaurant,
-    this.food,
-  });
-
-  factory BrowseHistoryItemResponse.fromJson(Map<String, dynamic> json) {
+class const BrowseHistoryItemResponse({
+  required final String targetType,
+  required final int targetId,
+  required final int viewedAt,
+  final Restaurant? restaurant,
+  final FoodVO? food,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return BrowseHistoryItemResponse(
       targetType: json['targetType'] as String? ?? '',
       targetId: (json['targetId'] as num?)?.toInt() ?? 0,

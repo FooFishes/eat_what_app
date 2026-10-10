@@ -9,7 +9,7 @@ import 'package:eat_what_app/features/auth/data/models/token_response.dart';
 class AuthRepository {
   final RequestClient _api;
 
-  const AuthRepository(this._api);
+  const new(this._api);
 
   Future<void> checkUsername(String username) async {
     await _api.postVoid(

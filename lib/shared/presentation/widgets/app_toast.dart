@@ -59,7 +59,7 @@ final class AppToast {
 }
 
 class _ToastOverlay extends StatefulWidget {
-  const _ToastOverlay({
+  const new({
     required this.message,
     required this.type,
     required this.duration,
@@ -133,19 +133,16 @@ class _ToastOverlayState extends State<_ToastOverlay>
   @override
   Widget build(BuildContext context) {
     final style = _ToastStyle.forType(widget.type);
-    final textStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: style.textColor,
-      fontWeight: FontWeight.w600,
-      height: 1.3,
-    );
+    final textStyle = Theme.of(context).textTheme.bodyMedium
+        ?.copyWith(color: style.textColor, fontWeight: .w600, height: 1.3);
 
     return Positioned.fill(
       child: IgnorePointer(
         child: SafeArea(
           child: Align(
-            alignment: Alignment.topCenter,
+            alignment: .topCenter,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const .fromLTRB(16, 12, 16, 0),
               child: SlideTransition(
                 position: _slide,
                 child: FadeTransition(
@@ -157,7 +154,7 @@ class _ToastOverlayState extends State<_ToastOverlay>
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           color: style.backgroundColor,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: .circular(14),
                           border: Border.all(color: style.borderColor),
                           boxShadow: const [
                             BoxShadow(
@@ -168,9 +165,9 @@ class _ToastOverlayState extends State<_ToastOverlay>
                           ],
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                          padding: const .fromLTRB(14, 12, 14, 12),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: .start,
                             children: [
                               Icon(
                                 style.icon,
@@ -202,22 +199,14 @@ class _ToastOverlayState extends State<_ToastOverlay>
   }
 }
 
-class _ToastStyle {
-  const _ToastStyle({
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.iconColor,
-    required this.textColor,
-    required this.icon,
-  });
-
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color iconColor;
-  final Color textColor;
-  final IconData icon;
-
-  factory _ToastStyle.forType(AppToastType type) {
+class const _ToastStyle({
+  required final Color backgroundColor,
+  required final Color borderColor,
+  required final Color iconColor,
+  required final Color textColor,
+  required final IconData icon,
+}) {
+  factory forType(AppToastType type) {
     return switch (type) {
       AppToastType.info => const _ToastStyle(
         backgroundColor: Color(0xFFF4F8FF),

@@ -1,21 +1,17 @@
 import 'package:eat_what_app/features/foodie_map/data/models/activity_food_response.dart';
 
-class ActivityFoodPageResponse {
-  final int currentPage;
+class ActivityFoodPageResponse({
+  required final int currentPage,
+  required List<ActivityFoodResponse> items,
+  required final int totalPages,
+  required final int totalItems,
+  required final bool hasNext,
+}) {
   final List<ActivityFoodResponse> items;
-  final int totalPages;
-  final int totalItems;
-  final bool hasNext;
 
-  ActivityFoodPageResponse({
-    required this.currentPage,
-    required List<ActivityFoodResponse> items,
-    required this.totalPages,
-    required this.totalItems,
-    required this.hasNext,
-  }) : items = List<ActivityFoodResponse>.unmodifiable(items);
+  this : items = List<ActivityFoodResponse>.unmodifiable(items);
 
-  factory ActivityFoodPageResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return ActivityFoodPageResponse(
       currentPage: (json['currentPage'] as num).toInt(),
       items: (json['items'] as List<dynamic>)

@@ -15,11 +15,7 @@ class UserRepository {
   final RequestClient _api;
   final RequestClient _rawApi;
 
-  const UserRepository({
-    required RequestClient api,
-    required RequestClient rawApi,
-  }) : _api = api,
-       _rawApi = rawApi;
+  const new({required this._api, required this._rawApi});
 
   Future<UserInfoResponse> getUserInfo() async {
     final result = await _api.get<UserInfoResponse>(

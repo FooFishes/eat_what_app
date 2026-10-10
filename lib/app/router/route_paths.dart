@@ -1,5 +1,5 @@
 class RoutePaths {
-  const RoutePaths._();
+  const new _();
 
   static const splash = '/splash';
   static const auth = '/auth';

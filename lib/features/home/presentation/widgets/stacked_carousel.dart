@@ -1,16 +1,16 @@
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 /// 轮播图内置卡片数据模型
-class CarouselData {
-  final String imagePath; // 支持 http 开头的网图或本地 asset 路径
-  final String? title;
-  final String? content;
-
-  CarouselData({required this.imagePath, this.title, this.content});
-}
+class CarouselData({
+  // 支持 http 开头的网图或本地 asset 路径
+  required final String imagePath,
+  final String? title,
+  final String? content,
+});
 
 class StackedCarousel extends StatefulWidget {
   // 简易用法：仅提供数据源，使用组件内置的好看卡片样式
@@ -42,7 +42,7 @@ class StackedCarousel extends StatefulWidget {
   // 拖拽时的最大旋转角度
   final double? maxDragAngle;
 
-  const StackedCarousel({
+  const new({
     super.key,
     this.data,
     this.items,
@@ -209,7 +209,7 @@ class _StackedCarouselState extends State<StackedCarousel>
       width: double.infinity,
       height: widget.height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
+        borderRadius: .circular(widget.borderRadius),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
@@ -219,7 +219,7 @@ class _StackedCarouselState extends State<StackedCarousel>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.borderRadius),
+        borderRadius: .circular(widget.borderRadius),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -227,7 +227,7 @@ class _StackedCarouselState extends State<StackedCarousel>
             isNetwork
                 ? CachedNetworkImage(
                     imageUrl: data.imagePath,
-                    fit: BoxFit.cover,
+                    fit: .cover,
                     width: double.infinity,
                     height: double.infinity,
                     placeholder: (context, url) => const Center(
@@ -237,7 +237,7 @@ class _StackedCarouselState extends State<StackedCarousel>
                       child: Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   )
-                : Image.asset(data.imagePath, fit: BoxFit.cover),
+                : Image.asset(data.imagePath, fit: .cover),
 
             // ============ 2. 文字蒙层 ============
             // 只有当有标题或内容时才覆盖底部黑色透明渐变以凸显文字
@@ -247,10 +247,7 @@ class _StackedCarouselState extends State<StackedCarousel>
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 12.0,
-                  ),
+                  padding: const .symmetric(horizontal: 16.0, vertical: 12.0),
                   // 从下往上由深黑色透明向完全透明过度
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -261,8 +258,8 @@ class _StackedCarouselState extends State<StackedCarousel>
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: .start,
+                    mainAxisSize: .min,
                     children: [
                       if (data.title != null)
                         Text(
@@ -270,7 +267,7 @@ class _StackedCarouselState extends State<StackedCarousel>
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: .bold,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -305,27 +302,27 @@ class _StackedCarouselState extends State<StackedCarousel>
     final visibleCount = min(3, _itemCount);
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: .min,
       // 增加上部间距避免因为旋转导致卡片头部被裁剪
       children: [
         const SizedBox(height: 10),
         Padding(
           // 将左右 padding 加大，才能留出缝隙给下面的牌漏出它的左右边界
-          padding: EdgeInsets.symmetric(horizontal: widget.horizontalPadding),
+          padding: .symmetric(horizontal: widget.horizontalPadding),
           child: GestureDetector(
             // 手势检测器放在最外层，确保即使顶牌飞出屏幕，轮播区域也始终可以接收新的拖拽手势
             onHorizontalDragStart: _onHorizontalDragStart,
             onHorizontalDragUpdate: _onHorizontalDragUpdate,
             onHorizontalDragEnd: _onHorizontalDragEnd,
             onTap: () => widget.onItemTap?.call(_currentIndex),
-            behavior: HitTestBehavior.opaque,
+            behavior: .opaque,
             child: SizedBox(
               height: widget.height,
               child: AnimatedBuilder(
                 animation: _slideController,
                 builder: (context, child) {
                   return Stack(
-                    clipBehavior: Clip.none,
+                    clipBehavior: .none,
                     children: List.generate(visibleCount, (i) {
                       int reversedIndex = visibleCount - 1 - i;
                       int dataIndex =
@@ -362,7 +359,7 @@ class _StackedCarouselState extends State<StackedCarousel>
                               offset: _dragOffset,
                               child: Transform.rotate(
                                 angle: _dragAngle,
-                                alignment: Alignment.bottomCenter,
+                                alignment: .bottomCenter,
                                 child: cardChild,
                               ),
                             ),
@@ -431,10 +428,10 @@ class _StackedCarouselState extends State<StackedCarousel>
                               offset: Offset(0, currentDy),
                               child: Transform.scale(
                                 scale: currentScale,
-                                alignment: Alignment.bottomCenter,
+                                alignment: .bottomCenter,
                                 child: Transform.rotate(
                                   angle: currentAngle,
-                                  alignment: Alignment.bottomCenter,
+                                  alignment: .bottomCenter,
                                   child: cardChild,
                                 ),
                               ),
@@ -453,12 +450,12 @@ class _StackedCarouselState extends State<StackedCarousel>
         const SizedBox(height: 24), // 底部留出空间展示超出边缘的部分
 
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: .center,
           children: List.generate(_itemCount, (index) {
             bool isActive = _currentIndex == index;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              margin: const .symmetric(horizontal: 4.0),
               width: isActive ? 8.0 : 6.0,
               height: isActive ? 8.0 : 6.0,
               decoration: BoxDecoration(

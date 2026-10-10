@@ -1,20 +1,10 @@
-class ApiResponse<T> {
-  final int code;
-  final String msg;
-  final T? data;
-  final int timestamp;
-
-  const ApiResponse({
-    required this.code,
-    required this.msg,
-    required this.data,
-    required this.timestamp,
-  });
-
-  factory ApiResponse.fromJson(
-    Map<String, dynamic> json,
-    T Function(Object?) parseData,
-  ) {
+class const ApiResponse<T>({
+  required final int code,
+  required final String msg,
+  required final T? data,
+  required final int timestamp,
+}) {
+  factory fromJson(Map<String, dynamic> json, T Function(Object?) parseData) {
     return ApiResponse(
       code: json['code'] as int,
       msg: (json['msg'] as String?)?.trim() ?? '',
@@ -24,18 +14,10 @@ class ApiResponse<T> {
   }
 }
 
-class PaginatedData<T> {
-  final int currentPage;
-  final List<T> items;
-  final int totalPages;
-  final int totalItems;
-  final bool hasNext;
-
-  const PaginatedData({
-    required this.currentPage,
-    required this.items,
-    required this.totalPages,
-    required this.totalItems,
-    required this.hasNext,
-  });
-}
+class const PaginatedData<T>({
+  required final int currentPage,
+  required final List<T> items,
+  required final int totalPages,
+  required final int totalItems,
+  required final bool hasNext,
+});

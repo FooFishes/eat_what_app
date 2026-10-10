@@ -4,16 +4,12 @@ sealed class PlatformException implements Exception {
   final dynamic originalError;
   final StackTrace? stackTrace;
 
-  const PlatformException({
-    required this.message,
-    this.originalError,
-    this.stackTrace,
-  });
+  const new({required this.message, this.originalError, this.stackTrace});
 }
 
 class LocationException extends PlatformException {
   final LocationExceptionType type;
-  const LocationException({
+  const new({
     required this.type,
     required super.message,
     super.originalError,

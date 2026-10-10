@@ -5,7 +5,7 @@
 /// - B: 子系统编号
 /// - C: 模块编号
 /// - D-E: 具体错误编号
-enum BizCode {
+enum BizCode(final int code, final String message) {
   // ==================== 成功 (0xxxx) ====================
   /// 业务成功
   success(0, '成功'),
@@ -99,14 +99,6 @@ enum BizCode {
 
   /// 未捕获异常
   uncaughtException(90004, '未捕获异常');
-
-  /// 业务码
-  final int code;
-
-  /// 业务码描述
-  final String message;
-
-  const BizCode(this.code, this.message);
 
   /// 是否成功
   bool get isSuccess => code == 0;

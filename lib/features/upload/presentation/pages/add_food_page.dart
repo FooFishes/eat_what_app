@@ -13,7 +13,7 @@ import 'package:image_picker/image_picker.dart';
 class AddFoodPage extends ConsumerStatefulWidget {
   final int restaurantId;
 
-  const AddFoodPage({super.key, required this.restaurantId});
+  const new({super.key, required this.restaurantId});
 
   @override
   ConsumerState<AddFoodPage> createState() => _AddFoodPageState();
@@ -94,19 +94,28 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
   Future<void> _submit({required bool finishAfterSubmit}) async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      AppErrorPresenter.showMessageToast(context, '请输入菜品名称',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '请输入菜品名称',
+        type: AppToastType.warning,
+      );
       return;
     }
     if (_images.isEmpty) {
-      AppErrorPresenter.showMessageToast(context, '请至少上传一张菜品照片',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '请至少上传一张菜品照片',
+        type: AppToastType.warning,
+      );
       return;
     }
     final price = _parsePrice();
     if (_priceController.text.trim().isNotEmpty && price == null) {
-      AppErrorPresenter.showMessageToast(context, '价格格式不正确',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '价格格式不正确',
+        type: AppToastType.warning,
+      );
       return;
     }
 
@@ -140,8 +149,11 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
       }
 
       if (finishAfterSubmit) {
-        AppErrorPresenter.showMessageToast(context, '菜品上传完成',
-            type: AppToastType.success);
+        AppErrorPresenter.showMessageToast(
+          context,
+          '菜品上传完成',
+          type: AppToastType.success,
+        );
         context.pop();
         return;
       }
@@ -156,8 +168,11 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
         _selectedSystemTagIds.clear();
         _selectedCategory = null;
       });
-      AppErrorPresenter.showMessageToast(context, '已保存，可继续添加下一道菜',
-          type: AppToastType.success);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '已保存，可继续添加下一道菜',
+        type: AppToastType.success,
+      );
     } catch (error) {
       if (!mounted) return;
       AppErrorPresenter.showErrorToast(context, error);
@@ -173,9 +188,9 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
       appBar: AppBar(title: const Text('添加菜品'), centerTitle: false),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const .fromLTRB(16, 16, 16, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: .start,
             children: [
               _buildSectionTitle('菜品名称'),
               const SizedBox(height: 8),
@@ -194,8 +209,9 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
               _buildInput(
                 controller: _priceController,
                 hintText: '可选，例如 18.5',
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               const SizedBox(height: 18),
               _buildSectionTitle('分类'),
@@ -204,7 +220,9 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
                 initialValue: _selectedCategory,
                 items: [
                   const DropdownMenuItem<String?>(
-                      value: null, child: Text('不选择')),
+                    value: null,
+                    child: Text('不选择'),
+                  ),
                   ..._categoryLabels.entries.map(
                     (entry) => DropdownMenuItem<String?>(
                       value: entry.key,
@@ -217,7 +235,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
                   filled: true,
                   fillColor: AppColors.surfaceAlt,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: .circular(18),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -227,7 +245,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
               const SizedBox(height: 10),
               if (vmState.isLoadingTags)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
+                  padding: .symmetric(vertical: 12),
                   child: CircularProgressIndicator(),
                 )
               else
@@ -275,7 +293,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primaryStrong,
                         side: const BorderSide(color: AppColors.primaryStrong),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        padding: const .symmetric(vertical: 15),
                       ),
                       child: const Text('Next'),
                     ),
@@ -289,7 +307,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primaryStrong,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        padding: const .symmetric(vertical: 15),
                       ),
                       child: vmState.isSubmitting
                           ? const SizedBox(
@@ -315,10 +333,8 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(fontWeight: FontWeight.w800),
+      style: Theme.of(context).textTheme.titleMedium
+          ?.copyWith(fontWeight: .w800),
     );
   }
 
@@ -337,7 +353,7 @@ class _AddFoodPageState extends ConsumerState<AddFoodPage> {
         filled: true,
         fillColor: AppColors.surfaceAlt,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: .circular(18),
           borderSide: BorderSide.none,
         ),
       ),

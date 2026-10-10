@@ -1,10 +1,8 @@
-class FoodTagSummaryVO {
-  final int id;
-  final String name;
-
-  const FoodTagSummaryVO({required this.id, required this.name});
-
-  factory FoodTagSummaryVO.fromJson(Map<String, dynamic> json) {
+class const FoodTagSummaryVO({
+  required final int id,
+  required final String name,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return FoodTagSummaryVO(
       id: (json['id'] as num?)?.toInt() ?? 0,
       name: (json['name'] as String?)?.trim() ?? '',

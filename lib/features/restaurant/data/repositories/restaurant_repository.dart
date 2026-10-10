@@ -9,7 +9,7 @@ import 'package:eat_what_app/features/restaurant/data/models/restaurant_dto.dart
 class RestaurantRepository {
   final RequestClient _api;
 
-  const RestaurantRepository(this._api);
+  const new(this._api);
 
   Future<PaginatedData<Restaurant>> searchRestaurants(
     String keyword, {

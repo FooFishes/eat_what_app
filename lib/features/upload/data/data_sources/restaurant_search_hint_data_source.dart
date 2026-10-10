@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class RestaurantSearchHintDataSource {
   static const String _howHintSeenKey = 'restaurant_search_how_hint_seen';
 
-  const RestaurantSearchHintDataSource();
+  const new();
 
   Future<bool> shouldShowIntroHint() async {
     final prefs = await SharedPreferences.getInstance();

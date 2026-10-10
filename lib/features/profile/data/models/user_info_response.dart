@@ -1,55 +1,29 @@
-class UserInfoResponse {
-  final int id;
-  final String userName;
-  final String? avatar;
-  final String? email;
-  final String? phone;
-  final bool verified;
-  final String method;
-  final String studentId;
-  final String realName;
-  final String? verifiedEmail;
-  final int createdAt;
-  final int updatedAt;
-  final String? banReason;
-  final bool? banned;
-  final int? bannedAt;
-  final String? role;
-  final String? gender;
-  final String? birthday;
-  final String? signature;
-  final int? hometownProvinceId;
-  final int? hometownCityId;
-  final String? hometownProvinceName;
-  final String? hometownCityName;
-
-  const UserInfoResponse({
-    required this.id,
-    required this.userName,
-    this.avatar,
-    this.email,
-    this.phone,
-    required this.verified,
-    required this.method,
-    required this.studentId,
-    required this.realName,
-    this.verifiedEmail,
-    required this.createdAt,
-    required this.updatedAt,
-    this.banReason,
-    this.banned,
-    this.bannedAt,
-    this.role,
-    this.gender,
-    this.birthday,
-    this.signature,
-    this.hometownProvinceId,
-    this.hometownCityId,
-    this.hometownProvinceName,
-    this.hometownCityName,
-  });
-
-  factory UserInfoResponse.fromJson(Map<String, dynamic> json) {
+class const UserInfoResponse({
+  required final int id,
+  required final String userName,
+  final String? avatar,
+  final String? email,
+  final String? phone,
+  required final bool verified,
+  required final String method,
+  required final String studentId,
+  required final String realName,
+  final String? verifiedEmail,
+  required final int createdAt,
+  required final int updatedAt,
+  final String? banReason,
+  final bool? banned,
+  final int? bannedAt,
+  final String? role,
+  final String? gender,
+  final String? birthday,
+  final String? signature,
+  final int? hometownProvinceId,
+  final int? hometownCityId,
+  final String? hometownProvinceName,
+  final String? hometownCityName,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return UserInfoResponse(
       id: (json['id'] as num).toInt(),
       userName: json['userName'] as String,

@@ -1,31 +1,21 @@
-class Restaurant {
-  final int id;
-  final String name;
-  final String address;
-  final int? cityId;
-  final double? gcjLng;
-  final double? gcjLat;
-  final int? hubId;
-  final String? poi;
+class Restaurant({
+  required final int id,
+  required final String name,
+  required final String address,
+  required final int? cityId,
+  required final double? gcjLng,
+  required final double? gcjLat,
+  required final int? hubId,
+  required final String? poi,
+  required List<String> pictureUrl,
+  required final int? createdAt,
+  required final int? updatedAt,
+}) {
   final List<String> pictureUrl;
-  final int? createdAt;
-  final int? updatedAt;
 
-  Restaurant({
-    required this.id,
-    required this.name,
-    required this.address,
-    required this.cityId,
-    required this.gcjLng,
-    required this.gcjLat,
-    required this.hubId,
-    required this.poi,
-    required List<String> pictureUrl,
-    required this.createdAt,
-    required this.updatedAt,
-  }) : pictureUrl = List<String>.unmodifiable(pictureUrl);
+  this : pictureUrl = List<String>.unmodifiable(pictureUrl);
 
-  factory Restaurant.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return Restaurant(
       id: _parseInt(json['id']) ?? 0,
       name: (json['name'] as String?)?.trim() ?? '',

@@ -7,7 +7,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
   final double height;
   final EdgeInsetsGeometry padding;
 
-  const CustomBottomNavigationBar({
+  const new({
     super.key,
     required this.items,
     required this.currentIndex,
@@ -21,14 +21,13 @@ class CustomBottomNavigationBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final double safeBottom = MediaQuery.paddingOf(
-      context,
-    ).bottom.clamp(0.0, 12.0);
+    final double safeBottom = MediaQuery.paddingOf(context).bottom
+        .clamp(0.0, 12.0);
 
     return Container(
       width: double.infinity,
       color: const Color(0xFFF3EDD1),
-      padding: EdgeInsets.only(bottom: safeBottom),
+      padding: .only(bottom: safeBottom),
       child: SizedBox(
         height: height,
         child: Padding(
@@ -58,7 +57,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: .circular(16),
                       ),
                     ),
                   ),
@@ -66,10 +65,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
                     children: items
                         .map(
                           (Widget item) => Expanded(
-                            child: Align(
-                              alignment: Alignment.topCenter,
-                              child: item,
-                            ),
+                            child: Align(alignment: .topCenter, child: item),
                           ),
                         )
                         .toList(growable: false),

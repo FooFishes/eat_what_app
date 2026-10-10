@@ -4,7 +4,7 @@ import 'package:eat_what_app/core/network/models/api_response.dart';
 
 /// 负责解析所有 {code, msg, data} 结构的接口响应
 final class ApiParser {
-  const ApiParser._();
+  const new _();
 
   /// 解析公共外壳 {code, msg, data}, 返回 data 部分
   /// 仅供 RequestClient 内部调用

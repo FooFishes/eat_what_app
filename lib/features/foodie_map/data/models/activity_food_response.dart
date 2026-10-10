@@ -1,33 +1,22 @@
-class ActivityFoodResponse {
-  final int id;
-  final int accountId;
-  final String foodName;
-  final String description;
-  final int provinceId;
-  final int cityId;
+class ActivityFoodResponse({
+  required final int id,
+  required final int accountId,
+  required final String foodName,
+  required final String description,
+  required final int provinceId,
+  required final int cityId,
+  required List<String> pictureUrl,
+  required final int likesCount,
+  required final bool isLiked,
+  required final int createdAt,
+  required final int updatedAt,
+  required final String uploaderName,
+}) {
   final List<String> pictureUrl;
-  final int likesCount;
-  final bool isLiked;
-  final int createdAt;
-  final int updatedAt;
-  final String uploaderName;
 
-  ActivityFoodResponse({
-    required this.id,
-    required this.accountId,
-    required this.foodName,
-    required this.description,
-    required this.provinceId,
-    required this.cityId,
-    required List<String> pictureUrl,
-    required this.likesCount,
-    required this.isLiked,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.uploaderName,
-  }) : pictureUrl = List<String>.unmodifiable(pictureUrl);
+  this : pictureUrl = List<String>.unmodifiable(pictureUrl);
 
-  factory ActivityFoodResponse.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return ActivityFoodResponse(
       id: (json['id'] as num).toInt(),
       accountId: (json['accountId'] as num).toInt(),

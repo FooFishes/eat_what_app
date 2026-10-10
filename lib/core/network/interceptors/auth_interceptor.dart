@@ -1,10 +1,11 @@
 import 'package:dio/dio.dart';
+
 import '../../constant/urls.dart';
 
 class AuthInterceptor extends Interceptor {
   final Future<String?> Function() getToken;
 
-  AuthInterceptor({required this.getToken});
+  new({required this.getToken});
 
   @override
   void onRequest(

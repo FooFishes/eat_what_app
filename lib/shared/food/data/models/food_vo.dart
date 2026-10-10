@@ -1,44 +1,33 @@
 import 'package:eat_what_app/shared/food/data/models/food_system_tag_vo.dart';
 import 'package:eat_what_app/shared/food/data/models/food_tag_summary_vo.dart';
 
-class FoodVO {
-  final int id;
-  final int? accountId;
-  final String uploaderName;
-  final int restaurantId;
-  final String name;
-  final String description;
-  final double? price;
-  final String? category;
+class FoodVO({
+  required final int id,
+  required final int? accountId,
+  required final String uploaderName,
+  required final int restaurantId,
+  required final String name,
+  required final String description,
+  required final double? price,
+  required final String? category,
+  required List<String> pictureUrl,
+  required List<FoodSystemTagVO> systemTags,
+  required List<FoodTagSummaryVO> myCustomTags,
+  required final bool isFavorite,
+  required final int likesCount,
+  required final int? createdAt,
+  required final int? updatedAt,
+}) {
   final List<String> pictureUrl;
   final List<FoodSystemTagVO> systemTags;
   final List<FoodTagSummaryVO> myCustomTags;
-  final bool isFavorite;
-  final int likesCount;
-  final int? createdAt;
-  final int? updatedAt;
 
-  FoodVO({
-    required this.id,
-    required this.accountId,
-    required this.uploaderName,
-    required this.restaurantId,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.category,
-    required List<String> pictureUrl,
-    required List<FoodSystemTagVO> systemTags,
-    required List<FoodTagSummaryVO> myCustomTags,
-    required this.isFavorite,
-    required this.likesCount,
-    required this.createdAt,
-    required this.updatedAt,
-  }) : pictureUrl = List<String>.unmodifiable(pictureUrl),
-       systemTags = List<FoodSystemTagVO>.unmodifiable(systemTags),
-       myCustomTags = List<FoodTagSummaryVO>.unmodifiable(myCustomTags);
+  this
+    : pictureUrl = List<String>.unmodifiable(pictureUrl),
+      systemTags = List<FoodSystemTagVO>.unmodifiable(systemTags),
+      myCustomTags = List<FoodTagSummaryVO>.unmodifiable(myCustomTags);
 
-  factory FoodVO.fromJson(Map<String, dynamic> json) {
+  factory fromJson(Map<String, dynamic> json) {
     return FoodVO(
       id: _parseInt(json['id']) ?? 0,
       accountId: _parseInt(json['accountId']),

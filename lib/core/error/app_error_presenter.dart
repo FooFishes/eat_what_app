@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'api_exception_ext.dart';
 
 final class AppErrorPresenter {
-  const AppErrorPresenter._();
+  const new _();
 
   static void showErrorToast(BuildContext context, Object error) {
     AppToast.show(

@@ -1,10 +1,8 @@
-class ProvinceResponse {
-  final int id;
-  final String name;
-
-  const ProvinceResponse({required this.id, required this.name});
-
-  factory ProvinceResponse.fromJson(Map<String, dynamic> json) {
+class const ProvinceResponse({
+  required final int id,
+  required final String name,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return ProvinceResponse(
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,

@@ -3,12 +3,12 @@ import 'package:eat_what_app/core/theme/app_font_sizes.dart';
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  const AppTheme._();
+  const new _();
 
   static final ColorScheme _lightColorScheme =
       ColorScheme.fromSeed(
         seedColor: AppColors.primary,
-        brightness: Brightness.light,
+        brightness: .light,
       ).copyWith(
         primary: AppColors.primary,
         secondary: AppColors.primarySoft,
@@ -22,67 +22,67 @@ class AppTheme {
   static final TextTheme _textTheme = const TextTheme(
     displayLarge: TextStyle(
       fontSize: AppFontSizes.s48,
-      fontWeight: FontWeight.w700,
+      fontWeight: .w700,
       height: 1.1,
     ),
     displayMedium: TextStyle(
       fontSize: AppFontSizes.s40,
-      fontWeight: FontWeight.w700,
+      fontWeight: .w700,
       height: 1.1,
     ),
     displaySmall: TextStyle(
       fontSize: AppFontSizes.s36,
-      fontWeight: FontWeight.w700,
+      fontWeight: .w700,
       height: 1.15,
     ),
     headlineLarge: TextStyle(
       fontSize: AppFontSizes.s32,
-      fontWeight: FontWeight.w600,
+      fontWeight: .w600,
       height: 1.2,
     ),
     headlineMedium: TextStyle(
       fontSize: AppFontSizes.s28,
-      fontWeight: FontWeight.w600,
+      fontWeight: .w600,
       height: 1.2,
     ),
     titleLarge: TextStyle(
       fontSize: AppFontSizes.s24,
-      fontWeight: FontWeight.w600,
+      fontWeight: .w600,
       height: 1.25,
     ),
     titleMedium: TextStyle(
       fontSize: AppFontSizes.s20,
-      fontWeight: FontWeight.w600,
+      fontWeight: .w600,
       height: 1.25,
     ),
     bodyLarge: TextStyle(
       fontSize: AppFontSizes.s16,
-      fontWeight: FontWeight.w400,
+      fontWeight: .w400,
       height: 1.4,
     ),
     bodyMedium: TextStyle(
       fontSize: AppFontSizes.s14,
-      fontWeight: FontWeight.w400,
+      fontWeight: .w400,
       height: 1.4,
     ),
     bodySmall: TextStyle(
       fontSize: AppFontSizes.s12,
-      fontWeight: FontWeight.w400,
+      fontWeight: .w400,
       height: 1.3,
     ),
     labelLarge: TextStyle(
       fontSize: AppFontSizes.s16,
-      fontWeight: FontWeight.w600,
+      fontWeight: .w600,
       height: 1.25,
     ),
     labelMedium: TextStyle(
       fontSize: AppFontSizes.s14,
-      fontWeight: FontWeight.w500,
+      fontWeight: .w500,
       height: 1.25,
     ),
     labelSmall: TextStyle(
       fontSize: AppFontSizes.s12,
-      fontWeight: FontWeight.w500,
+      fontWeight: .w500,
       height: 1.2,
     ),
   );
@@ -101,10 +101,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
-      cardTheme: const CardThemeData(
-        color: AppColors.card,
-        margin: EdgeInsets.zero,
-      ),
+      cardTheme: const CardThemeData(color: AppColors.card, margin: .zero),
       dividerColor: AppColors.border,
     );
   }

@@ -1,5 +1,5 @@
 class AppFontSizes {
-  const AppFontSizes._();
+  const new _();
 
   static const double s12 = 12;
   static const double s14 = 14;

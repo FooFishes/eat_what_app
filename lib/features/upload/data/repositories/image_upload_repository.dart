@@ -12,11 +12,7 @@ class ImageUploadRepository {
   final RequestClient _api;
   final RequestClient _rawApi;
 
-  const ImageUploadRepository({
-    required RequestClient api,
-    required RequestClient rawApi,
-  }) : _api = api,
-       _rawApi = rawApi;
+  const new({required this._api, required this._rawApi});
 
   Future<List<String>> uploadImages({required List<XFile> images}) async {
     if (images.isEmpty) {

@@ -1,15 +1,9 @@
-class CityResponse {
-  final int id;
-  final int provinceId;
-  final String name;
-
-  const CityResponse({
-    required this.id,
-    required this.provinceId,
-    required this.name,
-  });
-
-  factory CityResponse.fromJson(Map<String, dynamic> json) {
+class const CityResponse({
+  required final int id,
+  required final int provinceId,
+  required final String name,
+}) {
+  factory fromJson(Map<String, dynamic> json) {
     return CityResponse(
       id: (json['id'] as num).toInt(),
       provinceId: (json['provinceId'] as num).toInt(),

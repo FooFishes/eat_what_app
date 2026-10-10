@@ -1,18 +1,10 @@
-class CreateActivityFoodRequest {
-  final String foodName;
-  final String? description;
-  final int provinceId;
-  final int cityId;
-  final List<String> pictureUrl;
-
-  const CreateActivityFoodRequest({
-    required this.foodName,
-    required this.description,
-    required this.provinceId,
-    required this.cityId,
-    required this.pictureUrl,
-  });
-
+class const CreateActivityFoodRequest({
+  required final String foodName,
+  required final String? description,
+  required final int provinceId,
+  required final int cityId,
+  required final List<String> pictureUrl,
+}) {
   Map<String, dynamic> toJson() {
     return {
       'foodName': foodName,

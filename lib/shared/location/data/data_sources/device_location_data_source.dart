@@ -6,7 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 class DeviceLocationDataSource {
-  const DeviceLocationDataSource();
+  const new();
 
   Future<Province?> getLocalProvince() async {
     final hasPermission = await _getPermission();

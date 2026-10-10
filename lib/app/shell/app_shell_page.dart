@@ -9,7 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 class AppShellPage extends ConsumerWidget {
-  const AppShellPage({
+  const new({
     super.key,
     required this.navigationShell,
     required this.currentLocation,
@@ -77,7 +77,7 @@ class AppShellPage extends ConsumerWidget {
     double size = 32.0,
   }) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+      behavior: .opaque,
       onTap: () {
         HapticFeedback.lightImpact();
         navigationShell.goBranch(
@@ -86,12 +86,12 @@ class AppShellPage extends ConsumerWidget {
         );
       },
       child: Container(
-        alignment: Alignment.center,
+        alignment: .center,
         height: 85,
         width: 65,
         color: Colors.transparent,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             SizedBox(
               width: 65,
@@ -150,9 +150,7 @@ class AppShellPage extends ConsumerWidget {
   }
 }
 
-class _BottomTabItemData {
-  const _BottomTabItemData({required this.label, required this.iconAsset});
-
-  final String label;
-  final String iconAsset;
-}
+class const _BottomTabItemData({
+  required final String label,
+  required final String iconAsset,
+});

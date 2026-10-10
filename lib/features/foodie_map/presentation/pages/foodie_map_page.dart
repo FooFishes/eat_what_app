@@ -14,7 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class FoodieMapPage extends ConsumerWidget {
-  const FoodieMapPage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,7 +124,7 @@ class FoodieMapPage extends ConsumerWidget {
 class _FoodieMapHeader extends StatelessWidget {
   final int? provinceId;
 
-  const _FoodieMapHeader(this.provinceId);
+  const new(this.provinceId);
 
   @override
   Widget build(BuildContext context) {
@@ -135,8 +135,8 @@ class _FoodieMapHeader extends StatelessWidget {
         left: 20,
         bottom: 30,
         child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: .min,
+          crossAxisAlignment: .end,
           children: [
             const Icon(
               Icons.location_on,
@@ -145,9 +145,8 @@ class _FoodieMapHeader extends StatelessWidget {
             ),
             Text(
               '未获取到当前位置',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.bodyLarge
+                  ?.copyWith(fontWeight: .w700),
             ),
           ],
         ),
@@ -164,12 +163,12 @@ class _FoodieMapHeader extends StatelessWidget {
         right: 60,
         bottom: 15,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
           children: [
             Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: .min,
+              crossAxisAlignment: .end,
               children: [
                 const Icon(
                   Icons.location_on,
@@ -178,21 +177,18 @@ class _FoodieMapHeader extends StatelessWidget {
                 ),
                 Text(
                   '当前所在地：',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.bodyLarge
+                      ?.copyWith(fontWeight: .w700),
                 ),
               ],
             ),
             Padding(
-              padding: EdgeInsets.only(left: nameLeftPadding, top: 10),
+              padding: .only(left: nameLeftPadding, top: 10),
               child: FittedBox(
                 child: Text(
                   name,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppColors.accentRed,
-                    letterSpacing: 8,
-                  ),
+                  style: Theme.of(context).textTheme.displayMedium
+                      ?.copyWith(color: AppColors.accentRed, letterSpacing: 8),
                 ),
               ),
             ),
@@ -229,7 +225,7 @@ class FeatureTitle extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const FeatureTitle(this.title, {required this.child, super.key});
+  const new(this.title, {required this.child, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -250,13 +246,12 @@ class FeatureTitle extends StatelessWidget {
             top: 30,
             right: 10,
             child: Align(
-              alignment: Alignment.topLeft,
+              alignment: .topLeft,
               child: FittedBox(
                 child: Text(
                   title,
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(context).textTheme.headlineLarge
+                      ?.copyWith(fontWeight: .w600),
                 ),
               ),
             ),
@@ -272,7 +267,7 @@ class _ProvincesBar extends StatelessWidget {
   final List<ProvinceResponse> provinces;
   final ValueChanged<int> onChanged;
 
-  const _ProvincesBar({
+  const new({
     required this.provinces,
     required this.selectedProvinceId,
     required this.onChanged,
@@ -290,7 +285,7 @@ class _ProvincesBar extends StatelessWidget {
           final current = provinces[index];
           final isSelected = current.id == selectedProvinceId;
           return Container(
-            margin: const EdgeInsets.fromLTRB(5, 10, 5, 10),
+            margin: const .fromLTRB(5, 10, 5, 10),
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
@@ -305,7 +300,7 @@ class _ProvincesBar extends StatelessWidget {
                 current.name,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: isSelected ? AppColors.accentRed : null,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: .w600,
                 ),
               ),
             ),
@@ -319,7 +314,7 @@ class _ProvincesBar extends StatelessWidget {
 class _FoodList extends ConsumerStatefulWidget {
   final int provinceId;
 
-  const _FoodList({required this.provinceId, super.key});
+  const new({required this.provinceId, super.key});
 
   @override
   ConsumerState<_FoodList> createState() => _FoodListState();
@@ -459,7 +454,7 @@ class _FoodItem extends StatelessWidget {
   final bool isLiking;
   final VoidCallback? onPressed;
 
-  const _FoodItem({
+  const new({
     required this.food,
     required this.isLiking,
     required this.onPressed,
@@ -470,12 +465,12 @@ class _FoodItem extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF3EDD1),
-        borderRadius: BorderRadius.circular(23),
+        borderRadius: .circular(23),
       ),
       height: 135,
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(15, 5, 15, 5),
-      padding: const EdgeInsets.all(10),
+      margin: const .fromLTRB(15, 5, 15, 5),
+      padding: const .all(10),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final maxHeight = constraints.maxHeight;
@@ -489,7 +484,7 @@ class _FoodItem extends StatelessWidget {
                   maxWidth: maxHeight * 0.8,
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: .circular(20),
                   child: food.url == null
                       ? Center(
                           child: Text(
@@ -499,7 +494,7 @@ class _FoodItem extends StatelessWidget {
                         )
                       : CachedNetworkImage(
                           imageUrl: food.url!,
-                          fit: BoxFit.cover,
+                          fit: .cover,
                           placeholder: (context, url) => const Center(
                             child: SizedBox(
                               width: 20,
@@ -519,21 +514,18 @@ class _FoodItem extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Row(
                       children: [
                         Expanded(
                           child: Align(
-                            alignment: Alignment.centerLeft,
+                            alignment: .centerLeft,
                             child: FittedBox(
                               child: Text(
                                 food.foodName,
                                 style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                    ),
+                                    ?.copyWith(fontWeight: .w600, fontSize: 18),
                               ),
                             ),
                           ),
@@ -543,7 +535,7 @@ class _FoodItem extends StatelessWidget {
                           height: 30,
                           child: IconButton(
                             onPressed: isLiking ? null : onPressed,
-                            padding: EdgeInsets.zero,
+                            padding: .zero,
                             icon: Icon(
                               size: 25,
                               food.isLiked
@@ -559,9 +551,8 @@ class _FoodItem extends StatelessWidget {
                     ),
                     Text(
                       food.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textSecondary),
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -569,9 +560,8 @@ class _FoodItem extends StatelessWidget {
                     FittedBox(
                       child: Text(
                         food.accountName,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFFAAAAAA),
-                        ),
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(color: const Color(0xFFAAAAAA)),
                       ),
                     ),
                   ],
@@ -589,7 +579,7 @@ Widget _buildLoadingIndicator({bool isLarge = false}) {
   final side = isLarge ? 50.0 : 20.0;
   final strokeWidth = isLarge ? 5.0 : 3.0;
   return Padding(
-    padding: const EdgeInsets.all(5),
+    padding: const .all(5),
     child: SizedBox(
       height: side,
       width: side,
@@ -605,13 +595,12 @@ Widget _buildRetryMessage(
   required VoidCallback onPressed,
 }) {
   return Row(
-    mainAxisSize: MainAxisSize.min,
+    mainAxisSize: .min,
     children: [
       Text(
         message,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: AppColors.textSecondary),
       ),
       TextButton(
         onPressed: onPressed,

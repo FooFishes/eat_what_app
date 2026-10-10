@@ -8,7 +8,7 @@ import 'package:eat_what_app/shared/location/data/models/province_response.dart'
 class LocationRepository {
   final RequestClient _api;
 
-  const LocationRepository(this._api);
+  const new(this._api);
 
   Future<List<ProvinceResponse>> getProvinces() async {
     final result = await _api.get<List<ProvinceResponse>>(

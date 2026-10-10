@@ -17,7 +17,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileInfoPage extends ConsumerStatefulWidget {
-  const ProfileInfoPage({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<ProfileInfoPage> createState() => _ProfileInfoPageState();
@@ -28,9 +28,7 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
 
   Future<void> _saveField(UpdateUserInfoRequest request) async {
     try {
-      await ref
-          .read(profileInfoViewModelProvider.notifier)
-          .saveField(request);
+      await ref.read(profileInfoViewModelProvider.notifier).saveField(request);
       if (!mounted) return;
       AppErrorPresenter.showMessageToast(
         context,
@@ -133,21 +131,21 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
 
             Widget? suffixIcon = switch (checkState) {
               _UsernameCheckState.loading => const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+                width: 18,
+                height: 18,
+                child: Padding(
+                  padding: .all(12),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
+              ),
               _UsernameCheckState.available => const Icon(
-                  Icons.check_circle_outline_rounded,
-                  color: Colors.green,
-                ),
+                Icons.check_circle_outline_rounded,
+                color: Colors.green,
+              ),
               _UsernameCheckState.unavailable => const Icon(
-                  Icons.cancel_outlined,
-                  color: Colors.red,
-                ),
+                Icons.cancel_outlined,
+                color: Colors.red,
+              ),
               _UsernameCheckState.idle => null,
             };
 
@@ -209,15 +207,15 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
       context: context,
       backgroundColor: AppColors.surfaceAlt,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: .vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const .fromLTRB(20, 20, 20, 24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: .min,
               children: [
                 _SheetActionTile(
                   label: '男',
@@ -274,7 +272,7 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
       isScrollControlled: true,
       backgroundColor: AppColors.surfaceAlt,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: .vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
@@ -309,21 +307,20 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
             return SafeArea(
               top: false,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: .fromLTRB(
                   20,
                   20,
                   20,
                   24 + MediaQuery.viewInsetsOf(context).bottom,
                 ),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: .min,
+                  crossAxisAlignment: .start,
                   children: [
                     Text(
                       '选择家乡',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: .w800),
                     ),
                     const SizedBox(height: 16),
                     _DropdownField<int>(
@@ -363,9 +360,9 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => Navigator.of(
-                              sheetContext,
-                            ).pop(const _HometownSelection()),
+                            onPressed: () =>
+                                Navigator.of(sheetContext)
+                                    .pop(const _HometownSelection()),
                             child: const Text('清空'),
                           ),
                         ),
@@ -411,7 +408,9 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
     }
 
     try {
-      await ref.read(profileInfoViewModelProvider.notifier).saveHometown(
+      await ref
+          .read(profileInfoViewModelProvider.notifier)
+          .saveHometown(
             provinceId: result.provinceId,
             cityId: result.cityId,
             cities: result.cities,
@@ -436,15 +435,15 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
       context: context,
       backgroundColor: AppColors.surfaceAlt,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: .vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            padding: const .fromLTRB(20, 20, 20, 24),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: .min,
               children: [
                 if (!isVerified)
                   _SheetActionTile(
@@ -490,128 +489,129 @@ class _ProfileInfoPageState extends ConsumerState<ProfileInfoPage> {
         child: vmState.isLoading
             ? const Center(child: CircularProgressIndicator())
             : vmState.error != null || userInfo == null
-                ? _ProfileInfoErrorState(
-                    onRetry: () =>
-                        ref.read(profileInfoViewModelProvider.notifier).reload(),
-                  )
-                : Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
-                        child: Row(
+            ? _ProfileInfoErrorState(
+                onRetry: () =>
+                    ref.read(profileInfoViewModelProvider.notifier).reload(),
+              )
+            : Column(
+                children: [
+                  Padding(
+                    padding: const .fromLTRB(8, 8, 12, 0),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            context.pop();
+                            ref
+                                .read(appShellViewModelProvider.notifier)
+                                .showNavigationBar();
+                          },
+                          icon: const Icon(Icons.arrow_back_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const .fromLTRB(22, 8, 22, 32),
+                      children: [
+                        _ProfileInfoHero(
+                          userInfo: userInfo,
+                          avatarPreviewBytes: _avatarPreviewBytes,
+                          isUploadingAvatar: vmState.isUploadingAvatar,
+                          onEditAvatar: _editAvatar,
+                        ),
+                        const SizedBox(height: 26),
+                        _InfoGroup(
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                context.pop();
-                                ref
-                                    .read(appShellViewModelProvider.notifier)
-                                    .showNavigationBar();
+                            _InfoRowTile(
+                              label: '昵称',
+                              value: userInfo.userName,
+                              onTap: _editNickname,
+                            ),
+                            _InfoRowTile(
+                              label: '学号',
+                              value: userInfo.studentId,
+                              onTap: () {
+                                AppErrorPresenter.showMessageToast(
+                                  context,
+                                  '学号由认证结果生成，当前不支持修改',
+                                  type: AppToastType.info,
+                                );
                               },
-                              icon: const Icon(Icons.arrow_back_rounded),
+                            ),
+                            _InfoRowTile(
+                              label: '性别',
+                              value: switch (userInfo.gender) {
+                                'male' => '男',
+                                'female' => '女',
+                                'other' => '其他',
+                                _ => '未设置',
+                              },
+                              onTap: _editGender,
                             ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(22, 8, 22, 32),
+                        const SizedBox(height: 18),
+                        _InfoGroup(
                           children: [
-                            _ProfileInfoHero(
-                              userInfo: userInfo,
-                              avatarPreviewBytes: _avatarPreviewBytes,
-                              isUploadingAvatar: vmState.isUploadingAvatar,
-                              onEditAvatar: _editAvatar,
+                            _InfoRowTile(
+                              label: '生日',
+                              value: userInfo.birthday ?? '未设置',
+                              onTap: _editBirthday,
                             ),
-                            const SizedBox(height: 26),
-                            _InfoGroup(
-                              children: [
-                                _InfoRowTile(
-                                  label: '昵称',
-                                  value: userInfo.userName,
-                                  onTap: _editNickname,
-                                ),
-                                _InfoRowTile(
-                                  label: '学号',
-                                  value: userInfo.studentId,
-                                  onTap: () {
-                                    AppErrorPresenter.showMessageToast(
-                                      context,
-                                      '学号由认证结果生成，当前不支持修改',
-                                      type: AppToastType.info,
-                                    );
-                                  },
-                                ),
-                                _InfoRowTile(
-                                  label: '性别',
-                                  value: switch (userInfo.gender) {
-                                    'male' => '男',
-                                    'female' => '女',
-                                    'other' => '其他',
-                                    _ => '未设置',
-                                  },
-                                  onTap: _editGender,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            _InfoGroup(
-                              children: [
-                                _InfoRowTile(
-                                  label: '生日',
-                                  value: userInfo.birthday ?? '未设置',
-                                  onTap: _editBirthday,
-                                ),
-                                _InfoRowTile(
-                                  label: '家乡',
-                                  value: () {
-                                    final hometown = [
-                                      userInfo.hometownProvinceName,
-                                      userInfo.hometownCityName,
-                                    ]
+                            _InfoRowTile(
+                              label: '家乡',
+                              value: () {
+                                final hometown =
+                                    [
+                                          userInfo.hometownProvinceName,
+                                          userInfo.hometownCityName,
+                                        ]
                                         .whereType<String>()
                                         .where((s) => s.isNotEmpty)
                                         .join('');
-                                    return hometown.isEmpty ? '未设置' : hometown;
-                                  }(),
-                                  onTap: _editHometown,
-                                ),
-                                _InfoRowTile(
-                                  label: '认证状态',
-                                  value: userInfo.verified ? '已认证' : '未认证',
-                                  onTap: userInfo.verified
-                                      ? () {
-                                          AppErrorPresenter.showMessageToast(
-                                            context,
-                                            '当前账号已完成认证',
-                                            type: AppToastType.success,
-                                          );
-                                        }
-                                      : _openAuthPage,
-                                ),
-                              ],
+                                return hometown.isEmpty ? '未设置' : hometown;
+                              }(),
+                              onTap: _editHometown,
                             ),
-                            const SizedBox(height: 18),
-                            _InfoGroup(
-                              children: [
-                                _InfoRowTile(
-                                  label: '设置',
-                                  value: '',
-                                  onTap: _showSettingsSheet,
-                                ),
-                              ],
+                            _InfoRowTile(
+                              label: '认证状态',
+                              value: userInfo.verified ? '已认证' : '未认证',
+                              onTap: userInfo.verified
+                                  ? () {
+                                      AppErrorPresenter.showMessageToast(
+                                        context,
+                                        '当前账号已完成认证',
+                                        type: AppToastType.success,
+                                      );
+                                    }
+                                  : _openAuthPage,
                             ),
                           ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 18),
+                        _InfoGroup(
+                          children: [
+                            _InfoRowTile(
+                              label: '设置',
+                              value: '',
+                              onTap: _showSettingsSheet,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                ],
+              ),
       ),
     );
   }
 }
 
 class _ProfileInfoHero extends StatelessWidget {
-  const _ProfileInfoHero({
+  const new({
     required this.userInfo,
     required this.onEditAvatar,
     this.avatarPreviewBytes,
@@ -627,7 +627,7 @@ class _ProfileInfoHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Stack(
-        clipBehavior: Clip.none,
+        clipBehavior: .none,
         children: [
           _ProfileAvatar(
             avatar: userInfo.avatar,
@@ -667,7 +667,7 @@ class _ProfileInfoHero extends StatelessWidget {
 }
 
 class _InfoGroup extends StatelessWidget {
-  const _InfoGroup({required this.children});
+  const new({required this.children});
 
   final List<Widget> children;
 
@@ -676,7 +676,7 @@ class _InfoGroup extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFFFF8E8),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
       ),
       child: Column(children: children),
     );
@@ -684,11 +684,7 @@ class _InfoGroup extends StatelessWidget {
 }
 
 class _InfoRowTile extends StatelessWidget {
-  const _InfoRowTile({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
+  const new({required this.label, required this.value, required this.onTap});
 
   final String label;
   final String value;
@@ -697,29 +693,26 @@ class _InfoRowTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: .circular(18),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        padding: const .symmetric(horizontal: 18, vertical: 18),
         child: Row(
           children: [
             Text(
               label,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: .w700),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 value,
-                textAlign: TextAlign.right,
+                textAlign: .right,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(color: AppColors.textPrimary, fontWeight: .w500),
               ),
             ),
             const SizedBox(width: 8),
@@ -735,7 +728,7 @@ class _InfoRowTile extends StatelessWidget {
 }
 
 class _ProfileInfoErrorState extends StatelessWidget {
-  const _ProfileInfoErrorState({required this.onRetry});
+  const new({required this.onRetry});
 
   final VoidCallback onRetry;
 
@@ -743,9 +736,9 @@ class _ProfileInfoErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const .symmetric(horizontal: 32),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             const Icon(
               Icons.person_off_rounded,
@@ -757,9 +750,8 @@ class _ProfileInfoErrorState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '请稍后重试',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             OutlinedButton(onPressed: onRetry, child: const Text('重新加载')),
@@ -771,11 +763,7 @@ class _ProfileInfoErrorState extends StatelessWidget {
 }
 
 class _SheetActionTile extends StatelessWidget {
-  const _SheetActionTile({
-    required this.label,
-    required this.onTap,
-    this.danger = false,
-  });
+  const new({required this.label, required this.onTap, this.danger = false});
 
   final String label;
   final VoidCallback onTap;
@@ -784,22 +772,22 @@ class _SheetActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: .circular(16)),
       onTap: onTap,
       title: Text(
         label,
-        textAlign: TextAlign.center,
+        textAlign: .center,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: danger ? AppColors.accentRed : AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
+          color: danger ? AppColors.accentRed : AppColors.textPrimary,
+          fontWeight: .w700,
+        ),
       ),
     );
   }
 }
 
 class _DropdownField<T> extends StatelessWidget {
-  const _DropdownField({
+  const new({
     required this.label,
     required this.value,
     required this.items,
@@ -816,21 +804,19 @@ class _DropdownField<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: .start,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: AppColors.textSecondary, fontWeight: .w600),
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const .symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: .circular(14),
             border: Border.all(color: const Color(0xFFE6D9AF)),
           ),
           child: Row(
@@ -866,20 +852,14 @@ class _DropdownField<T> extends StatelessWidget {
   }
 }
 
-class _HometownSelection {
-  const _HometownSelection({
-    this.provinceId,
-    this.cityId,
-    this.cities = const [],
-  });
-
-  final int? provinceId;
-  final int? cityId;
-  final List<CityResponse> cities;
-}
+class const _HometownSelection({
+  final int? provinceId,
+  final int? cityId,
+  final List<CityResponse> cities = const [],
+});
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
+  const new({
     required this.avatar,
     required this.name,
     required this.size,
@@ -895,12 +875,12 @@ class _ProfileAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     if (previewBytes != null) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: .circular(size / 2),
         child: Image.memory(
           previewBytes!,
           width: size,
           height: size,
-          fit: BoxFit.cover,
+          fit: .cover,
         ),
       );
     }
@@ -912,12 +892,12 @@ class _ProfileAvatar extends StatelessWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 2),
+      borderRadius: .circular(size / 2),
       child: Image.network(
         avatarUrl,
         width: size,
         height: size,
-        fit: BoxFit.cover,
+        fit: .cover,
         errorBuilder: (_, _, _) => _AvatarPlaceholder(name: name, size: size),
       ),
     );
@@ -925,7 +905,7 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _AvatarPlaceholder extends StatelessWidget {
-  const _AvatarPlaceholder({required this.name, required this.size});
+  const new({required this.name, required this.size});
 
   final String name;
   final double size;
@@ -937,21 +917,19 @@ class _AvatarPlaceholder extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      alignment: Alignment.center,
+      alignment: .center,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFFE9BC), Color(0xFFFFC56F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: .circular(size / 2),
       ),
       child: Text(
         initial,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: AppColors.accentBrown,
-            ),
+        style: Theme.of(context).textTheme.headlineSmall
+            ?.copyWith(fontWeight: .w800, color: AppColors.accentBrown),
       ),
     );
   }

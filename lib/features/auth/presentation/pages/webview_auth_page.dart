@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class WebviewAuthPage extends ConsumerStatefulWidget {
-  const WebviewAuthPage({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<WebviewAuthPage> createState() => _WebviewAuthPageState();

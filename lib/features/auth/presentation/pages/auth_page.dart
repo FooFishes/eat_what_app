@@ -9,7 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:eat_what_app/shared/presentation/widgets/app_toast.dart';
 
 class AuthPage extends ConsumerStatefulWidget {
-  const AuthPage({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<AuthPage> createState() => _AuthPageState();
@@ -25,9 +25,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
       appBar: AppBar(title: Text('认证页面'), centerTitle: false),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const .all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: .center,
             children: [
               if (isLoading) ...[
                 const CircularProgressIndicator(),
@@ -42,10 +42,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                 const SizedBox(height: 24),
                 Text(
                   isVerified ? '已完成认证' : '未完成认证',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(fontSize: 24, fontWeight: .bold),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -73,7 +70,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                     ),
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: .circular(25),
                       ),
                       elevation: 2,
                     ),
@@ -89,7 +86,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                     label: Text('山大邮箱验证', style: const TextStyle(fontSize: 16)),
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: .circular(25),
                       ),
                       elevation: 2,
                     ),
@@ -105,7 +102,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                     label: Text('刷新认证状态', style: const TextStyle(fontSize: 16)),
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: .circular(25),
                       ),
                       elevation: 2,
                     ),
@@ -195,7 +192,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 }
 
 class EmailInputDialog extends ConsumerStatefulWidget {
-  const EmailInputDialog({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<EmailInputDialog> createState() => _EmailInputDialogState();
@@ -247,16 +244,16 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const .all(24),
         decoration: BoxDecoration(
           color:
               Theme.of(context).dialogTheme.backgroundColor ??
               Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: .circular(20),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
@@ -266,12 +263,12 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
           children: [
             const Text(
               "山大邮箱验证",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: .bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -291,43 +288,35 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
                 ),
                 filled: true,
                 fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
+                contentPadding: const .symmetric(horizontal: 16, vertical: 16),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: .circular(12),
                   borderSide: BorderSide.none,
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: .circular(12),
                   borderSide: BorderSide(
                     color: Theme.of(context).primaryColor,
                     width: 1.5,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: .circular(12),
                   borderSide: BorderSide(color: Colors.grey.shade200),
                 ),
               ),
             ),
             const SizedBox(height: 32),
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: .end,
               children: [
                 TextButton(
                   onPressed: _isLoading
                       ? null
                       : () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    padding: const .symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: .circular(8)),
                   ),
                   child: Text(
                     "取消",
@@ -338,13 +327,8 @@ class _EmailInputDialogState extends ConsumerState<EmailInputDialog> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _sendEmail,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    padding: const .symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: .circular(12)),
                     elevation: 0,
                   ),
                   child: _isLoading

@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -17,52 +17,42 @@ class HomePage extends ConsumerWidget {
     );
     final mainCarouselData = <CarouselData>[
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '麻辣香锅',
         content: '超大份量，校园必吃推荐',
       ),
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '新年美食专题',
       ),
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '人气披萨',
         content: '手工现烤，拉丝浓郁',
       ),
     ];
     final topicCarouselData = <CarouselData>[
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '新年美食专题',
       ),
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '火锅狂欢',
       ),
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '火锅狂欢',
       ),
       CarouselData(
-        imagePath:
-            'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+        imagePath: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
         title: '火锅狂欢',
       ),
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '今日推荐',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32),
-        ),
+        title: Text('今日推荐', style: TextStyle(fontWeight: .bold, fontSize: 32)),
         centerTitle: false,
       ),
       body: SingleChildScrollView(
@@ -80,7 +70,7 @@ class HomePage extends ConsumerWidget {
 
             // === 中间左右两块区域 ===
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: const .symmetric(horizontal: 24.0),
               child: Row(
                 children: [
                   // 左侧：活动入口 (类似 StackedCarousel)
@@ -108,29 +98,26 @@ class HomePage extends ConsumerWidget {
             ),
             // === 底部长条分享按钮 ===
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 16.0,
-              ),
+              padding: const .symmetric(horizontal: 24.0, vertical: 16.0),
               child: GestureDetector(
                 onTap: () {
                   context.go('/upload');
                 },
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 24.0),
+                  padding: const .symmetric(vertical: 24.0),
                   decoration: BoxDecoration(
                     color: AppColors.card,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: .circular(24),
                   ),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: .center,
                     children: [
                       Icon(
                         Icons.add_rounded,
                         color: AppColors.primary,
                         size: 60,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: .bold,
                       ),
                       SizedBox(height: 8),
                       Text(
@@ -138,7 +125,7 @@ class HomePage extends ConsumerWidget {
                         style: TextStyle(
                           color: AppColors.textPrimary.withValues(alpha: 0.5),
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: .w600,
                         ),
                       ),
                     ],

@@ -1,25 +1,15 @@
 import 'package:eat_what_app/features/foodie_map/data/models/activity_food_response.dart';
 
-class RegionalFood {
-  final int id;
-  final String foodName;
-  final String accountName;
-  final int accountId;
-  final String description;
-  final String? url;
-  final bool isLiked;
-
-  const RegionalFood({
-    required this.id,
-    required this.foodName,
-    required this.accountName,
-    required this.accountId,
-    required this.description,
-    required this.isLiked,
-    required this.url,
-  });
-
-  RegionalFood.fromActivityFoodResponse(ActivityFoodResponse response)
+class const RegionalFood({
+  required final int id,
+  required final String foodName,
+  required final String accountName,
+  required final int accountId,
+  required final String description,
+  required final bool isLiked,
+  required final String? url,
+}) {
+  new fromActivityFoodResponse(ActivityFoodResponse response)
     : this(
         id: response.id,
         foodName: response.foodName,

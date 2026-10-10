@@ -18,7 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 /// 上传页面
 /// 包含两个子页面：Campus页面和New Year页面
 class UploadPage extends ConsumerStatefulWidget {
-  const UploadPage({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<UploadPage> createState() => _ActivityUploadState();
@@ -90,12 +90,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('上传页'), centerTitle: false),
       body: Padding(
-        padding: const EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: 16,
-        ),
+        padding: const .only(left: 16, right: 16, top: 16, bottom: 16),
         child: Column(
           children: [
             _buildToggleSwitch(),
@@ -118,13 +113,13 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       builder: (context, constraints) {
         final slideWidth = constraints.maxWidth / 2;
         return Stack(
-          clipBehavior: Clip.none,
+          clipBehavior: .none,
           children: [
             Container(
               height: 50,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: .circular(20),
                 border: Border.all(color: AppColors.border),
               ),
               child: Stack(
@@ -139,7 +134,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.accentRed,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: .circular(18),
                       ),
                     ),
                   ),
@@ -174,11 +169,11 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
   Widget _buildToggleOption(String label, bool isCampus) {
     return Expanded(
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+        behavior: .opaque,
         onTap: () => setState(() => _isCampusSelected = isCampus),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          alignment: Alignment.center,
+          padding: const .symmetric(vertical: 10),
+          alignment: .center,
           child: Text(
             label,
             style: TextStyle(
@@ -203,16 +198,16 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
   /// 构建New Year子页面
   Widget _buildNewYearSubPage() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const .symmetric(horizontal: 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Center(
             child: Text(
               '添加菜品',
               style: TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontWeight: .bold,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -248,7 +243,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: .bold,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -280,7 +275,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
   /// [field] 字段内容组件
   Widget _buildFormField(String label, bool isRequired, Widget field) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: .start,
       children: [
         _buildLabel(label, isRequired),
         const SizedBox(height: 8),
@@ -294,13 +289,13 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
   /// [isRequired] 是否为必填项，必填项会显示红色圆点
   Widget _buildLabel(String label, bool isRequired) {
     return Stack(
-      clipBehavior: Clip.none,
+      clipBehavior: .none,
       children: [
         Text(
           label,
           style: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: .bold,
             color: AppColors.textPrimary,
           ),
         ),
@@ -332,7 +327,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       height: 36,
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
       ),
       child: TextField(
         controller: controller,
@@ -351,7 +346,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(color: Colors.transparent),
           ),
-          contentPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 8),
+          contentPadding: const .only(top: 0, bottom: 0, left: 8),
         ),
       ),
     );
@@ -365,7 +360,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       height: 116,
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: .circular(25),
       ),
       child: TextField(
         controller: controller,
@@ -374,7 +369,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
           hintText: hintText,
           hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 14),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: const .all(16),
         ),
       ),
     );
@@ -391,7 +386,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: .circular(25),
       ),
       child: PageView.builder(
         controller: _pageController,
@@ -420,8 +415,8 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
         children: [
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(25),
-              child: Image.memory(_imageBytes[index], fit: BoxFit.cover),
+              borderRadius: .circular(25),
+              child: Image.memory(_imageBytes[index], fit: .cover),
             ),
           ),
           Positioned(
@@ -446,10 +441,10 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const .symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.black54,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: .circular(12),
                 ),
                 child: Text(
                   '${index + 1}/${_selectedImages.length}',
@@ -470,18 +465,18 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: .circular(25),
         ),
         child: Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: .center,
             children: [
               Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
                   color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: .circular(25),
                 ),
                 child: const Icon(
                   Icons.add,
@@ -496,7 +491,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
               ),
               if (_selectedImages.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: const .only(top: 4),
                   child: Text(
                     '${_selectedImages.length}/9',
                     style: TextStyle(
@@ -550,10 +545,10 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       builder: (context) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: .vertical(top: Radius.circular(20)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             const SizedBox(height: 20),
             ListTile(
@@ -675,9 +670,9 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
       height: 36,
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const .symmetric(horizontal: 8),
       child: child,
     );
   }
@@ -795,9 +790,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
           backgroundColor: AppColors.accentRed,
           disabledBackgroundColor: AppColors.accentRed.withValues(alpha: 0.72),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(33),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: .circular(33)),
           elevation: 0,
         ),
         child: isSubmitting
@@ -811,7 +804,7 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
               )
             : const Text(
                 'Finish',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 18, fontWeight: .bold),
               ),
       ),
     );
@@ -874,10 +867,7 @@ class _ImagePreviewPage extends StatefulWidget {
   final List<Uint8List> imageBytes;
   final int initialIndex;
 
-  const _ImagePreviewPage({
-    required this.imageBytes,
-    required this.initialIndex,
-  });
+  const new({required this.imageBytes, required this.initialIndex});
 
   @override
   State<_ImagePreviewPage> createState() => _ImagePreviewPageState();
@@ -925,10 +915,7 @@ class _ImagePreviewPageState extends State<_ImagePreviewPage> {
             child: InteractiveViewer(
               minScale: 0.5,
               maxScale: 4.0,
-              child: Image.memory(
-                widget.imageBytes[index],
-                fit: BoxFit.contain,
-              ),
+              child: Image.memory(widget.imageBytes[index], fit: .contain),
             ),
           );
         },

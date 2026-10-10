@@ -11,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfilePage extends ConsumerWidget {
-  const ProfilePage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,9 +29,9 @@ class ProfilePage extends ConsumerWidget {
         body: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: const .symmetric(horizontal: 32),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: .min,
                 children: [
                   const Icon(
                     Icons.sentiment_dissatisfied_rounded,
@@ -46,14 +46,14 @@ class ProfilePage extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     '请检查网络后重试',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 20),
                   FilledButton(
-                    onPressed: () =>
-                        ref.read(profileOverviewViewModelProvider.notifier).reload(),
+                    onPressed: () => ref
+                        .read(profileOverviewViewModelProvider.notifier)
+                        .reload(),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primaryStrong,
                       foregroundColor: Colors.white,
@@ -87,7 +87,7 @@ class ProfilePage extends ConsumerWidget {
                     Stack(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                          padding: const .fromLTRB(24, 8, 24, 0),
                           child: SizedBox(
                             width: double.infinity,
                             child: _ProfileHeaderSection(
@@ -108,7 +108,7 @@ class ProfilePage extends ConsumerWidget {
                       ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
+                      padding: const .fromLTRB(24, 18, 24, 0),
                       child: _ProfileQuickActions(
                         onTapTagLibrary: () => context.push('/profile/tags'),
                         onTapHistory: () => context.push('/profile/history'),
@@ -116,9 +116,9 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const .symmetric(horizontal: 24),
                       child: Align(
-                        alignment: Alignment.centerLeft,
+                        alignment: .centerLeft,
                         child: TabBar(
                           isScrollable: true,
                           tabAlignment: TabAlignment.start,
@@ -127,11 +127,11 @@ class ProfilePage extends ConsumerWidget {
                           labelColor: AppColors.primary,
                           unselectedLabelColor: const Color(0xFFFFD4BB),
                           labelStyle: const TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: .w700,
                             fontSize: 18,
                           ),
                           unselectedLabelStyle: const TextStyle(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: .w600,
                             fontSize: 18,
                           ),
                           overlayColor: WidgetStateProperty.all(
@@ -209,10 +209,7 @@ class ProfilePage extends ConsumerWidget {
 }
 
 class _ProfileHeaderSection extends StatelessWidget {
-  const _ProfileHeaderSection({
-    required this.userInfo,
-    required this.stats,
-  });
+  const new({required this.userInfo, required this.stats});
 
   final UserInfoResponse userInfo;
   final UserProfileStatsResponse stats;
@@ -222,7 +219,7 @@ class _ProfileHeaderSection extends StatelessWidget {
     final tags = _buildTags(userInfo);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const .symmetric(vertical: 4),
       child: Column(
         children: [
           _ProfileAvatar(
@@ -233,11 +230,9 @@ class _ProfileHeaderSection extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             userInfo.userName,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w800,
-                ),
+            textAlign: .center,
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(color: Colors.black, fontWeight: .w800),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -258,10 +253,7 @@ class _ProfileHeaderSection extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _InlineStat(
-                  value: '${stats.earnedLikes}',
-                  label: '获赞',
-                ),
+                child: _InlineStat(value: '${stats.earnedLikes}', label: '获赞'),
               ),
               Expanded(
                 child: _InlineStat(
@@ -271,10 +263,7 @@ class _ProfileHeaderSection extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: _InlineStat(
-                  value: '${stats.fansCount}',
-                  label: '粉丝',
-                ),
+                child: _InlineStat(value: '${stats.fansCount}', label: '粉丝'),
               ),
               Expanded(
                 child: _InlineStat(
@@ -343,10 +332,7 @@ class _ProfileHeaderSection extends StatelessWidget {
 }
 
 class _ProfileQuickActions extends StatelessWidget {
-  const _ProfileQuickActions({
-    required this.onTapTagLibrary,
-    required this.onTapHistory,
-  });
+  const new({required this.onTapTagLibrary, required this.onTapHistory});
 
   final VoidCallback onTapTagLibrary;
   final VoidCallback onTapHistory;
@@ -378,7 +364,7 @@ class _ProfileQuickActions extends StatelessWidget {
 }
 
 class _ProfileTabList extends StatelessWidget {
-  const _ProfileTabList({required this.onRefresh, required this.children});
+  const new({required this.onRefresh, required this.children});
 
   final Future<void> Function() onRefresh;
   final List<Widget> children;
@@ -390,7 +376,7 @@ class _ProfileTabList extends StatelessWidget {
       color: AppColors.primaryStrong,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 128),
+        padding: const .fromLTRB(18, 16, 18, 128),
         children: children,
       ),
     );
@@ -398,7 +384,7 @@ class _ProfileTabList extends StatelessWidget {
 }
 
 class _ProfileFoodDataTab extends StatefulWidget {
-  const _ProfileFoodDataTab({
+  const new({
     required this.fetchPage,
     required this.resolveNames,
     required this.emptyTitle,
@@ -406,7 +392,8 @@ class _ProfileFoodDataTab extends StatefulWidget {
     required this.thumbnailLabel,
   });
 
-  final Future<PaginatedData<FoodVO>> Function(int page, int pageSize) fetchPage;
+  final Future<PaginatedData<FoodVO>> Function(int page, int pageSize)
+  fetchPage;
   final Future<Map<int, String>> Function(List<int> ids) resolveNames;
   final String emptyTitle;
   final String emptySubtitle;
@@ -514,7 +501,7 @@ class _ProfileFoodDataTabState extends State<_ProfileFoodDataTab> {
       color: AppColors.primaryStrong,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 128),
+        padding: const .fromLTRB(18, 16, 18, 128),
         children: [
           if (_items.isNotEmpty)
             _ProfileCountCaption(
@@ -537,7 +524,7 @@ class _ProfileFoodDataTabState extends State<_ProfileFoodDataTab> {
             ),
           if (_hasNext)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              padding: const .only(top: 8),
               child: Center(
                 child: TextButton(
                   onPressed: _isLoadingMore ? null : _loadMore,
@@ -569,7 +556,7 @@ class _ProfileFoodDataTabState extends State<_ProfileFoodDataTab> {
 }
 
 class _ProfileFoodCard extends StatelessWidget {
-  const _ProfileFoodCard({
+  const new({
     required this.title,
     required this.subtitle,
     required this.thumbnailLabel,
@@ -584,11 +571,11 @@ class _ProfileFoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      margin: const .only(bottom: 14),
+      padding: const .all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
         border: Border.all(color: const Color(0xFFAEB0B6)),
       ),
       child: Row(
@@ -597,22 +584,20 @@ class _ProfileFoodCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: .w700),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -625,12 +610,12 @@ class _ProfileFoodCard extends StatelessWidget {
   Widget _buildThumbnail(BuildContext context) {
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: .circular(12),
         child: Image.network(
           imageUrl!,
           width: 62,
           height: 62,
-          fit: BoxFit.cover,
+          fit: .cover,
           errorBuilder: (_, _, _) => _buildFallbackThumbnail(context),
         ),
       );
@@ -648,10 +633,10 @@ class _ProfileFoodCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: .circular(12),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: .center,
         children: [
           const Icon(
             Icons.restaurant_menu_rounded,
@@ -661,10 +646,8 @@ class _ProfileFoodCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             thumbnailLabel,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Colors.white, fontWeight: .w700),
           ),
         ],
       ),
@@ -673,7 +656,7 @@ class _ProfileFoodCard extends StatelessWidget {
 }
 
 class _ProfileEmptyStateCard extends StatelessWidget {
-  const _ProfileEmptyStateCard({required this.title, required this.subtitle});
+  const new({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -681,11 +664,11 @@ class _ProfileEmptyStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
+      margin: const .only(bottom: 14),
+      padding: const .symmetric(horizontal: 18, vertical: 22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
         border: Border.all(color: const Color(0xFFE6D9AF)),
       ),
       child: Column(
@@ -698,18 +681,16 @@ class _ProfileEmptyStateCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            textAlign: .center,
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: .w700),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            textAlign: .center,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -718,7 +699,7 @@ class _ProfileEmptyStateCard extends StatelessWidget {
 }
 
 class _ProfileCountCaption extends StatelessWidget {
-  const _ProfileCountCaption({required this.leading, required this.trailing});
+  const new({required this.leading, required this.trailing});
 
   final String leading;
   final String trailing;
@@ -726,21 +707,19 @@ class _ProfileCountCaption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const .only(bottom: 12),
       child: Row(
         children: [
           Text(
             leading,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontWeight: .w700),
           ),
           const SizedBox(width: 18),
           Text(
             trailing,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -749,7 +728,7 @@ class _ProfileCountCaption extends StatelessWidget {
 }
 
 class _ProfileCommentCard extends StatelessWidget {
-  const _ProfileCommentCard({
+  const new({
     required this.author,
     required this.title,
     required this.content,
@@ -766,22 +745,22 @@ class _ProfileCommentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      margin: const .only(bottom: 14),
+      padding: const .all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
         border: Border.all(color: const Color(0xFFE6D9AF)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Row(
             children: [
               Container(
                 width: 28,
                 height: 28,
-                alignment: Alignment.center,
+                alignment: .center,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFE9BC),
                   shape: BoxShape.circle,
@@ -789,7 +768,7 @@ class _ProfileCommentCard extends StatelessWidget {
                 child: Text(
                   author.characters.first,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: .w800,
                     color: AppColors.accentBrown,
                   ),
                 ),
@@ -797,19 +776,17 @@ class _ProfileCommentCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Text(
                       author,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(fontWeight: .w700),
                     ),
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textHint,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: AppColors.textHint),
                     ),
                   ],
                 ),
@@ -819,18 +796,16 @@ class _ProfileCommentCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             content,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               Text(
                 source,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textHint),
               ),
               const Spacer(),
               const Icon(
@@ -841,9 +816,8 @@ class _ProfileCommentCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 likeCount,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: AppColors.textHint),
               ),
             ],
           ),
@@ -854,7 +828,7 @@ class _ProfileCommentCard extends StatelessWidget {
 }
 
 class _QuickEntryCard extends StatelessWidget {
-  const _QuickEntryCard({
+  const new({
     required this.title,
     required this.subtitle,
     required this.icon,
@@ -869,13 +843,13 @@ class _QuickEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: .circular(16),
       onTap: onTap,
       child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        padding: const .symmetric(horizontal: 14, vertical: 16),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF4D8),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: .circular(16),
           border: Border.all(color: const Color(0xFFF7E7B3)),
         ),
         child: Row(
@@ -884,20 +858,18 @@ class _QuickEntryCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(fontWeight: .w700),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: AppColors.textHint),
                   ),
                 ],
               ),
@@ -910,7 +882,7 @@ class _QuickEntryCard extends StatelessWidget {
 }
 
 class _InlineStat extends StatelessWidget {
-  const _InlineStat({required this.value, required this.label, this.helper});
+  const new({required this.value, required this.label, this.helper});
 
   final String value;
   final String label;
@@ -921,22 +893,18 @@ class _InlineStat extends StatelessWidget {
     final actualLabel = helper == null ? label : '$helper$label';
 
     return RichText(
-      textAlign: TextAlign.center,
+      textAlign: .center,
       text: TextSpan(
         children: [
           TextSpan(
             text: value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
+            style: Theme.of(context).textTheme.titleLarge
+                ?.copyWith(color: AppColors.textPrimary, fontWeight: .w800),
           ),
           TextSpan(
             text: ' $actualLabel',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: AppColors.textSecondary, fontWeight: .w600),
           ),
         ],
       ),
@@ -945,7 +913,7 @@ class _InlineStat extends StatelessWidget {
 }
 
 class _TagChip extends StatelessWidget {
-  const _TagChip({
+  const new({
     required this.label,
     required this.backgroundColor,
     required this.textColor,
@@ -958,40 +926,28 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const .symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: .circular(999),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w700,
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: textColor, fontWeight: .w700),
       ),
     );
   }
 }
 
-class _TagData {
-  const _TagData({
-    required this.label,
-    required this.backgroundColor,
-    required this.textColor,
-  });
-
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
-}
+class const _TagData({
+  required final String label,
+  required final Color backgroundColor,
+  required final Color textColor,
+});
 
 class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
-    required this.avatar,
-    required this.name,
-    required this.size,
-  });
+  const new({required this.avatar, required this.name, required this.size});
 
   final String? avatar;
   final String name;
@@ -1006,12 +962,12 @@ class _ProfileAvatar extends StatelessWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(size / 2),
+      borderRadius: .circular(size / 2),
       child: Image.network(
         avatarUrl,
         width: size,
         height: size,
-        fit: BoxFit.cover,
+        fit: .cover,
         errorBuilder: (_, _, _) => _AvatarPlaceholder(name: name, size: size),
       ),
     );
@@ -1019,7 +975,7 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _AvatarPlaceholder extends StatelessWidget {
-  const _AvatarPlaceholder({required this.name, required this.size});
+  const new({required this.name, required this.size});
 
   final String name;
   final double size;
@@ -1031,21 +987,19 @@ class _AvatarPlaceholder extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      alignment: Alignment.center,
+      alignment: .center,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFFE9BC), Color(0xFFFFC56F)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(size / 2),
+        borderRadius: .circular(size / 2),
       ),
       child: Text(
         initial,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: AppColors.accentBrown,
-        ),
+        style: Theme.of(context).textTheme.headlineSmall
+            ?.copyWith(fontWeight: .w800, color: AppColors.accentBrown),
       ),
     );
   }

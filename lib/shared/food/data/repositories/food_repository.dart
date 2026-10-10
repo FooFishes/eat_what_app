@@ -10,7 +10,7 @@ import 'package:eat_what_app/shared/food/data/models/food_vo.dart';
 class FoodRepository {
   final RequestClient _api;
 
-  const FoodRepository(this._api);
+  const new(this._api);
 
   Future<PaginatedData<FoodVO>> getFoodsByRestaurant(
     int restaurantId, {

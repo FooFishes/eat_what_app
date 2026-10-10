@@ -9,21 +9,15 @@ class UpdateUserInfoRequest {
   final Object? _hometownProvinceId;
   final Object? _hometownCityId;
 
-  const UpdateUserInfoRequest({
-    Object? userName = _unset,
-    Object? avatar = _unset,
-    Object? gender = _unset,
-    Object? birthday = _unset,
-    Object? signature = _unset,
-    Object? hometownProvinceId = _unset,
-    Object? hometownCityId = _unset,
-  }) : _userName = userName,
-       _avatar = avatar,
-       _gender = gender,
-       _birthday = birthday,
-       _signature = signature,
-       _hometownProvinceId = hometownProvinceId,
-       _hometownCityId = hometownCityId;
+  const new({
+    this._userName = _unset,
+    this._avatar = _unset,
+    this._gender = _unset,
+    this._birthday = _unset,
+    this._signature = _unset,
+    this._hometownProvinceId = _unset,
+    this._hometownCityId = _unset,
+  });
 
   Map<String, dynamic> toJson() {
     return {

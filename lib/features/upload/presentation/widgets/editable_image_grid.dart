@@ -9,7 +9,7 @@ class EditableImageGrid extends StatelessWidget {
   final ValueChanged<int> onRemove;
   final int maxCount;
 
-  const EditableImageGrid({
+  const new({
     super.key,
     required this.images,
     required this.onAdd,
@@ -53,7 +53,7 @@ class _ImageTile extends StatelessWidget {
   final Uint8List bytes;
   final VoidCallback onRemove;
 
-  const _ImageTile({required this.bytes, required this.onRemove});
+  const new({required this.bytes, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +61,8 @@ class _ImageTile extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Image.memory(bytes, fit: BoxFit.cover),
+          borderRadius: .circular(14),
+          child: Image.memory(bytes, fit: .cover),
         ),
         Positioned(
           top: 5,
@@ -90,11 +90,7 @@ class _AddTile extends StatelessWidget {
   final String label;
   final String subtitle;
 
-  const _AddTile({
-    required this.onTap,
-    required this.label,
-    required this.subtitle,
-  });
+  const new({required this.onTap, required this.label, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -103,11 +99,11 @@ class _AddTile extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: .circular(14),
           border: Border.all(color: AppColors.border.withValues(alpha: 0.35)),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: .center,
           children: [
             const Icon(
               Icons.add_photo_alternate_outlined,
@@ -117,17 +113,14 @@ class _AddTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.textPrimary, fontWeight: .w600),
             ),
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: AppColors.textTertiary),
             ),
           ],
         ),

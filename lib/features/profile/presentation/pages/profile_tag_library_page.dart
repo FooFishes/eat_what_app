@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProfileTagLibraryPage extends ConsumerWidget {
-  const ProfileTagLibraryPage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,59 +25,59 @@ class ProfileTagLibraryPage extends ConsumerWidget {
         child: state.isLoading && !hasData
             ? const Center(child: CircularProgressIndicator())
             : state.error != null && !hasData
-                ? _ProfileActionErrorState(
-                    title: '标签库加载失败',
-                    subtitle: '请稍后重试',
-                    onRetry: () => ref
-                        .read(profileTagLibraryViewModelProvider.notifier)
-                        .loadTags(),
-                  )
-                : RefreshIndicator(
-                    onRefresh: () => ref
-                        .read(profileTagLibraryViewModelProvider.notifier)
-                        .loadTags(),
-                    color: AppColors.primaryStrong,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-                      children: [
-                        _ProfileActionIntroCard(
-                          title: '标签分区',
-                          subtitle: '系统预设标签和你自己写过的备注型标签会分开显示',
-                          valueText:
-                              '${state.systemTags.length + state.customTags.length}',
-                          helperText: '个标签',
-                        ),
-                        const SizedBox(height: 16),
-                        _TagSectionCard(
-                          title: '我的自定义标签',
-                          subtitle: '聚合自你上传、收藏和浏览过的菜品中的备注型标签',
-                          tags: state.customTags,
-                          emptyTitle: '还没有自定义标签',
-                          emptySubtitle: '例如"有点辣""小贵"这类标签会出现在这里',
-                          chipColor: const Color(0xFFFFE6D8),
-                          textColor: AppColors.primaryStrong,
-                        ),
-                        const SizedBox(height: 14),
-                        _TagSectionCard(
-                          title: '系统预设标签',
-                          subtitle: '后端统一维护的可选标签',
-                          tags: state.systemTags,
-                          emptyTitle: '还没有系统标签',
-                          emptySubtitle: '接口还没有返回系统标签数据',
-                          chipColor: const Color(0xFFE8F1D4),
-                          textColor: const Color(0xFF758B22),
-                        ),
-                      ],
+            ? _ProfileActionErrorState(
+                title: '标签库加载失败',
+                subtitle: '请稍后重试',
+                onRetry: () => ref
+                    .read(profileTagLibraryViewModelProvider.notifier)
+                    .loadTags(),
+              )
+            : RefreshIndicator(
+                onRefresh: () => ref
+                    .read(profileTagLibraryViewModelProvider.notifier)
+                    .loadTags(),
+                color: AppColors.primaryStrong,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const .fromLTRB(20, 16, 20, 28),
+                  children: [
+                    _ProfileActionIntroCard(
+                      title: '标签分区',
+                      subtitle: '系统预设标签和你自己写过的备注型标签会分开显示',
+                      valueText:
+                          '${state.systemTags.length + state.customTags.length}',
+                      helperText: '个标签',
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    _TagSectionCard(
+                      title: '我的自定义标签',
+                      subtitle: '聚合自你上传、收藏和浏览过的菜品中的备注型标签',
+                      tags: state.customTags,
+                      emptyTitle: '还没有自定义标签',
+                      emptySubtitle: '例如"有点辣""小贵"这类标签会出现在这里',
+                      chipColor: const Color(0xFFFFE6D8),
+                      textColor: AppColors.primaryStrong,
+                    ),
+                    const SizedBox(height: 14),
+                    _TagSectionCard(
+                      title: '系统预设标签',
+                      subtitle: '后端统一维护的可选标签',
+                      tags: state.systemTags,
+                      emptyTitle: '还没有系统标签',
+                      emptySubtitle: '接口还没有返回系统标签数据',
+                      chipColor: const Color(0xFFE8F1D4),
+                      textColor: const Color(0xFF758B22),
+                    ),
+                  ],
+                ),
+              ),
       ),
     );
   }
 }
 
 class _TagSectionCard extends StatelessWidget {
-  const _TagSectionCard({
+  const new({
     required this.title,
     required this.subtitle,
     required this.tags,
@@ -98,28 +98,24 @@ class _TagSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const .all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
         border: Border.all(color: const Color(0xFFEADDB2)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: .w800),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
+            style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 14),
@@ -150,7 +146,7 @@ class _TagSectionCard extends StatelessWidget {
 }
 
 class _TagLibraryChip extends StatelessWidget {
-  const _TagLibraryChip({
+  const new({
     required this.label,
     required this.backgroundColor,
     required this.textColor,
@@ -163,24 +159,22 @@ class _TagLibraryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const .symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: .circular(999),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: textColor,
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: textColor, fontWeight: .w700),
       ),
     );
   }
 }
 
 class _ProfileActionIntroCard extends StatelessWidget {
-  const _ProfileActionIntroCard({
+  const new({
     required this.title,
     required this.subtitle,
     required this.valueText,
@@ -195,31 +189,27 @@ class _ProfileActionIntroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const .all(18),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF6DF),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
         border: Border.all(color: const Color(0xFFF0E2B6)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: .w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
+                  style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: AppColors.textSecondary),
                 ),
               ],
@@ -232,16 +222,16 @@ class _ProfileActionIntroCard extends StatelessWidget {
                 TextSpan(
                   text: valueText,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primaryStrong,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.primaryStrong,
+                    fontWeight: .w800,
+                  ),
                 ),
                 TextSpan(
                   text: helperText,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.textSecondary,
+                    fontWeight: .w600,
+                  ),
                 ),
               ],
             ),
@@ -253,7 +243,7 @@ class _ProfileActionIntroCard extends StatelessWidget {
 }
 
 class _ProfileActionEmptyState extends StatelessWidget {
-  const _ProfileActionEmptyState({
+  const new({
     required this.title,
     required this.subtitle,
     this.compact = false,
@@ -266,13 +256,10 @@ class _ProfileActionEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: compact ? 20 : 28,
-      ),
+      padding: .symmetric(horizontal: 18, vertical: compact ? 20 : 28),
       decoration: BoxDecoration(
         color: compact ? const Color(0xFFFFFBF1) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
         border: Border.all(color: const Color(0xFFEADDB2)),
       ),
       child: Column(
@@ -285,18 +272,14 @@ class _ProfileActionEmptyState extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: .w700),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
+            textAlign: .center,
+            style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: AppColors.textSecondary),
           ),
         ],
@@ -306,7 +289,7 @@ class _ProfileActionEmptyState extends StatelessWidget {
 }
 
 class _ProfileActionErrorState extends StatelessWidget {
-  const _ProfileActionErrorState({
+  const new({
     required this.title,
     required this.subtitle,
     required this.onRetry,
@@ -320,9 +303,9 @@ class _ProfileActionErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const .symmetric(horizontal: 32),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
             const Icon(
               Icons.error_outline_rounded,
@@ -334,9 +317,7 @@ class _ProfileActionErrorState extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
+              style: Theme.of(context).textTheme.bodyMedium
                   ?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),

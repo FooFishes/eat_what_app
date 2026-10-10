@@ -14,9 +14,9 @@ class RequestClient {
   final Dio _dio;
   final Future<void> Function()? _clearSession;
 
-  RequestClient._(this._dio, this._clearSession);
+  new _(this._dio, this._clearSession);
 
-  factory RequestClient({
+  factory({
     required Future<String?> Function() getToken,
     required Future<void> Function() clearSession,
   }) {
@@ -46,7 +46,7 @@ class RequestClient {
     return RequestClient._(dio, clearSession);
   }
 
-  factory RequestClient.raw({BaseOptions? options}) {
+  factory raw({BaseOptions? options}) {
     final dio = Dio(
       options ??
           BaseOptions(

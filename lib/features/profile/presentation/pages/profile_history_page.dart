@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProfileHistoryPage extends StatelessWidget {
-  const ProfileHistoryPage({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,10 @@ class ProfileHistoryPage extends StatelessWidget {
             indicatorColor: AppColors.primaryStrong,
             labelColor: AppColors.primaryStrong,
             unselectedLabelColor: AppColors.textHint,
-            tabs: const [Tab(text: '店铺'), Tab(text: '菜品')],
+            tabs: const [
+              Tab(text: '店铺'),
+              Tab(text: '菜品'),
+            ],
           ),
         ),
         body: const SafeArea(
@@ -50,7 +53,7 @@ class ProfileHistoryPage extends StatelessWidget {
 }
 
 class _BrowseHistoryTab extends ConsumerWidget {
-  const _BrowseHistoryTab({
+  const new({
     required this.targetType,
     required this.emptyTitle,
     required this.emptySubtitle,
@@ -63,8 +66,9 @@ class _BrowseHistoryTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(profileHistoryViewModelProvider(targetType));
-    final notifier =
-        ref.read(profileHistoryViewModelProvider(targetType).notifier);
+    final notifier = ref.read(
+      profileHistoryViewModelProvider(targetType).notifier,
+    );
 
     ref.listen(profileHistoryViewModelProvider(targetType), (prev, next) {
       if (prev?.isLoadingMore == true &&
@@ -79,8 +83,7 @@ class _BrowseHistoryTab extends ConsumerWidget {
     }
 
     if (state.error != null && state.items.isEmpty) {
-      return _HistoryErrorState(
-          onRetry: () => notifier.loadMore(reset: true));
+      return _HistoryErrorState(onRetry: () => notifier.loadMore(reset: true));
     }
 
     return RefreshIndicator(
@@ -88,7 +91,7 @@ class _BrowseHistoryTab extends ConsumerWidget {
       color: AppColors.primaryStrong,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        padding: const .fromLTRB(20, 16, 20, 28),
         children: [
           _HistoryOverviewCard(totalItems: state.totalItems),
           const SizedBox(height: 16),
@@ -97,15 +100,16 @@ class _BrowseHistoryTab extends ConsumerWidget {
           else ...[
             for (final item in state.items)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const .only(bottom: 12),
                 child: targetType == 'restaurant'
                     ? _RestaurantHistoryCard(item: item)
                     : _FoodHistoryCard(item: item),
               ),
             if (state.hasNext)
               OutlinedButton(
-                onPressed:
-                    state.isLoadingMore ? null : () => notifier.loadMore(),
+                onPressed: state.isLoadingMore
+                    ? null
+                    : () => notifier.loadMore(),
                 child: state.isLoadingMore
                     ? const SizedBox(
                         width: 18,
@@ -122,37 +126,33 @@ class _BrowseHistoryTab extends ConsumerWidget {
 }
 
 class _HistoryOverviewCard extends StatelessWidget {
-  const _HistoryOverviewCard({required this.totalItems});
+  const new({required this.totalItems});
   final int totalItems;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const .all(18),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF6DF),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
         border: Border.all(color: const Color(0xFFF0E2B6)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Text(
                   '最近浏览',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: .w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   '记录你看过的店铺和菜品',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
+                  style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: AppColors.textSecondary),
                 ),
               ],
@@ -165,16 +165,16 @@ class _HistoryOverviewCard extends StatelessWidget {
                 TextSpan(
                   text: '$totalItems',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.primaryStrong,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.primaryStrong,
+                    fontWeight: .w800,
+                  ),
                 ),
                 TextSpan(
                   text: ' 条',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: AppColors.textSecondary,
+                    fontWeight: .w600,
+                  ),
                 ),
               ],
             ),
@@ -186,7 +186,7 @@ class _HistoryOverviewCard extends StatelessWidget {
 }
 
 class _RestaurantHistoryCard extends StatelessWidget {
-  const _RestaurantHistoryCard({required this.item});
+  const new({required this.item});
   final BrowseHistoryItemResponse item;
 
   @override
@@ -194,11 +194,11 @@ class _RestaurantHistoryCard extends StatelessWidget {
     final restaurant = item.restaurant;
     if (restaurant == null) return const SizedBox.shrink();
     return _HistoryCardFrame(
-      imageUrl:
-          restaurant.pictureUrl.isNotEmpty ? restaurant.pictureUrl.first : null,
+      imageUrl: restaurant.pictureUrl.isNotEmpty
+          ? restaurant.pictureUrl.first
+          : null,
       title: restaurant.name,
-      subtitle:
-          restaurant.address.isEmpty ? '暂无地址信息' : restaurant.address,
+      subtitle: restaurant.address.isEmpty ? '暂无地址信息' : restaurant.address,
       footer: '浏览于 ${_formatTimestamp(item.viewedAt)}',
       icon: Icons.storefront_outlined,
     );
@@ -206,7 +206,7 @@ class _RestaurantHistoryCard extends StatelessWidget {
 }
 
 class _FoodHistoryCard extends StatelessWidget {
-  const _FoodHistoryCard({required this.item});
+  const new({required this.item});
   final BrowseHistoryItemResponse item;
 
   @override
@@ -218,43 +218,40 @@ class _FoodHistoryCard extends StatelessWidget {
     final allTags = [...systemTags, ...customTags].where((t) => t.isNotEmpty);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const .all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
         border: Border.all(color: const Color(0xFFE6D9AF)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: .start,
             children: [
               _HistoryThumb(
-                imageUrl:
-                    food.pictureUrl.isNotEmpty ? food.pictureUrl.first : null,
+                imageUrl: food.pictureUrl.isNotEmpty
+                    ? food.pictureUrl.first
+                    : null,
                 icon: Icons.fastfood_outlined,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Text(
                       food.name,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: .w800),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       food.description.isEmpty ? '暂无菜品描述' : food.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
+                      style: Theme.of(context).textTheme.bodyMedium
                           ?.copyWith(color: AppColors.textSecondary),
                     ),
                   ],
@@ -268,7 +265,8 @@ class _FoodHistoryCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               _HistoryMetaChip(
-                  label: food.uploaderName.isEmpty ? '匿名上传' : food.uploaderName),
+                label: food.uploaderName.isEmpty ? '匿名上传' : food.uploaderName,
+              ),
               if (food.category != null)
                 _HistoryMetaChip(label: _foodCategoryLabel(food.category!)),
               if (food.likesCount > 0)
@@ -279,9 +277,7 @@ class _FoodHistoryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '浏览于 ${_formatTimestamp(item.viewedAt)}',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
+            style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: AppColors.textHint),
           ),
         ],
@@ -291,7 +287,7 @@ class _FoodHistoryCard extends StatelessWidget {
 }
 
 class _HistoryCardFrame extends StatelessWidget {
-  const _HistoryCardFrame({
+  const new({
     required this.title,
     required this.subtitle,
     required this.footer,
@@ -308,44 +304,38 @@ class _HistoryCardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const .all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
         border: Border.all(color: const Color(0xFFE6D9AF)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           _HistoryThumb(imageUrl: imageUrl, icon: icon),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: .w800),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
+                  style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   footer,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
+                  style: Theme.of(context).textTheme.bodySmall
                       ?.copyWith(color: AppColors.textHint),
                 ),
               ],
@@ -358,7 +348,7 @@ class _HistoryCardFrame extends StatelessWidget {
 }
 
 class _HistoryThumb extends StatelessWidget {
-  const _HistoryThumb({required this.imageUrl, required this.icon});
+  const new({required this.imageUrl, required this.icon});
   final String? imageUrl;
   final IconData icon;
 
@@ -366,25 +356,25 @@ class _HistoryThumb extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedUrl = Urls.resolvePublicAssetUrl(imageUrl);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: .circular(14),
       child: resolvedUrl == null
           ? Container(
               width: 72,
               height: 72,
               color: const Color(0xFFFFF1D4),
-              alignment: Alignment.center,
+              alignment: .center,
               child: Icon(icon, color: AppColors.accentBrown),
             )
           : Image.network(
               resolvedUrl,
               width: 72,
               height: 72,
-              fit: BoxFit.cover,
+              fit: .cover,
               errorBuilder: (_, _, _) => Container(
                 width: 72,
                 height: 72,
                 color: const Color(0xFFFFF1D4),
-                alignment: Alignment.center,
+                alignment: .center,
                 child: Icon(icon, color: AppColors.accentBrown),
               ),
             ),
@@ -393,59 +383,58 @@ class _HistoryThumb extends StatelessWidget {
 }
 
 class _HistoryMetaChip extends StatelessWidget {
-  const _HistoryMetaChip({required this.label});
+  const new({required this.label});
   final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const .symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFFFFF1D4),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: .circular(999),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.accentBrown,
-              fontWeight: FontWeight.w700,
-            ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: AppColors.accentBrown, fontWeight: .w700),
       ),
     );
   }
 }
 
 class _HistoryEmptyState extends StatelessWidget {
-  const _HistoryEmptyState({required this.title, required this.subtitle});
+  const new({required this.title, required this.subtitle});
   final String title;
   final String subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 28),
+      padding: const .symmetric(horizontal: 18, vertical: 28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
         border: Border.all(color: const Color(0xFFEADDB2)),
       ),
       child: Column(
         children: [
-          const Icon(Icons.history_toggle_off_rounded,
-              size: 34, color: AppColors.textHint),
+          const Icon(
+            Icons.history_toggle_off_rounded,
+            size: 34,
+            color: AppColors.textHint,
+          ),
           const SizedBox(height: 10),
-          Text(title,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: .w700),
+          ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
+            textAlign: .center,
+            style: Theme.of(context).textTheme.bodyMedium
                 ?.copyWith(color: AppColors.textSecondary),
           ),
         ],
@@ -455,27 +444,28 @@ class _HistoryEmptyState extends StatelessWidget {
 }
 
 class _HistoryErrorState extends StatelessWidget {
-  const _HistoryErrorState({required this.onRetry});
+  const new({required this.onRetry});
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const .symmetric(horizontal: 32),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: .min,
           children: [
-            const Icon(Icons.history_edu_outlined,
-                size: 44, color: AppColors.textHint),
+            const Icon(
+              Icons.history_edu_outlined,
+              size: 44,
+              color: AppColors.textHint,
+            ),
             const SizedBox(height: 12),
             Text('足迹加载失败', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               '请检查网络后重试',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
+              style: Theme.of(context).textTheme.bodyMedium
                   ?.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),

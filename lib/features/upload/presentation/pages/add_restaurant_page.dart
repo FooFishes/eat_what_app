@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class AddRestaurantPage extends ConsumerStatefulWidget {
-  const AddRestaurantPage({super.key});
+  const new({super.key});
 
   @override
   ConsumerState<AddRestaurantPage> createState() => _AddRestaurantPageState();
@@ -60,18 +60,27 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
     if (name.isEmpty) {
-      AppErrorPresenter.showMessageToast(context, '请输入店铺名称',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '请输入店铺名称',
+        type: AppToastType.warning,
+      );
       return;
     }
     if (address.isEmpty) {
-      AppErrorPresenter.showMessageToast(context, '请输入店铺地址',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '请输入店铺地址',
+        type: AppToastType.warning,
+      );
       return;
     }
     if (_images.isEmpty) {
-      AppErrorPresenter.showMessageToast(context, '请至少上传一张店铺照片',
-          type: AppToastType.warning);
+      AppErrorPresenter.showMessageToast(
+        context,
+        '请至少上传一张店铺照片',
+        type: AppToastType.warning,
+      );
       return;
     }
 
@@ -99,17 +108,16 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isSubmitting =
-        ref.watch(addRestaurantViewModelProvider).isSubmitting;
+    final isSubmitting = ref.watch(addRestaurantViewModelProvider).isSubmitting;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('新建店铺'), centerTitle: false),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: const .fromLTRB(16, 16, 16, 24),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: .start,
             children: [
               _MockInfoCard(
                 title: '定位字段将使用 Mock 数据',
@@ -123,13 +131,11 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
               const SizedBox(height: 18),
               _buildSectionTitle('店铺名称'),
               const SizedBox(height: 8),
-              _buildInput(
-                  controller: _nameController, hintText: '请输入店铺名称'),
+              _buildInput(controller: _nameController, hintText: '请输入店铺名称'),
               const SizedBox(height: 18),
               _buildSectionTitle('店铺地址'),
               const SizedBox(height: 8),
-              _buildInput(
-                  controller: _addressController, hintText: '请输入店铺地址'),
+              _buildInput(controller: _addressController, hintText: '请输入店铺地址'),
               const SizedBox(height: 18),
               _buildSectionTitle('店铺描述（当前仅保留 UI）'),
               const SizedBox(height: 8),
@@ -158,7 +164,7 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryStrong,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    padding: const .symmetric(vertical: 15),
                   ),
                   child: isSubmitting
                       ? const SizedBox(
@@ -182,10 +188,8 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(fontWeight: FontWeight.w800),
+      style: Theme.of(context).textTheme.titleMedium
+          ?.copyWith(fontWeight: .w800),
     );
   }
 
@@ -202,7 +206,7 @@ class _AddRestaurantPageState extends ConsumerState<AddRestaurantPage> {
         filled: true,
         fillColor: AppColors.surfaceAlt,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: .circular(18),
           borderSide: BorderSide.none,
         ),
       ),
@@ -214,33 +218,28 @@ class _MockInfoCard extends StatelessWidget {
   final String title;
   final List<String> lines;
 
-  const _MockInfoCard({required this.title, required this.lines});
+  const new({required this.title, required this.lines});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const .all(16),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: .circular(20),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: .w800),
           ),
           const SizedBox(height: 8),
           for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(line),
-            ),
+            Padding(padding: const .only(bottom: 4), child: Text(line)),
         ],
       ),
     );
@@ -250,22 +249,20 @@ class _MockInfoCard extends StatelessWidget {
 class _PlaceholderField extends StatelessWidget {
   final String text;
 
-  const _PlaceholderField({required this.text});
+  const new({required this.text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const .all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: .circular(18),
       ),
       child: Text(
         text,
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
+        style: Theme.of(context).textTheme.bodyMedium
             ?.copyWith(color: AppColors.textSecondary),
       ),
     );

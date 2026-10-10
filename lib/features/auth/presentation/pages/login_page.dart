@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key, required this.initialIsLoginMode});
+  const new({super.key, required this.initialIsLoginMode});
 
   final bool initialIsLoginMode;
 
@@ -64,18 +64,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               children: <Widget>[
                 _buildHeader(constraints),
                 Align(
-                  alignment: Alignment.bottomCenter,
+                  alignment: .bottomCenter,
                   child: Container(
                     width: double.infinity,
                     constraints: BoxConstraints(
                       maxHeight: maxHeight * (1 - headerPercentage),
                     ),
-                    padding: const EdgeInsets.fromLTRB(36, 36, 28, 0),
+                    padding: const .fromLTRB(36, 36, 28, 0),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(70),
-                      ),
+                      borderRadius: .vertical(top: Radius.circular(70)),
                       boxShadow: <BoxShadow>[
                         BoxShadow(
                           color: Color(0x44000000),
@@ -86,13 +84,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     child: SingleChildScrollView(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: .start,
                         children: <Widget>[
                           const SizedBox(height: 12),
                           Text(
                             '😋 欢迎使用 ~',
                             style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: .w700,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -110,7 +108,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                           const SizedBox(height: 14),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisAlignment: .center,
                             children: <Widget>[
                               Checkbox(
                                 value: _agreePrivacyPolicy,
@@ -131,7 +129,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontSize: 16,
                                     color: const Color(0xFF111111),
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: .w500,
                                   ),
                                   children: const <InlineSpan>[
                                     TextSpan(text: '我已阅读并同意'),
@@ -139,7 +137,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                       text: '隐私政策',
                                       style: TextStyle(
                                         color: _privacyHighlightColor,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: .w600,
                                       ),
                                     ),
                                   ],
@@ -161,7 +159,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     .withValues(alpha: 0.72),
                                 disabledForegroundColor: Colors.white70,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(40),
+                                  borderRadius: .circular(40),
                                 ),
                               ),
                               child: isSubmitting
@@ -177,7 +175,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                       _isLoginMode ? '登录' : '注册',
                                       style: theme.textTheme.headlineMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: .w700,
                                             color: Colors.white,
                                           ),
                                     ),
@@ -225,16 +223,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       controller: controller,
       enabled: enabled,
       obscureText: obscureText,
-      style: Theme.of(
-        context,
-      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+      style: Theme.of(context).textTheme.titleMedium
+          ?.copyWith(fontWeight: .w500),
       decoration: _buildAuthInputDecoration(hintText),
     );
   }
 
   InputDecoration _buildAuthInputDecoration(String hintText) {
     const OutlineInputBorder border = OutlineInputBorder(
-      borderRadius: BorderRadius.all(Radius.circular(38)),
+      borderRadius: .all(Radius.circular(38)),
       borderSide: BorderSide(color: _inputBorderColor, width: 2),
     );
     return InputDecoration(
@@ -244,9 +241,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       hintStyle: const TextStyle(
         color: _hintTextColor,
         fontSize: 18,
-        fontWeight: FontWeight.w500,
+        fontWeight: .w500,
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+      contentPadding: const .symmetric(horizontal: 32, vertical: 18),
       enabledBorder: border,
       focusedBorder: border,
       disabledBorder: border,
@@ -313,7 +310,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
           ),
-          Image.asset('assets/images/login_header.png', fit: BoxFit.cover),
+          Image.asset('assets/images/login_header.png', fit: .cover),
         ],
       ),
     );

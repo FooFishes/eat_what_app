@@ -1,4 +1,10 @@
-enum Province {
+enum Province(
+  final int id,
+  final String name,
+  final String shortName,
+  final String enName,
+  final String code,
+) {
   //中国大陆省级行政区（id与后端对应）
   beijing(1, "北京市", "北京", "Beijing", "BJ"),
   tianjin(2, "天津市", "天津", "Tianjin", "TJ"),
@@ -39,13 +45,6 @@ enum Province {
   taiwan(1003, "台湾省", "台湾", "Taiwan", "TW"),
   //国外
   foreign(999, "国外", "国外", "overseas", "ZZ");
-
-  final int id;
-  final String name;
-  final String shortName;
-  final String enName;
-  final String code;
-  const Province(this.id, this.name, this.shortName, this.enName, this.code);
 
   static Province? fromId(int id) {
     try {

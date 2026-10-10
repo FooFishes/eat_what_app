@@ -12,9 +12,7 @@ class UploadRepository {
   final RequestClient _api;
   final RequestClient _rawApi;
 
-  UploadRepository({required RequestClient api, required RequestClient rawApi})
-    : _api = api,
-      _rawApi = rawApi;
+  new({required this._api, required this._rawApi});
 
   Future<void> publishActivityFood({
     required String foodName,

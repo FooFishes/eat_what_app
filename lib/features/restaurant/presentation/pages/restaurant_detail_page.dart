@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 class RestaurantDetailPage extends ConsumerStatefulWidget {
   final int restaurantId;
 
-  const RestaurantDetailPage({super.key, required this.restaurantId});
+  const new({super.key, required this.restaurantId});
 
   @override
   ConsumerState<RestaurantDetailPage> createState() =>
@@ -48,7 +48,7 @@ class _RestaurantDetailPageState extends ConsumerState<RestaurantDetailPage> {
         appBar: AppBar(title: const Text('餐厅详情')),
         body: Center(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: .min,
             children: [
               const Text('餐厅详情加载失败'),
               const SizedBox(height: 8),
@@ -84,51 +84,49 @@ class _RestaurantDetailPageState extends ConsumerState<RestaurantDetailPage> {
       body: RefreshIndicator(
         onRefresh: controller.loadInitial,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+          padding: const .fromLTRB(16, 16, 16, 96),
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: .circular(28),
               child: cover == null
                   ? Container(
                       height: 220,
                       color: AppColors.card,
-                      alignment: Alignment.center,
+                      alignment: .center,
                       child: const Icon(Icons.storefront_rounded, size: 72),
                     )
                   : CachedNetworkImage(
                       imageUrl: cover,
                       height: 220,
-                      fit: BoxFit.cover,
+                      fit: .cover,
                       errorWidget: (_, _, _) => Container(
                         height: 220,
                         color: AppColors.card,
-                        alignment: Alignment.center,
+                        alignment: .center,
                         child: const Icon(Icons.storefront_rounded, size: 72),
                       ),
                     ),
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const .all(18),
               decoration: BoxDecoration(
                 color: AppColors.surfaceAlt,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: .circular(24),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: .start,
                 children: [
                   Text(
                     restaurant.name,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(fontWeight: .w900),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     restaurant.address.isEmpty ? '暂无地址信息' : restaurant.address,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -164,17 +162,16 @@ class _RestaurantDetailPageState extends ConsumerState<RestaurantDetailPage> {
             const SizedBox(height: 18),
             Text(
               '菜品列表',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: .w900),
             ),
             const SizedBox(height: 12),
             if (state.foods.isEmpty)
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const .all(24),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: .circular(24),
                 ),
                 child: const Text('这家店还没有菜品，先来上传第一道吧。'),
               ),
@@ -225,7 +222,7 @@ class _FoodCard extends StatelessWidget {
   final FoodVO food;
   final VoidCallback onToggleFavorite;
 
-  const _FoodCard({required this.food, required this.onToggleFavorite});
+  const new({required this.food, required this.onToggleFavorite});
 
   @override
   Widget build(BuildContext context) {
@@ -238,34 +235,34 @@ class _FoodCard extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const .all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceAlt,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: .circular(22),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: .start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: .circular(18),
             child: cover == null
                 ? Container(
                     width: 92,
                     height: 92,
                     color: AppColors.card,
-                    alignment: Alignment.center,
+                    alignment: .center,
                     child: const Icon(Icons.fastfood_rounded),
                   )
                 : CachedNetworkImage(
                     imageUrl: cover,
                     width: 92,
                     height: 92,
-                    fit: BoxFit.cover,
+                    fit: .cover,
                     errorWidget: (_, _, _) => Container(
                       width: 92,
                       height: 92,
                       color: AppColors.card,
-                      alignment: Alignment.center,
+                      alignment: .center,
                       child: const Icon(Icons.fastfood_rounded),
                     ),
                   ),
@@ -273,16 +270,16 @@ class _FoodCard extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: .start,
                   children: [
                     Expanded(
                       child: Text(
                         food.name,
                         style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: .w800),
                       ),
                     ),
                     IconButton(
@@ -300,30 +297,29 @@ class _FoodCard extends StatelessWidget {
                 ),
                 if (food.price != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: const .only(top: 4),
                     child: Text(
                       '¥${food.price!.toStringAsFixed(food.price! % 1 == 0 ? 0 : 1)}',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppColors.primaryStrong,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: .w900,
                       ),
                     ),
                   ),
                 if (food.description.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 6),
+                    padding: const .only(top: 6),
                     child: Text(
                       food.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: AppColors.textSecondary),
                     ),
                   ),
                 if (tags.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const .only(top: 8),
                     child: Wrap(
                       spacing: 6,
                       runSpacing: 6,
@@ -335,9 +331,8 @@ class _FoodCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${food.likesCount} 人收藏',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -351,22 +346,20 @@ class _FoodCard extends StatelessWidget {
 class _TagChip extends StatelessWidget {
   final String label;
 
-  const _TagChip({required this.label});
+  const new({required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const .symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: .circular(999),
       ),
       child: Text(
         label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w600,
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: AppColors.textPrimary, fontWeight: .w600),
       ),
     );
   }
@@ -377,11 +370,7 @@ class _ActionPill extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ActionPill({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const new({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +381,7 @@ class _ActionPill extends StatelessWidget {
         label: Text(label),
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const .symmetric(vertical: 14),
           side: BorderSide(color: AppColors.border.withValues(alpha: 0.35)),
         ),
       ),

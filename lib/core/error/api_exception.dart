@@ -9,7 +9,7 @@ sealed class ApiException implements Exception {
   final dynamic originalError;
   final StackTrace? stackTrace;
 
-  const ApiException({
+  const new({
     required this.message,
     this.code,
     this.originalError,
@@ -20,7 +20,7 @@ sealed class ApiException implements Exception {
 class BusinessException extends ApiException {
   final ErrorCategory category;
 
-  const BusinessException({
+  const new({
     required int super.code,
     required super.message,
     required this.category,
@@ -36,14 +36,14 @@ class BusinessException extends ApiException {
 class NetworkException extends ApiException {
   final DioExceptionType? dioExceptionType;
 
-  const NetworkException({
+  const new({
     required super.message,
     this.dioExceptionType,
     super.originalError,
     super.stackTrace,
   });
 
-  factory NetworkException.fromDioException(DioException e) {
+  factory fromDioException(DioException e) {
     final message = switch (e.type) {
       DioExceptionType.connectionTimeout => '连接超时，请稍后重试',
       DioExceptionType.sendTimeout => '请求发送超时，请稍后重试',
@@ -68,7 +68,7 @@ class NetworkException extends ApiException {
 class ServerException extends ApiException {
   final int statusCode;
 
-  const ServerException({
+  const new({
     required super.message,
     required this.statusCode,
     super.originalError,
@@ -81,18 +81,14 @@ class ServerException extends ApiException {
 }
 
 class ParseException extends ApiException {
-  const ParseException({
-    required super.message,
-    super.originalError,
-    super.stackTrace,
-  });
+  const new({required super.message, super.originalError, super.stackTrace});
 
   @override
   String toString() => 'ParseException(message: $message)';
 }
 
 class AuthException extends BusinessException {
-  const AuthException({
+  const new({
     required super.code,
     required super.message,
     required super.category,
