@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
     <application
-        android:label="eat_what_app"
+        android:label="沙软今天吃什么"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

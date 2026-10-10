@@ -1,4 +1,4 @@
-package com.example.eat_what_app
+package you.v50to.eat
 
 import io.flutter.embedding.android.FlutterActivity
 

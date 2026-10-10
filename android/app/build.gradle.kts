@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.eat_what_app"
+    namespace = "you.v50to.eat"
     // permission_handler_android 14 requires compileSdk 37.
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
@@ -21,8 +21,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.eat_what_app"
+        applicationId = "you.v50to.eat"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // sentry_flutter 10 requires API 26+.
