@@ -9,7 +9,6 @@ Future<void> bootstrap() async {
       options.dsn =
           'https://0247296817d5b39d78805706e0c88c70@sentry.orbithy.com/3';
       options.tracesSampleRate = 1.0;
-      options.profilesSampleRate = 1.0;
       options.replay.onErrorSampleRate = 1.0;
       options.replay.sessionSampleRate = 1.0;
       options.debug = false;
