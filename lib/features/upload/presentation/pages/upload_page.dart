@@ -581,18 +581,8 @@ class _ActivityUploadState extends ConsumerState<UploadPage> {
               title: const Text('从相册选择'),
               onTap: () async {
                 Navigator.pop(context);
-                final status = await Permission.photos.request();
-                if (status.isGranted) {
-                  await _pickFromGallery();
-                } else {
-                  if (context.mounted) {
-                    AppErrorPresenter.showMessageToast(
-                      context,
-                      '需要相册权限才能选择图片',
-                      type: AppToastType.warning,
-                    );
-                  }
-                }
+                // The system photo picker needs no media permission.
+                await _pickFromGallery();
               },
             ),
           ],
