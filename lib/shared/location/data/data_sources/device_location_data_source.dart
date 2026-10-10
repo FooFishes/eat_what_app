@@ -25,11 +25,9 @@ class DeviceLocationDataSource {
       ),
     );
 
-    final placemarks =
-        await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        ).timeout(
+    final placemarks = await Geocoding()
+        .placemarkFromCoordinates(position.latitude, position.longitude)
+        .timeout(
           const Duration(seconds: 3),
           onTimeout: () => throw TimeoutException('反向地理编码超时'),
         );
