@@ -1,0 +1,126 @@
+name: Build
+
+# main 的 push 与 PR、v 开头的 tag，以及手动触发
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Format, analyze & test
+    runs-on: ubuntu-latest
+    outputs:
+      flutter-version: ${{ steps.fvm.outputs.flutter }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Flutter 版本只在 .fvmrc 里维护，后续 job 复用这里的输出
+      - id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: flutter analyze
+      - run: flutter test
+
+  android:
+    name: Android
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ needs.check.outputs.flutter-version }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # release 暂用 debug 签名，接入上传密钥前产物只用于测试
+      - run: flutter build apk --release --build-number=${{ github.run_number }}
+      - run: flutter build appbundle --release --build-number=${{ github.run_number }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ needs.check.outputs.flutter-version }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # 未签名构建，只验证能编译；签名与上传 TestFlight 另行配置
+      - run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
+
+      - name: Package Runner.app
+        run: ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ios-unsigned
+          path: build/ios/Runner.app.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  web:
+    name: Web
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ needs.check.outputs.flutter-version }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web --release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web
+          path: build/web
+          if-no-files-found: error
+          retention-days: 14
