@@ -1,11 +1,11 @@
 {
-    "name": "eat_what_app",
-    "short_name": "eat_what_app",
+    "name": "沙软今天吃什么",
+    "short_name": "沙软今天吃什么",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "沙软今天吃什么（EatWhat）客户端",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,5 +1,6 @@
-import 'package:eat_what_app/app/bootstrap.dart';
+import 'package:eat/app.dart';
+import 'package:flutter/material.dart';
 
-Future<void> main() async {
-  await bootstrap();
+void main() {
+  runApp(const EatApp());
 }

@@ -1,63 +1,19 @@
-name: eat_what_app
-description: "A new Flutter project."
+name: eat
+description: "沙软今天吃什么（EatWhat）客户端"
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.0+1
 
 environment:
   sdk: ^3.13.5
-  flutter: '>=3.47.7'
 
 dependencies:
-  sentry_flutter: ^10.0.0
   flutter:
     sdk: flutter
-  dio: ^5.9.1
-  flutter_secure_storage: ^11.2.0
-  freezed_annotation: ^3.1.0
-  json_annotation: ^4.12.0
-  flutter_riverpod: ^3.4.3
-  riverpod_annotation: ^4.0.7
-  sentry_dio: ^10.0.0
-  go_router: ^18.0.2
-  url_launcher: ^6.3.2
-  flutter_svg: ^2.2.3
-  cached_network_image: ^4.0.4
-  image_picker: ^1.1.2
-  permission_handler: ^13.0.2
-  geolocator: ^14.0.2
-  geocoding: ^5.0.0
-  flutter_inappwebview: 6.2.0-beta.3
-  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  sentry_dart_plugin: ^3.2.1
-  build_runner: ^2.16.2
   flutter_lints: ^6.0.0
-  freezed: ^4.0.2
-  json_serializable: ^6.14.1
-  riverpod_generator: ^4.0.9
 
 flutter:
   uses-material-design: true
-
-  assets:
-    - assets/images/
-    - assets/images/china_map/
-    - assets/icons/
-
-sentry:
-  auth_token: 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
-  # Absolute or relative path to the Dart symbol map file
-  # Used to make obfuscated Flutter issue titles readable on iOS and Android
-  # See the "Building Your Application" section below for more details on how to generate the symbol map file
-  # Available since version 3.2.0 of the Sentry Dart Plugin
-  # Only applicable for obfuscated builds
-  dart_symbol_map_path: build/app/obfuscation.map.json
-  # Enable source context
-  upload_sources: true
-  # Enable source maps (only relevant for Flutter Web)
-  upload_source_maps: true
-  project: eat_what_app
-  org: orbithy

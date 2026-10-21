@@ -1,14 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 网络权限：允许应用访问互联网 -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <!-- 网络状态权限：允许 Sentry 检查网络连接状态 -->
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- 相机权限：允许应用拍摄照片 -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <!-- 定位权限 -->
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
     <application
         android:label="沙软今天吃什么"
         android:name="${applicationName}"
