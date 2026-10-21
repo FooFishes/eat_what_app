@@ -1,0 +1,44 @@
+{
+  "v": 3,
+  "layout": "files",
+  "createdOnFiles": {"v": 1, "at": "2026-10-21T13:00:00Z"},
+  "title": "沙软今天吃什么 · 舞台设计规范",
+  "namespace": "Stage",
+  "libraries": [],
+  "sections": {},
+  "groups": ["Dishes", "Photos"],
+  "assetGroups": {
+    "Dishes": {
+      "name": "Dishes",
+      "tile": "m",
+      "order": ["yuntun.svg", "niunan.svg", "yangzhi.svg", "luosifen.svg", "tieguodun.svg", "xiangguo.svg", "niandoubao.svg", "jiaozi.svg"],
+      "files": {
+        "yuntun.svg": {"name": "yuntun.svg", "blob": "b9f5cbccd98ec865842038dd3c638012", "size": 2896, "type": "image/svg+xml"},
+        "niunan.svg": {"name": "niunan.svg", "blob": "18f04974e6c7978b4f6476b595df1197", "size": 2860, "type": "image/svg+xml"},
+        "yangzhi.svg": {"name": "yangzhi.svg", "blob": "31922cd25c36eb4d6b2f3e60a17440cd", "size": 2450, "type": "image/svg+xml"},
+        "luosifen.svg": {"name": "luosifen.svg", "blob": "a9b4558c894da7beeb7d79a95d14e0d6", "size": 2171, "type": "image/svg+xml"},
+        "tieguodun.svg": {"name": "tieguodun.svg", "blob": "2f4fdd70c237a1555c1e98e618b001b2", "size": 2536, "type": "image/svg+xml"},
+        "xiangguo.svg": {"name": "xiangguo.svg", "blob": "6f06c65428e13a53e8825fad11afc1e9", "size": 2713, "type": "image/svg+xml"},
+        "niandoubao.svg": {"name": "niandoubao.svg", "blob": "cd397a69d6a62b168e33014f73cd24da", "size": 1551, "type": "image/svg+xml"},
+        "jiaozi.svg": {"name": "jiaozi.svg", "blob": "8ed6cd9a01cf8f817ffd69aaf1ce19df", "size": 3654, "type": "image/svg+xml"}
+      }
+    },
+    "Photos": {
+      "name": "Photos",
+      "tile": "m",
+      "order": ["sq-luosifen.png", "sq-tieguo.png", "sq-niandoubao.png", "sq-hongshaorou.png", "sq-paigutang.png", "raw-luosifen.png", "raw-tieguo.png"],
+      "files": {
+        "sq-luosifen.png": {"name": "sq-luosifen.png", "blob": "f626fb9190806f0f691330a69fedcb14", "size": 97432, "type": "image/png"},
+        "sq-tieguo.png": {"name": "sq-tieguo.png", "blob": "47cfb9bc48cb0c1dd1d4717524d8f540", "size": 121640, "type": "image/png"},
+        "sq-niandoubao.png": {"name": "sq-niandoubao.png", "blob": "e645630200320d0dc14e66cd48cf50e9", "size": 54696, "type": "image/png"},
+        "sq-hongshaorou.png": {"name": "sq-hongshaorou.png", "blob": "6bfa77158c1a1de549f4d319114b2b76", "size": 44497, "type": "image/png"},
+        "sq-paigutang.png": {"name": "sq-paigutang.png", "blob": "d363b3e2d1aa406b6f42ef4103968a9d", "size": 41397, "type": "image/png"},
+        "raw-luosifen.png": {"name": "raw-luosifen.png", "blob": "06523427448d5837258bf5d540ef27d1", "size": 125627, "type": "image/png"},
+        "raw-tieguo.png": {"name": "raw-tieguo.png", "blob": "51d88e51e7e76b34f20a33c7bd680c76", "size": 220670, "type": "image/png"}
+      }
+    }
+  },
+  "blobs": {},
+  "docs": {"sections": []},
+  "lastChange": {"by": "lzyyy", "at": "2026-10-21T14:10:00Z", "via": "Claude Code", "note": "按钮加上立体感：渐变、内高光、底边和按下下沉"}
+}

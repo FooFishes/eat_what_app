@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>G · 底部导航</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 100%; height: 60px; display: flex; gap: 10px; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
+  <nav aria-label="主导航" style="flex: 1; min-width: 0; height: 60px; padding: 5px; box-sizing: border-box; border-radius: 30px; background: rgba(255,255,255,0.94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 0 0 1px rgba(35,28,24,0.06), 0 8px 24px rgba(35,28,24,0.14); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px;">
+    <a href="G2-Home.dc.html" aria-current="{{t.home.cur}}" style="border-radius: 25px; background: {{t.home.bg}}; color: {{t.home.fg}}; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; font-weight: {{t.home.w}};">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>
+      发现
+    </a>
+    <a href="G-Nearby.dc.html" aria-current="{{t.nearby.cur}}" style="border-radius: 25px; background: {{t.nearby.bg}}; color: {{t.nearby.fg}}; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; font-weight: {{t.nearby.w}};">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      附近
+    </a>
+    <a href="G-Me.dc.html" aria-current="{{t.me.cur}}" style="border-radius: 25px; background: {{t.me.bg}}; color: {{t.me.fg}}; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; font-weight: {{t.me.w}};">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      我的
+    </a>
+  </nav>
+  <a href="G-PickShop.dc.html" class="btn-press" aria-label="发布一道菜" style="flex: none; width: 60px; height: 60px; border-radius: 30px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -3px 0 rgba(0,0,0,0.28), 0 8px 20px rgba(35,28,24,0.3); transition: transform 90ms ease;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","nearby","me"],"default":"home"},"$preview":{"width":358,"height":60}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'home';
+    const tab = (key) => {
+      const on = key === active;
+      return {
+        cur: on ? 'page' : 'false',
+        bg: on ? '#F4EFEB' : 'transparent',
+        fg: on ? '#231C18' : '#6E625B',
+        w: on ? 700 : 500
+      };
+    };
+    return { t: { home: tab('home'), nearby: tab('nearby'), me: tab('me') } };
+  }
+}
+</script>
+</body>
+</html>

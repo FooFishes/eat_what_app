@@ -1,0 +1,33 @@
+<!-- @dsCard group="操作" height=150 subtitle="三个标签加发布按钮" -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>NavBar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&display=swap">
+<style>
+  body { margin: 0; background: var(--paper); font-family: var(--font-sans); }
+  .ground { position: relative; margin: var(--space-20); width: 390px; height: 108px; border-radius: var(--radius-tile); overflow: hidden; background: url("../../../assets/photos/p_tieguo.png") center / cover; }
+  .bar { position: absolute; left: var(--space-16); right: var(--space-16); bottom: var(--space-24); height: var(--size-nav); display: flex; gap: var(--space-10); }
+  nav { flex: 1; padding: 5px; box-sizing: border-box; border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--shadow-float); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+  nav a { border-radius: var(--radius-pill); color: var(--ink-muted); text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 11px; line-height: 16px; font-weight: 500; }
+  nav a[aria-current="page"] { background: var(--mist); color: var(--ink); font-weight: 700; }
+  nav svg { width: 22px; height: 22px; }
+  .fab { flex: none; width: var(--size-nav); height: var(--size-nav); border-radius: 50%; background: linear-gradient(180deg, var(--ink-top), var(--ink)); color: var(--paper); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-fab); transition: transform 90ms ease; }
+  .fab:active { transform: translateY(1px); }
+  .fab svg { width: 26px; height: 26px; }
+</style>
+</head>
+<body>
+<div class="ground">
+  <div class="bar">
+    <nav aria-label="主导航">
+      <a href="#discover" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>发现</a>
+      <a href="#nearby"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>附近</a>
+      <a href="#me"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>我的</a>
+    </nav>
+    <a class="fab" href="#publish" aria-label="发布一道菜"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></a>
+  </div>
+</div>
+</body>
+</html>

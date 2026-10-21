@@ -1,0 +1,200 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "G-AddDish.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "发布 2/2 · 加菜",
+      "w": 390,
+      "x": 1410,
+      "y": 1300
+    },
+    "G-Crop.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "发布 · 调整照片（新增一步）",
+      "w": 390,
+      "x": 470,
+      "y": 3900
+    },
+    "G-Detail.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "餐厅详情",
+      "w": 390,
+      "x": 470,
+      "y": 1300
+    },
+    "G-Dish.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "菜品详情",
+      "w": 390,
+      "x": 0,
+      "y": 1300
+    },
+    "G-HomePhoto.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "发现（实拍图版）",
+      "w": 390,
+      "x": 0,
+      "y": 3900
+    },
+    "G-Inbox.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "消息",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "G-Kit.dc.html": {
+      "h": 844,
+      "page": "g",
+      "title": "组件",
+      "w": 760,
+      "x": 470,
+      "y": 2600
+    },
+    "G-Login.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "登录",
+      "w": 390,
+      "x": 0,
+      "y": 2600
+    },
+    "G-Me.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "我的",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "G-Nav.dc.html": {
+      "h": 60,
+      "is_interactive": true,
+      "page": "g",
+      "title": "底部导航（三页共用）",
+      "w": 358,
+      "x": 1310,
+      "y": 2600
+    },
+    "G-Nearby.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "附近",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "G-PhotoPipeline.dc.html": {
+      "h": 844,
+      "page": "g",
+      "title": "实拍图从上传到上舞台",
+      "w": 1240,
+      "x": 940,
+      "y": 3900
+    },
+    "G-PickShop.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "发布 1/2 · 选店",
+      "w": 390,
+      "x": 940,
+      "y": 1300
+    },
+    "G2-Home.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "g",
+      "title": "发现",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-21T09:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "page": "g",
+    "view": "canvas"
+  },
+  "notes": {
+    "g1": {
+      "kind": "title1",
+      "maxW": 1800,
+      "page": "g",
+      "text": "底部三个主页面 + 消息",
+      "w": 240,
+      "x": 0,
+      "y": -280
+    },
+    "g2": {
+      "kind": "title1",
+      "maxW": 1800,
+      "page": "g",
+      "text": "详情与发布流程",
+      "w": 240,
+      "x": 0,
+      "y": 1020
+    },
+    "g3": {
+      "kind": "title1",
+      "maxW": 1800,
+      "page": "g",
+      "text": "登录与组件",
+      "w": 240,
+      "x": 0,
+      "y": 2320
+    },
+    "g4": {
+      "kind": "title1",
+      "maxW": 2180,
+      "page": "g",
+      "text": "实拍图怎么处理",
+      "w": 240,
+      "x": 0,
+      "y": 3620
+    }
+  },
+  "order": [
+    "G2-Home.dc.html",
+    "G-Nearby.dc.html",
+    "G-Me.dc.html",
+    "G-Inbox.dc.html",
+    "G-Dish.dc.html",
+    "G-Detail.dc.html",
+    "G-PickShop.dc.html",
+    "G-AddDish.dc.html",
+    "G-Login.dc.html",
+    "G-Kit.dc.html",
+    "G-Nav.dc.html",
+    "G-HomePhoto.dc.html",
+    "G-Crop.dc.html",
+    "G-PhotoPipeline.dc.html"
+  ],
+  "pages": [
+    {
+      "id": "g",
+      "name": "G 定稿"
+    }
+  ],
+  "title": "沙软今天吃什么 · 风格候选"
+}
