@@ -11,23 +11,23 @@
 | 文件 | 内容 | 状态 |
 | --- | --- | --- |
 | `docs/EatWhat_产品文档.md` | 产品定位、场景、功能范围、页面流程 | 占位 |
-| `docs/EatWhat_技术架构.md` | 分层、目录、状态管理、路由、网络、数据流 | 占位 |
+| `docs/EatWhat_技术架构.md` | 分层与目录、状态管理、路由与页面骨架、网络与弱网、登录态、令牌与组件、取色、地图、多平台、测试 | 已有 |
 | `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 已有 |
-| `docs/EatWhat_开发计划.md` | 里程碑、任务与验收 | 占位 |
+| `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 已有 |
 | `prototype/screens/*.dc.html` | 「G 定稿」各页面画板 | 已有 |
 
-占位文档补齐之前：
+写代码时：
 
-- 不要自行搭整套架构（状态管理、路由、网络层、本地存储）或批量加依赖。需要时先提方案，写进对应文档、确认后再动代码。
-- 界面以 `prototype/` 为准，接口以 `docs/api.openapi.yml` 为准；两者都没覆盖的行为，先问。
+- 代码按技术架构文档组织，按开发计划的阶段推进。依赖在第一个用到它的阶段加入，不批量加。文档没覆盖的架构决定（新的全局状态、新的基础设施、跨层的约定）先提方案，写进技术架构文档、确认后再动代码。
+- 产品文档还是占位：界面以 `prototype/` 为准，接口以 `docs/api.openapi.yml` 为准；两者都没覆盖的行为，先问。
 
 ## 目录
 
 ```text
 lib/
-  main.dart          入口，只负责 runApp
+  main.dart          入口：读配置和本地 token，然后 runApp
   app.dart           EatApp（MaterialApp 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
@@ -39,7 +39,16 @@ prototype/
 .github/workflows/   CI
 ```
 
-`lib/` 之后的分层由技术架构文档决定，确定后在这里补上。
+`lib/` 按技术架构文档分层，目录在开发计划阶段一建好：
+
+- `core/` 和业务无关的基础设施（配置、网络、会话、存储、定位、取色、格式化）
+- `design/` 令牌、主题、舞台色、图标和设计规范里的组件
+- `data/` 接口类和模型，按 `api.openapi.yml` 的分组
+- `shared/` 几个功能都用到的业务部件（当前用户、认证拦截等）
+- `features/` 按产品功能分目录，放页面、页面的 provider 和本功能的组件
+- `router/` 路由表、路径常量、登录重定向、主页面外壳
+
+后面的目录可以导入前面的，反过来不行；功能之间不互相导入，跳到别的功能用路径。有一个测试检查这条规则，细节见技术架构「目录与分层」。
 
 ## 环境与命令
 
@@ -83,7 +92,8 @@ fvm flutter run -d chrome
 - 唯一依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它由后端根据已发布的服务生成，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。
 - 主要分组：Auth、User、Food、Activity、Restaurant、Notification、Upload、Location、AccountConsent 等；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
-- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、同意状态等由服务端判断，客户端只做展示层面的拦截。
+- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态等由服务端判断，客户端只做展示层面的拦截。
+- 跨站同步同意默认替所有用户发送，只接同意接口，不做同意相关的页面（设计稿里有也不做），见技术架构「跨站同步同意」。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地
