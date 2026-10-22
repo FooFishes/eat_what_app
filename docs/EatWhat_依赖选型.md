@@ -14,6 +14,7 @@
 | --- | --- | --- | --- | --- |
 | Material 组件、`ThemeExtension`、中文本地化 | `material_ui` | `^1.8.0` | 搭骨架时 | 待引入 |
 | 状态管理 | `flutter_riverpod` | `^3.4.3` | 搭骨架时 | 待引入 |
+| provider 注解 | `riverpod_annotation` | `^4.0.7` | 同上 | 待引入 |
 | 路由 | `go_router` | `^18.1.1` | 搭骨架时 | 待引入 |
 | SVG 图标和插画 | `flutter_svg` | `^2.3.0` | 搭骨架时（底部导航就要用图标） | 待引入 |
 | HTTP | `dio` | `^5.11.1` | 接第一个接口时 | 待引入 |
@@ -39,8 +40,9 @@
 | --- | --- | --- | --- | --- |
 | 代码规范 | `flutter_lints` | `^6.0.0` | 已有 | 已引入 |
 | 测试 | `flutter_test`（SDK） | — | 已有 | 已引入 |
-| 代码生成 | `build_runner` | `^2.17.1` | 接第一个接口时 | 待引入 |
-| JSON 生成 | `json_serializable` | `^6.15.2` | 同上 | 待引入 |
+| 代码生成 | `build_runner` | `^2.16.2`（原因见「状态管理」） | 搭骨架时（第一个 provider 就要生成） | 待引入 |
+| provider 生成 | `riverpod_generator` | `^4.0.9` | 同上 | 待引入 |
+| JSON 生成 | `json_serializable` | `^6.15.2` | 接第一个接口时 | 待引入 |
 | Mock | `mocktail` | `^1.0.5` | 第一个需要替身的测试 | 待引入 |
 | Riverpod 规则检查 | `riverpod_lint`（写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml`） | `3.1.9` | 和 `flutter_riverpod` 一起 | 待引入 |
 | 符号表、source map 上传 | `sentry_dart_plugin` | `^3.4.0` | 和 Sentry 一起，只在 CI 里跑 | 待引入 |
@@ -51,7 +53,6 @@
 
 | 包 | 不用的原因 |
 | --- | --- |
-| `riverpod_generator`、`riverpod_annotation` | 见「状态管理」。手写 provider 足够，生成器拖慢 build 生态升级 |
 | `freezed` | 见「网络与序列化」。主构造函数 + `sealed` 已覆盖大部分需求 |
 | `go_router_builder`、`auto_route` | 见「路由」 |
 | `retrofit`、`swagger_parser`、`openapi_generator`、`tonik` | 见「网络与序列化」，不从 OpenAPI 生成客户端 |
@@ -77,7 +78,7 @@
 - 版本只写在 `.fvmrc`（当前 3.47.7 / Dart 3.13.5），CI 从这里读取。
 - 依赖约束一律写 `^x.y.z`，不写 `any`。实测 `sentry_flutter: any` 会被解析到 8.14.2 而不是 10.x，写成 `^10.1.0` 才能拿到新版（原因见「监控与崩溃上报」）。
 - `pubspec.lock` 入库。补丁版本可以随功能 PR 顺手升；次版本和主版本单独一个 PR，标题如 `build(deps): 升级 go_router 至 18.2.0`。
-- 升级 Flutter 之前先看代码生成链（`analyzer`、`build`、`source_gen`）跟上没有：生成器跟不上新版 analyzer 是最常见的升级阻塞点，所以本文尽量少用生成器。
+- 升级 Flutter 之前先看代码生成链（`analyzer`、`build`、`source_gen`）跟上没有：生成器跟不上新版 analyzer 是最常见的升级阻塞点。本文只用 `riverpod_generator` 和 `json_serializable` 两个生成器，升级前确认这两个都已支持新版 Dart 的语法和 analyzer。
 
 ### Material 改用 `material_ui`
 
@@ -91,22 +92,51 @@ Flutter 3.47 把 Material 和 Cupertino 拆成了独立的 `material_ui`、`cupe
 
 ## 状态管理
 
-选 **`flutter_riverpod` 3**，手写 provider，不用 `riverpod_generator`。
+选 **`flutter_riverpod` 3 + `riverpod_generator`**：provider 一律用 `@riverpod` 注解写，由生成器生成，不手写 `Provider(...)`。
 
 为什么是 Riverpod：
 
 - 这个 App 的大部分页面是「请求接口、显示加载 / 失败 / 内容」，`AsyncValue` 直接对应这三种状态。
-- 菜品详情、餐厅详情这类按 id 取数据的页面用 `family` + `autoDispose`，离开页面自动释放。
+- 菜品详情、餐厅详情这类按 id 取数据的页面用带参数的 provider，离开页面自动释放。
 - 测试时用 `ProviderContainer` / `ProviderScope(overrides: ...)` 替换仓库层，不需要依赖注入框架。
 - `legacy` 用的就是 Riverpod 3，团队熟悉。
 
-为什么不用生成器：
+为什么用生成器：
 
-- Riverpod 3 不用生成器也能写全部类型的 provider，代码只是多几个泛型参数。
-- 生成器会把 analyzer / build 版本锁在一起。实测把 `riverpod_generator` 4.0.9 加进来后，因为它限制 `build < 5.0.0`，`build_runner` 从 2.17.1 被迫退回 2.16.2（`go_router_builder` 4.5.2 也有同样的限制）。生成器不跟进，Flutter 和其他生成器就升不上去。
-- 每个 provider 文件都多一个 `.g.dart`，改一行就要重新跑生成。
+- 写法统一：函数式 provider 和 `Notifier` 都只是一个注解，参数直接写成函数参数，不用在 `FutureProvider.autoDispose.family` 这类组合里挑，也不用写泛型。
+- 默认自动释放，常驻的（登录态等）显式写 `@Riverpod(keepAlive: true)`，一眼能看出哪些常驻。
+- 本来就有 `json_serializable` 这条生成链，再加一个生成器不增加新工具和 CI 步骤。
 
-`riverpod_lint` 照样用，它的大部分规则不依赖生成器。它通过新的 analyzer 插件机制安装，写在 `analysis_options.yaml`：
+```dart
+part 'session.g.dart';
+
+@Riverpod(keepAlive: true)
+class Session extends _$Session {
+  @override
+  TokenResponse? build() => null;
+
+  void signIn(TokenResponse token) => state = token;
+}
+
+@riverpod
+Future<List<Dish>> nearbyDishes(
+  Ref ref, {
+  required double lat,
+  required double lng,
+}) async {
+  final token = ref.watch(sessionProvider);
+  // ...
+}
+```
+
+使用处是 `ref.watch(sessionProvider)`、`ref.watch(nearbyDishesProvider(lat: lat, lng: lng))`。`Ref` 和注解来自 `riverpod_annotation`，`ProviderScope`、`ConsumerWidget` 仍来自 `flutter_riverpod`。生成的 `*.g.dart` 和 JSON 的一样入库（见「JSON」）。
+
+代价：
+
+- **`build_runner` 停在 2.16.2**。`riverpod_generator` 4.0.9 限制 `build < 5.0.0`，实测加入后 `build_runner` 从 2.17.1 退回 2.16.2，`build` 从 5.0.0 退回 4.0.11。`json_serializable`（6.15.2）和 `analyzer`（14.6.0，能解析主构造函数）仍是最新版，所以眼下没有实际损失：`build_runner` 2.17 新增的是实验性的共享 part 文件和 `serve` 命令的修复，这里都用不到。约束写 `^2.16.2`，等 `riverpod_generator` 放开 `build` 5 再单独一个 PR 升上去。以后再出现生成器跟不上 analyzer 的情况，升级 Flutter 要等它。
+- 每个 provider 文件多一个 `.g.dart`，改了 provider 的签名要重新生成。开发时开着 `dart run build_runner watch`。
+
+`riverpod_lint` 一起用。除了通用规则，它还检查生成器的写法，实测 `functional_ref`（函数式 provider 第一个参数必须是 `Ref`）、`notifier_extends`（`Notifier` 必须继承生成的 `_$Xxx`）、`only_use_keep_alive_inside_keep_alive`（常驻 provider 不能依赖会被释放的 provider）都会报。它通过新的 analyzer 插件机制安装，写在 `analysis_options.yaml`：
 
 ```yaml
 plugins:
@@ -124,7 +154,7 @@ plugins:
 - 设计规范要求 `NavBar` 放在 `StatefulShellRoute` 外层的 `Stack` 里，三个主页面各自保留导航栈，这正是 `go_router` 的 `StatefulShellRoute.indexedStack`。
 - 未登录拦截用 `redirect`，配合 Riverpod 的登录态。
 - Web 用路径式 URL：`usePathUrlStrategy()`，来自 SDK 自带的 `flutter_web_plugins`，不用另装包。
-- 页面一共十几个，路径用常量集中管理就够，不需要 `go_router_builder` 的类型安全路由；它和 `riverpod_generator` 一样会把 `build_runner` 锁在旧版。`auto_route` 依赖代码生成，同理不选。
+- 页面一共十几个，路径用常量集中管理就够，不需要 `go_router_builder` 的类型安全路由。它 4.5.2 同样限制 `build < 5.0.0`，加进来不会让版本锁更紧，以后路由参数变多、手写容易出错时可以再提。`auto_route` 和 `go_router` 同类，只留一个。
 
 ## 网络与序列化
 
@@ -155,7 +185,7 @@ plugins:
   ```
 
 - 接口里「数字有时是字符串」这类不规整的字段，用 `@JsonKey(fromJson: ...)` 或 `JsonConverter` 处理，不在业务代码里到处判断。
-- 生成的 `*.g.dart` 入库（和 `legacy` 一致），这样 IDE 打开就能用、CI 的 Android / iOS / Web 三个构建 job 不用各跑一遍生成。CI 的 check 步骤加一次 `dart run build_runner build` 后 `git diff --exit-code`，防止忘了重新生成。
+- 生成的 `*.g.dart`（JSON 和 provider 的）入库（和 `legacy` 一致），这样 IDE 打开就能用、CI 的 Android / iOS / Web 三个构建 job 不用各跑一遍生成。CI 的 check 步骤加一次 `dart run build_runner build` 后 `git diff --exit-code`，防止忘了重新生成。
 - 不用 `freezed`：主构造函数已经把数据类写得很短，联合类型用 Dart 3 的 `sealed class` + 模式匹配。`freezed` 4.0 也支持主构造函数，以后页面状态的 `copyWith` 写得太累，可以再单独提出来加。
 
 ### 不从 OpenAPI 生成客户端
@@ -303,7 +333,7 @@ plugins:
 | --- | --- |
 | `flutter_lints` | 已有，AGENTS.md 规定的规则集，不换 `very_good_analysis` |
 | `riverpod_lint` | analyzer 插件，见「状态管理」；CI 要加 `dart analyze` |
-| `build_runner` + `json_serializable` | 只有这一条代码生成链。首次生成约 1 分钟（AOT 模式），之后增量生成 |
+| `build_runner` + `riverpod_generator` + `json_serializable` | 一条生成链、两个生成器。首次生成约 1 分钟（AOT 模式），之后增量生成；开发时开着 `dart run build_runner watch` |
 | `mocktail` | 不需要代码生成的 mock，配合 Riverpod 的 override 替换仓库层；不用 `mockito`（要生成代码） |
 | Widget Preview | Flutter 3.47 起稳定，SDK 自带，写组件时用来对照设计稿 |
 | `integration_test` | SDK 自带，以后写端到端测试时启用 |
@@ -324,12 +354,12 @@ plugins:
 
 2026-10-22，在临时目录用本仓库代码做的验证，没有改动仓库里的 `pubspec.yaml`：
 
-- **依赖解析**：上面「采用」表里的全部包加 `build_runner`、`json_serializable`、`mocktail`，`flutter pub get` 解析成功，各包均为当天最新版（Sentry 需写 `^10.1.0`，见上）。
-- **代码生成**：主构造函数写的模型经 `build_runner` 2.17.1 + `json_serializable` 6.15.2 生成成功，结果见「JSON」一节。
-- **生成器的版本锁**：另外加入 `riverpod_generator` 4.0.9、`freezed` 4.0.3、`go_router_builder` 4.5.2 后，`build_runner` 被解析到 2.16.2、`build` 到 4.0.11。
+- **依赖解析**：上面「采用」表和开发依赖表里的全部包，`flutter pub get` 解析成功。除受 `riverpod_generator` 限制的 `build_runner` 2.16.2、`build` 4.0.11 外，各包均为当天最新版（Sentry 需写 `^10.1.0`，见上）。
+- **代码生成**：`build_runner` 2.16.2 + `riverpod_generator` 4.0.9 + `json_serializable` 6.15.2 在同一次构建里生成成功，覆盖主构造函数写的模型（见「JSON」）、常驻的 `Notifier`、带命名参数的函数式 provider、带参数的 `AsyncNotifier`，以及和 provider 写在同一文件里的主构造函数类。用 `ProviderContainer.test()` 写的单元测试通过。
+- **生成器的版本锁**：不加 `riverpod_generator` 时 `build_runner` 是 2.17.1、`build` 是 5.0.0；加入后分别退到 2.16.2、4.0.11，`build_config` 从 1.4.0 退到 1.3.3，其余不变。它还带进 `mockito`、`freezed_annotation` 两个传递依赖，只在开发依赖里，不进 App。再加 `freezed` 4.0.3、`go_router_builder` 4.5.2，结果相同。
 - **material_ui**：用 `material_ui` 的 `MaterialApp.router` + `go_router` + `ProviderScope` + `flutter_map`（组件标记）搭了一个最小页面，`flutter analyze` 唯一的提示是 `MaterialUiCompatibilityBridge` 的 deprecated。
 - **图标**：把 PR #11 的 78 个 MingCute SVG 放进 `assets/icons/`，用 `flutter_svg` 按「图标」一节的做法渲染（`currentColor` 换色、按尺寸改描边），Widget 测试通过，Web 构建通过。
-- **补充的包**：加入 `share_plus`、`package_info_plus`、`device_info_plus`、`shorebird_code_push` 并去掉图标包后重新解析，结果不变（Sentry 10.1.0、`build_runner` 2.17.1）。Shorebird CLI 本身没有在这里验证。
-- **Web 构建**：`flutter build web --release` 成功，Wasm 预检通过。
-- **riverpod_lint**：在 `analysis_options.yaml` 声明插件后，`dart analyze` 报出 `missing_provider_scope`、`avoid_public_notifier_properties`，`flutter analyze` 没有报。
+- **补充的包**：加入 `share_plus`、`package_info_plus`、`device_info_plus`、`shorebird_code_push` 并去掉图标包后重新解析，结果不变（Sentry 10.1.0）。Shorebird CLI 本身没有在这里验证。
+- **Web 构建**：`flutter build web --release` 成功，Wasm 预检通过；页面接上生成的 provider 后再次构建也成功。
+- **riverpod_lint**：在 `analysis_options.yaml` 声明插件后，`dart analyze` 报出 `missing_provider_scope`、`avoid_public_notifier_properties`，以及故意写错的生成器代码上的 `functional_ref`、`notifier_extends`、`only_use_keep_alive_inside_keep_alive`；`flutter analyze` 都没有报。
 - **OpenAPI 生成**：`swagger_parser` 1.45.0 的结果见「不从 OpenAPI 生成客户端」。
