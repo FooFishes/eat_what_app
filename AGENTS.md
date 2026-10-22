@@ -10,9 +10,10 @@
 
 | 文件 | 内容 | 状态 |
 | --- | --- | --- |
-| `docs/EatWhat_产品文档.md` | 产品定位、场景、功能范围、页面流程 | 占位 |
-| `docs/EatWhat_技术架构.md` | 分层与目录、状态管理、路由与页面骨架、网络与弱网、登录态、令牌与组件、取色、地图、多平台、测试 | 已有 |
-| `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 已有 |
+| `docs/EatWhat_产品文档.md` | 产品的最终形态：定位、用户与场景、核心概念、页面流程、权限、推荐、内容与消息规则 | 初稿 |
+| `docs/EatWhat_现状差距.md` | 现有接口、画板离产品文档还差什么，补上之前客户端怎么过渡 | 初稿 |
+| `docs/EatWhat_技术架构.md` | 分层、目录、启动、状态管理、路由、深链、网络、权限拦截、存储、离线缓存、令牌落地、屏幕适配、取色、地图、推送、多平台、测试 | 初稿 |
+| `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 初稿 |
 | `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
 | `docs/guideline/COMMENT-STYLE.md` | 代码注释风格：What 与 Why 各写在哪、篇幅、语体、格式、不要写的东西 | 已有 |
@@ -22,14 +23,15 @@
 写代码时：
 
 - 代码按技术架构文档组织，按开发计划的阶段推进。依赖在第一个用到它的阶段加入，不批量加。文档没覆盖的架构决定（新的全局状态、新的基础设施、跨层的约定）先提方案，写进技术架构文档、确认后再动代码。
-- 产品文档还是占位：界面以 `prototype/` 为准，接口以 `docs/api.openapi.yml` 为准；两者都没覆盖的行为，先问。
+- 行为以产品文档为准，视觉以 `prototype/` 为准，接口以 `docs/api.openapi.yml` 为准；接口或画板还没跟上产品文档的地方，按现状差距文档过渡。都没覆盖的行为，先问。
 
 ## 目录
 
 ```text
 lib/
-  main.dart          入口：读配置和本地 token，然后 runApp
-  app.dart           EatApp（MaterialApp 根组件）
+  main.dart          入口，只调用 bootstrap()
+  bootstrap.dart     启动顺序：读配置、本地 token 和同意记录，然后 runApp
+  app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
@@ -42,14 +44,15 @@ prototype/
 
 `lib/` 按技术架构文档分层，目录在开发计划阶段一建好：
 
-- `core/` 和业务无关的基础设施（配置、网络、会话、存储、定位、取色、格式化）
-- `design/` 令牌、主题、舞台色、图标和设计规范里的组件
-- `data/` 接口类和模型，按 `api.openapi.yml` 的分组
-- `shared/` 几个功能都用到的业务部件（当前用户、认证拦截等）
-- `features/` 按产品功能分目录，放页面、页面的 provider 和本功能的组件
-- `router/` 路由表、路径常量、登录重定向、主页面外壳
+- `core/` 和业务无关的基础设施（环境配置、网络、存储、失败与提示文案、坐标、格式化、平台能力、埋点）
+- `design/` 令牌、主题、舞台色与取色算法、图标和设计规范里的组件，不认识业务数据
+- `domain/` 领域模型和产品规则（权限表、饭点、校验等），纯 Dart，不做 IO
+- `data/` 按后端资源分组的接口类和 repository，负责缓存和转成领域模型
+- `state/` 跨页面共享的状态（登录态、账号状态、同意记录、远程配置、位置、未读数等）
+- `features/` 按页面分组，放页面、页面私有组件和页面的 provider
+- `router/` 路由表、守卫、深链处理、主页面外壳
 
-后面的目录可以导入前面的，反过来不行；功能之间不互相导入，跳到别的功能用路径。有一个测试检查这条规则，细节见技术架构「目录与分层」。
+依赖只能往下层走，具体哪层能依赖哪层见技术架构第 2 节的表；功能之间不互相导入，跳到别的页面用路由路径。`test/architecture_test.dart` 检查这条规则。
 
 ## 环境与命令
 
@@ -91,10 +94,10 @@ fvm flutter run -d chrome
 ## 接口
 
 - 唯一依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它由后端根据已发布的服务生成，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。
-- 主要分组：Auth、User、Food、Activity、Restaurant、Notification、Upload、Location、AccountConsent 等；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
+- 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
-- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态等由服务端判断，客户端只做展示层面的拦截。
-- 跨站同步同意默认替所有用户发送，只接同意接口，不做同意相关的页面（设计稿里有也不做），见技术架构「跨站同步同意」。
+- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
+- 数据存放同意按产品文档：注册时单独勾选，说明有变化时进「重新同意」页（`G-Reconsent`）。接口现在还是校内站、境外站两套逻辑，过渡做法见现状差距 2.1 和技术架构 9.4。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地
@@ -107,11 +110,11 @@ fvm flutter run -d chrome
 - **导航**：`NavBar` 只出现在发现、附近、我的三个主页面，悬浮在内容上方；滚动列表底部留出约 100px。
 - **颜色**：没有品牌主色，主操作用 `ink` 实心；`warn` 只用于提示用户该做什么，且必须配文字。
 - **字体**：中文 Noto Sans SC，主角文字用 900；Bricolage Grotesque 只用于数字（价格、距离、计数）。选中态靠字重，不靠颜色。
-- **形状**：能点的都是胶囊；食物和头像永远是正圆（`DishPlate` 带 8px 白色盘沿）。阴影只用在规范列出的几处，不给卡片加投影。
+- **形状**：能点的都是胶囊；盘子、地图标记和头像永远是正圆（`DishPlate` 带 8px 白色盘沿），列表缩略图是方圆角（`radius-thumb`），推荐流方块是圆角方图。阴影只用在规范列出的几处，不给卡片加投影。
 - **图标**：MingCute Line 一套，24 网格 2px 描边，按用途命名，SVG 在 `prototype/assets/icons/`，颜色用 `currentColor` 跟着文字。只有赞过 `heart-on`、收藏过 `bookmark-on` 用实心，不混用其他图标库，不用 emoji。
 - **文案**：同学之间说话的语气，短句；距离「320 m」、价格「¥18」；专题、标签用「」引用；不用 emoji 和感叹号。还没有接口的功能照样画出来，旁边放「待接入」虚线标签（`Chip`）。
 - **动效与无障碍**：转盘吸附 680ms 回弹曲线、舞台换色 500ms、按钮按下下沉 1px；系统开启减少动态效果时停掉自动动画。点击区域不小于 44px，文字对比不低于 4.5:1，可滑动的操作都要有按钮替代。
-- `prototype/assets/` 里的插画和示例图只用于对照设计；要进 App 的资源复制到项目自己的 `assets/` 并在 `pubspec.yaml` 声明。插画只用于空状态、引导和演示，不能冒充用户上传的照片。
+- `prototype/assets/` 里的插画、示例图和图标只用于对照设计；要进 App 的资源复制到项目自己的 `assets/` 并在 `pubspec.yaml` 声明。插画只用于空状态、引导和演示，不能冒充用户上传的照片。
 - `.dc.html` 依赖 Claude Design 运行时，本地打开只能看静态结构。读法见 `prototype/README.md`。
 
 ## 代码约定
