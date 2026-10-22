@@ -7,7 +7,7 @@
 ## 1. 总体约定
 
 - **一套代码，三端运行**。平台差异只出现在 `lib/core/platform/` 和少数明确标注的地方，页面里不写 `Platform.isIOS`。
-- **不用代码生成**。模型、Provider、路由都手写，不引入 `build_runner`。理由见依赖选型第 5 节。
+- **Provider 和 JSON 用代码生成，路由手写**。Provider 用 `riverpod_generator` 的 `@riverpod`（第 4 节），接口 DTO 用 `json_serializable`（第 7.6 节），都经 `build_runner` 生成 `*.g.dart`。生成文件入库，CI 重新生成一遍并检查没有差异（第 21.3 节）。不用 `freezed`、`retrofit`、`go_router_builder`。选型理由见依赖选型第 3、5 节。
 - **不写裸值**。颜色、间距、圆角、阴影、尺寸、动效都来自设计令牌（第 11 节）。
 - **业务规则写成纯函数**。权限表、饭点、取色、撞色、坐标转换、跳转规则都放在不依赖 Flutter 组件的文件里，配单元测试。
 - **过渡期的做法有统一出口**。「待接入」、按产品规则在客户端拦截、校区和商圈做成配置，都走第 8、17 节的机制，接口上线后改一处即可。
@@ -23,9 +23,9 @@ lib/
   bootstrap.dart            启动顺序（第 3 节）
   app.dart                  EatApp：MaterialApp.router、主题、本地化、字号上限
   core/                     基础设施，不含产品规则
-    env/                    AppEnv：编译期传入的环境配置
+    config/                 AppConfig：编译期传入的环境配置
     network/                ApiClient、拦截器、响应外壳解析、ApiException、分页
-    storage/                SecureStore、KvStore（hive_ce）、CacheStore
+    storage/                SecureStore、KvStore（shared_preferences）、CacheStore
     failure/                AppFailure 分类；失败 → 「说人话」的提示
     copy/                   通用文案：动作叫法、错误提示
     geo/                    GCJ-02 / WGS-84 转换、距离、「320 m」格式化
@@ -40,7 +40,7 @@ lib/
     stage/                  舞台取色算法、撞色规则（纯函数）
     icons/                  图标名表、EatIcon
     widgets/                Button、Chip、DishPlate、DishTile、ListRow、Panel、Sheet、Stage、
-                            StageScaffold、WhitePageScaffold、NavBar、Tabs、TasteCloud、Turntable、
+                            StageScaffold、PlainScaffold、NavBar、Tabs、TasteCloud、Turntable、
                             StageColorPicker、MapPin、SearchField、FormField、Switch、RadioRow、
                             PendingTag（待接入）、状态占位（加载、失败、空、没网）
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
@@ -66,11 +66,11 @@ lib/
     inbox/                  消息
     settings/               设置、账号与安全、登录设备、注销、隐私、屏蔽的人、通知、关于、反馈
     system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示
-  router/                   路由表、守卫、深链处理、MainShell（NavBar 外壳）
+  router/                   路由表、路径常量（paths.dart）、守卫、深链处理、MainShell（NavBar 外壳）
 assets/
   fonts/  icons/  illustrations/  config/remote_defaults.json
 config/
-  env.example.json          环境配置样例（真实的 env.*.json 不入库）
+  example.json              环境配置样例（真实的 dev.json、staging.json、prod.json 不入库）
 tool/                       一次性脚本：字体子集化、图标描边变体
 test/                       与 lib/ 同构；另有 support/（假实现）、fixtures/（样例 JSON、取色样图）
 ```
@@ -87,12 +87,12 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `domain` | `design/tokens`（只为 `StageColor`） | Flutter 组件、`core/network`、`data` 及以上 |
 | `data` | `domain`、`core` | `design/widgets`、`state`、`features` |
 | `state` | `data`、`domain`、`core` | `features`、`design/widgets` |
-| `features` | 以上全部 | 别的功能目录的内部文件 |
+| `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import。跳到别的页面用路由路径；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
-- 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。
+- 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
 ## 3. 启动流程
 
@@ -101,9 +101,9 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 步骤 | 做什么 | 等不等 |
 | --- | --- | --- |
 | 1 | `WidgetsFlutterBinding.ensureInitialized()`；Web 上 `usePathUrlStrategy()` | 等 |
-| 2 | 读 `AppEnv`（编译期常量） | 立即 |
-| 3 | 打开 Hive 盒子（偏好、缓存、埋点队列）；读安全存储里的 token | 等，几十毫秒 |
-| 4 | iOS 卸载重装检测：Hive 里没有「已安装」标记而 Keychain 里有 token，就清掉 Keychain（Keychain 卸载后会残留） | 等 |
+| 2 | 读 `AppConfig`（编译期常量） | 立即 |
+| 3 | 读本地存储（`shared_preferences`）里的偏好；读安全存储里的 token | 等，几十毫秒 |
+| 4 | iOS 卸载重装检测：本地存储里没有「已安装」标记而 Keychain 里有 token，就清掉 Keychain（Keychain 卸载后会残留，`shared_preferences` 不会） | 等 |
 | 5 | 读本地同意记录、缓存的远程配置（没有就用内置默认值）、缓存的当前用户 | 等 |
 | 6 | 已同意隐私政策：先初始化 Sentry，再 `runApp`；没同意：直接 `runApp` | — |
 | 7 | 首帧：有登录态进 `/discover`（先显示缓存），没有进 `/login`；舞台先用上一次的舞台色 | — |
@@ -113,19 +113,25 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 ## 4. 状态管理
 
-用 Riverpod 3，手写 Provider，不用生成器。
+用 Riverpod 3，Provider 用 `riverpod_generator` 生成：写带 `@riverpod` 注解的函数或类，`build_runner` 生成 `xxxProvider`。
 
 ### 4.1 Provider 的种类
 
 | 用途 | 写法 | 例子 |
 | --- | --- | --- |
-| 单例服务 | `Provider` | `apiClientProvider`、`kvStoreProvider`、`envProvider`、`clockProvider` |
-| 跨页面状态 | `NotifierProvider` | `sessionProvider`、`remoteConfigProvider`、`placeAndMealProvider` |
-| 页面数据 | `AsyncNotifierProvider.autoDispose.family` | `dishDetailProvider(dishId)`、`shopDetailProvider(shopId)` |
-| 派生值 | `Provider` | `accountStatusProvider`、`featureStateProvider(feature)` |
-| 一次性异步 | `FutureProvider.autoDispose` | 往期专题列表 |
+| 单例服务 | `@Riverpod(keepAlive: true)` 函数 | `apiClientProvider`、`kvStoreProvider`、`appConfigProvider`、`clockProvider` |
+| 跨页面状态 | `@Riverpod(keepAlive: true)` 类（`extends _$Xxx`） | `sessionProvider`、`remoteConfigProvider`、`placeAndMealProvider` |
+| 页面数据 | `@riverpod` 类，`build` 带参数（默认自动释放，参数即 family） | `dishDetailProvider(dishId)`、`shopDetailProvider(shopId)` |
+| 派生值 | `@riverpod` 函数 | `accountStatusProvider`、`featureStateProvider(feature)` |
+| 一次性异步 | 返回 `Future` 的 `@riverpod` 函数 | 往期专题列表 |
 
 `StateProvider`、`StateNotifierProvider` 在 3.x 已移到 `legacy.dart`，不用。实验性的 `Mutation` 和离线持久化也不用。
+
+**生成文件**
+
+- 有 `@riverpod` 的文件写 `part 'xxx.g.dart';`，改完跑 `fvm dart run build_runner build`（开发时可以用 `watch`）。
+- `*.g.dart` 入库，不手改。生成结果已经按 `dart format` 排好版，`analysis_options.yaml` 把它们排除在分析之外。CI 用 `build_runner build --only-check` 比对，源文件改了没重新生成、或生成了没提交都会失败。
+- `riverpod_lint` 作为分析器插件写在 `analysis_options.yaml` 的 `plugins` 下（不进 `pubspec.yaml`，由分析器自己拉取），检查 Provider 的写法（`runApp` 外面没有 `ProviderScope`、family 参数不合规则等）。它的结果只有 `dart analyze` 报告，`flutter analyze` 看不到。
 
 ### 4.2 共享状态（`lib/state/`）
 
@@ -202,7 +208,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 **不进路由表的**：
 
-- 底部面板（地点和饭点、筛选、加标签、举报、拦截、分享、退出确认、建议更新、定位说明、推送询问）：用统一的 `showEatPanel()` 弹出，不改地址。
+- 底部面板（地点和饭点、筛选、加标签、举报、拦截、分享、退出确认、建议更新、定位说明、推送询问）：用统一的 `showPanel()` 弹出，不改地址。
 - 调整照片（`G-Crop`）、看大图：发布流程或详情页内用 `Navigator.push` 打开的全屏页。它们依赖内存里的照片，刷新页面后无法恢复，所以不给地址。
 - 重要公告弹窗、人机验证：弹窗。
 
@@ -291,7 +297,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 7.1 环境配置
 
-用 `--dart-define-from-file=config/env.<环境>.json` 在编译期传入，代码里用 `String.fromEnvironment` 读成 `AppEnv`。不写死 IP 和端口。
+用 `--dart-define-from-file=config/<环境>.json` 在编译期传入，代码里用 `String.fromEnvironment` 读成 `AppConfig`（`core/config/`，`appConfigProvider` 提供）。不写死 IP 和端口。不传文件时每一项都是空串、`ENV_NAME` 是 `dev`，`fvm flutter run -d chrome` 照样能跑，只是调不了接口。
 
 | 键 | 说明 | 例 |
 | --- | --- | --- |
@@ -303,7 +309,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `TIANDITU_KEY` | 地图瓦片 Key | — |
 | `CAPTCHA_APP_ID` | 人机验证 | — |
 
-- 仓库只放 `config/env.example.json`；`config/env.*.json` 加进 `.gitignore`。CI 从 Secrets 写出文件再构建。
+- 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
 - 这些值会编进安装包，只放公开的值。
 - 推荐 Web 和接口同源（`https://<域名>/` 放 Web，`/api` 反代到业务网关）：Web 不用处理 CORS，以后改用 Cookie 也方便。待确认 A1。
 
@@ -358,8 +364,9 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 7.6 模型与 JSON
 
-- 不从 `docs/api.openapi.yml` 生成代码（理由见依赖选型第 5 节）。每个接口分组手写一个 `XxxApi`：方法名对应接口，返回 DTO。
-- DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，在这里补默认值，UI 拿到的模型尽量不为空。
+- 不从 `docs/api.openapi.yml` 生成接口客户端（理由见依赖选型第 5 节）。每个接口分组手写一个 `XxxApi`：方法名对应接口，返回 DTO。
+- DTO 用 `json_serializable`：类上标 `@JsonSerializable(createToJson: false)`（只发请求体的 DTO 才要 `toJson`），`fromJson` 转给生成的 `_$XxxFromJson`。字段名和接口一致，不一致的用 `@JsonKey(name: ...)`。
+- DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
 - **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`，检查每个 `XxxApi` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。
@@ -416,21 +423,21 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 9.1 存什么、存哪
 
-| 数据 | 存储 | 作用域 | 退出登录时 |
+| 数据 | 存储（没写安全存储的都在 `shared_preferences`，用键的前缀分组） | 作用域 | 退出登录时 |
 | --- | --- | --- | --- |
 | `tokenName`、`tokenValue` | 安全存储 | 账号 | 删 |
 | 安装 ID（首次启动随机生成，用于风控识别设备、埋点） | 安全存储 | 设备 | 留 |
-| 隐私政策同意版本和时间 | Hive `prefs` | 设备 | 留 |
-| 当前校区 | Hive `prefs` | 设备 | 留 |
-| 手动选的饭点和到期时间 | Hive `prefs` | 设备 | 留 |
-| 上一次的舞台色 | Hive `prefs` | 设备 | 留 |
-| 定位说明是否展示过、推送是否问过 | Hive `prefs` | 设备 | 留 |
-| 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | Hive `prefs` | 设备 | 留 |
-| 热更新分组号（1–100） | Hive `prefs` | 设备 | 留 |
-| 最近搜过的词（最多 10 个） | Hive `prefs`，键带用户 id | 账号 | 删 |
-| 接口缓存（第 10 节） | Hive `cache`，键带用户 id | 账号 | 整盒清空 |
-| 远程配置快照 | Hive `cache` | 设备 | 留（单独的键，不随整盒清空） |
-| 埋点队列 | Hive `analytics` | 设备 | 先尝试上报，再清空 |
+| 隐私政策同意版本和时间 | `prefs.*` | 设备 | 留 |
+| 当前校区 | `prefs.*` | 设备 | 留 |
+| 手动选的饭点和到期时间 | `prefs.*` | 设备 | 留 |
+| 上一次的舞台色 | `prefs.*` | 设备 | 留 |
+| 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
+| 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | `prefs.*` | 设备 | 留 |
+| 热更新分组号（1–100） | `prefs.*` | 设备 | 留 |
+| 最近搜过的词（最多 10 个） | `prefs.*`，键带用户 id | 账号 | 删 |
+| 接口缓存（第 10 节） | `cache.*`，键带用户 id | 账号 | `cache.*` 全部删掉 |
+| 远程配置快照 | `config.remote`（不在 `cache.*` 下） | 设备 | 留 |
+| 埋点队列 | `analytics.queue` | 设备 | 先尝试上报，再清空 |
 | 图片磁盘缓存 | `cached_network_image` | 设备 | 留（都是公开内容） |
 
 - 设备级的数据不算「个人数据」：校区选择、问过权限没有、公告看过没有。
@@ -449,7 +456,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 1. `POST /auth/logout`（失败也继续）。
 2. 解绑推送（设备登记接口上线后），清 Sentry、埋点的用户 id。
-3. 删 token；清空 Hive `cache`；删账号作用域的偏好。
+3. 删 token；删掉 `cache.*` 的键；删账号作用域的偏好。
 4. 清内存：`ProviderContainer` 里依赖账号的 Provider 全部 `invalidate`，`dishInteractionsProvider` 等清空。
 5. `go('/login')`。
 
@@ -485,7 +492,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 当前用户信息 | — | 1 份 | 不过期 | 启动时先用 |
 | 取色结果（过渡期，见 13.6） | 图片地址 + 裁切参数 | 500 条 | 不过期 | 避免重复计算 |
 
-`CacheStore` 包在 Hive 外面：每条记录带写入时间和最近访问时间，超上限按最近访问淘汰。
+`CacheStore` 包在 `KvStore` 外面，每条记录是 `cache.*` 下的一个 JSON 字符串，带写入时间和最近访问时间，超上限按最近访问淘汰。`shared_preferences` 在安卓、iOS 上会把整份数据读进内存，所以缓存总量控制在 1 MB 左右，超了也按最近访问淘汰。
 
 ### 10.2 读的流程
 
@@ -668,7 +675,7 @@ extension RefCache on Ref {
 - 结构：一个 `CustomScrollView`。第一个 sliver 是舞台，它的布局高度是 `H - 32`、绘制高度是 `H`（自定义一个很小的 `RenderSliver`，`layoutExtent < paintExtent`），后面的抽屉 sliver 从 `H - 32` 开始画，正好压住舞台底部 32px；抽屉用 `DecoratedSliver` 画白底和顶部 `radius-sheet` 圆角，压在舞台色上不加阴影。
 - 抽屉跟着页面一起滚（规范 `Sheet`）。附近页例外，用自己的可拖动面板。
 - 有 Widget 测试保证：舞台高度按 12.4 计算；抽屉顶部在 `H - 32`；舞台按钮不被抽屉盖住。
-- 白底页面用 `WhitePageScaffold`：44×44 返回、`page-title` 大标题、`space-20` 边距。
+- 白底页面用 `PlainScaffold`：44×44 返回、`page-title` 大标题、`space-20` 边距。
 
 ### 12.6 安全区、方向、键盘
 
@@ -880,13 +887,13 @@ class PushNotice({
 - **前台**：按产品 10.3，回到前台、回到发现页时刷新未读数，不弹系统通知（和产品「前台收到推送只刷新未读数」一致）。
 - **退到后台**：每 5 分钟拉一次新消息，最多持续 30 分钟，间隔和时长放在远程配置里。拉到比上次通知过的更新的消息，按 15.3 的规则交给 `PushService.show`。
 - **限制**：只有进程还活着时才有效。安卓退到后台后进程通常还能活一段时间；iOS 挂起后计时器停止，基本只有刚退到后台的几十秒；App 被杀后都收不到。消息页不受影响（产品 12.6）。
-- 上次通知到哪一条记在 Hive `prefs`，同一条消息不重复弹。
+- 上次通知到哪一条记在 `prefs.*`，同一条消息不重复弹。
 
 ### 15.3 规则
 
 产品 10.4 原本由服务端做的规则，本地通知期间都在客户端做；接远程推送后改回服务端，客户端只读写开关。
 
-- **按类型开关**：设置 → 通知里的四个开关（评论和回复、赞和收藏、关注、系统消息），默认都开。接口上线前存在本地 Hive `prefs`，按账号区分。
+- **按类型开关**：设置 → 通知里的四个开关（评论和回复、赞和收藏、关注、系统消息），默认都开。接口上线前存在本地 `prefs.*`，按账号区分。
 - **合并**：赞和收藏，同一道菜 1 小时内合成一条「Momo 等 5 人赞了你上传的番茄牛腩饭」；评论、回复、关注、系统消息一条一弹。
 - **免打扰**：23:00–08:00 不弹，这段时间的消息只进消息页。
 - **权限时机**：不在第一次打开时要（产品 10.4）。第一次发布成功后，先弹面板「有人赞你的菜、评论你的菜时告诉你？」，用户同意再调 `requestPermission`（安卓 13 起 `POST_NOTIFICATIONS`，iOS 通知授权）。拒绝后在设置 → 通知里显示状态和「去系统设置打开」（用 `geolocator` 的 `openAppSettings`，Web 不显示）。
@@ -1065,7 +1072,7 @@ class PushNotice({
 
 - 公共属性：安装 ID、用户 id、平台、系统版本、设备型号、App 版本 + 构建号 + 补丁号、当前校区、会话 id。
 - 产品 12.5 的指标怎么算：定下来的人数看 `dish_decide` 或 `navigate_shop` 的去重用户；换菜次数、定下来用时看 `dish_decide` 的属性；加载失败率看 `load_failed` / `page_view`；认证率、留存、内容供给用服务端数据。
-- 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进 Hive `analytics` 盒子，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
+- 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
 - 接口没上线前：只在调试日志里打印，不上报（现状差距 2.1）。
 - 只在同意隐私政策后采集。
 
@@ -1101,7 +1108,7 @@ class PushNotice({
 | --- | --- | --- | --- |
 | 热更新 | Shorebird | Shorebird | 不需要，提示「有新版本，刷新一下」 |
 | 登录态 | Keystore | Keychain（卸载重装后残留，首次启动清理） | localStorage 加密存储（A10） |
-| 本地缓存 | Hive 文件 | Hive 文件 | IndexedDB；多标签页可能互相覆盖 |
+| 本地存储 | `shared_preferences`（DataStore） | `shared_preferences`（NSUserDefaults） | localStorage，同一浏览器的标签页共用一份 |
 | 图片缓存 | 磁盘 | 磁盘 | 浏览器 HTTP 缓存 |
 | 人机验证 | WebView 加载 H5 | WebView 加载 H5 | 页面里直接加载 JS |
 | 字体 | 内置 | 内置 | 后台加载 + 自托管回落字体 |
@@ -1136,7 +1143,7 @@ class PushNotice({
 
 ### 21.3 CI 里跑什么
 
-- `check` 任务不变：`dart format --set-exit-if-changed`、`flutter analyze`、`flutter test`。契约、令牌、依赖方向测试都在 `flutter test` 里，不单独加任务。
+- `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、令牌、依赖方向测试都在 `flutter test` 里，不单独加任务。
 - `web` 任务：改成 `flutter build web --release --no-web-resources-cdn --build-number=<run_number> --dart-define-from-file=...`。
 - 打 tag 的发版构建：安卓、iOS 加混淆和符号表上传；Web 生成并上传 source map。热更新接入后改用 `shorebird release`（第 16.2 节）。
 - 带原生代码的新依赖：单独一个 PR，看 CI 的 `android`、`ios` 任务能否编过（本地只构建 Web）。

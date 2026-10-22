@@ -10,55 +10,65 @@
 - **版本怎么查的**。表里每个版本都在 2026-10-22 从 pub.dev 接口查过发布日期和 SDK 约束；再在一个临时工程里用 Flutter 3.47.7 / Dart 3.13.5 把所有选中的包一起 `pub get` 解析通过，并 `flutter build web --release --no-web-resources-cdn` 编译通过。没查证的版本会标出来。
 - **Android、iOS 由 CI 验证**。本地只允许构建 Web，所以带原生代码的包能不能在 AGP 9.1 / iOS 15 上编过，要看 CI 的 `android`、`ios` 任务。每个带原生代码的包第一次加进来时单独一个 PR。
 - **约束写法**：`^x.y.z`，锁主版本。`pubspec.lock` 入库。升级走 `build(deps): 升级 xxx 至 x.y.z` 的提交。
-- **加的时机**：「第一批」是搭架构时就加；其余等对应功能开工（多数要等接口，见现状差距）再加，不提前装。
-- **不用代码生成**：不引入 `build_runner` 及依赖它的包（`freezed`、`json_serializable`、`riverpod_generator`、`retrofit`、`go_router_builder`）。理由见第 5 节。
+- **加的时机**：按开发计划，在第一个用到它的阶段加入，「何时加」一列写的就是阶段；加入时把这一列改成「已引入」。不提前装。
+- **代码生成只用两处**：Provider 用 `riverpod_generator`，接口 DTO 用 `json_serializable`，都经 `build_runner`。不用 `freezed`、`retrofit`、`go_router_builder`。理由见第 3、5 节。
 - 标「待确认」的条目汇总在文末。
 
 ## 1. 总表
 
 **运行时依赖**
 
+「何时加」对应开发计划的阶段。
+
 | 类别 | 包 | 版本 | 发布日期 | Android | iOS | Web | 何时加 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 设计库（Material） | `material_ui` | `^1.8.0` | 2026-10-20 | ✅ | ✅ | ✅ | 第一批 |
-| 状态管理 | `flutter_riverpod` | `^3.4.3` | 2026-09-03 | ✅ | ✅ | ✅ | 第一批 |
-| 路由 | `go_router` | `^18.1.1` | 2026-10-20 | ✅ | ✅ | ✅ | 第一批 |
-| Web URL 策略 | `flutter_web_plugins` | SDK 自带 | — | — | — | ✅ | 第一批 |
-| 网络 | `dio` | `^5.11.1` | 2026-09-04 | ✅ | ✅ | ✅ | 第一批 |
-| 安全存储 | `flutter_secure_storage` | `^11.2.0` | 2026-09-16 | ✅ | ✅ | ✅ | 第一批 |
-| 本地存储 | `hive_ce` | `^2.22.0` | 2026-10-14 | ✅ | ✅ | ✅ | 第一批 |
-| 本地存储（Flutter 初始化） | `hive_ce_flutter` | `^2.5.0` | 2026-10-14 | ✅ | ✅ | ✅ | 第一批 |
-| 可注入时钟 | `clock` | `^1.1.3` | 2026-08-28 | ✅ | ✅ | ✅ | 第一批 |
-| Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 第一批 |
-| SVG 图标 | `flutter_svg` | `^2.3.0` | 2026-05-08 | ✅ | ✅ | ✅ | 第一批 |
-| 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 第一批 |
-| 版本号 | `package_info_plus` | `^10.2.2` | 2026-10-01 | ✅ | ✅ | ✅ | 第一批 |
-| 设备信息 | `device_info_plus` | `^13.3.0` | 2026-10-01 | ✅ | ✅ | ✅ | 第一批 |
-| 打开链接、外部地图、认证页 | `url_launcher` | `^6.3.3` | 2026-10-02 | ✅ | ✅ | ✅ | 第一批 |
-| 定位 | `geolocator` | `^14.1.2` | 2026-10-19 | ✅ | ✅ | ✅（仅 HTTPS） | 发现页 |
-| 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 发布 |
-| 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 发布 |
-| 地图 | `flutter_map` | `^8.3.2` | 2026-08-27 | ✅ | ✅ | ✅ | 附近，待确认 D1 |
+| 设计库（Material） | `material_ui` | `^1.8.0` | 2026-10-20 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| 状态管理 | `flutter_riverpod` | `^3.4.3` | 2026-09-03 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| Provider 注解 | `riverpod_annotation` | `^4.0.7` | 2026-09-03 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| 路由 | `go_router` | `^18.1.1` | 2026-10-20 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| Web URL 策略 | `flutter_web_plugins` | SDK 自带 | — | — | — | ✅ | 阶段一 |
+| SVG 图标 | `flutter_svg` | `^2.3.0` | 2026-05-08 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| 网络 | `dio` | `^5.11.1` | 2026-09-04 | ✅ | ✅ | ✅ | 阶段二 |
+| JSON 注解 | `json_annotation` | `^4.12.0` | 2026-05-15 | ✅ | ✅ | ✅ | 阶段二 |
+| 安全存储 | `flutter_secure_storage` | `^11.2.0` | 2026-09-16 | ✅ | ✅ | ✅ | 阶段二 |
+| 本地存储 | `shared_preferences` | `^2.5.6` | 2026-10-05 | ✅ | ✅ | ✅ | 阶段二（同意记录、卸载重装检测） |
+| 版本号 | `package_info_plus` | `^10.2.2` | 2026-10-01 | ✅ | ✅ | ✅ | 阶段二 |
+| 打开链接、外部地图、认证页 | `url_launcher` | `^6.3.3` | 2026-10-02 | ✅ | ✅ | ✅ | 阶段二 |
+| 统一认证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 整页跳转） | 阶段二。开发计划用它做统一认证，和技术架构 18.1、待确认 A4 的「应用内浏览器、不用 WebView」不一致，阶段二开头和后端一起定；人机验证也用它，见第 15 节 |
+| 可注入时钟 | `clock` | `^1.1.3` | 2026-08-28 | ✅ | ✅ | ✅ | 阶段三（饭点、「12 分钟前」） |
+| Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 阶段三（判断微信内置浏览器） |
+| 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 阶段三 |
+| 定位 | `geolocator` | `^14.1.2` | 2026-10-19 | ✅ | ✅ | ✅（仅 HTTPS） | 阶段三 |
+| 地图 | `flutter_map` | `^8.3.2` | 2026-08-27 | ✅ | ✅ | ✅ | 阶段三，待确认 D1 |
 | 地图坐标类型 | `latlong2` | `^0.10.1` | 2026-04-27 | ✅ | ✅ | ✅ | 同上 |
-| 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 菜品详情 |
-| 深链 | `app_links` | `^7.2.2` | 2026-10-06 | ✅ | ✅ | 不用 | 分享链接 |
-| 崩溃上报 | `sentry_flutter` | `^10.1.0` | 2026-10-15 | ✅ | ✅ | ✅ | 待确认 D4 |
-| 本地通知 | `flutter_local_notifications` | `^22.3.2` | 2026-10-12 | ✅ | ✅ | — | 消息页 |
-| 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 上架前，待确认 D3 |
-| 人机验证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 直接加载验证 JS） | 风控接口上线后，待确认 D6 |
+| 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 阶段三 |
+| 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 阶段四 |
+| 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 阶段四 |
+| 崩溃上报 | `sentry_flutter` | `^10.1.0` | 2026-10-15 | ✅ | ✅ | ✅ | 阶段五，待确认 D4 |
+| 网络请求的崩溃上下文 | `sentry_dio` | 和 `sentry_flutter` 同版本 | 2026-10-22 | ✅ | ✅ | ✅ | 阶段五 |
+| 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 阶段五，待确认 D3 |
+| 设备信息 | `device_info_plus` | `^13.3.0` | 2026-10-01 | ✅ | ✅ | ✅ | 阶段六（反馈） |
+| 深链 | `app_links` | `^7.2.2` | 2026-10-06 | ✅ | ✅ | 不用 | 分享链接，开发计划还没排 |
+| 本地通知 | `flutter_local_notifications` | `^22.3.2` | 2026-10-12 | ✅ | ✅ | — | 开发计划还没排 |
 
 **开发依赖与工具**
 
 | 类别 | 包或工具 | 版本 | 发布日期 | 何时加 |
 | --- | --- | --- | --- | --- |
 | 静态检查 | `flutter_lints` | `^6.0.0` | 2025-05-27 | 已有 |
-| 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 第一批 |
-| 读 `docs/api.openapi.yml` 做契约测试 | `yaml` | `^3.1.4` | 2026-08-28 | 第一批 |
-| SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 第一批 |
-| 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 接 Sentry 时 |
+| 代码生成 | `build_runner` | `^2.16.2` | 2026-10-07 | 已引入（阶段一） |
+| Provider 生成 | `riverpod_generator` | `^4.0.9` | 2026-09-03 | 已引入（阶段一） |
+| Provider 写法检查（分析器插件） | `riverpod_lint` | `^3.1.9` | 2026-09-03 | 已引入（阶段一）。写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml` |
+| SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 阶段一 |
+| 字体子集化 | fonttools（`pyftsubset`，Python 工具，不进 pubspec） | 不锁 | — | 阶段一（只在开发机用） |
+| JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 阶段二 |
+| 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 阶段二 |
+| 读 `docs/api.openapi.yml` 做契约测试 | `yaml` | `^3.1.4` | 2026-08-28 | 阶段二 |
+| 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 阶段五 |
+| 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 阶段五 |
 | Golden 测试 | `alchemist` | `^0.14.1` | 2026-10-08 | 组件稳定后（见技术架构「测试策略」） |
-| 字体子集化 | fonttools（`pyftsubset`，Python 工具，不进 pubspec） | 不锁 | — | 第一批（只在开发机和 CI 用） |
-| 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 上架前 |
+
+`build_runner` 最新是 2.17.1，但它要求 `build` 5.x，而 `riverpod_generator` 4.0.9 只支持 `build` 5 以下，所以锁 2.16 线；`riverpod_generator` 放开 `build` 5 以后再升。
 
 **SDK 自带、不用另装**：`flutter_test`、`integration_test`（以后需要时）。`flutter_localizations` 由 `material_ui` 带进来，本地化代理用 `GlobalMaterialLocalizations.delegates`，不要再直接 `import 'package:flutter_localizations/...'`，否则和 `material_ui` 里的同名类冲突（临时工程里实测报 `ambiguous_import`）。
 
@@ -68,8 +78,9 @@
 | --- | --- |
 | `firebase_*`（Messaging、Remote Config、Crashlytics、Analytics） | Google 服务在中国大陆不可用，多数国产安卓机没有 GMS |
 | `google_fonts` | 运行时从 `fonts.gstatic.com` 下载字体，大陆访问不到 |
-| `shared_preferences` | 和 `hive_ce` 同类，只留一个 |
-| `freezed`、`json_serializable`、`riverpod_generator`、`retrofit`、`go_router_builder` | 依赖代码生成，见第 5 节 |
+| `hive_ce`、`hive_ce_flutter` | 和 `shared_preferences` 同类，只留一个，见第 6 节 |
+| `freezed` | 要求工厂构造函数，和 AGENTS.md「普通数据模型用主构造函数」冲突；DTO 用 `json_serializable` 就够 |
+| `retrofit`、`go_router_builder` | 接口类和路由表手写，见第 4、5 节 |
 | `palette_generator` | pub.dev 已标为 discontinued，算法也和规范要求的不同 |
 | `image_cropper` | 原生裁切界面，做不出 `G-Crop` 的样子；我们只存裁切参数，不需要真的裁图 |
 | `flutter_web_auth_2` | 统一认证用应用内浏览器打开、回到 App 时刷新状态即可，见第 10 节和技术架构第 18 节 |
@@ -90,7 +101,7 @@
 
 **Material 库独立成包**
 
-Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起可以改用独立的 `material_ui` 包，框架内的版本计划在之后的稳定版标为过时。我们第一批就用 `material_ui`，原因：
+Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起可以改用独立的 `material_ui` 包，框架内的版本计划在之后的稳定版标为过时。我们阶段一就用 `material_ui`，原因：
 
 - `go_router` 18.0.0 起已经迁到 `material_ui`。它判断「是不是 Material App」时找的是 `material_ui` 里的 `MaterialApp`（`go_router-18.1.1/lib/src/pages/material.dart`）。如果我们还用框架里的 `MaterialApp`，类型对不上，页面过渡会走非 Material 的分支。
 - 迟早要迁，现在 `lib/` 只有两个文件，最便宜。
@@ -100,7 +111,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 ## 3. 状态管理
 
-**选**：`flutter_riverpod ^3.4.3`，不用 `riverpod_generator`，手写 Provider。
+**选**：`flutter_riverpod ^3.4.3` + `riverpod_annotation ^4.0.7`，Provider 用 `riverpod_generator ^4.0.9` 生成，`riverpod_lint ^3.1.9` 检查写法。
 
 **为什么**
 
@@ -110,6 +121,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
   - 不可见的组件会暂停监听（靠 `TickerMode` 判断），`StatefulShellRoute` 切走的分支自动暂停，不白白刷新。
   - 失败自动重试，可以在 `ProviderScope(retry: ...)` 统一定策略（只重试网络错误、不重试业务错误）。
 - legacy 用的也是 Riverpod，团队熟悉。
+- 用生成器：`@riverpod` 写一个函数或类就得到 Provider，`family`、`autoDispose` 由参数和注解决定，不用自己挑 `AsyncNotifierProvider.autoDispose.family` 这类组合；Riverpod 3 的文档和示例也以生成器写法为主。
 
 **不选**
 
@@ -118,14 +130,14 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `flutter_bloc` 9.1.1 | 事件、状态、Bloc 三件套样板多；依赖注入还要另配 |
 | `provider` 6.1.5+1 | Riverpod 的前身，`BuildContext` 依赖强，异步和释放要自己管 |
 | `signals_flutter` 7.1.0 | 社区小，和路由、测试的配合资料少 |
-| `riverpod_generator` | 依赖代码生成。legacy 迁到 Freezed + `riverpod_generator` 的重构，交接文档 `docs/refactor_handoff.md` 记录停在 24 个编译错误上 |
 
 **注意**
 
 - 3.x 的 `Mutation`、离线持久化（`riverpod_sqflite`）还是实验特性，不用。离线缓存自己做（技术架构「离线与缓存」）。
 - `StateProvider`、`StateNotifierProvider` 在 3.x 已移到 `legacy.dart`，不用；统一用 `Notifier` / `AsyncNotifier`。
 - pub.dev 上 `flutter_riverpod` 3.4.3 的平台标签没列 Web，但它是纯 Dart，临时工程的 Web 构建通过，`riverpod` 本身标了 Web。
-- `riverpod_lint` 3.1.9 依赖新的分析器插件机制，第一批不加，等架构稳定后再评估。
+- legacy 迁到 Freezed + `riverpod_generator` 的重构停在 24 个编译错误上（交接文档 `docs/refactor_handoff.md`），问题出在生成文件和源文件对不上。这次的约束：生成文件入库但不手改，CI 每次重新生成并比对（技术架构第 21.3 节），不用 Freezed。
+- `riverpod_lint` 3.1.9 用的是新的分析器插件机制（`analysis_options.yaml` 的 `plugins`），不再依赖 `custom_lint`。它写在 `analysis_options.yaml` 里，由分析器自己拉取，不进 `pubspec.yaml`；结果只有 `dart analyze` 报告（实测 `flutter analyze` 看不到），CI 里单独跑一步。
 
 ## 4. 路由
 
@@ -151,11 +163,12 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 不选 `http` 1.6.0：没有拦截器和上传进度，要自己包一层，最后就是半个 dio。
 
-**序列化选**：手写，不引入序列化库。
+**序列化选**：`json_serializable ^6.15.2` + `json_annotation ^4.12.0`。
 
-- 模型用 Dart 3.13 的主构造函数写，`fromJson` 手写，用模式匹配取字段。AGENTS.md 要求普通数据模型用主构造函数；`freezed` 要求用工厂构造函数，两者冲突。
-- 接口文档里几乎每个字段都是 `anyOf: [type, null]`，在解析边界把空值换成默认值，进到 UI 的模型尽量不为空。手写更容易控制这件事。
-- 不用 `build_runner`：省掉生成时间和生成文件的冲突。legacy 把 `.g.dart`、`.freezed.dart` 都提交进仓库，改名、拆文件时生成文件和源文件对不上，重构停在一堆编译错误上。
+- 只给 `data/` 里的 DTO 用：`@JsonSerializable` 生成 `fromJson`，字段和接口一一对应，接口改了字段，重新生成就行，不用手写一堆取字段的代码。
+- DTO 照接口写成可空（接口文档里几乎每个字段都是 `anyOf: [type, null]`），repository 转领域模型时补默认值，进到 UI 的模型尽量不为空。领域模型不做 JSON。
+- 不用 `freezed`：它要求工厂构造函数，和 AGENTS.md「普通数据模型用主构造函数」冲突；DTO 只读不改，用不上它的 `copyWith` 和联合类型。
+- 和 `riverpod_generator` 共用一个 `build_runner`，生成文件的约定相同（技术架构第 4.1 节）。
 
 **不由 `docs/api.openapi.yml` 生成客户端**
 
@@ -167,31 +180,34 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 接口还会大改 | 现状差距列了约 30 项接口变化（手机号登录、推荐参数、评论、专题……），生成的代码会频繁整体重来 |
 | 风格不合 | 生成代码用工厂构造或 `built_value`，不符合项目写法 |
 
-替代做法：每个接口分组手写一个 `XxxApi` 类；加一个**契约测试**，用 `yaml` 包读 `docs/api.openapi.yml`，检查客户端用到的每个「方法 + 路径」都在文档里。后端更新接口文件后跑测试就知道哪里对不上。
+替代做法：每个接口分组手写一个 `XxxApi` 类，DTO 用 `json_serializable`；加一个**契约测试**，用 `yaml` 包读 `docs/api.openapi.yml`，检查客户端用到的每个「方法 + 路径」都在文档里。后端更新接口文件后跑测试就知道哪里对不上。
 
 ## 6. 本地存储与安全存储
 
 | 存什么 | 选 | 说明 |
 | --- | --- | --- |
 | 登录 token、`tokenName`、安装 ID | `flutter_secure_storage ^11.2.0` | Android Keystore、iOS Keychain；Web 用 WebCrypto 加密后存 localStorage（密钥也在浏览器里，挡不住 XSS，见技术架构待确认 A10） |
-| 偏好设置、接口缓存、埋点队列 | `hive_ce ^2.22.0` + `hive_ce_flutter ^2.5.0` | 键值盒子，存 `Map`、`List`、基本类型不需要生成适配器；Web 用 IndexedDB |
+| 偏好设置、接口缓存、埋点队列 | `shared_preferences ^2.5.6` | 用 `SharedPreferencesAsync`，键加前缀分组（`prefs.*`、`cache.*`、`analytics.queue`，见技术架构 9.1）；值是基本类型或 JSON 字符串。安卓走 DataStore，iOS 走 NSUserDefaults，Web 走 localStorage |
 
-**为什么是 `hive_ce`**
+**为什么是 `shared_preferences`**
 
-- 三端一致的键值存储，能放几百 KB 的 JSON 缓存（看过的菜品详情、上一批推荐）。
-- 不需要代码生成。
-- 原来的 `hive` 已经不维护，`hive_ce` 是社区接手的版本，2026-10 仍在发布。
+- 开发计划选定。Flutter 官方维护，三端都有，不需要代码生成，也不用在启动时额外打开什么。
+- 我们要存的都是键值：偏好、几百 KB 的 JSON 缓存（看过的菜品详情、上一批推荐）、埋点队列。
+
+**代价和约束**
+
+- 安卓、iOS 会把整份数据读进内存，iOS 的 NSUserDefaults 还会在启动时整个读进来，所以不适合放大缓存。`CacheStore` 把总量控制在 1 MB 左右，超了按最近访问淘汰（技术架构 10.1）。
+- Web 的 localStorage 每个域名约 5 MB，同一浏览器的标签页共用一份。
+- 缓存和偏好丢一点无所谓，必须可靠的数据（token）放安全存储。
 
 **不选**
 
 | 方案 | 原因 |
 | --- | --- |
-| `shared_preferences` 2.5.6 | 只适合少量偏好；iOS 的 NSUserDefaults 启动时整个读进内存，不适合放缓存。偏好和缓存用两套就违反「一类一个方案」 |
+| `hive_ce` 2.22.0 | 能放更大的缓存，Web 用 IndexedDB；但和 `shared_preferences` 同类，一类只留一个 |
 | `drift` 2.35.2 | 关系型数据库，需要代码生成；我们没有需要查询的本地数据 |
 | `sembast` 3.9.0 | 可用，但用户少，资料少 |
 | `sqflite` | 不支持 Web |
-
-**注意**：Web 上同一个浏览器开两个标签页时，两边各自把盒子读进内存，后写的覆盖先写的。缓存和偏好丢一点无所谓，不在 Hive 里放必须可靠的数据。
 
 ## 7. 地图与定位，跳转外部地图 App
 
@@ -338,7 +354,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 ## 13. 远程配置与 A/B 测试
 
-**选**：不引入第三方，由业务后端提供一个配置接口，客户端只用 `dio` 和 `hive_ce`。
+**选**：不引入第三方，由业务后端提供一个配置接口，客户端只用 `dio` 和 `shared_preferences`。
 
 - 产品要的内容（功能开关、运营参数、公告、维护、版本线、实验分组、补丁放量比例）都是简单的 JSON，一个接口就够。
 - A/B 测试要求「按账号分组，换设备也一样」，分组在服务端按账号算最直接，客户端只读结果。
@@ -359,7 +375,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
   - `SENTRY_AUTH_TOKEN` 只放 CI Secrets，不写进 `pubspec.yaml` 的 `sentry:` 段（legacy 提交过）。
   - legacy 在 `runApp` 前就初始化 Sentry，还开了 100% 的会话回放。新实现同意隐私政策后才初始化，**不开会话回放**（会录到输入框内容，违反产品 12.5）。
   - legacy 把 `.sentry-native/` 运行目录提交进了仓库，`.gitignore` 要加上。
-- `sentry_dio` 第一批不加：网络错误的面包屑在我们自己的拦截器里记，性能追踪先不开。
+- `sentry_dio` 和 `sentry_flutter` 一起在阶段五加入，给崩溃带上最近的网络请求；性能追踪先不开。
 
 **统计埋点（待确认 D5）**：自建，客户端批量上报到业务后端的埋点接口（现状差距里是 P1，没好之前只在调试日志输出）。不引包。
 
@@ -389,6 +405,10 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 工具 | 版本 | 用途 |
 | --- | --- | --- |
 | `flutter_lints` | `^6.0.0` | 已有，`fvm flutter analyze` 零问题 |
+| `build_runner` | `^2.16.2` | 跑 `riverpod_generator`、`json_serializable`；`fvm dart run build_runner build` |
+| `riverpod_generator` | `^4.0.9` | 生成 Provider |
+| `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
+| `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
 | `yaml` | `^3.1.4` | 契约测试读 `docs/api.openapi.yml`；令牌测试读 `tokens.json` 用 `dart:convert` |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
@@ -398,7 +418,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `integration_test` | SDK | 以后做端到端测试时用 |
 | fonttools `pyftsubset` | 不锁 | 字体子集化脚本 |
 
-不用 `build_runner`；不加 `very_good_analysis` 等更严的规则集，先守住 `flutter_lints` 零问题。
+不加 `very_good_analysis` 等更严的规则集，先守住 `flutter_lints` 零问题。
 
 ## 17. 隐私合规：第三方 SDK
 
@@ -419,7 +439,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 名称 | 用在哪 | 性质 | 放哪 |
 | --- | --- | --- | --- |
-| 环境配置（接口地址、Web 地址等） | 客户端 | 公开 | `config/env.<环境>.json`（未跟踪），CI 用 Secret 写出；仓库只放 `config/env.example.json` |
+| 环境配置（接口地址、Web 地址等） | 客户端 | 公开 | `config/<环境>.json`（未跟踪），CI 用 Secret 写出；仓库只放 `config/example.json` |
 | 天地图 Key | 客户端 | 公开，在控制台限制域名或应用 | 同上 |
 | Sentry DSN | 客户端 | 公开 | 环境配置 |
 | `SENTRY_AUTH_TOKEN` | CI 上传符号表 | 机密 | CI Secret，不写进 `pubspec.yaml` |
@@ -428,7 +448,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | iOS 证书、描述文件、App Store Connect API Key | 签名、上传 | 机密 | CI Secret |
 | 人机验证 AppId / 服务端密钥 | 客户端 / 后端 | 公开 / 机密 | 环境配置 / 后端 |
 
-`--dart-define-from-file` 传进去的值会编进安装包，只能放公开的值。`.gitignore` 要补上 `config/env.*.json`（保留 `env.example.json`）、`android/key.properties`、`*.jks`、`.sentry-native/`。
+`--dart-define-from-file` 传进去的值会编进安装包，只能放公开的值。`.gitignore` 要补上 `config/*.json`（保留 `example.json`）、`android/key.properties`、`*.jks`、`.sentry-native/`。
 
 ## 19. 待确认
 
