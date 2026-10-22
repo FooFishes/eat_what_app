@@ -34,8 +34,8 @@ lib/
                             推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
     telemetry/              埋点 Analytics、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
-    tokens/                 tokens.json 的转写：颜色、字体、间距、圆角、阴影、尺寸、动效、StageColor
-    theme/                  EatTheme（ThemeExtension）、StageTheme（舞台色过渡）
+    tokens/                 tokens.json 里只用 dart:ui 就能表达的部分：颜色原值、间距、圆角、尺寸、StageColor
+    theme/                  EatTheme（ThemeExtension：颜色、文字样式、阴影）、EatMotion、ThemeData、StageTheme（舞台色过渡）
     layout/                 断点、宽屏左右布局和居中一栏、舞台高度、字号上限
     stage/                  舞台取色算法、撞色规则（纯函数）
     icons/                  图标名表、EatIcon
@@ -566,12 +566,12 @@ extension RefCache on Ref {
 
 ### 11.1 转写与校验
 
-- `lib/design/tokens/` 手写转写 `prototype/design-system/tokens.json`：颜色、字体、间距、圆角、阴影、尺寸。动效写在规范 README 里，没有进 `tokens.json`，一起转写。
-- `test/design/tokens_test.dart` 读 `tokens.json`，逐项比对 Dart 常量（颜色值、间距、圆角、尺寸、字号、行高、字重）。设计更新导出后跑测试，就知道哪里没同步。
+- 手写转写 `prototype/design-system/tokens.json`，按用到的类型分两处：只要 `dart:ui` 的（颜色原值 `EatPalette`、`EatSpace`、`EatRadius`、`EatSize`、`StageColor`）放 `lib/design/tokens/`，这样 `domain` 引用 `StageColor` 时不会带进 Flutter；要用 `TextStyle`、`BoxShadow`、`Curve` 的（`EatTextStyles`、`EatShadows`、`EatMotion`）放 `lib/design/theme/`。动效写在规范 README 里，没有进 `tokens.json`，一起转写。
+- `test/design/tokens_test.dart` 读 `tokens.json`，逐项比对 Dart 常量（颜色值、间距、圆角、尺寸、字号、行高、字重、字距、阴影），两边多一项少一项都报错。设计更新导出后跑测试，就知道哪里没同步。
 - CSS 到 Flutter 的换算：
   - 行高：`height = lineHeight / fontSize`，并设 `leadingDistribution: TextLeadingDistribution.even`，和 CSS 的上下平分行距一致。
   - 字距：直接用 px 值。
-  - 阴影：外阴影转 `BoxShadow`；`inset` 内阴影 Flutter 不支持，按钮的「顶部 1px 高光、底部 2px 内阴影」在 `Button` 里用自定义绘制实现；`shadow-plate` 的 `0 0 0 8px #fff` 是盘沿，用白色外圈实现，不当阴影处理。
+  - 阴影：外阴影转 `BoxShadow`；`inset` 内阴影 Flutter 不支持，`EatShadow` 把它们单独放在 `inset` 里，按钮的「顶部 1px 高光、底部 2px 内阴影」在 `Button` 里用自定义绘制实现；`shadow-plate` 的 `0 0 0 8px #fff` 是盘沿，用白色外圈实现，不当阴影处理。CSS 里写在前面的阴影在上层，`BoxDecoration` 按列表顺序画、后画的在上层，所以 `EatShadow` 里的顺序和 CSS 相反。
 
 ### 11.2 ThemeExtension 和常量的分工
 
@@ -592,14 +592,15 @@ extension RefCache on Ref {
 | `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 |
 | `mango` | `#ffcb45` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品；「我的」默认 |
 | `bamboo` | `#d8b27a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤、其他 |
-| `chili` | `#d9632b` | 浅 | `ink` | `ink`（不用 `ink-soft`） | 同上 | 同上 | 同上 | 小吃 |
+| `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 |
 | `porcelain` | `#9db8d9` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 甜品 |
 | `matcha` | `#9dbf7a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 凉菜、配菜 |
-| `tomato` | `#c9442b` | 深 | `paper` | `paper` 85% | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 到 `paper-bottom` 渐变，舞台色字 | — |
+| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 到 `paper-bottom` 渐变，舞台色字 | — |
 | `redoil` | `#a8321c` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 火锅 |
 | `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 烧烤 |
 
 - 分类到默认色的对应（产品 4.4）写在 `domain/models/dish_category.dart`，分类和后端枚举（`staple`、`drink`……）一一对应。
+- `test/design/stage_color_test.dart` 检查每个舞台色上的主文字和次级文字都不低于 4.5:1。
 - 状态栏图标跟着舞台深浅切换（`AnnotatedRegion<SystemUiOverlayStyle>`）。
 
 ### 11.4 舞台换色
@@ -609,8 +610,10 @@ extension RefCache on Ref {
 
 ### 11.5 字体与字号
 
-- 字体文件、子集化见依赖选型第 9 节。文字样式里同时设 `fontWeight` 和 `fontVariations`（可变字体的 `wght` 轴）。
+- 字体文件、子集化见依赖选型第 9 节。两个都是可变字体，文字样式只设 `fontWeight`：Flutter 3.47 起 `FontWeight` 会直接设置可变字体的 `wght` 轴，任意值（如 650）都行，不用再写 `FontVariation.weight`。
 - 中文样式用 `NotoSansSC`；数字样式（`price-hero`、`price-inline`、`stat`、`distance`、`count`）用 `BricolageGrotesque`，回落到 `NotoSansSC`。
+- Bricolage Grotesque 还有光学尺寸轴 `opsz`：画板在浏览器里按字号自动取光学尺寸，数字样式里同样把 `opsz` 设成字号。宽度轴在子集化时固定为 100。
+- 字体文件由 `tool/subset_fonts.py` 生成，三端都在 `pubspec.yaml` 的 `fonts` 里声明。Web 上后台加载中文字体的做法（待确认 D7）等做 Web 实验时再改。许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。
 - 选中态靠字重，不靠颜色：`tab-active` 900，`tab` 400。
 
 ### 11.6 图标

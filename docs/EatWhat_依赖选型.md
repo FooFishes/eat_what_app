@@ -28,6 +28,7 @@
 | 路由 | `go_router` | `^18.1.1` | 2026-10-20 | ✅ | ✅ | ✅ | 已引入（阶段一） |
 | Web URL 策略 | `flutter_web_plugins` | SDK 自带 | — | — | — | ✅ | 阶段一 |
 | SVG 图标 | `flutter_svg` | `^2.3.0` | 2026-05-08 | ✅ | ✅ | ✅ | 已引入（阶段一） |
+| 读预编译的 SVG | `vector_graphics` | `^1.2.4` | 2026-10-19 | ✅ | ✅ | ✅ | 已引入（阶段一），见第 9.2 节 |
 | 网络 | `dio` | `^5.11.1` | 2026-09-04 | ✅ | ✅ | ✅ | 阶段二 |
 | JSON 注解 | `json_annotation` | `^4.12.0` | 2026-05-15 | ✅ | ✅ | ✅ | 阶段二 |
 | 安全存储 | `flutter_secure_storage` | `^11.2.0` | 2026-09-16 | ✅ | ✅ | ✅ | 阶段二 |
@@ -59,8 +60,8 @@
 | 代码生成 | `build_runner` | `^2.16.2` | 2026-10-07 | 已引入（阶段一） |
 | Provider 生成 | `riverpod_generator` | `^4.0.9` | 2026-09-03 | 已引入（阶段一） |
 | Provider 写法检查（分析器插件） | `riverpod_lint` | `^3.1.9` | 2026-09-03 | 已引入（阶段一）。写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml` |
-| SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 阶段一 |
-| 字体子集化 | fonttools（`pyftsubset`，Python 工具，不进 pubspec） | 不锁 | — | 阶段一（只在开发机用） |
+| SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 已引入（阶段一） |
+| 字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
 | JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 阶段二 |
 | 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 阶段二 |
 | 读 `docs/api.openapi.yml` 做契约测试 | `yaml` | `^3.1.4` | 2026-08-28 | 阶段二 |
@@ -280,8 +281,8 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | Noto Sans SC | 全部中文，主角文字 900 | Google Fonts，OFL | 可变字体 `NotoSansSC[wght].ttf` 17,772,300 字节 | 子集化后内置 |
 | Bricolage Grotesque | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `BricolageGrotesque[opsz,wdth,wght].ttf` 408,496 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
 
-- 两个都用**可变字体**，一份文件覆盖 400–900 所有字重。Flutter 里用 `fontVariations: [FontVariation.weight(900)]` 指定字重（集中写在字体令牌里）。
-- Noto Sans SC 全量 17.8 MB 太大。推荐用 `pyftsubset` 裁到 GB 2312 的 6763 个汉字加常用符号，估计 4–5 MB（未实测，待确认 D7）。子集外的生僻字在安卓、iOS 上由系统字体补上，样子略有不同但不会缺字。
+- 两个都用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；Bricolage 另按字号设 `opsz`（技术架构 11.5）。
+- Noto Sans SC 全量 17.8 MB 太大。`tool/subset_fonts.py` 裁到 GB 2312 的全部字符（6763 个汉字加符号）、ASCII 和几段常用标点，实测 3,939,760 字节、7801 个字符；Bricolage 固定宽度轴、只留 ASCII 和 `¥` 等几个符号，88,412 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。子集外的生僻字在安卓、iOS 上由系统字体补上，样子略有不同但不会缺字。
 - 设计规范说 iOS 可以回落到苹方，但苹方最粗只有 Semibold，做不出 900 的主角字，所以三端都内置。
 - **Web 的问题**：
   - 内置字体会在引擎初始化时全部下载，几 MB 的中文字体会拖慢首屏，在微信里更明显。推荐 Web 不在 `pubspec.yaml` 的 `fonts` 里声明 Noto，而是作为普通资源，启动后用 `FontLoader` 在后台加载，加载完自动重排；加载前用回落字体显示。具体效果要做一次 Web 实验确认。
@@ -289,12 +290,12 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 - 不用 `google_fonts`（运行时从境外下载）。
 - 字体文件放项目 `assets/fonts/`，在 `pubspec.yaml` 声明；`prototype/` 里的资源不直接引用。子集化脚本放 `tool/`，输出入库，CI 不跑。
 
-### 9.2 图标：`flutter_svg ^2.3.0` + `vector_graphics_compiler ^1.3.2`
+### 9.2 图标：`flutter_svg ^2.3.0` + `vector_graphics ^1.2.4` + `vector_graphics_compiler ^1.3.2`
 
 - 图标是 MingCute Line 的 SVG（设计规范 `Icon`）。从 `prototype/assets/icons/` 复制到项目 `assets/icons/`，按文件名引用。
-- `pubspec.yaml` 里给 `assets/icons/` 配 `vector_graphics_compiler` 资源转换器，构建时把 SVG 预编译成二进制，运行时不解析 XML。
+- `pubspec.yaml` 里给 `assets/icons/` 配 `vector_graphics_compiler` 资源转换器，构建时把 SVG 预编译成二进制，运行时不解析 XML。预编译的资源要用 `vector_graphics` 的 `AssetBytesLoader` 读（`SvgPicture(AssetBytesLoader(...))`），`flutter_svg` 没有导出它，所以 `vector_graphics` 也写进直接依赖；它本来就是 `flutter_svg` 的依赖，版本跟着走。
 - 颜色：图标都是单色，用 `colorFilter: ColorFilter.mode(颜色, BlendMode.srcIn)` 跟着所在文字变色；赞过的心形是 `stage-tomato`。
-- 小尺寸加粗描边（14px 用 2.6、16px 用 2.4、18px 用 2.13）：运行时不能改预编译图标的描边，用 `tool/` 下的脚本为描边类图标预先生成 14、16、18 三套变体。少数图标本身是填充轮廓（如 `image`、`followed`），不参与加粗。
+- 小尺寸加粗描边（14px 用 2.6、16px 用 2.4、18px 用 2.13）：运行时不能改预编译图标的描边，用 `tool/icons.dart` 为描边类图标预先生成 14、16、18 三套变体，放在 `assets/icons/14/` 这样的子目录里。少数图标本身是填充轮廓（如 `image`、`followed`），不参与加粗。
 - 不用图标字体：描边类图标转字体要先轮廓化，小尺寸加粗也做不了。
 
 ## 10. 系统分享与深链

@@ -34,6 +34,8 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
+assets/              进 App 的资源：fonts/（子集化的字体和许可证）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
