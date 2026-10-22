@@ -92,7 +92,8 @@ fvm flutter run -d chrome
 - 唯一依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它由后端根据已发布的服务生成，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。
 - 主要分组：Auth、User、Food、Activity、Restaurant、Notification、Upload、Location、AccountConsent 等；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
-- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、同意状态等由服务端判断，客户端只做展示层面的拦截。
+- HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态等由服务端判断，客户端只做展示层面的拦截。
+- 跨站同步同意默认替所有用户发送，只接同意接口，不做同意相关的页面（设计稿里有也不做），见技术架构「跨站同步同意」。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地

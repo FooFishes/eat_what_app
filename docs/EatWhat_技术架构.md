@@ -11,7 +11,7 @@
 - 三层：数据（接口和模型）、状态（provider）、界面（页面和组件）。不另设 domain、use case 层，业务规则真的复杂起来再加。
 - 界面只通过 provider 读数据、做写操作，不直接调接口类，也不碰 `dio`。
 - 样式只从设计令牌来，业务代码不写裸色值和魔法数字。
-- 角色、认证、同意状态以服务端返回为准，客户端只做展示层面的拦截。
+- 角色、认证状态以服务端返回为准，客户端只做展示层面的拦截。
 - 弱网下手上有数据就先显示，没有才显示占位，失败了可以重试。
 - Android、iOS、Web 一套代码，平台差异收在少数几处，见「多平台差异」。
 
@@ -153,7 +153,7 @@ StatefulShellRoute.indexedStack(
 | `/user/:id`、`/user/:id/follows` | 他人主页、粉丝与关注 | `G-UserProfile`、`G-Follows` |
 | `/me/edit`、`/me/tags`、`/me/tags/:id`、`/me/history`、`/me/follows` | 编辑资料、我的标签、标签下的菜、足迹、我的粉丝与关注 | `G-EditProfile`、`G-MyTags`、`G-TagDishes`、`G-History`、`G-Follows` |
 | `/settings` 及其子路径 | 设置、账号与安全、登录设备、注销、隐私、屏蔽、通知、关于、反馈 | `G-Settings` 等 |
-| `/login` 及其子路径、`/verify`、`/reconsent`、`/data-notice` | 登录、注册、认证、同意 | `G-Login` 等 |
+| `/login` 及其子路径、`/verify` | 登录、注册、认证 | `G-Login` 等 |
 
 - 不进路由表的：底部面板用 `showModalBottomSheet` 弹出，不改 URL；调整照片是发布流程里拿着内存中图片的一步，用 `Navigator.push` 打开、返回裁切结果。
 - 返回按钮：`context.canPop()` 时 `pop`，否则（Web 直接打开链接或刷新后）`go('/')`。
@@ -164,7 +164,6 @@ StatefulShellRoute.indexedStack(
 - `main()` 在 `runApp` 之前读出本地 token（这时原生启动图还在），交给会话作初始值。路由第一帧就知道该去哪，不需要启动页。
 - 没登录时访问任何页面都跳 `/login?from=<原地址>`，登录后回到 `from`。分享链接在 Web 上因此能用：先登录再看。
 - 已登录时访问登录相关页面跳回 `/`。
-- 会话要求重新同意时跳 `/reconsent`，见「登录、注册和同意」。
 - 认证不做重定向，见「当前用户与认证拦截」。
 
 ### 页面骨架
@@ -193,9 +192,9 @@ StatefulShellRoute.indexedStack(
 
 - 两个 `Dio`：业务接口一个，带鉴权和拦截器；上传到对象存储一个，`putUrl` 是预签名地址，不带鉴权头、不加前缀。
 - 超时：连接 10 秒、接收 15 秒。上传不用固定超时卡，界面显示进度、可以取消。
-- 鉴权头：拦截器从会话取 `tokenName` 和 `tokenValue`，加上 `<tokenName>: Bearer <tokenValue>`。头名用登录返回的 `tokenName`，不写死 `satoken`。登录、注册、读同意政策这几个开放接口不带头。
+- 鉴权头：拦截器从会话取 `tokenName` 和 `tokenValue`，加上 `<tokenName>: Bearer <tokenValue>`。头名用登录返回的 `tokenName`，不写死 `satoken`。登录、注册这类开放接口不带头。
 - `ApiClient` 负责发请求、解开 `{code, msg, data}`、检查业务 `code`，把各种失败统一成 `ApiException`。接口类只写路径、参数和 `data` 的解析。
-- 接口类按 `api.openapi.yml` 的分组，一组一个：`AuthApi`、`ConsentApi`、`UserApi`、`FoodApi`、`RestaurantApi`、`HubApi`、`HistoryApi`、`NotificationApi`、`UploadApi`。只写客户端真正调用的接口。`Activity`、`Location` 目前没有页面用到，管理和运维接口客户端不接。
+- 接口类按 `api.openapi.yml` 的分组，一组一个：`AuthApi`、`ConsentApi`、`UserApi`、`FoodApi`、`RestaurantApi`、`HubApi`、`HistoryApi`、`NotificationApi`、`UploadApi`。只写客户端真正调用的接口，`ConsentApi` 只有同意（见「跨站同步同意」）。`Activity`、`Location` 目前没有页面用到，管理和运维接口客户端不接。
 
 ### 失败的分类
 
@@ -209,10 +208,9 @@ StatefulShellRoute.indexedStack(
 | `BusinessException` | HTTP 200 但 `code` 不是 0，或错误响应里带 `code`（可能是字符串） | 不重试 | 显示 `msg` |
 | `NotVerifiedException` | 接口因为没认证拒绝 | 不重试 | 认证拦截 |
 | `AuthExpiredException` | 登录失效 | 不重试 | 清掉 token，回登录页 |
-| `ConsentRequiredException` | 需要（重新）同意数据存放 | 不重试 | 进同意页 |
 | `ParseException` | 响应和模型对不上 | 不重试 | 显示通用失败，上报 Sentry |
 
-- 业务码表先按 `legacy` 分支的 `lib/core/constant/biz_code.dart` 整理（20001–20003 登录失效、20004 权限不足），加上接口文档写到的 20005 / 20006（需要同意），做登录时和后端核对一遍。
+- 业务码表先按 `legacy` 分支的 `lib/core/constant/biz_code.dart` 整理（20001–20003 登录失效、20004 权限不足），加上接口文档写到的 20005 / 20006（需要跨站同步同意，由 `ApiClient` 自动处理，见「跨站同步同意」），做登录时和后端核对一遍。
 - 离开页面导致的取消不算失败，不提示、不上报。
 
 ### 模型和 JSON
@@ -309,21 +307,23 @@ extension RefCache on Ref {
 
 - `core/session/` 的常驻 Notifier 管当前会话：没登录，或已登录（`tokenName`、`tokenValue`）。token 存在 `flutter_secure_storage`。
 - 启动时有 token 就当作已登录，不额外请求校验；token 是否还有效由第一次请求的结果决定，失效了再回登录页。
-- `ApiClient` 遇到登录失效、需要重新同意时，通过构造时传入的回调通知会话，这样 `core/network` 不用导入上层。
+- `ApiClient` 遇到登录失效时，通过构造时传入的回调通知会话，这样 `core/network` 不用导入上层。
 
-### 登录、注册和同意
+### 登录和注册
 
-登录和注册接口的返回不只成功、失败两种，客户端按返回进入不同的页面：
+- 登录、注册成功时 `data` 带 `tokenName`、`tokenValue`：存 token，进入已登录。返回 `consentProof` 不算登录成功，按「跨站同步同意」自动同意后再登录。
+- 登录失效：清掉 token，回登录页，登录后回到原地址。
 
-| 接口返回 | 客户端怎么做 |
-| --- | --- |
-| `code` 为 0，`data` 带 `tokenName`、`tokenValue` | 存 token，进入已登录 |
-| 带 `consentProof`，或 `code` 为 20005 / 20006 | 进数据存放说明和同意。同意后用 proof 调 `/auth/consent/grant`，再登录一次；这次用的账号密码只留在内存里 |
-| 已登录时任何接口返回 20005 / 20006 | 进「重新同意」（`G-Reconsent`）：同意后照常使用，也可以退出登录或注销 |
-| 登录失效 | 清掉 token，回登录页，登录后回到原地址 |
+### 跨站同步同意
 
-- 注册前先读 `/auth/consent/policy` 拿到政策版本，`G-RegisterConfirm` 勾选后把 `crossBorderConsent` 和 `consentPolicyVersion` 和注册信息一起提交。
-- 20005 和 20006 各指什么、proof 多久过期，以后端为准，做登录时核对。
+默认所有用户都同意，客户端替每个用户发送同意，不做任何同意相关的页面：设计稿里的 `G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 不做，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。
+
+- 只接同意接口 `/auth/consent/grant`。同意和注册都要带当前的政策版本，用 `/auth/consent/policy` 读出来。查询状态、撤回不接。
+- 代码放在 `data/consent/` 的 `ConsentApi`，目录照常保留，以后要接别的同意接口也放这里。
+- 注册：请求里带 `crossBorderConsent: true` 和 `consentPolicyVersion`。
+- 登录或注册返回 `consentProof`：带上 proof 调同意，成功后用同一组账号密码自动再登录一次。账号密码只为这一次留在内存里。
+- 已登录时接口返回 20005 / 20006：`ApiClient` 通过构造时传入的回调（和登录失效一样，`core/network` 不导入 `data/`）不带 proof 调一次同意，用的是当前会话，成功后把原请求重发一次。几个请求同时遇到时只同意一次；同意失败，或重发后还是这两个码，就当普通业务错误显示 `msg`。
+- 页面不用管这些。20005 和 20006 各指什么、proof 多久过期、不带 proof 的同意在哪些部署下可用，做登录时和后端核对。
 
 ### 统一认证与邮箱认证
 
@@ -466,8 +466,8 @@ Android、iOS 另外要注意：
 | 测什么 | 怎么测 |
 | --- | --- |
 | 取色、坐标转换和距离、格式化（距离、价格、时间）、重试策略、业务码分类 | 单元测试 |
-| `ApiClient` 解包、`code` 检查、各种失败分别变成哪种 `ApiException`、鉴权头 | 单元测试，用假的 `HttpClientAdapter` |
-| 会话（登录、需要同意、失效、退出）、分页、乐观更新失败后改回 | `ProviderContainer.test()`，override 接口类 |
+| `ApiClient` 解包、`code` 检查、各种失败分别变成哪种 `ApiException`、鉴权头、20005 / 20006 自动同意后重发 | 单元测试，用假的 `HttpClientAdapter` |
+| 会话（登录、返回 proof 时自动同意再登录、失效、退出）、分页、乐观更新失败后改回 | `ProviderContainer.test()`，override 接口类 |
 | 设计组件的各种状态；页面的占位、失败、内容三种状态；`NavBar` 只在主页面出现；登录重定向 | Widget 测试，override provider |
 | 点击区域、文字对比度、可点元素有标签 | Widget 测试里用 `iOSTapTargetGuideline`（44px）、`textContrastGuideline`、`labeledTapTargetGuideline` |
 | 令牌和 `tokens.json` 一致；`lib/` 的 import 不违反分层方向 | 单元测试 |

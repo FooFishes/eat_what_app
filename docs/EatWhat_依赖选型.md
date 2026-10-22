@@ -282,7 +282,7 @@ plugins:
 - **移动端：`webview_flutter`**。WebView 打开 `/auth/sdu`，在 `NavigationDelegate` 里拦截跳到回调地址（带 `token` 参数）的那次导航，再调用回调接口换取结果。`legacy` 用 `flutter_inappwebview` 做了同样的事，换成官方包不影响流程。
 - **Web：整页跳转**。浏览器里 iframe 方式拿不到跨域的跳转地址，只能整页跳到统一认证，再由后端把结果带回 Web 版的地址。
 - 山大邮箱认证「回到这里会自动刷新」用 SDK 自带的 `AppLifecycleListener`，回到前台时重新查认证状态。
-- 《隐私政策》《用户协议》《数据存放说明》用 `url_launcher` 打开或做成 App 内页面，不另加包。
+- 《隐私政策》《用户协议》用 `url_launcher` 打开或做成 App 内页面，不另加包。
 
 ## 分享
 
