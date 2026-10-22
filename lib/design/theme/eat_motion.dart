@@ -1,4 +1,4 @@
-import 'package:flutter/animation.dart';
+import 'package:flutter/widgets.dart';
 
 /// 一段动效的时长和曲线。
 typedef EatTransition = ({Duration duration, Curve curve});
@@ -33,4 +33,12 @@ abstract final class EatMotion {
 
   /// 登录页转盘匀速转一圈的时间，这是全应用唯一自动播放的动画。
   static const loginSpinPeriod = Duration(seconds: 90);
+}
+
+extension EatMotionContext on BuildContext {
+  /// [transition] 在当前环境下的时长：系统开启减少动态效果时为零，组件直接跳到终点。
+  Duration motion(EatTransition transition) =>
+      MediaQuery.maybeDisableAnimationsOf(this) ?? false
+      ? Duration.zero
+      : transition.duration;
 }

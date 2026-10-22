@@ -39,10 +39,12 @@ lib/
     layout/                 断点、宽屏左右布局和居中一栏、舞台高度、字号上限
     stage/                  舞台取色算法、撞色规则（纯函数）
     icons/                  图标名表、EatIcon
-    widgets/                Button、Chip、DishPlate、DishTile、ListRow、Panel、Sheet、Stage、
-                            StageScaffold、PlainScaffold、NavBar、Tabs、TasteCloud、Turntable、
-                            StageColorPicker、MapPin、SearchField、FormField、Switch、RadioRow、
-                            PendingTag（待接入）、状态占位（加载、失败、空、没网）
+    widgets/                设计规范里的组件。和 Flutter 同名的（Chip、Switch、FormField……）一律加 Eat 前缀：
+                            EatButton、EatIconButton、EatChip、PendingTag（待接入）、EatTabs、EatListRow、
+                            EatRadioRow、EatSwitch、EatSearchField、EatFormField、EatSheet、EatStage、
+                            EatPanel（showPanel）、EatNavBar、DishPlate、DishTile、Skeleton、EmptyState、
+                            FailureState；以后的 StageScaffold、PlainScaffold、Turntable、TasteCloud、
+                            StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
     models/                 Dish、Shop、Campus、Hub、MealTime、DishCategory、TasteTag、Comment、
                             Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T> …
@@ -1131,7 +1133,7 @@ class PushNotice({
 | --- | --- | --- |
 | 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、放量分组、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
-| 无障碍检查 | 主要页面跑 `androidTapTargetGuideline`、`iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`；2 倍字号下不溢出 | 同上 |
+| 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
 | 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml` 里 | `test/contract/` |
 | 令牌测试 | Dart 令牌和 `tokens.json` 一致 | `test/design/` |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
