@@ -15,6 +15,7 @@
 | `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 已有 |
 | `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
+| `docs/guideline/COMMENT-STYLE.md` | 代码注释风格：What 与 Why 各写在哪、篇幅、语体、格式、不要写的东西 | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 已有 |
 | `prototype/screens/*.dc.html` | 「G 定稿」各页面画板 | 已有 |
 
@@ -118,6 +119,7 @@ fvm flutter run -d chrome
 - 遵守 `analysis_options.yaml`（`flutter_lints`），`fvm flutter analyze` 零问题。
 - 沿用 Dart 3.13 的写法：组件和其他手写构造函数用简写 `const new({super.key});`；普通数据模型用主构造函数，如 `class TokenResponse({required final String tokenValue}) { ... }`。
 - 包内导入用 `package:eat/...`，不用相对路径跨目录导入。
+- 注释按 `docs/guideline/COMMENT-STYLE.md` 写：只在读者会停下来看的地方写，写成文档注释、单独占行，不写行尾注释。
 - 新增依赖前先查 `docs/EatWhat_依赖选型.md`，表里没有的先提出来。一类问题只用一个方案，不引入同类库。
 - 密钥、token、签名文件、`.env` 一律不入库，用本地未跟踪文件或 CI Secrets。`legacy` 分支的 `pubspec.yaml` 曾提交过 Sentry auth token，不要重蹈覆辙。
 - 界面文字用中文，按设计规范的用词；文档用中文撰写。
