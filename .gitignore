@@ -49,3 +49,7 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# 环境配置：只有样例入库，真实的 dev.json、staging.json、prod.json 留在本地或由 CI 写出
+/config/*.json
+!/config/example.json

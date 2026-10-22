@@ -1,6 +1,3 @@
-import 'package:eat/app.dart';
-import 'package:flutter/material.dart';
+import 'package:eat/bootstrap.dart';
 
-void main() {
-  runApp(const EatApp());
-}
+void main() => bootstrap();

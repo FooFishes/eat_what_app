@@ -33,6 +33,7 @@ lib/
   bootstrap.dart     启动顺序：读配置、本地 token 和同意记录，然后 runApp
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
+config/              环境配置，只有 example.json 入库
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
@@ -50,9 +51,9 @@ prototype/
 - `data/` 按后端资源分组的接口类和 repository，负责缓存和转成领域模型
 - `state/` 跨页面共享的状态（登录态、账号状态、同意记录、远程配置、位置、未读数等）
 - `features/` 按页面分组，放页面、页面私有组件和页面的 provider
-- `router/` 路由表、守卫、深链处理、主页面外壳
+- `router/` 路由表、路径常量、守卫、深链处理、主页面外壳
 
-依赖只能往下层走，具体哪层能依赖哪层见技术架构第 2 节的表；功能之间不互相导入，跳到别的页面用路由路径。`test/architecture_test.dart` 检查这条规则。
+依赖只能往下层走，具体哪层能依赖哪层见技术架构第 2 节的表；功能之间不互相导入，跳到别的页面用 `router/paths.dart` 的路径常量。`test/architecture_test.dart` 检查这条规则。
 
 ## 环境与命令
 
@@ -61,14 +62,18 @@ Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.7 stable，附�
 ```bash
 fvm install                              # 安装 .fvmrc 指定的 SDK
 fvm flutter pub get
+fvm dart run build_runner build          # 改了 @riverpod、@JsonSerializable 后重新生成；开发时可用 watch
 fvm dart format .
 fvm flutter analyze
+fvm dart analyze --fatal-infos           # riverpod_lint 等分析器插件的结果只在这里报告
 fvm flutter test
 fvm flutter build web --release          # 本地唯一允许的构建
-fvm flutter run -d chrome
+fvm flutter run -d chrome                # 要调接口时加 --dart-define-from-file=config/dev.json
 ```
 
-改完代码至少跑 `fvm dart format .`、`fvm flutter analyze`、`fvm flutter test`。CI 用 `--set-exit-if-changed` 检查格式，没格式化的代码会让构建失败；`analyze` 要求零问题。
+改完代码至少跑上面从 `build_runner` 到 `flutter test` 这几步。CI 用 `build_runner build --only-check` 检查生成文件是否最新，用 `--set-exit-if-changed` 检查格式，任何一步不过都会让构建失败；两种 `analyze` 都要求零问题。
+
+环境配置（接口地址等）编译期传入：复制 `config/example.json` 为 `config/dev.json` 再填值，`config/` 下除样例外的 JSON 不入库。不传时也能启动，只是调不了接口。
 
 本地验证只允许构建 Web。不要在本地构建 Android、iOS（`flutter build apk`、`appbundle`、`ios`、`ipa` 等），也不要在模拟器或真机上实际运行 iOS，除非用户明确允许；Android、iOS 的构建交给 CI。
 
@@ -119,9 +124,11 @@ fvm flutter run -d chrome
 
 ## 代码约定
 
-- 遵守 `analysis_options.yaml`（`flutter_lints`），`fvm flutter analyze` 零问题。
+- 遵守 `analysis_options.yaml`（`flutter_lints` 和 `riverpod_lint` 插件），两种 `analyze` 都零问题。
+- Provider 用 `riverpod_generator` 的 `@riverpod` 写，接口 DTO 用 `json_serializable`，路由表手写。生成的 `*.g.dart` 入库、不手改，源文件改了就重新生成一起提交。
 - 沿用 Dart 3.13 的写法：组件和其他手写构造函数用简写 `const new({super.key});`；普通数据模型用主构造函数，如 `class TokenResponse({required final String tokenValue}) { ... }`。
 - 包内导入用 `package:eat/...`，不用相对路径跨目录导入。
+- Material 用独立的 `material_ui` 包（`package:material_ui/material_ui.dart`），不直接导入 `package:flutter/material.dart` 和 `flutter_localizations`；只需要基础组件时导入 `package:flutter/widgets.dart`。
 - 注释按 `docs/guideline/COMMENT-STYLE.md` 写：只在读者会停下来看的地方写，写成文档注释、单独占行，不写行尾注释。
 - 新增依赖前先查 `docs/EatWhat_依赖选型.md`，表里没有的先提出来。一类问题只用一个方案，不引入同类库。
 - 密钥、token、签名文件、`.env` 一律不入库，用本地未跟踪文件或 CI Secrets。`legacy` 分支的 `pubspec.yaml` 曾提交过 Sentry auth token，不要重蹈覆辙。
@@ -138,7 +145,7 @@ fvm flutter run -d chrome
 
 `.github/workflows/build.yml` 在 `main` 的 push 与 PR、`v*` tag 和手动触发时运行：
 
-1. `check`（ubuntu）：读取 `.fvmrc` 版本，`dart format` 检查、`flutter analyze`、`flutter test`。
+1. `check`（ubuntu）：读取 `.fvmrc` 版本，生成文件检查（`build_runner build --only-check`）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
 2. 通过后并行构建，产物保留 14 天：
    - `android`（ubuntu，JDK 17）：release APK 与 AAB，debug 签名。
    - `ios`（macOS）：未签名的 `Runner.app`，打包为 zip。

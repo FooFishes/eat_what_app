@@ -36,8 +36,12 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # 生成文件入库；源文件改了没重新生成、或生成了没提交，这一步失败
+      - run: dart run build_runner build --only-check
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
+      # riverpod_lint 这类分析器插件的结果只有 dart analyze 报告
+      - run: dart analyze --fatal-infos
       - run: flutter test
 
   android:

@@ -14,11 +14,15 @@ fvm flutter pub get
 fvm flutter run
 ```
 
+要调接口时，复制 `config/example.json` 为 `config/dev.json` 填好地址，运行时加 `--dart-define-from-file=config/dev.json`。
+
 提交前：
 
 ```sh
+fvm dart run build_runner build
 fvm dart format .
 fvm flutter analyze
+fvm dart analyze --fatal-infos
 fvm flutter test
 ```
 
