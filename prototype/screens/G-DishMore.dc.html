@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>G · 菜品详情（往下滑）</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Noto+Sans+SC:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+a{color:#231C18}a:hover{color:#000000}
+.btn-press:active{transform:translateY(1px)}
+.btn-light{transition:transform 90ms ease,box-shadow 90ms ease}
+.btn-light:active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7),inset 0 -1px 0 rgba(35,28,24,0.1),0 1px 1px rgba(35,28,24,0.1)!important}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
+
+  <div style="position: absolute; left: 0; top: 0; width: 390px; height: 124px; background: #F3C46E;"></div>
+  <header style="position: absolute; left: 8px; right: 8px; top: 48px; height: 44px; display: flex; align-items: center; gap: 4px;">
+    <a href="G-Dish.dc.html" aria-label="返回" style="flex: none; width: 44px; height: 44px; color: #231C18; text-decoration: none; display: flex; align-items: center; justify-content: center;">
+      <dc-import name="G-Icon" icon="back" size="24" hint-size="24px,24px"></dc-import>
+    </a>
+    <span style="flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px;">
+      <span style="font-size: 17px; font-weight: 900; white-space: nowrap;">鲜虾蟹籽云吞</span>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 800;">¥18</span>
+    </span>
+    <button type="button" aria-label="{{favLabel}}" aria-pressed="{{fav}}" onClick="{{flipFav}}" style="flex: none; width: 44px; height: 44px; border: 0; background: none; color: #231C18; display: flex; align-items: center; justify-content: center;">
+      <sc-if value="{{fav}}" hint-placeholder-val="{{ true }}"><dc-import name="G-Icon" icon="bookmarkOn" size="22" hint-size="22px,22px"></dc-import></sc-if>
+      <sc-if value="{{notFav}}" hint-placeholder-val="{{ false }}"><dc-import name="G-Icon" icon="bookmark" size="22" hint-size="22px,22px"></dc-import></sc-if>
+    </button>
+    <button type="button" aria-label="分享" style="flex: none; width: 44px; height: 44px; border: 0; background: none; color: #231C18; display: flex; align-items: center; justify-content: center;">
+      <dc-import name="G-Icon" icon="share" size="22" hint-size="22px,22px"></dc-import>
+    </button>
+  </header>
+
+  <div style="position: absolute; left: 0; right: 0; top: 104px; bottom: 0; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 22px 20px 0; display: flex; flex-direction: column; gap: 22px;">
+
+    <section style="display: flex; flex-direction: column; gap: 8px;">
+      <a href="G-UserProfile.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+        <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 50%; background: #231C18; color: #FFCB45; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900;">天</span>
+        <span style="font-size: 14px; font-weight: 600;">天凉被破王</span>
+        <span style="font-size: 12px; color: #6E625B;">10 月 18 日上传</span>
+      </a>
+      <p style="margin: 0; font-size: 15px; line-height: 24px;">鲜虾很大只，蟹籽一咬就爆。汤底是骨头熬的，喝到最后也不腻。饭量大的建议再加一份煎饺。</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 20px; line-height: 28px; font-weight: 900;">吃过的人说<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 15px; font-weight: 800;">23</span><span style="font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border: 1px dashed #9A8B80; border-radius: 9px;">待接入</span></h2>
+        <a href="G-WriteComment.dc.html" style="height: 44px; color: #231C18; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px;"><dc-import name="G-Icon" icon="edit" size="18" hint-size="18px,18px"></dc-import>写一条</a>
+      </div>
+
+      <article style="display: flex; gap: 12px;">
+        <span aria-hidden="true" style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #F3C46E; color: #231C18; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900;">林</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 36px;">
+            <span style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">小林</span><span style="font-size: 12px; color: #6E625B;">3 天前</span></span>
+            <button type="button" aria-label="更多" style="width: 44px; height: 44px; margin-right: -12px; border: 0; background: none; color: #6E625B; display: flex; align-items: center; justify-content: center;"><dc-import name="G-Icon" icon="more" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+          <p style="margin: 0; font-size: 15px; line-height: 24px;">汤底确实是骨头熬的，喝到最后也不腻。蟹籽给得多，一口下去会爆。</p>
+          <div style="display: flex; align-items: center; gap: 18px; margin-left: -10px;">
+            <button type="button" aria-pressed="{{liked}}" onClick="{{flipLike}}" style="height: 40px; padding: 0 10px; border: 0; background: none; color: {{likeColor}}; display: flex; align-items: center; gap: 6px;">
+              <sc-if value="{{liked}}" hint-placeholder-val="{{ false }}"><dc-import name="G-Icon" icon="heartOn" size="18" hint-size="18px,18px"></dc-import></sc-if>
+              <sc-if value="{{notLiked}}" hint-placeholder-val="{{ true }}"><dc-import name="G-Icon" icon="heart" size="18" hint-size="18px,18px"></dc-import></sc-if>
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 800; color: #231C18;">{{likes}}</span>
+            </button>
+            <a href="G-WriteComment.dc.html" style="height: 40px; color: #231C18; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center;">回复</a>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 2px 0 0 14px; box-shadow: inset 2px 0 0 #EFE9E4;">
+            <p style="margin: 0; font-size: 14px; line-height: 22px;"><strong style="font-weight: 600;">天凉被破王</strong>　汤是店里每天早上现熬的</p>
+            <p style="margin: 0; font-size: 14px; line-height: 22px;"><strong style="font-weight: 600;">阿哲</strong> <span style="color: #6E625B;">回复 小林</span>　蟹籽那口太顶了</p>
+            <a href="G-Comments.dc.html" style="align-self: flex-start; height: 32px; color: #231C18; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 2px;">展开 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;">3</span> 条回复<dc-import name="G-Icon" icon="chevronDown" size="16" hint-size="16px,16px"></dc-import></a>
+          </div>
+        </div>
+      </article>
+
+      <article style="display: flex; gap: 12px;">
+        <span aria-hidden="true" style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #C9442B; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900;">M</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 36px;">
+            <span style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Momo</span><span style="font-size: 12px; color: #6E625B;">10 月 19 日</span></span>
+            <button type="button" aria-label="更多" style="width: 44px; height: 44px; margin-right: -12px; border: 0; background: none; color: #6E625B; display: flex; align-items: center; justify-content: center;"><dc-import name="G-Icon" icon="more" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+          <p style="margin: 0; font-size: 15px; line-height: 24px;">中午 12 点那会儿要等十分钟，错开饭点来就不用排。</p>
+          <div style="display: flex; align-items: center; gap: 18px; margin-left: -10px;">
+            <button type="button" aria-pressed="false" style="height: 40px; padding: 0 10px; border: 0; background: none; color: #6E625B; display: flex; align-items: center; gap: 6px;"><dc-import name="G-Icon" icon="heart" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 800; color: #231C18;">12</span></button>
+            <a href="G-WriteComment.dc.html" style="height: 40px; color: #231C18; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center;">回复</a>
+          </div>
+        </div>
+      </article>
+
+      <a href="G-Comments.dc.html" class="btn-light" style="height: 48px; border-radius: 24px; background: linear-gradient(180deg, #FBF8F6, #F4EFEB); color: #231C18; font-size: 15px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 4px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(35,28,24,0.1), 0 1px 2px rgba(35,28,24,0.12), 0 3px 8px rgba(35,28,24,0.06);">看全部 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;">23</span> 条</a>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { fav: true, liked: false };
+  }
+  renderVals() {
+    const fav = this.state.fav;
+    const liked = this.state.liked;
+    return {
+      fav: fav,
+      notFav: !fav,
+      favLabel: fav ? '已收藏' : '收藏',
+      flipFav: () => this.setState({ fav: !fav }),
+      liked: liked,
+      notLiked: !liked,
+      likes: liked ? 32 : 31,
+      likeColor: liked ? '#C9442B' : '#6E625B',
+      flipLike: () => this.setState({ liked: !liked })
+    };
+  }
+}
+</script>
+</body>
+</html>

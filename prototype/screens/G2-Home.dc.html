@@ -83,13 +83,29 @@ a{color:#231C18}a:hover{color:#000000}
 
   <div style="position: absolute; left: 0; right: 0; top: 488px; bottom: 0; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 10px 20px 0; display: flex; flex-direction: column; gap: 14px;">
     <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #E6DED8;"></span>
-    <div role="tablist" aria-label="推荐分类" style="display: flex; gap: 20px; align-items: center; height: 32px;">
-      <button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0; border: 0; background: none; color: #231C18; font-size: 17px; font-weight: 900;">今日推荐</button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px;">主食</button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px;">小吃</button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px;">饮品</button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px;">甜品</button>
+    <div role="tablist" aria-label="推荐分类" style="display: flex; gap: 20px; align-items: center; height: 32px; margin-right: -20px; overflow: hidden; white-space: nowrap;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+        <button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="flex: none; height: 32px; padding: 0; border: 0; background: none; color: {{t.fg}}; font-size: {{t.size}}px; font-weight: {{t.w}}; display: flex; align-items: center; gap: 4px;"><sc-if value="{{t.topic}}" hint-placeholder-val="{{ false }}"><dc-import name="G-Icon" icon="topic" size="16" hint-size="16px,16px"></dc-import></sc-if>{{t.label}}</button>
+      </sc-for>
     </div>
+    <sc-if value="{{topicOn}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 4px; margin-top: -2px;">
+        <p style="margin: 0; font-size: 15px; line-height: 22px;">复习到半夜，来点热的顶一顶。</p>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #6E625B;">本周专题，10 月 20 日–10 月 26 日<span style="font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border: 1px dashed #9A8B80; border-radius: 9px; color: #231C18;">待接入</span></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; row-gap: 18px;">
+      <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+        <div style="height: 150px; border-radius: 22px; background: #F6DDD3; overflow: hidden; position: relative;"><img src="../assets/dishes/niunan.svg" alt="" style="position: absolute; left: 30px; top: 18px; width: 150px; height: 150px;"></div>
+        <div style="display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">番茄牛腩饭</h3><span style="font-size: 13px; color: #6E625B;">小碗菜</span></div>
+      </a>
+      <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+        <div style="height: 150px; border-radius: 22px; background: #F3D6CF; overflow: hidden; position: relative;"><img src="../assets/dishes/luosifen.svg" alt="" style="position: absolute; left: -16px; top: 24px; width: 150px; height: 150px;"></div>
+        <div style="display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">柳州螺蛳粉</h3><span style="font-size: 13px; color: #6E625B;">螺蛳粉研究所</span></div>
+      </a>
+      </div>
+      <a href="G-TopicArchive.dc.html" style="align-self: flex-start; height: 44px; color: #231C18; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 2px;">往期专题<dc-import name="G-Icon" icon="chevronRight" size="16" hint-size="16px,16px"></dc-import></a>
+    </sc-if>
+    <sc-if value="{{topicOff}}" hint-placeholder-val="{{ true }}">
     <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; row-gap: 18px;">
       <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
         <div style="height: 150px; border-radius: 22px; background: #F2E6D6; overflow: hidden; position: relative;"><img src="../assets/dishes/tieguodun.svg" alt="" style="position: absolute; left: 30px; top: 18px; width: 150px; height: 150px;"></div>
@@ -100,6 +116,7 @@ a{color:#231C18}a:hover{color:#000000}
         <div style="display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">麻辣香锅</h3><span style="font-size: 13px; color: #6E625B;">香锅小站</span></div>
       </a>
     </div>
+    </sc-if>
   </div>
 
   <div style="position: absolute; left: 16px; right: 16px; bottom: 24px; height: 60px;">
@@ -107,11 +124,11 @@ a{color:#231C18}a:hover{color:#000000}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":["今日推荐","专题"],"default":"今日推荐"},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { n: 0, drag: 0, dragging: false };
+    this.state = { n: 0, drag: 0, dragging: false, tab: props.tab === '专题' ? 'topic' : 'today', notice: props.notice === true || props.notice === 'true' };
     this.startX = 0;
   }
   renderVals() {
@@ -146,6 +163,18 @@ class Component extends DCLogic {
     };
     const dots = dishes.map((_, i) => ({ w: i === k ? 16 : 5, o: i === k ? 1 : 0.4 }));
     return {
+      tabs: [
+        { key: 'today', label: '今日推荐' }, { key: 'topic', label: '期末续命餐', topic: true },
+        { key: 'staple', label: '主食' }, { key: 'snack', label: '小吃' }, { key: 'drink', label: '饮品' },
+        { key: 'dessert', label: '甜品' }, { key: 'soup', label: '汤' }, { key: 'hotpot', label: '火锅' }
+      ].map((t) => {
+        const on = this.state.tab === t.key;
+        return { label: t.label, topic: !!t.topic, on: on, fg: on ? '#231C18' : '#6E625B', size: on ? 17 : 15, w: on ? 900 : 400, pick: () => this.setState({ tab: t.key }) };
+      }),
+      topicOn: this.state.tab === 'topic',
+      topicOff: this.state.tab !== 'topic',
+      noticeOn: this.state.notice,
+      closeNotice: () => this.setState({ notice: false }),
       s: dishes[k],
       p0: plate(0), p1: plate(1), p2: plate(2), p3: plate(3),
       p4: plate(4), p5: plate(5), p6: plate(6), p7: plate(7),

@@ -58,20 +58,86 @@ a{color:#231C18}a:hover{color:#000000}
       </a>
     </div>
     <div role="tablist" aria-label="我的内容" style="display: flex; gap: 22px; align-items: baseline; height: 32px;">
-      <button type="button" role="tab" aria-selected="true" style="height: 32px; padding: 0; border: 0; background: none; color: #231C18; font-size: 17px; font-weight: 900; display: flex; align-items: baseline; gap: 4px;">上传<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 800;">42</span></button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px; display: flex; align-items: baseline; gap: 4px;">收藏<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 600;">117</span></button>
-      <button type="button" role="tab" aria-selected="false" style="height: 32px; padding: 0; border: 0; background: none; color: #6E625B; font-size: 15px; display: flex; align-items: baseline; gap: 6px;">评论<span style="font-size: 11px; padding: 0 6px; border: 1px dashed #B5A79C; border-radius: 8px;">待接入</span></button>
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+        <button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="height: 32px; padding: 0; border: 0; background: none; color: {{t.fg}}; font-size: {{t.size}}px; font-weight: {{t.w}}; display: flex; align-items: baseline; gap: 4px;">{{t.label}}<sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ true }}"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: {{t.cw}};">{{t.count}}</span></sc-if><sc-if value="{{t.pending}}" hint-placeholder-val="{{ false }}"><span style="align-self: center; margin-left: 2px;"><span style="font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border: 1px dashed #9A8B80; border-radius: 9px; color: #231C18;">待接入</span></span></sc-if></button>
+      </sc-for>
     </div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px;">
-      <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
-        <div style="height: 150px; border-radius: 22px; background: #F8E6C4; overflow: hidden; position: relative;"><img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: 28px; top: 18px; width: 150px; height: 150px;"></div>
-        <div style="display: flex; justify-content: space-between; align-items: baseline;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">鲜虾蟹籽云吞</h3><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 600; color: #6E625B; display: flex; align-items: center; gap: 3px;"><dc-import name="G-Icon" icon="heart" size="14" hint-size="14px,14px"></dc-import>143</span></div>
-      </a>
-      <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
-        <div style="height: 150px; border-radius: 22px; background: #E2EAF3; overflow: hidden; position: relative;"><img src="../assets/dishes/jiaozi.svg" alt="" style="position: absolute; left: -18px; top: 22px; width: 150px; height: 150px;"></div>
-        <div style="display: flex; justify-content: space-between; align-items: baseline;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">玉米鲜肉饺子</h3><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 600; color: #6E625B; display: flex; align-items: center; gap: 3px;"><dc-import name="G-Icon" icon="heart" size="14" hint-size="14px,14px"></dc-import>127</span></div>
-      </a>
-    </div>
+    <sc-if value="{{showUploads}}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px;">
+        <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+          <div style="height: 150px; border-radius: 22px; background: #F8E6C4; overflow: hidden; position: relative;"><img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: 28px; top: 18px; width: 150px; height: 150px;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">鲜虾蟹籽云吞</h3><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 600; color: #6E625B; display: flex; align-items: center; gap: 3px;"><dc-import name="G-Icon" icon="heart" size="14" hint-size="14px,14px"></dc-import>143</span></div>
+        </a>
+        <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+          <div style="height: 150px; border-radius: 22px; background: #E2EAF3; overflow: hidden; position: relative;"><img src="../assets/dishes/jiaozi.svg" alt="" style="position: absolute; left: -18px; top: 22px; width: 150px; height: 150px;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">玉米鲜肉饺子</h3><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 600; color: #6E625B; display: flex; align-items: center; gap: 3px;"><dc-import name="G-Icon" icon="heart" size="14" hint-size="14px,14px"></dc-import>127</span></div>
+        </a>
+      </div>
+    </sc-if>
+    <sc-if value="{{showFav}}" hint-placeholder-val="{{ false }}">
+      <div role="radiogroup" aria-label="收藏的类型" style="display: flex; gap: 8px; margin-top: -4px;">
+        <button type="button" role="radio" aria-checked="{{fDish.on}}" onClick="{{fDish.pick}}" style="height: 32px; padding: 0 14px; border: 0; border-radius: 16px; background: {{fDish.bg}}; color: {{fDish.fg}}; font-size: 14px; font-weight: {{fDish.w}}; display: flex; align-items: center; gap: 4px;">菜<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 800;">109</span></button>
+        <button type="button" role="radio" aria-checked="{{fShop.on}}" onClick="{{fShop.pick}}" style="height: 32px; padding: 0 14px; border: 0; border-radius: 16px; background: {{fShop.bg}}; color: {{fShop.fg}}; font-size: 14px; font-weight: {{fShop.w}}; display: flex; align-items: center; gap: 4px;">店<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 13px; font-weight: 800;">8</span></button>
+        <span style="align-self: center;"><span style="font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border: 1px dashed #9A8B80; border-radius: 9px; color: #231C18;">待接入</span></span>
+      </div>
+      <sc-if value="{{fDish.on}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px;">
+        <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+            <div style="height: 150px; border-radius: 22px; background: #FBEFC6; overflow: hidden; position: relative;"><img src="../assets/dishes/yangzhi.svg" alt="" style="position: absolute; left: 28px; top: 18px; width: 150px; height: 150px;"></div>
+            <div style="display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">杨枝甘露</h3><span style="font-size: 13px; color: #6E625B;">一点点</span></div>
+          </a>
+        <a href="G-Dish.dc.html" style="display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit;">
+            <div style="height: 150px; border-radius: 22px; background: #F6E0DB; overflow: hidden; position: relative;"><img src="../assets/dishes/xiangguo.svg" alt="" style="position: absolute; left: -16px; top: 24px; width: 150px; height: 150px;"></div>
+            <div style="display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">麻辣香锅</h3><span style="font-size: 13px; color: #6E625B;">香锅小站</span></div>
+          </a>
+        </div>
+      </sc-if>
+      <sc-if value="{{fShop.on}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+        <a href="G-Detail.dc.html" style="display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit;">
+          <span style="position: relative; flex: none; width: 64px; height: 64px; border-radius: 18px; overflow: hidden; background: #F8E6C4;"><img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: -14px; top: -14px; width: 92px; height: 92px;"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 16px; font-weight: 700;">袁记云饺</span>
+            <span style="display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: #6E625B;"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 600; color: #231C18;">320 m</span>万达金街 1 层</span>
+            <span style="font-size: 13px; color: #6E625B;">招牌：鲜虾蟹籽云吞</span>
+          </span>
+        </a>
+        <a href="G-Detail.dc.html" style="display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit;">
+          <span style="position: relative; flex: none; width: 64px; height: 64px; border-radius: 18px; overflow: hidden; background: #F3D6CF;"><img src="../assets/dishes/luosifen.svg" alt="" style="position: absolute; left: -14px; top: -14px; width: 92px; height: 92px;"></span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 16px; font-weight: 700;">螺蛳粉研究所</span>
+            <span style="display: flex; align-items: baseline; gap: 8px; font-size: 13px; color: #6E625B;"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 600; color: #231C18;">600 m</span>万达金街 B1</span>
+            <span style="font-size: 13px; color: #6E625B;">招牌：柳州螺蛳粉</span>
+          </span>
+        </a>
+        </div>
+      </sc-if>
+    </sc-if>
+    <sc-if value="{{showComments}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <a href="G-Comments.dc.html" style="display: flex; gap: 14px; text-decoration: none; color: inherit;">
+          <span style="position: relative; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: #F3D6CF;"><img src="../assets/dishes/luosifen.svg" alt="" style="position: absolute; left: -10px; top: -10px; width: 68px; height: 68px;"></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;"><span style="font-size: 15px; font-weight: 700;">柳州螺蛳粉</span><span style="flex: none; font-size: 12px; color: #6E625B;">2 天前</span></span>
+            <span style="font-size: 14px; line-height: 22px; color: #4A3C31; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">中辣刚好，酸笋很足。加了一份炸蛋，泡在汤里吸满了味道。</span>
+          </span>
+        </a>
+        <a href="G-Comments.dc.html" style="display: flex; gap: 14px; text-decoration: none; color: inherit;">
+          <span style="position: relative; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: #F6DDD3;"><img src="../assets/dishes/niunan.svg" alt="" style="position: absolute; left: -10px; top: -10px; width: 68px; height: 68px;"></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;"><span style="font-size: 15px; font-weight: 700;">番茄牛腩饭</span><span style="flex: none; font-size: 12px; color: #6E625B;">周一</span></span>
+            <span style="font-size: 14px; line-height: 22px; color: #4A3C31; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">牛腩炖得很烂，番茄汤汁拌饭能吃两碗，就是饭点人有点多。</span>
+          </span>
+        </a>
+        <a href="G-Comments.dc.html" style="display: flex; gap: 14px; text-decoration: none; color: inherit;">
+          <span style="position: relative; flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: #F2E6D6;"><img src="../assets/dishes/tieguodun.svg" alt="" style="position: absolute; left: -10px; top: -10px; width: 68px; height: 68px;"></span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;"><span style="font-size: 15px; font-weight: 700;">铁锅炖大鹅</span><span style="flex: none; font-size: 12px; color: #6E625B;">10 月 12 日</span></span>
+            <span style="font-size: 14px; line-height: 22px; color: #4A3C31; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">四个人点一锅刚好，贴饼子一定要加。</span>
+          </span>
+        </a>
+      </div>
+    </sc-if>
   </div>
 
   <div style="position: absolute; left: 16px; right: 16px; bottom: 24px; height: 60px;">
@@ -79,10 +145,35 @@ a{color:#231C18}a:hover{color:#000000}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":["上传","收藏","评论"],"default":"上传"},"fav":{"editor":"enum","options":["菜","店"],"default":"菜"},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const tabs = { '上传': 'up', '收藏': 'fav', '评论': 'cm' };
+    this.state = { tab: tabs[props.tab] || 'up', fav: props.fav === '店' ? 'shop' : 'dish' };
+  }
   renderVals() {
-    return {};
+    const tab = this.state.tab;
+    const mk = (key, label, count, pending) => {
+      const on = tab === key;
+      return {
+        label: label, count: count, hasCount: count !== null, pending: !!pending,
+        on: on, fg: on ? '#231C18' : '#6E625B', size: on ? 17 : 15, w: on ? 900 : 400, cw: on ? 800 : 600,
+        pick: () => this.setState({ tab: key })
+      };
+    };
+    const seg = (key) => {
+      const on = this.state.fav === key;
+      return { on: on, bg: on ? '#231C18' : '#F4EFEB', fg: on ? '#FFFFFF' : '#231C18', w: on ? 600 : 400, pick: () => this.setState({ fav: key }) };
+    };
+    return {
+      tabs: [mk('up', '上传', 42), mk('fav', '收藏', 117), mk('cm', '评论', null, true)],
+      showUploads: tab === 'up',
+      showFav: tab === 'fav',
+      showComments: tab === 'cm',
+      fDish: seg('dish'),
+      fShop: seg('shop')
+    };
   }
 }
 </script>

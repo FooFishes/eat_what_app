@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>G · 重要公告</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Noto+Sans+SC:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+a{color:#231C18}a:hover{color:#000000}
+.btn-solid{transition:transform 90ms ease,box-shadow 90ms ease}
+.btn-solid:active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1),inset 0 -1px 0 rgba(0,0,0,0.24),0 1px 1px rgba(35,28,24,0.2)!important}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px; pointer-events: none;">
+    <dc-import name="G-HomePhoto" hint-size="390px,844px"></dc-import>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(35,28,24,0.45);"></div>
+
+  <section role="alertdialog" aria-labelledby="ann-title" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 10px 20px 32px; background: #FFFFFF; border-radius: 28px 28px 0 0; display: flex; flex-direction: column; gap: 14px;">
+    <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #E6DED8;"></span>
+    <span style="display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 13px; font-weight: 600;"><dc-import name="G-Icon" icon="announce" size="18" hint-size="18px,18px"></dc-import>重要公告<span style="font-weight: 400; color: #6E625B;">10 月 22 日</span></span>
+    <h1 id="ann-title" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 900;">[公告标题]</h1>
+    <p style="margin: 0; font-size: 15px; line-height: 24px; color: #4A3C31;">[公告内容：发生了什么、影响到谁、大家要做什么、到什么时候。写成同学之间说话的样子，三四句以内。]</p>
+    <a href="G-HomePhoto.dc.html" class="btn-solid" style="margin-top: 6px; height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">知道了</a>
+    <span style="text-align: center; font-size: 12px; color: #6E625B;">打开 App 时弹一次，看过就不再弹</span>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

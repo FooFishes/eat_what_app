@@ -28,7 +28,7 @@ a{color:#231C18}a:hover{color:#000000}
   <div aria-hidden="true" style="position: absolute; left: -405px; top: 300px; width: 1200px; height: 1200px; border-radius: 50%; background: rgba(255,255,255,0.22);"></div>
   <div aria-hidden="true" style="position: absolute; left: -365px; top: 340px; width: 1120px; height: 1120px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.55);"></div>
 
-  <div aria-hidden="true" class="spin" style="position: absolute; left: 195px; top: 900px; width: 0; height: 0;">
+  <div aria-hidden="true" class="spin" style="position: absolute; left: 159px; top: 883px; width: 0; height: 0">
     <img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; transform: rotate(0deg) translateY(-430px);">
     <img src="../assets/dishes/niunan.svg" alt="" style="position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; transform: rotate(30deg) translateY(-430px);">
     <img src="../assets/dishes/yangzhi.svg" alt="" style="position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; transform: rotate(60deg) translateY(-430px);">
@@ -51,28 +51,23 @@ a{color:#231C18}a:hover{color:#000000}
 
   <div style="position: absolute; left: 0; right: 0; top: 560px; bottom: 0; box-sizing: border-box; padding: 24px 20px 30px; background: #FFFFFF; border-radius: 28px 28px 0 0; display: flex; flex-direction: column; gap: 12px;">
     <sc-if value="{{agreed}}" hint-placeholder-val="{{ true }}">
-      <a href="G2-Home.dc.html" class="btn-solid" style="height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">
-        <dc-import name="G-Icon" icon="school" size="20" hint-size="20px,20px"></dc-import>
-        用山大统一认证登录
+      <a href="G-PhoneLogin.dc.html" class="btn-solid" style="height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">
+        <dc-import name="G-Icon" icon="phone" size="20" hint-size="20px,20px"></dc-import>
+        手机号登录
       </a>
-      <a href="G-PasswordLogin.dc.html" class="btn-press" style="height: 52px; box-sizing: border-box; border: 1.5px solid #231C18; border-radius: 26px; background: #FFFFFF; color: #231C18; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -3px 0 rgba(35,28,24,0.08), 0 1px 2px rgba(35,28,24,0.12); transition: transform 90ms ease;">账号密码登录</a>
     </sc-if>
     <sc-if value="{{notAgreed}}" hint-placeholder-val="{{ false }}">
-      <button type="button" disabled style="height: 52px; border: 0; border-radius: 26px; background: #E9E2DC; color: #8A7E76; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: not-allowed;">
-        <dc-import name="G-Icon" icon="school" size="20" hint-size="20px,20px"></dc-import>
-        用山大统一认证登录
+      <button type="button" disabled="" style="height: 52px; border: 0; border-radius: 26px; background: #E9E2DC; color: #8A7E76; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: not-allowed;">
+        <dc-import name="G-Icon" icon="phone" size="20" hint-size="20px,20px"></dc-import>
+        手机号登录
       </button>
-      <button type="button" disabled style="height: 52px; border: 1.5px solid #E2DAD3; border-radius: 26px; background: #FFFFFF; color: #8A7E76; font-size: 16px; font-weight: 600; cursor: not-allowed;">账号密码登录</button>
     </sc-if>
 
     <label style="display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; font-size: 13px; line-height: 20px; color: #4A3C31; cursor: pointer;">
       <input type="checkbox" checked="{{agreed}}" onChange="{{toggle}}" style="flex: none; width: 20px; height: 20px; margin: 0; accent-color: #231C18;">
-      <span>我已阅读并同意<a href="#privacy" style="color: #231C18; font-weight: 600;">《隐私政策》</a>和<a href="#terms" style="color: #231C18; font-weight: 600;">《用户协议》</a><sc-if value="{{notAgreed}}" hint-placeholder-val="{{ false }}"><span style="display: block; color: #A8321C;">勾选后才能登录</span></sc-if></span>
+      <span>我已阅读并同意<a href="#privacy" style="color: #231C18; font-weight: 600;">《隐私政策》</a>和<a href="#terms" style="color: #231C18; font-weight: 600;">《用户协议》</a><sc-if value="{{notAgreed}}" hint-placeholder-val="{{ false }}"><span style="display: block; color: #A8321C;">勾选后才能继续</span></sc-if></span>
     </label>
 
-    <div style="display: flex; justify-content: center; gap: 4px; font-size: 14px; color: #6E625B;">
-      还没有账号？<a href="G-PhoneLogin.dc.html" style="color: #231C18; font-weight: 600;">注册</a>
-    </div>
   </div>
 </div>
 </x-dc>

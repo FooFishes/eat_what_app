@@ -125,5 +125,5 @@
   },
   "blobs": {},
   "docs": {"sections": []},
-  "lastChange": {"by": "lzyyy", "at": "2026-10-22T13:03:40Z", "via": "Claude Code", "note": "按产品文档修正组件说明：TasteCloud 点击行为、Tabs 发现页分类栏、ListRow 菜品行、DishTile 显示赞数、Stage 高度伸缩与三行菜名、DishPlate 加载态、Sheet 附近页抽屉；tokens 的 stage-dish、count、size-stage 说明同步"}
+  "lastChange": {"by": "lzyyy", "at": "2026-10-23T02:00:00Z", "via": "Claude Code", "note": "宽屏改为舞台铺满、抽屉变左侧悬浮面板，不再用居中一栏"}
 }

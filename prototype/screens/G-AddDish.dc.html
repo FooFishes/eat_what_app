@@ -21,10 +21,15 @@ a{color:#231C18}a:hover{color:#000000}
 input::placeholder,textarea::placeholder{color:#8A7E76}
 </style>
 </helmet>
-<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
+<div style="width: 390px; height: 1160px; position: relative; overflow: hidden; background: #FFFFFF; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
 
   <div style="position: absolute; left: 0; top: 0; width: 390px; height: 332px; overflow: hidden; background: #F3C46E;">
-    <img src="../assets/dishes/yuntun.svg" alt="你上传的照片" style="position: absolute; left: 126px; top: 20px; width: 290px; height: 290px; transform: rotate(-8deg);">
+    <sc-if value="{{hasPhoto}}" hint-placeholder-val="{{ true }}">
+      <img src="../assets/dishes/yuntun.svg" alt="你上传的照片" style="position: absolute; left: 126px; top: 20px; width: 290px; height: 290px; transform: rotate(-8deg);">
+    </sc-if>
+    <sc-if value="{{noPhoto}}" hint-placeholder-val="{{ false }}">
+      <a href="G-Crop.dc.html" style="position: absolute; left: 150px; top: 52px; width: 210px; height: 210px; box-sizing: border-box; border: 2px dashed rgba(35,28,24,0.45); border-radius: 50%; background: rgba(255,255,255,0.22); color: #231C18; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600;"><dc-import name="G-Icon" icon="camera" size="28" hint-size="28px,28px"></dc-import>加一张照片</a>
+    </sc-if>
   </div>
 
   <header style="position: absolute; left: 8px; right: 20px; top: 46px; height: 44px; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center;">
@@ -36,13 +41,17 @@ input::placeholder,textarea::placeholder{color:#8A7E76}
   </header>
 
   <div style="position: absolute; left: 20px; top: 214px; display: flex; align-items: center; gap: 8px;">
-    <span style="position: relative; width: 56px; height: 56px; border-radius: 16px; overflow: hidden; background: #F8E6C4; box-shadow: 0 0 0 3px #FFFFFF;"><img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: -12px; top: -12px; width: 80px; height: 80px;"></span>
+    <sc-if value="{{hasPhoto}}" hint-placeholder-val="{{ true }}">
+      <span style="position: relative; width: 56px; height: 56px; border-radius: 16px; overflow: hidden; background: #F8E6C4; box-shadow: 0 0 0 3px #FFFFFF;"><img src="../assets/dishes/yuntun.svg" alt="" style="position: absolute; left: -12px; top: -12px; width: 80px; height: 80px;"></span>
+    </sc-if>
     <a href="G-Crop.dc.html" aria-label="再加一张照片" style="width: 56px; height: 56px; box-sizing: border-box; border: 1.5px dashed rgba(35,28,24,0.45); border-radius: 16px; background: rgba(255,255,255,0.3); color: #231C18; text-decoration: none; display: flex; align-items: center; justify-content: center;">
       <dc-import name="G-Icon" icon="add" size="22" hint-size="22px,22px"></dc-import>
     </a>
-    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 800;">1<span style="font-weight: 600;"> / 9</span></span>
+    <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 800;">{{count}}<span style="font-weight: 600;"> / 9</span></span>
   </div>
+  <sc-if value="{{hasPhoto}}" hint-placeholder-val="{{ true }}">
   <span style="position: absolute; right: 20px; top: 262px; height: 28px; padding: 0 10px 0 6px; border-radius: 14px; background: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;"><span style="width: 16px; height: 16px; border-radius: 8px; background: #F3C46E; box-shadow: 0 0 0 2px #FFFFFF;"></span>主色取自照片</span>
+  </sc-if>
 
   <div style="position: absolute; left: 0; right: 0; top: 304px; bottom: 0; background: #FFFFFF; border-radius: 28px 28px 0 0; padding: 10px 20px 0; display: flex; flex-direction: column; gap: 18px;">
     <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #E6DED8;"></span>
@@ -76,33 +85,68 @@ input::placeholder,textarea::placeholder{color:#8A7E76}
     </fieldset>
 
     <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column;">
+      <legend style="padding: 0; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6E625B;">适合哪顿，可以多选<span style="font-size: 11px; font-weight: 500; line-height: 18px; padding: 0 6px; border: 1px dashed #9A8B80; border-radius: 9px; color: #231C18;">待接入</span></legend>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+        <sc-for list="{{meals}}" as="m" hint-placeholder-count="4">
+          <button type="button" aria-pressed="{{m.on}}" onClick="{{m.toggle}}" style="height: 36px; padding: 0 14px; border: 1.5px solid {{m.line}}; border-radius: 18px; background: {{m.bg}}; color: #231C18; font-size: 14px; font-weight: {{m.w}}; transition: background-color 160ms ease, border-color 160ms ease;">{{m.label}}</button>
+        </sc-for>
+      </div>
+    </fieldset>
+
+    <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column;">
       <legend style="padding: 0; margin-bottom: 8px; font-size: 13px; color: #6E625B;">标签，可以多选</legend>
       <div style="display: flex; flex-wrap: wrap; gap: 8px;">
         <sc-for list="{{tags}}" as="t" hint-placeholder-count="5">
           <button type="button" aria-pressed="{{t.on}}" onClick="{{t.toggle}}" style="height: 36px; padding: 0 14px; border: 1.5px solid {{t.line}}; border-radius: 18px; background: {{t.bg}}; color: {{t.fg}}; font-size: 14px; font-weight: {{t.w}}; display: flex; align-items: center; gap: 4px; transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;">{{t.label}}</button>
         </sc-for>
-        <button type="button" style="height: 36px; padding: 0 14px; border: 1.5px dashed #B5A79C; border-radius: 18px; background: none; color: #231C18; font-size: 14px;">+ 自己写</button>
+        <button type="button" style="height: 36px; padding: 0 14px; border: 1.5px dashed #9A8B80; border-radius: 18px; background: none; color: #231C18; font-size: 14px;">＋ 自己写</button>
       </div>
     </fieldset>
+
+    <label style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="display: flex; justify-content: space-between; font-size: 13px; color: #6E625B;">说两句，选填<span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 600;">{{noteLen}}</span> / 300</span></span>
+      <textarea maxlength="300" value="{{note}}" onChange="{{setNote}}" placeholder="好吃在哪，有什么要注意的" style="box-sizing: border-box; width: 100%; height: 108px; padding: 12px 14px; border: 0; border-radius: 18px; background: #F4EFEB; resize: none; outline: none; font: inherit; font-size: 15px; line-height: 22px; color: #231C18;"></textarea>
+    </label>
   </div>
 
-  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 96px; box-sizing: border-box; padding: 12px 20px 32px; background: #FFFFFF; box-shadow: 0 -1px 0 #EFE9E4;">
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 12px 20px 32px; background: #FFFFFF; box-shadow: 0 -1px 0 #EFE9E4; display: flex; flex-direction: column; gap: 8px;">
+    <sc-if value="{{noPhoto}}" hint-placeholder-val="{{ false }}">
+      <span style="text-align: center; font-size: 13px; color: #A8321C;">还差照片</span>
+      <button type="button" disabled style="height: 52px; border: 0; border-radius: 26px; background: #E9E2DC; color: #8A7E76; font-size: 16px; font-weight: 600; cursor: not-allowed;">发布</button>
+    </sc-if>
+    <sc-if value="{{hasPhoto}}" hint-placeholder-val="{{ true }}">
     <a href="G-Dish.dc.html" class="btn-solid" style="height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">发布</a>
+    </sc-if>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"photo":{"editor":"enum","options":["有照片","还没加"],"default":"有照片"},"$preview":{"width":390,"height":1160}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { cat: 0, tags: { '平价': true, '鲜虾大只': true } };
+    this.state = { cat: 0, tags: { '平价': true, '鲜虾大只': true }, meals: { '晚饭': true }, note: '鲜虾很大只，蟹籽一咬就爆。饭量大的建议再加一份煎饺。' };
   }
   renderVals() {
     const catLabels = ['主食', '小吃', '饮品', '甜品', '汤', '火锅', '烧烤', '凉菜', '配菜', '其他'];
     const tagLabels = ['平价', '量大', '鲜虾大只', '微辣', '汤鲜'];
     const cat = this.state.cat;
     const tags = this.state.tags;
+    const hasPhoto = (this.props.photo ?? '有照片') !== '还没加';
     return {
+      hasPhoto: hasPhoto,
+      noPhoto: !hasPhoto,
+      count: hasPhoto ? 1 : 0,
+      note: this.state.note,
+      noteLen: this.state.note.length,
+      setNote: (e) => this.setState({ note: e.target.value.slice(0, 300) }),
+      meals: ['早饭', '午饭', '晚饭', '夜宵'].map((label) => {
+        const on = !!this.state.meals[label];
+        return {
+          label: label, on: on ? 'true' : 'false', w: on ? 600 : 400,
+          bg: on ? '#FBEFD9' : '#FFFFFF', line: on ? '#231C18' : '#E6DED8',
+          toggle: () => { const next = Object.assign({}, this.state.meals); next[label] = !next[label]; this.setState({ meals: next }); }
+        };
+      }),
       cats: catLabels.map((label, i) => {
         const on = i === cat;
         return {

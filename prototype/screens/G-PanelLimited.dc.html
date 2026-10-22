@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>G · 操作受限</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&amp;family=Noto+Sans+SC:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font:inherit;cursor:pointer}
+a{color:#231C18}a:hover{color:#000000}
+.btn-solid,.btn-light{transition:transform 90ms ease,box-shadow 90ms ease}
+.btn-solid:active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1),inset 0 -1px 0 rgba(0,0,0,0.24),0 1px 1px rgba(35,28,24,0.2)!important}
+.btn-light:active{transform:translateY(1px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7),inset 0 -1px 0 rgba(35,28,24,0.1),0 1px 1px rgba(35,28,24,0.1)!important}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #FFFFFF; color: #231C18; font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;">
+
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 844px; pointer-events: none;">
+    <dc-import name="G-DishMore" hint-size="390px,844px"></dc-import>
+  </div>
+  <a href="G-DishMore.dc.html" aria-label="关闭面板" style="position: absolute; inset: 0; background: rgba(35,28,24,0.45);"></a>
+
+  <section role="alertdialog" aria-labelledby="lim-title" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 10px 20px 32px; background: #FFFFFF; border-radius: 28px 28px 0 0; display: flex; flex-direction: column; gap: 14px;">
+    <span aria-hidden="true" style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: #E6DED8;"></span>
+    <div style="display: flex; align-items: center; gap: 14px; margin-top: 4px;">
+      <span aria-hidden="true" style="flex: none; width: 52px; height: 52px; border-radius: 50%; background: #F4EFEB; display: flex; align-items: center; justify-content: center;">
+        <sc-if value="{{isGuest}}" hint-placeholder-val="{{ false }}"><dc-import name="G-Icon" icon="verify" size="26" hint-size="26px,26px"></dc-import></sc-if>
+        <sc-if value="{{isPenalty}}" hint-placeholder-val="{{ true }}"><dc-import name="G-Icon" icon="block" size="26" hint-size="26px,26px"></dc-import></sc-if>
+      </span>
+      <h1 id="lim-title" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 900;">{{title}}</h1>
+    </div>
+
+    <sc-if value="{{isPenalty}}" hint-placeholder-val="{{ true }}">
+      <dl style="margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; row-gap: 8px; font-size: 15px; line-height: 22px;">
+        <dt style="color: #6E625B;">原因</dt><dd style="margin: 0;">{{reason}}</dd>
+        <dt style="color: #6E625B;">恢复</dt><dd style="margin: 0; font-weight: 600;">{{until}}</dd>
+      </dl>
+      <p style="margin: 0; font-size: 13px; line-height: 20px; color: #6E625B;">{{note}}</p>
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <a href="G-Feedback.dc.html" class="btn-light" style="flex: 1; height: 52px; border-radius: 26px; background: linear-gradient(180deg, #FBF8F6, #F4EFEB); color: #231C18; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(35,28,24,0.1), 0 1px 2px rgba(35,28,24,0.12), 0 3px 8px rgba(35,28,24,0.06);">觉得误伤了</a>
+        <a href="G-DishMore.dc.html" class="btn-solid" style="flex: 1; height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">知道了</a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isGuest}}" hint-placeholder-val="{{ false }}">
+      <p style="margin: 0; font-size: 15px; line-height: 24px; color: #4A3C31;">认证一下就能发布、点赞、评论和关注。只用来确认你是山大学生，一两分钟就好。</p>
+      <div style="display: flex; gap: 10px; margin-top: 6px;">
+        <a href="G-DishMore.dc.html" class="btn-light" style="flex: 1; height: 52px; border-radius: 26px; background: linear-gradient(180deg, #FBF8F6, #F4EFEB); color: #231C18; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(35,28,24,0.1), 0 1px 2px rgba(35,28,24,0.12), 0 3px 8px rgba(35,28,24,0.06);">先逛逛</a>
+        <a href="G-Verify.dc.html" class="btn-solid" style="flex: 1; height: 52px; border-radius: 26px; background: linear-gradient(180deg, #3B312B, #231C18); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.28), 0 1px 2px rgba(35,28,24,0.2), 0 6px 14px rgba(35,28,24,0.16);">去认证</a>
+      </div>
+    </sc-if>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["操作受限","封禁中","未认证"],"default":"操作受限"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const kind = this.props.kind ?? '操作受限';
+    const guest = kind === '未认证';
+    const banned = kind === '封禁中';
+    return {
+      isGuest: guest,
+      isPenalty: !guest,
+      title: guest ? '认证后才能评论' : (banned ? '账号封禁中，暂时不能评论' : '24 小时内不能评论'),
+      reason: banned ? '多次发布不是实拍的照片' : '评论里留了联系方式',
+      until: banned ? '10 月 30 日解封' : '明天 14:20 恢复',
+      note: banned ? '封禁期间还能浏览，不能发布和互动。' : '其他功能照常用。'
+    };
+  }
+}
+</script>
+</body>
+</html>
