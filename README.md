@@ -25,7 +25,7 @@ fvm flutter test
 ## 目录
 
 - `lib/`：应用代码
-- `docs/`：产品文档、技术架构、依赖选型、开发计划，以及接口文档 `api.openapi.yml`
+- `docs/`：产品文档、现状差距、技术架构、依赖选型、开发计划，以及接口文档 `api.openapi.yml`
 - `prototype/`：界面设计（舞台设计规范与定稿画板）
 - `.github/workflows/build.yml`：CI，检查通过后并行构建 Android、iOS（未签名）与 Web
 
