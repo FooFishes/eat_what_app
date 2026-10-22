@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | `docs/EatWhat_产品文档.md` | 产品定位、场景、功能范围、页面流程 | 占位 |
 | `docs/EatWhat_技术架构.md` | 分层、目录、状态管理、路由、网络、数据流 | 占位 |
-| `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 占位 |
+| `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 已有 |
 | `docs/EatWhat_开发计划.md` | 里程碑、任务与验收 | 占位 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 已有 |
