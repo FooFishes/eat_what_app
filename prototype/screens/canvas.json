@@ -1,5 +1,4 @@
 {
-  "v": 3,
   "attachments": {},
   "boards": {
     "G-AddDish.dc.html": {
@@ -588,5 +587,6 @@
       "name": "G 定稿"
     }
   ],
-  "title": "沙软今天吃什么 · 风格候选"
+  "title": "沙软今天吃什么 · 风格候选",
+  "v": 3
 }
