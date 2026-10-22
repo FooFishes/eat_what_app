@@ -31,6 +31,7 @@
 | 版本号 | `package_info_plus` | `^10.2.2` | 做关于页 / 反馈时 | 待引入 |
 | 设备型号 | `device_info_plus` | `^13.3.0` | 做反馈时 | 待引入 |
 | 崩溃与性能监控 | `sentry_flutter`、`sentry_dio` | `^10.1.0` | 第一次分发测试包之前 | 待引入 |
+| 热更新补丁号 | `shorebird_code_push` | `^2.0.7` | 和 Shorebird 一起，第一次分发测试包之前 | 待引入 |
 
 开发依赖：
 
@@ -44,7 +45,7 @@
 | Riverpod 规则检查 | `riverpod_lint`（写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml`） | `3.1.9` | 和 `flutter_riverpod` 一起 | 待引入 |
 | 符号表、source map 上传 | `sentry_dart_plugin` | `^3.4.0` | 和 Sentry 一起，只在 CI 里跑 | 待引入 |
 
-以后需要时再评估、目前不加：`flutter_launcher_icons`、`flutter_native_splash`（有正式图标和启动图时）、`integration_test`（SDK 自带，写端到端测试时）、`smooth_sheets`（附近页抽屉先用内置的 `DraggableScrollableSheet`，底部面板 `Panel` 用内置的 `showModalBottomSheet`，满足不了时再看）、`flutter_image_compress`（`image_picker` 自带的压缩不够用时）、推送 SDK（见「推送」）、`shorebird_code_push`（见「版本号、设备型号与补丁号」）。
+以后需要时再评估、目前不加：`flutter_launcher_icons`、`flutter_native_splash`（有正式图标和启动图时）、`integration_test`（SDK 自带，写端到端测试时）、`smooth_sheets`（附近页抽屉先用内置的 `DraggableScrollableSheet`，底部面板 `Panel` 用内置的 `showModalBottomSheet`，满足不了时再看）、`flutter_image_compress`（`image_picker` 自带的压缩不够用时）、推送 SDK（见「推送」）。
 
 ### 不用
 
@@ -267,7 +268,17 @@ plugins:
 
 - **版本号：`package_info_plus`**。读 `pubspec.yaml` 的 `version` 和构建号，三端都支持。Sentry 也依赖它，不额外增加体积。
 - **设备型号：`device_info_plus`**。Android 取厂商和型号，iOS 取机型，Web 取浏览器和系统。
-- **补丁号：待定**。画板上的「补丁」通常指不经应用商店推送的热更新补丁，Flutter 里对应的是 Shorebird（`shorebird_code_push` 读当前补丁号）。它会改变发版方式（用 shorebird 命令构建、CI 加 token），而且只对 Android、iOS 有意义，Web 本来就是即时更新。要不要接见「需要确认的事」。
+- **补丁号：`shorebird_code_push`**。用 `ShorebirdUpdater().readCurrentPatch()` 读当前补丁号，没有补丁时为空。不是 Shorebird 构建的包（本地调试、普通 `flutter build`）和 Web 上 `isAvailable` 为 `false`，读不到补丁号（看过它的 Web 实现）。Web 上关于页怎么显示，做时和设计对一下。
+
+### 热更新：Shorebird
+
+2026-10-22 确定接入 Shorebird，第一次分发测试包时和 Sentry 一起接。Android、iOS 发版后，Dart 层的修复可以不经应用商店直接推给用户；原生代码和插件的改动仍然要重新发版。Web 每次部署就是最新版，不用它。
+
+- **CLI 不进 `pubspec.yaml`**：Shorebird 的命令行工具装在开发机和 CI 上；`shorebird init` 生成的 `shorebird.yaml`（含 `app_id`，不是密钥）入库。
+- **发版方式**：要推补丁的版本必须用 `shorebird release android` / `shorebird release ios` 构建，修复用 `shorebird patch` 推送。CI 里只在打 `v*` tag 的发版构建改用 shorebird；PR 和 `main` 的构建保持 `flutter build`，避免每次提交都在 Shorebird 上生成一个版本。登录凭据放 GitHub Secrets（`SHOREBIRD_TOKEN`）。iOS 目前只做未签名构建，shorebird 有对应的不签名参数，接入时按官方文档配。
+- **Flutter 版本**：Shorebird 用自己维护的 Flutter 版本构建，`.fvmrc` 里的版本要在它支持的列表里。以后升级 Flutter 先确认 Shorebird 已支持该版本。
+- **和 Sentry 配合**：上报时把补丁号带进 Sentry 的 release 信息，崩溃能对应到具体补丁；补丁的符号表同样在 CI 里上传。
+- **接入时先验证**：Shorebird 是否已支持 Flutter 3.47.7；国内网络下检查和下载补丁的速度；免费额度够不够测试阶段用。
 
 ## 推送
 
@@ -301,14 +312,13 @@ plugins:
 
 ## 需要确认的事
 
-1. **补丁号与热更新**：关于页、反馈里的「补丁」号要不要接 Shorebird 热更新（见「版本号、设备型号与补丁号」）。
-2. **后端**：
+1. **后端**：
    - 菜品的裁切位置（圆心、缩放）和选定的舞台色，现在的 `CreateFoodDTORequest` / `FoodVOResponse` 里没有对应字段，需要后端加。
    - 推送：什么时候提供登记推送设备的接口，用哪家推送服务。
    - Web 端统一认证：认证完成后能否重定向回 Web 版的某个地址并带上登录结果。
    - 对象存储的预签名 PUT 和业务接口是否对 Web 版的域名开放 CORS。
    - 各种 `id`（`int64`）的实际取值会不会超过 2^53。超过的话 Web 端按数字解析会丢精度，需要后端以字符串返回。
-3. **Sentry**：`legacy` 用的组织和项目是否沿用。
+2. **Sentry**：`legacy` 用的组织和项目是否沿用。
 
 ## 验证记录
 
@@ -319,7 +329,7 @@ plugins:
 - **生成器的版本锁**：另外加入 `riverpod_generator` 4.0.9、`freezed` 4.0.3、`go_router_builder` 4.5.2 后，`build_runner` 被解析到 2.16.2、`build` 到 4.0.11。
 - **material_ui**：用 `material_ui` 的 `MaterialApp.router` + `go_router` + `ProviderScope` + `flutter_map`（组件标记）搭了一个最小页面，`flutter analyze` 唯一的提示是 `MaterialUiCompatibilityBridge` 的 deprecated。
 - **图标**：把 PR #11 的 78 个 MingCute SVG 放进 `assets/icons/`，用 `flutter_svg` 按「图标」一节的做法渲染（`currentColor` 换色、按尺寸改描边），Widget 测试通过，Web 构建通过。
-- **补充的包**：加入 `share_plus`、`package_info_plus`、`device_info_plus` 并去掉图标包后重新解析，结果不变（Sentry 10.1.0、`build_runner` 2.17.1）。
+- **补充的包**：加入 `share_plus`、`package_info_plus`、`device_info_plus`、`shorebird_code_push` 并去掉图标包后重新解析，结果不变（Sentry 10.1.0、`build_runner` 2.17.1）。Shorebird CLI 本身没有在这里验证。
 - **Web 构建**：`flutter build web --release` 成功，Wasm 预检通过。
 - **riverpod_lint**：在 `analysis_options.yaml` 声明插件后，`dart analyze` 报出 `missing_provider_scope`、`avoid_public_notifier_properties`，`flutter analyze` 没有报。
 - **OpenAPI 生成**：`swagger_parser` 1.45.0 的结果见「不从 OpenAPI 生成客户端」。
