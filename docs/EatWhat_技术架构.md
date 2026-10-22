@@ -463,7 +463,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 9.5 跨站同步同意
 
-默认所有用户都同意，客户端替每个用户发送同意，不做任何同意相关的页面：设计稿里的 `G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 不做，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品文档 7.5 的单独勾选、重新同意、撤回即注销，客户端都不做。
+默认所有用户都同意，客户端替每个用户发送同意，不做任何同意相关的页面：设计稿里的 `G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 不做，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
 
 - 只接同意接口 `/auth/consent/grant`。同意和注册都要带当前的政策版本，用 `/auth/consent/policy` 读出来。查询状态、撤回不接。
 - 代码放在 `data/consent/` 的 `ConsentApi`，以后要接别的同意接口也放这里。
