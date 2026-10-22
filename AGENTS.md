@@ -97,7 +97,7 @@ fvm flutter run -d chrome
 - 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
-- 数据存放同意按产品文档：注册时单独勾选，说明有变化时进「重新同意」页（`G-Reconsent`）。接口现在还是校内站、境外站两套逻辑，过渡做法见现状差距 2.1 和技术架构 9.4。
+- 跨站同步同意默认替所有用户发送，只接同意接口，不做同意相关的页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 设计稿里有也不做），见技术架构 9.5。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地

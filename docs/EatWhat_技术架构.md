@@ -48,12 +48,12 @@ lib/
                             Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T> …
     rules/                  权限表、饭点、价格与名称校验、推荐率、消息 → 跳转、菜名断行
   data/                     数据层：按后端资源分组，做 IO
-    auth/ user/ food/ restaurant/ hub/ notification/ upload/ history/ config/ analytics/ …
+    auth/ consent/ user/ food/ restaurant/ hub/ notification/ upload/ history/ config/ analytics/ …
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
                             当前位置、地点和饭点、菜的赞和收藏、未读数、网络状态
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
-    auth/                   登录、手机号登录、密码登录、完成注册、数据存放说明、重新同意
+    auth/                   登录、手机号登录、密码登录
     verify/                 认证
     discover/               发现、转盘、地点和饭点面板
     search/                 搜索
@@ -133,7 +133,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | --- | --- | --- |
 | `sessionProvider` | 未登录 / 已登录（token、当前用户）；过期时带上原因和原地址 | 登录、退出、过期、刷新用户信息 |
 | `accountStatusProvider` | 未登录、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
-| `consentProvider` | 隐私政策同意版本和时间、数据存放同意状态 | 登录页、重新同意页 |
+| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意由客户端自动发送，不进这里，见 9.5） | 登录页 |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
 | `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
 | `locationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
@@ -167,9 +167,6 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 登录 | `/login` | 根 | 是 | `G-Login` |
 | 手机号登录 | `/login/phone` | 根 | 是 | `G-PhoneLogin` |
 | 密码登录 | `/login/password` | 根 | 是 | `G-PasswordLogin` |
-| 完成注册（数据存放同意） | `/login/register` | 根 | 是 | `G-RegisterConfirm` |
-| 数据存放说明 | `/data-notice` | 根 | 是 | `G-DataNotice` |
-| 重新同意 | `/reconsent` | 根 | 否 | `G-Reconsent` |
 | 认证 | `/verify` | 根 | 否 | `G-Verify` |
 | 菜品详情 | `/dishes/:dishId` | 根 | 否 | `G-Dish` |
 | 全部评论 | `/dishes/:dishId/comments` | 根 | 否 | `G-Comments` |
@@ -221,7 +218,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 ### 5.3 守卫
 
-GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) → 目标地址或 null`，输入是当前地址、登录态、同意状态、远程配置里的版本线和维护状态。`refreshListenable` 接一个桥接对象，`sessionProvider`、`consentProvider`、`remoteConfigProvider` 变化时让路由重新判断。
+GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) → 目标地址或 null`，输入是当前地址、登录态、远程配置里的版本线和维护状态。`refreshListenable` 接一个桥接对象，`sessionProvider`、`remoteConfigProvider` 变化时让路由重新判断。
 
 按顺序判断，命中一条就返回：
 
@@ -230,8 +227,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 1 | 当前版本低于强制更新线 | `/update` |
 | 2 | 停服维护中 | `/maintenance` |
 | 3 | 未登录，且目标不是「未登录可进」的页面 | `/login?from=<原地址>`；过期时再带 `expired=1` |
-| 4 | 需要重新同意数据存放，且目标不是 `/reconsent`、`/data-notice`、`/settings/account/delete` | `/reconsent` |
-| 5 | 已登录还去 `/login*` | `/discover` |
+| 4 | 已登录还去 `/login*` | `/discover` |
 
 `resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」，不在守卫里写死路径列表。
 
@@ -336,7 +332,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 10003 | 请求频率过高 | 「操作太快了，慢一点」；验证码场景「验证码发得太频繁了，明天再试」 |
 | 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4） |
 | 20004 | 权限不足 | 重新拉用户信息，按新的账号状态弹拦截面板（第 8 节） |
-| 20005、20006 | 接口文档：海外未同意、授权过期或未同步 | 进重新同意页（现状差距 2.1） |
+| 20005、20006 | 接口文档：海外未同意、授权过期或未同步 | `ApiClient` 自动同意后重发原请求，用户看不到（9.5） |
 | 30xxx | 用户模块（密码错、验证码错、邮箱不对……） | 每个码一句话，表在 `core/failure/messages.dart` |
 | 9xxxx、HTTP 5xx | 系统错误 | 「服务器开小差了，等会儿再试」；上报 |
 
@@ -410,6 +406,12 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 现状差距 P0：推荐、菜品详情、餐厅详情、菜单、标签、足迹现在要求已认证。`pending_features.dart` 里有一个「浏览需要认证」的开关，打开时这些页面对未认证账号显示认证引导；后端放开后关掉。
 - 关注现在只要求登录，产品要求已认证：客户端按产品规则拦（`Capability.follow`）。
 
+### 8.5 待接入的功能
+
+- 设计要求没有接口的功能照样画出来，旁边放「待接入」（8.2 第 1 行）。页面照常写，数据也走 Provider，只是 Provider 先返回放在功能目录里的示例数据（插画和示例文字），不发请求；写操作的按钮点了也不发请求。
+- 示例数据只用于演示，插画不能冒充用户上传的照片。
+- 接口上线后只换 Provider 的实现、补 `data/` 里的接口类，页面不用改；同时改 `pending_features.dart`、去掉「待接入」，删掉现状差距里对应的一行。
+
 ## 9. 本地存储与登录态
 
 ### 9.1 存什么、存哪
@@ -451,13 +453,24 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 4. 清内存：`ProviderContainer` 里依赖账号的 Provider 全部 `invalidate`，`dishInteractionsProvider` 等清空。
 5. `go('/login')`。
 
-注销账号、撤回数据存放同意走同一套清理。
+注销账号走同一套清理。
 
 ### 9.4 同意记录与 SDK 初始化
 
 - 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
-- 数据存放同意（产品 7.5）由服务端记录；登录返回 20005 / 20006 或临时 `consentProof` 时进重新同意页（现状差距 2.1 的过渡做法）。
+- 跨站同步同意由客户端替用户自动发送，不进本地同意记录，见 9.5。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
+
+### 9.5 跨站同步同意
+
+默认所有用户都同意，客户端替每个用户发送同意，不做任何同意相关的页面：设计稿里的 `G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 不做，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品文档 7.5 的单独勾选、重新同意、撤回即注销，客户端都不做。
+
+- 只接同意接口 `/auth/consent/grant`。同意和注册都要带当前的政策版本，用 `/auth/consent/policy` 读出来。查询状态、撤回不接。
+- 代码放在 `data/consent/` 的 `ConsentApi`，以后要接别的同意接口也放这里。
+- 注册：新号码验证后直接注册，请求里带 `crossBorderConsent: true` 和 `consentPolicyVersion`，没有「完成注册」这一步。
+- 登录或注册返回 `consentProof`：不算登录成功。带上 proof 调同意，成功后用同一组账号密码自动再登录一次；账号密码只为这一次留在内存里。
+- 已登录时接口返回 20005 / 20006：`ApiClient` 通过构造时传入的回调（和登录过期一样，`core/network` 不导入 `data/`）不带 proof 调一次同意，用的是当前会话，成功后把原请求重发一次。几个请求同时遇到时只同意一次；同意失败，或重发后还是这两个码，就按 7.5 的「未知」处理。
+- 页面不用管这些。20005 和 20006 各指什么、proof 多久过期、不带 proof 的同意在哪些部署下可用，做登录时和后端核对（A2）。
 
 ## 10. 离线与缓存
 
@@ -491,6 +504,56 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 安卓、iOS：`cached_network_image` 的磁盘缓存，看过的图离线能看。
 - Web：靠浏览器 HTTP 缓存，图片服务器要返回合适的缓存头（A3）。
 - 列表和方块按显示尺寸解码（`memCacheWidth`），不把 2048 像素的原图整张解码。图片服务能出缩略图的话按尺寸请求缩略图（A3）。
+
+### 10.5 弱网与加载
+
+手上有数据就先显示，没有才显示占位，失败了可以重试。这里把散在各节的做法汇总成每个页面都要落实的清单，不新增依赖。
+
+**切换页面**
+
+- 三个主页面放在 `StatefulShellRoute.indexedStack` 里（5.2），切走时不销毁，数据只拉一次；它们的 Provider 标 `keepAlive`。
+- 看不见的页面不偷偷发请求：Riverpod 3 按 `TickerMode` 暂停不可见页面的监听（4.3）。常驻 Provider 在暂停期间被失效时，回到页面再带着旧数据刷新。
+- 详情页的 Provider 自动释放，但看不见以后在内存里再保留 5 分钟（`ref.cacheFor`），回到刚看过的页面不用重新拉；更久的离线可看靠 10.1 的磁盘缓存。
+- 从列表点进详情，先用列表里已有的图、名字和舞台色把舞台画出来，只有抽屉里的内容要等。
+
+**重试**
+
+- 读请求的自动重试按 4.3：只对网络错误重试，最多 2 次；业务 `code` 报错、登录过期、解析失败不重试。
+- 写操作（发布、评论、赞、关注……）不在 Provider 的 `build` 里，不会被自动重试，`dio` 也不加重试拦截器。失败时保留用户已经输入的内容，由用户再点一次（10.3）。
+
+**加载、失败、没网的样子**
+
+- 加载中：用 `mist` 色块按内容的形状占位（舞台、盘子、方块、列表行），不用转圈（7.5）。
+- 失败且没有旧数据：`wifi-off` 图标、「没加载出来」、「再试一次」按钮。后台重试期间状态是「加载中但带着上一次的错误」，这时也显示失败；某次重试成功就自动换成内容。
+- 有旧数据时刷新：保留旧内容；刷新失败也不清空，只给一句不打断操作的提示（10.2）。
+- 这几种状态是 `design/widgets/` 里的通用状态占位组件，页面按同一条规则选：有数据显示数据，没数据但有错误显示失败，都没有显示占位。
+
+**取消和防抖**
+
+- 每个发请求的 Provider 拿一个 `CancelToken`，Provider 释放时取消（4.3）。离开页面，页面的请求就停了。
+- 搜索输入防抖：Provider 先等 300 ms，期间关键词变了（旧的 Provider 被释放）就不发请求。
+
+`cacheFor` 和 `cancelToken` 是 `core/network/` 里给 `Ref` 写的扩展：
+
+```dart
+extension RefCache on Ref {
+  /// 没人看以后再保留 [duration]，这段时间里回来不重新请求。
+  void cacheFor(Duration duration) {
+    final link = keepAlive();
+    Timer? timer;
+    onCancel(() => timer = Timer(duration, link.close));
+    onResume(() => timer?.cancel());
+    onDispose(() => timer?.cancel());
+  }
+
+  /// Provider 释放时取消请求。
+  CancelToken cancelToken() {
+    final token = CancelToken();
+    onDispose(token.cancel);
+    return token;
+  }
+}
+```
 
 ## 11. 设计令牌落地
 
@@ -1083,7 +1146,7 @@ class PushNotice({
 | A4 | 统一认证改为绑定票据 | App 用应用内浏览器打开学校页面，后端用一次性票据把结果记到当前账号，完成页给回 App 的链接；不在 URL 里带登录 token，不用 WebView | 后端 |
 | A5 | 远程配置接口的形状 | 按 17.1 做一个接口，包含开关、参数、校区、公告、维护、版本线、补丁放量、实验分组、隐私政策版本 | 后端、产品负责人 |
 | A6 | 轻提示的样式 | 产品里有「发布好了」「这个功能暂时关了」「没赞上，再试一次」这类短提示，设计规范没有对应组件。推荐在页面底部、`NavBar` 上方出现的 `ink` 底胶囊，2 秒消失，不挡操作 | 设计 |
-| A7 | 隐私政策、用户协议更新后的重新同意 | 产品只写了数据存放说明变化时重新同意。推荐隐私政策有实质变化时同样进「重新同意」页，用远程配置里的版本号判断 | 产品负责人 |
+| A7 | 隐私政策、用户协议更新后的重新同意 | 不做「重新同意」页（9.5）。推荐用远程配置里的版本号判断，本地版本更旧时回登录页重新勾选协议，不清登录态 | 产品负责人 |
 | A8 | 附近页宽屏时 `NavBar` 放哪 | 画板未出（现状差距 3.2）。先放在左侧面板底部 | 设计 |
 | A9 | 微信里的分享卡片 | 自定义标题和缩略图要用微信 JS-SDK，需要认证的公众号和备案域名。推荐先不做，微信里分享出去就是链接；其他 App 的链接预览可以由服务端给 `/dishes/:id` 这类地址输出带标题和图片的 meta | 产品负责人 |
 | A10 | Web 登录态存在哪 | Web 上 token 只能存在浏览器里（加密的密钥也在浏览器），页面被注入脚本时能被读走。推荐先这样做并给 Web 配内容安全策略（CSP）；更安全的是后端改用 httpOnly Cookie，需要同源部署（A1） | 后端、产品负责人 |
