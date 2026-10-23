@@ -4,7 +4,7 @@ import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_shadows.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/widgets.dart';

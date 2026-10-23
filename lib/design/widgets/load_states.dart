@@ -1,7 +1,9 @@
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/theme/stage_theme.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:flutter/widgets.dart';
 
@@ -146,6 +148,136 @@ class FailureState extends StatelessWidget {
       icon: EatIcons.shuffle,
       height: 48,
       onPressed: onRetry,
+    ),
+  );
+}
+
+/// 舞台上的加载占位：右边一个盘子、左下几行字的形状，用舞台的次按钮色画，跟着舞台色走。
+///
+/// 只能放在舞台里（`StageScaffold` 的舞台内容）；字的形状离底部留出被抽屉压住的 32px。
+class StagePlaceholder extends StatelessWidget {
+  const new({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = StageTheme.of(context).ghost;
+    final scale = EatLayout.of(context).stageScale;
+    Widget block(double width, double height, {bool circle = false}) =>
+        Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            shape: circle ? BoxShape.circle : BoxShape.rectangle,
+            borderRadius: circle
+                ? null
+                : const BorderRadius.all(Radius.circular(8)),
+          ),
+        );
+    final plate = EatSize.plate * scale;
+    return LoadingArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) => Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned(
+              right: -plate * 0.28,
+              top: (constraints.maxHeight - plate) / 2,
+              child: block(plate, plate, circle: true),
+            ),
+            Positioned(
+              left: EatSpace.s20,
+              bottom: EatSize.sheetOverlap + EatSpace.s24,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: EatSpace.s10,
+                children: [
+                  block(170, 40),
+                  block(110, 40),
+                  const SizedBox(height: EatSpace.s14),
+                  block(96, 52),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 两列菜品方块的加载占位，排法和 `DishTile` 的网格一样。
+class TileGridPlaceholder extends StatelessWidget {
+  const new({super.key, this.count = 4});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tile() => const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: EatSpace.s8,
+      children: [
+        Skeleton(height: 150, radius: EatRadius.tile),
+        Skeleton.line(width: 90),
+        Skeleton.line(width: 60, fontSize: 13),
+      ],
+    );
+    return LoadingArea(
+      child: Column(
+        spacing: 18,
+        children: [
+          for (var i = 0; i < count; i += 2)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: EatSpace.s14,
+              children: [
+                Expanded(child: tile()),
+                Expanded(child: i + 1 < count ? tile() : const SizedBox()),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 列表行的加载占位：左边缩略图，右边两行字。
+class RowListPlaceholder extends StatelessWidget {
+  const new({super.key, this.count = 4, this.thumbSize = EatSize.thumb});
+
+  final int count;
+  final double thumbSize;
+
+  @override
+  Widget build(BuildContext context) => LoadingArea(
+    child: Column(
+      spacing: 18,
+      children: [
+        for (var i = 0; i < count; i++)
+          Row(
+            spacing: EatSpace.s14,
+            children: [
+              Skeleton(
+                width: thumbSize,
+                height: thumbSize,
+                radius: thumbSize >= EatSize.thumbLg
+                    ? EatRadius.thumbLg
+                    : EatRadius.thumb,
+              ),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: EatSpace.s8,
+                  children: [
+                    Skeleton.line(width: 140, fontSize: 16),
+                    Skeleton.line(width: 90, fontSize: 13),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
     ),
   );
 }

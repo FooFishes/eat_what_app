@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -59,6 +60,20 @@ void main() {
             );
           }
         }
+      }
+    });
+
+    test('Illustration 和 assets/illustrations/ 一一对应，内容和设计稿一致', () {
+      expect(
+        Illustration.values.map((art) => '${art.name}.svg').toSet(),
+        _svgNames('assets/illustrations'),
+      );
+      for (final art in Illustration.values) {
+        expect(
+          File(art.asset).readAsStringSync(),
+          File('prototype/assets/dishes/${art.name}.svg').readAsStringSync(),
+          reason: art.name,
+        );
       }
     });
 

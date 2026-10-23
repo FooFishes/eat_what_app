@@ -1,6 +1,6 @@
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/painting.dart';
 import 'package:eat/design/widgets/surface.dart';
@@ -76,34 +76,39 @@ class EatChip extends StatelessWidget {
       (_Kind.add, _) => (SurfaceStyle.dashed(c.lineStrong), c.ink),
     };
     final duration = context.motion(EatMotion.select);
-    return EatTappable(
-      onTap: onTap,
-      button: _kind == _Kind.add,
-      checked: _kind == _Kind.choice ? selected : null,
-      inMutuallyExclusiveGroup: _kind == _Kind.choice,
-      toggled: _kind == _Kind.tag ? selected : null,
-      selected: _kind == _Kind.district ? selected : null,
-      builder: (context, _) => SizedBox(
-        height: EatSize.touch,
-        child: Center(
-          widthFactor: 1,
-          child: Surface(
-            style: style,
-            duration: duration,
-            curve: EatMotion.select.curve,
-            child: SizedBox(
-              height: EatSize.chip,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Center(
-                  widthFactor: 1,
-                  child: Text(
-                    label,
-                    style: eat.text.body.copyWith(
-                      fontSize: 14,
-                      height: 20 / 14,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: foreground,
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: EatTappable(
+        onTap: onTap,
+        button: _kind == _Kind.add,
+        checked: _kind == _Kind.choice ? selected : null,
+        inMutuallyExclusiveGroup: _kind == _Kind.choice,
+        toggled: _kind == _Kind.tag ? selected : null,
+        selected: _kind == _Kind.district ? selected : null,
+        builder: (context, _) => SizedBox(
+          height: EatSize.touch,
+          child: Center(
+            widthFactor: 1,
+            child: Surface(
+              style: style,
+              duration: duration,
+              curve: EatMotion.select.curve,
+              child: SizedBox(
+                height: EatSize.chip,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Center(
+                    widthFactor: 1,
+                    child: Text(
+                      label,
+                      style: eat.text.body.copyWith(
+                        fontSize: 14,
+                        height: 20 / 14,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: foreground,
+                      ),
                     ),
                   ),
                 ),
@@ -127,17 +132,20 @@ class PendingTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    return CustomPaint(
-      painter: _DashedPillPainter(eat.colors.lineStrong),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-        child: Text(
-          '待接入',
-          style: eat.text.caption.copyWith(
-            fontSize: 11,
-            height: 18 / 11,
-            fontWeight: FontWeight.w500,
-            color: DefaultTextStyle.of(context).style.color,
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: CustomPaint(
+        painter: _DashedPillPainter(eat.colors.lineStrong),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          child: Text(
+            '待接入',
+            style: eat.text.caption.copyWith(
+              fontSize: 11,
+              height: 18 / 11,
+              fontWeight: FontWeight.w500,
+              color: DefaultTextStyle.of(context).style.color,
+            ),
           ),
         ),
       ),

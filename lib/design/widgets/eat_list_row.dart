@@ -1,5 +1,5 @@
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';

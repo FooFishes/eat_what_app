@@ -3,10 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 /// 启动应用：先准备好首帧要用的本地数据，再挂上界面。首帧不等网络。
 void bootstrap() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Web 上地址用路径（/dishes/123）而不是 #/dishes/123，和分享链接、App Links 用同一套路径。
+  usePathUrlStrategy();
   LicenseRegistry.addLicense(_fontLicenses);
   runApp(const ProviderScope(child: EatApp()));
 }

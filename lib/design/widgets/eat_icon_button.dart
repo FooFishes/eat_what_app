@@ -1,6 +1,6 @@
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 

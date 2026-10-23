@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:eat/design/theme/eat_colors.dart';
 import 'package:eat/design/theme/eat_shadows.dart';
 import 'package:eat/design/theme/eat_text_styles.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/painting.dart';

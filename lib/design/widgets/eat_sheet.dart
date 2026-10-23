@@ -1,5 +1,5 @@
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
 /// 舞台下方的白色抽屉：顶部两角 `radius-sheet`，顶部居中一个把手，内容左右留 `space-20`。

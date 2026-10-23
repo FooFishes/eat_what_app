@@ -38,7 +38,7 @@ lib/
     theme/                  EatTheme（ThemeExtension：颜色、文字样式、阴影）、EatMotion、ThemeData、StageTheme（舞台色过渡）
     layout/                 断点、宽屏左右布局和居中一栏、舞台高度、字号上限
     stage/                  舞台取色算法、撞色规则（纯函数）
-    icons/                  图标名表、EatIcon
+    icons/                  图标名表、EatIcon；菜品插画（Illustration，只用于空状态、引导和演示）
     widgets/                设计规范里的组件。和 Flutter 同名的（Chip、Switch、FormField……）一律加 Eat 前缀：
                             EatButton、EatIconButton、EatChip、PendingTag（待接入）、EatTabs、EatListRow、
                             EatRadioRow、EatSwitch、EatSearchField、EatFormField、EatSheet、EatStage、
@@ -67,10 +67,12 @@ lib/
     profile/                我的、他人主页、编辑资料、我的标签、标签下的菜、足迹、粉丝和关注
     inbox/                  消息
     settings/               设置、账号与安全、登录设备、注销、隐私、屏蔽的人、通知、关于、反馈
-    system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示
-  router/                   路由表、路径常量（paths.dart）、守卫、深链处理、MainShell（NavBar 外壳）
+    system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示、没找到页面
+    kit/                    组件页，只在 debug 构建里有
+  router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、深链处理、
+                            MainShell（NavBar 外壳）
 assets/
-  fonts/  icons/  illustrations/  config/remote_defaults.json
+  fonts/  icons/  illustrations/（从 prototype/assets/dishes 复制）  config/remote_defaults.json
 config/
   example.json              环境配置样例（真实的 dev.json、staging.json、prod.json 不入库）
 tool/                       一次性脚本：字体子集化、图标描边变体
@@ -218,9 +220,10 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 ### 5.2 MainShell 与 NavBar
 
-- `MainShell` = `Stack`：底层是 `navigationShell`，上层是定位好的 `NavBar`（距左右 `space-16`、距底部 `space-24` 加系统底部安全区）。宽屏时 `NavBar` 放进左侧面板底部（第 12 节）。
-- 页面通过 `NavBarInset.of(context)` 拿到导航占用的高度，滚动列表底部留出这段空白（约 100px，含安全区）。
-- 点当前所在的标签：回到该分支的根并滚到顶部（`goBranch(index, initialLocation: true)`）。
+- `MainShell` = `Stack`：底层是 `navigationShell`，上层是定位好的 `NavBar`（距左右 `space-16`、距底部 `space-24` 加系统底部安全区）。宽屏时 `NavBar` 放进左侧面板底部（第 12 节）：离面板左右和底部 `space-20`，三个页面的面板位置一样，切换时导航不动。
+- 分支容器用 `StatefulShellRoute` 的 `navigatorContainerBuilder` 自己排（`router/main_shell.dart` 的 `MainBranches`）：和 `indexedStack` 一样用 `IndexedStack` + `Offstage` + `TickerMode`，另外给每个分支包一层 `TabReselect`。
+- 页面通过 `NavBarInset.of(context)` 拿到导航占用的高度，滚动列表底部留出这段空白（约 100px，含安全区）。`StageScaffold`、`PlainScaffold` 已经自动留了。
+- 点当前所在的标签：回到该分支的根（`goBranch(index, initialLocation: true)`），同时触发这个分支的 `TabReselect` 信号，页面骨架收到后滚回顶部。信号从导航的点击直接发出，不靠观察路由重建（从上层页面返回时也会重建，会误触发）。
 - 发布按钮：`context.push('/publish')`，压在根导航器上。
 - 安卓返回键：在附近或我的，先回发现；在发现，退出 App。
 
@@ -258,7 +261,10 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 - 用 path 策略（`usePathUrlStrategy()`），地址形如 `https://<域名>/dishes/123`，和分享链接、App Links 共用一套路径。
 - 服务器把所有非静态文件的路径回落到 `index.html`；`/.well-known/` 下的文件和 `/api` 不回落。
-- 浏览器后退等于路由后退。直接打开详情页时没有上一页，详情页左上角的返回改为 `go('/discover')`。
+- 浏览器后退等于路由后退。`GoRouter.optionURLReflectsImperativeAPIs` 打开：`push` 打开的页面也写进地址栏，刷新、复制链接都回到同一页。
+- 返回的兜底：页面左上角的 `EatBackButton` 调 `BackFallback.back`，有上一页就回去，没有（直接打开的链接、刷新后的 Web 页面）就走 App 根部给的兜底，回到 `/discover`。`design/` 不知道兜底去哪，由 `app.dart` 提供。
+- `/` 重定向到 `/discover`；对不上任何路由的地址显示「没找到这个页面」（`features/system/not_found_page.dart`）。
+- 组件页 `/kit` 只在 debug 构建里注册（`kDebugMode`），发布构建里没有这个地址。
 
 ## 6. 分享链接与深链
 
@@ -680,7 +686,10 @@ extension RefCache on Ref {
 - 结构：一个 `CustomScrollView`。第一个 sliver 是舞台，它的布局高度是 `H - 32`、绘制高度是 `H`（自定义一个很小的 `RenderSliver`，`layoutExtent < paintExtent`），后面的抽屉 sliver 从 `H - 32` 开始画，正好压住舞台底部 32px；抽屉用 `DecoratedSliver` 画白底和顶部 `radius-sheet` 圆角，压在舞台色上不加阴影。
 - 抽屉跟着页面一起滚（规范 `Sheet`）。附近页例外，用自己的可拖动面板。
 - 有 Widget 测试保证：舞台高度按 12.4 计算；抽屉顶部在 `H - 32`；舞台按钮不被抽屉盖住。
-- 白底页面用 `PlainScaffold`：44×44 返回、`page-title` 大标题、`space-20` 边距。
+- 白底页面用 `PlainScaffold`：44×44 返回、`page-title` 大标题（不跟系统字号）、`space-20` 边距。
+- 实现：`CustomScrollView(paintOrder: SliverPaintOrder.lastIsTop)`，后面的 sliver 画在上面、先接点击，抽屉才能盖住舞台底部。抽屉的白底用 `DecoratedSliver` 的子类画，白底本身也接住点击，压住舞台的那 32px 和抽屉里的空白都不会点穿到舞台上。舞台后面另垫一块舞台色，只在 iOS 顶部回弹时露出来。
+- `StageScaffold.map` 给附近页这类用地图当舞台的页面：抽屉在手机上加 `shadow-sheet`，宽屏面板加 `shadow-float`。附近页可拖动的抽屉在阶段三再换。
+- App 根部（`app.dart` 的 `builder`）给了默认文字样式（`body`、`ink`）：页面不用 Material 的 `Scaffold`，没有这一层时没写样式的文字会显示成 Flutter 的兜底样子（红字加黄色下划线）。
 
 ### 12.6 安全区、方向、键盘
 

@@ -4,7 +4,7 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/rendering.dart';
@@ -38,40 +38,44 @@ class EatNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    return SizedBox(
-      height: EatSize.nav,
-      child: Row(
-        spacing: EatSpace.s10,
-        children: [
-          Expanded(
-            child: Semantics(
-              role: SemanticsRole.tabBar,
-              child: DecoratedBox(
-                decoration: ShapeDecoration(
-                  shape: const StadiumBorder(),
-                  shadows: eat.shadows.float.outer,
-                ),
-                child: ClipPath(
-                  clipper: const ShapeBorderClipper(shape: StadiumBorder()),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                    child: ColoredBox(
-                      color: eat.colors.paper.withValues(alpha: 0.94),
-                      child: Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: Row(
-                          spacing: 2,
-                          children: [
-                            for (final (i, tab) in _tabs.indexed)
-                              Expanded(
-                                child: _NavTab(
-                                  icon: tab.icon,
-                                  label: tab.label,
-                                  selected: i == currentIndex,
-                                  onTap: () => onSelected(i),
+    // 固定高度的控件，系统字号最多跟到 1.3 倍，再大会撑破 60px 的胶囊。
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: SizedBox(
+        height: EatSize.nav,
+        child: Row(
+          spacing: EatSpace.s10,
+          children: [
+            Expanded(
+              child: Semantics(
+                role: SemanticsRole.tabBar,
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    shape: const StadiumBorder(),
+                    shadows: eat.shadows.float.outer,
+                  ),
+                  child: ClipPath(
+                    clipper: const ShapeBorderClipper(shape: StadiumBorder()),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: ColoredBox(
+                        color: eat.colors.paper.withValues(alpha: 0.94),
+                        child: Padding(
+                          padding: const EdgeInsets.all(5),
+                          child: Row(
+                            spacing: 2,
+                            children: [
+                              for (final (i, tab) in _tabs.indexed)
+                                Expanded(
+                                  child: _NavTab(
+                                    icon: tab.icon,
+                                    label: tab.label,
+                                    selected: i == currentIndex,
+                                    onTap: () => onSelected(i),
+                                  ),
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -79,9 +83,9 @@ class EatNavBar extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-          _PublishButton(onPressed: onPublish),
-        ],
+            _PublishButton(onPressed: onPublish),
+          ],
+        ),
       ),
     );
   }

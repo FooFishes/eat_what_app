@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/tokens/eat_layout.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
 /// 把一道菜显示成一个盘子：圆形取景的照片，外面一圈白色盘沿加投影。实拍图和插画都走它。
