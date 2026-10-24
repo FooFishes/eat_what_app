@@ -387,7 +387,7 @@ class _KitPageState extends State<KitPage> {
             ),
           EatSwitch(
             label: '公开我的关注列表',
-            description: '关掉后别人点开，看到的是「对方没有公开」',
+            description: '关掉后别人点开，看到的是「对方未公开」',
             value: _publicFollows,
             onChanged: (value) => setState(() => _publicFollows = value),
           ),
@@ -427,11 +427,7 @@ class _KitPageState extends State<KitPage> {
               SizedBox(width: 104, child: EatFormField.price(label: '价格')),
             ],
           ),
-          const EatFormField(
-            label: '菜名',
-            hintText: '叫什么',
-            errorText: '还没写菜名，写上大家才搜得到',
-          ),
+          const EatFormField(label: '菜名', hintText: '叫什么', errorText: '请填写菜名'),
         ]),
         section('盘子和方块：插画不加盘沿；图片没加载出来时是 mist 底', [
           Row(

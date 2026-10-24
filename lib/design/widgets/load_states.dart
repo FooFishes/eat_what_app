@@ -127,7 +127,7 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// 没有旧数据可显示、请求又失败时的样子：「没加载出来」加「再试一次」。
+/// 没有旧数据可显示、请求又失败时的样子：「加载失败」加「重试」。
 ///
 /// 有旧数据时不用它：保留旧内容，只给一句不打断操作的提示。
 class FailureState extends StatelessWidget {
@@ -135,16 +135,16 @@ class FailureState extends StatelessWidget {
 
   final VoidCallback onRetry;
 
-  /// 补一句原因，如「网络不太好」。
+  /// 补一句原因，如「网络连接失败」。
   final String? message;
 
   @override
   Widget build(BuildContext context) => EmptyState(
     icon: EatIcons.wifiOff,
-    title: '没加载出来',
+    title: '加载失败',
     message: message,
     action: EatButton.mist(
-      '再试一次',
+      '重试',
       icon: EatIcons.shuffle,
       height: 48,
       onPressed: onRetry,

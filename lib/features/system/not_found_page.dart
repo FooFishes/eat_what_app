@@ -12,14 +12,14 @@ class NotFoundPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PlainScaffold(
-    title: '没找到这个页面',
+    title: '页面不存在',
     slivers: [
       SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.only(top: 40),
           child: EmptyState(
             icon: EatIcons.question,
-            title: '链接可能失效了',
+            title: '链接可能已失效',
             message: '回到发现页，看看今天吃什么。',
             action: EatButton.outline(
               '回到发现',

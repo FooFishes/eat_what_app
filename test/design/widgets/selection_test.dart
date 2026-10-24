@@ -197,7 +197,7 @@ void main() {
           width: 360,
           child: EatSwitch(
             label: '公开我的关注列表',
-            description: '关掉后别人点开，看到的是「对方没有公开」',
+            description: '关掉后别人点开，看到的是「对方未公开」',
             value: true,
             onChanged: values.add,
           ),

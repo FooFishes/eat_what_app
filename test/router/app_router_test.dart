@@ -171,7 +171,7 @@ void main() {
     expect(_location(router), Paths.discover);
   });
 
-  testWidgets('根地址进发现页，对不上的地址显示「没找到这个页面」', (tester) async {
+  testWidgets('根地址进发现页，对不上的地址显示「页面不存在」', (tester) async {
     final router = await _start(tester);
     router.go('/');
     await tester.pumpAndSettle();

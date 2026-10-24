@@ -1,6 +1,8 @@
 # EatWhat 依赖选型
 
 > 2026-10-22 初稿。依据产品文档（2026-10-22）、现状差距（2026-10-22）、接口 `auth-renewal-20261019`、设计规范与画板「G 定稿」（2026-10-22）。
+>
+> 2026-10-25：按接口 `tencent-captcha-20261024` 定下人机验证用腾讯云（第 15 节、D6），`webview_flutter` 只用于人机验证。
 
 本文记录装哪个包、锁哪条版本线、为什么不选另一个。新增依赖前先查这里，表里没有的先提出来，确定后补进本文再改 `pubspec.yaml`。这些包在代码里怎么用，见 `EatWhat_技术架构.md`。
 
@@ -35,7 +37,7 @@
 | 本地存储 | `shared_preferences` | `^2.5.6` | 2026-10-05 | ✅ | ✅ | ✅ | 阶段二（同意记录、卸载重装检测） |
 | 版本号 | `package_info_plus` | `^10.2.2` | 2026-10-01 | ✅ | ✅ | ✅ | 阶段二 |
 | 打开链接、外部地图、认证页 | `url_launcher` | `^6.3.3` | 2026-10-02 | ✅ | ✅ | ✅ | 阶段二 |
-| 统一认证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 整页跳转） | 阶段二。开发计划用它做统一认证，和技术架构 18.1、待确认 A4 的「应用内浏览器、不用 WebView」不一致，阶段二开头和后端一起定；人机验证也用它，见第 15 节 |
+| 人机验证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 直接加载 JS） | 阶段二。只用于人机验证，见第 15 节；统一认证用 `url_launcher` 的应用内浏览器，不用 WebView（技术架构 18.1） |
 | 可注入时钟 | `clock` | `^1.1.3` | 2026-08-28 | ✅ | ✅ | ✅ | 阶段三（饭点、「12 分钟前」） |
 | Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 阶段三（判断微信内置浏览器） |
 | 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 阶段三 |
@@ -388,18 +390,18 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | PostHog `posthog_flutter` 5.56.1 | 云服务在境外，自建也重 |
 | Firebase Crashlytics / Analytics | 大陆不可用 |
 
-## 15. 人机验证（待确认 D6）
+## 15. 人机验证
 
-产品 12.4：同一设备或网络短时间请求太多验证码时，先过一道人机验证。
+产品 12.4：每次发验证码前都先过人机验证，没有风险时自动通过，有风险时才要用户动手。
 
-**做法**：选一家国内验证码服务，App 里用 `webview_flutter ^4.14.1` 加载我们托管的一个 H5 页面（里面是服务商的 Web JS），验证结果通过 `JavaScriptChannel` 传回；Web 端直接在页面里加载同一份 JS（`dart:js_interop` + `web` 包）。拿到票据后交给后端，后端调服务商接口校验。
+**服务商**：腾讯云验证码国际站。后端已经接好（接口版本 `tencent-captcha-20261024`，待部署），初始化参数由 `/auth/captcha/config` 每次下发，流程见技术架构 18.3。
 
-- 阿里云验证码 2.0 有官方的 Flutter 接入文档，用的就是 `webview_flutter` + `JavaScriptChannel`；腾讯云验证码没找到官方 Flutter 文档，只有 Web 接入，WebView 方式同样可行。
-- 极验有官方插件 `gt4_flutter_plugin` 0.1.6，但只有 Android、iOS，Web 还要另接 JS，等于两套。
-- Cloudflare Turnstile、reCAPTCHA：大陆访问没保障或不可用。
+**做法**：腾讯云验证码没有官方 Flutter 接入，只有 Web JS。App 里用 `webview_flutter ^4.14.1` 加载我们托管的一个 H5 页面，页面按接口给的 `scriptUrl` 加载腾讯的 JS，验证结果通过 `JavaScriptChannel` 传回；Web 端直接在页面里加载同一份 JS（`dart:js_interop` + `web` 包）。拿到票据后放进请求头交给后端，后端调腾讯的接口校验。
+
 - `webview_flutter` 不支持 Web（pub.dev 平台只有 Android、iOS、macOS），Web 端不能引用它，用条件导入隔开。
+- 要实测：国际站的 JS（`ca.turing.captcha.qcloud.com`）在大陆各运营商和校园网下的加载速度和成功率。
 
-服务商、费用、后端的「需要人机验证」业务码，待确认 D6。
+当时比较过的其他方案：阿里云验证码 2.0 有官方的 Flutter WebView 接入文档；极验有官方插件 `gt4_flutter_plugin` 0.1.6，但只有 Android、iOS，Web 还要另接 JS；Cloudflare Turnstile、reCAPTCHA 在大陆访问没保障或不可用。
 
 ## 16. 开发与测试工具
 
@@ -433,7 +435,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | --- | --- | --- | --- | --- | --- |
 | Shorebird | Shorebird（境外服务） | 热更新 | 应用版本、补丁号、平台与 CPU 架构、随机客户端标识 | 同意隐私政策后 | 境外 |
 | 天地图 | 自然资源部天地图 | 地图底图 | 请求瓦片时的 IP 和地图范围 | 打开附近、新建店时 | 境内 |
-| 人机验证（服务商待定） | 待定 | 风控 | 设备环境、操作行为 | 触发风控时 | 境内 |
+| 腾讯云验证码（国际站） | 腾讯云 | 风控 | 设备环境、操作行为 | 每次发验证码前 | 国际站，存放地待确认 |
 | Sentry（自建） | 我们自己部署，不是第三方 | 崩溃上报 | 崩溃堆栈、设备型号、系统版本、App 版本、账号 ID | 同意隐私政策后 | 境外，和业务数据同处 |
 
 ## 18. 密钥与配置
@@ -447,7 +449,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `SHOREBIRD_TOKEN` | CI 发版和补丁 | 机密 | CI Secret（`shorebird.yaml` 里的 `app_id` 不是机密，可以入库） |
 | 安卓上传密钥、`android/key.properties` | 签名 | 机密 | CI Secret；`build.gradle.kts` 参考 legacy 的「缺失时回落 debug 签名」写法 |
 | iOS 证书、描述文件、App Store Connect API Key | 签名、上传 | 机密 | CI Secret |
-| 人机验证 AppId / 服务端密钥 | 客户端 / 后端 | 公开 / 机密 | 环境配置 / 后端 |
+| 腾讯验证码 AppSecretKey、云 API 密钥 | 后端 | 机密 | 后端。客户端用的 AppId 由 `/auth/captcha/config` 每次下发，不进环境配置 |
 
 `--dart-define-from-file` 传进去的值会编进安装包，只能放公开的值。`.gitignore` 要补上 `config/*.json`（保留 `example.json`）、`android/key.properties`、`*.jks`、`.sentry-native/`。
 
@@ -460,6 +462,6 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | D3 | 热更新是否用 Shorebird | 推荐用，但先做一次实测：在校园网和三大运营商网络下能否稳定下载补丁、回滚是否生效。不过就不做热更新，只保留建议更新和强制更新。用的话发版流程改用 `shorebird release`，需要付费档时再定 | 产品负责人 |
 | D4 | 崩溃上报的 Sentry 放哪、谁维护 | 沿用自建 Sentry（legacy 的 `sentry.orbithy.com` 或新部署），数据和业务一起在境外，写进隐私政策。要确认谁维护、大陆访问速度 | 产品负责人、后端 |
 | D5 | 统计埋点自建还是用第三方 | 自建：后端提供批量上报接口，事件在客户端代码里定义。第三方意味着数据存在另一处、隐私政策多列一家 | 产品负责人、后端 |
-| D6 | 人机验证服务商 | 阿里云验证码 2.0（有官方 Flutter WebView 接入文档）或腾讯云验证码，费用对比后定；后端要定义「需要人机验证」的业务码和校验接口 | 产品负责人、后端 |
+| D6 | 人机验证服务商 | 已定：腾讯云验证码国际站，后端已接（第 15 节）。还要实测国际站 JS 在大陆网络下的表现，确认验证数据的存放地写进隐私政策 | 产品负责人、后端 |
 | D7 | 中文字体怎么内置 | 三端内置 Noto Sans SC 可变字体的 GB 2312 子集（预计 4–5 MB，待实测），子集外的字由系统字体补；Web 上字体后台加载、先用回落字体显示，并自托管回落字体。要接受安装包变大、Web 首屏前几百毫秒字形不同 | 产品负责人、设计 |
 | D8 | 自动去背景放哪做 | 放后端：上传完成后生成去背景版本，客户端只管开关和显示。客户端三端没有统一的抠图能力 | 产品负责人、后端 |

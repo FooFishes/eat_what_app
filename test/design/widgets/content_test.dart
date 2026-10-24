@@ -153,11 +153,11 @@ void main() {
         tester,
         const SizedBox(
           width: 300,
-          child: EatFormField(label: '菜名', errorText: '还没写菜名，写上大家才搜得到'),
+          child: EatFormField(label: '菜名', errorText: '请填写菜名'),
         ),
       );
       expect(line(), EatPalette.warn);
-      expect(find.text('还没写菜名，写上大家才搜得到'), findsOneWidget);
+      expect(find.text('请填写菜名'), findsOneWidget);
     });
   });
 
@@ -226,12 +226,12 @@ void main() {
   });
 
   group('状态占位', () {
-    testWidgets('失败时「没加载出来」加「再试一次」', (tester) async {
+    testWidgets('失败时「加载失败」加「重试」', (tester) async {
       var retries = 0;
       await pumpEat(tester, FailureState(onRetry: () => retries++));
 
-      expect(find.text('没加载出来'), findsOneWidget);
-      await tester.tap(find.text('再试一次'));
+      expect(find.text('加载失败'), findsOneWidget);
+      await tester.tap(find.text('重试'));
       expect(retries, 1);
       await expectAccessible(tester);
     });
