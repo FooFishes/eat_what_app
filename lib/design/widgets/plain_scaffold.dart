@@ -13,6 +13,7 @@ class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
     required this.title,
+    this.subtitle,
     this.slivers = const [],
     this.actions = const [],
     this.showBack = true,
@@ -20,6 +21,10 @@ class PlainScaffold extends StatefulWidget {
   });
 
   final String title;
+
+  /// 标题下面一两行的说明，`ink-muted`。
+  final String? subtitle;
+
   final List<Widget> slivers;
 
   /// 顶栏右边的图标按钮。
@@ -75,13 +80,30 @@ class _PlainScaffoldState extends State<PlainScaffold>
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(padding, 8, padding, 24),
                 sliver: SliverToBoxAdapter(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      widget.title,
-                      textScaler: TextScaler.noScaling,
-                      style: eat.text.pageTitle.copyWith(color: eat.colors.ink),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: EatSpace.s4,
+                    children: [
+                      Semantics(
+                        header: true,
+                        child: Text(
+                          widget.title,
+                          textScaler: TextScaler.noScaling,
+                          style: eat.text.pageTitle.copyWith(
+                            color: eat.colors.ink,
+                          ),
+                        ),
+                      ),
+                      if (widget.subtitle case final subtitle?)
+                        Text(
+                          subtitle,
+                          style: eat.text.body.copyWith(
+                            fontSize: 14,
+                            height: 22 / 14,
+                            color: eat.colors.inkMuted,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

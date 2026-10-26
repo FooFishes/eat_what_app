@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 调业务接口、加载人机验证。模板只在 debug 和 profile 的清单里加了它，release 包没有就连不上网。 -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="沙软今天吃什么"
         android:name="${applicationName}"
@@ -40,6 +42,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher 打开协议页和学校的统一认证页：安卓 11 起要声明才查得到浏览器和 Custom Tabs。 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
         </intent>
     </queries>
 </manifest>

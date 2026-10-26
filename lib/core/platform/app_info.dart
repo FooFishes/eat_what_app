@@ -1,0 +1,9 @@
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+
+part 'app_info.g.dart';
+
+/// 版本名，取自 `pubspec.yaml` 的 `version`（如 `0.1.0`），设置和关于里显示。
+@Riverpod(keepAlive: true)
+Future<String> appVersion(Ref ref) async =>
+    (await PackageInfo.fromPlatform()).version;

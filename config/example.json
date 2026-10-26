@@ -5,5 +5,6 @@
   "ASSET_BASE_URL": "",
   "SENTRY_DSN": "",
   "TIANDITU_KEY": "",
-  "CAPTCHA_APP_ID": ""
+  "PRIVACY_URL": "https://example.com/legal/privacy.html",
+  "TERMS_URL": "https://example.com/legal/terms.html"
 }

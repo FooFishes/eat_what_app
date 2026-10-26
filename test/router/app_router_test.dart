@@ -10,12 +10,14 @@ import 'package:eat/features/publish/publish_page.dart';
 import 'package:eat/features/system/not_found_page.dart';
 import 'package:eat/router/app_router.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../support/fakes.dart';
 import '../support/screen.dart';
 
 Future<GoRouter> _start(
@@ -24,7 +26,9 @@ Future<GoRouter> _start(
   EdgeInsets padding = EdgeInsets.zero,
 }) async {
   useScreen(tester, size, padding: padding);
-  final container = ProviderContainer.test();
+  final container = await TestEnv().container(
+    session: const SignedIn(user: testUser),
+  );
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const EatApp()),
   );

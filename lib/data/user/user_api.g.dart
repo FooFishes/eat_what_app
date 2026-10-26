@@ -1,0 +1,90 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'user_api.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
+  id: (json['id'] as num?)?.toInt(),
+  userName: json['userName'] as String?,
+  loginUsername: json['loginUsername'] as String?,
+  hasUsername: json['hasUsername'] as bool?,
+  avatar: json['avatar'] as String?,
+  banned: json['banned'] as bool?,
+  banReason: json['banReason'] as String?,
+  bannedAt: (json['bannedAt'] as num?)?.toInt(),
+  phone: json['phone'] as String?,
+  verified: json['verified'] as bool?,
+  method: json['method'] as String?,
+  verifiedEmail: json['verifiedEmail'] as String?,
+  hasPassword: json['hasPassword'] as bool?,
+  signature: json['signature'] as String?,
+);
+
+Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
+    <String, dynamic>{
+      'id': ?instance.id,
+      'userName': ?instance.userName,
+      'loginUsername': ?instance.loginUsername,
+      'hasUsername': ?instance.hasUsername,
+      'avatar': ?instance.avatar,
+      'banned': ?instance.banned,
+      'banReason': ?instance.banReason,
+      'bannedAt': ?instance.bannedAt,
+      'phone': ?instance.phone,
+      'verified': ?instance.verified,
+      'method': ?instance.method,
+      'verifiedEmail': ?instance.verifiedEmail,
+      'hasPassword': ?instance.hasPassword,
+      'signature': ?instance.signature,
+    };
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+
+@ProviderFor(userApi)
+final userApiProvider = UserApiProvider._();
+
+final class UserApiProvider
+    extends $FunctionalProvider<UserApi, UserApi, UserApi>
+    with $Provider<UserApi> {
+  UserApiProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'userApiProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$userApiHash();
+
+  @$internal
+  @override
+  $ProviderElement<UserApi> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  UserApi create(Ref ref) {
+    return userApi(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(UserApi value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<UserApi>(value),
+    );
+  }
+}
+
+String _$userApiHash() => r'23f185146d93445fd66b7da737968db3c665f211';

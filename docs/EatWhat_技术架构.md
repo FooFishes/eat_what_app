@@ -3,6 +3,8 @@
 > 2026-10-22 初稿。依据产品文档（2026-10-22）、现状差距（2026-10-22）、接口 `auth-renewal-20261019`、设计规范与画板「G 定稿」（2026-10-22）。
 >
 > 2026-10-25：登录、认证和人机验证相关的内容（5.1、5.4、7.1、7.4、9.5、第 18 节、待确认 A2、A4）按接口 `tencent-captcha-20261024` 更新。
+>
+> 2026-10-25：按阶段二的实现补充守卫第 4 条、网络层回调的接法、协议地址的配置、人机验证的 App 实现和测试的假实现（5.3、5.4、7.1、9.5、18.3、21.1）。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
 
@@ -238,14 +240,15 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 1 | 当前版本低于强制更新线 | `/update` |
 | 2 | 停服维护中 | `/maintenance` |
 | 3 | 未登录，且目标不是「未登录可进」的页面 | `/login?from=<原地址>`；过期时再带 `expired=1` |
-| 4 | 已登录还去 `/login*` | `/discover` |
+| 4 | 已登录还去 `/login*` | `from` 指的原地址（校验见 5.4），没有就 `/discover`；新号码刚注册先去 `/verify?onboarding=1` |
 
 `resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」，不在守卫里写死路径列表。
 
 ### 5.4 登录后回到原页面
 
 - 守卫把原地址放进 `from` 参数（URL 编码）。
-- 登录成功后：`from` 是站内路径、能匹配路由表、不是 `/login` 开头，就 `go(from)`；否则 `go('/discover')`。校验是为了防止拼出来的链接把人带到外站。
+- 登录成功后：`from` 是站内路径、能匹配路由表、不是 `/login` 开头，就去 `from`；否则去 `/discover`。校验是为了防止拼出来的链接把人带到外站。跳转由守卫第 4 条做：登录页只更新登录态，`refreshListenable` 让守卫重新判断还停在 `/login*` 的地址；页面自己再 `go` 会和守卫抢，页面先被守卫换掉就跳不到 `from` 了。
+- 自己退出登录时守卫不记原地址，登录后回发现页；要去的本来就是 `/discover` 时也不带 `from`。
 - 新号码注册后（`/auth/phone/login` 返回 `newUser: true`）进认证引导（`/verify?onboarding=1`），「先逛逛」再去 `from`。
 - 设置用户名成功后接口要求所有设备重新登录：清登录态回 `/login`，不带 `expired=1`，提示「用户名已设置，请重新登录」。
 - 登录过期：网络层发现过期 → `sessionProvider.expire()` 清登录态并记下当前地址 → 守卫跳到 `/login?from=...&expired=1` → 登录页显示「登录已过期，请重新登录」。同时有多个请求过期时只处理一次。
@@ -316,6 +319,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `ASSET_BASE_URL` | 图片字段是 key 时拼接用的前缀（待确认 A3） | — |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `TIANDITU_KEY` | 地图瓦片 Key | — |
+| `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页和关于里打开 | `https://<域名>/legal/privacy.html` |
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
 - 这些值会编进安装包，只放公开的值。
@@ -493,7 +497,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 代码放在 `data/consent/` 的 `ConsentApi`，以后要接别的同意接口也放这里。
 - 注册：手机号登录遇到新号码时直接注册，所以 `/auth/phone/login` 的请求一律带 `crossBorderConsent: true` 和 `consentPolicyVersion`，没有「完成注册」这一步。
 - 登录或注册返回 `consentProof`：不算登录成功。带上 proof 调同意，成功后用同一组账号密码自动再登录一次；账号密码只为这一次留在内存里。
-- 已登录时接口返回 20005 / 20006：`ApiClient` 通过构造时传入的回调（和登录过期一样，`core/network` 不导入 `data/`）不带 proof 调一次同意，用的是当前会话，成功后把原请求重发一次。几个请求同时遇到时只同意一次；同意失败，或重发后还是这两个码，就按 7.5 的「未知」处理。
+- 已登录时接口返回 20005 / 20006：`ApiClient` 通过构造时传入的回调（和登录过期一样，`core/network` 不导入 `data/`）不带 proof 调一次同意，用的是当前会话，成功后把原请求重发一次。几个请求同时遇到时只同意一次（请求发出后已经有别的请求同意成功了，就直接重发）；同意失败，或重发后还是这两个码，就按 7.5 的「未知」处理。
+- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → 自动同意），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
 - 页面不用管这些。20005 和 20006 各指什么、proof 多久过期、不带 proof 的同意在哪些部署下可用，做登录时和后端核对（A2）。
 
 ## 10. 离线与缓存
@@ -1073,7 +1078,10 @@ class PushNotice({
   2. 用这组参数新建腾讯的验证实例，拿到 `ticket` 和 `randstr`。
   3. 发验证码的请求带上 `X-Captcha-Ticket`、`X-Captcha-Randstr` 两个请求头。返回 30015、30016 时回到第 1 步重新验证；50004 时提示「人机验证暂不可用，请稍后再试」；用户关掉验证就不发。
 - 票据只放请求头，不进 URL、日志和本地存储；由后端校验，客户端不判断真假。
-- `HumanVerifier` 接口：App 用 `webview_flutter` 加载我们托管的 H5 页，把第 1 步的参数传进去，页面按 `scriptUrl` 加载腾讯的 JS，结果经 `JavaScriptChannel` 回传；Web 用条件导入，在页面里直接加载同一份 JS。
+- `HumanVerifier` 接口（`core/platform/captcha/`）：App 盖一层全屏页，`webview_flutter` 用 `loadHtmlString` 加载内置在 App 里的一小段验证页，`baseUrl` 设成 `WEB_BASE_URL`（腾讯按来源校验域名时看到的是我们自己的域名，也不用等 Web 版部署一个单独的验证页）；页面加载完后把第 1 步的参数经 `runJavaScript` 传进去（不放进 URL），按 `scriptUrl` 加载腾讯的 JS，结果经 `JavaScriptChannel` 回传。脚本 20 秒加载不出来按失败处理，加载出来后不再计时。Web 用条件导入，在页面里直接加载同一份 JS（`dart:js_interop` + `web`）。
+- `TJNCaptcha-global.js` 的构造函数是 `new TencentCaptcha(容器, appId, 回调, options)`，第一个参数必须是 DOM 容器，照旧版只传 appId 会直接抛错。控制台目前配的是「我是人类」勾选框，渲染在容器里、没有关闭按钮：App 的验证页和 Web 的浮层都是遮罩加居中容器，点遮罩空白处算用户关掉。
+- 腾讯回调 `ret` 为 0 且票据不是 `trerror_` 开头的容灾票据才算通过（后端不收容灾票据），2 是用户关掉，其余按失败提示「人机验证未通过，请重试」。
+- 「拿参数 → 验证 → 发送 → 30015/30016 时重来」写在 `state/captcha_gate.dart` 的 `CaptchaGate`，最多三次。验证要弹在页面上，页面把「用自己的 `BuildContext` 调 `HumanVerifier.verify`」包成一个函数传给 Provider，Provider 里不拿 `BuildContext`。
 - 客户端基础节流（现状差距 2.1）：验证码 60 秒倒计时、提交类按钮防连点。
 
 ## 19. 统计埋点与崩溃上报
@@ -1163,7 +1171,7 @@ class PushNotice({
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。
 - 网络用一个假的 `HttpClientAdapter`（放 `test/support/`）返回样例 JSON，不起真服务器。
-- mock 用 `mocktail`。
+- 假实现放 `test/support/fakes.dart`：内存里的 `KvStore`、`SecureStore`，按「方法 路径」返回样例的 `FakeAdapter`，直接给结果的 `FakeHumanVerifier`，以及一键搭好这些的 `TestEnv`。真要 mock 时再加 `mocktail`。
 
 ### 21.2 Golden 测试
 

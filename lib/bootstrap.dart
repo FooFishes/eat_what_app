@@ -1,4 +1,7 @@
 import 'package:eat/app.dart';
+import 'package:eat/core/network/api_client.dart';
+import 'package:eat/state/api_hooks.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -6,12 +9,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
 /// 启动应用：先准备好首帧要用的本地数据，再挂上界面。首帧不等网络。
-void bootstrap() {
+///
+/// 读本地的登录态要等（几十毫秒）：首帧就要知道进发现页还是登录页。向服务端核对登录态在首帧之后。
+Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Web 上地址用路径（/dishes/123）而不是 #/dishes/123，和分享链接、App Links 用同一套路径。
   usePathUrlStrategy();
   LicenseRegistry.addLicense(_fontLicenses);
-  runApp(const ProviderScope(child: EatApp()));
+  final container = ProviderContainer(
+    overrides: stateOverrides,
+    retry: retryOnNetworkFailure,
+  );
+  await container.read(sessionProvider.notifier).restore();
+  runApp(
+    UncontrolledProviderScope(container: container, child: const EatApp()),
+  );
 }
 
 /// 内置字体的 OFL 许可证。OFL 要求随字体分发许可证，登记后出现在系统的许可证页里。

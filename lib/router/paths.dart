@@ -7,6 +7,18 @@ abstract final class Paths {
   static const nearby = '/nearby';
   static const me = '/me';
 
+  /// 登录。可带 `from`（登录后回到哪）和 `expired=1`（因为登录过期来的）。
+  static const login = '/login';
+  static const loginPhone = '/login/phone';
+  static const loginPassword = '/login/password';
+
+  /// 学生认证。`onboarding=1` 是新号码注册后的认证引导，左上角是「先逛逛」而不是返回。
+  static const verify = '/verify';
+
+  static const settings = '/settings';
+  static const settingsAccount = '/settings/account';
+  static const settingsAbout = '/settings/about';
+
   /// 发布第 1 步：选店。
   static const publish = '/publish';
 

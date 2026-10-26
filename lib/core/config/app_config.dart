@@ -13,7 +13,8 @@ class const AppConfig({
   required final String assetBaseUrl,
   required final String sentryDsn,
   required final String tiandituKey,
-  required final String captchaAppId,
+  required final String privacyUrl,
+  required final String termsUrl,
 }) {
   const AppConfig.fromEnvironment()
     : this(
@@ -23,7 +24,8 @@ class const AppConfig({
         assetBaseUrl: const String.fromEnvironment('ASSET_BASE_URL'),
         sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
         tiandituKey: const String.fromEnvironment('TIANDITU_KEY'),
-        captchaAppId: const String.fromEnvironment('CAPTCHA_APP_ID'),
+        privacyUrl: const String.fromEnvironment('PRIVACY_URL'),
+        termsUrl: const String.fromEnvironment('TERMS_URL'),
       );
 }
 

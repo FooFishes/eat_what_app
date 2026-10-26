@@ -19,7 +19,8 @@ void main() {
       assetBaseUrl: '',
       sentryDsn: '',
       tiandituKey: '',
-      captchaAppId: '',
+      privacyUrl: '',
+      termsUrl: '',
     );
     final container = ProviderContainer.test(
       overrides: [appConfigProvider.overrideWithValue(fake)],

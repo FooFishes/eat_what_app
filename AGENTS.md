@@ -70,7 +70,7 @@ fvm flutter analyze
 fvm dart analyze --fatal-infos           # riverpod_lint 等分析器插件的结果只在这里报告
 fvm flutter test
 fvm flutter build web --release          # 本地唯一允许的构建
-fvm flutter run -d chrome                # 要调接口时加 --dart-define-from-file=config/dev.json
+fvm flutter run -d chrome                # 要调接口时加 --dart-define-from-file=config/dev.json；端口固定 5173，见 web_dev_config.yaml
 ```
 
 改完代码至少跑上面从 `build_runner` 到 `flutter test` 这几步。CI 用 `build_runner build --only-check` 检查生成文件是否最新，用 `--set-exit-if-changed` 检查格式，任何一步不过都会让构建失败；两种 `analyze` 都要求零问题。
