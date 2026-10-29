@@ -2,7 +2,7 @@
 
 本文把开发分成七个阶段，按顺序做，每个阶段写清要做的事和做完是什么样。不排日期，也不拆到具体任务：一个阶段可以拆成多个 PR，怎么拆由做的人定。
 
-依据：界面以 `prototype/` 为准，接口以 `docs/api.openapi.yml` 为准，代码怎么组织见 `docs/EatWhat_技术架构.md`，用哪些包、什么时候加见 `docs/EatWhat_依赖选型.md`。
+依据：界面守设计原则，`prototype/` 是设计快照、供参考（见 `docs/EatWhat_设计与实现.md`），接口以 `docs/api.openapi.yml` 为准，代码怎么组织见 `docs/EatWhat_技术架构.md`，用哪些包、什么时候加见 `docs/EatWhat_依赖选型.md`。
 
 | 阶段 | 做完以后 |
 | --- | --- |
@@ -27,10 +27,10 @@
 把工程、设计系统和页面骨架搭好，后面的阶段只往里填功能。这一阶段不接接口。
 
 - **工程**：加入状态管理、路由、SVG 和代码生成这一批依赖（`material_ui`、`flutter_riverpod`、`riverpod_annotation`、`go_router`、`flutter_svg`、`build_runner`、`riverpod_generator`、`riverpod_lint`），现有代码从 `package:flutter/material.dart` 换到 `material_ui`；按技术架构建目录；CI 加上 `dart analyze` 和代码生成检查；加 `config/example.json` 和 `AppConfig`。
-- **设计系统**：令牌和 `ThemeExtension`（带和 `tokens.json` 逐项比对的测试）、`StageColor`、文字样式、动效常量；两种字体子集化后打包，子集脚本入库；78 个图标复制进 `assets/icons/`，做图标组件；基础组件 Button、Chip、Tabs、ListRow、RadioRow、Switch、SearchField、FormField、Sheet、Stage、Panel、NavBar、DishPlate、DishTile；加载占位、失败重试、空状态、「待接入」标记。Turntable、TasteCloud、MapPin、StageColorPicker 和具体页面绑得紧，放到第一个用到它们的阶段做。
+- **设计系统**：令牌和 `ThemeExtension`、`StageColor`、文字样式、动效常量；两种字体子集化后打包，子集脚本入库；78 个图标复制进 `assets/icons/`，做图标组件；基础组件 Button、Chip、Tabs、ListRow、RadioRow、Switch、SearchField、FormField、Sheet、Stage、Panel、NavBar、DishPlate、DishTile；加载占位、失败重试、空状态、「待接入」标记。Turntable、TasteCloud、MapPin、StageColorPicker 和具体页面绑得紧，放到第一个用到它们的阶段做。
 - **页面骨架**：`StageScaffold`、`PlainScaffold`、`showPanel`；路由表和路径常量；三个主页面的外壳和悬浮 `NavBar`；Web 路径式 URL；返回的兜底；只在 debug 构建里出现的组件页。
 
-涉及画板：`G-Kit`、`G-Nav`、`G-Icons`、`G-Icon`，组件以 `prototype/design-system/components/` 为准。
+参考画板：`G-Kit`、`G-Nav`、`G-Icons`、`G-Icon`，组件参考 `prototype/design-system/components/` 的说明，接口和行为以 Dart 为准。
 
 做完是什么样：
 
@@ -56,7 +56,7 @@
 - **认证**：认证页的邮箱认证、统一认证（`url_launcher` 的应用内浏览器，Web 整页跳转），回到前台刷新认证状态；当前用户；认证拦截面板，以及接口因为没认证拒绝时的统一处理。
 - **设置页**：`G-Settings` 本身、退出登录的确认面板、版本号（`package_info_plus`）。各子页放到阶段六。
 
-涉及画板：`G-Login`、`G-PhoneLogin`、`G-PasswordLogin`、`G-Verify`、`G-Settings`。接口：Auth、AccountConsent（同意和读政策版本）、User（`/user/info`）。
+参考画板：`G-Login`、`G-PhoneLogin`、`G-PasswordLogin`、`G-Verify`、`G-Settings`。接口：Auth、AccountConsent（同意和读政策版本）、User（`/user/info`）。
 
 做完是什么样：
 
@@ -83,7 +83,7 @@
 - **专题**：专题和往期专题带「待接入」。
 - **弱网**：骨架占位、失败重试、详情页 5 分钟缓存、从列表进详情先画舞台，按技术架构「弱网与加载」逐页落实。
 
-涉及画板：`G2-Home`、`G-HomePhoto`、`G-PanelPlace`、`G-Dish`、`G-PanelTag`、`G-PanelReport`、`G-Comments`、`G-WriteComment`、`G-Detail`、`G-WrongInfo`、`G-Nearby`、`G-PanelFilter`、`G-Search`、`G-Me`、`G-Inbox`、`G-Topic`、`G-TopicArchive`。接口：Food、Restaurant（搜索、详情）、Hub、Notification、User（统计）。
+参考画板：`G2-Home`、`G-HomePhoto`、`G-PanelPlace`、`G-Dish`、`G-PanelTag`、`G-PanelReport`、`G-Comments`、`G-WriteComment`、`G-Detail`、`G-WrongInfo`、`G-Nearby`、`G-PanelFilter`、`G-Search`、`G-Me`、`G-Inbox`、`G-Topic`、`G-TopicArchive`。接口：Food、Restaurant（搜索、详情）、Hub、Notification、User（统计）。
 
 做完是什么样：
 
@@ -105,7 +105,7 @@
 - **上传**：`Uploader` 的三步上传；选好照片就在后台传，显示进度、可以取消，失败的单独重传；发布后失效「我的上传」和相关列表。
 - 发布和新建店要认证，没认证的在入口就被拦下。
 
-涉及画板：`G-PickShop`、`G-NewShop`、`G-AddDish`、`G-Crop`、`G-PhotoPipeline`。接口：Upload、Restaurant（新增）、Food（发布、标签）、Hub（定位）。
+参考画板：`G-PickShop`、`G-NewShop`、`G-AddDish`、`G-Crop`、`G-PhotoPipeline`。接口：Upload、Restaurant（新增）、Food（发布、标签）、Hub（定位）。
 
 做完是什么样：
 
@@ -136,7 +136,7 @@
 - **他人主页和关注**：他人主页的统计和关注、回关、已互关，上传列表、屏蔽、举报带「待接入」；粉丝与关注列表，包括对方没公开时的样子。关注按设计要认证，走认证拦截。
 - **设置子页**：账号与安全（认证状态、用户名、手机号、设置或修改密码；登录设备、注销带「待接入」）、隐私（公开关注和粉丝列表；个性化推荐、屏蔽的人带「待接入」）、通知（待接入）、关于（版本号、补丁号、协议）、反馈（待接入，带上版本、补丁号和设备型号，加 `device_info_plus`）。
 
-涉及画板：`G-EditProfile`、`G-MyTags`、`G-TagDishes`、`G-History`、`G-Follows`、`G-UserProfile`、`G-SettingsAccount`、`G-Devices`、`G-DeleteAccount`、`G-SettingsPrivacy`、`G-Blocked`、`G-SettingsNotify`、`G-SettingsAbout`、`G-Feedback`。接口：User（资料、关注、粉丝、隐私）、Food（我的标签）、History、Upload（头像）。
+参考画板：`G-EditProfile`、`G-MyTags`、`G-TagDishes`、`G-History`、`G-Follows`、`G-UserProfile`、`G-SettingsAccount`、`G-Devices`、`G-DeleteAccount`、`G-SettingsPrivacy`、`G-Blocked`、`G-SettingsNotify`、`G-SettingsAbout`、`G-Feedback`。接口：User（资料、关注、粉丝、隐私）、Food（我的标签）、History、Upload（头像）。
 
 做完是什么样：
 

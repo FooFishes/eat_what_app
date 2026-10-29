@@ -413,7 +413,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
 | `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
-| `yaml` | `^3.1.4` | 契约测试读 `docs/api.openapi.yml`；令牌测试读 `tokens.json` 用 `dart:convert` |
+| `yaml` | `^3.1.4` | 契约测试读 `docs/api.openapi.yml` |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
 | `vector_graphics_compiler` | `^1.3.2` | SVG 资源转换器 |
 | `sentry_dart_plugin` | `^3.4.0` | CI 上传符号表、source map；令牌只从环境变量 `SENTRY_AUTH_TOKEN` 读 |

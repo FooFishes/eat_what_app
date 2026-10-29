@@ -5,6 +5,8 @@
 > 2026-10-25：登录、认证和人机验证相关的内容（5.1、5.4、7.1、7.4、9.5、第 18 节、待确认 A2、A4）按接口 `tencent-captcha-20261024` 更新。
 >
 > 2026-10-25：按阶段二的实现补充守卫第 4 条、网络层回调的接法、协议地址的配置、人机验证的 App 实现和测试的假实现（5.3、5.4、7.1、9.5、18.3、21.1）。
+>
+> 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
 
@@ -588,9 +590,8 @@ extension RefCache on Ref {
 
 ### 11.1 转写与校验
 
-- 手写转写 `prototype/design-system/tokens.json`，按用到的类型分两处：只要 `dart:ui` 的（颜色原值 `EatPalette`、`EatSpace`、`EatRadius`、`EatSize`、`StageColor`）放 `lib/design/tokens/`，这样 `domain` 引用 `StageColor` 时不会带进 Flutter；要用 `TextStyle`、`BoxShadow`、`Curve` 的（`EatTextStyles`、`EatShadows`、`EatMotion`）放 `lib/design/theme/`。动效写在规范 README 里，没有进 `tokens.json`，一起转写。
-- `test/design/tokens_test.dart` 读 `tokens.json`，逐项比对 Dart 常量（颜色值、间距、圆角、尺寸、字号、行高、字重、字距、阴影），两边多一项少一项都报错。设计更新导出后跑测试，就知道哪里没同步。
-- CSS 到 Flutter 的换算：
+- 令牌的正本是 Dart 代码，初值从 `prototype/design-system/tokens.json`（2026-10-22 的快照）手写转写而来。之后要调颜色、间距、字号，直接改 Dart，不回写快照。按用到的类型分两处：只要 `dart:ui` 的（颜色原值 `EatPalette`、`EatSpace`、`EatRadius`、`EatSize`、`StageColor`）放 `lib/design/tokens/`，这样 `domain` 引用 `StageColor` 时不会带进 Flutter；要用 `TextStyle`、`BoxShadow`、`Curve` 的（`EatTextStyles`、`EatShadows`、`EatMotion`）放 `lib/design/theme/`。动效的初值来自规范 README。
+- 转写时 CSS 到 Flutter 的换算：
   - 行高：`height = lineHeight / fontSize`，并设 `leadingDistribution: TextLeadingDistribution.even`，和 CSS 的上下平分行距一致。
   - 字距：直接用 px 值。
   - 阴影：外阴影转 `BoxShadow`；`inset` 内阴影 Flutter 不支持，`EatShadow` 把它们单独放在 `inset` 里，按钮的「顶部 1px 高光、底部 2px 内阴影」在 `Button` 里用自定义绘制实现；`shadow-plate` 的 `0 0 0 8px #fff` 是盘沿，用白色外圈实现，不当阴影处理。CSS 里写在前面的阴影在上层，`BoxDecoration` 按列表顺序画、后画的在上层，所以 `EatShadow` 里的顺序和 CSS 相反。
@@ -1166,7 +1167,6 @@ class PushNotice({
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
 | 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
 | 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml` 里 | `test/contract/` |
-| 令牌测试 | Dart 令牌和 `tokens.json` 一致 | `test/design/` |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。
@@ -1175,11 +1175,11 @@ class PushNotice({
 
 ### 21.2 Golden 测试
 
-第一批不做。组件和画板对齐稳定后，用 `alchemist` 的「CI golden」模式给核心组件（`Button` 各状态、`Chip`、`DishPlate`、9 个舞台色的 `Stage`、`NavBar`、`Panel`）加 golden，只在 CI（Linux）上生成和比对，打 `golden` 标签。原因：系统字体渲染在 macOS 和 Linux 上不同，本地生成的基准在 CI 上会对不上。
+第一批不做。组件的接口稳定后，用 `alchemist` 的「CI golden」模式给核心组件（`Button` 各状态、`Chip`、`DishPlate`、9 个舞台色的 `Stage`、`NavBar`、`Panel`）加 golden，只在 CI（Linux）上生成和比对，打 `golden` 标签。基准是 App 自己的渲染结果，目的是防止组件回归，不是和画板比对。原因：系统字体渲染在 macOS 和 Linux 上不同，本地生成的基准在 CI 上会对不上。
 
 ### 21.3 CI 里跑什么
 
-- `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、令牌、依赖方向测试都在 `flutter test` 里，不单独加任务。
+- `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、依赖方向测试都在 `flutter test` 里，不单独加任务。
 - `web` 任务：改成 `flutter build web --release --no-web-resources-cdn --build-number=<run_number> --dart-define-from-file=...`。
 - 打 tag 的发版构建：安卓、iOS 加混淆和符号表上传；Web 生成并上传 source map。热更新接入后改用 `shorebird release`（第 16.2 节）。
 - 带原生代码的新依赖：单独一个 PR，看 CI 的 `android`、`ios` 任务能否编过（本地只构建 Web）。

@@ -1,9 +1,9 @@
 import 'dart:ui';
 
-/// `tokens.json` 里全部颜色的原值，名字去掉连字符改成驼峰（`ink-muted` → `inkMuted`）。
+/// 全部颜色的原值，名字沿用设计令牌、去掉连字符改成驼峰（`ink-muted` → `inkMuted`）。
 ///
 /// 组件不直接读这里：白底页面的颜色从 `context.eat.colors` 取，舞台上的颜色从 `StageColor` 取。
-/// 这里只供那两处和令牌测试引用，因为 `EatColors.light.ink` 这样的取值不是常量表达式，
+/// 这里只供那两处引用，因为 `EatColors.light.ink` 这样的取值不是常量表达式，
 /// 写不进 `StageColor` 的 const 构造。
 abstract final class EatPalette {
   static const ink = Color(0xFF231C18);

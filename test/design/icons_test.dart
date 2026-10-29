@@ -29,10 +29,10 @@ void main() {
       );
     });
 
-    test('assets/icons/ 和设计稿的图标一致（改了设计稿要重跑 tool/icons.dart）', () {
-      expect(_svgNames('assets/icons'), _svgNames('prototype/assets/icons'));
-      for (final icon in EatIcons.values) {
-        final name = '${icon.file}.svg';
+    test('设计快照里的图标都在 assets/icons/ 里，且内容一致', () {
+      final snapshot = _svgNames('prototype/assets/icons');
+      expect(_svgNames('assets/icons').containsAll(snapshot), isTrue);
+      for (final name in snapshot) {
         expect(
           File('assets/icons/$name').readAsStringSync(),
           File('prototype/assets/icons/$name').readAsStringSync(),
