@@ -56,18 +56,18 @@ void main() {
       matching: find.byType(EditableText),
     );
     await tester.enterText(field, 'me@qq.com');
-    await tester.tap(find.text('发认证链接'));
+    await tester.tap(find.text('发送认证链接'));
     await tester.pumpAndSettle();
     expect(find.text('请填写 @mail.sdu.edu.cn 或 @sdu.edu.cn 邮箱'), findsOneWidget);
     expect(env.adapter.sent('GET /auth/sendEmail'), isEmpty);
 
     await tester.enterText(field, '2021@mail.sdu.edu.cn');
-    await tester.tap(find.text('发认证链接'));
+    await tester.tap(find.text('发送认证链接'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('GET /auth/sendEmail').single.query, {
       'email': '2021@mail.sdu.edu.cn',
     });
-    expect(find.textContaining('链接发到了'), findsOneWidget);
+    expect(find.textContaining('认证链接已发送至'), findsOneWidget);
 
     await tester.tap(find.text('我已完成，刷新状态'));
     await tester.pumpAndSettle();

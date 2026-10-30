@@ -90,7 +90,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
 
     return PlainScaffold(
       title: '密码登录',
-      subtitle: '设过密码的账号才能用',
+      subtitle: '仅限已设置密码的账号',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
@@ -144,7 +144,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                 FormLink('用验证码登录', onTap: _useCode),
                 const SizedBox(height: EatSpace.s24),
                 Text(
-                  '忘了密码就用验证码登录，进去后在设置里改',
+                  '忘记密码时可用验证码登录，登录后在设置中修改',
                   textAlign: TextAlign.center,
                   style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),

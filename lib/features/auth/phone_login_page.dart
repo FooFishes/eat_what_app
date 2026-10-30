@@ -132,7 +132,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         ],
       ),
       child: Text(
-        '同一个号码 1 小时最多发 5 次，一天最多 10 次。设过密码的话，可以用密码登录。',
+        '同一号码每小时最多发送 5 次，每天最多 10 次。已设置密码的账号可使用密码登录。',
         style: panel.eat.text.body.copyWith(height: 22 / 15),
       ),
     ),
@@ -164,7 +164,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
 
     return PlainScaffold(
       title: '手机号登录',
-      subtitle: '没注册过的号码，验证后自动注册',
+      subtitle: '未注册的号码验证后自动注册',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
@@ -231,7 +231,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '验证码 5 分钟内有效，60 秒后可以重发',
+                  '验证码 5 分钟内有效，60 秒后可重新发送',
                   style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),
                 const SizedBox(height: 40),

@@ -27,7 +27,7 @@ class AboutPage extends ConsumerWidget {
 
     return PlainScaffold(
       title: '关于',
-      subtitle: '沙软今天吃什么是同学自己做的，和学校没有隶属关系。',
+      subtitle: '沙软今天吃什么由学生独立开发，与学校无隶属关系。',
       slivers: [
         SliverList.list(
           children: [
@@ -45,7 +45,7 @@ class AboutPage extends ConsumerWidget {
             const SettingsRow(
               icon: EatIcons.feedback,
               label: '反馈',
-              value: '出问题、提建议都行',
+              value: '问题与建议',
               pending: true,
             ),
             SettingsRow(
@@ -60,7 +60,7 @@ class AboutPage extends ConsumerWidget {
             ),
             const SizedBox(height: EatSpace.s16),
             Text(
-              '反馈问题时带上版本号，我们查得更快。',
+              '反馈问题时请附上版本号，便于排查。',
               style: eat.text.caption.copyWith(color: c.inkMuted),
             ),
           ],

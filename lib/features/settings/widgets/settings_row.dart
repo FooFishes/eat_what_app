@@ -38,39 +38,44 @@ class SettingsRow extends StatelessWidget {
         : eat.text.body.copyWith(fontSize: 14, color: c.inkMuted);
     final row = SizedBox(
       height: 56,
-      child: Row(
-        spacing: EatSpace.s14,
-        children: [
-          EatIcon(icon, size: 22, color: c.ink),
-          Expanded(
-            child: Row(
-              spacing: EatSpace.s8,
-              children: [
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: eat.text.body.copyWith(fontSize: 16, color: c.ink),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          spacing: EatSpace.s14,
+          children: [
+            EatIcon(icon, size: 22, color: c.ink),
+            Expanded(
+              child: Row(
+                spacing: EatSpace.s8,
+                children: [
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: eat.text.body.copyWith(fontSize: 16, color: c.ink),
+                    ),
                   ),
-                ),
-                if (pending) const PendingTag(),
-              ],
-            ),
-          ),
-          if (value case final value?)
-            Flexible(
-              child: Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
-                style: valueStyle,
+                  if (pending) const PendingTag(),
+                ],
               ),
             ),
-          if (onTap != null)
-            EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
-        ],
+
+            /// 值不参与分配剩余宽度，否则会和名字各占一半，短的值贴不到右边；只限制它最多占半行。
+            if (value case final value?)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: valueStyle,
+                ),
+              ),
+            if (onTap != null)
+              EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
+          ],
+        ),
       ),
     );
     if (onTap == null) return MergeSemantics(child: row);

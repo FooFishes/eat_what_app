@@ -76,13 +76,13 @@ class SettingsPage extends ConsumerWidget {
               onPressed: () => Navigator.of(panel).pop(true),
             ),
             EatButton.mist(
-              '先不退',
+              '取消',
               onPressed: () => Navigator.of(panel).pop(false),
             ),
           ],
         ),
         child: Text(
-          '这台设备上的登录信息和个人数据会清掉，你的账号和内容都还在，用手机号再登录就行。',
+          '将清除本设备上的登录信息和个人数据，账号和内容不受影响，可用手机号重新登录。',
           style: panel.eat.text.body.copyWith(
             fontSize: 14,
             height: 22 / 14,

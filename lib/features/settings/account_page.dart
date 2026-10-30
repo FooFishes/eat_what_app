@@ -50,12 +50,12 @@ class AccountPage extends ConsumerWidget {
             SettingsRow(
               icon: EatIcons.idcard,
               label: '用户名',
-              value: user?.username ?? '还没设',
+              value: user?.username ?? '未设置',
             ),
             SettingsRow(
               icon: EatIcons.key,
               label: hasPassword ? '修改密码' : '设置密码',
-              value: hasPassword ? null : '还没设',
+              value: hasPassword ? null : '未设置',
               pending: true,
             ),
             const SettingsRow(

@@ -103,7 +103,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
 
     return PlainScaffold(
       title: '学生认证',
-      subtitle: '认证后可以发布、点赞、评论和关注。只用来确认你是山大学生，我们看不到你的统一认证密码。',
+      subtitle: '认证后可以发布、点赞、评论和关注。认证仅用于确认学生身份，我们无法获取你的统一认证密码。',
       showBack: !widget.onboarding,
       actions: [
         if (widget.onboarding && !verified) _TextAction('先逛逛', onTap: _leave),
@@ -133,7 +133,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
                       .refresh(userAsked: true),
                 ),
               const SizedBox(height: 28),
-              Text('一个统一认证身份、一个邮箱只能认证一个账号。校外的同学可以注册和浏览，但没法认证。', style: small),
+              Text('每个统一认证身份、每个邮箱只能认证一个账号。校外用户可以注册和浏览，但无法认证。', style: small),
             ],
           ),
         ),
@@ -190,7 +190,7 @@ class _Unverified extends StatelessWidget {
         _MethodRow(
           icon: EatIcons.school,
           title: '山大统一认证',
-          subtitle: '跳到学校页面，完成后自动回来',
+          subtitle: '跳转至学校页面，完成后自动返回',
           trailing: EatIcons.external,
           onTap: state.busy ? null : onSso,
         ),
@@ -200,7 +200,7 @@ class _Unverified extends StatelessWidget {
         const _MethodRow(
           icon: EatIcons.mail,
           title: '山大邮箱',
-          subtitle: '收到链接后点开就完成了',
+          subtitle: '点击邮件中的链接即可完成认证',
         ),
         const SizedBox(height: EatSpace.s16),
         if (sentTo == null) ...[
@@ -215,7 +215,7 @@ class _Unverified extends StatelessWidget {
             errorText: emailError,
           ),
           const SizedBox(height: EatSpace.s20),
-          EatButton.solid('发认证链接', onPressed: state.busy ? null : onSendEmail),
+          EatButton.solid('发送认证链接', onPressed: state.busy ? null : onSendEmail),
         ] else ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,12 +229,12 @@ class _Unverified extends StatelessWidget {
                 child: Text.rich(
                   TextSpan(
                     children: [
-                      const TextSpan(text: '链接发到了 '),
+                      const TextSpan(text: '认证链接已发送至 '),
                       TextSpan(
                         text: sentTo,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      const TextSpan(text: '，去邮箱点开就完成认证。回到这里会自动刷新。'),
+                      const TextSpan(text: '，点击链接即可完成认证，返回此页后自动刷新。'),
                     ],
                   ),
                   style: body,
@@ -256,14 +256,14 @@ class _Unverified extends StatelessWidget {
                 height: EatSize.touch,
                 child: Center(
                   child: Text(
-                    '没收到？$secondsLeft 秒后可以重发',
+                    '未收到？$secondsLeft 秒后可重新发送',
                     style: eat.text.meta.copyWith(color: c.inkMuted),
                   ),
                 ),
               ),
             )
           else
-            _TextAction('没收到？换个邮箱或重发', onTap: onEditEmail, center: true),
+            _TextAction('未收到？更换邮箱或重新发送', onTap: onEditEmail, center: true),
         ],
         if (state.notice case final notice?) ...[
           const SizedBox(height: EatSpace.s14),
@@ -337,7 +337,7 @@ class _Verified extends StatelessWidget {
         ),
         const SizedBox(height: EatSpace.s16),
         Text(
-          '认证一次长期有效，毕业后也不收回。刚才被拦下的操作现在可以直接做了。',
+          '认证长期有效，毕业后不会收回。之前受限的操作现在可以继续。',
           style: eat.text.body.copyWith(height: 22 / 15, color: c.inkSoft),
         ),
         if (onboarding) ...[

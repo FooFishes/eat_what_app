@@ -64,7 +64,7 @@ void main() {
     await tester.tap(find.text('退出登录'));
     await tester.pumpAndSettle();
     expect(find.text('退出登录？'), findsOneWidget);
-    await tester.tap(find.text('先不退'));
+    await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
     expect(find.byType(SettingsPage), findsOneWidget);
     expect(env.adapter.sent('POST /auth/logout'), isEmpty);
@@ -103,6 +103,10 @@ void main() {
     expect(find.text('已认证，山大邮箱'), findsOneWidget);
     expect(find.text('修改密码'), findsOneWidget);
     expect(find.text('待接入'), findsNWidgets(3));
+    expect(
+      tester.getTopRight(find.text('未设置')).dx,
+      tester.getTopRight(find.text('138 **** 5678')).dx,
+    );
     await expectAccessible(tester);
 
     await tester.tap(find.text('学生认证'));
