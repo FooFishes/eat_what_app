@@ -72,7 +72,7 @@ class AuthRepository {
       _login(
         () => _auth.passwordLogin(
           PasswordLoginRequestDto(
-            username: account,
+            userName: account,
             password: password,
             device: _device,
           ),
@@ -96,7 +96,7 @@ class AuthRepository {
 
   /// 统一认证的学校页面地址，5 分钟内有效、只能用一次，每次点都重新拿。
   Future<Uri> ssoUrl() async {
-    final url = (await _auth.startSso()).url;
+    final url = (await _auth.startSso(client: kIsWeb ? 'web' : 'app')).url;
     final uri = url == null ? null : Uri.tryParse(url);
     if (uri == null || !uri.hasScheme) {
       throw const AppFailure(FailureKind.unknown, serverMessage: 'bad sso url');

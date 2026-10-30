@@ -23,8 +23,8 @@ class UserApi {
 @JsonSerializable(includeIfNull: false)
 class const UserInfoDto({
   final int? id,
+  final String? displayName,
   final String? userName,
-  final String? loginUsername,
   final bool? hasUsername,
   final String? avatar,
   final bool? banned,

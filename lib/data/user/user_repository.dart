@@ -42,10 +42,10 @@ class UserRepository {
 
   CurrentUser _toUser(UserInfoDto dto) => CurrentUser(
     id: dto.id ?? 0,
-    nickname: dto.userName?.trim().isNotEmpty == true
-        ? dto.userName!.trim()
+    nickname: dto.displayName?.trim().isNotEmpty == true
+        ? dto.displayName!.trim()
         : '同学',
-    username: dto.hasUsername == true ? dto.loginUsername : null,
+    username: dto.hasUsername == true ? dto.userName : null,
     avatarUrl: resolveImageUrl(dto.avatar, _assetBaseUrl),
     phone: dto.phone?.isNotEmpty == true ? dto.phone : null,
     signature: dto.signature?.isNotEmpty == true ? dto.signature : null,

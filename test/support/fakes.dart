@@ -159,8 +159,8 @@ Map<String, Object?> userInfoJson({
   bool hasPassword = false,
 }) => {
   'id': 42,
-  'userName': '天凉被破王',
-  'loginUsername': null,
+  'displayName': '天凉被破王',
+  'userName': null,
   'hasUsername': false,
   'avatar': null,
   'role': 'user',

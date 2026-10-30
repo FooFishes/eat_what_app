@@ -29,7 +29,7 @@ Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
 Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
   PasswordLoginRequestDto instance,
 ) => <String, dynamic>{
-  'username': instance.username,
+  'userName': instance.userName,
   'password': instance.password,
   'device': instance.device,
 };

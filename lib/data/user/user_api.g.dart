@@ -8,8 +8,8 @@ part of 'user_api.dart';
 
 UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   id: (json['id'] as num?)?.toInt(),
+  displayName: json['displayName'] as String?,
   userName: json['userName'] as String?,
-  loginUsername: json['loginUsername'] as String?,
   hasUsername: json['hasUsername'] as bool?,
   avatar: json['avatar'] as String?,
   banned: json['banned'] as bool?,
@@ -26,8 +26,8 @@ UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
 Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
     <String, dynamic>{
       'id': ?instance.id,
+      'displayName': ?instance.displayName,
       'userName': ?instance.userName,
-      'loginUsername': ?instance.loginUsername,
       'hasUsername': ?instance.hasUsername,
       'avatar': ?instance.avatar,
       'banned': ?instance.banned,

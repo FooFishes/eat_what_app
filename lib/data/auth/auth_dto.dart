@@ -32,7 +32,7 @@ class const PhoneLoginRequestDto({
 
 @JsonSerializable(createFactory: false)
 class const PasswordLoginRequestDto({
-  required final String username,
+  required final String userName,
   required final String password,
   required final String device,
 }) {

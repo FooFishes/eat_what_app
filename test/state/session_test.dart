@@ -102,7 +102,7 @@ void main() {
   });
 
   test('任何接口返回登录过期，都清掉登录态和缓存', () async {
-    env.kv.values['cache.user.current'] = '{}';
+    env.kv.values[UserRepository.cacheKey] = '{}';
     env.kv.values['prefs.installed'] = '1';
     env.adapter.on('GET /anything', [FakeAdapter.fail(20002)]);
     final container = await env.container(
@@ -140,7 +140,7 @@ void main() {
 
   test('退出登录：通知服务端、清凭证和缓存，同意记录和设备级偏好留着', () async {
     env.kv.values
-      ..['cache.user.current'] = '{}'
+      ..[UserRepository.cacheKey] = '{}'
       ..[PrivacyConsentStore.key] = '{"version":"2026-10"}'
       ..['prefs.installed'] = '1';
     env.adapter.on('POST /auth/logout', [FakeAdapter.ok()]);
@@ -186,10 +186,10 @@ void main() {
     env.adapter.on('GET /user/info', [
       FakeAdapter.ok({
         'id': 7,
-        'userName': '',
+        'displayName': '',
         'avatar': 'avatars/7.jpg',
         'hasUsername': true,
-        'loginUsername': 'chi_fan',
+        'userName': 'chi_fan',
       }),
     ]);
     final container = await env.container();

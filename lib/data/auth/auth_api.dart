@@ -54,8 +54,11 @@ class AuthApi {
 
   Future<void> logout() => _client.post('/auth/logout');
 
-  Future<SsoStartDto> startSso() async =>
-      decodeJson(await _client.get('/auth/sdu'), SsoStartDto.fromJson);
+  /// [client] 决定学校页面完成后跳回哪里：`app` 回 App，`web` 回网页。
+  Future<SsoStartDto> startSso({required String client}) async => decodeJson(
+    await _client.get('/auth/sdu', query: {'client': client}),
+    SsoStartDto.fromJson,
+  );
 
   Future<void> sendVerifyEmail(
     String email, {

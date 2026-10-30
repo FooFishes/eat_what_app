@@ -92,6 +92,7 @@ void main() {
       browser.opened.single.toString(),
       'https://pass.sdu.edu.cn/cas?state=s1',
     );
+    expect(env.adapter.sent('GET /auth/sdu').single.query, {'client': 'app'});
 
     await tester.tap(find.text('我已完成，刷新状态'));
     await tester.pumpAndSettle();

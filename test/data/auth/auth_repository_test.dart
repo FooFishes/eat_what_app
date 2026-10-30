@@ -106,7 +106,7 @@ void main() {
     final result = await auth.loginWithPassword('chi_fan', 'secret1');
     expect(result.newUser, isFalse);
     expect(env.adapter.sent('POST /auth/login').single.body, {
-      'username': 'chi_fan',
+      'userName': 'chi_fan',
       'password': 'secret1',
       'device': 'APP',
     });

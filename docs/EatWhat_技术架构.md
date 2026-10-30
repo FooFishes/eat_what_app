@@ -1058,7 +1058,7 @@ class PushNotice({
 
 - 只用于认证，不是登录方式（产品 6.3、7.1）。结果记到发起认证的账号上，不签发新的登录，认证后现有的登录态马上有已认证的权限，不用重新登录。
 - 流程：
-  1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。
+  1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。App 带 `client=app`，Web 带 `client=web`，后端按它选跳回的预设链接；客户端不能自己指定跳回地址。
   2. 打开 `url`：App 用 `url_launcher` 的应用内浏览器（iOS SFSafariViewController，安卓 Custom Tabs）；Web 在当前标签页跳转。
   3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功时 302 到预设的链接：App 回到 App，Web 回到 `<Web>/verify`。预设链接还没配置。
   4. 回到 App（`AppLifecycleListener` 的恢复事件）或回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。
