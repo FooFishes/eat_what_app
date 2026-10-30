@@ -1,11 +1,11 @@
-"""把 Noto Sans SC 和 Bricolage Grotesque 的可变字体裁成 App 内置的子集，输出到 assets/fonts/。
+"""把 Noto Sans SC 和 Inter 的可变字体裁成 App 内置的子集，输出到 assets/fonts/。
 
 用法（需要 fonttools，原始字体从 github.com/google/fonts 的 ofl/ 目录取）：
 
-    python3 tool/subset_fonts.py <NotoSansSC[wght].ttf> <BricolageGrotesque[opsz,wdth,wght].ttf>
+    python3 tool/subset_fonts.py <NotoSansSC[wght].ttf> <Inter[opsz,wght].ttf>
 
 两个字体都保留可变字重轴，一份文件覆盖全部字重。Noto Sans SC 全量 17.8 MB，只留 GB 2312 的
-字符和常用标点；子集外的生僻字由系统字体补，样子不同但不缺字。Bricolage Grotesque 只用来排数字，
+字符和常用标点；子集外的生僻字由系统字体补，样子不同但不缺字。Inter 只用来排数字，
 留下 ASCII 和价格、区间要用的几个符号。输出入库，CI 不跑这个脚本；换字体版本或扩字符集时重跑。
 """
 
@@ -14,7 +14,6 @@ from pathlib import Path
 
 from fontTools import subset
 from fontTools.ttLib import TTFont
-from fontTools.varLib import instancer
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 
@@ -43,12 +42,14 @@ def gb2312_chars():
     return chars
 
 
-def write_subset(font, unicodes, out_name):
+def write_subset(font, unicodes, out_name, layout_features=None):
     options = subset.Options()
     # 去掉 hinting：Flutter 在三端都不用 TrueType 指令渲染，留着只增加体积。
     options.hinting = False
     options.desubroutinize = True
     options.name_IDs = ["*"]
+    if layout_features is not None:
+        options.layout_features = layout_features
     subsetter = subset.Subsetter(options)
     subsetter.populate(unicodes=sorted(unicodes))
     subsetter.subset(font)
@@ -57,7 +58,7 @@ def write_subset(font, unicodes, out_name):
     print(f"{out.relative_to(OUT_DIR.parent.parent)}: {out.stat().st_size:,} 字节，{len(font.getBestCmap())} 个字符")
 
 
-def main(noto_path, bricolage_path):
+def main(noto_path, inter_path):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     sans = set(ASCII) | gb2312_chars()
@@ -65,10 +66,9 @@ def main(noto_path, bricolage_path):
         sans.update(r)
     write_subset(TTFont(noto_path), sans, "NotoSansSC-VF.ttf")
 
-    # 宽度轴固定在 100（标准宽度），只留光学尺寸和字重：设计稿在浏览器里按字号自动取光学尺寸，
-    # 文字样式里同样按字号设 opsz，才能和画板一致。
-    bricolage = instancer.instantiateVariableFont(TTFont(bricolage_path), {"wdth": 100})
-    write_subset(bricolage, set(ASCII) | set(NUMERAL_EXTRA), "BricolageGrotesque-VF.ttf")
+    # 保留全部 OpenType 特性：等宽数字 tnum 等不在 fonttools 的默认集合里，文字样式要用到；
+    # 只有 ASCII 几十个字形，多留的特性表几乎不占体积。
+    write_subset(TTFont(inter_path), set(ASCII) | set(NUMERAL_EXTRA), "Inter-VF.ttf", ["*"])
 
 
 if __name__ == "__main__":

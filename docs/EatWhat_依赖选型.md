@@ -281,10 +281,11 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 字体 | 用途 | 来源与许可 | 原始大小 | 做法 |
 | --- | --- | --- | --- | --- |
 | Noto Sans SC | 全部中文，主角文字 900 | Google Fonts，OFL | 可变字体 `NotoSansSC[wght].ttf` 17,772,300 字节 | 子集化后内置 |
-| Bricolage Grotesque | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `BricolageGrotesque[opsz,wdth,wght].ttf` 408,496 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
+| Inter | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `Inter[opsz,wght].ttf` 876,576 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
 
-- 两个都用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；Bricolage 另按字号设 `opsz`（技术架构 11.5）。
-- Noto Sans SC 全量 17.8 MB 太大。`tool/subset_fonts.py` 裁到 GB 2312 的全部字符（6763 个汉字加符号）、ASCII 和几段常用标点，实测 3,939,760 字节、7801 个字符；Bricolage 固定宽度轴、只留 ASCII 和 `¥` 等几个符号，88,412 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。子集外的生僻字在安卓、iOS 上由系统字体补上，样子略有不同但不会缺字。
+- 两个都用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；Inter 另按字号设 `opsz`（技术架构 11.5）。
+- 数字原先用设计稿里的 Bricolage Grotesque，字形个性强，小字号下 `6 8 9`、`3 5` 不好认，换成为屏幕小字号设计的 Inter。Inter 字形开口大，带等宽数字 `tnum`。
+- Noto Sans SC 全量 17.8 MB 太大。`tool/subset_fonts.py` 裁到 GB 2312 的全部字符（6763 个汉字加符号）、ASCII 和几段常用标点，实测 3,939,760 字节、7801 个字符；Inter 只留 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。子集外的生僻字在安卓、iOS 上由系统字体补上，样子略有不同但不会缺字。
 - 设计规范说 iOS 可以回落到苹方，但苹方最粗只有 Semibold，做不出 900 的主角字，所以三端都内置。
 - **Web 的问题**：
   - 内置字体会在引擎初始化时全部下载，几 MB 的中文字体会拖慢首屏，在微信里更明显。推荐 Web 不在 `pubspec.yaml` 的 `fonts` 里声明 Noto，而是作为普通资源，启动后用 `FontLoader` 在后台加载，加载完自动重排；加载前用回落字体显示。具体效果要做一次 Web 实验确认。

@@ -141,7 +141,7 @@ class _KitPageState extends State<KitPage> {
             ],
           ),
         ]),
-        section('黑体 900 做主角，Bricolage Grotesque 只用于数字', [
+        section('黑体 900 做主角，Inter 只用于数字', [
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.end,
             spacing: 20,

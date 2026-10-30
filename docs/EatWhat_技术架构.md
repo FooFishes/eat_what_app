@@ -634,8 +634,9 @@ extension RefCache on Ref {
 ### 11.5 字体与字号
 
 - 字体文件、子集化见依赖选型第 9 节。两个都是可变字体，文字样式只设 `fontWeight`：Flutter 3.47 起 `FontWeight` 会直接设置可变字体的 `wght` 轴，任意值（如 650）都行，不用再写 `FontVariation.weight`。
-- 中文样式用 `NotoSansSC`；数字样式（`price-hero`、`price-inline`、`stat`、`distance`、`count`）用 `BricolageGrotesque`，回落到 `NotoSansSC`。
-- Bricolage Grotesque 还有光学尺寸轴 `opsz`：画板在浏览器里按字号自动取光学尺寸，数字样式里同样把 `opsz` 设成字号。宽度轴在子集化时固定为 100。
+- 中文样式用 `NotoSansSC`；数字样式（`price-hero`、`price-inline`、`stat`、`distance`、`count`）用 `Inter`，回落到 `NotoSansSC`。
+- Inter 还有光学尺寸轴 `opsz`，范围 14 到 32：数字样式把 `opsz` 设成字号，超出范围的取两端，大字号的价格用的是显示用的紧凑字形。
+- `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
 - 字体文件由 `tool/subset_fonts.py` 生成，三端都在 `pubspec.yaml` 的 `fonts` 里声明。Web 上后台加载中文字体的做法（待确认 D7）等做 Web 实验时再改。许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。
 - 选中态靠字重，不靠颜色：`tab-active` 900，`tab` 400。
 

@@ -59,13 +59,13 @@ flutter:
       transformers:
         - package: vector_graphics_compiler
     - assets/fonts/OFL-NotoSansSC.txt
-    - assets/fonts/OFL-BricolageGrotesque.txt
+    - assets/fonts/OFL-Inter.txt
 
   # 可变字体，一个文件覆盖全部字重；由 tool/subset_fonts.py 子集化生成
   fonts:
     - family: NotoSansSC
       fonts:
         - asset: assets/fonts/NotoSansSC-VF.ttf
-    - family: BricolageGrotesque
+    - family: Inter
       fonts:
-        - asset: assets/fonts/BricolageGrotesque-VF.ttf
+        - asset: assets/fonts/Inter-VF.ttf

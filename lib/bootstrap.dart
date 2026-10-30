@@ -30,7 +30,7 @@ Future<void> bootstrap() async {
 Stream<LicenseEntry> _fontLicenses() async* {
   const fonts = {
     'Noto Sans SC': 'assets/fonts/OFL-NotoSansSC.txt',
-    'Bricolage Grotesque': 'assets/fonts/OFL-BricolageGrotesque.txt',
+    'Inter': 'assets/fonts/OFL-Inter.txt',
   };
   for (final MapEntry(key: font, value: path) in fonts.entries) {
     yield LicenseEntryWithLineBreaks([font], await rootBundle.loadString(path));

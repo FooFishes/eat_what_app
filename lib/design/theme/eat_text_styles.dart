@@ -6,7 +6,7 @@ abstract final class EatFonts {
   static const sans = 'NotoSansSC';
 
   /// 只排数字：价格、距离、统计、计数。
-  static const numeral = 'BricolageGrotesque';
+  static const numeral = 'Inter';
 }
 
 /// 设计规范里的 20 个文字样式。
@@ -89,11 +89,11 @@ class EatTextStyles({
     meta: _sans(13, 20, 400),
     caption: _sans(12, 18, 400),
     navLabel: _sans(11, 16, 500),
-    priceHero: _numeral(60, 60, 800, letterSpacing: -2),
+    priceHero: _numeral(60, 60, 800, letterSpacing: -1),
     stat: _numeral(30, 32, 800),
     priceInline: _numeral(18, 24, 800),
     distance: _numeral(14, 20, 600),
-    count: _numeral(13, 18, 800),
+    count: _numeral(13, 18, 800, tabular: true),
   );
 }
 
@@ -111,12 +111,15 @@ TextStyle _sans(
   letterSpacing: letterSpacing,
 );
 
-/// 光学尺寸取字号：设计稿在浏览器里按字号自动选 `opsz`，这里照做才和画板一致。
+/// 光学尺寸跟着字号走，Inter 的 `opsz` 轴只有 14 到 32，超出的取两端。
+///
+/// [tabular] 用等宽数字，给原地变化的数（计数）用，数字变了宽度不跳。
 TextStyle _numeral(
   double size,
   double lineHeight,
   int weight, {
   double? letterSpacing,
+  bool tabular = false,
 }) => TextStyle(
   fontFamily: EatFonts.numeral,
   fontFamilyFallback: const [EatFonts.sans],
@@ -124,6 +127,7 @@ TextStyle _numeral(
   height: lineHeight / size,
   leadingDistribution: TextLeadingDistribution.even,
   fontWeight: FontWeight(weight),
-  fontVariations: [FontVariation.opticalSize(size)],
+  fontVariations: [FontVariation.opticalSize(size.clamp(14, 32))],
+  fontFeatures: [if (tabular) const FontFeature.tabularFigures()],
   letterSpacing: letterSpacing,
 );
