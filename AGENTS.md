@@ -37,7 +37,7 @@ lib/
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的字体和许可证）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
@@ -102,7 +102,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 ## 接口
 
-- 唯一依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它由后端根据已发布的服务生成，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。
+- 唯一依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它由后端根据已发布的服务生成，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh`，从 Apifox 业务模块导出 OpenAPI 3.1 YAML 覆盖该文件；令牌只放环境变量，不入库。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
 - 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
