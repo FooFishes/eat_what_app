@@ -123,6 +123,39 @@ void main() {
     expect(tester.getSize(find.byType(EatButton)).height, 44);
   });
 
+  testWidgets('提交中：转圈盖住文字，宽度不变，不变灰，点了没反应', (tester) async {
+    var taps = 0;
+    Widget button({required bool loading}) => Center(
+      child: EatButton.solid('登录', loading: loading, onPressed: () => taps++),
+    );
+    await pumpEat(tester, button(loading: false));
+    final width = tester.getSize(find.byType(EatButton)).width;
+
+    await pumpEat(tester, button(loading: true));
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(tester.getSize(find.byType(EatButton)).width, width);
+    expect(_labelColor(tester, '登录'), EatPalette.paper);
+    await tester.tap(find.byType(EatButton));
+    expect(taps, 0);
+  });
+
+  testWidgets('muted：样子和不可用一样、按下不下沉，点了照样响应', (tester) async {
+    var taps = 0;
+    await pumpEat(
+      tester,
+      EatButton.solid('手机号登录', muted: true, onPressed: () => taps++),
+    );
+
+    expect(_labelColor(tester, '手机号登录'), EatPalette.disabledFg);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(EatButton)),
+    );
+    await tester.pumpAndSettle();
+    expect(_sink(tester), 0);
+    await gesture.up();
+    expect(taps, 1);
+  });
+
   testWidgets('各种按钮满足点击区域、说明和对比度要求', (tester) async {
     await pumpEat(
       tester,

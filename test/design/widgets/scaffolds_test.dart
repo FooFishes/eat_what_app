@@ -144,6 +144,35 @@ void main() {
       expect(tester.getTopLeft(find.text('设置')).dx, (1280 - 480) / 2 + 20);
     });
 
+    testWidgets('键盘弹起时让到键盘上方，点空白处收起键盘', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300 * 3);
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await _pump(
+        tester,
+        PlainScaffold(
+          title: '手机号登录',
+          slivers: [
+            SliverToBoxAdapter(
+              child: Material(
+                type: MaterialType.transparency,
+                child: TextField(focusNode: focus),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      expect(tester.getSize(find.byType(CustomScrollView)).height, 844 - 300);
+      focus.requestFocus();
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      await tester.tapAt(const Offset(200, 500));
+      await tester.pump();
+      expect(focus.hasFocus, isFalse);
+    });
+
     testWidgets('大标题不跟系统字号放大', (tester) async {
       useScreen(tester, const Size(390, 844));
       tester.platformDispatcher.textScaleFactorTestValue = 2;

@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// 登录表单下面的一句出错说明：`warn` 加警示图标，说清楚哪里不对、下一步怎么做。
@@ -69,6 +70,39 @@ class FormLink extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 手机号输入：只留数字，最多 11 位。
+///
+/// 从通讯录、短信里复制来的号码常带「+86」、空格和横线，粘贴时去掉区号再截，
+/// 不然「+86 138 1234 5678」会被截成「86138123456」。
+class MobileInputFormatter extends TextInputFormatter {
+  const new();
+
+  static const _length = 11;
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length > _length) {
+      for (final prefix in const ['0086', '86']) {
+        if (digits.startsWith(prefix) &&
+            digits.length - prefix.length <= _length) {
+          digits = digits.substring(prefix.length);
+          break;
+        }
+      }
+    }
+    if (digits.length > _length) digits = digits.substring(0, _length);
+    if (digits == newValue.text) return newValue;
+    return TextEditingValue(
+      text: digits,
+      selection: TextSelection.collapsed(offset: digits.length),
     );
   }
 }

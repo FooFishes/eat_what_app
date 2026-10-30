@@ -159,8 +159,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     final wrongCode = failure?.code == BizCodes.wrongCode;
     final ready =
         AccountRules.isMobile(_mobile.text) &&
-        AccountRules.isSmsCode(_code.text) &&
-        !login.submitting;
+        AccountRules.isSmsCode(_code.text);
     final numberStyle = eat.text.count.copyWith(color: c.inkMuted);
 
     return PlainScaffold(
@@ -182,10 +181,8 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.telephoneNumberNational],
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(11),
-                  ],
+                  autofocus: true,
+                  inputFormatters: const [MobileInputFormatter()],
                   errorText: _mobileError,
                 ),
                 const SizedBox(height: 26),
@@ -203,7 +200,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                     LengthLimitingTextInputFormatter(6),
                   ],
                   onSubmitted: (_) {
-                    if (ready) _submit();
+                    if (ready && !login.submitting) _submit();
                   },
                   errorText: wrongCode ? failure!.message : null,
                   trailing: secondsLeft > 0
@@ -228,7 +225,8 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                       : EatButton.mist(
                           '获取验证码',
                           height: 36,
-                          onPressed: login.sending ? null : _sendCode,
+                          loading: login.sending,
+                          onPressed: _sendCode,
                         ),
                 ),
                 const SizedBox(height: 6),
@@ -241,7 +239,11 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                   FormMessage(failure.message),
                   const SizedBox(height: EatSpace.s14),
                 ],
-                EatButton.solid('登录', onPressed: ready ? _submit : null),
+                EatButton.solid(
+                  '登录',
+                  loading: login.submitting,
+                  onPressed: ready ? _submit : null,
+                ),
                 const SizedBox(height: 6),
                 FormLink(
                   '用密码登录',

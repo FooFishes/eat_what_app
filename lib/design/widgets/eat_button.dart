@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
@@ -7,7 +9,9 @@ import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart' show CircularProgressIndicator;
 
 enum _Kind { solid, outline, mist, dashed, stageSolid, stageGhost }
 
@@ -18,6 +22,9 @@ enum _Kind { solid, outline, mist, dashed, stageSolid, stageGhost }
 /// [EatButton.stageSolid] 和 [EatButton.stageGhost]，颜色跟着所在的舞台走。
 ///
 /// [onPressed] 为 null 时不可用：变成扁平的灰底，附近要用 `warn` 文字说明怎样才能用。
+/// 条件还没满足、但点了要告诉用户差什么时（没勾协议就点登录）设 [muted]：样子和不可用一样，
+/// 点了照样调 [onPressed]，由页面给出提示；条件满足后去掉 [muted]，灰底平滑过渡成正常的样子。
+/// 提交等着网络时设 [loading]：样子不变灰，文字换成转圈，不能再点；读屏报「按钮名，进行中」。
 /// 宽度默认贴着内容；放进 `Expanded` 或给定宽度时撑满，成对出现时左次右主、等宽、隔 `space-10`。
 class EatButton extends StatelessWidget {
   const new solid(
@@ -26,6 +33,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.solid;
 
   const new outline(
@@ -34,6 +43,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.outline;
 
   const new mist(
@@ -42,6 +53,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.mist;
 
   const new dashed(
@@ -50,6 +63,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.dashed;
 
   /// 舞台上的主操作：浅色舞台是 `ink` 底、舞台色字；深色舞台是白色渐变底、舞台色字。
@@ -59,6 +74,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.stageSolid;
 
   /// 舞台上的次操作：半透明的磨砂底，文字是舞台文字色。
@@ -68,6 +85,8 @@ class EatButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.height = EatSize.button,
+    this.loading = false,
+    this.muted = false,
   }) : _kind = _Kind.stageGhost;
 
   final String label;
@@ -78,6 +97,12 @@ class EatButton extends StatelessWidget {
 
   /// 主按钮 52；列表行里的小按钮（回关、关注）36，点击区域会自动扩到 44。
   final double height;
+
+  /// 正在处理这次点击，比如等登录接口返回。
+  final bool loading;
+
+  /// 看起来不可用，点了仍然响应。
+  final bool muted;
 
   final _Kind _kind;
 
@@ -95,58 +120,81 @@ class EatButton extends StatelessWidget {
         ? 14.0
         : 15.0;
     return EatTappable(
-      onTap: onPressed,
+      onTap: loading ? null : onPressed,
+      label: loading ? '$label，进行中' : null,
       builder: (context, pressed) {
         final look = _look(eat, stage, pressed: pressed);
-        final sinks = onPressed != null && _kind != _Kind.dashed;
+        final sinks =
+            onPressed != null && !loading && !muted && _kind != _Kind.dashed;
         final duration = context.motion(EatMotion.press);
-        final content = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon case final icon?) ...[
-              EatIcon(icon, size: compact ? 16 : 18, color: look.foreground),
-              const SizedBox(width: EatSpace.s8),
-            ],
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: eat.text.buttonLabel.copyWith(
-                  fontSize: fontSize,
-                  color: look.foreground,
+        // 按下用 90ms；松开、在可用和不可用之间切换时用选中态的 180ms，颜色不是一下跳过去。
+        final styleDuration = pressed
+            ? duration
+            : context.motion(EatMotion.select);
+        final content = TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: look.foreground),
+          duration: styleDuration,
+          curve: EatMotion.select.curve,
+          builder: (context, foreground, _) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon case final icon?) ...[
+                EatIcon(icon, size: compact ? 16 : 18, color: foreground),
+                const SizedBox(width: EatSpace.s8),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: eat.text.buttonLabel.copyWith(
+                    fontSize: fontSize,
+                    color: foreground,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
+        // 转圈叠在原来的文字上，文字只是隐去，按钮宽度不跟着变。
+        final body = loading
+            ? Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(opacity: 0, child: content),
+                  SizedBox.square(
+                    dimension: compact ? 16 : 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: look.foreground,
+                      value: MediaQuery.disableAnimationsOf(context)
+                          ? 0.75
+                          : null,
+                    ),
+                  ),
+                ],
+              )
+            : content;
         // 贴着内容的按钮两侧留 22px（小按钮 14px）；被撑满时（Expanded、给定宽度）文字居中，
         // 两侧只留 6px，否则三个并排的按钮会把「新建一家店」省略成「新建…」。
-        final button = LayoutBuilder(
-          builder: (context, constraints) => AnimatedContainer(
-            duration: duration,
+        final button = AnimatedContainer(
+          duration: duration,
+          curve: EatMotion.press.curve,
+          transform: Matrix4.translationValues(
+            0,
+            sinks && pressed ? EatMotion.pressOffset : 0,
+            0,
+          ),
+          child: Surface(
+            style: look.style,
+            duration: styleDuration,
             curve: EatMotion.press.curve,
-            transform: Matrix4.translationValues(
-              0,
-              sinks && pressed ? EatMotion.pressOffset : 0,
-              0,
-            ),
-            child: Surface(
-              style: look.style,
-              duration: duration,
-              curve: EatMotion.press.curve,
-              child: SizedBox(
-                height: height,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: constraints.hasTightWidth
-                        ? 6
-                        : compact
-                        ? 14
-                        : 22,
-                  ),
-                  child: Center(widthFactor: 1, child: content),
-                ),
+            child: SizedBox(
+              height: height,
+              child: _SidePadding(
+                loose: compact ? 14 : 22,
+                tight: 6,
+                child: Center(widthFactor: 1, child: body),
               ),
             ),
           ),
@@ -167,7 +215,7 @@ class EatButton extends StatelessWidget {
   }) {
     final c = eat.colors;
     final s = eat.shadows;
-    if (onPressed == null) {
+    if (onPressed == null || muted) {
       return _kind == _Kind.dashed
           ? (style: SurfaceStyle.dashed(c.lineStrong), foreground: c.disabledFg)
           : (style: SurfaceStyle.flat(c.disabledBg), foreground: c.disabledFg);
@@ -216,6 +264,95 @@ class EatButton extends StatelessWidget {
           foreground: stage.foreground,
         );
     }
+  }
+}
+
+/// 左右留白：宽度是给定的（撑满）时用 [tight]，贴着内容时用 [loose]。
+///
+/// 不用 `LayoutBuilder` 判断宽度，是为了让按钮能回答自己的固有尺寸：抽屉、面板这类按内容
+/// 定高的容器会先量一遍里面的按钮，`LayoutBuilder` 量不了。
+class _SidePadding extends SingleChildRenderObjectWidget {
+  const new({required this.loose, required this.tight, super.child});
+
+  final double loose;
+  final double tight;
+
+  @override
+  _RenderSidePadding createRenderObject(BuildContext context) =>
+      _RenderSidePadding(loose: loose, tight: tight);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderSidePadding renderObject,
+  ) => renderObject
+    ..loose = loose
+    ..tight = tight;
+}
+
+class _RenderSidePadding extends RenderShiftedBox {
+  _RenderSidePadding({required this._loose, required this._tight})
+    : super(null);
+
+  double _loose;
+  set loose(double value) {
+    if (value == _loose) return;
+    _loose = value;
+    markNeedsLayout();
+  }
+
+  double _tight;
+  set tight(double value) {
+    if (value == _tight) return;
+    _tight = value;
+    markNeedsLayout();
+  }
+
+  double _sideFor(BoxConstraints constraints) =>
+      constraints.hasTightWidth ? _tight : _loose;
+
+  @override
+  double computeMinIntrinsicWidth(double height) =>
+      (child?.getMinIntrinsicWidth(height) ?? 0) + _loose * 2;
+
+  @override
+  double computeMaxIntrinsicWidth(double height) =>
+      (child?.getMaxIntrinsicWidth(height) ?? 0) + _loose * 2;
+
+  @override
+  double computeMinIntrinsicHeight(double width) =>
+      child?.getMinIntrinsicHeight(math.max(0, width - _loose * 2)) ?? 0;
+
+  @override
+  double computeMaxIntrinsicHeight(double width) =>
+      child?.getMaxIntrinsicHeight(math.max(0, width - _loose * 2)) ?? 0;
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final side = _sideFor(constraints);
+    final inner = constraints.deflate(EdgeInsets.symmetric(horizontal: side));
+    final childSize = child?.getDryLayout(inner) ?? Size.zero;
+    return constraints.constrain(
+      Size(childSize.width + side * 2, childSize.height),
+    );
+  }
+
+  @override
+  void performLayout() {
+    final side = _sideFor(constraints);
+    final child = this.child;
+    if (child == null) {
+      size = constraints.constrain(Size(side * 2, 0));
+      return;
+    }
+    child.layout(
+      constraints.deflate(EdgeInsets.symmetric(horizontal: side)),
+      parentUsesSize: true,
+    );
+    size = constraints.constrain(
+      Size(child.size.width + side * 2, child.size.height),
+    );
+    (child.parentData! as BoxParentData).offset = Offset(side, 0);
   }
 }
 

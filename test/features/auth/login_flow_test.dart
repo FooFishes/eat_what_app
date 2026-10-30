@@ -63,19 +63,39 @@ void main() {
       ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
   });
 
-  testWidgets('没登录时进登录页；勾选协议之前「手机号登录」不能点', (tester) async {
+  testWidgets('没登录时进登录页；没勾协议时按钮是灰的，点了提示先勾选，抽屉高度不变', (tester) async {
     final (_, router) = await pumpApp(tester, env);
 
     expect(locationOf(router), Paths.login);
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(_button(tester, '手机号登录').onPressed, isNull);
-    expect(find.text('请先勾选同意协议'), findsOneWidget);
+    bool hintShown() =>
+        tester
+            .widget<AnimatedOpacity>(
+              find.ancestor(
+                of: find.text('请先勾选同意协议'),
+                matching: find.byType(AnimatedOpacity),
+              ),
+            )
+            .opacity ==
+        1;
+    expect(hintShown(), isFalse);
+    expect(_button(tester, '手机号登录').muted, isTrue);
+    final buttonTop = tester.getTopLeft(find.text('手机号登录')).dy;
+
+    await tester.tap(find.text('手机号登录'));
+    await tester.pumpAndSettle();
+    expect(locationOf(router), Paths.login);
+    expect(hintShown(), isTrue);
+    expect(tester.getTopLeft(find.text('手机号登录')).dy, buttonTop);
 
     await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
     await tester.pump();
-    expect(_button(tester, '手机号登录').onPressed, isNotNull);
-    expect(find.text('请先勾选同意协议'), findsNothing);
+    expect(hintShown(), isFalse);
+    expect(_button(tester, '手机号登录').muted, isFalse);
     await expectLater(tester, meetsGuideline(textContrastGuideline));
+    await tester.tap(find.text('手机号登录'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PhoneLoginPage), findsOneWidget);
   });
 
   testWidgets('验证码登录：过人机验证发码，60 秒倒计时，登录后进发现页并记下协议同意', (tester) async {
@@ -291,6 +311,26 @@ void main() {
     await tester.tap(find.text('用密码登录'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('矮屏加大字号时登录页的品牌字和抽屉不重叠，可以滚到按钮', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    await pumpApp(tester, env, size: const Size(320, 480));
+    expect(tester.takeException(), isNull);
+
+    final intro = tester.getRect(find.textContaining('看看软件园'));
+    final button = find.widgetWithText(EatButton, '手机号登录');
+    expect(intro.bottom, lessThan(tester.getRect(button).top));
+    await tester.ensureVisible(find.bySemanticsLabel('同意隐私政策和用户协议'));
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
+    await tester.pump();
+    await tester.ensureVisible(button);
+    await tester.pump();
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byType(PhoneLoginPage), findsOneWidget);
   });
 
   testWidgets('宽屏时登录页的抽屉居中，最宽 480', (tester) async {

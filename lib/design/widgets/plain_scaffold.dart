@@ -9,6 +9,8 @@ import 'package:flutter/widgets.dart';
 /// 左右边距 `space-20`。宽屏时整页挤到居中一栏，最宽 480。
 ///
 /// 分组靠 13px 的小标题和留白，不加卡片；[slivers] 已经套好了左右边距。
+///
+/// 键盘弹起时整页让到键盘上方，输入框获得焦点能滚到看得见的地方；拖动页面或点空白处收起键盘。
 class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -53,72 +55,86 @@ class _PlainScaffoldState extends State<PlainScaffold>
         color: eat.colors.paper,
         child: DefaultTextStyle.merge(
           style: TextStyle(color: eat.colors.ink),
-          child: CustomScrollView(
-            controller: scrollController,
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  padding - 12,
-                  media.padding.top + 2,
-                  padding - 4,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: EatSize.touch,
-                    child: Row(
-                      children: [
-                        if (widget.showBack)
-                          EatBackButton(onPressed: widget.onBack),
-                        const Spacer(),
-                        ...widget.actions,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(padding, 8, padding, 24),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: EatSpace.s4,
-                    children: [
-                      Semantics(
-                        header: true,
-                        child: Text(
-                          widget.title,
-                          textScaler: TextScaler.noScaling,
-                          style: eat.text.pageTitle.copyWith(
-                            color: eat.colors.ink,
+          child: GestureDetector(
+            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+            behavior: HitTestBehavior.translucent,
+            excludeFromSemantics: true,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+              child: MediaQuery.removeViewInsets(
+                context: context,
+                removeBottom: true,
+                child: CustomScrollView(
+                  controller: scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding - 12,
+                        media.padding.top + 2,
+                        padding - 4,
+                        0,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: EatSize.touch,
+                          child: Row(
+                            children: [
+                              if (widget.showBack)
+                                EatBackButton(onPressed: widget.onBack),
+                              const Spacer(),
+                              ...widget.actions,
+                            ],
                           ),
                         ),
                       ),
-                      if (widget.subtitle case final subtitle?)
-                        Text(
-                          subtitle,
-                          style: eat.text.body.copyWith(
-                            fontSize: 14,
-                            height: 22 / 14,
-                            color: eat.colors.inkMuted,
-                          ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(padding, 8, padding, 24),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing: EatSpace.s4,
+                          children: [
+                            Semantics(
+                              header: true,
+                              child: Text(
+                                widget.title,
+                                textScaler: TextScaler.noScaling,
+                                style: eat.text.pageTitle.copyWith(
+                                  color: eat.colors.ink,
+                                ),
+                              ),
+                            ),
+                            if (widget.subtitle case final subtitle?)
+                              Text(
+                                subtitle,
+                                style: eat.text.body.copyWith(
+                                  fontSize: 14,
+                                  height: 22 / 14,
+                                  color: eat.colors.inkMuted,
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: padding),
+                      sliver: SliverMainAxisGroup(slivers: widget.slivers),
+                    ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: navInset > 0
+                            ? navInset
+                            : media.padding.bottom + EatSpace.s24,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: padding),
-                sliver: SliverMainAxisGroup(slivers: widget.slivers),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: navInset > 0
-                      ? navInset
-                      : media.padding.bottom + EatSpace.s24,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

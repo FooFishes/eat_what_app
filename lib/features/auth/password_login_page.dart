@@ -86,8 +86,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     final wrong = failure != null && isWrongCredentials(failure);
     final ready =
         AccountRules.isLoginAccount(_account.text.trim()) &&
-        AccountRules.isPassword(_password.text) &&
-        !login.submitting;
+        AccountRules.isPassword(_password.text);
 
     return PlainScaffold(
       title: '密码登录',
@@ -103,6 +102,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                   label: '手机号或用户名',
                   controller: _account,
                   hintText: '11 位手机号或用户名',
+                  autofocus: true,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.username],
                   inputFormatters: [LengthLimitingTextInputFormatter(64)],
@@ -118,7 +118,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                   autofillHints: const [AutofillHints.password],
                   inputFormatters: [LengthLimitingTextInputFormatter(64)],
                   onSubmitted: (_) {
-                    if (ready) _submit();
+                    if (ready && !login.submitting) _submit();
                   },
                   // 只有账号或密码不对时下划线变 `warn`；没设过密码、没网这类不是输错了，提示写在下面。
                   errorText: wrong ? '账号或密码错误' : null,
@@ -135,7 +135,11 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                   FormMessage(failure.message),
                 ],
                 const SizedBox(height: 40),
-                EatButton.solid('登录', onPressed: ready ? _submit : null),
+                EatButton.solid(
+                  '登录',
+                  loading: login.submitting,
+                  onPressed: ready ? _submit : null,
+                ),
                 const SizedBox(height: 6),
                 FormLink('用验证码登录', onTap: _useCode),
                 const SizedBox(height: EatSpace.s24),
