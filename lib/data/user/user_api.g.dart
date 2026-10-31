@@ -6,6 +6,20 @@ part of 'user_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
+    UserProfileDto(
+      displayName: json['displayName'] as String?,
+      avatar: json['avatar'] as String?,
+      earnedLikes: (json['earnedLikes'] as num?)?.toInt(),
+      fansCount: (json['fansCount'] as num?)?.toInt(),
+      followingsCount: (json['followingsCount'] as num?)?.toInt(),
+      fansVisible: json['fansVisible'] as bool?,
+      followingsVisible: json['followingsVisible'] as bool?,
+      isFollowingMe: json['isFollowingMe'] as bool?,
+      isFollowingHim: json['isFollowingHim'] as bool?,
+      uploadedFoodsCount: (json['uploadedFoodsCount'] as num?)?.toInt(),
+    );
+
 UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   id: (json['id'] as num?)?.toInt(),
   displayName: json['displayName'] as String?,

@@ -8,6 +8,9 @@ import 'dart:io';
 
 import 'package:eat/data/auth/auth_api.dart';
 import 'package:eat/data/consent/consent_api.dart';
+import 'package:eat/data/food/food_api.dart';
+import 'package:eat/data/notification/notification_api.dart';
+import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/user/user_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yaml/yaml.dart';
@@ -15,6 +18,9 @@ import 'package:yaml/yaml.dart';
 const _clients = {
   'AuthApi': AuthApi.endpoints,
   'ConsentApi': ConsentApi.endpoints,
+  'FoodApi': FoodApi.endpoints,
+  'NotificationApi': NotificationApi.endpoints,
+  'PlaceApi': PlaceApi.endpoints,
   'UserApi': UserApi.endpoints,
 };
 

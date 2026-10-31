@@ -72,6 +72,12 @@ class ApiClient {
     consentRetry: consentRetry,
   );
 
+  Future<Object?> delete(String path, {CancelToken? cancelToken}) =>
+      _send('DELETE', path, cancel: cancelToken);
+
+  Future<Object?> put(String path, {Object? body, CancelToken? cancelToken}) =>
+      _send('PUT', path, body: body, cancel: cancelToken);
+
   Future<Object?> _send(
     String method,
     String path, {

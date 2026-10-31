@@ -1,19 +1,50 @@
+import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_api.g.dart';
 
-/// 接口分组 User：当前用户。资料、关注、隐私在后面的阶段加。
+/// 接口分组 User：当前用户、一个用户对外的资料和统计。编辑资料、关注、隐私在阶段六加。
 class UserApi {
   UserApi(this._client);
 
   final ApiClient _client;
 
-  static const endpoints = ['GET /user/info'];
+  static const endpoints = ['GET /user/info', 'GET /user/userInfo'];
 
   Future<UserInfoDto> info() async =>
       decodeJson(await _client.get('/user/info'), UserInfoDto.fromJson);
+
+  Future<UserProfileDto> profile(
+    int userId, {
+    CancelToken? cancelToken,
+  }) async => decodeJson(
+    await _client.get(
+      '/user/userInfo',
+      query: {'userId': userId},
+      cancelToken: cancelToken,
+    ),
+    UserProfileDto.fromJson,
+  );
+}
+
+/// `/user/userInfo` 的 `data`：一个用户对外的资料、统计和我们之间的关注关系。
+@JsonSerializable(createToJson: false)
+class const UserProfileDto({
+  final String? displayName,
+  final String? avatar,
+  final int? earnedLikes,
+  final int? fansCount,
+  final int? followingsCount,
+  final bool? fansVisible,
+  final bool? followingsVisible,
+  final bool? isFollowingMe,
+  final bool? isFollowingHim,
+  final int? uploadedFoodsCount,
+}) {
+  factory UserProfileDto.fromJson(Map<String, dynamic> json) =>
+      _$UserProfileDtoFromJson(json);
 }
 
 /// `/user/info` 的 `data`。字段照接口写成可空，转领域模型时补默认值。

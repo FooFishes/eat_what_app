@@ -16,7 +16,22 @@ enum Capability {
   editOwnDish,
 
   /// 编辑资料。未认证能做，封禁中不能。
-  editProfile,
+  editProfile;
+
+  /// 拦截面板里的动作词：「认证后才能点赞」「账号封禁中，暂时不能点赞」（产品 7.3）。
+  String get verb => switch (this) {
+    like => '点赞',
+    favorite => '收藏',
+    tasteTag || myTag => '加标签',
+    comment => '评论',
+    reply => '回复',
+    rateShop => '评价',
+    follow => '关注',
+    publishDish => '发布',
+    createShop => '新建店',
+    editOwnDish => '编辑',
+    editProfile => '编辑资料',
+  };
 }
 
 /// 一次权限判断的结果。

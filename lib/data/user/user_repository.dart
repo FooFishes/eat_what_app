@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/user/user_api.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/domain/models/notice.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_repository.g.dart';
@@ -38,6 +40,26 @@ class UserRepository {
       await _kv.delete(cacheKey);
       return null;
     }
+  }
+
+  /// 一个用户对外的资料和统计；「我的」也用它拿自己的统计。
+  Future<UserProfile> profile(int userId, {CancelToken? cancelToken}) async {
+    final dto = await _api.profile(userId, cancelToken: cancelToken);
+    return UserProfile(
+      id: userId,
+      nickname: dto.displayName?.trim().isNotEmpty == true
+          ? dto.displayName!.trim()
+          : '同学',
+      avatarUrl: resolveImageUrl(dto.avatar, _assetBaseUrl),
+      earnedLikes: dto.earnedLikes ?? 0,
+      fans: dto.fansCount ?? 0,
+      followings: dto.followingsCount ?? 0,
+      uploadedDishes: dto.uploadedFoodsCount ?? 0,
+      fansVisible: dto.fansVisible ?? false,
+      followingsVisible: dto.followingsVisible ?? false,
+      followsMe: dto.isFollowingMe ?? false,
+      followedByMe: dto.isFollowingHim ?? false,
+    );
   }
 
   CurrentUser _toUser(UserInfoDto dto) => CurrentUser(
