@@ -6,7 +6,7 @@ info:
     servers=/api，路径为后端实际映射，不自动去重 /api。当前会话头是 satoken: Bearer <tokenValue>，以登录返回的
     tokenName 为准。HTTP 200 也可能包含非零业务
     code；角色、同意状态和集群可用性仍由服务端检查。时间输出兼容项目自定义毫秒序列化及默认 ISO 转换器；当前双机授权有效期实测为 ISO 时间。
-  version: tencent-captcha-20261024
+  version: user-blocks-consent-20261026
 tags:
   - name: Activity
   - name: FoodTagAdmin
