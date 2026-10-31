@@ -69,6 +69,10 @@ const _allowedLayers = <String, Set<String>>{
   'features': {'core', 'design', 'domain', 'data', 'state', 'features'},
 };
 
+/// 各功能都能导入的功能目录：拦截面板、轻提示这类所有页面共用、又要读账号状态的东西
+/// （技术架构 2.1 的 `system/`）。
+const _sharedFeature = 'system';
+
 /// 功能目录唯一能导入的 `router/` 文件：跳转用的路径常量。
 const _routerPathsFile = 'router/paths.dart';
 
@@ -149,7 +153,9 @@ String? _internalProblem(String from, String fromLayer, String target) {
   if (targetLayer == 'root') return '入口文件只能由入口文件导入';
   if (fromLayer == 'features') {
     if (target == _routerPathsFile) return null;
-    if (targetLayer == 'features' && _featureOf(target) != _featureOf(from)) {
+    if (targetLayer == 'features' &&
+        _featureOf(target) != _featureOf(from) &&
+        _featureOf(target) != _sharedFeature) {
       return '功能之间不互相导入，跳转用 router/paths.dart 的路径';
     }
   }
