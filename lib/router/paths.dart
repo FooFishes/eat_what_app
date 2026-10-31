@@ -22,6 +22,20 @@ abstract final class Paths {
   /// 发布第 1 步：选店。
   static const publish = '/publish';
 
+  /// 菜品详情。从列表进来时把手上的那道菜放在 `extra` 里，舞台不用等接口（技术架构 10.5）。
+  static const dishPattern = '/dishes/:dishId';
+  static String dish(int id) => '/dishes/$id';
+
+  /// 餐厅详情。
+  static const shopPattern = '/shops/:shopId';
+  static String shop(int id) => '/shops/$id';
+
+  /// 搜索，从发现页右上角进。
+  static const search = '/search';
+
+  /// 消息，从发现页右上角的铃铛进。
+  static const inbox = '/inbox';
+
   /// 组件页，只在 debug 构建里有。
   static const kit = '/kit';
 }

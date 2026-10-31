@@ -1,12 +1,17 @@
 import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
+import 'package:eat/domain/models/dish.dart';
 import 'package:eat/features/discover/discover_page.dart';
+import 'package:eat/features/dish/dish_page.dart';
+import 'package:eat/features/inbox/inbox_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
 import 'package:eat/features/profile/me_page.dart';
 import 'package:eat/features/publish/publish_page.dart';
+import 'package:eat/features/search/search_page.dart';
 import 'package:eat/features/settings/about_page.dart';
+import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/system/not_found_page.dart';
@@ -115,6 +120,25 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
       GoRoute(path: Paths.publish, builder: (_, _) => const PublishPage()),
+      GoRoute(path: Paths.search, builder: (_, _) => const SearchPage()),
+      GoRoute(path: Paths.inbox, builder: (_, _) => const InboxPage()),
+      GoRoute(
+        path: Paths.dishPattern,
+        builder: (_, state) => switch (_idOf(state, 'dishId')) {
+          final id? => DishPage(
+            dishId: id,
+            initial: state.extra is Dish ? state.extra! as Dish : null,
+          ),
+          null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
+        path: Paths.shopPattern,
+        builder: (_, state) => switch (_idOf(state, 'shopId')) {
+          final id? => ShopPage(shopId: id),
+          null => const NotFoundPage(),
+        },
+      ),
       if (kDebugMode)
         GoRoute(path: Paths.kit, builder: (_, _) => const KitPage()),
     ],
@@ -128,6 +152,10 @@ GoRouter appRouter(Ref ref) {
 
 /// 子路由写相对路径：`/login/phone` 在 `/login` 下面是 `phone`。
 String _child(String path, String parent) => path.substring(parent.length + 1);
+
+/// 地址里的数字 id；不是数字（手拼的链接）时为 null，显示「页面不存在」。
+int? _idOf(GoRouterState state, String name) =>
+    int.tryParse(state.pathParameters[name] ?? '');
 
 /// 登录各页之间原样传递的参数。
 Map<String, String> _loginQuery(GoRouterState state) => {

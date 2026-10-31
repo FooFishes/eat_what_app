@@ -1,0 +1,130 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'nearby_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+
+@ProviderFor(nearbyShops)
+final nearbyShopsProvider = NearbyShopsFamily._();
+
+/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+
+final class NearbyShopsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Shop>>,
+          List<Shop>,
+          FutureOr<List<Shop>>
+        >
+    with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
+  /// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+  NearbyShopsProvider._({
+    required NearbyShopsFamily super.from,
+    required NearbyQuery super.argument,
+  }) : super(
+         retry: null,
+         name: r'nearbyShopsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$nearbyShopsHash();
+
+  @override
+  String toString() {
+    return r'nearbyShopsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Shop>> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Shop>> create(Ref ref) {
+    final argument = this.argument as NearbyQuery;
+    return nearbyShops(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is NearbyShopsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$nearbyShopsHash() => r'a54b51effbb9636b2d09cd7ab28ecde5ff7ce242';
+
+/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+
+final class NearbyShopsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Shop>>, NearbyQuery> {
+  NearbyShopsFamily._()
+    : super(
+        retry: null,
+        name: r'nearbyShopsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+
+  NearbyShopsProvider call(NearbyQuery query) =>
+      NearbyShopsProvider._(argument: query, from: this);
+
+  @override
+  String toString() => r'nearbyShopsProvider';
+}
+
+/// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+
+@ProviderFor(myHub)
+final myHubProvider = MyHubProvider._();
+
+/// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+
+final class MyHubProvider
+    extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
+    with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
+  /// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+  MyHubProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'myHubProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$myHubHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Hub?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Hub?> create(Ref ref) {
+    return myHub(ref);
+  }
+}
+
+String _$myHubHash() => r'30801ea7c162f9ef6f0eb76904ef25536364c232';

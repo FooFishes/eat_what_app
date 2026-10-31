@@ -41,6 +41,11 @@ String _location(GoRouter router) =>
 
 Finder _visible(Type type) => find.byType(type).hitTestable();
 
+/// 页面本身的纵向滚动，不算分类栏这类横向滚动。
+final _verticalScrollable = find.byWidgetPredicate(
+  (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+);
+
 void main() {
   testWidgets('启动进入发现页，导航悬浮在底部，离左右 16、离底部 24 加安全区', (tester) async {
     final router = await _start(
@@ -95,7 +100,7 @@ void main() {
         .state<ScrollableState>(
           find.descendant(
             of: find.byType(DiscoverPage),
-            matching: find.byType(Scrollable),
+            matching: _verticalScrollable,
           ),
         )
         .position
@@ -113,7 +118,7 @@ void main() {
         .state<ScrollableState>(
           find.descendant(
             of: find.byType(DiscoverPage),
-            matching: find.byType(Scrollable),
+            matching: _verticalScrollable,
           ),
         )
         .position
@@ -131,7 +136,7 @@ void main() {
     final scrollable = tester.state<ScrollableState>(
       find.descendant(
         of: find.byType(DiscoverPage),
-        matching: find.byType(Scrollable),
+        matching: _verticalScrollable,
       ),
     );
     expect(scrollable.position.pixels, 0);
