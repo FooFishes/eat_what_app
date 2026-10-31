@@ -158,20 +158,16 @@
 
 ## 接口补齐
 
-设计里标「待接入」的功能，接口上线一个就接一个，不等阶段：补接口类，把 provider 从示例数据换成接口，去掉「待接入」，补测试。目前待接入的有：
+设计里标「待接入」的功能，接口上线一个就接一个，不等阶段：补接口类，把 provider 从示例数据换成接口，去掉「待接入」，补测试。待接入的入口在代码里都标着 `PendingFeature`（`lib/core/env/pending_features.dart`）。屏蔽、他人的上传、标签下的菜、清空足迹、个性化推荐开关的接口已经有了，随阶段六直接做。目前待接入的有：
 
 | 功能 | 画板 |
 | --- | --- |
 | 评论、回复、我的评论 | `G-Comments`、`G-WriteComment`、`G-Me` |
 | 专题 | `G-Topic`、`G-TopicArchive` |
-| 搜菜 | `G-Search` |
 | 举报、信息有误、反馈 | `G-PanelReport`、`G-WrongInfo`、`G-Feedback` |
-| 屏蔽 | `G-Blocked`、`G-UserProfile` |
 | 附近筛选 | `G-PanelFilter` |
 | 餐厅评分、收藏店铺 | `G-Detail` |
-| 他人的上传、标签下的菜、清空足迹 | `G-UserProfile`、`G-TagDishes`、`G-History` |
 | 登录设备、注销账号 | `G-Devices`、`G-DeleteAccount` |
-| 个性化推荐开关 | `G-SettingsPrivacy` |
 | 推送和通知设置 | `G-SettingsNotify`，还要先选推送 SDK（见依赖选型「推送」） |
 
 ## 发版节奏

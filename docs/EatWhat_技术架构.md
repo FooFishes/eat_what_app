@@ -6,6 +6,8 @@
 >
 > 2026-10-25：按阶段二的实现补充守卫第 4 条、网络层回调的接法、协议地址的配置、人机验证的 App 实现和测试的假实现（5.3、5.4、7.1、9.5、18.3、21.1）。
 >
+> 2026-11-01：按阶段三的实现和接口 `user-blocks-consent-20261026` 更新：坐标类型和转换放进 `domain`（2.1、14.1），`features/system/` 作为各功能共用的目录（2.2），校区改用 `/campus/list`（14.3），舞台色和裁切直接用接口字段、去掉过渡期现算（13.6），浏览不再要求认证（8.4），推荐等地点定下来再拉（10.5）。
+>
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
@@ -34,7 +36,6 @@ lib/
     storage/                SecureStore、KvStore（shared_preferences）、CacheStore
     failure/                AppFailure 分类；失败 → 用户能看懂的提示
     copy/                   通用文案：动作叫法、错误提示
-    geo/                    GCJ-02 / WGS-84 转换、距离、「320 m」格式化
     format/                 价格「¥18」、时间「12 分钟前」、计数
     platform/               平台能力的接口和各端实现：定位、选图压缩、分享、外部地图、
                             推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
@@ -53,8 +54,9 @@ lib/
                             StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
     models/                 Dish、Shop、Campus、Hub、MealTime、DishCategory、TasteTag、Comment、
-                            Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T> …
-    rules/                  权限表、饭点、价格与名称校验、推荐率、消息 → 跳转、菜名断行
+                            Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T>、GcjPoint、WgsPoint …
+    rules/                  权限表、饭点、价格与名称校验、推荐率、消息 → 跳转、菜名断行、
+                            坐标转换和距离（geo_rules.dart）
   data/                     数据层：按后端资源分组，做 IO
     auth/ consent/ user/ food/ restaurant/ hub/ notification/ upload/ history/ config/ analytics/ …
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）
@@ -100,7 +102,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）这些各页都用、又要读账号状态或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -433,8 +435,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 8.4 过渡期
 
-- 现状差距 P0：推荐、菜品详情、餐厅详情、菜单、标签、足迹现在要求已认证。`pending_features.dart` 里有一个「浏览需要认证」的开关，打开时这些页面对未认证账号显示认证引导；后端放开后关掉。
-- 关注现在只要求登录，产品要求已认证：客户端按产品规则拦（`Capability.follow`）。
+- 浏览接口（推荐、菜品、餐厅、商圈）已经对游客和未认证账号开放，关注也改成了要求认证，和产品规则一致，客户端不再需要「浏览需要认证」的开关。
+- 收藏接口只要求登录，产品要求已认证：客户端按产品规则拦（`Capability.favorite`）。
 
 ### 8.5 待接入的功能
 
@@ -563,6 +565,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 - 每个发请求的 Provider 拿一个 `CancelToken`，Provider 释放时取消（4.3）。离开页面，页面的请求就停了。
 - 搜索输入防抖：Provider 先等 300 ms，期间关键词变了（旧的 Provider 被释放）就不发请求。
+- 列表滑到底：最后放一个 `LoadMoreTrigger`，进了预加载范围就拉下一页；下一页失败时换成「加载失败，重试」，不自动重试。
+- 最近搜过的词存在 `cache.search.<用户 id>`，和接口缓存一起在退出登录时删掉。
 
 `cacheFor` 和 `cancelToken` 是 `core/network/` 里给 `Ref` 写的扩展：
 
@@ -779,14 +783,9 @@ extension RefCache on Ref {
 
 **在哪算**：发布时在「调整照片」页实时算（裁切变化后防抖 100 ms）。256 像素的图在三端主线程上都够快，不开 isolate。结果随菜品保存，所有人看到同一个颜色（产品 4.7）。
 
-### 13.6 过渡期：从封面现算
+### 13.6 舞台色和裁切的来源
 
-接口还没有舞台色字段时（现状差距 P0），显示一道菜之前从封面现算：
-
-- 转盘一批 8 道，预取下一批时顺便算。
-- 结果按「图片地址 + 裁切参数」缓存（10.1）。
-- Web 上读像素要求图片服务器允许跨域（A3）；读不到就用分类默认色。
-- 字段上线后去掉现算，直接用保存的值。
+接口已经有 `stageColor`、`stageAlternates`、`coverCrop`，显示时直接用保存的值；`stageColor` 为 null（老数据）时用分类默认色，分类也没有时用 `broth`。原来设想的「从封面现算」不再需要，取色只在发布时的「调整照片」里做。
 
 ### 13.7 显示
 
@@ -811,7 +810,7 @@ extension RefCache on Ref {
 | 高德、腾讯、百度的导航 URL | GCJ-02（百度用 `coord_type=gcj02` 指定） | 原样用 |
 | Apple 地图 URL | 大陆境内的处理方式没查到资料 | 真机验证后定 |
 
-- 转换在 `core/geo/`：WGS-84 → GCJ-02 是公开算法；GCJ-02 → WGS-84 用迭代反算，误差在米级。单元测试用几组已知点验证。
+- 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法；GCJ-02 → WGS-84 用迭代反算，误差在米级。单元测试用几组已知点验证。
 - 距离：两点都用 GCJ-02 算球面距离。显示「320 m」「1.2 km」。混用坐标系会差几百米，所以所有距离计算只接受 GCJ-02 的类型（用两个不同的类型 `GcjPoint`、`WgsPoint` 防止混用）。
 
 ### 14.2 定位
@@ -824,9 +823,9 @@ extension RefCache on Ref {
 
 ### 14.3 校区和商圈
 
-- 校区列表（名称、中心点、包含哪些商圈）先放在远程配置里，内置默认值只有软件园（现状差距 P1：先做成配置，不写死在业务代码里）。软件园中心点坐标和商圈对应关系要运营提供。
+- 已开放的校区用 `/campus/list`（名称、中心点、`isDefault`、排序）；商圈的 `campusId` 说明它属于哪个校区，为空的归入默认校区。
 - 商圈的范围和名称用接口 `/hub/list`、`/hub/detail`；按位置判断商圈用 `/hub/locate`。
-- 第一次打开：有定位就选最近的已开放校区，没有就选软件园；之后记住（产品 4.1）。
+- 第一次打开：有定位就选最近的已开放校区，没有就选 `isDefault` 的；之后记住（产品 4.1）。当前校区和饭点由 `state/place.dart` 的 `currentPlaceProvider` 给出，本机的选择读出来、校区列表拿到之前标为未就绪，推荐等它就绪再拉：推荐按天去重，拿错地点发出去又取消的请求也可能被算作「推荐过」。
 
 ### 14.4 地图（附近页、新建店）
 
