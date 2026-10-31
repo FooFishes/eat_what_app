@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 调业务接口、加载人机验证。模板只在 debug 和 profile 的清单里加了它，release 包没有就连不上网。 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 发现页的距离、附近页的地图：只在用的时候定位一次，不后台定位。 -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:label="沙软今天吃什么"
         android:name="${applicationName}"
@@ -50,6 +53,19 @@
         </intent>
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService"/>
+        </intent>
+        <!-- 「导航去店里」列出装了的地图 App。 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="androidamap"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="baidumap"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="qqmap"/>
         </intent>
     </queries>
 </manifest>
