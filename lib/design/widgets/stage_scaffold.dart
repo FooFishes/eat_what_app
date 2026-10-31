@@ -218,8 +218,9 @@ class _StageScaffoldState extends State<StageScaffold>
   }
 }
 
-/// 布局高度比绘制高度少 [overlap] 的 sliver：后面的 sliver 从它底部往上 [overlap] 处开始排，
-/// 配合 `SliverPaintOrder.lastIsTop` 画在它上面，形成抽屉压住舞台的样子。
+/// 布局高度比内容少 [overlap] 的 sliver：后面的 sliver 从它底部往上 [overlap] 处开始排，
+/// 多出来的那段画在自己的范围外面，配合 `SliverPaintOrder.lastIsTop` 被后面的抽屉盖住，
+/// 形成抽屉压住舞台的样子。
 class _OverlappedSliver extends SingleChildRenderObjectWidget {
   const new({required this.overlap, required Widget super.child});
 
@@ -252,7 +253,8 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
     child.layout(constraints.asBoxConstraints(), parentUsesSize: true);
     final extent = child.size.height;
     final scrollExtent = (extent - _overlap).clamp(0.0, extent);
-    final paintExtent = calculatePaintOffset(constraints, from: 0, to: extent);
+    // 绘制范围报成和布局范围一样，多出来的 [_overlap] 画在范围外面：报大了的话，视口会把后面那个
+    // sliver 的语义按重叠的高度裁掉，抽屉最上面一行的按钮在读屏里就少了一截。
     final layoutExtent = calculatePaintOffset(
       constraints,
       from: 0,
@@ -260,13 +262,10 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
     );
     geometry = SliverGeometry(
       scrollExtent: scrollExtent,
-      paintExtent: paintExtent,
-      layoutExtent: layoutExtent.clamp(0.0, paintExtent),
+      paintExtent: layoutExtent,
+      layoutExtent: layoutExtent,
       maxPaintExtent: extent,
-      hitTestExtent: paintExtent,
-      hasVisualOverflow:
-          extent > constraints.remainingPaintExtent ||
-          constraints.scrollOffset > 0,
+      hasVisualOverflow: true,
     );
     setChildParentData(child, constraints, geometry!);
   }

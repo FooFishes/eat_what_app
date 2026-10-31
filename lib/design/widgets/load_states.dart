@@ -242,6 +242,65 @@ class TileGridPlaceholder extends StatelessWidget {
   }
 }
 
+/// 放在列表最后：滚到快看见它时（进了列表的预加载范围）调一次 [onVisible] 加载下一页。
+///
+/// [generation] 一般传当前条数：加载回来条数变了，就再触发一次；没有更多时不要放它。
+/// [failed] 时不自动加载，换成「加载失败」和「重试」，免得一直重试。
+class LoadMoreTrigger extends StatefulWidget {
+  const new({
+    super.key,
+    required this.generation,
+    required this.onVisible,
+    this.failed = false,
+  });
+
+  final int generation;
+  final VoidCallback onVisible;
+  final bool failed;
+
+  @override
+  State<LoadMoreTrigger> createState() => _LoadMoreTriggerState();
+}
+
+class _LoadMoreTriggerState extends State<LoadMoreTrigger> {
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(LoadMoreTrigger oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.generation != widget.generation ||
+        oldWidget.failed && !widget.failed) {
+      _schedule();
+    }
+  }
+
+  void _schedule() {
+    if (widget.failed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !widget.failed) widget.onVisible();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: EatSpace.s16),
+    child: widget.failed
+        ? Center(
+            child: EatButton.mist(
+              '加载失败，重试',
+              icon: EatIcons.wifiOff,
+              height: 40,
+              onPressed: widget.onVisible,
+            ),
+          )
+        : const SizedBox(height: 20),
+  );
+}
+
 /// 列表行的加载占位：左边缩略图，右边两行字。
 class RowListPlaceholder extends StatelessWidget {
   const new({super.key, this.count = 4, this.thumbSize = EatSize.thumb});

@@ -6,6 +6,34 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:flutter/widgets.dart';
 
+/// 两列方块的网格，排法和设计稿一样：列间距 `space-14`、行间距 18。
+///
+/// 按行排、每行高度跟着内容走：系统字号放大后菜名变高也不会溢出。
+class SliverTileGrid extends StatelessWidget {
+  const new({super.key, required this.count, required this.builder});
+
+  final int count;
+  final IndexedWidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) => SliverList.separated(
+    itemCount: (count + 1) ~/ 2,
+    separatorBuilder: (_, _) => const SizedBox(height: 18),
+    itemBuilder: (context, row) => Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: EatSpace.s14,
+      children: [
+        Expanded(child: builder(context, row * 2)),
+        Expanded(
+          child: row * 2 + 1 < count
+              ? builder(context, row * 2 + 1)
+              : const SizedBox(),
+        ),
+      ],
+    ),
+  );
+}
+
 /// 推荐流和「我的」里的菜品方块：上面一张直接用原图的圆角方图，菜名和店名写在图外面。
 ///
 /// 两列网格，列间距 `space-14`、行间距 18 由网格给。不把文字压在图上，不给方块加底色、边框、阴影，
