@@ -6,8 +6,10 @@ import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
+import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/storage/secure_store.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/state/api_hooks.dart';
 import 'package:eat/state/session.dart';
@@ -182,6 +184,16 @@ const testUser = CurrentUser(
   banned: false,
 );
 
+/// 认证过的 [testUser]：能点赞、收藏、打标签。
+const verifiedUser = CurrentUser(
+  id: 42,
+  nickname: '天凉被破王',
+  phone: '13812345678',
+  hasPassword: false,
+  verified: true,
+  banned: false,
+);
+
 /// 人机验证：直接给出事先定好的结果，不弹任何东西。
 class FakeHumanVerifier implements HumanVerifier {
   FakeHumanVerifier([this.outcome = const CaptchaPassed(_ticket)]);
@@ -201,6 +213,28 @@ class FakeHumanVerifier implements HumanVerifier {
   }
 }
 
+/// 定位：给定的权限和位置（WGS-84），不碰系统。默认已拒绝，发现页不弹定位说明。
+class FakeLocationService implements LocationService {
+  FakeLocationService({this.state = LocationAccess.blocked, this.point});
+
+  LocationAccess state;
+  ({double lat, double lng})? point;
+  var requests = 0;
+
+  @override
+  Future<LocationAccess> access() async => state;
+
+  @override
+  Future<LocationAccess> request() async {
+    requests++;
+    return state;
+  }
+
+  @override
+  Future<({double lat, double lng})?> current() async =>
+      state == LocationAccess.granted ? point : null;
+}
+
 /// 一开始就是 [initial] 的登录态，跳过从本地存储恢复。
 class FakeSession extends Session {
   FakeSession(this.initial);
@@ -211,12 +245,23 @@ class FakeSession extends Session {
   SessionState build() => initial;
 }
 
+/// 1×1 的透明 PNG，测试里所有网络图片都用它。
+final transparentImage = Uint8List.fromList(const [
+  0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, //
+  0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, //
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, //
+  0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, //
+  0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, //
+  0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+]);
+
 /// 测试用的一套假环境：网络、存储都在内存里，网络层的回调接到登录态上。
 class TestEnv {
   final adapter = FakeAdapter();
   final kv = MemoryKvStore();
   final secure = MemorySecureStore();
   final verifier = FakeHumanVerifier();
+  final location = FakeLocationService();
 
   /// [session] 给定时登录态从它开始；要测登录过期，同时传 [token]，网络层会带上它。
   Future<ProviderContainer> container({
@@ -224,6 +269,7 @@ class TestEnv {
     AuthToken? token,
     List<Override> overrides = const [],
   }) async {
+    networkImageFactory = (_) => MemoryImage(transparentImage);
     final tokens = TokenStore(secure);
     if (token != null) await tokens.save(token);
     final container = ProviderContainer.test(
@@ -235,6 +281,7 @@ class TestEnv {
         secureStoreProvider.overrideWithValue(secure),
         tokenStoreProvider.overrideWithValue(tokens),
         humanVerifierProvider.overrideWithValue(verifier),
+        locationServiceProvider.overrideWithValue(location),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(
             baseUrl: testConfig.apiBaseUrl,
@@ -251,3 +298,98 @@ class TestEnv {
     return container;
   }
 }
+
+/// 一道菜的接口样例（`FoodVO`）。推荐接口才带店的坐标和商圈，[recommend] 为 true 时加上。
+Map<String, Object?> foodJson({
+  int id = 1,
+  String name = '鲜虾蟹籽云吞',
+  int restaurantId = 7,
+  String restaurantName = '袁记云饺',
+  double price = 18,
+  String category = 'staple',
+  String? stageColor = 'broth',
+  List<String> alternates = const ['mango', 'bamboo'],
+  int likes = 12,
+  bool liked = false,
+  bool favorite = false,
+  int uploaderId = 9,
+  List<Map<String, Object?>> systemTags = const [],
+  bool recommend = false,
+}) => {
+  'id': id,
+  'accountId': uploaderId,
+  'uploaderName': '小林',
+  'restaurantId': restaurantId,
+  'restaurantName': restaurantName,
+  'restaurantAddress': recommend ? '万达金街 1 层' : null,
+  'restaurantGcjLng': recommend ? 117.1412 : null,
+  'restaurantGcjLat': recommend ? 36.6681 : null,
+  'hubId': recommend ? 3 : null,
+  'hubName': recommend ? '万达金街' : null,
+  'name': name,
+  'description': '汤很鲜，虾仁很多',
+  'price': price,
+  'category': category,
+  'categoryLabel': '主食',
+  'pictureUrl': ['https://img.test/foods/$id.jpg'],
+  'pictureKeys': ['foods/$id.jpg'],
+  'systemTags': systemTags,
+  'myCustomTags': <Object>[],
+  'isLiked': liked,
+  'isFavorite': favorite,
+  'likesCount': likes,
+  'mealTimes': ['lunch', 'dinner'],
+  'stageColor': stageColor,
+  'stageAlternates': alternates,
+  'coverCrop': {'centerX': 0.5, 'centerY': 0.5, 'diameter': 1},
+  'removeBackground': false,
+  'createdAt': 1792763739329,
+  'updatedAt': 1792763739329,
+};
+
+/// 一个分页外壳。
+Map<String, Object?> pageJson(List<Object?> items, {bool hasNext = false}) => {
+  'currentPage': 1,
+  'items': items,
+  'totalPages': 1,
+  'totalItems': items.length,
+  'hasNext': hasNext,
+};
+
+/// 一家店的接口样例（`RestaurantVO`）。
+Map<String, Object?> restaurantJson({
+  int id = 7,
+  String name = '袁记云饺',
+  double lat = 36.6681,
+  double lng = 117.1412,
+}) => {
+  'id': id,
+  'accountId': 9,
+  'name': name,
+  'address': '万达金街 1 层',
+  'cityId': 1,
+  'location': {
+    'type': 'Point',
+    'coordinates': [lng, lat],
+  },
+  'gcjLng': lng,
+  'gcjLat': lat,
+  'hubId': 3,
+  'POI': null,
+  'pictureUrl': <String>[],
+  'createdAt': 1792763739329,
+  'updatedAt': 1792763739329,
+};
+
+/// `/campus/list` 的样例：只有软件园。
+final campusListJson = [
+  {
+    'id': 1,
+    'name': '软件园',
+    'gcjLng': 117.140109,
+    'gcjLat': 36.667382,
+    'isDefault': true,
+    'open': true,
+    'sort': 0,
+  },
+];

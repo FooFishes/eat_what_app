@@ -44,3 +44,13 @@ Future<(ProviderContainer, GoRouter)> pumpApp(
 /// 地址栏里的地址。
 String locationOf(GoRouter router) =>
     router.routerDelegate.currentConfiguration.uri.toString();
+
+/// 测试结束前收起 App 并释放 Provider：详情页的 Provider 没人看以后还要留 5 分钟
+/// （`cacheFor` 的定时器），不在测试里先释放，测试框架会报定时器没走完。
+Future<void> unmountApp(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await tester.pumpWidget(const SizedBox());
+  container.dispose();
+}
