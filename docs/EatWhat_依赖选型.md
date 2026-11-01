@@ -45,8 +45,8 @@
 | 地图 | `flutter_map` | `^8.3.2` | 2026-08-27 | ✅ | ✅ | ✅ | 已引入（阶段三），底图待确认 D1 |
 | 地图坐标类型 | `latlong2` | `^0.10.1` | 2026-04-27 | ✅ | ✅ | ✅ | 已引入（阶段三） |
 | 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 已引入（阶段三） |
-| 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 阶段四 |
-| 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 阶段四 |
+| 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 已引入（阶段四） |
+| 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 已引入（阶段四） |
 | 崩溃上报 | `sentry_flutter` | `^10.1.0` | 2026-10-15 | ✅ | ✅ | ✅ | 阶段五，待确认 D4 |
 | 网络请求的崩溃上下文 | `sentry_dio` | 和 `sentry_flutter` 同版本 | 2026-10-22 | ✅ | ✅ | ✅ | 阶段五 |
 | 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 阶段五，待确认 D3 |
@@ -262,8 +262,8 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 环节 | 选 | 说明 |
 | --- | --- | --- |
-| 选择 | `image_picker ^1.2.4` | 拍照、相册多选（`pickMultiImage(limit:)`）。Web 上是文件选择框，手机浏览器可以直接拍。iOS 相册走系统 PHPicker，不需要相册权限；拍照要在 `Info.plist` 写 `NSCameraUsageDescription` |
-| 压缩 | `flutter_image_compress ^2.5.1` | 三端统一用 `compressWithList`（Web 不支持按文件压缩）。输出 JPEG；默认 `keepExif: false`，**去掉 EXIF**，照片里的 GPS 位置不会传上去；方向统一校正。Web 上靠浏览器 Canvas 编码 |
+| 选择 | `image_picker ^1.2.4` | 拍照、相册多选（`pickMultiImage(limit:)`）。Web 上是文件选择框，手机浏览器可以直接拍。iOS 相册走系统 PHPicker，不需要相册权限；拍照要在 `Info.plist` 写 `NSCameraUsageDescription`（老系统的相册兜底另写了 `NSPhotoLibraryUsageDescription`） |
+| 压缩 | `flutter_image_compress ^2.5.1` | 三端统一用 `compressWithList`（Web 不支持按文件压缩）。输出 JPEG；默认 `keepExif: false`，**去掉 EXIF**，照片里的 GPS 位置不会传上去；方向统一校正。Web 上靠浏览器 Canvas 编码。`minWidth`、`minHeight` 实际是按短边缩的上限，要先读原图尺寸、按长边 2048 换算（`core/platform/photo_picker.dart`） |
 | 裁切 | 自己写 | 「调整照片」只产出裁切参数（圆心和缩放），随菜品保存，不生成裁好的图。头像需要真的裁：用 `PictureRecorder` 画出圆形区域，`toByteData` 拿 PNG，再交给压缩转 JPEG |
 | 取色 | 自己写 | 只看圆内像素、按饱和度加权、吸附到 9 个 `stage-*`。用 `ui.instantiateImageCodec` 按小尺寸解码拿像素，纯 Dart 计算，三端一致 |
 | 去背景 | 不在客户端做（待确认 D8） | 见下 |

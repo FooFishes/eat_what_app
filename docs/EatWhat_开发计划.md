@@ -169,6 +169,7 @@
 | 餐厅评分、收藏店铺 | `G-Detail` |
 | 登录设备、注销账号 | `G-Devices`、`G-DeleteAccount` |
 | 推送和通知设置 | `G-SettingsNotify`，还要先选推送 SDK（见依赖选型「推送」） |
+| 自动去掉背景（接口只存开关，后端还没生成去背景的图） | `G-Crop` |
 
 ## 发版节奏
 

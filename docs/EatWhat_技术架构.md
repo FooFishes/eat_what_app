@@ -8,6 +8,8 @@
 >
 > 2026-11-01：按阶段三的实现和接口 `user-blocks-consent-20261026` 更新：坐标类型和转换放进 `domain`（2.1、14.1），`features/system/` 作为各功能共用的目录（2.2），校区改用 `/campus/list`（14.3），舞台色和裁切直接用接口字段、去掉过渡期现算（13.6），浏览不再要求认证（8.4），推荐等地点定下来再拉（10.5）。
 >
+> 2026-11-02：按阶段四的实现更新：发布流程的路由和「换一家」（5.1、5.5），业务码 40016（7.4），舞台取色的做法和验收结果（13.5），裁切参数已在接口里（13.4），各功能共用的底图（2.2），发布后通知相关列表的共享状态（4.2）。
+>
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
@@ -102,7 +104,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）这些各页都用、又要读账号状态或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的天地图底图（`base_map.dart`）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -159,6 +161,8 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
 | `unreadCountProvider` | 未读消息数 | 回到前台、回到发现页、读消息 |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
+| `tasteVocabularyProvider` | 口味词表，加标签面板和发布共用 | 只读 |
+| `publishedCountProvider` | 这次打开以来发布了几道菜、建了几家店；「我的」的统计和上传、餐厅详情的菜单监听它，发布后重新拉 | 加菜页、新建店页 |
 
 ### 4.3 约定
 
@@ -212,8 +216,8 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 通知 | `/settings/notify` | 根 | 否 | `G-SettingsNotify` |
 | 关于 | `/settings/about` | 根 | 否 | `G-SettingsAbout` |
 | 反馈 | `/feedback`（可带 `dishId`、`shopId`） | 根 | 否 | `G-Feedback` |
-| 发布 1/2 选店 | `/publish` | 根 | 否 | `G-PickShop` |
-| 新建店 | `/publish/shop` | 根 | 否 | `G-NewShop` |
+| 发布 1/2 选店 | `/publish`；加菜页「换一家」打开时带 `change=1` | 根 | 否 | `G-PickShop` |
+| 新建店 | `/publish/shop`（可带 `name`；`return=1` 时建好后带着店返回） | 根 | 否 | `G-NewShop` |
 | 发布 2/2 加菜 | `/publish/dish?shopId=` | 根 | 否 | `G-AddDish` |
 | 强制更新 | `/update` | 根 | 是 | `G-ForceUpdate` |
 | 停服维护 | `/maintenance` | 根 | 是 | `G-Maintenance` |
@@ -259,11 +263,13 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 5.5 发布流程的导航
 
-- 入口：`NavBar` 的「＋」、餐厅详情的「加一道菜」（直接 `/publish/dish?shopId=`）、发现页空状态、搜索没结果的「新建一家店」（`/publish/shop`，建好后替换成 `/publish/dish`）。
-- 流程状态（选的店、照片、上传队列、表单）在一个随流程释放的 Provider 里；Web 上刷新 `/publish/dish` 时状态没了，守卫让它回到 `/publish`。
+- 入口：`NavBar` 的「＋」、发现页空状态、「我的」空状态进 `/publish`；餐厅详情的「加一道菜」直接 `/publish/dish?shopId=`；搜索没结果的「新建一家店」进 `/publish/shop?name=<搜的词>`，建好后替换成 `/publish/dish`。
+- 三页都是顶层路由，写完整路径（不嵌套），发布成功后按路径前缀 `/publish` 退出整个流程。
+- 加菜页的草稿（照片、上传队列、裁切和颜色、表单）在随页面释放的 `draftProvider` 里（`features/publish/publish_providers.dart`）。店只在地址里：Web 上刷新 `/publish/dish?shopId=` 时店还在、草稿没了；地址里没有店时回到 `/publish`。
+- 「换一家」：加菜页 `push` 带 `change=1` 的选店页，选好后带着 `Shop` 返回，草稿留着。选店页里再新建店时，新建店页带 `return=1`，建好后一路返回。
 - 中途关闭：页面用 `PopScope` 拦住返回，填过内容时弹「这道菜还未发布，确定放弃吗？」。
-- 发布成功：退出发布流程的所有页面，再压入 `/dishes/:id`，提示「发布成功」。这样从详情返回就回到发起发布的页面（产品 6.9）。
-- 发布入口的权限拦截在进入流程之前做（第 8 节），不进入流程。
+- 发布成功：退出发布流程的所有页面，再压入 `/dishes/:id`，提示「发布成功」。这样从详情返回就回到发起发布的页面（产品 6.9）。流程是直接打开的、下面没有页面时，换成 `go` 到菜品详情。
+- 发布入口的权限拦截在进入流程之前做（第 8 节），不进入流程；发布和新建店提交时再判断一次。
 
 ### 5.6 Web 的 URL 策略
 
@@ -365,6 +371,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 30015、30016 | 接口文档：缺少人机验证票据；票据无效、过期或被判有风险 | 重新走一遍人机验证（18.3） |
 | 50004 | 接口文档：人机验证服务暂不可用 | 「人机验证暂不可用，请稍后再试」，不发验证码 |
 | `STATE_NOT_ALLOWED` | 接口文档：没认证（`/auth/getCode`、`/user/getCode`） | 和 20004 一样，按新的账号状态弹拦截面板 |
+| 40016 | 接口文档：发布的菜和这家店已有的菜重名（忽略空格），`data.id` 是已有的那道 | 加菜页在菜名下提示「这家店已有……」和「去看看」，不能发布。`ApiClient` 失败时把外壳里的 `data` 带在 `AppFailure.data` 上 |
 | 9xxxx、HTTP 5xx | 系统错误 | 「服务器出错，请稍后再试」；上报 |
 
 还缺的码：账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限（24 小时不能评论）、内容违规。要后端定义（A2）。
@@ -762,26 +769,26 @@ extension RefCache on Ref {
 - 「调整照片」只产出参数，不生成裁好的图：`CoverCrop(centerX, centerY, diameter)`。`centerX`、`centerY` 是圆心在原图里的位置（0–1，按原图宽高归一），`diameter` 是圆的直径占原图短边的比例（默认 1，即短边内切圆，居中）。
 - 和分辨率无关：缩略图、原图、不同尺寸的盘子都按同一组参数裁。`DishPlate` 收图片地址和这组参数。
 - 手势：拖动、双指缩放，缩放滑条是替代操作（规范「无障碍」）。参数限制在圆不超出原图的范围内。
-- 接口字段还没有（现状差距 P0），格式要和后端约定（A3）。没有之前裁切默认居中，改选存不下来。
+- 接口的 `coverCrop` 就是这三个字段，发布时提交。
 - 头像需要真的裁：把圆形区域画到 `PictureRecorder`，导出 PNG，再压成 JPEG 上传。
 
 ### 13.5 舞台取色算法
 
-放在 `lib/design/stage/stage_palette.dart`，纯函数：输入像素和裁切参数，输出三个 `StageColor` 和「是否可靠」。
+放在 `lib/design/stage/stage_palette.dart`：`StagePalette.sample` 把照片按长边 256 解码成 `StageSample`，`StageSample.suggest` 是纯函数，输入裁切参数，输出 9 个舞台色按远近的排序和「是否可靠」（`StageSuggestion`），`top3(分类默认色)` 给出「调整照片」里的三个推荐色。
 
-1. 把封面按长边 ≤ 256 解码（`ui.instantiateImageCodec` 的目标尺寸），拿 RGBA。
+1. 把封面按长边 ≤ 256 解码（`ImageDescriptor.instantiateCodec` 的目标尺寸），拿 RGBA。
 2. 只取圆内的像素（裁切参数映射到缩小后的坐标），跳过透明像素。
-3. 转到 OKLab / OKLCh。权重 = 彩度 × 亮度系数（太黑、太白的像素降权）。
-4. 色相分 36 个区间按权重累计，取权重最大的区间（连同两侧相邻区间），这部分像素的加权平均就是代表色。
-5. 可靠性：圆内「有颜色」的像素（彩度超过阈值）权重占比太低，判为太灰。
-6. 吸附：按 OKLab 距离给 9 个舞台色排序，取前三。太灰时：第一个换成分类默认色（还没选分类就用 `broth`，选了分类后自动换成分类色；用户手动选过就不再动，产品 6.9），后两个取排序里的前两个。
-7. 阈值写成常量，用样图调。
+3. 转到 OKLab。亮度系数：太黑（阴影、碗沿）、太白（反光、桌布）的像素降权，到两头时不算。
+4. 色相分 36 段，按「彩度 × 亮度系数」累计权重，找出最重的一段；再把它两侧各两段（共 50°）的像素按亮度系数平均（不再乘彩度），就是代表色。平均时乘了彩度会被最艳的一小块拉走：红烧肉的酱汁会把整盘拉成红油。
+5. 可靠性：彩度超过阈值的像素按亮度系数计，占圆内不到 12% 就判为太灰。
+6. 吸附：按 OKLab 距离给 9 个舞台色排序，亮度差只算一半（实拍的明暗受光线影响大，色相才分得开菜）。太灰时：第一个换成分类默认色（还没选分类就用 `broth`，选了分类后自动换成分类色；用户手动选过就不再动，产品 6.9），后两个取排序里的前两个。
+7. 阈值是常量，按下面的样图调定。
 
-**验收**：`prototype/assets/photos/` 的 5 张样图复制到 `test/fixtures/photos/`，按设计资源说明的实测结果写测试：螺蛳粉、铁锅炖、红烧肉 → `soy`；粘豆包 → `broth`；玉米排骨汤 → `bamboo`。
+**验收**：`prototype/assets/photos/` 的 5 张样图在 `test/fixtures/photos/`，`test/design/stage/stage_palette_test.dart` 按设计资源说明的结果检查：螺蛳粉、铁锅炖、红烧肉 → `soy`；粘豆包 → `broth`；玉米排骨汤 → `bamboo`。铁锅炖排第二的是 `redoil`，和设计稿里撞色顺延的结果一致。
 
 **撞色**：`resolveTurntableColors(菜列表)`：相邻两道的舞台色相同，后一道临时用第一个备选色，不改保存的值（产品 4.7）。纯函数，单元测试。
 
-**在哪算**：发布时在「调整照片」页实时算（裁切变化后防抖 100 ms）。256 像素的图在三端主线程上都够快，不开 isolate。结果随菜品保存，所有人看到同一个颜色（产品 4.7）。
+**在哪算**：照片加进来先按居中裁切算一次（「调整照片」点了取消也有颜色）；在「调整照片」页拖动、缩放后防抖 100 ms 用同一张小图重算。256 像素的图在三端主线程上都够快，不开 isolate。结果随菜品保存，所有人看到同一个颜色（产品 4.7）。
 
 ### 13.6 舞台色和裁切的来源
 
