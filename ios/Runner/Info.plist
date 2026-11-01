@@ -66,8 +66,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>用来拍菜品和门头的照片。</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>用来显示店离你多远，以及在地图上找附近的店。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>用来从相册选菜品和门头的照片。</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>iosamap</string>
