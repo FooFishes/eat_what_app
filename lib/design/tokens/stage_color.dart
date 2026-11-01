@@ -4,20 +4,23 @@ import 'package:eat/design/tokens/eat_palette.dart';
 
 /// 舞台只能用的 9 个颜色。每个值带着自己整套配色，深浅写死，不在运行时按亮度去猜。
 enum StageColor {
-  broth(EatPalette.stageBroth, isDark: false),
-  mango(EatPalette.stageMango, isDark: false),
-  bamboo(EatPalette.stageBamboo, isDark: false),
-  chili(EatPalette.stageChili, isDark: false),
-  porcelain(EatPalette.stagePorcelain, isDark: false),
-  matcha(EatPalette.stageMatcha, isDark: false),
-  tomato(EatPalette.stageTomato, isDark: true),
-  redoil(EatPalette.stageRedoil, isDark: true),
-  soy(EatPalette.stageSoy, isDark: true);
+  broth(EatPalette.stageBroth, '汤色', isDark: false),
+  mango(EatPalette.stageMango, '芒果黄', isDark: false),
+  bamboo(EatPalette.stageBamboo, '竹屉', isDark: false),
+  chili(EatPalette.stageChili, '辣橙', isDark: false),
+  porcelain(EatPalette.stagePorcelain, '青花蓝', isDark: false),
+  matcha(EatPalette.stageMatcha, '抹茶绿', isDark: false),
+  tomato(EatPalette.stageTomato, '番茄红', isDark: true),
+  redoil(EatPalette.stageRedoil, '红油', isDark: true),
+  soy(EatPalette.stageSoy, '酱色', isDark: true);
 
-  const new(this.color, {required this.isDark});
+  const new(this.color, this.label, {required this.isDark});
 
   /// 舞台底色。
   final Color color;
+
+  /// 给人看的名字，「调整照片」里色圆下面写的。
+  final String label;
 
   /// 深色舞台上文字用 `paper`，浅色舞台上用 `ink`。
   final bool isDark;

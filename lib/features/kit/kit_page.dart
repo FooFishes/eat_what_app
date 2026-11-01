@@ -43,18 +43,6 @@ class _KitPageState extends State<KitPage> {
   var _likes = false;
   var _nav = 0;
 
-  static const _stageNames = {
-    StageColor.broth: '汤色',
-    StageColor.mango: '芒果黄',
-    StageColor.bamboo: '竹屉',
-    StageColor.chili: '辣橙',
-    StageColor.porcelain: '青花蓝',
-    StageColor.matcha: '抹茶绿',
-    StageColor.tomato: '番茄红',
-    StageColor.redoil: '红油',
-    StageColor.soy: '酱色',
-  };
-
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
@@ -114,7 +102,7 @@ class _KitPageState extends State<KitPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _stageNames[stage]!,
+                              stage.label,
                               style: eat.text.rowTitle.copyWith(
                                 fontWeight: FontWeight.w900,
                               ),
