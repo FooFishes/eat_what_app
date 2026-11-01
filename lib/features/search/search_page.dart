@@ -233,7 +233,7 @@ class _History extends ConsumerWidget {
   }
 }
 
-/// 没结果：「没找到」，认证用户多一个「新建一家店」。新建店随发布流程在阶段四做，先到发布的第 1 步。
+/// 没结果：「没找到」，认证用户多一个「新建一家店」，店名带上搜的词，建好后直接加菜（产品 6.9）。
 class _NotFound extends ConsumerWidget {
   const new({required this.keyword});
 
@@ -256,7 +256,7 @@ class _NotFound extends ConsumerWidget {
                 onPressed: () async {
                   if (await guardAction(context, ref, Capability.createShop) &&
                       context.mounted) {
-                    unawaited(context.push(Paths.publish));
+                    unawaited(context.push(Paths.publishShop(name: keyword)));
                   }
                 },
               )

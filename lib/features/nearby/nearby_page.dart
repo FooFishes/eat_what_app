@@ -24,6 +24,7 @@ import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/features/nearby/nearby_providers.dart';
+import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
@@ -510,37 +511,16 @@ class _NearbyMap extends ConsumerWidget {
   /// 天地图要求显示的标识。手机上抽屉会盖住地图底部，由页面画在抽屉上沿。
   final bool attribution;
 
-  /// 底图整体往 `map-ground` 的暖色靠一点：稍微降饱和、提暖（技术架构 14.4）。
-  static const _warm = ColorFilter.matrix([
-    0.95, 0.05, 0.0, 0, 6, //
-    0.03, 0.92, 0.03, 0, 4, //
-    0.02, 0.06, 0.82, 0, 0, //
-    0, 0, 0, 1, 0,
-  ]);
-
-  static LatLng _ll(GcjPoint p) {
-    final w = GeoRules.toWgs(p);
-    return LatLng(w.lat, w.lng);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
-    final key = ref.watch(appConfigProvider).tiandituKey;
     final ring = StageColor.broth.color;
-    TileLayer tiles(String layer) => TileLayer(
-      urlTemplate:
-          'https://t{s}.tianditu.gov.cn/DataServer?T=$layer&x={x}&y={y}&l={z}&tk=$key',
-      subdomains: const ['0', '1', '2', '3', '4', '5', '6', '7'],
-      userAgentPackageName: 'you.v50to.eat',
-      errorTileCallback: (_, _, _) => onTileError(),
-    );
     final selected = shops.where((s) => s.id == selectedShopId);
     final others = shops.where((s) => s.id != selectedShopId);
     return FlutterMap(
       mapController: controller,
       options: MapOptions(
-        initialCenter: _ll(initialCenter),
+        initialCenter: mapPoint(initialCenter),
         initialZoom: 16,
         minZoom: 11,
         maxZoom: 18,
@@ -551,8 +531,7 @@ class _NearbyMap extends ConsumerWidget {
         onPositionChanged: onMoved,
       ),
       children: [
-        ColorFiltered(colorFilter: _warm, child: tiles('vec_w')),
-        tiles('cva_w'),
+        BaseMapLayers(onTileError: onTileError),
         if (hub case final hub? when hub.boundary.isNotEmpty)
           PolygonLayer(
             polygons: [
@@ -571,7 +550,7 @@ class _NearbyMap extends ConsumerWidget {
             // 选中的那家最后画，压在别的标记上面。
             for (final shop in [...others, ...selected])
               Marker(
-                point: _ll(shop.point),
+                point: mapPoint(shop.point),
                 width: MapPin.size.width,
                 height: MapPin.size.height,
                 alignment: Alignment.center,
@@ -588,7 +567,7 @@ class _NearbyMap extends ConsumerWidget {
               ),
             if (me case final me?)
               Marker(
-                point: _ll(me),
+                point: mapPoint(me),
                 width: MyLocationDot.size,
                 height: MyLocationDot.size,
                 child: const IgnorePointer(child: MyLocationDot()),
@@ -601,23 +580,6 @@ class _NearbyMap extends ConsumerWidget {
             child: Padding(padding: EdgeInsets.all(6), child: MapAttribution()),
           ),
       ],
-    );
-  }
-}
-
-/// 「© 天地图」：用天地图的瓦片要显示的标识（技术架构 14.4）。审图号等拿到 Key 时按控制台给的补上。
-class MapAttribution extends StatelessWidget {
-  const new({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    return Text(
-      '© 天地图',
-      style: eat.text.caption.copyWith(
-        fontSize: 10,
-        color: eat.colors.inkMuted,
-      ),
     );
   }
 }

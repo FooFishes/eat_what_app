@@ -6,6 +6,8 @@ import 'package:eat/data/place/place_dto.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
+import 'package:eat/domain/rules/publish_rules.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_repository.g.dart';
@@ -43,6 +45,48 @@ class PlaceRepository {
   Future<Hub?> locateHub(GcjPoint point) async {
     final dto = await _api.locateHub(point.lat, point.lng);
     return dto == null ? null : _hub(dto);
+  }
+
+  /// 新建一家店，返回店的 id。[photoKey] 是门头照片上传后的 key。
+  Future<int> createShop({
+    required String name,
+    required String address,
+    required GcjPoint point,
+    int? hubId,
+    String? photoKey,
+  }) => _api.createRestaurant(
+    CreateRestaurantDto(
+      name: name,
+      address: address,
+      gcjLng: point.lng,
+      gcjLat: point.lat,
+      hubId: hubId,
+      pictureUrl: photoKey == null ? null : [photoKey],
+    ),
+  );
+
+  /// [point] 附近 [radius] 米内和 [name] 同名的店，没有返回 null（产品 9.2）。
+  Future<Shop?> sameNameNearby(
+    String name,
+    GcjPoint point, {
+    int radius = 200,
+    CancelToken? cancelToken,
+  }) async {
+    final key = PublishRules.compactName(name);
+    if (key.isEmpty) return null;
+    final page = await searchShops(
+      keyword: name.trim(),
+      near: point,
+      radius: radius,
+      cancelToken: cancelToken,
+    );
+    for (final shop in page.items) {
+      if (PublishRules.compactName(shop.name) == key &&
+          GeoRules.distance(point, shop.point) <= radius) {
+        return shop;
+      }
+    }
+    return null;
   }
 
   Future<Shop> shop(int id, {CancelToken? cancelToken}) async {

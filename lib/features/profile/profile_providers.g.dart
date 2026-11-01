@@ -50,7 +50,7 @@ final class MyProfileProvider
   }
 }
 
-String _$myProfileHash() => r'6ec712b49570098f8d04e30445e1c6b6a2018f42';
+String _$myProfileHash() => r'02b97837386a0066675c0827dfe5e703b6bef032';
 
 /// 我上传的菜。
 
@@ -80,7 +80,7 @@ final class MyUploadsProvider
   MyUploads create() => MyUploads();
 }
 
-String _$myUploadsHash() => r'bd14e12502a5ca40fea77e50e815efe82e186690';
+String _$myUploadsHash() => r'34093fce95a085e36b5dfaaa96672bbd534c9a61';
 
 /// 我上传的菜。
 

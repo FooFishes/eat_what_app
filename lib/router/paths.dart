@@ -22,6 +22,27 @@ abstract final class Paths {
   /// 发布第 1 步：选店。
   static const publish = '/publish';
 
+  /// 加菜页点「换一家」打开的选店：选好后带着店返回加菜页，不再往下走。
+  static const publishChangeShop = '/publish?change=1';
+
+  /// 新建店。[name] 是带过来的店名（搜索没找到时的关键词）；[returnShop] 为 true 时建好后带着店
+  /// 返回上一页，否则直接换成加菜页。
+  static const publishShopPattern = '/publish/shop';
+  static String publishShop({String? name, bool returnShop = false}) {
+    final query = {
+      if (name != null && name.isNotEmpty) 'name': name,
+      if (returnShop) 'return': '1',
+    };
+    return Uri(
+      path: publishShopPattern,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
+
+  /// 发布第 2 步：给这家店加菜。
+  static const publishDishPattern = '/publish/dish';
+  static String publishDish(int shopId) => '/publish/dish?shopId=$shopId';
+
   /// 菜品详情。从列表进来时把手上的那道菜放在 `extra` 里，舞台不用等接口（技术架构 10.5）。
   static const dishPattern = '/dishes/:dishId';
   static String dish(int id) => '/dishes/$id';

@@ -20,6 +20,7 @@ class PlainScaffold extends StatefulWidget {
     this.actions = const [],
     this.showBack = true,
     this.onBack,
+    this.physics,
   });
 
   final String title;
@@ -36,6 +37,10 @@ class PlainScaffold extends StatefulWidget {
 
   /// 不传时返回上一页，没有上一页时回到兜底页面。
   final VoidCallback? onBack;
+
+  /// 页面里有地图这类自己要拖动的东西时，手指按在上面期间传 `NeverScrollableScrollPhysics`，
+  /// 竖着拖才不会被页面滚动抢走。
+  final ScrollPhysics? physics;
 
   @override
   State<PlainScaffold> createState() => _PlainScaffoldState();
@@ -66,6 +71,7 @@ class _PlainScaffoldState extends State<PlainScaffold>
                 removeBottom: true,
                 child: CustomScrollView(
                   controller: scrollController,
+                  physics: widget.physics,
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   slivers: [

@@ -23,7 +23,9 @@ import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -367,7 +369,16 @@ class _DishGrid extends ConsumerWidget {
                     '发布一道菜',
                     icon: EatIcons.add,
                     height: 48,
-                    onPressed: () => context.push(Paths.publish),
+                    onPressed: () async {
+                      if (await guardAction(
+                            context,
+                            ref,
+                            Capability.publishDish,
+                          ) &&
+                          context.mounted) {
+                        await context.push(Paths.publish);
+                      }
+                    },
                   ),
                 ),
         ),

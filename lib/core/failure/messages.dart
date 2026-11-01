@@ -32,6 +32,9 @@ abstract final class BizCodes {
 
   static const captchaUnavailable = 50004;
 
+  /// 发布的菜和这家店已有的菜重名（忽略空格），`data.id` 是已有的那道。
+  static const duplicateDish = 40016;
+
   /// `/auth/getCode`、`/user/getCode` 在没认证时返回的字符串码。
   static const stateNotAllowed = 'STATE_NOT_ALLOWED';
 
@@ -54,6 +57,7 @@ const failureMessages = <Object, String>{
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
+  BizCodes.duplicateDish: '这家店已有这道菜',
 };
 
 /// 业务码归到哪一类失败（技术架构 7.5）。

@@ -34,14 +34,25 @@ class const AppFailure(
   final FailureKind kind, {
   final Object? code,
   final String? serverMessage,
+
+  /// 失败时外壳里仍带着的 `data`，如发布重名的菜时已有那道菜的 id。
+  final Object? data,
 }) implements Exception {
   const AppFailure.network() : this(FailureKind.network);
 
   const AppFailure.cancelled() : this(FailureKind.cancelled);
 
   /// 业务码转成失败，归类和提示按码表（技术架构 7.4、7.5）。
-  factory AppFailure.fromCode(Object code, {String? serverMessage}) =>
-      AppFailure(failureKindOf(code), code: code, serverMessage: serverMessage);
+  factory AppFailure.fromCode(
+    Object code, {
+    String? serverMessage,
+    Object? data,
+  }) => AppFailure(
+    failureKindOf(code),
+    code: code,
+    serverMessage: serverMessage,
+    data: data,
+  );
 
   /// 给用户看的一句话。
   String get message => switch (kind) {

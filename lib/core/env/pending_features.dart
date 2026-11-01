@@ -26,4 +26,7 @@ enum PendingFeature {
 
   /// 附近按菜名找店。
   nearbyDishSearch,
+
+  /// 「调整照片」的「自动去掉背景」：接口只存开关，后端还没生成去背景的图（技术架构 13.8）。
+  removeBackground,
 }

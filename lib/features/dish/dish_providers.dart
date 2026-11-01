@@ -24,12 +24,6 @@ Future<Dish> dishDetail(Ref ref, int dishId) async {
   }
 }
 
-/// 口味词表，运营维护，整个 App 用一份。
-@Riverpod(keepAlive: true)
-Future<List<TasteTag>> tasteVocabulary(Ref ref) => ref
-    .watch(foodRepositoryProvider)
-    .tasteVocabulary(cancelToken: ref.cancelToken());
-
 /// 一道菜的口味标签和我的标签，打标签、撤回时先改这里（乐观更新），失败退回。
 class const DishTags({
   required final List<TasteTag> taste,

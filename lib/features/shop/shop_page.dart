@@ -28,6 +28,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/published.dart';
 import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,6 +41,7 @@ part 'shop_page.g.dart';
 @riverpod
 Future<List<Dish>> shopMenu(Ref ref, int shopId) {
   ref.cacheFor(const Duration(minutes: 5));
+  ref.watch(publishedCountProvider);
   return ref
       .watch(foodRepositoryProvider)
       .menu(shopId, cancelToken: ref.cancelToken());
@@ -397,7 +399,7 @@ class _StageContent extends ConsumerWidget {
   }
 }
 
-/// 「导航去店里」和「加一道菜」。加菜进发布流程，发布在阶段四做，现在先到发布的第 1 步。
+/// 「导航去店里」和「加一道菜」。加菜跳过选店，直接进这家店的加菜页（产品 6.9）。
 class _Actions extends ConsumerWidget {
   const new({required this.shop});
 
@@ -430,9 +432,10 @@ class _Actions extends ConsumerWidget {
             '加一道菜',
             icon: EatIcons.add,
             onPressed: () async {
-              if (await guardAction(context, ref, Capability.publishDish) &&
+              if (shop != null &&
+                  await guardAction(context, ref, Capability.publishDish) &&
                   context.mounted) {
-                unawaited(context.push(Paths.publish));
+                unawaited(context.push(Paths.publishDish(shop.id)));
               }
             },
           ),

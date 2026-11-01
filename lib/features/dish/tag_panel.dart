@@ -8,6 +8,7 @@ import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/features/dish/dish_providers.dart';
+import 'package:eat/state/taste_vocabulary.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

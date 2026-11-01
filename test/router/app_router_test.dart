@@ -2,6 +2,7 @@ import 'package:eat/app.dart';
 import 'package:eat/design/widgets/eat_nav_bar.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
+import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/discover/discover_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
@@ -24,11 +25,10 @@ Future<GoRouter> _start(
   WidgetTester tester, {
   Size size = const Size(390, 844),
   EdgeInsets padding = EdgeInsets.zero,
+  CurrentUser user = testUser,
 }) async {
   useScreen(tester, size, padding: padding);
-  final container = await TestEnv().container(
-    session: const SignedIn(user: testUser),
-  );
+  final container = await TestEnv().container(session: SignedIn(user: user));
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const EatApp()),
   );
@@ -143,7 +143,7 @@ void main() {
   });
 
   testWidgets('发布按钮打开发布页，盖住导航；返回回到原来的页面', (tester) async {
-    final router = await _start(tester);
+    final router = await _start(tester, user: verifiedUser);
     await tester.tap(find.text('附近'));
     await tester.pumpAndSettle();
 

@@ -128,7 +128,11 @@ class ApiClient {
         );
       }
       final failure = switch (e.code) {
-        final Object code => AppFailure.fromCode(code, serverMessage: e.msg),
+        final Object code => AppFailure.fromCode(
+          code,
+          serverMessage: e.msg,
+          data: e.data,
+        ),
         null => AppFailure(FailureKind.unknown, serverMessage: e.msg),
       };
       _notify(failure, token);
@@ -175,7 +179,7 @@ class ApiClient {
     if (body is! Map) throw const _BizError(null, 'unexpected body');
     final code = body['code'];
     if (code == BizCodes.success) return body['data'];
-    throw _BizError(code, '${body['msg']}');
+    throw _BizError(code, '${body['msg']}', body['data']);
   }
 
   static AppFailure _fromDio(DioException e) {
@@ -214,8 +218,11 @@ class ApiClient {
 }
 
 /// 外壳里的 `code` 不是 0。
-class const _BizError(final Object? code, final String? msg)
-    implements Exception;
+class const _BizError(
+  final Object? code,
+  final String? msg, [
+  final Object? data,
+]) implements Exception;
 
 /// 把 `data` 按 [fromJson] 解析成 DTO；形状不对时当作「未知」失败，不让解析异常漏到页面。
 T decodeJson<T>(Object? data, T Function(Map<String, dynamic> json) fromJson) {

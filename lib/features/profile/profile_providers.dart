@@ -5,6 +5,7 @@ import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/notice.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/state/published.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,6 +19,7 @@ Future<UserProfile?> myProfile(Ref ref) async {
     sessionProvider.select((s) => s is SignedIn ? s.user?.id : null),
   );
   if (id == null) return null;
+  ref.watch(publishedCountProvider);
   return ref
       .watch(userRepositoryProvider)
       .profile(id, cancelToken: ref.cancelToken());
@@ -35,6 +37,7 @@ class MyUploads extends _$MyUploads {
   @override
   Future<DishPages> build() async {
     ref.watch(sessionProvider.select((s) => s is SignedIn ? s.user?.id : null));
+    ref.watch(publishedCountProvider);
     return DishPages(
       pages: await ref
           .watch(foodRepositoryProvider)

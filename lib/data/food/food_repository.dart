@@ -10,6 +10,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/domain/rules/publish_rules.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_repository.g.dart';
@@ -148,6 +149,49 @@ class FoodRepository {
 
   Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
       _map(await _api.mine(page: page, cancelToken: cancelToken));
+
+  /// 发布，返回新菜的 id。
+  Future<int> publish(NewDish dish) => _api.create(
+    CreateFoodDto(
+      restaurantId: dish.shopId,
+      name: dish.name,
+      pictureUrl: dish.imageKeys,
+      price: dish.price,
+      category: dish.category.api,
+      mealTimes: [for (final meal in dish.mealTimes) meal.api],
+      description: dish.description,
+      systemTagIds: dish.tasteTagIds.isEmpty ? null : dish.tasteTagIds,
+      myCustomTagNames: dish.myTagNames.isEmpty ? null : dish.myTagNames,
+      stageColor: dish.stage.name,
+      stageAlternates: [for (final c in dish.stageAlternates) c.name],
+      coverCrop: CoverCropDto(
+        centerX: dish.crop.centerX,
+        centerY: dish.crop.centerY,
+        diameter: dish.crop.diameter,
+      ),
+      removeBackground: dish.removeBackground,
+    ),
+  );
+
+  /// 这家店里和 [name] 同名（忽略空格）的菜，没有返回 null（产品 9.2）。
+  Future<Dish?> sameName(
+    int shopId,
+    String name, {
+    CancelToken? cancelToken,
+  }) async {
+    final key = PublishRules.compactName(name);
+    if (key.isEmpty) return null;
+    final page = await list(
+      shopId: shopId,
+      keyword: key,
+      pageSize: 50,
+      cancelToken: cancelToken,
+    );
+    for (final dish in page.items) {
+      if (PublishRules.compactName(dish.name) == key) return dish;
+    }
+    return null;
+  }
 
   Future<void> setLiked(int id, {required bool liked}) =>
       liked ? _api.like(id) : _api.unlike(id);

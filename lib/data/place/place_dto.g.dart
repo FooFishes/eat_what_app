@@ -43,3 +43,14 @@ RestaurantDto _$RestaurantDtoFromJson(Map<String, dynamic> json) =>
           ?.map((e) => e as String)
           .toList(),
     );
+
+Map<String, dynamic> _$CreateRestaurantDtoToJson(
+  CreateRestaurantDto instance,
+) => <String, dynamic>{
+  'name': instance.name,
+  'address': instance.address,
+  'gcjLng': instance.gcjLng,
+  'gcjLat': instance.gcjLat,
+  'hubId': ?instance.hubId,
+  'pictureUrl': ?instance.pictureUrl,
+};

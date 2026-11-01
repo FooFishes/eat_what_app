@@ -50,3 +50,16 @@ class const RestaurantDto({
   factory RestaurantDto.fromJson(Map<String, dynamic> json) =>
       _$RestaurantDtoFromJson(json);
 }
+
+/// 新增餐厅的请求体（`RestaurantDTO`）。[address] 是地址描述，如「万达金街 1 层」。
+@JsonSerializable(createFactory: false, includeIfNull: false)
+class const CreateRestaurantDto({
+  required final String name,
+  required final String address,
+  required final double gcjLng,
+  required final double gcjLat,
+  final int? hubId,
+  final List<String>? pictureUrl,
+}) {
+  Map<String, dynamic> toJson() => _$CreateRestaurantDtoToJson(this);
+}

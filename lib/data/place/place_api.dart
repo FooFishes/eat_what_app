@@ -7,8 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_api.g.dart';
 
-/// 地点相关的三个接口分组：Campus（校区）、Hub（商圈）、Restaurant（餐厅的浏览和搜索）。
-/// 新建店在阶段四加。
+/// 地点相关的三个接口分组：Campus（校区）、Hub（商圈）、Restaurant（餐厅的浏览、搜索和新建）。
 class PlaceApi {
   PlaceApi(this._client);
 
@@ -20,6 +19,7 @@ class PlaceApi {
     'GET /hub/locate',
     'GET /restaurant/detail/{id}',
     'GET /restaurant/search',
+    'POST /restaurant/add',
   ];
 
   Future<List<CampusDto>> campuses({CancelToken? cancelToken}) async =>
@@ -49,6 +49,12 @@ class PlaceApi {
     );
     return data == null ? null : decodeJson(data, HubDto.fromJson);
   }
+
+  /// 新建一家店，返回店的 id。
+  Future<int> createRestaurant(CreateRestaurantDto body) async =>
+      decodeCreatedId(
+        await _client.post('/restaurant/add', body: body.toJson()),
+      );
 
   Future<RestaurantDto> restaurant(int id, {CancelToken? cancelToken}) async =>
       decodeJson(

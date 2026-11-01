@@ -86,50 +86,6 @@ final class DishDetailFamily extends $Family
   String toString() => r'dishDetailProvider';
 }
 
-/// 口味词表，运营维护，整个 App 用一份。
-
-@ProviderFor(tasteVocabulary)
-final tasteVocabularyProvider = TasteVocabularyProvider._();
-
-/// 口味词表，运营维护，整个 App 用一份。
-
-final class TasteVocabularyProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<TasteTag>>,
-          List<TasteTag>,
-          FutureOr<List<TasteTag>>
-        >
-    with $FutureModifier<List<TasteTag>>, $FutureProvider<List<TasteTag>> {
-  /// 口味词表，运营维护，整个 App 用一份。
-  TasteVocabularyProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'tasteVocabularyProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$tasteVocabularyHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<TasteTag>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<TasteTag>> create(Ref ref) {
-    return tasteVocabulary(ref);
-  }
-}
-
-String _$tasteVocabularyHash() => r'b306fa1480ed47ce2fab8cc87ebc7c7528f89ca2';
-
 @ProviderFor(DishTagsOf)
 final dishTagsOfProvider = DishTagsOfFamily._();
 

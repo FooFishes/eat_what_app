@@ -2,25 +2,28 @@ import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_nav_bar.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// 三个主页面的外壳：下面是各分支的页面，上面悬浮 [EatNavBar]。
 ///
 /// 手机上导航离屏幕左右 `space-16`、离底部 `space-24` 加安全区；宽屏时放进页面左侧悬浮面板的底部，
 /// 三个页面的面板位置一样，所以切换时导航不动。安卓的返回键在附近、我的先回发现，在发现才退出。
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const new({super.key, required this.shell});
 
   /// go_router 给的分支外壳，里面是 [MainBranches] 排好的各分支页面。
   final StatefulNavigationShell shell;
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
   final _signals = [for (var i = 0; i < 3; i++) _ReselectSignal()];
 
   @override
@@ -46,7 +49,13 @@ class _MainShellState extends State<MainShell> {
     final navBar = EatNavBar(
       currentIndex: shell.currentIndex,
       onSelected: _select,
-      onPublish: () => context.push(Paths.publish),
+      onPublish: () async {
+        // 没认证、封禁中在入口就拦下，不进发布流程（技术架构 5.5）。
+        if (await guardAction(context, ref, Capability.publishDish) &&
+            context.mounted) {
+          await context.push(Paths.publish);
+        }
+      },
     );
     final Widget positioned;
     final double inset;

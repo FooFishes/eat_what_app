@@ -64,3 +64,10 @@ String? resolveImageUrl(String? value, String assetBaseUrl) {
       : assetBaseUrl;
   return value.startsWith('/') ? '$base$value' : '$base/$value';
 }
+
+/// 新增类接口返回的 `{id}`。
+int decodeCreatedId(Object? data) {
+  final id = data is Map ? data['id'] : null;
+  if (id is num) return id.toInt();
+  throw const AppFailure(FailureKind.unknown, serverMessage: 'no id');
+}

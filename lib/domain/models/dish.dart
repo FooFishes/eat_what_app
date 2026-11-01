@@ -117,3 +117,21 @@ class const Dish({
 }) {
   String? get cover => images.isEmpty ? null : images.first;
 }
+
+/// 发布一道菜时填好的内容（产品 9.1）。[imageKeys] 是上传后拿到的存储 key，第一张是封面；
+/// [crop]、[stage]、[stageAlternates] 都是封面的。
+class const NewDish({
+  required final int shopId,
+  required final String name,
+  required final List<String> imageKeys,
+  required final double price,
+  required final DishCategory category,
+  required final List<MealTime> mealTimes,
+  required final StageColor stage,
+  required final List<StageColor> stageAlternates,
+  final CoverCrop crop = const CoverCrop(),
+  final bool removeBackground = false,
+  final List<int> tasteTagIds = const [],
+  final List<String> myTagNames = const [],
+  final String? description,
+});

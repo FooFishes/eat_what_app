@@ -17,7 +17,7 @@ enum FoodSort {
   final String api;
 }
 
-/// 接口分组 Food：推荐、详情、列表、赞和收藏、标签。发布和编辑在阶段四加。
+/// 接口分组 Food：推荐、详情、列表、发布、赞和收藏、标签。
 class FoodApi {
   FoodApi(this._client);
 
@@ -29,6 +29,7 @@ class FoodApi {
     'GET /foods/list',
     'GET /foods/favorites',
     'GET /foods/my',
+    'POST /foods/upload',
     'POST /foods/{id}/like',
     'POST /foods/{id}/unlike',
     'POST /foods/{id}/favorite',
@@ -121,6 +122,11 @@ class FoodApi {
     ),
     FoodDto.fromJson,
   );
+
+  /// 发布一道菜，返回新菜的 id。同一家店已有同名的菜时失败，码是 `BizCodes.duplicateDish`，
+  /// `data.id` 是已有的那道。
+  Future<int> create(CreateFoodDto body) async =>
+      decodeCreatedId(await _client.post('/foods/upload', body: body.toJson()));
 
   Future<void> like(int id) => _client.post('/foods/$id/like');
 

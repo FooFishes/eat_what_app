@@ -67,7 +67,7 @@ final class ShopMenuProvider
   }
 }
 
-String _$shopMenuHash() => r'2339b8666a47a3d806320ce9037bec69a4cc720e';
+String _$shopMenuHash() => r'0f7e4dc733b252da7722ccb4c2947d32c05f63ca';
 
 /// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
 

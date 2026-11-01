@@ -8,6 +8,8 @@ import 'package:eat/features/inbox/inbox_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
 import 'package:eat/features/profile/me_page.dart';
+import 'package:eat/features/publish/add_dish_page.dart';
+import 'package:eat/features/publish/new_shop_page.dart';
 import 'package:eat/features/publish/publish_page.dart';
 import 'package:eat/features/search/search_page.dart';
 import 'package:eat/features/settings/about_page.dart';
@@ -119,7 +121,30 @@ GoRouter appRouter(Ref ref) {
           ),
         ],
       ),
-      GoRoute(path: Paths.publish, builder: (_, _) => const PublishPage()),
+      // 发布流程的三页都写成顶层的完整路径：发布成功后按路径前缀退出整个流程（加菜页的 _finish）。
+      GoRoute(
+        path: Paths.publish,
+        builder: (_, state) =>
+            PublishPage(changing: state.uri.queryParameters['change'] == '1'),
+      ),
+      GoRoute(
+        path: Paths.publishShopPattern,
+        builder: (_, state) => NewShopPage(
+          initialName: state.uri.queryParameters['name'] ?? '',
+          returnShop: state.uri.queryParameters['return'] == '1',
+        ),
+      ),
+      GoRoute(
+        path: Paths.publishDishPattern,
+        // 没带店（手拼的地址）时回到选店。
+        redirect: (_, state) =>
+            int.tryParse(state.uri.queryParameters['shopId'] ?? '') == null
+            ? Paths.publish
+            : null,
+        builder: (_, state) => AddDishPage(
+          shopId: int.parse(state.uri.queryParameters['shopId']!),
+        ),
+      ),
       GoRoute(path: Paths.search, builder: (_, _) => const SearchPage()),
       GoRoute(path: Paths.inbox, builder: (_, _) => const InboxPage()),
       GoRoute(

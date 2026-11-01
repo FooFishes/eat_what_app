@@ -75,3 +75,27 @@ class const FoodTagsDto({
   factory FoodTagsDto.fromJson(Map<String, dynamic> json) =>
       _$FoodTagsDtoFromJson(json);
 }
+
+/// 发布菜品的请求体（`CreateFoodDTO`）。[pictureUrl] 是上传后拿到的 key，第一张是封面。
+@JsonSerializable(
+  createFactory: false,
+  includeIfNull: false,
+  explicitToJson: true,
+)
+class const CreateFoodDto({
+  required final int restaurantId,
+  required final String name,
+  required final List<String> pictureUrl,
+  final double? price,
+  final String? category,
+  final List<String>? mealTimes,
+  final String? description,
+  final List<int>? systemTagIds,
+  final List<String>? myCustomTagNames,
+  final String? stageColor,
+  final List<String>? stageAlternates,
+  final CoverCropDto? coverCrop,
+  final bool? removeBackground,
+}) {
+  Map<String, dynamic> toJson() => _$CreateFoodDtoToJson(this);
+}

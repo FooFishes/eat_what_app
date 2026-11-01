@@ -112,3 +112,20 @@ FoodTagsDto _$FoodTagsDtoFromJson(Map<String, dynamic> json) => FoodTagsDto(
       ?.map((e) => FoodTagDto.fromJson(e as Map<String, dynamic>))
       .toList(),
 );
+
+Map<String, dynamic> _$CreateFoodDtoToJson(CreateFoodDto instance) =>
+    <String, dynamic>{
+      'restaurantId': instance.restaurantId,
+      'name': instance.name,
+      'pictureUrl': instance.pictureUrl,
+      'price': ?instance.price,
+      'category': ?instance.category,
+      'mealTimes': ?instance.mealTimes,
+      'description': ?instance.description,
+      'systemTagIds': ?instance.systemTagIds,
+      'myCustomTagNames': ?instance.myCustomTagNames,
+      'stageColor': ?instance.stageColor,
+      'stageAlternates': ?instance.stageAlternates,
+      'coverCrop': ?instance.coverCrop?.toJson(),
+      'removeBackground': ?instance.removeBackground,
+    };

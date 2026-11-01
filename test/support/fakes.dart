@@ -5,8 +5,10 @@ import 'package:dio/dio.dart';
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
+import 'package:eat/core/network/upload_client.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/core/platform/location.dart';
+import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/storage/secure_store.dart';
 import 'package:eat/design/widgets/images.dart';
@@ -141,6 +143,18 @@ class const FakeResponse({
   const FakeResponse.offline() : this(offline: true);
 }
 
+/// 选图：直接给出事先放好的照片，不弹系统的选择框。
+class FakePhotoPicker implements PhotoPicker {
+  var next = <PickedPhoto>[];
+
+  @override
+  Future<List<PickedPhoto>> pickFromGallery({required int limit}) async =>
+      next.take(limit).toList();
+
+  @override
+  Future<PickedPhoto?> takePhoto() async => next.firstOrNull;
+}
+
 /// 测试用的环境配置。
 const testConfig = AppConfig(
   envName: 'test',
@@ -262,6 +276,7 @@ class TestEnv {
   final secure = MemorySecureStore();
   final verifier = FakeHumanVerifier();
   final location = FakeLocationService();
+  final photos = FakePhotoPicker();
 
   /// [session] 给定时登录态从它开始；要测登录过期，同时传 [token]，网络层会带上它。
   Future<ProviderContainer> container({
@@ -282,6 +297,8 @@ class TestEnv {
         tokenStoreProvider.overrideWithValue(tokens),
         humanVerifierProvider.overrideWithValue(verifier),
         locationServiceProvider.overrideWithValue(location),
+        photoPickerProvider.overrideWithValue(photos),
+        uploadClientProvider.overrideWithValue(UploadClient(adapter: adapter)),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(
             baseUrl: testConfig.apiBaseUrl,
