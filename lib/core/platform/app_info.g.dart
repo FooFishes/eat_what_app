@@ -45,3 +45,41 @@ final class AppVersionProvider
 }
 
 String _$appVersionHash() => r'59b58cc8214f60571dfe517b1f68cfc1aed29718';
+
+/// 构建号, CI 中取工作流的运行序号. 判断是否需要更新时比较它, 不比较版本名.
+
+@ProviderFor(appBuildNumber)
+final appBuildNumberProvider = AppBuildNumberProvider._();
+
+/// 构建号, CI 中取工作流的运行序号. 判断是否需要更新时比较它, 不比较版本名.
+
+final class AppBuildNumberProvider
+    extends $FunctionalProvider<AsyncValue<String>, String, FutureOr<String>>
+    with $FutureModifier<String>, $FutureProvider<String> {
+  /// 构建号, CI 中取工作流的运行序号. 判断是否需要更新时比较它, 不比较版本名.
+  AppBuildNumberProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'appBuildNumberProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$appBuildNumberHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<String> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<String> create(Ref ref) {
+    return appBuildNumber(ref);
+  }
+}
+
+String _$appBuildNumberHash() => r'083c693c8eba190410e7b5b4c9a8b7ca71beecc7';

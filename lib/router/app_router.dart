@@ -1,3 +1,4 @@
+import 'package:eat/core/telemetry/crash_reporter.dart';
 import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
@@ -45,6 +46,7 @@ GoRouter appRouter(Ref ref) {
   router = GoRouter(
     initialLocation: Paths.discover,
     refreshListenable: refresh,
+    observers: [CrashReporter.navigatorObserver()],
     redirect: (context, state) => resolveRedirect(
       location: state.uri,
       isPublic: state.metadata['public'] == true,

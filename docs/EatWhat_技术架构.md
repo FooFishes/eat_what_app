@@ -162,6 +162,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `unreadCountProvider` | 未读消息数 | 回到前台、回到发现页、读消息 |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表，加标签面板和发布共用 | 只读 |
+| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次登录时 |
 | `publishedCountProvider` | 这次打开以来发布了几道菜、建了几家店；「我的」的统计和上传、餐厅详情的菜单监听它，发布后重新拉 | 加菜页、新建店页 |
 
 ### 4.3 约定
@@ -963,6 +964,7 @@ class PushNotice({
   3. `checkForUpdate(track:)` 有新补丁就 `update(track:)` 静默下载。下次启动生效，不提示（产品 12.1）。
 - 放量：新补丁先发 `beta` 轨道，比例从 5% 开始调；没问题后发到 `stable`，比例清零。
 - 回退：控制台回滚补丁；补丁启动就崩时 Shorebird 在设备端自动退回上一个补丁（需要实测确认）。
+- 远程配置上线前，所有设备都检查 `stable` 轨道，补丁不能按比例放，发出即全量。CI 的补丁工作流默认发到 `stable`。
 - 「关于」页显示「版本 0.3.0（30）补丁 2」：版本名、构建号来自 `package_info_plus`，补丁号来自 `readCurrentPatch()`。崩溃上报和埋点都带补丁号。
 - 范围：只修问题和不改变功能范围的小改动；新功能、新权限、新的数据收集都发新版本（产品 12.1）。发布清单里加这一条检查。
 - CI：打 tag 发版时用 `shorebird release android` / `shorebird release ios` 代替 `flutter build`，补丁用手动触发的工作流 `shorebird patch`。Flutter 版本必须和 `.fvmrc` 一致。需要 `SHOREBIRD_TOKEN`。
@@ -1124,10 +1126,10 @@ class PushNotice({
 
 方案待确认 D4，推荐自建 Sentry（依赖选型第 14 节）。
 
-- 同意隐私政策后才初始化；`SENTRY_DSN` 为空时不启用。
-- 配置：`environment` 取 `ENV_NAME`；`release` 为 `eat@<版本名>+<构建号>`，`dist` 为补丁号；`sendDefaultPii: false`；不开会话回放，不截屏；性能追踪先关（采样率 0）。
+- 同意隐私政策后才初始化；`SENTRY_DSN` 为空时不启用。`CrashReporter`（`core/telemetry/`）封装 Sentry，`consentedServicesProvider` 在启动时（本机已有同意记录）或首次登录写入同意记录后启动它。
+- 配置：`environment` 取 `ENV_NAME`；`release` 为 `eat@<版本名>+<构建号>`，`dist` 为补丁号；`sendDefaultPii: false`；不开会话回放，不截屏，不记录界面结构和点击；性能追踪先关（不设采样率）。
 - `beforeSend` 去掉请求头、Cookie、请求体和 URL 的查询参数；用户信息只放账号 id。
-- 面包屑：路由跳转（挂在 GoRouter 的观察者上）、网络请求（方法、路径模板、业务码）。
+- 面包屑：路由跳转（挂在 GoRouter 的观察者上，去掉路由参数）、网络请求（`sentry_dio` 记录地址和状态码，去掉查询参数；`ApiClient` 对失败的请求另记方法、路径和业务码）。`sentry_dio` 不把失败的请求作为错误上报。
 - 安卓、iOS 发版构建加 `--obfuscate --split-debug-info`，CI 用 `sentry_dart_plugin` 上传符号表；Web 构建生成 source map 并上传，`.map` 文件不部署到线上。`SENTRY_AUTH_TOKEN` 只在 CI Secrets。
 - 反馈页自动带上版本号和补丁号，方便对上崩溃记录。
 

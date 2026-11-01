@@ -1,6 +1,7 @@
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/app_info.dart';
 import 'package:eat/core/platform/browser.dart';
+import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -10,8 +11,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // TODO: 反馈没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
-// TODO: 热更新未接入, 只显示版本号, 不显示补丁号. 接入热更新后在版本号旁显示补丁号.
 /// 关于页面: 应用说明, 版本号, 反馈入口和两份协议.
+///
+/// 版本写作 "版本 0.3.0（30）补丁 2", 依次是版本名, 构建号和热更新的补丁号. 没有补丁时不显示补丁号.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
 
@@ -21,6 +23,9 @@ class AboutPage extends ConsumerWidget {
     final c = eat.colors;
     final config = ref.watch(appConfigProvider);
     final version = ref.watch(appVersionProvider).value;
+    final build = ref.watch(appBuildNumberProvider).value;
+    final hasBuild = build != null && build.isNotEmpty;
+    final patch = ref.watch(currentPatchProvider).value;
     void open(String url) {
       if (url.isNotEmpty) ref.read(browserProvider).open(Uri.parse(url));
     }
@@ -37,6 +42,15 @@ class AboutPage extends ConsumerWidget {
                   children: [
                     const TextSpan(text: '版本 '),
                     TextSpan(text: version, style: eat.text.count),
+                    if (hasBuild) ...[
+                      const TextSpan(text: '（'),
+                      TextSpan(text: build, style: eat.text.count),
+                      const TextSpan(text: '）'),
+                    ],
+                    if (patch != null) ...[
+                      TextSpan(text: hasBuild ? '补丁 ' : ' 补丁 '),
+                      TextSpan(text: '$patch', style: eat.text.count),
+                    ],
                   ],
                 ),
                 style: eat.text.meta.copyWith(color: c.inkMuted),

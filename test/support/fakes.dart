@@ -7,6 +7,7 @@ import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/network/upload_client.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
+import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/core/storage/kv_store.dart';
@@ -18,6 +19,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 /// 内存实现的 [KvStore].
 class MemoryKvStore implements KvStore {
@@ -253,6 +255,37 @@ class FakeLocationService implements LocationService {
       state == LocationAccess.granted ? point : null;
 }
 
+/// 热更新. 默认不可用, 与 `flutter build` 的包一致.
+class FakeShorebirdUpdater implements ShorebirdUpdater {
+  @override
+  bool isAvailable = false;
+
+  int? patch;
+  var status = UpdateStatus.upToDate;
+  Object? updateError;
+  var checks = 0;
+  var updates = 0;
+
+  @override
+  Future<Patch?> readCurrentPatch() async =>
+      patch == null ? null : Patch(number: patch!);
+
+  @override
+  Future<Patch?> readNextPatch() => readCurrentPatch();
+
+  @override
+  Future<UpdateStatus> checkForUpdate({UpdateTrack? track}) async {
+    checks++;
+    return status;
+  }
+
+  @override
+  Future<void> update({UpdateTrack? track}) async {
+    updates++;
+    if (updateError case final error?) throw error;
+  }
+}
+
 /// 以 [initial] 为初始状态的登录态, 跳过从本地存储恢复.
 class FakeSession extends Session {
   FakeSession(this.initial);
@@ -281,6 +314,7 @@ class TestEnv {
   final verifier = FakeHumanVerifier();
   final location = FakeLocationService();
   final photos = FakePhotoPicker();
+  final updater = FakeShorebirdUpdater();
 
   /// 创建 Provider 容器. 给定 [session] 时以 [session] 为初始登录态.
   ///
@@ -304,6 +338,7 @@ class TestEnv {
         humanVerifierProvider.overrideWithValue(verifier),
         locationServiceProvider.overrideWithValue(location),
         photoPickerProvider.overrideWithValue(photos),
+        hotUpdateProvider.overrideWithValue(HotUpdate(updater)),
         uploadClientProvider.overrideWithValue(UploadClient(adapter: adapter)),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(

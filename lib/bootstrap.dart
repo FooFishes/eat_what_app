@@ -1,6 +1,7 @@
 import 'package:eat/app.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/state/api_hooks.dart';
+import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -22,6 +23,8 @@ Future<void> bootstrap() async {
     retry: retryOnNetworkFailure,
   );
   await container.read(sessionProvider.notifier).restore();
+  // 崩溃上报要在首帧前启动, 才能收到启动过程中的错误. 本机没有同意记录时不启动.
+  await container.read(consentedServicesProvider.notifier).start();
   runApp(
     UncontrolledProviderScope(container: container, child: const EatApp()),
   );

@@ -3,8 +3,10 @@ import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/auth_token.dart';
+import 'package:eat/core/telemetry/crash_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sentry_dio/sentry_dio.dart';
 
 part 'api_client.g.dart';
 
@@ -39,6 +41,8 @@ class ApiClient {
          ),
        ) {
     if (adapter != null) _dio.httpClientAdapter = adapter;
+    // 只给崩溃上报加上最近请求的面包屑. 失败的请求由页面处理, 不作为错误上报.
+    _dio.addSentry(captureFailedRequests: false);
   }
 
   final Dio _dio;
@@ -216,12 +220,13 @@ class ApiClient {
     }
   }
 
-  /// 在调试构建中记录请求结果.
+  /// 记录失败的请求: 调试构建打印日志, 同时作为崩溃上报的面包屑.
   ///
   /// 只记录方法, 路径和业务码.
   /// 不记录参数, 请求头和响应体, 以免凭证和个人信息进入日志.
   static void _log(String method, String path, Object? code) {
     if (kDebugMode) debugPrint('[api] $method $path → $code');
+    CrashReporter.recordRequestFailure(method, path, code);
   }
 }
 

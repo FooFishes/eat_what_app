@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/state/captcha_gate.dart';
+import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -124,8 +127,11 @@ class PasswordLogin extends _$PasswordLogin {
 }
 
 /// 登录成功后记录协议同意, 再更新登录态. 守卫随后把页面导回原目标地址.
+///
+/// 首次同意时在这里补启动崩溃上报等服务.
 Future<void> _signIn(Ref ref, SignInResult result) async {
   await ref.read(privacyConsentStoreProvider).record();
+  unawaited(ref.read(consentedServicesProvider.notifier).start());
   await ref.read(sessionProvider.notifier).signIn(result);
 }
 

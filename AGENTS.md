@@ -86,7 +86,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 **Android**
 
 - `applicationId` 与 `namespace` 都是 `you.v50to.eat`，入口 `android/app/src/main/kotlin/you/v50to/eat/MainActivity.kt`。
-- Gradle 用 Kotlin DSL：AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0，Java / JVM target 17。`minSdk`、`targetSdk` 跟随 Flutter 默认值。
+- Gradle 用 Kotlin DSL：AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0，Java / JVM target 17。`targetSdk` 跟随 Flutter 默认值；`minSdk` 取 Flutter 默认值和 26 中较大的一个（`sentry_flutter` 要求 26）。
 - release 目前用 debug 签名。接入上传密钥时，密钥和 `android/key.properties` 不入库，CI 通过 Secrets 注入；`legacy` 分支的 `android/app/build.gradle.kts` 有读取 `key.properties`、缺失时回落 debug 签名的写法可参考。
 
 **iOS**

@@ -1,6 +1,7 @@
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/auth/login_page.dart';
+import 'package:eat/features/settings/about_page.dart';
 import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
@@ -112,6 +113,22 @@ void main() {
     await tester.tap(find.text('学生认证'));
     await tester.pumpAndSettle();
     expect(find.byType(VerifyPage), findsOneWidget);
+  });
+
+  testWidgets('关于页写出版本名、构建号和补丁号', (tester) async {
+    env.updater
+      ..isAvailable = true
+      ..patch = 2;
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: testUser),
+      location: Paths.settingsAbout,
+    );
+
+    expect(find.byType(AboutPage), findsOneWidget);
+    expect(find.text('版本 0.1.0（1）补丁 2'), findsOneWidget);
+    await expectAccessible(tester);
   });
 
   testWidgets('没登录时打开设置，先去登录', (tester) async {

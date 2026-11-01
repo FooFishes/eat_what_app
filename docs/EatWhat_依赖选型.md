@@ -47,9 +47,9 @@
 | 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 已引入（阶段三） |
 | 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 已引入（阶段四） |
 | 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 已引入（阶段四） |
-| 崩溃上报 | `sentry_flutter` | `^10.1.0` | 2026-10-15 | ✅ | ✅ | ✅ | 阶段五，待确认 D4 |
-| 网络请求的崩溃上下文 | `sentry_dio` | 和 `sentry_flutter` 同版本 | 2026-10-22 | ✅ | ✅ | ✅ | 阶段五 |
-| 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 阶段五，待确认 D3 |
+| 崩溃上报 | `sentry_flutter` | `^10.1.0`（解析到 10.2.0） | 2026-10-22 | ✅ | ✅ | ✅ | 已引入（阶段五），服务端待确认 D4。安卓要求 `minSdk` 26 |
+| 网络请求的崩溃上下文 | `sentry_dio` | `^10.1.0`（解析到 10.2.0） | 2026-10-22 | ✅ | ✅ | ✅ | 已引入（阶段五） |
+| 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 已引入（阶段五），国内网络实测待确认 D3 |
 | 设备信息 | `device_info_plus` | `^13.3.0` | 2026-10-01 | ✅ | ✅ | ✅ | 阶段六（反馈） |
 | 深链 | `app_links` | `^7.2.2` | 2026-10-06 | ✅ | ✅ | 不用 | 分享链接，开发计划还没排 |
 | 本地通知 | `flutter_local_notifications` | `^22.3.2` | 2026-10-12 | ✅ | ✅ | — | 开发计划还没排 |
@@ -67,8 +67,8 @@
 | JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 已引入（阶段二） |
 | 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 第一次需要 mock 时。阶段二的测试用 `test/support/fakes.dart` 里的内存实现和假网络适配器就够了，没有加 |
 | 读 `docs/api.openapi.yml` 做契约测试 | `yaml` | `^3.1.4` | 2026-08-28 | 已引入（阶段二） |
-| 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 阶段五 |
-| 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 阶段五 |
+| 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 已引入（阶段五），只在 CI 的发版构建运行 |
+| 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 已引入（阶段五），CI 用 `shorebirdtech/setup-shorebird` 安装 |
 | Golden 测试 | `alchemist` | `^0.14.1` | 2026-10-08 | 组件稳定后（见技术架构「测试策略」） |
 
 `build_runner` 最新是 2.17.1，但它要求 `build` 5.x，而 `riverpod_generator` 4.0.9 只支持 `build` 5 以下，所以锁 2.16 线；`riverpod_generator` 放开 `build` 5 以后再升。
