@@ -8,12 +8,12 @@ part of 'taste_vocabulary.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 口味词表，运营维护，整个 App 用一份。加标签面板和发布时选标签都用它。
+/// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
 
 @ProviderFor(tasteVocabulary)
 final tasteVocabularyProvider = TasteVocabularyProvider._();
 
-/// 口味词表，运营维护，整个 App 用一份。加标签面板和发布时选标签都用它。
+/// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
 
 final class TasteVocabularyProvider
     extends
@@ -23,7 +23,7 @@ final class TasteVocabularyProvider
           FutureOr<List<TasteTag>>
         >
     with $FutureModifier<List<TasteTag>>, $FutureProvider<List<TasteTag>> {
-  /// 口味词表，运营维护，整个 App 用一份。加标签面板和发布时选标签都用它。
+  /// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
   TasteVocabularyProvider._()
     : super(
         from: null,

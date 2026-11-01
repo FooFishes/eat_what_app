@@ -8,13 +8,14 @@ import 'package:web/web.dart' as web;
 
 HumanVerifier createHumanVerifier(AppConfig config) => _JsHumanVerifier();
 
-/// Web 上的人机验证：在页面里加载腾讯的 JS，每次新建一个验证实例。
+/// Web 中的人机验证. 在页面中加载腾讯的 JS, 每次验证新建一个实例.
 ///
-/// `TJNCaptcha-global.js` 的构造函数第一个参数必须是 DOM 容器。Flutter 的画布铺满整页，
-/// 所以在它上面盖一层带遮罩的浮层，容器居中放在里面；点遮罩空白处当作用户关掉。
+/// `TJNCaptcha-global.js` 的构造函数第一个参数必须是 DOM 容器.
+/// Flutter 的画布占满整页, 因此在画布上方添加带遮罩的浮层, 容器居中放在浮层内.
+/// 点击遮罩空白处视为用户关闭.
 ///
-/// 有风险时腾讯会另弹滑块拼图，挂在 `body` 下，遮罩层级 2000000000、弹窗 2000000002。
-/// 浮层的层级要低于它们，否则拼图会被我们的遮罩盖暗，勾选框还压在拼图上面。
+/// 有风险时腾讯另外弹出滑块拼图, 挂在 `body` 下, 遮罩层级为 2000000000, 弹窗层级为 2000000002.
+/// 浮层层级必须低于二者, 否则拼图会被本站的遮罩压暗, 勾选框也会盖住拼图.
 class _JsHumanVerifier implements HumanVerifier {
   final _loaded = <String, Future<bool>>{};
 
@@ -73,7 +74,7 @@ class _JsHumanVerifier implements HumanVerifier {
     return completer.future;
   }
 
-  /// 同一个地址的脚本只加载一次；加载失败的下次重新加载。
+  /// 同一地址的脚本只加载一次. 加载失败时移除记录, 下次重新加载.
   Future<bool> _load(String src) {
     final pending = _loaded[src] ??= () {
       final done = Completer<bool>();

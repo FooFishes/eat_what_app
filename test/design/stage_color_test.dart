@@ -3,7 +3,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// WCAG 对比度；半透明的文字色先叠到底色上再算。
+/// WCAG 对比度. 半透明的前景色先与背景色混合, 再计算对比度.
 double contrast(Color foreground, Color background) {
   final a = Color.alphaBlend(foreground, background).computeLuminance();
   final b = background.computeLuminance();

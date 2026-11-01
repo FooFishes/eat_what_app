@@ -14,10 +14,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'search_providers.g.dart';
 
-/// 输入停下 300ms 才发请求；这段时间里关键词变了，旧的 Provider 已经释放，不再发（技术架构 10.5）。
+/// 输入防抖时长.
+///
+/// 防抖期间关键词变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-/// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+// TODO: 接口不支持按距离排序菜品, 目前按热度排序. 接口支持后改为按距离排序.
+/// 按菜名跨店搜索菜品.
 @riverpod
 Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -33,7 +36,8 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   return page.items;
 }
 
-/// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+// TODO: 接口不返回营业状态, 已关门的店没有排到最后并标明. 接口返回营业状态后补上.
+/// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
 @riverpod
 Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -51,7 +55,9 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   return page.items;
 }
 
-/// 最近搜过的词，最多 10 个，新的在前。按账号存，退出登录时删（技术架构 9.1）。
+/// 最近搜索的词, 按时间倒序, 数量有上限.
+///
+/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
 @riverpod
 class SearchHistory extends _$SearchHistory {
   static const _max = 10;

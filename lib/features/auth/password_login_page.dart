@@ -15,9 +15,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 密码登录（`G-PasswordLogin`）：手机号或用户名加密码，只有设过密码的账号能用。
+/// 密码登录页. 账号为手机号或用户名, 只有设置过密码的账号可用.
 ///
-/// 出错时就地提示，不清空账号（产品 6.2）。忘了密码就用验证码登录，不单独做找回。
+/// 出错时就地提示, 不清空账号输入.
+/// 不提供找回密码, 忘记密码时改用验证码登录.
 class PasswordLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
@@ -65,7 +66,9 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
         .submit(_account.text.trim(), _password.text);
   }
 
-  /// 从手机号登录页点进来的就退回去；直接打开的没有上一页，换成手机号登录页。
+  /// 切换到验证码登录.
+  ///
+  /// 从手机号登录页进入时返回上一页. 直接打开时没有上一页, 替换为手机号登录页.
   void _useCode() {
     if (context.canPop()) {
       context.pop();
@@ -120,7 +123,8 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                   onSubmitted: (_) {
                     if (ready && !login.submitting) _submit();
                   },
-                  // 只有账号或密码不对时下划线变 `warn`；没设过密码、没网这类不是输错了，提示写在下面。
+                  // 只有账号或密码错误时下划线显示 `warn` 色.
+                  // 未设置密码和网络不可达等错误与输入无关, 提示显示在表单下方.
                   errorText: wrong ? '账号或密码错误' : null,
                   trailing: EatIconButton(
                     _showPassword ? EatIcons.eye : EatIcons.eyeOff,

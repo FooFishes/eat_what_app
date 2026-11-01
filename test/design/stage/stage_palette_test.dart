@@ -5,7 +5,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  // 设计资源说明（`G-PhotoPipeline`）里 5 张实拍图的取色结果。
+  // 5 张实拍示例图的预期舞台色, 与设计快照中为这几张图配的舞台色一致.
   const expected = {
     'sq_luosi': StageColor.soy,
     'sq_tieguo': StageColor.soy,

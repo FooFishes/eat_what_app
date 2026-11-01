@@ -6,7 +6,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:flutter/widgets.dart';
 
-/// 转盘上的一道菜：封面和圆形取景。
+/// 转盘上的一道菜: 封面和圆形取景.
 class const TurntableItem({
   required final ImageProvider? image,
   final double centerX = 0.5,
@@ -14,16 +14,23 @@ class const TurntableItem({
   final double diameter = 1,
 });
 
-/// 发现页舞台里的转盘：几道菜摆在一张大圆桌的边上，拖动或点「换一个」转到下一道。
+/// 发现页舞台中的转盘. 几道菜排列在一张大圆桌的边缘, 拖动或点击 "换一个" 转到下一道.
 ///
-/// 手机上圆心在当前这道菜正下方 430px（按舞台高度缩放），相邻两道隔 55°，屏幕上只看到当前这道和
-/// 左下角露出的上一道；宽屏时圆心在屏幕右侧外面，菜沿右边缘上下转，下一道从右上角露出来。
-/// 拖动跟手，每 7.5px 转 1°，拖过约 4° 松手就换一道，一次只转一格；吸附 680ms 带回弹。
-/// 离开正位的菜缩到 0.85 倍，照片保持正向。
+/// 布局:
+/// - 手机上圆心位于当前菜品正下方, 屏幕上只露出当前菜品和左下角的上一道.
+/// - 宽屏时圆心位于屏幕右侧之外, 菜品沿右边缘纵向转动, 下一道从右上角露出.
+/// - 离开正位的菜品缩小显示, 照片始终保持正向.
 ///
-/// [items] 是一条往后增长的队列，[index] 是当前那道；转到 [index] 以外由 [onIndexChanged] 告诉页面，
-/// 页面改了 [index] 再传回来。[spinning] 为 false 时（能推荐的菜少于 5 道）不画转盘，只放当前这道。
-/// 只认横向拖动（宽屏是纵向），另一个方向交给页面滚动；拖动的替代操作是页面上的「换一个」。
+/// 交互:
+/// - 拖动时转盘跟随手指. 松手时拖过的角度超过阈值即换一道, 每次只转一格.
+/// - 松手后以回弹曲线吸附到目标位置.
+/// - 手机上只响应横向拖动, 宽屏只响应纵向拖动, 另一方向交给页面滚动.
+/// - 拖动的替代操作是页面上的 "换一个" 按钮.
+///
+/// 状态:
+/// - [items] 是向后增长的队列, [index] 是当前菜品.
+/// - 转到其他位置时通过 [onIndexChanged] 通知页面, 页面更新 [index] 后传回.
+/// - [spinning] 为 false 时不绘制转盘, 只显示当前菜品.
 class Turntable extends StatefulWidget {
   const new({
     super.key,
@@ -40,16 +47,16 @@ class Turntable extends StatefulWidget {
   final int index;
   final ValueChanged<int> onIndexChanged;
 
-  /// 当前这道菜盘子的直径（含盘沿内的照片）。
+  /// 当前菜品盘子的直径, 即盘沿内照片的直径.
   final double plateSize;
 
-  /// 当前这道菜盘子的圆心，在这个组件里的坐标。
+  /// 当前菜品盘子的圆心, 以本组件的坐标表示.
   final Offset plateCenter;
 
   final bool wide;
   final bool spinning;
 
-  /// 相邻两道之间的角度。
+  /// 相邻两道菜之间的角度.
   static const step = 55.0;
 
   @override
@@ -58,19 +65,19 @@ class Turntable extends StatefulWidget {
 
 class _TurntableState extends State<Turntable>
     with SingleTickerProviderStateMixin {
-  /// 当前转到的位置，带小数：动画在两道之间插值。
+  /// 当前转到的位置, 可带小数. 动画在两道菜之间插值.
   late final _position = AnimationController.unbounded(
     vsync: this,
     value: widget.index.toDouble(),
   );
 
-  /// 手指拖出来的角度，松手后归零。
+  /// 手指拖动产生的角度, 松手后归零.
   double _drag = 0;
 
   double get _radius =>
       EatSize.turntableRadius * widget.plateSize / EatSize.plate;
 
-  /// 每拖 1px 转多少度：弧长 πR/180 对应 1°。
+  /// 每拖动 1px 转过的角度. 半径为 R 时, 1° 对应的弧长为 πR/180.
   double get _degreesPerPixel => 180 / (math.pi * _radius);
 
   @override
@@ -113,7 +120,7 @@ class _TurntableState extends State<Turntable>
     var next = widget.index;
     if (drag < -4 && widget.index + 1 < widget.items.length) next++;
     if (drag > 4 && widget.index > 0) next--;
-    // 把松手时的角度折进位置里，再从那里吸附过去，不会先跳回原位。
+    // 把松手时的角度并入位置, 再从该位置吸附到目标, 避免先跳回原位.
     _position.value -= drag / Turntable.step;
     setState(() => _drag = 0);
     if (next == widget.index) {
@@ -128,7 +135,7 @@ class _TurntableState extends State<Turntable>
     final palette = StageTheme.of(context);
     final plate = widget.plateSize;
     final radius = _radius;
-    // 手机上菜指向正上方，宽屏时指向左边。
+    // 手机上菜品朝向正上方, 宽屏时朝向左侧.
     final base = widget.wide ? -math.pi / 2 : 0.0;
     final center = widget.wide
         ? widget.plateCenter + Offset(radius, 0)
@@ -224,7 +231,7 @@ class _TurntableState extends State<Turntable>
   );
 }
 
-/// 舞台左栏下面的一排小圆点：这道菜在这一批里排第几，当前那个拉长成 16px。
+/// 舞台左栏下方的一排小圆点, 表示当前菜品在本批中的位置. 当前圆点拉长显示.
 class TurntableDots extends StatelessWidget {
   const new({super.key, required this.count, required this.current});
 

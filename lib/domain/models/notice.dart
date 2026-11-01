@@ -1,7 +1,6 @@
-/// 消息页的一条消息，来自 `/notification/list`。
+/// 消息页的一条消息, 来自 `/notification/list`.
 ///
-/// [type]、[targetType] 的取值接口还没写全（现状差距 2.1），原样保留，由 `noticeTargetOf`
-/// 和页面按已知的几种处理。
+/// [type] 和 [targetType] 原样保留接口取值, 由 `NoticeRules` 和页面识别已知的取值.
 class const Notice({
   required final int id,
   required final int actorId,
@@ -15,7 +14,7 @@ class const Notice({
   required final DateTime createdAt,
 });
 
-/// 一个用户对外的资料和统计，来自 `/user/userInfo`。
+/// 用户的公开资料和统计, 来自 `/user/userInfo`.
 class const UserProfile({
   required final int id,
   required final String nickname,

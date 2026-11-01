@@ -15,17 +15,24 @@ import 'package:material_ui/material_ui.dart' show CircularProgressIndicator;
 
 enum _Kind { solid, outline, mist, dashed, stageSolid, stageGhost }
 
-/// 带一点厚度的胶囊按钮。文字写清楚按下会发生什么（「就它了」「导航去店里」），不写「确定」。
+/// 有厚度的胶囊按钮.
 ///
-/// 白底上：主操作 [EatButton.solid]，一屏最多一个；并排的次操作用 [EatButton.outline] 或
-/// [EatButton.mist]；「新建」「自己写」这类补充入口用 [EatButton.dashed]。舞台上用
-/// [EatButton.stageSolid] 和 [EatButton.stageGhost]，颜色跟着所在的舞台走。
+/// 文字写明按下后的结果, 如 "就它了" "导航去店里", 不写 "确定".
 ///
-/// [onPressed] 为 null 时不可用：变成扁平的灰底，附近要用 `warn` 文字说明怎样才能用。
-/// 条件还没满足、但点了要告诉用户差什么时（没勾协议就点登录）设 [muted]：样子和不可用一样，
-/// 点了照样调 [onPressed]，由页面给出提示；条件满足后去掉 [muted]，灰底平滑过渡成正常的样子。
-/// 提交等着网络时设 [loading]：样子不变灰，文字换成转圈，不能再点；读屏报「按钮名，进行中」。
-/// 宽度默认贴着内容；放进 `Expanded` 或给定宽度时撑满，成对出现时左次右主、等宽、隔 `space-10`。
+/// 变体:
+/// - 白底主操作用 [EatButton.solid], 每屏最多一个.
+/// - 白底上并排的次操作用 [EatButton.outline] 或 [EatButton.mist].
+/// - "新建" "自己写" 这类补充入口用 [EatButton.dashed].
+/// - 舞台上用 [EatButton.stageSolid] 和 [EatButton.stageGhost], 颜色取自所在舞台.
+///
+/// 状态:
+/// - [onPressed] 为 null 时不可用, 显示为扁平灰底. 附近须用 `warn` 文字说明可用条件.
+/// - [muted] 的外观与不可用相同, 但仍调用 [onPressed], 由页面提示缺少的条件.
+///   去掉 [muted] 后, 外观平滑过渡回正常状态.
+/// - [loading] 时文字替换为进度圈, 不响应点击, 外观不变灰. 读屏在按钮名后加 "进行中".
+///
+/// 宽度默认贴合内容, 放入 `Expanded` 或给定宽度时撑满.
+/// 成对出现时左次右主, 等宽, 间距 `space-10`.
 class EatButton extends StatelessWidget {
   const new solid(
     this.label, {
@@ -67,7 +74,7 @@ class EatButton extends StatelessWidget {
     this.muted = false,
   }) : _kind = _Kind.dashed;
 
-  /// 舞台上的主操作：浅色舞台是 `ink` 底、舞台色字；深色舞台是白色渐变底、舞台色字。
+  /// 舞台上的主操作. 浅色舞台为 `ink` 底, 深色舞台为白色渐变底, 文字均为舞台色.
   const new stageSolid(
     this.label, {
     super.key,
@@ -78,7 +85,7 @@ class EatButton extends StatelessWidget {
     this.muted = false,
   }) : _kind = _Kind.stageSolid;
 
-  /// 舞台上的次操作：半透明的磨砂底，文字是舞台文字色。
+  /// 舞台上的次操作. 半透明磨砂底, 文字为舞台文字色.
   const new stageGhost(
     this.label, {
     super.key,
@@ -92,16 +99,16 @@ class EatButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
 
-  /// 放在文字左边。
+  /// 文字左侧的图标.
   final EatIcons? icon;
 
-  /// 主按钮 52；列表行里的小按钮（回关、关注）36，点击区域会自动扩到 44。
+  /// 按钮高度. 列表行中的小按钮 (回关, 关注) 用 36, 点击区域仍会扩展到 44.
   final double height;
 
-  /// 正在处理这次点击，比如等登录接口返回。
+  /// 正在处理本次点击, 如等待登录接口返回.
   final bool loading;
 
-  /// 看起来不可用，点了仍然响应。
+  /// 外观为不可用, 但仍响应点击.
   final bool muted;
 
   final _Kind _kind;
@@ -127,7 +134,7 @@ class EatButton extends StatelessWidget {
         final sinks =
             onPressed != null && !loading && !muted && _kind != _Kind.dashed;
         final duration = context.motion(EatMotion.press);
-        // 按下用 90ms；松开、在可用和不可用之间切换时用选中态的 180ms，颜色不是一下跳过去。
+        // 按下使用按压时长. 松开以及切换可用状态时使用较长的选中态时长, 颜色渐变而非突变.
         final styleDuration = pressed
             ? duration
             : context.motion(EatMotion.select);
@@ -156,7 +163,7 @@ class EatButton extends StatelessWidget {
             ],
           ),
         );
-        // 转圈叠在原来的文字上，文字只是隐去，按钮宽度不跟着变。
+        // 进度圈叠加在透明的文字上, 按钮宽度保持不变.
         final body = loading
             ? Stack(
                 alignment: Alignment.center,
@@ -175,8 +182,8 @@ class EatButton extends StatelessWidget {
                 ],
               )
             : content;
-        // 贴着内容的按钮两侧留 22px（小按钮 14px）；被撑满时（Expanded、给定宽度）文字居中，
-        // 两侧只留 6px，否则三个并排的按钮会把「新建一家店」省略成「新建…」。
+        // 贴合内容时两侧留白较宽. 被撑满时文字居中, 两侧留白收窄.
+        // 否则三个按钮并排时, "新建一家店" 会被截断为省略号.
         final button = AnimatedContainer(
           duration: duration,
           curve: EatMotion.press.curve,
@@ -267,10 +274,10 @@ class EatButton extends StatelessWidget {
   }
 }
 
-/// 左右留白：宽度是给定的（撑满）时用 [tight]，贴着内容时用 [loose]。
+/// 按宽度约束选择左右留白: 宽度固定 (撑满) 时用 [tight], 贴合内容时用 [loose].
 ///
-/// 不用 `LayoutBuilder` 判断宽度，是为了让按钮能回答自己的固有尺寸：抽屉、面板这类按内容
-/// 定高的容器会先量一遍里面的按钮，`LayoutBuilder` 量不了。
+/// 不用 `LayoutBuilder` 判断宽度, 因为 `LayoutBuilder` 不支持固有尺寸查询.
+/// 抽屉, 面板等按内容定高的容器会先查询内部按钮的固有尺寸.
 class _SidePadding extends SingleChildRenderObjectWidget {
   const new({required this.loose, required this.tight, super.child});
 
@@ -363,14 +370,14 @@ SurfaceStyle _raised(Color top, Color bottom, EatShadow shadow) => SurfaceStyle(
   inset: shadow.inset,
 );
 
-// 下面三种按下的阴影只出现在 Button 组件的预览里，没有进 tokens.json。
+// 以下三种按下阴影不在阴影令牌中, 只供本组件使用.
 
-/// 描边按钮按下：只剩描边，底边和投影收掉。
+/// 描边按钮按下: 保留描边, 去掉底边和投影.
 const _outlinePressed = EatShadow(
   inset: [BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18))],
 );
 
-/// 深色舞台上的白色实心按钮按下。
+/// 深色舞台上白色实心按钮的按下阴影.
 const _onStagePressed = EatShadow(
   outer: [
     BoxShadow(
@@ -384,7 +391,7 @@ const _onStagePressed = EatShadow(
   ],
 );
 
-/// 舞台次按钮按下：顶边高光变暗，投影收掉。
+/// 舞台次按钮按下: 顶边高光变暗, 去掉投影.
 const _ghostPressed = EatShadow(
   inset: [
     BoxShadow(offset: Offset(0, 1), color: Color.fromRGBO(255, 255, 255, 0.3)),

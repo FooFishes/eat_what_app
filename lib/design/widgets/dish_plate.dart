@@ -5,12 +5,15 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// 把一道菜显示成一个盘子：圆形取景的照片，外面一圈白色盘沿加投影。实拍图和插画都走它。
+/// 把一道菜显示为盘子: 圆形取景的照片, 外圈为白色盘沿和投影. 实拍图和插画共用.
 ///
-/// 照片按「调整照片」保存的圆心和直径裁：[centerX]、[centerY] 是圆心在原图里的位置（0–1，按原图宽高
-/// 归一），[diameter] 是圆的直径占原图短边的比例，默认 1，即居中的短边内切圆。
-/// 盘沿画在 [size] 外面：舞台主图 320px 配 8px 盘沿，100–200px 的预览配 4–6px，按尺寸自动取。
-/// 图片没加载出来时盘子里是 `mist` 底。列表缩略图不用它，用 `ListThumb`。
+/// 照片按 "调整照片" 保存的圆形取景裁切:
+/// - [centerX], [centerY]: 圆心在原图中的位置, 按原图宽高归一到 0–1.
+/// - [diameter]: 直径占原图短边的比例. 默认 1, 即居中的短边内切圆.
+///
+/// 盘沿绘制在 [size] 之外, 宽度由 [rimFor] 按尺寸计算.
+/// 图片加载完成前显示 `mist` 底.
+/// 列表缩略图使用 `ListThumb`, 不使用本组件.
 class DishPlate extends StatelessWidget {
   const new({
     super.key,
@@ -23,7 +26,7 @@ class DishPlate extends StatelessWidget {
     this.semanticLabel,
   }) : illustration = null;
 
-  /// 插画本身已经画了碗盘，直接放，不加盘沿和投影，也不裁成圆。
+  /// 插画自带碗盘, 原样显示, 不加盘沿和投影, 也不裁切成圆形.
   const new illustration(
     Widget this.illustration, {
     super.key,
@@ -43,10 +46,12 @@ class DishPlate extends StatelessWidget {
   final double diameter;
   final bool shadow;
 
-  /// 单独出现的菜品图才写；舞台主图旁边已经写了菜名，留空标为装饰。
+  /// 读屏文字. 菜品图单独出现时填写.
+  ///
+  /// 舞台主图旁已有菜名, 此时留空, 图片标记为装饰.
   final String? semanticLabel;
 
-  /// 盘沿宽度：100px 以下 4，320px 以上 8，中间按尺寸线性取。
+  /// 按盘子尺寸计算盘沿宽度. 宽度随尺寸线性变化, 两端截断.
   static double rimFor(double size) =>
       4 + 4 * ((size - 100) / (EatSize.plate - 100)).clamp(0.0, 1.0);
 
@@ -92,7 +97,7 @@ class DishPlate extends StatelessWidget {
   }
 }
 
-/// 只画原图里那块正方形（圆的外接正方形），省得先把整张图按 `cover` 铺开再挪位置。
+/// 只绘制原图中圆形取景的外接正方形, 不先按 `cover` 铺满整张图再平移.
 class _CroppedImage extends StatefulWidget {
   const new({
     required this.image,

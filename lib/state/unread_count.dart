@@ -6,9 +6,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unread_count.g.dart';
 
-/// 未读消息数，发现页铃铛上的圆点和消息页的「3 条未读」用它。
+/// 未读消息数, 用于发现页铃铛上的圆点和消息页的未读条数.
 ///
-/// 回到前台、回到发现页时由页面调 [refresh]（产品 10.3）；读了消息直接减。
+/// 回到前台和回到发现页时由页面调用 [refresh]. 阅读消息后直接递减.
 @Riverpod(keepAlive: true)
 class UnreadCount extends _$UnreadCount {
   @override

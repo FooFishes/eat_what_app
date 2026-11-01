@@ -8,15 +8,15 @@ part of 'discover_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 发现页的转盘。地点或饭点一变就重新拉（产品 6.4「选完立即刷新转盘和列表」）。
+/// 发现页的转盘队列. 地点或饭点变化时重新请求.
 
 @ProviderFor(TurntableQueue)
 final turntableQueueProvider = TurntableQueueProvider._();
 
-/// 发现页的转盘。地点或饭点一变就重新拉（产品 6.4「选完立即刷新转盘和列表」）。
+/// 发现页的转盘队列. 地点或饭点变化时重新请求.
 final class TurntableQueueProvider
     extends $AsyncNotifierProvider<TurntableQueue, TurntableFeed> {
-  /// 发现页的转盘。地点或饭点一变就重新拉（产品 6.4「选完立即刷新转盘和列表」）。
+  /// 发现页的转盘队列. 地点或饭点变化时重新请求.
   TurntableQueueProvider._()
     : super(
         from: null,
@@ -38,7 +38,7 @@ final class TurntableQueueProvider
 
 String _$turntableQueueHash() => r'e7f5a7717f0c12e36440f462c231845775358a82';
 
-/// 发现页的转盘。地点或饭点一变就重新拉（产品 6.4「选完立即刷新转盘和列表」）。
+/// 发现页的转盘队列. 地点或饭点变化时重新请求.
 
 abstract class _$TurntableQueue extends $AsyncNotifier<TurntableFeed> {
   FutureOr<TurntableFeed> build();

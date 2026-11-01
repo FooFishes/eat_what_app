@@ -7,15 +7,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-/// 附近页和新建店共用的底图：天地图矢量底图加注记（技术架构 14.4）。放在 `FlutterMap` 的
-/// `children` 最前面，上面再叠商圈、标记。
+/// 附近页和新建店页共用的底图: 天地图矢量底图和注记.
+///
+/// 放在 `FlutterMap.children` 的第一项, 商圈和标记叠加在其上.
 class BaseMapLayers extends ConsumerWidget {
   const new({super.key, this.onTileError});
 
-  /// 瓦片加载失败时调用，页面数够了次数就退回只有列表。
+  /// 瓦片加载失败时调用. 页面据此计数, 失败次数达到阈值后改为只显示列表.
   final VoidCallback? onTileError;
 
-  /// 底图整体往 `map-ground` 的暖色靠一点：稍微降饱和、提暖（技术架构 14.4）。
+  /// 底图的调色矩阵: 略微降低饱和度并提高暖色, 使底图接近 `map-ground` 的色调.
   static const _warm = ColorFilter.matrix([
     0.95, 0.05, 0.0, 0, 6, //
     0.03, 0.92, 0.03, 0, 4, //
@@ -42,17 +43,20 @@ class BaseMapLayers extends ConsumerWidget {
   }
 }
 
-/// GCJ-02 的点放到天地图上要先转回 WGS-84（技术架构 14.1）。
+/// 把 GCJ-02 坐标转换为天地图使用的 WGS-84 坐标.
+///
+/// 天地图瓦片使用 WGS-84, 直接放入 GCJ-02 坐标会偏移数百米.
 LatLng mapPoint(GcjPoint point) {
   final w = GeoRules.toWgs(point);
   return LatLng(w.lat, w.lng);
 }
 
-/// 地图上的位置转回 GCJ-02，用来调接口。
+/// 把地图上的 WGS-84 坐标转换为接口使用的 GCJ-02 坐标.
 GcjPoint gcjOf(LatLng point) =>
     GeoRules.toGcj(WgsPoint(point.latitude, point.longitude));
 
-/// 「© 天地图」：用天地图的瓦片要显示的标识（技术架构 14.4）。审图号等拿到 Key 时按控制台给的补上。
+// TODO: 天地图要求同时显示审图号, 目前只显示 "© 天地图". 取得正式 Key 后按控制台提供的审图号补上.
+/// 使用天地图瓦片时必须显示的标识.
 class MapAttribution extends StatelessWidget {
   const new({super.key});
 

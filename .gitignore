@@ -50,6 +50,6 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 
-# 环境配置：只有样例入库，真实的 dev.json、staging.json、prod.json 留在本地或由 CI 写出
+# 环境配置: 只有样例入库. 实际使用的 dev.json, staging.json, prod.json 保存在本地或由 CI 生成.
 /config/*.json
 !/config/example.json

@@ -5,11 +5,12 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:flutter/widgets.dart';
 
-/// 没有卡片的列表行：左边缩略图或头像，中间两到三行文字，右边可选的内容；行与行之间只靠留白分开。
+/// 无卡片的列表行. 左侧为缩略图或头像, 中间为两到三行文字, 右侧为可选内容.
 ///
-/// [title] 默认用 `row-title`，[lines] 里的每一行默认 `meta` 加 `ink-muted`；消息正文这类
-/// 要换样式的，传自己的 `Text`。整行可点时整行是一个链接，[action] 单独可点、不算在整行里。
-/// 行与行之间 16–20px 由列表给，不要给行加背景、圆角或分隔线。
+/// - [title] 默认使用 `row-title`. [lines] 的每一行默认使用 `meta` 和 `ink-muted`.
+/// - 消息正文等需要其他样式的行, 传入自定义的 `Text`.
+/// - 整行可点时, 整行是一个链接. [action] 独立可点, 不属于整行链接.
+/// - 行间距由列表提供. 行本身不加背景, 圆角和分隔线.
 class EatListRow extends StatelessWidget {
   const new({
     super.key,
@@ -22,20 +23,20 @@ class EatListRow extends StatelessWidget {
     this.onTap,
   });
 
-  /// 缩略图（[ListThumb]）或头像（[EatAvatar]）。
+  /// 缩略图 [ListThumb] 或头像 [EatAvatar].
   final Widget? leading;
 
   final Widget title;
 
   final List<Widget> lines;
 
-  /// 整行的一部分：时间、价格、相关菜品的缩略图。
+  /// 右侧内容, 属于整行链接的一部分, 如时间, 价格和相关菜品的缩略图.
   final Widget? trailing;
 
-  /// 单独可点的按钮，如「回关」、收藏。一行里最多一个。
+  /// 独立可点的按钮, 如 "回关" 和收藏. 每行最多一个.
   final Widget? action;
 
-  /// 未读时行首放一个 7px 的 `ink` 圆点，落在页面左边距里。
+  /// 是否未读. 未读时行首显示 [UnreadDot], 位于页面左边距内.
   final bool unread;
 
   final VoidCallback? onTap;
@@ -109,7 +110,7 @@ class EatListRow extends StatelessWidget {
   }
 }
 
-/// 未读的 7px 圆点，读过就去掉。
+/// 未读标记圆点. 已读后不再显示.
 class UnreadDot extends StatelessWidget {
   const new({super.key});
 
@@ -127,7 +128,7 @@ class UnreadDot extends StatelessWidget {
   );
 }
 
-/// 列表分组的小标题：「今天」「本周」「主食」。
+/// 列表分组的小标题, 如 "今天" "本周" "主食".
 class ListGroupTitle extends StatelessWidget {
   const new(this.text, {super.key});
 
@@ -149,13 +150,15 @@ class ListGroupTitle extends StatelessWidget {
   }
 }
 
-/// 列表里的方圆角缩略图。64px 用 `radius-thumb-lg`，其余用 `radius-thumb`；图没加载出来时是 `mist` 底。
+/// 列表中的方圆角缩略图. 图片加载完成前显示 `mist` 底.
+///
+/// 尺寸不小于 [EatSize.thumbLg] 时使用 `radius-thumb-lg`, 其余使用 `radius-thumb`.
 class ListThumb extends StatelessWidget {
   const new({super.key, required this.image, this.size = EatSize.thumb});
 
   final ImageProvider? image;
 
-  /// 48（消息）、52（选店）、56（足迹）或 64（附近）。
+  /// 边长. 消息用 48, 选店用 52, 足迹用 56, 附近用 64.
   final double size;
 
   @override
@@ -170,7 +173,7 @@ class ListThumb extends StatelessWidget {
   );
 }
 
-/// 圆形头像。没有头像图时写名字的第一个字，底色取一个舞台色，字色按它的深浅。
+/// 圆形头像. 没有头像图时显示名字的首字, 底色取一个舞台色, 字色随底色深浅.
 class EatAvatar extends StatelessWidget {
   const new({
     super.key,

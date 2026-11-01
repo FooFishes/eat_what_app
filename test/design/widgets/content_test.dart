@@ -16,7 +16,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../support/eat_test_app.dart';
 
-/// 一张 [width]×[height] 的纯色 PNG，用来测加载和裁切。
+/// 生成 [width]×[height] 的纯色 PNG, 用于测试加载和裁切.
 Future<MemoryImage> _solidImage(WidgetTester tester, int width, int height) =>
     tester
         .runAsync(() async {

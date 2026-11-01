@@ -5,10 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'consent_api.g.dart';
 
-/// 接口分组 AccountConsent：跨站同步同意。
+/// 接口分组 AccountConsent: 跨站同步同意.
 ///
-/// 产品上默认替所有用户同意，客户端只接读政策版本和同意两个接口，查询状态、撤回都不接
-/// （技术架构 9.5）。
+/// 产品默认替所有用户同意, 因此客户端只对接读取政策版本和同意两个接口, 不对接状态查询和撤回.
 class ConsentApi {
   ConsentApi(this._client);
 
@@ -19,7 +18,7 @@ class ConsentApi {
     'POST /auth/consent/grant',
   ];
 
-  /// 当前政策的版本号。同意和注册都要带上它。
+  /// 当前政策的版本号. 同意和注册都需要携带.
   Future<String> policyVersion() async {
     final policy = decodeJson(
       await _client.get('/auth/consent/policy'),
@@ -32,9 +31,9 @@ class ConsentApi {
     return version;
   }
 
-  /// 带 [proof] 时不需要登录（登录返回了临时凭证）；不带时用当前会话同意。
+  /// 带 [proof] 时无需登录, [proof] 是登录返回的临时凭证. 不带时使用当前会话同意.
   ///
-  /// 同意接口自己遇到「需要同意」的码不再自动同意，否则会一直绕圈。
+  /// 本接口收到要求同意的业务码时不再自动同意, 否则会无限循环.
   Future<void> grant({required String policyVersion, String? proof}) =>
       _client.post(
         '/auth/consent/grant',

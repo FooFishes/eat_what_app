@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dish_interactions.g.dart';
 
-/// 一道菜的赞和收藏现在是什么样。
+/// 一道菜当前的赞和收藏状态.
 class const DishInteraction({
   required final bool liked,
   required final int likes,
@@ -20,10 +20,12 @@ class const DishInteraction({
   );
 }
 
-/// 赞和收藏的本地覆盖值，按菜 id（技术架构 4.3 乐观更新）。
+/// 赞和收藏的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
 ///
-/// 点了先改这里，转盘、方块、详情里同一道菜一起变；请求失败退回原值，由页面给一句提示。
-/// 拉到这道菜的最新详情时清掉覆盖值，换了账号全部清空。
+/// - 点击后先修改覆盖值, 转盘, 方块和详情中的同一道菜同步变化.
+/// - 请求失败时恢复原值, 由页面显示提示.
+/// - 获取到该菜的最新详情时清除覆盖值.
+/// - 切换账号时全部清空.
 @Riverpod(keepAlive: true)
 class DishInteractions extends _$DishInteractions {
   @override
@@ -34,7 +36,7 @@ class DishInteractions extends _$DishInteractions {
 
   DishInteraction of(Dish dish) => state[dish.id] ?? DishInteraction.of(dish);
 
-  /// 赞或取消赞。失败时退回，返回失败原因；成功返回 null。
+  /// 切换赞的状态. 成功返回 null; 失败时恢复原值并返回失败原因.
   Future<AppFailure?> toggleLike(Dish dish) async {
     final before = of(dish);
     final liked = !before.liked;
@@ -77,7 +79,7 @@ class DishInteractions extends _$DishInteractions {
     }
   }
 
-  /// 拿到了服务端的最新数据，不再需要覆盖。
+  /// 清除 [dishId] 的覆盖值. 获取到服务端的最新数据后调用.
   void forget(int dishId) {
     if (!state.containsKey(dishId)) return;
     state = {...state}..remove(dishId);

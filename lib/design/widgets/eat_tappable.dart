@@ -3,10 +3,10 @@ import 'package:eat/design/widgets/painting.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 能点的组件共用的外壳：点击和按下状态、键盘操作、焦点双环、鼠标手型和读屏语义。
+/// 可点击组件共用的外壳. 提供点击和按下状态, 键盘操作, 焦点双环, 鼠标手型和读屏语义.
 ///
-/// 不画任何底色和水波纹，样子全由 [builder] 决定；`pressed` 用来做按钮的下沉。
-/// [onTap] 为 null 时不可点，读屏报「不可用」。
+/// - 不绘制底色和水波纹, 外观完全由 [builder] 决定. `pressed` 用于实现按钮的下沉效果.
+/// - [onTap] 为 null 时不可点击, 读屏报告 "不可用".
 class EatTappable extends StatefulWidget {
   const new({
     super.key,
@@ -26,10 +26,10 @@ class EatTappable extends StatefulWidget {
 
   final Widget Function(BuildContext context, bool pressed) builder;
 
-  /// 焦点双环沿着画的轮廓，和组件本身的形状一致。
+  /// 焦点双环的轮廓, 应与组件自身的形状一致.
   final ShapeBorder focusShape;
 
-  /// 读屏读的文字。不传时读子组件里的文字。
+  /// 读屏文字. 不传时朗读子组件中的文字.
   final String? label;
 
   final bool button;

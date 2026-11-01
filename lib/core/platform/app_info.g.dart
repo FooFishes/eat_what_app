@@ -8,17 +8,17 @@ part of 'app_info.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 版本名，取自 `pubspec.yaml` 的 `version`（如 `0.1.0`），设置和关于里显示。
+/// 版本名, 取自 `pubspec.yaml` 的 `version`, 如 `0.1.0`. 显示在设置页和关于页.
 
 @ProviderFor(appVersion)
 final appVersionProvider = AppVersionProvider._();
 
-/// 版本名，取自 `pubspec.yaml` 的 `version`（如 `0.1.0`），设置和关于里显示。
+/// 版本名, 取自 `pubspec.yaml` 的 `version`, 如 `0.1.0`. 显示在设置页和关于页.
 
 final class AppVersionProvider
     extends $FunctionalProvider<AsyncValue<String>, String, FutureOr<String>>
     with $FutureModifier<String>, $FutureProvider<String> {
-  /// 版本名，取自 `pubspec.yaml` 的 `version`（如 `0.1.0`），设置和关于里显示。
+  /// 版本名, 取自 `pubspec.yaml` 的 `version`, 如 `0.1.0`. 显示在设置页和关于页.
   AppVersionProvider._()
     : super(
         from: null,

@@ -2,10 +2,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_config.g.dart';
 
-/// 编译期通过 `--dart-define-from-file=config/<环境>.json` 传入的环境配置。
+/// 编译期通过 `--dart-define-from-file=config/<环境>.json` 传入的环境配置.
 ///
-/// 这些值会编进安装包，只能放公开的值。没传的项是空串，`fvm flutter run`
-/// 不带配置文件也能启动，只是调不了接口。
+/// 这些值会编入安装包, 只能存放可公开的值.
+/// 未传入的项为空串. 不带配置文件也能启动, 但无法调用接口.
 class const AppConfig({
   required final String envName,
   required final String apiBaseUrl,
@@ -29,6 +29,6 @@ class const AppConfig({
       );
 }
 
-/// 当前构建的环境配置，测试里用 `overrideWithValue` 换掉。
+/// 当前构建的环境配置. 测试中用 `overrideWithValue` 替换.
 @Riverpod(keepAlive: true)
 AppConfig appConfig(Ref ref) => const AppConfig.fromEnvironment();

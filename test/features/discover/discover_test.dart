@@ -43,7 +43,8 @@ void main() {
     expect(find.text('软件园 ${_mealLabel()}'), findsOneWidget);
     await expectAccessible(tester);
 
-    // 方块里也有菜名：舞台换了以后，铁锅炖只剩方块里那个。
+    // 菜名同时出现在舞台和推荐流方块中.
+    // 换菜后, 新菜 "粘豆包" 出现两处, 原先的 "铁锅炖" 只剩方块中的一处.
     expect(find.text('粘豆包'), findsOneWidget);
     await tester.tap(find.text('换一个'));
     await tester.pumpAndSettle();

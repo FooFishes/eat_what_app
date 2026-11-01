@@ -28,17 +28,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_router.g.dart';
 
-/// 路由表。
+/// 路由表.
 ///
-/// 三个主页面是 `StatefulShellRoute` 的三个分支，切换时各自的页面状态留着，导航悬浮在上面；
-/// 其余页面都放在根导航器上，盖住导航（详情和流程页不显示导航）。没登录能进的页面在 `metadata`
-/// 上标 [publicRoute]，其余页面由守卫送去登录（[resolveRedirect]）。
+/// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
+/// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
+/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
-  // push 打开的页面（发布、以后的详情页）也写进 Web 的地址栏：地址栏就是当前页面，
-  // 刷新或复制链接都回到同一页；默认只有 go 才改地址。
+  // push 打开的页面也写入 Web 地址栏, 使地址栏始终对应当前页面, 刷新或复制链接都回到同一页.
+  // go_router 默认只有 go 会修改地址.
   GoRouter.optionURLReflectsImperativeAPIs = true;
-  // 登录态一变就让守卫重新判断当前地址：登录后离开登录页，过期、退出后去登录页。
+  // 登录态变化时让守卫重新判断当前地址: 登录后离开登录页, 过期或退出后进入登录页.
   final refresh = ValueNotifier<SessionState>(ref.read(sessionProvider));
   ref.listen(sessionProvider, (_, next) => refresh.value = next);
   late final GoRouter router;
@@ -121,7 +121,8 @@ GoRouter appRouter(Ref ref) {
           ),
         ],
       ),
-      // 发布流程的三页都写成顶层的完整路径：发布成功后按路径前缀退出整个流程（加菜页的 _finish）。
+      // 发布流程的三个页面都使用顶层完整路径.
+      // 发布成功后, 加菜页的 `_finish` 按路径前缀退出整个流程.
       GoRoute(
         path: Paths.publish,
         builder: (_, state) =>
@@ -136,7 +137,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: Paths.publishDishPattern,
-        // 没带店（手拼的地址）时回到选店。
+        // 地址缺少有效的 shopId 时 (如手动拼写的地址) 重定向到选店.
         redirect: (_, state) =>
             int.tryParse(state.uri.queryParameters['shopId'] ?? '') == null
             ? Paths.publish
@@ -175,14 +176,14 @@ GoRouter appRouter(Ref ref) {
   return router;
 }
 
-/// 子路由写相对路径：`/login/phone` 在 `/login` 下面是 `phone`。
+/// 子路由使用相对路径: `/login` 下的 `/login/phone` 写作 `phone`.
 String _child(String path, String parent) => path.substring(parent.length + 1);
 
-/// 地址里的数字 id；不是数字（手拼的链接）时为 null，显示「页面不存在」。
+/// 地址中的数字 id. 不是数字时 (如手动拼写的链接) 为 null, 页面显示 "页面不存在".
 int? _idOf(GoRouterState state, String name) =>
     int.tryParse(state.pathParameters[name] ?? '');
 
-/// 登录各页之间原样传递的参数。
+/// 登录各页之间原样传递的查询参数.
 Map<String, String> _loginQuery(GoRouterState state) => {
   for (final key in const ['from', 'expired'])
     key: ?state.uri.queryParameters[key],

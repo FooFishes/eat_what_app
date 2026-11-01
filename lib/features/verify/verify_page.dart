@@ -20,16 +20,19 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 学生认证（`G-Verify`）：山大统一认证或山大邮箱，结果记到当前账号上，不用重新登录。
+/// 学生认证页面. 支持山大统一认证和山大邮箱两种方式, 结果记入当前账号, 无需重新登录.
 ///
-/// 两种入口：新号码注册后的认证引导（[onboarding]，右上角「先逛逛」），以及设置、拦截面板
-/// 进来的普通页面（左上角返回）。回到前台和打开页面时自动刷新认证状态。
+/// 页面有两种入口:
+/// - 认证引导: 新号码注册后进入, [onboarding] 为 true, 右上角显示 "先逛逛".
+/// - 普通页面: 从设置或拦截面板进入, 左上角显示返回.
+///
+/// 打开页面和回到前台时自动刷新认证状态.
 class VerifyPage extends ConsumerStatefulWidget {
   const new({super.key, this.onboarding = false, this.from});
 
   final bool onboarding;
 
-  /// 认证引导结束后去哪，来自登录前要去的页面；没有就去发现页。
+  /// 认证引导结束后的目标地址, 即登录前要去的页面. 为 null 时去发现页.
   final String? from;
 
   @override
@@ -49,7 +52,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(sessionProvider.notifier).finishOnboarding();
-      // Web 上统一认证完成后整页跳回这里，打开时就刷新一次。
+      // Web 上完成统一认证后整页重定向回本页, 因此打开页面时刷新一次认证状态.
       _refresh();
     });
   }
@@ -62,7 +65,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     super.dispose();
   }
 
-  /// 人机验证弹在这一页上；页面已经关掉时当作用户取消。
+  /// 在本页上弹出人机验证. 页面已关闭时按用户取消处理.
   Future<CaptchaOutcome> _presentCaptcha(CaptchaParams params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);
@@ -349,7 +352,7 @@ class _Verified extends StatelessWidget {
   }
 }
 
-/// 一种认证方式：左边 `mist` 圆底图标，中间名字和一句说明，能点时右边是外链图标。
+/// 认证方式行: 左侧图标, 中间名称和说明. 可点击时右侧显示外链图标.
 class _MethodRow extends StatelessWidget {
   const new({
     required this.icon,
@@ -404,7 +407,7 @@ class _MethodRow extends StatelessWidget {
   }
 }
 
-/// 顶栏或段落里的文字按钮，点击区域 44px 高。
+/// 顶栏或段落中的文字按钮. 点击区域高度满足最小点击尺寸.
 class _TextAction extends StatelessWidget {
   const new(this.label, {required this.onTap, this.center = false});
 

@@ -4,20 +4,23 @@ import 'dart:ui' as ui;
 
 import 'package:eat/design/tokens/stage_color.dart';
 
-/// 从照片推荐的舞台色：9 个舞台色按离照片主色调的远近排好，外加这次取色可不可靠。
+/// 从照片推荐的舞台色.
 ///
-/// 照片太灰（[reliable] 为 false）时排第一的不作数，由 [top3] 换成分类默认色（产品 6.9）。
+/// [ranked] 是全部舞台色按与照片主色调的距离由近到远的排序.
+/// [reliable] 为 false 表示照片过灰, 排序第一的颜色不可采用, 由 [top3] 替换为分类默认色.
 class const StageSuggestion({
   required final List<StageColor> ranked,
   required final bool reliable,
 }) {
-  /// 「调整照片」里给出的三个推荐色。不可靠时第一个是 [fallback]，后两个取排序里的前两个。
+  /// "调整照片" 中给出的三个推荐色.
+  ///
+  /// 不可靠时第一个为 [fallback], 其后为排序中除 [fallback] 以外的前两个.
   List<StageColor> top3(StageColor fallback) => reliable
       ? ranked.take(3).toList()
       : [fallback, ...ranked.where((c) => c != fallback).take(2)];
 }
 
-/// 解码好的取色小图：长边不超过 [StagePalette.sampleSide] 的 RGBA 像素。
+/// 解码后的取色小图: 长边不超过 [StagePalette.sampleSide] 的 RGBA 像素.
 class const StageSample(
   final Uint8List rgba, {
   required final int width,
@@ -37,30 +40,37 @@ class const StageSample(
   );
 }
 
-/// 舞台取色（技术架构 13.5）：只看圆内的像素，按彩度加权找主色调，再吸附到 9 个舞台色。
+/// 舞台取色: 只统计圆形取景内的像素, 按彩度加权求主色调, 再吸附到最近的舞台色.
 ///
-/// 不用平均色：实拍中餐的平均色几乎都是发灰的褐色。这里先把像素按色相分成 36 段、按「彩度 × 亮度系数」
-/// 累计权重，找出最重的一段，再把它两侧各两段（共 50°）的像素按亮度系数平均，得到代表色。
-/// 平均时不再乘彩度：乘了会被最艳的那一小块拉走，红烧肉的酱汁会把整盘拉成红油。
+/// 不使用平均色, 因为实拍中餐的平均色几乎都是发灰的褐色.
+///
+/// 求主色调的步骤:
+/// 1. 按色相把像素分为 36 段, 以 "彩度 × 亮度系数" 累计每段的权重.
+/// 2. 取权重最大的一段及其两侧各两段, 共 50°.
+/// 3. 对这 5 段的像素按亮度系数求平均, 得到代表色.
+///
+/// 第 3 步不再乘彩度. 乘彩度会使结果偏向面积很小的高彩度区域, 例如红烧肉的酱汁会使整盘被判为红油色.
 abstract final class StagePalette {
-  /// 解码时的长边。256 像素在三端主线程上都够快，不开 isolate。
+  /// 解码后的长边像素数. 该尺寸在三端主线程上的取色耗时都可以接受, 因此不使用 isolate.
   static const sampleSide = 256;
 
   static const _hueBins = 36;
 
-  /// 彩度超过它才算「有颜色」。
+  /// 彩度阈值. 彩度超过该值的像素计为有颜色.
   static const _colorfulChroma = 0.045;
 
-  /// 有颜色的像素在圆内（按亮度系数计）占比低于它，判为太灰。
+  /// 有颜色像素在圆内的最低占比, 按亮度系数加权. 低于该比例判定为过灰.
   static const _minColorfulShare = 0.12;
 
-  /// 吸附时亮度差的权重。实拍的明暗受光线影响大，色相才是分得开菜的依据：粘豆包很淡，
-  /// 靠色相仍能分到黄色系（设计资源说明 `G-PhotoPipeline`）。
+  /// 吸附时亮度差的权重.
+  ///
+  /// 实拍照片的明暗受光线影响大, 区分菜品主要依靠色相.
+  /// 例如粘豆包颜色很淡, 降低亮度权重后仍能吸附到黄色系.
   static const _lightnessWeight = 0.5;
 
-  /// 把 [bytes]（任意编码的图片）按 [sampleSide] 解码成取色用的小图。
+  /// 把任意编码的图片 [bytes] 解码为长边不超过 [sampleSide] 的取色小图.
   ///
-  /// 「调整照片」里裁切一变就要重算，解码只做一次，之后用 [StageSample.suggest]。
+  /// "调整照片" 中裁切每次变化都要重新取色. 解码只做一次, 之后调用 [StageSample.suggest].
   static Future<StageSample> sample(Uint8List bytes) async {
     final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
     final descriptor = await ui.ImageDescriptor.encoded(buffer);
@@ -89,8 +99,10 @@ abstract final class StagePalette {
     }
   }
 
-  /// [rgba] 是 [width] × [height] 的 RGBA 像素。圆按 `DishPlate` 的裁切参数：圆心占宽高的比例，
-  /// 直径占短边的比例。
+  /// [rgba] 是 [width] × [height] 的 RGBA 像素.
+  ///
+  /// 取景圆的参数与 `DishPlate` 的裁切参数一致.
+  /// [centerX] 和 [centerY] 是圆心占宽高的比例, [diameter] 是直径占短边的比例.
   static StageSuggestion suggest(
     Uint8List rgba, {
     required int width,
@@ -167,7 +179,7 @@ abstract final class StagePalette {
     return StageSuggestion(ranked: ranked, reliable: reliable);
   }
 
-  /// 太黑（阴影、碗沿）和太白（反光、桌布）的像素降权，到两头时不算。
+  /// 亮度系数. 过暗 (阴影, 碗沿) 和过亮 (反光, 桌布) 的像素降权, 亮度到达两端时系数为 0.
   static double _lightnessFactor(double l) =>
       _smoothstep(0.12, 0.32, l) * (1 - _smoothstep(0.86, 0.97, l));
 
@@ -193,7 +205,7 @@ abstract final class StagePalette {
   };
 }
 
-/// OKLab 颜色。
+/// OKLab 色彩空间中的颜色.
 class const _Lab(final double l, final double a, final double b) {
   factory _Lab.fromRgb(int r, int g, int b) {
     final lr = _linear(r), lg = _linear(g), lb = _linear(b);

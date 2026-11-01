@@ -9,9 +9,9 @@ import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 关于（`G-SettingsAbout`）：一句说明、版本号，反馈和两份协议。
-///
-/// 反馈还没有接口，带「待接入」；补丁号等热更新接入后加（开发计划阶段五）。
+// TODO: 反馈没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
+// TODO: 热更新未接入, 只显示版本号, 不显示补丁号. 接入热更新后在版本号旁显示补丁号.
+/// 关于页面: 应用说明, 版本号, 反馈入口和两份协议.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
 

@@ -1,49 +1,52 @@
 import 'package:flutter/painting.dart';
 
-/// 一条阴影令牌，外阴影和内阴影分开放。
+/// 阴影令牌, 外阴影和内阴影分别存放.
 ///
-/// 两个列表都按绘制顺序排，后画的在上层，和 CSS 的写法顺序相反。
+/// 两个列表都按绘制顺序排列, 后绘制的在上层. 该顺序与 CSS 的书写顺序相反.
 class const EatShadow({
-  /// 直接交给 `BoxDecoration.boxShadow`。
+  /// 外阴影, 直接传给 `BoxDecoration.boxShadow`.
   final List<BoxShadow> outer = const [],
 
-  /// CSS 的 `inset` 阴影。Flutter 不支持内阴影，由按钮自己画：`offset.dy` 为正是顶部高光，
-  /// 为负是底部暗边，`spreadRadius` 是贴着边的一圈描边。
+  /// 对应 CSS 的 `inset` 阴影. Flutter 不支持内阴影, 由组件自行绘制.
+  ///
+  /// - `offset.dy` 为正: 顶部高光.
+  /// - `offset.dy` 为负: 底部暗边.
+  /// - `spreadRadius`: 沿边缘的描边宽度.
   final List<BoxShadow> inset = const [],
 });
 
-/// 设计规范里的阴影，只用在规范列出的几处，卡片不加投影。
+/// 设计规范中的阴影. 只用于下列位置, 卡片不加投影.
 class const EatShadows({
-  /// 舞台上的盘子：白色盘沿加投影。
+  /// 舞台上的盘子: 白色盘沿和投影.
   required final EatShadow plate,
 
-  /// 悬浮导航胶囊、地图上的搜索框和商圈标签。
+  /// 悬浮元素: 导航胶囊, 地图上的搜索框和商圈标签.
   required final EatShadow float,
 
-  /// 导航里的发布按钮。
+  /// 导航中的发布按钮.
   required final EatShadow fab,
 
-  /// `ink` 实心按钮，配 `ink-top` 到 `ink` 的渐变。
+  /// `ink` 实心按钮, 搭配 `ink-top` 到 `ink` 的渐变.
   required final EatShadow button,
   required final EatShadow buttonPressed,
 
-  /// 雾面按钮，配 `mist-top` 到 `mist` 的渐变。
+  /// 雾面按钮, 搭配 `mist-top` 到 `mist` 的渐变.
   required final EatShadow buttonLight,
   required final EatShadow buttonLightPressed,
 
-  /// 描边按钮：1.5px `ink` 描边加一道很浅的底边。
+  /// 描边按钮: `ink` 描边和浅色底边.
   required final EatShadow buttonOutline,
 
-  /// 深色舞台上的白色实心按钮，配 `paper` 到 `paper-bottom` 的渐变。
+  /// 深色舞台上的白色实心按钮, 搭配 `paper` 到 `paper-bottom` 的渐变.
   required final EatShadow buttonOnStage,
 
-  /// 舞台上的半透明次按钮。
+  /// 舞台上的半透明次按钮.
   required final EatShadow buttonGhost,
 
-  /// 地图上的店铺标记。
+  /// 地图上的店铺标记.
   required final EatShadow pin,
 
-  /// 压在地图上的抽屉。压在舞台色上的抽屉不加阴影。
+  /// 压在地图上的抽屉. 压在舞台色上的抽屉不加阴影.
   required final EatShadow sheet,
 }) {
   static const standard = EatShadows(

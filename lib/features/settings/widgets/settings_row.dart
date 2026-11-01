@@ -6,9 +6,9 @@ import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// 设置里的一行：左边 22px 图标、名字，右边当前的值；能点进去时最右边是箭头。
+/// 设置页中的一行: 左侧图标和名称, 右侧当前值. 可点击时最右侧显示箭头.
 ///
-/// 还没有接口的功能照样列出来，名字旁边放「待接入」（[pending]），点了不做任何事。
+/// 没有接口的功能仍然列出. [pending] 为 true 时名称旁显示 "待接入".
 class SettingsRow extends StatelessWidget {
   const new({
     super.key,
@@ -24,7 +24,7 @@ class SettingsRow extends StatelessWidget {
   final String label;
   final String? value;
 
-  /// 值是版本号、打码的手机号这类数字时用数字字体。
+  /// 值为数字 (版本号, 打码的手机号) 时使用数字字体.
   final bool numericValue;
   final bool pending;
   final VoidCallback? onTap;
@@ -60,7 +60,8 @@ class SettingsRow extends StatelessWidget {
               ),
             ),
 
-            /// 值不参与分配剩余宽度，否则会和名字各占一半，短的值贴不到右边；只限制它最多占半行。
+            // 值不参与分配剩余宽度, 只限制最大宽度为半行.
+            // 参与分配时值和名称各占一半, 较短的值无法靠右对齐.
             if (value case final value?)
               ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: constraints.maxWidth / 2),

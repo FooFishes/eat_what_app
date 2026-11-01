@@ -1,6 +1,6 @@
 name: Build
 
-# main 的 push 与 PR、v 开头的 tag，以及手动触发
+# 触发条件: main 的 push 与 PR, 以 v 开头的 tag, 手动触发.
 on:
   push:
     branches: [main]
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Flutter 版本只在 .fvmrc 里维护，后续 job 复用这里的输出
+      # Flutter 版本只在 .fvmrc 中维护, 后续 job 复用此处的输出.
       - id: fvm
         run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
 
@@ -36,11 +36,11 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      # 生成文件入库；源文件改了没重新生成、或生成了没提交，这一步失败
+      # 生成文件入库. 源文件修改后未重新生成, 或生成后未提交, 此步失败.
       - run: dart run build_runner build --only-check
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
-      # riverpod_lint 这类分析器插件的结果只有 dart analyze 报告
+      # riverpod_lint 等分析器插件的结果只由 dart analyze 报告.
       - run: dart analyze --fatal-infos
       - run: flutter test
 
@@ -65,7 +65,7 @@ jobs:
 
       - run: flutter pub get
 
-      # release 暂用 debug 签名，接入上传密钥前产物只用于测试
+      # TODO: release 使用 debug 签名, 产物只能用于测试. 接入上传密钥后改用正式签名.
       - run: flutter build apk --release --build-number=${{ github.run_number }}
       - run: flutter build appbundle --release --build-number=${{ github.run_number }}
 
@@ -93,7 +93,7 @@ jobs:
 
       - run: flutter pub get
 
-      # 未签名构建，只验证能编译；签名与上传 TestFlight 另行配置
+      # 未签名构建, 只验证能否编译. 签名和上传 TestFlight 另行配置.
       - run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
 
       - name: Package Runner.app

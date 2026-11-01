@@ -8,12 +8,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 
-/// 启动应用：先准备好首帧要用的本地数据，再挂上界面。首帧不等网络。
+/// 启动应用. 首帧前只读取本地数据, 不等待网络.
 ///
-/// 读本地的登录态要等（几十毫秒）：首帧就要知道进发现页还是登录页。向服务端核对登录态在首帧之后。
+/// 首帧需要决定显示发现页还是登录页, 因此要等待本地登录态读取完成, 耗时约数十毫秒.
+/// 向服务端核对登录态在首帧之后进行.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Web 上地址用路径（/dishes/123）而不是 #/dishes/123，和分享链接、App Links 用同一套路径。
+  // Web 使用路径形式的地址 (/dishes/123) 而非 #/dishes/123, 与分享链接和 App Links 保持一致.
   usePathUrlStrategy();
   LicenseRegistry.addLicense(_fontLicenses);
   final container = ProviderContainer(
@@ -26,7 +27,7 @@ Future<void> bootstrap() async {
   );
 }
 
-/// 内置字体的 OFL 许可证。OFL 要求随字体分发许可证，登记后出现在系统的许可证页里。
+/// 内置字体的 OFL 许可证. OFL 要求随字体分发许可证, 注册后显示在系统的许可证页中.
 Stream<LicenseEntry> _fontLicenses() async* {
   const fonts = {
     'Noto Sans SC': 'assets/fonts/OFL-NotoSansSC.txt',

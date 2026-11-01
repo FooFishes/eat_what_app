@@ -1,18 +1,18 @@
 import 'package:eat/domain/models/geo.dart';
 
-/// 校区：「在哪吃」，决定推荐和附近的范围（产品 4.1）。只列已开放的。
+/// 校区, 即用户选择的 "在哪吃", 决定推荐和附近的范围. 只包含已开放的校区.
 class const Campus({
   required final int id,
   required final String name,
   required final GcjPoint center,
 
-  /// 没有定位时选它。
+  /// 是否为默认校区. 没有定位时选择默认校区.
   final bool isDefault = false,
 });
 
-/// 商圈：校区周边一片有边界的店铺聚集区，食堂也算（产品 4.1）。
+/// 商圈: 校区周边有边界的店铺聚集区, 食堂也算作商圈.
 ///
-/// [boundary] 是接口 GeoJSON MultiPolygon 的外环，按 WGS-84 读（技术架构待确认 A3）。
+/// [boundary] 是接口中 GeoJSON MultiPolygon 每个多边形的外环.
 class const Hub({
   required final int id,
   required final String name,
@@ -21,7 +21,7 @@ class const Hub({
   final List<List<WgsPoint>> boundary = const [],
 });
 
-/// 一家店（产品 4.2）。[address] 是地址描述，如「万达金街 1 层」。
+/// 店铺. [address] 是地址描述, 如 "万达金街 1 层".
 class const Shop({
   required final int id,
   required final String name,

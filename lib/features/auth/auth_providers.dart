@@ -9,7 +9,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_providers.g.dart';
 
-/// 登录页的协议勾选。手机号登录、密码登录都要先勾过；登录成功后写进本机的同意记录。
+/// 登录页的协议勾选状态.
+///
+/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
 @Riverpod(keepAlive: true)
 class LoginAgreement extends _$LoginAgreement {
   @override
@@ -18,24 +20,24 @@ class LoginAgreement extends _$LoginAgreement {
   void set({required bool agreed}) => state = agreed;
 }
 
-/// 一次登录表单提交或发验证码的结果，页面按它就地提示。
+/// 一次登录表单提交或发送验证码的结果. 页面据此就地显示提示.
 sealed class AuthFormEvent {
   const AuthFormEvent();
 }
 
-/// 失败了，[failure] 决定提示写在哪。
+/// 操作失败. [failure] 决定提示显示的位置.
 final class AuthFormFailed extends AuthFormEvent {
   const AuthFormFailed(this.failure);
 
   final AppFailure failure;
 }
 
-/// 验证码发得太频繁，弹面板说明上限，并给出「用密码登录」（产品 12.4）。
+/// 验证码发送过于频繁. 页面弹出面板说明次数上限, 并提供 "用密码登录".
 final class AuthCodeLimited extends AuthFormEvent {
   const AuthCodeLimited();
 }
 
-/// 手机号登录页：发验证码的倒计时、提交中，以及最近一次失败。
+/// 手机号登录页的状态: 验证码重发倒计时, 提交状态, 最近一次失败.
 class const PhoneLoginState({
   final DateTime? resendAt,
   final bool sending = false,
@@ -43,7 +45,7 @@ class const PhoneLoginState({
   final AuthFormEvent? event,
 });
 
-/// 验证码 60 秒后才能重发（产品 6.2）。
+/// 验证码的重发间隔.
 const resendInterval = Duration(seconds: 60);
 
 @riverpod
@@ -51,7 +53,7 @@ class PhoneLogin extends _$PhoneLogin {
   @override
   PhoneLoginState build() => const PhoneLoginState();
 
-  /// 先过人机验证再发验证码。用户关掉验证时什么都不发、也不开始倒计时。
+  /// 先完成人机验证再发送验证码. 用户关闭验证时不发送请求, 也不开始倒计时.
   Future<void> sendCode(CaptchaPresenter present, String mobile) async {
     if (state.sending) return;
     state = PhoneLoginState(resendAt: state.resendAt, sending: true);
@@ -94,7 +96,7 @@ class PhoneLogin extends _$PhoneLogin {
   }
 }
 
-/// 密码登录页：提交中，以及最近一次失败。
+/// 密码登录页的状态: 提交状态和最近一次失败.
 class const PasswordLoginState({
   final bool submitting = false,
   final AppFailure? failure,
@@ -121,13 +123,13 @@ class PasswordLogin extends _$PasswordLogin {
   }
 }
 
-/// 登录成功：记下协议同意，再更新登录态。守卫随后把页面带回原来要去的地方。
+/// 登录成功后记录协议同意, 再更新登录态. 守卫随后把页面导回原目标地址.
 Future<void> _signIn(Ref ref, SignInResult result) async {
   await ref.read(privacyConsentStoreProvider).record();
   await ref.read(sessionProvider.notifier).signIn(result);
 }
 
-/// 账号或密码不对的几个码：输入框的下划线变 `warn`，提示「账号或密码错误」。
+/// [failure] 是否为账号或密码错误. 是时输入框下划线显示 `warn` 色, 并提示账号或密码错误.
 bool isWrongCredentials(AppFailure failure) =>
     failure.code == BizCodes.wrongPassword ||
     failure.code == BizCodes.userNotFound;

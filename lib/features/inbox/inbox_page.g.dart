@@ -8,14 +8,20 @@ part of 'inbox_page.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 消息列表，滑到底接着加载；点一条、全部已读时先改本地再告诉服务端。
+/// 消息列表, 滚动到底部时加载下一页.
+///
+/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
 
 @ProviderFor(Inbox)
 final inboxProvider = InboxProvider._();
 
-/// 消息列表，滑到底接着加载；点一条、全部已读时先改本地再告诉服务端。
+/// 消息列表, 滚动到底部时加载下一页.
+///
+/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
 final class InboxProvider extends $AsyncNotifierProvider<Inbox, InboxPages> {
-  /// 消息列表，滑到底接着加载；点一条、全部已读时先改本地再告诉服务端。
+  /// 消息列表, 滚动到底部时加载下一页.
+  ///
+  /// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
   InboxProvider._()
     : super(
         from: null,
@@ -37,7 +43,9 @@ final class InboxProvider extends $AsyncNotifierProvider<Inbox, InboxPages> {
 
 String _$inboxHash() => r'8b055980f0f2260d11c95b805b9e43633f65c22a';
 
-/// 消息列表，滑到底接着加载；点一条、全部已读时先改本地再告诉服务端。
+/// 消息列表, 滚动到底部时加载下一页.
+///
+/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
 
 abstract class _$Inbox extends $AsyncNotifier<InboxPages> {
   FutureOr<InboxPages> build();

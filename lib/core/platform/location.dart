@@ -3,29 +3,31 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'location.g.dart';
 
-/// 定位权限现在怎样。
+/// 定位权限的状态.
 enum LocationAccess {
-  /// 还没问过系统。
+  /// 尚未向系统申请.
   notAsked,
   granted,
 
-  /// 拒绝了，还能再问。
+  /// 已拒绝, 仍可再次申请.
   denied,
 
-  /// 永久拒绝，或者系统定位服务关着：只能去系统设置里开。
+  /// 永久拒绝或系统定位服务已关闭. 只能由用户在系统设置中开启.
   blocked,
 }
 
-/// 设备定位，包住 `geolocator`。只给 WGS-84 的经纬度，转 GCJ-02 由上层做（技术架构 14.1、14.2）。
+/// 设备定位, 封装 `geolocator`. 只返回 WGS-84 坐标, 由上层转换为 GCJ-02.
 ///
-/// 只在需要时定位一次，不持续监听、不后台定位，位置不落盘。
+/// 只在需要时单次定位, 不持续监听, 不在后台定位, 位置不写入磁盘.
 abstract interface class LocationService {
   Future<LocationAccess> access();
 
-  /// 弹系统的权限框。已经永久拒绝时不弹，直接返回 [LocationAccess.blocked]。
+  /// 弹出系统权限框. 已永久拒绝时不弹出, 直接返回 [LocationAccess.blocked].
   Future<LocationAccess> request();
 
-  /// 当前位置的 WGS-84 经纬度；没有权限或定位失败时为 null。
+  /// 当前位置的 WGS-84 坐标.
+  ///
+  /// 定位失败时使用系统记录的上次位置. 两者都取不到时返回 null.
   Future<({double lat, double lng})?> current();
 }
 

@@ -8,18 +8,24 @@ part of 'published.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 这次打开 App 以来发布了几道菜、建了几家店。「我的」的统计和上传、餐厅详情的菜单都监听它，
-/// 发布成功后重新拉（技术架构 13.3）。功能之间不互相导入，靠它通知。
+/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+///
+/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// 功能之间不能互相导入, 因此通过该 Provider 通知.
 
 @ProviderFor(PublishedCount)
 final publishedCountProvider = PublishedCountProvider._();
 
-/// 这次打开 App 以来发布了几道菜、建了几家店。「我的」的统计和上传、餐厅详情的菜单都监听它，
-/// 发布成功后重新拉（技术架构 13.3）。功能之间不互相导入，靠它通知。
+/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+///
+/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// 功能之间不能互相导入, 因此通过该 Provider 通知.
 final class PublishedCountProvider
     extends $NotifierProvider<PublishedCount, int> {
-  /// 这次打开 App 以来发布了几道菜、建了几家店。「我的」的统计和上传、餐厅详情的菜单都监听它，
-  /// 发布成功后重新拉（技术架构 13.3）。功能之间不互相导入，靠它通知。
+  /// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+  ///
+  /// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+  /// 功能之间不能互相导入, 因此通过该 Provider 通知.
   PublishedCountProvider._()
     : super(
         from: null,
@@ -49,8 +55,10 @@ final class PublishedCountProvider
 
 String _$publishedCountHash() => r'c0e0c731fb85afbf7fcf0ce1742a717e6544648b';
 
-/// 这次打开 App 以来发布了几道菜、建了几家店。「我的」的统计和上传、餐厅详情的菜单都监听它，
-/// 发布成功后重新拉（技术架构 13.3）。功能之间不互相导入，靠它通知。
+/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+///
+/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// 功能之间不能互相导入, 因此通过该 Provider 通知.
 
 abstract class _$PublishedCount extends $Notifier<int> {
   int build();

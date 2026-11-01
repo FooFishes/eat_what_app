@@ -8,17 +8,26 @@ part of 'dish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+/// 菜品详情.
+///
+/// 获取到最新数据时清除赞和收藏的本地覆盖值.
+/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
 
 @ProviderFor(dishDetail)
 final dishDetailProvider = DishDetailFamily._();
 
-/// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+/// 菜品详情.
+///
+/// 获取到最新数据时清除赞和收藏的本地覆盖值.
+/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
 
 final class DishDetailProvider
     extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
     with $FutureModifier<Dish>, $FutureProvider<Dish> {
-  /// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+  /// 菜品详情.
+  ///
+  /// 获取到最新数据时清除赞和收藏的本地覆盖值.
+  /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
   DishDetailProvider._({
     required DishDetailFamily super.from,
     required int super.argument,
@@ -64,7 +73,10 @@ final class DishDetailProvider
 
 String _$dishDetailHash() => r'0e45f82ebcdb10e610570ece7ed4368ecc7aa7a4';
 
-/// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+/// 菜品详情.
+///
+/// 获取到最新数据时清除赞和收藏的本地覆盖值.
+/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
 
 final class DishDetailFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
@@ -77,7 +89,10 @@ final class DishDetailFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+  /// 菜品详情.
+  ///
+  /// 获取到最新数据时清除赞和收藏的本地覆盖值.
+  /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
 
   DishDetailProvider call(int dishId) =>
       DishDetailProvider._(argument: dishId, from: this);

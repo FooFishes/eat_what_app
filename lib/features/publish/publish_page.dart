@@ -21,9 +21,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 发布第 1 步：选店（`G-PickShop`）。离我近的店排在前面，可以搜店名，找不到就新建一家。
+/// 发布流程第 1 步: 选店.
 ///
-/// [changing] 是加菜页点「换一家」打开的：选好后带着店返回加菜页，不再往下走。
+/// - 列表按与我的距离升序排列.
+/// - 可以按店名搜索. 找不到时可以新建店铺.
+///
+/// [changing] 为 true 表示由加菜页的 "换一家" 打开. 此时选好后带着店返回加菜页, 不进入下一步.
 class PublishPage extends ConsumerStatefulWidget {
   const new({super.key, this.changing = false});
 
@@ -165,7 +168,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
   }
 }
 
-/// 顶栏右边的「1 / 2」。
+/// 顶栏右侧的步骤进度.
 class _Step extends StatelessWidget {
   const new();
 
@@ -196,7 +199,7 @@ class _Step extends StatelessWidget {
   }
 }
 
-/// 一家可选的店：门头照片、店名、距离和商圈、地址。
+/// 可选的店铺行: 门头照片, 店名, 距离和商圈, 地址.
 class _ShopOption extends ConsumerWidget {
   const new({
     required this.shop,

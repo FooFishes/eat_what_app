@@ -2,15 +2,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:flutter/widgets.dart';
 
-/// 按地址造图片来源。测试里换成内存图片：磁盘缓存要用到测试环境里没有的平台插件。
+/// 根据地址创建图片来源.
+///
+/// 测试中替换为内存图片, 因为磁盘缓存依赖测试环境中没有的平台插件.
 @visibleForTesting
 ImageProvider Function(String url) networkImageFactory =
     CachedNetworkImageProvider.new;
 
-/// 网络图片：安卓、iOS 有磁盘缓存，看过的图离线能看；Web 靠浏览器缓存（技术架构 10.4）。
+/// 创建网络图片来源. 没有地址时返回 null, 组件显示 `mist` 底.
 ///
-/// [width] 是显示宽度（逻辑像素），按它乘屏幕密度解码，不把原图整张解码进内存。
-/// 没有地址时返回 null，组件显示 `mist` 底。
+/// - Android 和 iOS 使用磁盘缓存, 浏览过的图片离线可见. Web 依赖浏览器的 HTTP 缓存.
+/// - 按显示宽度 [width] (逻辑像素) 乘以屏幕密度解码, 不把原图完整解码到内存.
 ImageProvider? networkImage(String? url, {double? width, double dpr = 3}) {
   if (url == null || url.isEmpty) return null;
   final provider = networkImageFactory(url);
@@ -22,13 +24,17 @@ ImageProvider? networkImage(String? url, {double? width, double dpr = 3}) {
   );
 }
 
-/// 铺满父组件的图片，按 `cover` 裁；还没加载出来或加载失败时是 `mist` 底，不用插画顶替。
+/// 铺满父组件的图片, 按 `cover` 裁切.
+///
+/// 加载完成前或加载失败时显示 `mist` 底, 不用插画替代.
 class CoverImage extends StatelessWidget {
   const new({super.key, required this.image, this.semanticLabel});
 
   final ImageProvider? image;
 
-  /// 单独出现的菜品图才写；舞台主图、列表缩略图旁边已经有菜名，留空标为装饰。
+  /// 读屏文字. 菜品图单独出现时填写.
+  ///
+  /// 舞台主图和列表缩略图旁已有菜名, 此时留空, 图片标记为装饰.
   final String? semanticLabel;
 
   @override

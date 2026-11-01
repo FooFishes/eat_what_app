@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'place_dto.g.dart';
 
-/// `/campus/list` 的一项。
+/// `/campus/list` 的一项.
 @JsonSerializable(createToJson: false)
 class const CampusDto({
   final int? id,
@@ -16,7 +16,8 @@ class const CampusDto({
       _$CampusDtoFromJson(json);
 }
 
-/// 商圈（`HubVO`）。[boundary] 是 GeoJSON，坐标按 WGS-84 读（技术架构待确认 A3）。
+// TODO: 后端未说明 GeoJSON 的坐标系, 目前按 WGS-84 解析. 确认不是 WGS-84 时, 同时修改解析和 `Hub.boundary` 的点类型.
+/// 商圈 (`HubVO`). [boundary] 为 GeoJSON, 坐标按 WGS-84 解析.
 @JsonSerializable(createToJson: false)
 class const HubDto({
   final int? id,
@@ -29,14 +30,14 @@ class const HubDto({
   factory HubDto.fromJson(Map<String, dynamic> json) => _$HubDtoFromJson(json);
 }
 
-/// GeoJSON 几何：`Point` 的坐标是 `[经度, 纬度]`，`MultiPolygon` 按多边形、环、点三层嵌套。
+/// GeoJSON 几何. `Point` 的坐标为 `[经度, 纬度]`, `MultiPolygon` 按多边形, 环, 点三层嵌套.
 @JsonSerializable(createToJson: false)
 class const GeoJsonDto({final String? type, final List<dynamic>? coordinates}) {
   factory GeoJsonDto.fromJson(Map<String, dynamic> json) =>
       _$GeoJsonDtoFromJson(json);
 }
 
-/// 餐厅（`RestaurantVO`）。
+/// 餐厅 (`RestaurantVO`).
 @JsonSerializable(createToJson: false)
 class const RestaurantDto({
   final int? id,
@@ -51,7 +52,7 @@ class const RestaurantDto({
       _$RestaurantDtoFromJson(json);
 }
 
-/// 新增餐厅的请求体（`RestaurantDTO`）。[address] 是地址描述，如「万达金街 1 层」。
+/// 新增餐厅的请求体 (`RestaurantDTO`). [address] 为地址描述, 如 "万达金街 1 层".
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const CreateRestaurantDto({
   required final String name,

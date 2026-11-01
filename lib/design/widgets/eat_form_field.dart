@@ -3,13 +3,16 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 大字输入：上面 13px 的标签，下面没有边框、只有一条下划线的大号输入框，填进去的内容就像标题。
+/// 大字输入框. 上方为小号标签, 下方为只有下划线的大号输入框, 输入内容以标题字号显示.
 ///
-/// 下划线平时 `handle`，获得焦点变 `ink`，出错变 `warn`；出错的说明写在下面，说清楚哪里不对、怎么改。
-/// 不要只用占位文字代替标签。
+/// - 下划线默认为 `handle`, 获得焦点时为 `ink`, 出错时为 `warn`.
+/// - 出错说明显示在下方, 写明错误原因和修改方法.
+/// - 必须提供标签, 不能只用占位文字代替.
 ///
-/// 手机号、验证码这类数字输入设 [numeric]，用数字字体；[prefix] 是输入框前面的固定文字
-/// （如「+86」），[trailing] 放在输入框右边（获取验证码按钮、显示密码的眼睛）。
+/// 参数:
+/// - [numeric]: 手机号, 验证码等数字输入, 使用数字字体.
+/// - [prefix]: 输入框前的固定文字, 如 "+86".
+/// - [trailing]: 输入框右侧的组件, 如获取验证码按钮和显示密码按钮.
 class EatFormField extends StatefulWidget {
   const new({
     super.key,
@@ -31,7 +34,7 @@ class EatFormField extends StatefulWidget {
     this.autofillHints,
   }) : price = false;
 
-  /// 价格：数字字体，前面带「¥」，只能输数字和小数点。
+  /// 价格输入. 使用数字字体, 带前缀 "¥", 只接受数字和小数点.
   const new price({
     super.key,
     required this.label,
@@ -57,7 +60,7 @@ class EatFormField extends StatefulWidget {
   final FocusNode? focusNode;
   final String? hintText;
 
-  /// 不为 null 时显示成出错的样子。
+  /// 出错说明. 不为 null 时显示出错样式.
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -135,7 +138,7 @@ class _EatFormFieldState extends State<EatFormField> {
             : widget.inputFormatters,
         style: inputStyle.copyWith(color: c.ink),
         cursorColor: c.ink,
-        // 上下各留 7px，让输入框连同留白有 44px 高，点得到；文字本身 30px 高。
+        // 文字行高低于最小点击高度, 由上下留白补足到 44px.
         decoration: InputDecoration(
           isCollapsed: true,
           border: InputBorder.none,
@@ -167,7 +170,7 @@ class _EatFormFieldState extends State<EatFormField> {
                 ExcludeSemantics(
                   child: Text(prefix, style: inputStyle.copyWith(color: c.ink)),
                 ),
-                // 价格的「¥」紧贴数字；「+86」这类区号和号码之间隔一条竖线。
+                // 价格的 "¥" 紧贴数字. 区号 (如 "+86") 与号码之间用竖线分隔.
                 if (widget.price)
                   const SizedBox(width: 2)
                 else ...[
@@ -176,7 +179,7 @@ class _EatFormFieldState extends State<EatFormField> {
                   const SizedBox(width: EatSpace.s10),
                 ],
               ],
-              // 标签读给读屏软件时和输入框合成一项；右边的按钮不并进来，单独可点。
+              // 标签与输入框合并为一个读屏节点. 右侧按钮不合并, 保持独立可点.
               Expanded(
                 child: MergeSemantics(
                   child: Semantics(label: widget.label, child: field),

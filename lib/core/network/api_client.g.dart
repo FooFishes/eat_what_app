@@ -8,17 +8,17 @@ part of 'api_client.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 网络层遇到登录过期、需要同意时的回调，由 `state` 覆盖成真正的处理（`state/api_hooks.dart`）。
+/// 网络层的会话回调. 默认为空, 由 `state/api_hooks.dart` 覆盖为实际处理.
 
 @ProviderFor(apiHooks)
 final apiHooksProvider = ApiHooksProvider._();
 
-/// 网络层遇到登录过期、需要同意时的回调，由 `state` 覆盖成真正的处理（`state/api_hooks.dart`）。
+/// 网络层的会话回调. 默认为空, 由 `state/api_hooks.dart` 覆盖为实际处理.
 
 final class ApiHooksProvider
     extends $FunctionalProvider<ApiHooks, ApiHooks, ApiHooks>
     with $Provider<ApiHooks> {
-  /// 网络层遇到登录过期、需要同意时的回调，由 `state` 覆盖成真正的处理（`state/api_hooks.dart`）。
+  /// 网络层的会话回调. 默认为空, 由 `state/api_hooks.dart` 覆盖为实际处理.
   ApiHooksProvider._()
     : super(
         from: null,

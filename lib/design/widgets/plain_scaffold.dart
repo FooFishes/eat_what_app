@@ -5,12 +5,13 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 白底页面骨架（消息、选店、搜索、评论、设置）：左上角 44×44 的返回，下面 `page-title` 大标题，
-/// 左右边距 `space-20`。宽屏时整页挤到居中一栏，最宽 480。
+/// 白底页面骨架, 用于消息, 选店, 搜索, 评论和设置.
 ///
-/// 分组靠 13px 的小标题和留白，不加卡片；[slivers] 已经套好了左右边距。
-///
-/// 键盘弹起时整页让到键盘上方，输入框获得焦点能滚到看得见的地方；拖动页面或点空白处收起键盘。
+/// - 左上角为返回按钮, 下方为 `page-title` 大标题, 左右边距 `space-20`.
+/// - 宽屏时整页收窄为居中的一栏.
+/// - 分组靠小标题和留白分隔, 不加卡片. [slivers] 已包含左右边距.
+/// - 键盘弹出时页面避让到键盘上方, 获得焦点的输入框会滚动到可见位置.
+/// - 拖动页面或点击空白处时收起键盘.
 class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -25,21 +26,23 @@ class PlainScaffold extends StatefulWidget {
 
   final String title;
 
-  /// 标题下面一两行的说明，`ink-muted`。
+  /// 标题下方一两行的说明, 使用 `ink-muted`.
   final String? subtitle;
 
   final List<Widget> slivers;
 
-  /// 顶栏右边的图标按钮。
+  /// 顶栏右侧的图标按钮.
   final List<Widget> actions;
 
   final bool showBack;
 
-  /// 不传时返回上一页，没有上一页时回到兜底页面。
+  /// 返回按钮的回调. 不传时返回上一页, 没有上一页时执行后备行为.
   final VoidCallback? onBack;
 
-  /// 页面里有地图这类自己要拖动的东西时，手指按在上面期间传 `NeverScrollableScrollPhysics`，
-  /// 竖着拖才不会被页面滚动抢走。
+  /// 页面的滚动行为.
+  ///
+  /// 页面中有地图等需要拖动的组件时, 手指按在其上期间传入 `NeverScrollableScrollPhysics`.
+  /// 否则纵向拖动会被页面滚动接管.
   final ScrollPhysics? physics;
 
   @override

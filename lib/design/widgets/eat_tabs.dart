@@ -5,21 +5,21 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 一个分类。
+/// 文字分类栏 [EatTabs] 中的一项.
 class const EatTabItem(
   final String label, {
 
-  /// 跟在文字后面的计数，如「上传 42」。
+  /// 文字后的计数, 如 "上传 42".
   final int? count,
 
-  /// 还没有接口的分类照样列出，后面跟「待接入」。
+  /// 功能尚未对接接口. 分类正常列出, 文字后接 "待接入".
   final bool pending = false,
 });
 
-/// 用字重区分选中的文字分类：选中 17px 900，其他 15px 400 `ink-muted`，没有下划线和底色。
+/// 文字分类栏. 选中项靠字重区分, 没有下划线和底色.
 ///
-/// 文字行高 32，点击区域上下扩到 44，所以整条的布局高度约 44（按基线对齐会多出不到 1px）。
-/// 放不下时横向滚动，不换行。
+/// - 点击区域上下扩展到 44px, 整条的布局高度因此约为 44px. 按基线对齐时会多出不到 1px.
+/// - 放不下时横向滚动, 不换行.
 class EatTabs extends StatelessWidget {
   const new({
     super.key,
@@ -33,13 +33,13 @@ class EatTabs extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
 
-  /// 横向滚动时内容两侧的留白，一般是页面边距 `space-20`。
+  /// 横向滚动时内容两侧的留白, 通常为页面边距 `space-20`.
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    // tabBar 的语义节点必须直接包住各个 tab，所以放在滚动视图里面，而不是外面。
+    // tabBar 语义节点必须直接包含各个 tab, 因此放在滚动视图内部, 而不是外部.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: padding,

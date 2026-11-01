@@ -1,48 +1,48 @@
 import 'package:eat/core/failure/messages.dart';
 
-/// 失败的大类，决定页面怎么反应：就地重试、回登录页、弹拦截面板，还是只给一句提示。
+/// 失败的类别, 决定页面的处理方式: 就地重试, 返回登录页, 弹出拦截面板, 或只显示提示.
 enum FailureKind {
-  /// 连不上：连接错误、DNS 失败、超时。读请求会自动重试。
+  /// 网络不可达: 连接错误, DNS 失败, 超时. 读请求会自动重试.
   network,
 
-  /// HTTP 5xx 或 9xxxx 系统错误。
+  /// HTTP 5xx 或 9xxxx 系统错误.
   server,
 
-  /// 登录过期，网络层已经通知登录态清掉登录信息。
+  /// 登录过期. 网络层已通知登录态清除登录信息.
   sessionExpired,
 
-  /// 服务端判定没权限（没认证、被封禁），页面按最新的账号状态弹拦截面板。
+  /// 服务端判定无权限 (未认证或已封禁). 页面按最新的账号状态弹出拦截面板.
   forbidden,
 
-  /// 请求频率过高。
   tooFrequent,
 
-  /// 业务码表里有的错误，[AppFailure.message] 是那一句提示。
+  /// 码表中已登记的业务错误. [AppFailure.message] 为对应的提示.
   business,
 
-  /// 请求被取消（页面已经离开），不提示。
+  /// 请求已取消, 例如页面已离开. 不显示提示.
   cancelled,
 
-  /// 其他：码表里没有的业务码、响应解析失败。
+  /// 其他失败: 码表中未登记的业务码, 响应解析失败.
   unknown,
 }
 
-/// 网络层抛出的唯一异常：页面只看 [kind] 和 [message]，业务码只用来就地提示（比如验证码错误）。
+/// 网络层抛出的唯一异常类型.
 ///
-/// 服务端的 `msg` 和错误码不直接给用户看（产品 6.13）；[serverMessage] 只用于调试和上报。
+/// 页面只读取 [kind] 和 [message]. 业务码仅用于就地提示, 例如验证码错误.
+/// 服务端的 `msg` 和错误码不展示给用户, [serverMessage] 仅用于调试和上报.
 class const AppFailure(
   final FailureKind kind, {
   final Object? code,
   final String? serverMessage,
 
-  /// 失败时外壳里仍带着的 `data`，如发布重名的菜时已有那道菜的 id。
+  /// 失败响应外壳中携带的 `data`, 例如发布重名菜品时已有菜品的 id.
   final Object? data,
 }) implements Exception {
   const AppFailure.network() : this(FailureKind.network);
 
   const AppFailure.cancelled() : this(FailureKind.cancelled);
 
-  /// 业务码转成失败，归类和提示按码表（技术架构 7.4、7.5）。
+  /// 按码表把业务码转换为失败, 码表决定类别和提示.
   factory AppFailure.fromCode(
     Object code, {
     String? serverMessage,
@@ -54,7 +54,7 @@ class const AppFailure(
     data: data,
   );
 
-  /// 给用户看的一句话。
+  /// 展示给用户的提示.
   String get message => switch (kind) {
     FailureKind.network => '网络连接失败，请重试',
     FailureKind.server => '服务器出错，请稍后再试',

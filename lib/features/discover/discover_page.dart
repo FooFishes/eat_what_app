@@ -38,10 +38,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 发现页（`G-HomePhoto`）：舞台上是转盘，拖动或「换一个」挑菜，「就它了」进菜品详情；
-/// 抽屉里是分类栏和两列推荐流。左上角是地点和饭点，右上角是搜索和消息。
+// TODO: 专题接口未提供, 分类栏不显示专题. 接口上线后在分类栏加入专题.
+/// 发现页.
 ///
-/// 专题还没有接口（现状差距 2.1），分类栏里不出现专题。
+/// - 舞台: 转盘. 拖动或点击 "换一个" 切换菜品, 点击 "就它了" 进入菜品详情.
+/// - 抽屉: 分类栏和两列推荐流.
+/// - 顶栏: 左侧为地点和饭点, 右侧为搜索和消息.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -59,8 +61,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   @override
   void initState() {
     super.initState();
-    // 回到前台时刷新铃铛上的未读点（产品 10.3）。
-    // 回到前台时饭点可能已经换了，也重算一次。
+    // 回到前台时刷新铃铛上的未读标记.
+    // 离开期间饭点可能已切换, 因此同时重算饭点.
     _lifecycle = AppLifecycleListener(
       onResume: () {
         ref.read(unreadCountProvider.notifier).refresh();
@@ -69,7 +71,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     );
     _scheduleMealChange();
     ref.listenManual(placeAndMealProvider, (_, _) => _scheduleMealChange());
-    // 说明展示过没有要从本地读出来，读到了、又还没问过系统才弹说明。
+    // 说明是否已展示需要从本地存储读出.
+    // 读出结果为未展示, 且尚未申请过系统权限时, 才弹出说明.
     ref.listenManual(currentLocationProvider, (_, location) {
       if (location.explained == false &&
           location.access == LocationAccess.notAsked &&
@@ -87,7 +90,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     super.dispose();
   }
 
-  /// 到饭点的时间段结束时换成下一顿，转盘和列表跟着刷新（产品 4.5）。
+  /// 在当前饭点的时间段结束时切换到下一个饭点, 转盘和列表随之刷新.
   void _scheduleMealChange() {
     _mealTimer?.cancel();
     final now = clock.now();
@@ -99,7 +102,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     });
   }
 
-  /// 第一次进发现页：先说明为什么要定位，用户点了「允许定位」再弹系统的权限框（产品 6.13）。
+  /// 首次进入发现页时先说明定位用途. 用户点击 "允许定位" 后再弹出系统权限框.
   Future<void> _explainLocation() async {
     if (!mounted) return;
     final allow = await showPanel<bool>(
@@ -195,7 +198,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   }
 }
 
-/// 舞台顶部：左边当前地点和饭点，点开是面板；右边搜索和消息，有未读时铃铛加一个小圆点。
+/// 舞台顶栏.
+///
+/// - 左侧: 当前地点和饭点, 点击打开选择面板.
+/// - 右侧: 搜索和消息. 有未读消息时铃铛上显示圆点.
 class _TopBar extends ConsumerWidget {
   const new();
 
@@ -266,7 +272,7 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// 「地点和饭点」面板（`G-PanelPlace`）：两组单选，另有「按现在的时间」；选完立即生效。
+/// "地点和饭点" 面板: 校区和饭点两组单选, 另有 "按现在的时间" 选项. 选择后立即生效.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
     showPanel<void>(
       context,
@@ -318,7 +324,7 @@ Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
       ),
     );
 
-/// 舞台：转盘、菜名、店名和距离、价格、批次圆点，「换一个」和「就它了」。
+/// 发现页舞台: 转盘, 菜名, 店名和距离, 价格, 批次圆点, 以及 "换一个" 和 "就它了" 按钮.
 class _TurntableStage extends ConsumerWidget {
   const new({required this.feed});
 
@@ -479,7 +485,7 @@ class _TurntableStage extends ConsumerWidget {
   }
 }
 
-/// 当前地点和饭点下一道菜都没有：插画加一句话和「发布一道菜」（产品 6.4）。
+/// 当前地点和饭点下没有菜品时的舞台: 插画, 说明文字和 "发布一道菜" 按钮.
 class _EmptyStage extends ConsumerWidget {
   const new();
 
@@ -535,7 +541,7 @@ class _EmptyStage extends ConsumerWidget {
   }
 }
 
-/// 推荐拿不到、也没有上一批：舞台上就地「加载失败」和「重试」。
+/// 推荐请求失败且没有上一批数据时的舞台, 显示 "加载失败" 和 "重试".
 class _StageFailure extends StatelessWidget {
   const new({required this.onRetry});
 
@@ -575,7 +581,7 @@ class _StageFailure extends StatelessWidget {
   }
 }
 
-/// 抽屉里的两列推荐流，滑到底接着加载。
+/// 抽屉中的两列推荐流, 滚动到底部时加载下一批.
 class _DishList extends ConsumerWidget {
   const new({required this.category});
 

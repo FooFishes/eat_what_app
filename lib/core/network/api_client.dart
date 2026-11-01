@@ -8,20 +8,21 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'api_client.g.dart';
 
-/// 网络层遇到会话问题时交给上层处理的回调。
+/// 网络层把会话相关的事件交给上层处理的回调.
 ///
-/// `core` 不能导入 `data` 和 `state`，所以登录过期、自动同意这些要动登录态的事，由 `state`
-/// 构造时传进来（技术架构 9.5）。
+/// 登录过期和自动同意都要修改登录态, 登录态属于 `state`.
+/// `core` 不能导入 `state`, 因此由 `state` 构造回调并注入.
 class const ApiHooks({
   final VoidCallback? onSessionExpired,
   final VoidCallback? onForbidden,
   final Future<bool> Function()? grantConsent,
 });
 
-/// 业务接口的客户端：加鉴权头、拆 `{code, msg, data}` 外壳，把各种失败都转成 [AppFailure]。
+/// 业务接口客户端. 负责添加鉴权头, 解开 `{code, msg, data}` 外壳, 把失败统一转换为 [AppFailure].
 ///
-/// 只返回外壳里的 `data`；HTTP 200 带非零 `code` 也算失败。写操作不自动重试，读请求的重试
-/// 由 Provider 的重试策略做（[retryOnNetworkFailure]）。
+/// - 只返回外壳中的 `data`.
+/// - HTTP 200 但 `code` 非零同样视为失败.
+/// - 写请求不自动重试. 读请求的重试由 Provider 的重试策略 [retryOnNetworkFailure] 负责.
 class ApiClient {
   ApiClient({
     required String baseUrl,
@@ -45,8 +46,9 @@ class ApiClient {
   final ApiHooks _hooks;
   Future<bool>? _granting;
 
-  /// 自动同意成功的次数。请求发出后又有别的请求同意成功了，这个请求再遇到要求同意时直接重发，
-  /// 不再同意一次。
+  /// 自动同意成功的累计次数.
+  ///
+  /// 请求发出后若计数已变化, 说明其他请求已完成同意. 此时收到要求同意的业务码直接重发, 不再次同意.
   var _grants = 0;
 
   Future<Object?> get(
@@ -56,7 +58,7 @@ class ApiClient {
     CancelToken? cancelToken,
   }) => _send('GET', path, query: query, headers: headers, cancel: cancelToken);
 
-  /// [consentRetry] 为 false 时遇到需要同意的码不自动同意，同意接口自己就这样调。
+  /// [consentRetry] 为 false 时, 收到要求同意的业务码不自动同意. 同意接口本身以 false 调用.
   Future<Object?> post(
     String path, {
     Object? body,
@@ -145,7 +147,9 @@ class ApiClient {
     }
   }
 
-  /// 几个请求同时要求同意时只同意一次，其余等同一个结果。同意失败算 false，不抛异常。
+  /// 并发的多个请求要求同意时只调用一次同意接口, 其余请求等待同一结果.
+  ///
+  /// 同意失败返回 false, 不抛出异常.
   Future<bool> _grantOnce() async {
     final pending = _granting ??= () async {
       try {
@@ -165,7 +169,8 @@ class ApiClient {
 
   void _notify(AppFailure failure, AuthToken? sent) {
     switch (failure.kind) {
-      // 只在这次请求带的还是当前凭证时通知：同时过期的其余请求看到凭证已清掉，就不再重复处理。
+      // 仅当请求携带的凭证仍是当前凭证时通知.
+      // 第一次通知会清除凭证, 并发过期的其余请求据此跳过, 避免重复处理.
       case FailureKind.sessionExpired
           when sent != null && identical(_tokens.current, sent):
         _hooks.onSessionExpired?.call();
@@ -189,7 +194,7 @@ class ApiClient {
       case DioExceptionType.badResponse:
         final status = e.response?.statusCode ?? 0;
         final body = e.response?.data;
-        // 集群或授权拦截返回非 200 加 `ErrorResponse`，`code` 是字符串，按字符串保留。
+        // 网关和鉴权拦截返回非 200 状态码和 `ErrorResponse`, 其中 `code` 是字符串, 原样保留.
         if (body is Map) {
           final code = body['code'];
           if (code != null && code != BizCodes.success) {
@@ -211,20 +216,25 @@ class ApiClient {
     }
   }
 
-  /// 调试构建里打一行请求结果。只打方法、路径和业务码，不打参数、请求头和响应体。
+  /// 在调试构建中记录请求结果.
+  ///
+  /// 只记录方法, 路径和业务码.
+  /// 不记录参数, 请求头和响应体, 以免凭证和个人信息进入日志.
   static void _log(String method, String path, Object? code) {
     if (kDebugMode) debugPrint('[api] $method $path → $code');
   }
 }
 
-/// 外壳里的 `code` 不是 0。
+/// 外壳中的 `code` 不为 0.
 class const _BizError(
   final Object? code,
   final String? msg, [
   final Object? data,
 ]) implements Exception;
 
-/// 把 `data` 按 [fromJson] 解析成 DTO；形状不对时当作「未知」失败，不让解析异常漏到页面。
+/// 用 [fromJson] 把 `data` 解析为 DTO.
+///
+/// 结构不符时抛出 [FailureKind.unknown], 避免解析异常传到页面.
 T decodeJson<T>(Object? data, T Function(Map<String, dynamic> json) fromJson) {
   if (data is! Map<String, dynamic>) {
     throw const AppFailure(FailureKind.unknown, serverMessage: 'bad data');
@@ -236,14 +246,16 @@ T decodeJson<T>(Object? data, T Function(Map<String, dynamic> json) fromJson) {
   }
 }
 
-/// 读请求的自动重试：只重试连不上网，最多 2 次；业务错误、登录过期、解析失败都不重试。
+/// 读请求的重试策略: 仅在网络不可达时重试, 最多 2 次.
+///
+/// 业务错误, 登录过期和解析失败不重试.
 Duration? retryOnNetworkFailure(int retryCount, Object error) {
   if (retryCount >= 2) return null;
   if (error is! AppFailure || error.kind != FailureKind.network) return null;
   return Duration(milliseconds: 400 * (1 << retryCount));
 }
 
-/// 网络层遇到登录过期、需要同意时的回调，由 `state` 覆盖成真正的处理（`state/api_hooks.dart`）。
+/// 网络层的会话回调. 默认为空, 由 `state/api_hooks.dart` 覆盖为实际处理.
 @Riverpod(keepAlive: true)
 ApiHooks apiHooks(Ref ref) => const ApiHooks();
 

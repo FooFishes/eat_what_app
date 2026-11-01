@@ -1,7 +1,8 @@
 import 'package:eat/core/failure/app_failure.dart';
 
-/// 客户端要单独处理的业务码。接口文档只写了「0 为成功」，下面的码来自 legacy 和接口说明，
-/// 还要后端确认（技术架构待确认 A2）。
+// TODO: 接口文档只声明 0 为成功, 其余业务码取自 legacy 实现和接口说明, 未经后端确认.
+// 后端提供完整码表后逐项核对.
+/// 客户端需要单独处理的业务码.
 abstract final class BizCodes {
   static const success = 0;
   static const tooFrequent = 10003;
@@ -10,10 +11,10 @@ abstract final class BizCodes {
   static const tokenExpired = 20003;
   static const permissionDenied = 20004;
 
-  /// 海外站未同意跨站同步。网络层自动同意后重发（技术架构 9.5）。
+  /// 海外站未同意跨站同步. 网络层自动同意后重发请求.
   static const consentRequired = 20005;
 
-  /// 跨站授权过期或还没同步。处理同 [consentRequired]。
+  /// 跨站授权过期或尚未同步. 处理方式同 [consentRequired].
   static const consentExpired = 20006;
 
   static const userNotFound = 30001;
@@ -24,18 +25,18 @@ abstract final class BizCodes {
   static const passwordNotSet = 30010;
   static const mobileNotBound = 30011;
 
-  /// 缺少人机验证票据。重新走一遍人机验证。
+  /// 缺少人机验证票据. 需要重新进行人机验证.
   static const captchaMissing = 30015;
 
-  /// 人机验证票据无效、过期或被判有风险。重新走一遍人机验证。
+  /// 人机验证票据无效, 已过期或被判定有风险. 需要重新进行人机验证.
   static const captchaInvalid = 30016;
 
   static const captchaUnavailable = 50004;
 
-  /// 发布的菜和这家店已有的菜重名（忽略空格），`data.id` 是已有的那道。
+  /// 发布的菜品与该店已有菜品重名 (忽略空白). `data.id` 为已有菜品的 id.
   static const duplicateDish = 40016;
 
-  /// `/auth/getCode`、`/user/getCode` 在没认证时返回的字符串码。
+  /// `/auth/getCode` 和 `/user/getCode` 在账号未认证时返回的字符串业务码.
   static const stateNotAllowed = 'STATE_NOT_ALLOWED';
 
   static const sessionCodes = {notLoggedIn, tokenInvalid, tokenExpired};
@@ -43,7 +44,7 @@ abstract final class BizCodes {
   static const captchaRetryCodes = {captchaMissing, captchaInvalid};
 }
 
-/// 业务码对应的提示。只收需要特别说明的码，其余走 [AppFailure.message] 的默认句子。
+/// 业务码对应的提示. 只收录需要专门说明的业务码, 其余使用 [AppFailure.message] 的默认提示.
 const failureMessages = <Object, String>{
   10001: '填写的内容有误，请检查后重试',
   10002: '填写的内容有误，请检查后重试',
@@ -60,7 +61,7 @@ const failureMessages = <Object, String>{
   BizCodes.duplicateDish: '这家店已有这道菜',
 };
 
-/// 业务码归到哪一类失败（技术架构 7.5）。
+/// 业务码所属的失败类别.
 FailureKind failureKindOf(Object code) {
   if (code == BizCodes.tooFrequent) return FailureKind.tooFrequent;
   if (BizCodes.sessionCodes.contains(code)) return FailureKind.sessionExpired;

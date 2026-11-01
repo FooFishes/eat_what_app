@@ -1,11 +1,12 @@
-/// 把 `prototype/assets/icons/` 的图标复制到 `assets/icons/`，并为描边图标生成小尺寸的加粗变体。
+/// 把 `prototype/assets/icons/` 的图标复制到 `assets/icons/`, 并为描边图标生成小尺寸的加粗变体.
 ///
-/// 用法：`fvm dart run tool/icons.dart`。设计稿增删图标后重跑，再同步 `EatIcons`；
-/// `test/design/icons_test.dart` 会检查两边对得上。
+/// 用法: `fvm dart run tool/icons.dart`.
+/// `prototype/assets/icons/` 增删图标后重新运行, 再同步 `EatIcons`. `test/design/icons_test.dart` 检查两者是否一致.
 ///
-/// 图标在 24 网格里是 2px 描边，缩到 20px 以下实际线宽不到 1.5px，看起来发虚。资源在构建时
-/// 预编译成二进制，运行时改不了描边，所以预先生成 14、16、18 三套，分别用 2.6、2.4、2.13 的描边，
-/// 让实际线宽保持在 1.5–1.6px。没有 `stroke-width="2"` 的图标（实心或本身就是填充轮廓）不生成变体。
+/// 图标在 24 网格中使用 2px 描边, 缩小到 20px 以下时实际线宽不足 1.5px, 显示发虚.
+/// 资源在构建时预编译为二进制, 运行时无法修改描边宽度, 因此预先为小尺寸生成加粗变体.
+/// 各尺寸的描边宽度见 [_strokeBySize], 目标是实际线宽保持在 1.5–1.6px.
+/// 不含 `stroke-width="2"` 的图标 (实心图标或本身是填充轮廓) 不生成变体.
 library;
 
 import 'dart:io';

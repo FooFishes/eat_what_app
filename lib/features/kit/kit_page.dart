@@ -23,9 +23,9 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:flutter/widgets.dart';
 
-/// 组件页：设计规范里的组件和它们的各种状态摆在一页，对照 `G-Kit` 画板检查。只在 debug 构建里有。
+/// 组件页: 集中展示设计规范中的组件及其各种状态, 用于检查组件实现. 只在 debug 构建中存在.
 ///
-/// 按下、键盘焦点（按 Tab 键）这类状态要亲手试，页面上的组件都是能操作的。
+/// 按下和键盘焦点 (Tab 键) 等状态需要手动操作检查, 因此页面上的组件都可交互.
 class KitPage extends StatefulWidget {
   const new({super.key});
 

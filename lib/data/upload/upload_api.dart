@@ -4,10 +4,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'upload_api.g.dart';
 
-/// 上传的用途，决定文件存在哪、要什么权限：头像只要登录，菜和店要认证。
+/// 上传用途, 决定文件的存储位置和所需权限: 头像只需登录, 菜品和店铺需要认证.
 enum UploadBiz { avatar, foods, restaurants }
 
-/// 接口分组 Upload：申请签名、确认上传完成。中间的 `PUT` 走 `UploadClient`，不经过业务网关。
+/// 接口分组 Upload: 申请签名, 确认上传完成.
+///
+/// 两步之间的 `PUT` 由 `UploadClient` 直接发往存储服务, 不经过业务网关.
 class UploadApi {
   UploadApi(this._client);
 

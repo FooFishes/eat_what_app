@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
-/// 一个 MingCute Line 图标。颜色默认跟着所在的文字。
+/// MingCute Line 图标. 未指定颜色时使用所在文字的颜色.
 class EatIcon extends StatelessWidget {
   const new(
     this.icon, {
@@ -17,13 +17,16 @@ class EatIcon extends StatelessWidget {
 
   final EatIcons icon;
 
-  /// 边长。底部导航 22，顶栏 22–24，列表行 20–22，按钮里 18–20，文字旁 14–16。
+  /// 边长. 描边图标小于 20 时换用加粗变体, 见 [EatIcons.assetFor].
   final double size;
 
-  /// 不传时取 `DefaultTextStyle` 的颜色；赞过的心形默认是 `stage-tomato`。
+  /// 未指定时使用 `DefaultTextStyle` 的颜色. [EatIcons.heartOn] 默认使用 `stage-tomato`.
   final Color? color;
 
-  /// 只有图标、旁边没有文字时写上动作（「返回」「分享」）；旁边有文字时留空，图标标为装饰。
+  /// 读屏文字.
+  ///
+  /// 图标单独出现时写明动作, 如 "返回" "分享".
+  /// 旁边已有文字时留空, 图标作为装饰不参与读屏.
   final String? semanticLabel;
 
   @override

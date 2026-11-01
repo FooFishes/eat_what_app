@@ -8,12 +8,12 @@ part of 'place.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 已开放的校区（`/campus/list`）。
+/// 已开放的校区, 来自 `/campus/list`.
 
 @ProviderFor(campuses)
 final campusesProvider = CampusesProvider._();
 
-/// 已开放的校区（`/campus/list`）。
+/// 已开放的校区, 来自 `/campus/list`.
 
 final class CampusesProvider
     extends
@@ -23,7 +23,7 @@ final class CampusesProvider
           FutureOr<List<Campus>>
         >
     with $FutureModifier<List<Campus>>, $FutureProvider<List<Campus>> {
-  /// 已开放的校区（`/campus/list`）。
+  /// 已开放的校区, 来自 `/campus/list`.
   CampusesProvider._()
     : super(
         from: null,
@@ -52,12 +52,12 @@ final class CampusesProvider
 
 String _$campusesHash() => r'f5205c6bd2214e92c06e1766e9552a6d5170777d';
 
-/// 全部商圈。附近页的商圈胶囊、餐厅详情的商圈名用它。
+/// 全部商圈. 用于附近页的商圈胶囊和餐厅详情的商圈名.
 
 @ProviderFor(hubs)
 final hubsProvider = HubsProvider._();
 
-/// 全部商圈。附近页的商圈胶囊、餐厅详情的商圈名用它。
+/// 全部商圈. 用于附近页的商圈胶囊和餐厅详情的商圈名.
 
 final class HubsProvider
     extends
@@ -67,7 +67,7 @@ final class HubsProvider
           FutureOr<List<Hub>>
         >
     with $FutureModifier<List<Hub>>, $FutureProvider<List<Hub>> {
-  /// 全部商圈。附近页的商圈胶囊、餐厅详情的商圈名用它。
+  /// 全部商圈. 用于附近页的商圈胶囊和餐厅详情的商圈名.
   HubsProvider._()
     : super(
         from: null,
@@ -95,15 +95,21 @@ final class HubsProvider
 
 String _$hubsHash() => r'7e1161c0dcdfe6ae86ce142d60b40922118c5305';
 
-/// 地点和饭点的选择，存在本机（设备级偏好，退出登录不删，技术架构 9.1）。
+/// 地点和饭点的选择, 保存在本机.
+///
+/// 属于设备级偏好, 退出登录时不清除.
 
 @ProviderFor(PlaceAndMeal)
 final placeAndMealProvider = PlaceAndMealProvider._();
 
-/// 地点和饭点的选择，存在本机（设备级偏好，退出登录不删，技术架构 9.1）。
+/// 地点和饭点的选择, 保存在本机.
+///
+/// 属于设备级偏好, 退出登录时不清除.
 final class PlaceAndMealProvider
     extends $NotifierProvider<PlaceAndMeal, PlaceChoice> {
-  /// 地点和饭点的选择，存在本机（设备级偏好，退出登录不删，技术架构 9.1）。
+  /// 地点和饭点的选择, 保存在本机.
+  ///
+  /// 属于设备级偏好, 退出登录时不清除.
   PlaceAndMealProvider._()
     : super(
         from: null,
@@ -133,7 +139,9 @@ final class PlaceAndMealProvider
 
 String _$placeAndMealHash() => r'972ed996e8dd11945458539558fd0f3f7b195453';
 
-/// 地点和饭点的选择，存在本机（设备级偏好，退出登录不删，技术架构 9.1）。
+/// 地点和饭点的选择, 保存在本机.
+///
+/// 属于设备级偏好, 退出登录时不清除.
 
 abstract class _$PlaceAndMeal extends $Notifier<PlaceChoice> {
   PlaceChoice build();
@@ -153,29 +161,35 @@ abstract class _$PlaceAndMeal extends $Notifier<PlaceChoice> {
   }
 }
 
-/// 当前的校区和饭点：校区按「上次选的 → 离定位最近的 → 默认」挑；饭点手动选的没过期就用它，
-/// 否则按现在的时间。
+/// 当前的校区和饭点.
 ///
-/// 到了时间段结束（[mealPeriodEnd]）由发现页让它重算一次，回到前台时也重算。不在这里起定时器：
-/// 它常驻，定时器会一直挂着。
+/// - 校区: 依次取上次选择的校区, 离定位最近的校区, 默认校区.
+/// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间.
+///
+/// 时间段结束 ([mealPeriodEnd]) 和回到前台时, 由发现页触发重算.
+/// 这里不启动定时器: 该 Provider 常驻, 定时器会一直存在.
 
 @ProviderFor(currentPlace)
 final currentPlaceProvider = CurrentPlaceProvider._();
 
-/// 当前的校区和饭点：校区按「上次选的 → 离定位最近的 → 默认」挑；饭点手动选的没过期就用它，
-/// 否则按现在的时间。
+/// 当前的校区和饭点.
 ///
-/// 到了时间段结束（[mealPeriodEnd]）由发现页让它重算一次，回到前台时也重算。不在这里起定时器：
-/// 它常驻，定时器会一直挂着。
+/// - 校区: 依次取上次选择的校区, 离定位最近的校区, 默认校区.
+/// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间.
+///
+/// 时间段结束 ([mealPeriodEnd]) 和回到前台时, 由发现页触发重算.
+/// 这里不启动定时器: 该 Provider 常驻, 定时器会一直存在.
 
 final class CurrentPlaceProvider
     extends $FunctionalProvider<CurrentPlace, CurrentPlace, CurrentPlace>
     with $Provider<CurrentPlace> {
-  /// 当前的校区和饭点：校区按「上次选的 → 离定位最近的 → 默认」挑；饭点手动选的没过期就用它，
-  /// 否则按现在的时间。
+  /// 当前的校区和饭点.
   ///
-  /// 到了时间段结束（[mealPeriodEnd]）由发现页让它重算一次，回到前台时也重算。不在这里起定时器：
-  /// 它常驻，定时器会一直挂着。
+  /// - 校区: 依次取上次选择的校区, 离定位最近的校区, 默认校区.
+  /// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间.
+  ///
+  /// 时间段结束 ([mealPeriodEnd]) 和回到前台时, 由发现页触发重算.
+  /// 这里不启动定时器: 该 Provider 常驻, 定时器会一直存在.
   CurrentPlaceProvider._()
     : super(
         from: null,

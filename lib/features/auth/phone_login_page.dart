@@ -20,13 +20,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 手机号登录（`G-PhoneLogin`）：手机号加 6 位验证码，新号码验证后自动注册。
+/// 手机号登录页. 使用手机号和短信验证码登录, 新号码验证后自动注册.
 ///
-/// 发验证码前先过人机验证；60 秒后才能重发。登录成功后由守卫带回原来要去的页面，新号码进认证引导。
+/// 发送验证码前先完成人机验证, 重发有冷却时间.
+/// 登录成功后由守卫导回原目标页面, 新号码导向认证引导.
 class PhoneLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
-  /// 登录页带来的 `from`、`expired`，原样往下传。
+  /// 登录页传入的 `from` 和 `expired`, 原样向下传递.
   final Map<String, String> query;
 
   @override
@@ -43,7 +44,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
   @override
   void initState() {
     super.initState();
-    // Web 上直接打开或刷新这一页时还没勾协议，先回登录页勾选。
+    // Web 上直接打开或刷新本页时协议尚未勾选, 返回登录页勾选.
     if (!ref.read(loginAgreementProvider)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.go(_withQuery(Paths.login));
@@ -62,7 +63,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     super.dispose();
   }
 
-  /// 人机验证弹在这一页上；页面已经关掉时当作用户取消。
+  /// 在本页弹出人机验证. 页面已关闭时按用户取消处理.
   Future<CaptchaOutcome> _presentCaptcha(CaptchaParams params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);

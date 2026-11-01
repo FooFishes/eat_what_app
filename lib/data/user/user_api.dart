@@ -5,7 +5,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_api.g.dart';
 
-/// 接口分组 User：当前用户、一个用户对外的资料和统计。编辑资料、关注、隐私在阶段六加。
+// TODO: 未对接编辑资料, 关注和隐私设置的接口. 实现对应页面时在此添加接口方法.
+/// 接口分组 User: 当前用户, 指定用户的公开资料和统计.
 class UserApi {
   UserApi(this._client);
 
@@ -29,7 +30,7 @@ class UserApi {
   );
 }
 
-/// `/user/userInfo` 的 `data`：一个用户对外的资料、统计和我们之间的关注关系。
+/// `/user/userInfo` 的 `data`: 指定用户的公开资料, 统计, 以及与当前用户的关注关系.
 @JsonSerializable(createToJson: false)
 class const UserProfileDto({
   final String? displayName,
@@ -47,10 +48,10 @@ class const UserProfileDto({
       _$UserProfileDtoFromJson(json);
 }
 
-/// `/user/info` 的 `data`。字段照接口写成可空，转领域模型时补默认值。
+/// `/user/info` 的 `data`. 字段按接口声明均为可空, 转换为领域模型时补默认值.
 ///
-/// 也原样存进本地缓存，启动时先用它显示（技术架构 10.1），所以要能转回 JSON。性别、生日、家乡
-/// 产品上不收集（产品 7.6），这里不读。
+/// 该 DTO 原样存入本地缓存, 启动时先用缓存显示, 因此需要支持转回 JSON.
+/// 产品不收集性别, 生日和家乡, 因此不读取这些字段.
 @JsonSerializable(includeIfNull: false)
 class const UserInfoDto({
   final int? id,

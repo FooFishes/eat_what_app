@@ -30,10 +30,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'inbox_page.g.dart';
 
-/// 消息页的数据：已经拉到的几页，以及下一页是不是加载失败了（失败时列表底部换成「重试」）。
+/// 消息页的数据: 已获取的分页, 以及下一页是否加载失败.
+///
+/// 下一页加载失败时, 列表底部显示 "重试".
 typedef InboxPages = ({Paged<Notice> pages, bool moreFailed});
 
-/// 消息列表，滑到底接着加载；点一条、全部已读时先改本地再告诉服务端。
+/// 消息列表, 滚动到底部时加载下一页.
+///
+/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
 @riverpod
 class Inbox extends _$Inbox {
   var _loadingMore = false;
@@ -123,10 +127,12 @@ class Inbox extends _$Inbox {
   );
 }
 
-/// 消息（`G-Inbox`）：大标题旁边写未读数，右上角「全部已读」；按「今天」「本周」「更早」分组。
+// TODO: 消息接口不支持按分栏过滤和合并同类消息, 除 "全部" 外的分栏标注 "待接入". 接口支持后对接分栏过滤并合并同类消息.
+// TODO: 他人主页未实现, 点击关注消息只标记为已读. 实现他人主页后跳转到关注者主页.
+/// 消息页.
 ///
-/// 接口还不能按分栏过滤、也不合并同类消息（现状差距 2.1）：只有「全部」可用，其余分栏带「待接入」，
-/// 一条一行。他人主页在阶段六做，关注消息点了只算读过。
+/// - 大标题旁显示未读数, 右上角为 "全部已读".
+/// - 消息按 "今天", "本周", "更早" 分组.
 class InboxPage extends ConsumerWidget {
   const new({super.key});
 
@@ -227,7 +233,7 @@ class _NoticeList extends ConsumerWidget {
 
   final List<Notice> notices;
 
-  /// 「今天」「本周」「更早」。
+  /// 消息所属的分组: "今天", "本周" 或 "更早".
   static String _groupOf(DateTime time, DateTime now) {
     final today = DateTime(now.year, now.month, now.day);
     if (!time.isBefore(today)) return '今天';

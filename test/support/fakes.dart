@@ -19,7 +19,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
-/// 内存里的 [KvStore]。
+/// 内存实现的 [KvStore].
 class MemoryKvStore implements KvStore {
   final values = <String, String>{};
 
@@ -37,7 +37,7 @@ class MemoryKvStore implements KvStore {
       values.removeWhere((key, _) => key.startsWith(prefix));
 }
 
-/// 内存里的 [SecureStore]。
+/// 内存实现的 [SecureStore].
 class MemorySecureStore implements SecureStore {
   final values = <String, String>{};
 
@@ -51,7 +51,7 @@ class MemorySecureStore implements SecureStore {
   Future<void> delete(String key) async => values.remove(key);
 }
 
-/// 一次请求：方法、路径、查询参数、请求头和 JSON 请求体，测试里用来断言发了什么。
+/// 一次已发送的请求, 供测试断言请求内容.
 class const SentRequest(
   final String method,
   final String path,
@@ -62,19 +62,21 @@ class const SentRequest(
   String get route => '$method $path';
 }
 
-/// 假的网络适配器：按「方法 路径」返回登记好的响应，不起真服务器（技术架构 21.1）。
+/// 模拟的网络适配器. 按 "方法 路径" 返回预先登记的响应, 不启动真实服务器.
 ///
-/// 每个路由登记一串响应，依次用掉，用完后一直返回最后一个；没登记的路由返回 HTTP 404。
-/// 响应是一个 Map 时当作 HTTP 200 的 JSON；是 [FakeResponse] 时可以指定状态码，或者模拟连不上。
+/// - 每个路由登记一组响应, 按顺序消耗. 只剩最后一个时重复返回该响应.
+/// - 未登记的路由返回 HTTP 404.
+/// - 响应为 Map 时作为 HTTP 200 的 JSON 返回.
+/// - 响应为 [FakeResponse] 时可以指定状态码或模拟网络不可达.
 class FakeAdapter implements HttpClientAdapter {
   final _routes = <String, List<Object>>{};
   final requests = <SentRequest>[];
 
-  /// 登记 [route]（如 `POST /auth/phone/login`）的响应。
+  /// 登记 [route] 的响应. [route] 形如 `POST /auth/phone/login`.
   void on(String route, List<Object> responses) =>
       _routes[route] = [...responses];
 
-  /// 业务成功的外壳。
+  /// 业务成功的响应外壳.
   static Map<String, Object?> ok([Object? data]) => {
     'code': 0,
     'msg': 'ok',
@@ -82,7 +84,7 @@ class FakeAdapter implements HttpClientAdapter {
     'timestamp': 0,
   };
 
-  /// 业务失败的外壳（HTTP 200 带非零 `code`）。
+  /// 业务失败的响应外壳: HTTP 200, `code` 非零.
   static Map<String, Object?> fail(Object code, [String msg = 'error']) => {
     'code': code,
     'msg': msg,
@@ -134,7 +136,7 @@ class FakeAdapter implements HttpClientAdapter {
   };
 }
 
-/// 指定了状态码或者连不上的响应。
+/// 指定状态码或模拟网络不可达的响应.
 class const FakeResponse({
   final int status = 200,
   final Object? body,
@@ -143,7 +145,7 @@ class const FakeResponse({
   const FakeResponse.offline() : this(offline: true);
 }
 
-/// 选图：直接给出事先放好的照片，不弹系统的选择框。
+/// 模拟的选图服务. 直接返回预置的照片, 不打开系统选择器.
 class FakePhotoPicker implements PhotoPicker {
   var next = <PickedPhoto>[];
 
@@ -155,7 +157,7 @@ class FakePhotoPicker implements PhotoPicker {
   Future<PickedPhoto?> takePhoto() async => next.firstOrNull;
 }
 
-/// 测试用的环境配置。
+/// 测试用的环境配置.
 const testConfig = AppConfig(
   envName: 'test',
   apiBaseUrl: 'https://api.test/api',
@@ -167,7 +169,7 @@ const testConfig = AppConfig(
   termsUrl: 'https://eat.test/terms.html',
 );
 
-/// `/user/info` 的一份样例。
+/// `/user/info` 的响应数据样例.
 Map<String, Object?> userInfoJson({
   bool verified = false,
   String? method,
@@ -198,7 +200,7 @@ const testUser = CurrentUser(
   banned: false,
 );
 
-/// 认证过的 [testUser]：能点赞、收藏、打标签。
+/// 已认证版本的 [testUser], 具备点赞, 收藏和打标签的权限.
 const verifiedUser = CurrentUser(
   id: 42,
   nickname: '天凉被破王',
@@ -208,7 +210,7 @@ const verifiedUser = CurrentUser(
   banned: false,
 );
 
-/// 人机验证：直接给出事先定好的结果，不弹任何东西。
+/// 模拟的人机验证. 直接返回预设结果, 不显示任何界面.
 class FakeHumanVerifier implements HumanVerifier {
   FakeHumanVerifier([this.outcome = const CaptchaPassed(_ticket)]);
 
@@ -227,7 +229,9 @@ class FakeHumanVerifier implements HumanVerifier {
   }
 }
 
-/// 定位：给定的权限和位置（WGS-84），不碰系统。默认已拒绝，发现页不弹定位说明。
+/// 模拟的定位服务. 返回预设的权限和 WGS-84 坐标, 不访问系统.
+///
+/// 默认权限为永久拒绝, 发现页因此不弹出定位说明.
 class FakeLocationService implements LocationService {
   FakeLocationService({this.state = LocationAccess.blocked, this.point});
 
@@ -249,7 +253,7 @@ class FakeLocationService implements LocationService {
       state == LocationAccess.granted ? point : null;
 }
 
-/// 一开始就是 [initial] 的登录态，跳过从本地存储恢复。
+/// 以 [initial] 为初始状态的登录态, 跳过从本地存储恢复.
 class FakeSession extends Session {
   FakeSession(this.initial);
 
@@ -259,7 +263,7 @@ class FakeSession extends Session {
   SessionState build() => initial;
 }
 
-/// 1×1 的透明 PNG，测试里所有网络图片都用它。
+/// 1×1 透明 PNG. 测试中的网络图片统一使用这张图.
 final transparentImage = Uint8List.fromList(const [
   0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, //
   0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, //
@@ -269,7 +273,7 @@ final transparentImage = Uint8List.fromList(const [
   0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
 ]);
 
-/// 测试用的一套假环境：网络、存储都在内存里，网络层的回调接到登录态上。
+/// 测试用的模拟环境. 网络和存储都在内存中, 网络层回调连接到登录态.
 class TestEnv {
   final adapter = FakeAdapter();
   final kv = MemoryKvStore();
@@ -278,7 +282,9 @@ class TestEnv {
   final location = FakeLocationService();
   final photos = FakePhotoPicker();
 
-  /// [session] 给定时登录态从它开始；要测登录过期，同时传 [token]，网络层会带上它。
+  /// 创建 Provider 容器. 给定 [session] 时以 [session] 为初始登录态.
+  ///
+  /// 测试登录过期时需同时传入 [token], 网络层会在请求中携带该凭证.
   Future<ProviderContainer> container({
     SessionState? session,
     AuthToken? token,
@@ -316,7 +322,9 @@ class TestEnv {
   }
 }
 
-/// 一道菜的接口样例（`FoodVO`）。推荐接口才带店的坐标和商圈，[recommend] 为 true 时加上。
+/// 菜品接口 (`FoodVO`) 的响应样例.
+///
+/// 店铺坐标和商圈只出现在推荐接口中, [recommend] 为 true 时添加.
 Map<String, Object?> foodJson({
   int id = 1,
   String name = '鲜虾蟹籽云吞',
@@ -364,7 +372,7 @@ Map<String, Object?> foodJson({
   'updatedAt': 1792763739329,
 };
 
-/// 一个分页外壳。
+/// 分页外壳样例.
 Map<String, Object?> pageJson(List<Object?> items, {bool hasNext = false}) => {
   'currentPage': 1,
   'items': items,
@@ -373,7 +381,7 @@ Map<String, Object?> pageJson(List<Object?> items, {bool hasNext = false}) => {
   'hasNext': hasNext,
 };
 
-/// 一家店的接口样例（`RestaurantVO`）。
+/// 餐厅接口 (`RestaurantVO`) 的响应样例.
 Map<String, Object?> restaurantJson({
   int id = 7,
   String name = '袁记云饺',
@@ -398,7 +406,7 @@ Map<String, Object?> restaurantJson({
   'updatedAt': 1792763739329,
 };
 
-/// `/campus/list` 的样例：只有软件园。
+/// `/campus/list` 的响应样例, 只含软件园校区.
 final campusListJson = [
   {
     'id': 1,

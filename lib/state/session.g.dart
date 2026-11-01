@@ -8,14 +8,20 @@ part of 'session.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 登录态：启动时恢复，登录、退出、过期、刷新用户信息时更新。路由守卫跟着它跳转。
+/// 登录态. 路由守卫根据它决定跳转.
+///
+/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
 
 @ProviderFor(Session)
 final sessionProvider = SessionProvider._();
 
-/// 登录态：启动时恢复，登录、退出、过期、刷新用户信息时更新。路由守卫跟着它跳转。
+/// 登录态. 路由守卫根据它决定跳转.
+///
+/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
 final class SessionProvider extends $NotifierProvider<Session, SessionState> {
-  /// 登录态：启动时恢复，登录、退出、过期、刷新用户信息时更新。路由守卫跟着它跳转。
+  /// 登录态. 路由守卫根据它决定跳转.
+  ///
+  /// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
   SessionProvider._()
     : super(
         from: null,
@@ -45,7 +51,9 @@ final class SessionProvider extends $NotifierProvider<Session, SessionState> {
 
 String _$sessionHash() => r'f20c55811b407ef9a5332e603c3b21783e23806f';
 
-/// 登录态：启动时恢复，登录、退出、过期、刷新用户信息时更新。路由守卫跟着它跳转。
+/// 登录态. 路由守卫根据它决定跳转.
+///
+/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
 
 abstract class _$Session extends $Notifier<SessionState> {
   SessionState build();
@@ -65,17 +73,17 @@ abstract class _$Session extends $Notifier<SessionState> {
   }
 }
 
-/// 当前账号能做什么，由登录态派生（技术架构 8.1）。
+/// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
 
 @ProviderFor(accountStatus)
 final accountStatusProvider = AccountStatusProvider._();
 
-/// 当前账号能做什么，由登录态派生（技术架构 8.1）。
+/// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
 
 final class AccountStatusProvider
     extends $FunctionalProvider<AccountStatus, AccountStatus, AccountStatus>
     with $Provider<AccountStatus> {
-  /// 当前账号能做什么，由登录态派生（技术架构 8.1）。
+  /// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
   AccountStatusProvider._()
     : super(
         from: null,

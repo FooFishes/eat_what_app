@@ -13,10 +13,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 加标签面板（`G-PanelTag`）：上面是口味词表，多选，打过的是选中态；下面「＋ 自己写」写进我的标签，
-/// 旁边写明「只有你自己看得见」（产品 6.5、4.6）。
+// TODO: 反馈页未实现, 面板缺少跳转反馈页的 "告诉我们" 入口. 实现反馈页后补上该入口.
+/// 加标签面板.
 ///
-/// 「词表里没有想要的？告诉我们」要进反馈页，反馈在阶段六做，先不放。
+/// - 上部: 口味词表, 可多选, 已打过的词显示为选中.
+/// - 下部: "+ 自己写" 入口, 写入我的标签. 旁边注明我的标签只有自己可见.
 Future<void> showTagPanel(BuildContext context, {required int dishId}) =>
     showPanel<void>(context, builder: (_) => _TagPanel(dishId: dishId));
 
@@ -37,7 +38,7 @@ class _TagPanelState extends ConsumerState<_TagPanel> {
   var _busy = false;
   String? _error;
 
-  /// 我的标签每个最多 10 个字（产品 9.1）。
+  /// 我的标签单个标签的字数上限.
   static const _maxLength = 10;
 
   @override

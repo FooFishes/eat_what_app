@@ -7,7 +7,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dish_providers.g.dart';
 
-/// 菜品详情。拿到最新的就清掉赞和收藏的本地覆盖；拿不到时用 7 天内看过的缓存（技术架构 10.1）。
+/// 菜品详情.
+///
+/// 获取到最新数据时清除赞和收藏的本地覆盖值.
+/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
 @riverpod
 Future<Dish> dishDetail(Ref ref, int dishId) async {
   ref.cacheFor(const Duration(minutes: 5));
@@ -24,7 +27,9 @@ Future<Dish> dishDetail(Ref ref, int dishId) async {
   }
 }
 
-/// 一道菜的口味标签和我的标签，打标签、撤回时先改这里（乐观更新），失败退回。
+/// 一道菜的口味标签和我的标签.
+///
+/// 打标签和撤回采用乐观更新: 先修改本地状态, 请求失败时恢复.
 class const DishTags({
   required final List<TasteTag> taste,
   required final List<MyTag> mine,
@@ -39,7 +44,9 @@ class DishTagsOf extends _$DishTagsOf {
     return DishTags(taste: dish.tasteTags, mine: dish.myTags);
   }
 
-  /// 点「大家怎么说」里的一个词：没打过就打上，打过就撤回。失败返回原因。
+  /// 切换 "大家怎么说" 中一个口味词的状态: 未打过则打上, 已打过则撤回.
+  ///
+  /// 成功返回 null, 失败返回原因.
   Future<AppFailure?> toggleTaste(TasteTag tag) async {
     final before = state;
     if (before == null) return null;
@@ -62,7 +69,12 @@ class DishTagsOf extends _$DishTagsOf {
     }
   }
 
-  /// 加标签面板点「完成」：口味词按选中的增删，自己写的加进我的标签。改完从服务端拉一遍。
+  /// 提交加标签面板的结果.
+  ///
+  /// - 口味词按选中状态增删.
+  /// - [newMine] 中的词加入我的标签.
+  ///
+  /// 提交后从服务端重新获取标签.
   Future<AppFailure?> apply({
     required Set<int> taste,
     required List<String> newMine,

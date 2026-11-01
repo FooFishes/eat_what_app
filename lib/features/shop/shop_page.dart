@@ -37,7 +37,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'shop_page.g.dart';
 
-/// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+// TODO: 接口没有招牌菜, 菜数和口味汇总字段, 客户端请求全部菜品自行计算, 菜品数超过请求上限时结果不完整. 接口提供汇总字段后改用接口数据.
+/// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
 @riverpod
 Future<List<Dish>> shopMenu(Ref ref, int shopId) {
   ref.cacheFor(const Duration(minutes: 5));
@@ -47,10 +48,11 @@ Future<List<Dish>> shopMenu(Ref ref, int shopId) {
       .menu(shopId, cancelToken: ref.cancelToken());
 }
 
-/// 餐厅详情（`G-Detail`）：舞台上是第一道招牌菜的封面和舞台色、店名、商圈、距离和菜数；
-/// 抽屉里是导航和加菜、招牌、「大家怎么说」、店铺评价和全部菜品。
+// TODO: 店铺评价, 收藏店铺和 "信息有误" 没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
+/// 餐厅详情页.
 ///
-/// 店铺评价、收藏店铺、信息有误还没有接口，带「待接入」。
+/// - 舞台: 第一道招牌菜的封面和舞台色, 店名, 商圈, 距离和菜数.
+/// - 抽屉: 导航和加菜, 招牌菜, "大家怎么说", 店铺评价和全部菜品.
 class ShopPage extends ConsumerStatefulWidget {
   const new({super.key, required this.shopId});
 
@@ -61,7 +63,7 @@ class ShopPage extends ConsumerStatefulWidget {
 }
 
 class _ShopPageState extends ConsumerState<ShopPage> {
-  /// 「大家怎么说」里点中的词，全部菜品只看带这个词的菜。
+  /// "大家怎么说" 中选中的口味标签. 有值时全部菜品只列出带该标签的菜.
   int? _tagFilter;
 
   @override
@@ -274,7 +276,11 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// 舞台：右边招牌菜的盘子，左下店名、商圈和地址、距离、菜数。推荐率待接入。
+// TODO: 推荐率没有接口, 舞台上不显示推荐率. 接口上线后在舞台上补上.
+/// 餐厅详情舞台内容.
+///
+/// - 右侧: 招牌菜的盘子.
+/// - 左下: 店名, 商圈和地址, 距离, 菜数.
 class _StageContent extends ConsumerWidget {
   const new({required this.shop, required this.hero, required this.count});
 
@@ -399,7 +405,7 @@ class _StageContent extends ConsumerWidget {
   }
 }
 
-/// 「导航去店里」和「加一道菜」。加菜跳过选店，直接进这家店的加菜页（产品 6.9）。
+/// "导航去店里" 和 "加一道菜". 加菜跳过选店, 直接进入这家店的加菜页.
 class _Actions extends ConsumerWidget {
   const new({required this.shop});
 

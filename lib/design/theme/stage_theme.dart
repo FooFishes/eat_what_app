@@ -2,7 +2,9 @@ import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/widgets.dart';
 
-/// 舞台上用到的一整套颜色，由 [StageColor] 算出；换舞台色时整套一起插值。
+/// 舞台使用的整套颜色, 由 [StageColor] 计算得出.
+///
+/// 切换舞台色时整套颜色同步插值.
 @immutable
 class const StagePalette({
   required final Color background,
@@ -14,10 +16,12 @@ class const StagePalette({
   required final Color solidTop,
   required final Color solidBottom,
 
-  /// 实心按钮的文字色，就是舞台色本身。
+  /// 实心按钮的文字色, 等于舞台色本身.
   required final Color solidForeground,
 
-  /// 深色舞台：实心按钮换成白色那一套阴影，状态栏图标用浅色。过渡到一半时切换。
+  /// 是否为深色舞台. 深色舞台的实心按钮使用白色按钮的阴影, 状态栏图标使用浅色.
+  ///
+  /// 插值时在进度过半处切换.
   required final bool isDark,
 }) {
   factory StagePalette.of(StageColor stage) => StagePalette(
@@ -80,13 +84,15 @@ class const StagePalette({
   );
 }
 
-/// 向下提供当前舞台的颜色。舞台上的按钮、文字从这里取色，所以换舞台色时它们跟着一起变。
+/// 向子树提供当前舞台的颜色.
+///
+/// 舞台上的按钮和文字从本组件取色, 因此切换舞台色时同步变化.
 class StageTheme extends InheritedWidget {
   const new({super.key, required this.palette, required super.child});
 
   final StagePalette palette;
 
-  /// 不在舞台里时返回 null。
+  /// 不在舞台内时返回 null.
   static StagePalette? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<StageTheme>()?.palette;
 
@@ -100,7 +106,9 @@ class StageTheme extends InheritedWidget {
   bool updateShouldNotify(StageTheme oldWidget) => palette != oldWidget.palette;
 }
 
-/// 换舞台色时，底色、文字和按钮的颜色在 500ms 里一起过渡；减少动态效果时直接切换。
+/// 切换舞台色时, 底色, 文字和按钮的颜色按 [EatMotion.stageColor] 同步过渡.
+///
+/// 系统开启减少动态效果时直接切换.
 class AnimatedStageTheme extends StatelessWidget {
   const new({super.key, required this.stage, required this.builder});
 

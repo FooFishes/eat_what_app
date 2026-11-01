@@ -6,15 +6,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'privacy_consent.g.dart';
 
-/// 本机同意《隐私政策》《用户协议》的记录（版本和时间）。登录页勾选后、登录成功时写入。
+/// 本机同意 "隐私政策" 和 "用户协议" 的记录, 包含版本和时间. 登录成功时写入.
 ///
-/// 是设备级的数据，退出登录不删。以后有了这条记录才初始化崩溃上报、推送这些 SDK（技术架构 9.4）。
+/// 属于设备级数据, 退出登录时不清除.
+/// 崩溃上报和推送等 SDK 只能在该记录存在后初始化.
 class PrivacyConsentStore {
   PrivacyConsentStore(this._kv);
 
   static const key = 'prefs.consent.privacy';
 
-  /// 当前协议的版本。远程配置上线前写死；协议改版时改这里（技术架构待确认 A7）。
+  // TODO: 协议版本写死在客户端, 协议更新后无法要求已同意旧版的用户重新勾选.
+  // 远程配置上线后改为读取远程版本号, 本地版本更旧时回登录页重新勾选.
+  /// 当前协议的版本. 协议改版时修改此值.
   static const currentVersion = '2026-10';
 
   final KvStore _kv;
@@ -27,7 +30,7 @@ class PrivacyConsentStore {
     }),
   );
 
-  /// 本机同意过的协议版本，没同意过为 null。
+  /// 本机同意过的协议版本. 未同意过时为 null.
   Future<String?> agreedVersion() async {
     final raw = await _kv.read(key);
     if (raw == null) return null;

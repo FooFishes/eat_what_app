@@ -6,9 +6,9 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:flutter/widgets.dart';
 
-/// 两列方块的网格，排法和设计稿一样：列间距 `space-14`、行间距 18。
+/// 菜品方块的两列网格.
 ///
-/// 按行排、每行高度跟着内容走：系统字号放大后菜名变高也不会溢出。
+/// 逐行排列, 行高由该行内容决定. 系统字号放大使菜名变高时, 方块不会溢出.
 class SliverTileGrid extends StatelessWidget {
   const new({super.key, required this.count, required this.builder});
 
@@ -34,10 +34,13 @@ class SliverTileGrid extends StatelessWidget {
   );
 }
 
-/// 推荐流和「我的」里的菜品方块：上面一张直接用原图的圆角方图，菜名和店名写在图外面。
+/// 推荐流和 "我的" 中的菜品方块. 上方为原图裁成的圆角方图, 菜名和店名位于图片下方.
 ///
-/// 两列网格，列间距 `space-14`、行间距 18 由网格给。不把文字压在图上，不给方块加底色、边框、阴影，
-/// 也不套盘沿。整块是一个链接。
+/// - 文字不叠加在图片上.
+/// - 方块不加底色, 边框, 阴影和盘沿.
+/// - 整个方块是一个链接.
+///
+/// 方块之间的间距由 [SliverTileGrid] 提供.
 class DishTile extends StatelessWidget {
   const new({
     super.key,
@@ -51,10 +54,10 @@ class DishTile extends StatelessWidget {
   final ImageProvider? image;
   final String name;
 
-  /// 推荐流里写店名。
+  /// 店名, 用于推荐流.
   final String? shop;
 
-  /// 「我的」里不写店名，改在菜名右边显示赞数。
+  /// 赞数, 用于 "我的". 显示在菜名右侧, 此时不传店名.
   final int? likes;
 
   final VoidCallback? onTap;

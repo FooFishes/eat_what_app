@@ -100,7 +100,7 @@ void main() {
   });
 }
 
-/// 已登录、停在认证页，打开网页换成假的。
+/// 以已登录状态打开认证页, 并用 [browser] 替换打开网页的实现.
 Future<void> pumpAppWithBrowser(
   WidgetTester tester,
   TestEnv env,

@@ -5,7 +5,7 @@ import 'package:eat/router/paths.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 应用根组件：主题固定浅色，中文界面，系统字号最多跟到 2 倍。
+/// 应用根组件. 固定浅色主题和中文界面, 并限制系统字号的最大缩放倍数.
 class EatApp extends ConsumerWidget {
   const new({super.key});
 
@@ -20,8 +20,8 @@ class EatApp extends ConsumerWidget {
       locale: const Locale('zh', 'CN'),
       supportedLocales: const [Locale('zh', 'CN')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      // 页面不套 Material 的 Scaffold，默认文字样式在这里给；不给的话没写样式的文字会显示成
-      // Flutter 的兜底样子（红字加黄色下划线）。
+      // 页面不使用 Material 的 Scaffold, 因此在此提供默认文字样式.
+      // 缺少默认样式时, 未指定样式的文字会显示为 Flutter 的缺省样式 (红字加黄色下划线).
       builder: (context, child) {
         final eat = context.eat;
         return MediaQuery.withClampedTextScaling(

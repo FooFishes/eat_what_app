@@ -1,9 +1,10 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/domain/models/paged.dart';
 
-/// 接口的 `PageResult`（`items`、`currentPage`、`hasNext`）转成 [Paged]。
+// TODO: /foods/recommend 文档声明返回 `PageResult`, 实际返回数组. 后端统一格式后删除数组分支.
+/// 把接口的 `PageResult` (`items`, `currentPage`, `hasNext`) 转换为 [Paged].
 ///
-/// 也接受直接返回的数组：`/foods/recommend` 文档写的是分页，实际返回数组（要反馈给后端）。
+/// 也接受数组, 视为只有一页.
 Paged<T> decodePage<T>(
   Object? data,
   T Function(Map<String, dynamic> json) item,
@@ -26,7 +27,7 @@ Paged<T> decodePage<T>(
   }
 }
 
-/// `data` 是数组时逐项解析；`null` 当作空数组。
+/// 逐项解析数组形式的 `data`. `null` 视为空数组.
 List<T> decodeList<T>(
   Object? data,
   T Function(Map<String, dynamic> json) item,
@@ -45,13 +46,16 @@ List<T> decodeList<T>(
 List<T> _items<T>(List<dynamic> list, T Function(Map<String, dynamic>) item) =>
     [for (final e in list) item(e as Map<String, dynamic>)];
 
-/// 接口里的 Unix 毫秒转成本地时间；没有值或者是 0 时为 null。
+/// 把接口中的 Unix 毫秒时间戳转换为本地时间. 缺失或不大于 0 时返回 null.
 DateTime? dateFromMillis(int? millis) => millis == null || millis <= 0
     ? null
     : DateTime.fromMillisecondsSinceEpoch(millis);
 
-/// 图片字段可能是完整地址，也可能只是存储的 key（技术架构待确认 A3）：是 key 时拼上
-/// [assetBaseUrl]，没配前缀就原样返回。空串当作没有图片。
+// TODO: 后端未确认图片字段是完整 URL 还是存储 key. 确认后只保留对应的一种处理.
+/// 把图片字段解析为可加载的地址. 空串视为没有图片, 返回 null.
+///
+/// 图片字段可能是完整 URL, 也可能是存储 key.
+/// 是 key 时拼接 [assetBaseUrl]; 未配置 [assetBaseUrl] 时原样返回.
 String? resolveImageUrl(String? value, String assetBaseUrl) {
   if (value == null || value.isEmpty) return null;
   if (value.startsWith('http://') ||
@@ -65,7 +69,7 @@ String? resolveImageUrl(String? value, String assetBaseUrl) {
   return value.startsWith('/') ? '$base$value' : '$base/$value';
 }
 
-/// 新增类接口返回的 `{id}`。
+/// 解析新增类接口返回的 `{id}`.
 int decodeCreatedId(Object? data) {
   final id = data is Map ? data['id'] : null;
   if (id is num) return id.toInt();

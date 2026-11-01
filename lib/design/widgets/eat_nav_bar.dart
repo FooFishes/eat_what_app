@@ -10,10 +10,13 @@ import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 三个主页面底部的悬浮导航：左边「发现 / 附近 / 我的」三个标签组成的胶囊，右边紧挨一个黑色圆形发布按钮。
+/// 三个主页面底部的悬浮导航.
 ///
-/// 只画导航本身，高 `size-nav`；离屏幕左右 `space-16`、离底部 `space-24` 加安全区由主页面外壳摆放。
-/// 消息不在导航里，入口是发现页右上角的铃铛。
+/// - 左侧: "发现" "附近" "我的" 三个标签组成的胶囊.
+/// - 右侧: 紧邻胶囊的黑色圆形发布按钮.
+///
+/// 本组件只绘制导航本身, 与屏幕边缘的距离和安全区由主页面外壳负责.
+/// 消息不在导航中, 入口是发现页右上角的铃铛.
 class EatNavBar extends StatelessWidget {
   const new({
     super.key,
@@ -22,11 +25,11 @@ class EatNavBar extends StatelessWidget {
     required this.onPublish,
   });
 
-  /// 0 发现，1 附近，2 我的。
+  /// 当前标签的序号: 0 为发现, 1 为附近, 2 为我的.
   final int currentIndex;
   final ValueChanged<int> onSelected;
 
-  /// 发布第 1 步：选店。
+  /// 点击发布按钮的回调. 发布流程从选店开始.
   final VoidCallback onPublish;
 
   static const _tabs = [
@@ -38,7 +41,7 @@ class EatNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    // 固定高度的控件，系统字号最多跟到 1.3 倍，再大会撑破 60px 的胶囊。
+    // 导航高度固定. 系统字号过大时文字会撑破胶囊, 因此限制文字缩放的上限.
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.3,
       child: SizedBox(

@@ -4,7 +4,7 @@ import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 把组件放进挂好主题的 App 里，居中显示；传 [stage] 时放在那个舞台色上。
+/// 把组件放入挂载主题的 App 中居中显示. 传入 [stage] 时, 组件放在该舞台色上.
 Future<void> pumpEat(
   WidgetTester tester,
   Widget child, {
@@ -26,7 +26,10 @@ Future<void> pumpEat(
   );
 }
 
-/// 设计规范的三条无障碍要求：点击区域不小于 44px、可点的东西都有说明、文字对比不低于 4.5:1。
+/// 检查设计规范的三条无障碍要求:
+/// - 点击区域不小于 44px.
+/// - 可点击元素都有语义说明.
+/// - 文字对比度不低于 4.5:1.
 Future<void> expectAccessible(WidgetTester tester) async {
   await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
   await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));

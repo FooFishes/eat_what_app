@@ -25,8 +25,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 搜索（`G-Search`）：白底，进来就弹键盘。结果分「菜」「店」两栏，默认停在「菜」，菜没有、店有时停在「店」。
-/// 没输入时是最近搜过的词；没结果时写「没找到」，认证用户多一个「新建一家店」（产品 6.8）。
+/// 搜索页. 白底页面, 打开时自动弹出键盘.
+///
+/// - 未输入时显示最近搜索的词.
+/// - 结果分为 "菜" 和 "店" 两个分栏. 默认显示 "菜", 只有店有结果时显示 "店".
+/// - 没有结果时显示 "没找到". 认证用户额外显示 "新建一家店".
 class SearchPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -38,7 +41,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   final _input = TextEditingController();
   var _keyword = '';
 
-  /// 用户自己点过分栏后不再自动切。
+  /// 用户手动选择的分栏. 有值时不再根据结果自动切换分栏.
   int? _tab;
 
   @override
@@ -182,7 +185,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 }
 
-/// 最近搜过的词，可以清空。
+/// 最近搜索的词, 可以清空.
 class _History extends ConsumerWidget {
   const new({required this.onPick});
 
@@ -233,7 +236,9 @@ class _History extends ConsumerWidget {
   }
 }
 
-/// 没结果：「没找到」，认证用户多一个「新建一家店」，店名带上搜的词，建好后直接加菜（产品 6.9）。
+/// 没有结果时的空状态.
+///
+/// 认证用户额外显示 "新建一家店". 新建店页面以搜索词作为店名初值, 创建后直接进入加菜页.
 class _NotFound extends ConsumerWidget {
   const new({required this.keyword});
 

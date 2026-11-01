@@ -10,7 +10,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'shops.g.dart';
 
-/// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+///
+/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
 @riverpod
 Future<Shop> shop(Ref ref, int shopId) {
   ref.cacheFor(const Duration(minutes: 5));
@@ -19,7 +21,7 @@ Future<Shop> shop(Ref ref, int shopId) {
       .shop(shopId, cancelToken: ref.cancelToken());
 }
 
-/// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
 @riverpod
 String? hubName(Ref ref, int? hubId) {
   if (hubId == null) return null;
@@ -30,7 +32,7 @@ String? hubName(Ref ref, int? hubId) {
   return null;
 }
 
-/// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
 @riverpod
 String? distanceTo(Ref ref, GcjPoint? point) {
   final me = ref.watch(currentLocationProvider.select((s) => s.point));

@@ -36,10 +36,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 新建一家店（`G-NewShop`）：店名、地图选点、地址描述、选填的门头照片（产品 6.9）。
+/// 新建店铺页面. 字段包括店名, 地图选点, 地址描述和选填的门头照片.
 ///
-/// 所属商圈按地图中心自动判断；附近 200 m 内已有同名店时提示，可以直接选它，也可以坚持新建。
-/// 建好后：[returnShop] 为 true 时带着店返回上一页（选店页的「换一家」），否则换成这家店的加菜页。
+/// - 所属商圈按地图中心自动判断.
+/// - 附近已有同名店时显示提示. 用户可以选择已有的店, 也可以继续新建.
+///
+/// 创建成功后的去向:
+/// - [returnShop] 为 true 时, 带着新店返回上一页. 用于加菜页的 "换一家".
+/// - 否则替换为新店的加菜页.
 class NewShopPage extends ConsumerStatefulWidget {
   const new({super.key, this.initialName = '', this.returnShop = false});
 
@@ -57,10 +61,12 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   GcjPoint? _center;
   PickedPhoto? _photo;
 
-  /// 看过同名店的提示、点了「不是同一家，继续建」。
+  /// 用户在同名店提示中选择了 "不是同一家, 继续建".
   var _keepNew = false;
 
-  /// 手指按在地图上：这时页面不滚动，竖着拖才拖得动地图。
+  /// 手指是否按在地图上.
+  ///
+  /// 按在地图上时禁止页面滚动, 否则纵向拖动会被页面滚动拦截, 地图无法拖动.
   var _onMap = false;
   var _busy = false;
 
@@ -78,7 +84,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     super.dispose();
   }
 
-  /// 地图中心。还没拖过时是当前位置，没有定位时是校区中心。
+  /// 地图中心. 未拖动过时取当前位置, 没有定位时取校区中心.
   GcjPoint? get _point =>
       _center ??
       ref.read(currentLocationProvider).point ??
@@ -140,7 +146,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     }
   }
 
-  /// 同名店提示里点「就选它」。
+  /// 在同名店提示中选择已有的店.
   void _useExisting(Shop shop) {
     if (widget.returnShop) {
       context.pop(shop);
@@ -153,7 +159,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    // 定位和校区回来以后 [_point] 才有值，监听它们让页面跟着重画。
+    // 定位和校区数据到达后 [_point] 才有值. 监听这两项, 数据到达时重建页面.
     ref
       ..watch(currentLocationProvider.select((s) => s.point))
       ..watch(currentPlaceProvider.select((p) => p.campus));
@@ -291,7 +297,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   }
 }
 
-/// 输入框右边的「3 / 20」。
+/// 输入框右侧的字数计数.
 class _Counter extends StatelessWidget {
   const new(this.count, this.max);
 
@@ -310,7 +316,7 @@ class _Counter extends StatelessWidget {
   }
 }
 
-/// 「附近已经有一家袁记云饺了，80 m」：「就选它」或「不是同一家，继续建」。
+/// 同名店提示. 显示附近同名店的距离, 提供 "就选它" 和 "不是同一家, 继续建".
 class _SameNameNotice extends StatelessWidget {
   const new({
     required this.shop,
@@ -354,7 +360,9 @@ class _SameNameNotice extends StatelessWidget {
   }
 }
 
-/// 选点地图：中心固定一根针，拖动地图让针对准店门口。停下后把中心交给 [onMoved]。
+/// 选点地图. 地图中心固定一个定位针, 用户拖动地图使针尖对准店门口.
+///
+/// 拖动停止后, 地图中心通过 [onMoved] 回传.
 class _PickMap extends StatelessWidget {
   const new({
     required this.controller,
@@ -406,7 +414,7 @@ class _PickMap extends StatelessWidget {
                 ),
               ],
             ),
-            // 针尖对准地图中心：图标底部在正中，整个图标往上挪半个身位。
+            // 针尖位于图标底部. 图标上移半个自身高度, 使针尖对准地图中心.
             IgnorePointer(
               child: Center(
                 child: Transform.translate(
@@ -422,7 +430,7 @@ class _PickMap extends StatelessWidget {
   }
 }
 
-/// 门头照片：没选时是虚线框「选填，拍一张招牌，别人更好找」，选了显示照片和删除。
+/// 门头照片. 未选择时显示虚线框和选填说明, 选择后显示照片和删除按钮.
 class _StorefrontPhoto extends StatelessWidget {
   const new({
     required this.photo,

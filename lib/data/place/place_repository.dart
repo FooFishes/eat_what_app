@@ -12,14 +12,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_repository.g.dart';
 
-/// 校区、商圈和店：DTO 转成领域模型。坐标缺了的条目丢掉，没法放到地图上也算不了距离。
+/// 校区, 商圈和店铺数据. 把 DTO 转换为领域模型.
+///
+/// 缺少坐标的条目直接丢弃, 因为它们无法显示在地图上, 也无法计算距离.
 class PlaceRepository {
   PlaceRepository(this._api, this._assetBaseUrl);
 
   final PlaceApi _api;
   final String _assetBaseUrl;
 
-  /// 已开放的校区，按运营给的顺序。
+  /// 已开放的校区, 按运营设定的顺序排列.
   Future<List<Campus>> campuses({CancelToken? cancelToken}) async {
     final list = await _api.campuses(cancelToken: cancelToken);
     final sorted = [...list]
@@ -36,7 +38,8 @@ class PlaceRepository {
     ];
   }
 
-  /// 全部商圈。一个校区周边就十来个，一页拉完。
+  // TODO: 只请求第一页, 商圈数超过单页上限时后面的商圈会丢失. 商圈增多后改为按 `hasNext` 翻页取完.
+  /// 全部商圈. 单个校区周边约十余个商圈, 因此一页取完.
   Future<List<Hub>> hubs({CancelToken? cancelToken}) async {
     final page = await _api.hubs(cancelToken: cancelToken);
     return [for (final dto in page.items) ?_hub(dto)];
@@ -47,7 +50,7 @@ class PlaceRepository {
     return dto == null ? null : _hub(dto);
   }
 
-  /// 新建一家店，返回店的 id。[photoKey] 是门头照片上传后的 key。
+  /// 新建店铺, 返回店铺 id. [photoKey] 为门头照片上传后的存储 key.
   Future<int> createShop({
     required String name,
     required String address,
@@ -65,7 +68,7 @@ class PlaceRepository {
     ),
   );
 
-  /// [point] 附近 [radius] 米内和 [name] 同名的店，没有返回 null（产品 9.2）。
+  /// [point] 周围 [radius] 米内与 [name] 同名 (忽略空白) 的店铺. 没有时返回 null.
   Future<Shop?> sameNameNearby(
     String name,
     GcjPoint point, {
@@ -151,7 +154,7 @@ class PlaceRepository {
     );
   }
 
-  /// MultiPolygon 每个多边形的外环；形状不对时返回空，地图上不画范围。
+  /// MultiPolygon 中每个多边形的外环. 结构不符时返回空列表, 地图上不绘制范围.
   static List<List<WgsPoint>> _rings(GeoJsonDto? geometry) {
     if (geometry?.type != 'MultiPolygon') return const [];
     try {

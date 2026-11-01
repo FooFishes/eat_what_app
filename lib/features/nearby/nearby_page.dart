@@ -36,11 +36,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
-/// 附近（`G-Nearby`）：地图当舞台，每家店一个圆形标记，下面可拖动的抽屉列出附近的店。
+// TODO: 筛选和按菜名找店没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
+/// 附近页. 以地图作为舞台, 下方可拖动的抽屉列出附近的店.
 ///
-/// 顶部是搜索框和筛选，下面一排商圈胶囊；右下「回到我的位置」。拖动地图后按新的中心重新找店。
-/// 地图用天地图瓦片（技术架构 14.4）：没配 Key 或瓦片连着加载失败时只显示列表。
-/// 筛选、按菜名找店、按推荐率和菜数排序还没有接口，带「待接入」。
+/// - 顶部: 搜索框, 筛选按钮, 商圈胶囊.
+/// - 地图: 每家店一个圆形标记, 右下角是 "回到我的位置".
+/// - 拖动地图停止后, 按新的地图中心重新查找店铺.
+///
+/// 地图使用天地图瓦片. 未配置 Key 或瓦片连续加载失败时只显示列表.
 class NearbyPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -54,11 +57,13 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   final _keywordInput = TextEditingController();
   ScrollController? _list;
 
-  /// 地图现在的中心；拖动停下 400ms 后才更新，用它找店。还没定下来时为 null。
+  /// 用于查找店铺的地图中心. 拖动停止并经过防抖后才更新, 尚未确定时为 null.
   GcjPoint? _center;
   Timer? _moveDebounce;
 
-  /// 点了胶囊的商圈；[_hubTouched] 之前跟着「我所在的商圈」走。
+  /// 用户在商圈胶囊中选中的商圈.
+  ///
+  /// [_hubTouched] 为 false 时不使用该值, 选中的商圈跟随 "我所在的商圈".
   int? _hubId;
   var _hubTouched = false;
 
@@ -67,7 +72,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   var _mapFailed = false;
   var _tileErrors = 0;
 
-  /// 抽屉现在占屏幕高度的比例，「回到我的位置」跟着抽屉上沿走。
+  /// 抽屉高度占屏幕高度的比例. "回到我的位置" 按钮随抽屉上沿移动.
   var _sheetExtent = _sheetInitial;
 
   static const _sheetInitial = 0.42;
@@ -434,7 +439,8 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   }
 }
 
-/// 「附近 18 家」和排序。只有「按距离」能用，其余排序待接入。
+// TODO: 只有 "按距离" 排序可用, 按推荐率和菜数排序没有接口. 接口支持后接入并去掉 "待接入".
+/// 列表头: 店铺数量和排序.
 class _ListHeader extends StatelessWidget {
   const new({required this.count});
 
@@ -483,7 +489,7 @@ class _ListHeader extends StatelessWidget {
   }
 }
 
-/// 天地图底图加注记，上面是商圈范围、店铺标记和我的位置。禁止旋转。
+/// 附近页地图. 天地图底图之上叠加商圈范围, 店铺标记和我的位置. 禁止旋转.
 class _NearbyMap extends ConsumerWidget {
   const new({
     required this.controller,
@@ -508,7 +514,9 @@ class _NearbyMap extends ConsumerWidget {
   final VoidCallback onTileError;
   final ValueChanged<Shop> onShopTap;
 
-  /// 天地图要求显示的标识。手机上抽屉会盖住地图底部，由页面画在抽屉上沿。
+  /// 是否在地图内显示天地图要求的标识.
+  ///
+  /// 手机上抽屉遮住地图底部, 标识改由页面绘制在抽屉上沿.
   final bool attribution;
 
   @override
@@ -547,7 +555,7 @@ class _NearbyMap extends ConsumerWidget {
           ),
         MarkerLayer(
           markers: [
-            // 选中的那家最后画，压在别的标记上面。
+            // 选中的店最后绘制, 位于其他标记上方.
             for (final shop in [...others, ...selected])
               Marker(
                 point: mapPoint(shop.point),

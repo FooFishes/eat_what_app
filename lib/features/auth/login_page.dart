@@ -22,11 +22,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 登录页（`G-Login`）：汤色舞台上慢慢转的一圈菜，品牌字和一句介绍，底部白色抽屉里是
-/// 「手机号登录」和协议勾选。没勾协议时按钮是灰的，点了不进下一页：协议那一行晃一下、手机轻震，
-/// 勾选框下面提示先勾选。
+/// 登录页.
 ///
-/// [query] 是地址里的 `from`、`expired`，原样带进手机号登录页，登录后守卫按它回到原页面。
+/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介.
+/// - 抽屉: "手机号登录" 按钮和协议勾选.
+///
+/// 未勾选协议时按钮显示为不可用样式, 但仍响应点击.
+/// 点击后不跳转, 而是晃动协议行, 触发轻震, 并显示勾选提示.
+///
+/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页.
+/// 登录成功后, 守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
@@ -37,8 +42,9 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  /// 没勾协议时点了几次按钮，每点一次协议那一行晃一下。勾上之后清零、收起提示，
-  /// 再取消勾选也要等下次点按钮才提示。
+  /// 未勾选协议时点击按钮的次数. 每次递增触发协议行晃动一次.
+  ///
+  /// 勾选后归零并隐藏提示. 之后取消勾选不会立即提示, 再次点击按钮时才提示.
   var _nudges = 0;
 
   void _start() {
@@ -98,9 +104,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ),
       ),
     );
-    // 品牌字在上、抽屉贴底，转盘画在两者之间的空隙里，下半圈被抽屉盖住。屏幕越高，多出来的
-    // 高度按 1:8 分给品牌字上方和转盘：品牌字稍往下挪，转盘露出更多，中间不留一大块空。
-    // 矮屏、大字号放不下时整页滚动，品牌字和抽屉不叠在一起。
+    // 纵向布局: 品牌字在顶部, 抽屉贴底, 转盘绘制在两者之间, 下半部分被抽屉遮挡.
+    // 屏幕的富余高度按 1:8 分给品牌字上方留白和转盘, 避免中间出现大块空白.
+    // 矮屏或大字号下内容超出屏幕时整页滚动, 避免品牌字与抽屉重叠.
     return EatStage(
       stage: StageColor.broth,
       child: CustomScrollView(
@@ -143,10 +149,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  /// 抽屉里的内容离屏幕底部的距离，比上边距大，按钮不贴着底边。
+  /// 抽屉内容与屏幕底边的距离. 大于上边距, 避免按钮贴近底边.
   static const _sheetBottom = 44.0;
 
-  /// 品牌字离状态栏至少多远。
+  /// 品牌字与状态栏的最小距离.
   static const _brandTop = 56.0;
 }
 
@@ -193,9 +199,9 @@ class _Brand extends StatelessWidget {
   }
 }
 
-/// 舞台下方慢慢转的一圈菜：90 秒一圈，系统开启减少动态效果时停住（产品 6.2）。
+/// 登录页的装饰转盘. 匀速旋转, 系统开启减少动态效果时停止.
 ///
-/// 和发现页的转盘长得一样，但不能拖、不能点，只是装饰，所以不用 `Turntable` 组件。
+/// 外观与发现页转盘一致, 但不响应拖动和点击, 因此不复用 `Turntable`.
 class _Turntable extends StatefulWidget {
   const new();
 
@@ -220,7 +226,7 @@ class _TurntableState extends State<_Turntable>
     Illustration.jiaozi,
   ];
 
-  /// 比发现页的转盘放大一些：登录页的菜只是装饰，放大了更有分量。
+  /// 相对发现页转盘的放大倍数. 登录页没有主角菜, 转盘作为舞台的视觉主体.
   static const _scale = 1.2;
   static const _dish = 220 * _scale;
   static const _radius = EatSize.turntableRadius * _scale;
@@ -228,11 +234,13 @@ class _TurntableState extends State<_Turntable>
   static const _tableRadius = 600 * _scale;
   static const _tableRingRadius = 560 * _scale;
 
-  /// 桌面圆心到最上面那道菜上缘的距离。
+  /// 桌面圆心到最上方菜品上缘的距离.
   static const _ringTop = _radius + _dish / 2 + 17 * _scale;
   static const _maxVisible = 320.0;
 
-  /// 桌面圆比菜的上缘还高，留出这段才不越过空隙顶部。
+  /// 空隙顶部到菜品上缘的最小距离.
+  ///
+  /// 桌面圆的顶部高于菜品上缘. 预留这段距离, 桌面才不会越过空隙顶部.
   static const _clearance = _tableRadius - _ringTop + 4;
 
   late final _spin = AnimationController(
@@ -262,9 +270,9 @@ class _TurntableState extends State<_Turntable>
     return ExcludeSemantics(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // 菜的圆心比桌面圆心往左上偏一些，转起来上缘不是一条平的弧。
-          // 转盘在抽屉上方露出的高度随空隙变化，最多 [_maxVisible]；桌面和菜的上缘离空隙顶部
-          // 至少 [_clearance]，不压到品牌字上。
+          // 菜品环的圆心相对桌面圆心向左上偏移, 旋转时菜品上缘因此高低起伏, 不形成平滑圆弧.
+          // 转盘在抽屉上方的露出高度随空隙变化, 上限为 [_maxVisible].
+          // 桌面和菜品上缘与空隙顶部至少相距 [_clearance], 避免压住品牌字.
           final gap = constraints.maxHeight;
           final visible = (gap - _clearance).clamp(0.0, _maxVisible);
           final table = Offset(
@@ -337,10 +345,11 @@ class _TurntableState extends State<_Turntable>
   }
 }
 
-/// 「我已阅读并同意《隐私政策》和《用户协议》」：左边 44px 的勾选框，协议名可以点开看。
+/// 协议勾选行. 左侧为勾选框, 协议名可点击查看.
 ///
-/// [nudges] 每加一次，整行左右晃一下，下面淡入 `warn` 的「请先勾选同意协议」；为 0 时不提示。
-/// 提示那一行一直占着位置，出现时抽屉不跟着变高。
+/// [nudges] 每递增一次, 整行水平晃动一次.
+/// [nudges] 大于 0 时, 下方淡入 `warn` 色提示 "请先勾选同意协议".
+/// 提示行始终占位, 提示出现时抽屉高度不变.
 class AgreementCheck extends ConsumerStatefulWidget {
   const new({super.key, this.nudges = 0});
 
@@ -363,7 +372,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
 
   static const _shakeDuration = Duration(milliseconds: 420);
 
-  /// 晃动的幅度和来回次数：先大后小，像被轻轻拨了一下。
+  /// 晃动的初始振幅和往返次数. 振幅随动画进度线性衰减到 0.
   static const _shakeAmplitude = 6.0;
   static const _shakeCycles = 3;
 
@@ -492,7 +501,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
   }
 }
 
-/// 勾选框：勾上时圆底从白过渡成 `ink`，对勾带一点回弹地放大出现。
+/// 勾选框. 勾选时圆底由 `paper` 过渡到 `ink`, 对勾以回弹曲线放大出现.
 class _CheckCircle extends StatelessWidget {
   const new({required this.checked});
 
@@ -524,7 +533,7 @@ class _CheckCircle extends StatelessWidget {
   }
 }
 
-/// 抽屉顶部的一行提示，`warn` 配图标。
+/// 抽屉顶部的提示行, `warn` 色文字配图标.
 class _Notice extends StatelessWidget {
   const new(this.text);
 

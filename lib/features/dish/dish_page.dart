@@ -38,11 +38,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 菜品详情（`G-Dish`）：舞台上是封面、分类、菜名、价格；抽屉里依次是店卡、赞和导航、
-/// 「大家怎么说」、上传者和「吃过的人说」。
+// TODO: 评论, 专题和举报缺少接口, 入口标注 "待接入". 接口上线后对接.
+// TODO: 编辑自己的菜品未实现, 页面缺少编辑入口. 实现编辑流程后为上传者本人显示编辑入口.
+/// 菜品详情页.
 ///
-/// 从列表进来时用手上的 [initial] 先把舞台画出来，抽屉里的内容等接口（技术架构 10.5）。
-/// 评论、专题、举报还没有接口，带「待接入」；编辑自己的菜随发布流程在阶段四做。
+/// - 舞台: 封面, 分类, 菜名, 价格.
+/// - 抽屉: 依次为店卡, 赞和导航, "大家怎么说", 上传者, "吃过的人说".
+///
+/// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
   const new({super.key, required this.dishId, this.initial});
 
@@ -177,7 +180,10 @@ Future<void> _toggleFavorite(
   }
 }
 
-/// 舞台：右边是封面盘子，点开看大图；左下是分类、菜名、价格。
+/// 菜品详情的舞台内容.
+///
+/// - 右侧: 封面盘子, 点击查看大图.
+/// - 左下: 分类, 菜名, 价格.
 class _StageContent extends StatelessWidget {
   const new({required this.dish});
 
@@ -287,7 +293,7 @@ class _StageContent extends StatelessWidget {
   }
 }
 
-/// 店卡：店名、距离、商圈和地址，点了进餐厅详情。
+/// 店卡: 店名, 距离, 商圈和地址. 点击进入餐厅详情.
 class _ShopCard extends ConsumerWidget {
   const new({required this.dish});
 
@@ -322,7 +328,7 @@ class _ShopCard extends ConsumerWidget {
   }
 }
 
-/// 赞（心形加赞数，赞过是按下的样子）和「导航去店里」。
+/// 赞按钮和 "导航去店里" 按钮. 赞按钮显示心形和赞数, 已赞时显示为按下状态.
 class _Actions extends ConsumerWidget {
   const new({required this.dish});
 
@@ -384,7 +390,9 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-/// 「大家怎么说」：按人数排的口味标签，点一个就是打上，打过的再点撤回；最后是「＋ 加标签」。
+/// "大家怎么说": 按人数排序的口味标签, 末尾是 "+ 加标签".
+///
+/// 点击未打过的标签即打上, 点击已打过的标签则撤回.
 class _TasteSection extends ConsumerWidget {
   const new({required this.dish});
 
@@ -455,7 +463,8 @@ class _TasteSection extends ConsumerWidget {
   }
 }
 
-/// 上传者：头像、昵称、「10 月 18 日上传」，下面是说明。他人主页在阶段六做。
+// TODO: 他人主页未实现, 该行不可点. 实现他人主页后点击跳转到上传者主页.
+/// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明.
 class _Uploader extends StatelessWidget {
   const new({required this.dish});
 
@@ -492,7 +501,8 @@ class _Uploader extends StatelessWidget {
   }
 }
 
-/// 「吃过的人说」：评论还没有接口（现状差距 2.1），标题和「写一条」照样画出来。
+// TODO: 评论缺少接口, 只显示标题和 "写一条" 入口. 接口上线后显示评论列表并对接发表评论.
+/// "吃过的人说" 评论区.
 class _Comments extends StatelessWidget {
   const new();
 

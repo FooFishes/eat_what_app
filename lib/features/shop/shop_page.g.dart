@@ -8,12 +8,12 @@ part of 'shop_page.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+/// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
 
 @ProviderFor(shopMenu)
 final shopMenuProvider = ShopMenuFamily._();
 
-/// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+/// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
 
 final class ShopMenuProvider
     extends
@@ -23,7 +23,7 @@ final class ShopMenuProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+  /// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
   ShopMenuProvider._({
     required ShopMenuFamily super.from,
     required int super.argument,
@@ -69,7 +69,7 @@ final class ShopMenuProvider
 
 String _$shopMenuHash() => r'0f7e4dc733b252da7722ccb4c2947d32c05f63ca';
 
-/// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+/// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
 
 final class ShopMenuFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, int> {
@@ -82,7 +82,7 @@ final class ShopMenuFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的全部菜，按赞数排。招牌、菜数、口味汇总都从它算：接口还没有这些汇总字段（现状差距 2.1）。
+  /// 一家店的全部菜品, 按赞数降序. 招牌菜, 菜数和口味汇总都由它计算.
 
   ShopMenuProvider call(int shopId) =>
       ShopMenuProvider._(argument: shopId, from: this);

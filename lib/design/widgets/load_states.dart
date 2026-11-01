@@ -7,11 +7,11 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:flutter/widgets.dart';
 
-/// 加载中的占位：`mist` 色块按内容的形状摆（舞台、盘子、方块、列表行），不用转圈。
+/// 加载占位. `mist` 色块按内容的形状排列, 如舞台, 盘子, 方块和列表行, 不使用进度圈.
 ///
-/// 一组占位外面包一层 [LoadingArea]，读屏只报一次「加载中」。
+/// 一组占位外包 [LoadingArea], 读屏只报告一次 "加载中".
 class Skeleton extends StatelessWidget {
-  /// 方块、缩略图这类圆角矩形。
+  /// 圆角矩形占位, 用于方块和缩略图.
   const new({
     super.key,
     this.width,
@@ -19,20 +19,20 @@ class Skeleton extends StatelessWidget {
     this.radius = EatRadius.thumb,
   }) : circle = false;
 
-  /// 盘子、头像。
+  /// 圆形占位, 用于盘子和头像.
   const new circle({super.key, required double size})
     : width = size,
       height = size,
       radius = Radius.zero,
       circle = true;
 
-  /// 一行字：高度取字号，四角稍圆。
+  /// 单行文字占位. 高度等于字号, 四角略圆.
   const new line({super.key, this.width, double fontSize = 15})
     : height = fontSize,
       radius = const Radius.circular(4),
       circle = false;
 
-  /// 不传时撑满父组件给的宽度。
+  /// 宽度. 不传时撑满父组件提供的宽度.
   final double? width;
   final double height;
   final Radius radius;
@@ -52,7 +52,7 @@ class Skeleton extends StatelessWidget {
   );
 }
 
-/// 一组 [Skeleton] 的外壳：读屏报一次「加载中」，里面的色块都不读。
+/// 一组 [Skeleton] 的外壳. 读屏只报告一次 "加载中", 内部色块不朗读.
 class LoadingArea extends StatelessWidget {
   const new({super.key, required this.child});
 
@@ -66,9 +66,9 @@ class LoadingArea extends StatelessWidget {
   );
 }
 
-/// 空状态和其他整块的说明：圆底图标、一句标题、一两句话，可选一个按钮。
+/// 空状态和其他整块说明: 圆底图标, 标题, 一两句正文和可选按钮.
 ///
-/// 空状态要说清楚下一步做什么，如「没找到「螺蛳粉」」配「换个词试试……」和「新建一家店」。
+/// 空状态须写明下一步操作. 例如搜索无结果时, 正文提示更换关键词, 按钮为 "新建一家店".
 class EmptyState extends StatelessWidget {
   const new({
     super.key,
@@ -82,7 +82,7 @@ class EmptyState extends StatelessWidget {
   final String title;
   final String? message;
 
-  /// 一般是 48px 高的 `EatButton.outline` 或 `EatButton.mist`。
+  /// 可选按钮, 通常为 48px 高的 `EatButton.outline` 或 `EatButton.mist`.
   final Widget? action;
 
   @override
@@ -127,15 +127,15 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// 没有旧数据可显示、请求又失败时的样子：「加载失败」加「重试」。
+/// 没有旧数据且请求失败时的状态, 显示 "加载失败" 和 "重试".
 ///
-/// 有旧数据时不用它：保留旧内容，只给一句不打断操作的提示。
+/// 有旧数据时不使用本组件, 而是保留旧内容, 并给出不打断操作的提示.
 class FailureState extends StatelessWidget {
   const new({super.key, required this.onRetry, this.message});
 
   final VoidCallback onRetry;
 
-  /// 补一句原因，如「网络连接失败」。
+  /// 失败原因, 如 "网络连接失败".
   final String? message;
 
   @override
@@ -152,9 +152,9 @@ class FailureState extends StatelessWidget {
   );
 }
 
-/// 舞台上的加载占位：右边一个盘子、左下几行字的形状，用舞台的次按钮色画，跟着舞台色走。
+/// 舞台上的加载占位: 右侧为盘子, 左下为几行文字的形状. 用舞台次按钮色绘制, 随舞台色变化.
 ///
-/// 只能放在舞台里（`StageScaffold` 的舞台内容）；字的形状离底部留出被抽屉压住的 32px。
+/// 只能放在 `StageScaffold` 的舞台内容中. 文字形状与底部之间预留被抽屉遮挡的高度.
 class StagePlaceholder extends StatelessWidget {
   const new({super.key});
 
@@ -206,7 +206,7 @@ class StagePlaceholder extends StatelessWidget {
   }
 }
 
-/// 两列菜品方块的加载占位，排法和 `DishTile` 的网格一样。
+/// 两列菜品方块的加载占位, 间距与 `SliverTileGrid` 相同.
 class TileGridPlaceholder extends StatelessWidget {
   const new({super.key, this.count = 4});
 
@@ -242,10 +242,11 @@ class TileGridPlaceholder extends StatelessWidget {
   }
 }
 
-/// 放在列表最后：滚到快看见它时（进了列表的预加载范围）调一次 [onVisible] 加载下一页。
+/// 放在列表末尾的分页触发器. 进入列表的预加载范围时调用一次 [onVisible] 加载下一页.
 ///
-/// [generation] 一般传当前条数：加载回来条数变了，就再触发一次；没有更多时不要放它。
-/// [failed] 时不自动加载，换成「加载失败」和「重试」，免得一直重试。
+/// - [generation] 通常传当前条数. 加载后条数变化时会再次触发.
+/// - 没有更多数据时不放置本组件.
+/// - [failed] 为 true 时不自动加载, 改为显示 "加载失败" 和 "重试", 避免反复重试.
 class LoadMoreTrigger extends StatefulWidget {
   const new({
     super.key,
@@ -301,7 +302,7 @@ class _LoadMoreTriggerState extends State<LoadMoreTrigger> {
   );
 }
 
-/// 列表行的加载占位：左边缩略图，右边两行字。
+/// 列表行的加载占位: 左侧为缩略图, 右侧为两行文字.
 class RowListPlaceholder extends StatelessWidget {
   const new({super.key, this.count = 4, this.thumbSize = EatSize.thumb});
 

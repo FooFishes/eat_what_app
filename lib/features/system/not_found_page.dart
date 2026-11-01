@@ -6,7 +6,7 @@ import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-/// 地址对不上任何页面时显示，比如分享链接里的路径打错了或已经下线。
+/// 地址不匹配任何页面时显示, 如分享链接中的路径有误或页面已下线.
 class NotFoundPage extends StatelessWidget {
   const new({super.key});
 

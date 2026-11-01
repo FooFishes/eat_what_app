@@ -9,23 +9,25 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'discover_providers.g.dart';
 
-/// 转盘：一批一批往后接的推荐队列，和当前转到第几道。
+/// 转盘数据: 按批次追加的推荐队列, 以及当前所在的位置.
 class const TurntableFeed({
   required final List<Dish> dishes,
   final int index = 0,
 
-  /// 每一批从队列的第几道开始，算舞台左下的小圆点用。
+  /// 每一批在队列中的起始下标, 用于计算舞台左下角的批次圆点.
   final List<int> batchStarts = const [0],
 
-  /// 后面还有没有新的一批。拿到空的一批就算没有了，转到最后一道再「换一个」回到第一道。
+  /// 是否还有下一批. 获取到空批次即视为没有.
+  ///
+  /// 没有下一批时, 在最后一道点击 "换一个" 回到第一道.
   final bool hasMore = true,
 
-  /// 推荐拿不到，显示的是这个校区和饭点上一次的那批（产品 12.6）。
+  /// 推荐请求失败, 当前显示的是该校区和饭点上一次获取的批次.
   final bool stale = false,
 }) {
   Dish? get current => dishes.isEmpty ? null : dishes[index];
 
-  /// 当前这道所在那一批的范围。
+  /// 当前菜品所在批次的范围.
   ({int start, int length}) get batch {
     var start = 0;
     var end = dishes.length;
@@ -39,10 +41,10 @@ class const TurntableFeed({
   }
 }
 
-/// 发现页的转盘。地点或饭点一变就重新拉（产品 6.4「选完立即刷新转盘和列表」）。
+/// 发现页的转盘队列. 地点或饭点变化时重新请求.
 @Riverpod(keepAlive: true)
 class TurntableQueue extends _$TurntableQueue {
-  /// 剩下不到这么多道时预取下一批。
+  /// 剩余菜品不多于该数量时预取下一批.
   static const _prefetch = 3;
 
   @override
@@ -70,7 +72,9 @@ class TurntableQueue extends _$TurntableQueue {
 
   var _loading = false;
 
-  /// 转到第 [index] 道（拖动松手、「换一个」都走这里）。越过最后一道回到第一道。
+  /// 转到第 [index] 道. 拖动松手和点击 "换一个" 都调用此方法.
+  ///
+  /// [index] 超过最后一道时回到第一道.
   void select(int index) {
     final feed = state.value;
     if (feed == null || feed.dishes.isEmpty) return;
@@ -123,14 +127,14 @@ class TurntableQueue extends _$TurntableQueue {
         ),
       );
     } on AppFailure {
-      // 预取失败不打断，转到最后一道时回到第一道；下次再试。
+      // 预取失败不中断浏览: 转到最后一道时回到第一道, 之后切换菜品时再次预取.
     } finally {
       _loading = false;
     }
   }
 }
 
-/// 抽屉里一个分类的推荐流：往下滑一批一批地接（`null` 是「今日推荐」）。
+/// 抽屉中一个分类的推荐流, 向下滚动时按批次追加. 分类为 `null` 表示 "今日推荐".
 class const DishFeed({
   required final List<Dish> dishes,
   final bool hasMore = true,

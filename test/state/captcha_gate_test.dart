@@ -135,5 +135,5 @@ void main() {
   });
 }
 
-/// [FakeHumanVerifier] 不用 `BuildContext`，随便给一个。
+/// 占位用的 [BuildContext]. [FakeHumanVerifier] 不读取 context.
 class _NoContext extends Fake implements BuildContext {}

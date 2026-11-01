@@ -9,7 +9,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'nearby_providers.g.dart';
 
-/// 附近要找哪些店：地图中心、选中的商圈、搜索框里的店名。
+/// 附近页的查询条件: 地图中心, 选中的商圈, 搜索框中的店名.
 class const NearbyQuery({
   required final GcjPoint center,
   final int? hubId,
@@ -26,10 +26,11 @@ class const NearbyQuery({
   int get hashCode => Object.hash(center, hubId, keyword);
 }
 
-/// 不选商圈、不搜店名时，找地图中心多远以内的店（米）。
+/// 未选商圈且未输入店名时的查询半径, 单位米.
 const nearbyRadius = 3000;
 
-/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+// TODO: 接口不区分已关门的店, 已关门的店仍会出现在附近. 接口返回营业状态后过滤已关门的店.
+/// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
 @riverpod
 Future<List<Shop>> nearbyShops(Ref ref, NearbyQuery query) async {
   ref.cacheFor(const Duration(minutes: 1));
@@ -53,7 +54,9 @@ Future<List<Shop>> nearbyShops(Ref ref, NearbyQuery query) async {
   );
 }
 
-/// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+/// 我当前所在的商圈, 附近页默认选中该商圈.
+///
+/// 没有定位或不在任何商圈内时为 null.
 @riverpod
 Future<Hub?> myHub(Ref ref) async {
   final me = ref.watch(currentLocationProvider.select((s) => s.point));

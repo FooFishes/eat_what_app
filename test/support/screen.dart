@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 把测试窗口设成 [size]（逻辑像素），测试结束时复原。
+/// 把测试窗口设为 [size] (逻辑像素), 测试结束时恢复.
 void useScreen(
   WidgetTester tester,
   Size size, {

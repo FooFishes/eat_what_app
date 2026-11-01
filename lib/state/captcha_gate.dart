@@ -6,15 +6,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'captcha_gate.g.dart';
 
-/// 把人机验证弹出来、等结果。页面用自己的 `BuildContext` 包一层 `HumanVerifier.verify` 传进来，
-/// Provider 里不拿 `BuildContext`。
+/// 弹出人机验证并等待结果.
+///
+/// 由页面用自身的 `BuildContext` 包装 `HumanVerifier.verify` 后传入, Provider 不持有 `BuildContext`.
 typedef CaptchaPresenter = Future<CaptchaOutcome> Function(
   CaptchaParams params,
 );
 
-/// 发验证码、发认证邮件前先过人机验证，票据随这一次请求发出（技术架构 18.3）。
+/// 发送验证码和认证邮件前的人机验证. 票据只随本次请求发送.
 ///
-/// 每次都重新拿初始化参数、新建验证实例；服务端说票据缺失或无效时整套重来，最多三次。
+/// 每次验证都重新获取初始化参数并新建验证实例.
+/// 服务端返回票据缺失或无效时重新验证, 次数上限为 [_maxAttempts].
 class CaptchaGate {
   CaptchaGate(this._auth);
 
@@ -22,7 +24,9 @@ class CaptchaGate {
 
   final AuthRepository _auth;
 
-  /// 返回 false 表示用户关掉了验证，什么都没发。验证不过、发送失败时抛 [AppFailure]。
+  /// 返回 false 表示用户关闭了验证, 未发送请求.
+  ///
+  /// 验证不通过或发送失败时抛出 [AppFailure].
   Future<bool> run(
     CaptchaPresenter present,
     Future<void> Function(CaptchaTicket? ticket) send,

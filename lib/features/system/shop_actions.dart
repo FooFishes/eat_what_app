@@ -17,8 +17,11 @@ import 'package:eat/features/system/guard.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 「导航去店里」：装了几个地图 App 就让用户选，只有一个直接打开，一个都没有或在 Web 上用高德网页版
-/// （产品 6.6、技术架构 14.5）。
+/// "导航去店里".
+///
+/// - 只有一个可用的地图时直接打开.
+/// - 有多个时弹出面板让用户选择.
+/// - 未安装地图 App 或在 Web 上时, 可用的只有高德网页版.
 Future<void> navigateToShop(
   BuildContext context,
   WidgetRef ref, {
@@ -59,9 +62,8 @@ Future<void> navigateToShop(
   }
 }
 
-/// 分享面板：分享渠道和「复制链接」；看别人的菜时最后多一项「举报」（产品 6.5）。
-///
-/// 举报还没有接口（现状差距 2.1），带「待接入」。
+// TODO: 举报没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
+/// 分享面板: 分享渠道和 "复制链接". [reportable] 为 true 时末尾增加 "举报".
 Future<void> showSharePanel(
   BuildContext context,
   WidgetRef ref, {

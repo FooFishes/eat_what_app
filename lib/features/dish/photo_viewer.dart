@@ -7,10 +7,10 @@ import 'package:flutter/widgets.dart';
 import 'package:material_ui/material_ui.dart'
     show InteractiveViewer, MaterialPageRoute;
 
-/// 看大图：左右翻，双指放大，每张标出是谁拍的（产品 6.5）。
+// TODO: 只显示上传者的照片, 评论照片缺少接口. 评论接口上线后把评论照片追加在后面.
+/// 大图浏览. 支持左右翻页和双指缩放, 每张照片标注拍摄者.
 ///
-/// 只放上传者的照片；评论里的照片等评论接口上线后接在后面。依赖内存里的图片地址，不给路由地址
-/// （技术架构 5.1）。
+/// 页面依赖内存中的图片地址, 刷新后无法恢复, 因此不注册路由地址.
 class PhotoViewer extends StatefulWidget {
   const new({super.key, required this.images, this.uploader});
 

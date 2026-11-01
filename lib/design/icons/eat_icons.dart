@@ -1,8 +1,9 @@
-/// 界面里用到的全部图标，按用途命名，和 `assets/icons/` 的文件名一一对应
-/// （`chevronRight` 对应 `chevron-right.svg`）。
+/// 界面使用的全部图标, 按用途命名.
 ///
-/// 取自 MingCute Line，用途和原名的对照在 `prototype/design-system/assets/Icons/README.md`。
-/// 缺图标时先在那里补上，再跑 `tool/icons.dart` 并在这里加一项。
+/// 枚举名与 `assets/icons/` 的文件名一一对应, 如 `chevronRight` 对应 `chevron-right.svg`.
+/// 图标取自 MingCute Line, 用途名与原名的对照见 `prototype/design-system/assets/Icons/README.md`.
+///
+/// 新增图标时先在对照表中登记, 再运行 `tool/icons.dart`, 最后在本枚举中添加对应值.
 enum EatIcons {
   add,
   addCircle,
@@ -85,16 +86,18 @@ enum EatIcons {
 
   const new({this.stroked = true});
 
-  /// 用 2px 描边画的图标有 14、16、18 的加粗变体；用填充画的（实心或填充轮廓）没有。
+  /// 是否以 2px 描边绘制.
+  ///
+  /// 只有描边图标生成了 14, 16, 18 三档加粗变体. 实心图标和填充轮廓图标没有变体.
   final bool stroked;
 
-  /// 文件名，不带扩展名。
+  /// 不含扩展名的文件名.
   String get file => name.replaceAllMapped(
     RegExp('[A-Z]'),
     (match) => '-${match[0]!.toLowerCase()}',
   );
 
-  /// 按显示尺寸选资源：20px 以下换成描边加粗的变体，让实际线宽保持在 1.5–1.6px。
+  /// 按显示尺寸选择资源. 描边图标小于 20px 时换用加粗变体, 使实际线宽保持在 1.5–1.6px.
   String assetFor(double size) {
     final variant = switch (size) {
       _ when !stroked || size >= 20 => null,

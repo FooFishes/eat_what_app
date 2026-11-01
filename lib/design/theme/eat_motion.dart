@@ -1,29 +1,31 @@
 import 'package:flutter/widgets.dart';
 
-/// 一段动效的时长和曲线。
+/// 动效的时长和曲线.
 typedef EatTransition = ({Duration duration, Curve curve});
 
-/// 设计规范「动效」里的时长和曲线。系统开启减少动态效果时，组件直接跳到终点，不用这些值。
+/// 设计规范中的动效时长和曲线.
+///
+/// 系统开启减少动态效果时, 组件直接跳到终点, 不使用这些值.
 abstract final class EatMotion {
-  /// 转盘吸附：略带回弹，像真的转盘停下来。
+  /// 转盘吸附. 曲线末段略微越过终点再回落, 形成回弹.
   static const EatTransition snap = (
     duration: Duration(milliseconds: 680),
     curve: Cubic(0.2, 0.9, 0.25, 1.1),
   );
 
-  /// 舞台换色：背景和文字一起过渡。
+  /// 舞台换色. 背景和文字同步过渡.
   static const EatTransition stageColor = (
     duration: Duration(milliseconds: 500),
     curve: Curves.ease,
   );
 
-  /// 选中态：标签、单选、开关。规范给的是 160–200ms，取中间值。
+  /// 选中态切换: 标签, 单选, 开关. 规范给出的范围是 160–200ms, 取中间值.
   static const EatTransition select = (
     duration: Duration(milliseconds: 180),
     curve: Curves.ease,
   );
 
-  /// 按钮按下：整体下移 [pressOffset]、换成按下的阴影；松开弹回。
+  /// 按钮按下: 整体下移 [pressOffset] 并换用按下的阴影, 松开后复原.
   static const EatTransition press = (
     duration: Duration(milliseconds: 90),
     curve: Curves.easeOut,
@@ -31,12 +33,12 @@ abstract final class EatMotion {
 
   static const pressOffset = 1.0;
 
-  /// 登录页转盘匀速转一圈的时间，这是全应用唯一自动播放的动画。
+  /// 登录页转盘匀速旋转一周的时间. 这是应用中唯一自动播放的动画.
   static const loginSpinPeriod = Duration(seconds: 90);
 }
 
 extension EatMotionContext on BuildContext {
-  /// [transition] 在当前环境下的时长：系统开启减少动态效果时为零，组件直接跳到终点。
+  /// [transition] 在当前环境下的时长. 系统开启减少动态效果时为零, 组件直接跳到终点.
   Duration motion(EatTransition transition) =>
       MediaQuery.maybeDisableAnimationsOf(this) ?? false
       ? Duration.zero

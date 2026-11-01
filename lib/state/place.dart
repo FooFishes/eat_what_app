@@ -14,27 +14,29 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place.g.dart';
 
-/// 已开放的校区（`/campus/list`）。
+/// 已开放的校区, 来自 `/campus/list`.
 @Riverpod(keepAlive: true)
 Future<List<Campus>> campuses(Ref ref) =>
     ref.watch(placeRepositoryProvider).campuses(cancelToken: ref.cancelToken());
 
-/// 全部商圈。附近页的商圈胶囊、餐厅详情的商圈名用它。
+/// 全部商圈. 用于附近页的商圈胶囊和餐厅详情的商圈名.
 @Riverpod(keepAlive: true)
 Future<List<Hub>> hubs(Ref ref) =>
     ref.watch(placeRepositoryProvider).hubs(cancelToken: ref.cancelToken());
 
-/// 用户在「地点和饭点」面板里选的：校区，以及手动选的饭点和它到什么时候失效。
+/// 用户在 "地点和饭点" 面板中的选择: 校区, 手动选择的饭点及其失效时间.
 class const PlaceChoice({
   final int? campusId,
   final MealTime? manualMeal,
   final DateTime? manualUntil,
 
-  /// 本机存的选择读出来了没有。读出来之前不按默认值去拉推荐。
+  /// 本地存储中的选择是否已读出. 读出之前不按默认值请求推荐.
   final bool restored = false,
 });
 
-/// 地点和饭点的选择，存在本机（设备级偏好，退出登录不删，技术架构 9.1）。
+/// 地点和饭点的选择, 保存在本机.
+///
+/// 属于设备级偏好, 退出登录时不清除.
 @Riverpod(keepAlive: true)
 class PlaceAndMeal extends _$PlaceAndMeal {
   static const campusKey = 'prefs.campus';
@@ -76,7 +78,7 @@ class PlaceAndMeal extends _$PlaceAndMeal {
     await _kv.write(campusKey, '$id');
   }
 
-  /// 手动选一个饭点，保持到当前时间段结束（产品 4.5）。
+  /// 手动选择饭点, 有效期到当前时间段结束.
   Future<void> selectMeal(MealTime meal) async {
     final until = MealRules.periodEnd(clock.now());
     state = PlaceChoice(
@@ -88,21 +90,22 @@ class PlaceAndMeal extends _$PlaceAndMeal {
     await _kv.write(mealKey, '${meal.api}|${until.millisecondsSinceEpoch}');
   }
 
-  /// 「按现在的时间」。
+  /// 恢复为按当前时间自动选择饭点.
   Future<void> autoMeal() async {
     state = PlaceChoice(campusId: state.campusId, restored: true);
     await _kv.delete(mealKey);
   }
 }
 
-/// 现在用的地点和饭点。
+/// 当前使用的地点和饭点.
 class const CurrentPlace({
   final Campus? campus,
   required final MealTime meal,
   required final bool autoMeal,
 
-  /// 本机的选择和校区列表都有结果了。还没好时不去拉推荐：推荐按天去重，
-  /// 拿错地点发出去又取消的请求也可能算作「推荐过」。
+  /// 本机选择和校区列表是否都已就绪. 未就绪时不请求推荐.
+  ///
+  /// 推荐按天去重. 以错误地点发出后又取消的请求, 也可能被服务端计为已推荐.
   final bool ready = false,
 }) {
   @override
@@ -117,11 +120,13 @@ class const CurrentPlace({
   int get hashCode => Object.hash(campus?.id, meal, autoMeal, ready);
 }
 
-/// 当前的校区和饭点：校区按「上次选的 → 离定位最近的 → 默认」挑；饭点手动选的没过期就用它，
-/// 否则按现在的时间。
+/// 当前的校区和饭点.
 ///
-/// 到了时间段结束（[mealPeriodEnd]）由发现页让它重算一次，回到前台时也重算。不在这里起定时器：
-/// 它常驻，定时器会一直挂着。
+/// - 校区: 依次取上次选择的校区, 离定位最近的校区, 默认校区.
+/// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间.
+///
+/// 时间段结束 ([mealPeriodEnd]) 和回到前台时, 由发现页触发重算.
+/// 这里不启动定时器: 该 Provider 常驻, 定时器会一直存在.
 @Riverpod(keepAlive: true)
 CurrentPlace currentPlace(Ref ref) {
   final choice = ref.watch(placeAndMealProvider);
@@ -165,7 +170,7 @@ CurrentPlace currentPlace(Ref ref) {
   );
 }
 
-/// 现在显示的饭点什么时候该换：手动选的到期时间，或者当前时间段结束。
+/// 当前饭点的失效时间: 手动选择的到期时间, 或当前时间段的结束时间.
 DateTime mealPeriodEnd(PlaceChoice choice, DateTime now) {
   final until = choice.manualUntil;
   return until != null && now.isBefore(until)

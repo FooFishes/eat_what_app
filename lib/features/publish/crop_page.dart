@@ -16,17 +16,19 @@ import 'package:eat/features/system/guard.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 「调整照片」点了「完成」的结果。[picked] 是用户点过的颜色，没点过为 null。
+/// "调整照片" 点击 "完成" 的结果. [picked] 是用户手动选择的颜色, 未选择时为 null.
 class const CropResult({
   required final CoverCrop crop,
   required final StageSuggestion suggestion,
   final StageColor? picked,
 });
 
-/// 调整照片（`G-Crop`）：拖动、双指缩放把主菜放进圈里，缩放滑条是不能用手势时的替代；
-/// 下面是从圈里取色推荐的三个舞台色和首页预览（产品 6.9）。
+/// "调整照片" 页面.
 ///
-/// 依赖内存里的照片，不进路由表，由加菜页 `Navigator.push`（技术架构 5.1）。
+/// - 上方: 通过拖动和双指缩放把主菜放进取景圈. 缩放滑条是双指缩放的替代操作.
+/// - 下方: 从取景圈内取色推荐的三个舞台色, 以及首页效果预览.
+///
+/// 页面依赖内存中的照片, 无法用地址恢复, 因此不进路由表, 由加菜页通过 `Navigator.push` 打开.
 class CropPage extends StatefulWidget {
   const new({
     super.key,
@@ -42,15 +44,15 @@ class CropPage extends StatefulWidget {
 
   final ImageProvider image;
 
-  /// 照片的像素尺寸。
+  /// 照片的像素宽度. [height] 为像素高度.
   final int width;
   final int height;
 
-  /// 取色用的小图，拖动时直接用它重算。
+  /// 取色用的缩小图. 裁切变化时用它重算推荐色, 不重新解码原图.
   final Future<StageSample> sample;
   final CoverCrop crop;
 
-  /// 照片太灰时排第一的分类默认色。
+  /// 分类默认色. 照片太灰导致取色不可靠时排在推荐色第一位.
   final StageColor fallback;
   final String dishName;
   final StageColor? picked;
@@ -90,7 +92,7 @@ class _CropPageState extends State<CropPage> {
   Timer? _debounce;
   CoverCrop? _gestureStart;
 
-  /// 圈最小占短边的四分之一，也就是最多放大 4 倍。
+  /// 取景圈直径占照片短边比例的下限, 决定最大放大倍数.
   static const _minDiameter = 0.25;
 
   @override
@@ -129,14 +131,16 @@ class _CropPageState extends State<CropPage> {
     });
   }
 
-  /// 裁切变了：马上挪图，停下 100ms 再重算颜色（技术架构 13.5）。
+  /// 更新裁切. 照片位置立即更新, 推荐色在裁切停止变化后经过防抖再重算.
+  ///
+  /// 取色在主线程执行, 防抖避免拖动的每一帧都重算.
   void _setCrop(CoverCrop crop) {
     setState(() => _crop = _clamp(crop));
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), _resuggest);
   }
 
-  /// 圈不超出照片：直径在 [_minDiameter, 1]，圆心离各边至少半个直径。
+  /// 把裁切限制在照片范围内: 直径限制在 [_minDiameter] 到 1, 取景圈不超出照片边缘.
   CoverCrop _clamp(CoverCrop crop) {
     final diameter = crop.diameter.clamp(_minDiameter, 1.0);
     final short = math.min(widget.width, widget.height).toDouble();
@@ -173,7 +177,7 @@ class _CropPageState extends State<CropPage> {
     final media = MediaQuery.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      // 缩放滑条是 Material 组件，要有 Material 祖先。
+      // 缩放滑条是 Material 组件, 需要 Material 祖先.
       child: Material(
         color: c.cropGround,
         child: DefaultTextStyle.merge(
@@ -325,7 +329,7 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// 照片铺在取景圈下面，圈外盖一层 `crop-scrim`。手势同时处理拖动和双指缩放。
+/// 取景区域. 照片位于取景圈下方, 圈外覆盖 `crop-scrim`. 手势同时处理拖动和双指缩放.
 class _Viewport extends StatelessWidget {
   const new({
     required this.image,
@@ -342,12 +346,15 @@ class _Viewport extends StatelessWidget {
   final int height;
   final CoverCrop crop;
 
-  /// 取景圈在屏幕上的直径。
+  /// 取景圈在屏幕上的直径.
   final double circle;
   final VoidCallback onStart;
 
-  /// [scale] 是这次手势开始以来的缩放，[delta] 是这一帧手指挪了多少，[pxPerImage] 是照片一个像素
-  /// 在屏幕上多宽。
+  /// 手势更新回调.
+  ///
+  /// - [scale]: 本次手势开始以来的累计缩放.
+  /// - [delta]: 本帧手指的位移.
+  /// - [pxPerImage]: 照片一个像素在屏幕上的宽度.
   final void Function(double scale, Offset delta, double pxPerImage) onUpdate;
 
   @override
@@ -442,7 +449,7 @@ class _ScrimPainter extends CustomPainter {
       old.ring != ring;
 }
 
-/// 缩放滑条：不能用双指缩放时的替代（规范「无障碍」）。
+/// 缩放滑条. 无障碍要求每个手势操作都有非手势的替代, 它是双指缩放的替代.
 class _ZoomSlider extends StatelessWidget {
   const new({required this.zoom, required this.max, required this.onChanged});
 
@@ -481,7 +488,8 @@ class _ZoomSlider extends StatelessWidget {
   }
 }
 
-/// 「自动去掉背景」：接口只存开关，后端还没生成去背景的图，先画出来带「待接入」（技术架构 13.8）。
+// TODO: 接口只保存 "自动去掉背景" 开关, 后端不生成去背景的图片. 后端支持后接入开关并去掉 "待接入".
+/// "自动去掉背景" 开关.
 class _RemoveBackground extends StatelessWidget {
   const new();
 

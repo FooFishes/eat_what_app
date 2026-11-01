@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-/// 页面数据 Provider 共用的两件事：离开页面后再缓存一会儿，以及释放时取消请求（技术架构 10.5）。
+/// 页面数据 Provider 的公共行为: 离开页面后保留缓存一段时间, 释放时取消请求.
 extension RefCache on Ref {
-  /// 没人看以后再保留 [duration]，这段时间里回来不重新请求。
+  /// 最后一个监听者离开后保留 [duration]. 期间重新监听不会发起请求.
   void cacheFor(Duration duration) {
     final link = keepAlive();
     Timer? timer;
@@ -14,7 +14,7 @@ extension RefCache on Ref {
     onDispose(() => timer?.cancel());
   }
 
-  /// Provider 释放时取消请求。
+  /// 返回一个在 Provider 释放时取消的 [CancelToken].
   CancelToken cancelToken() {
     final token = CancelToken();
     onDispose(token.cancel);

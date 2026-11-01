@@ -1,9 +1,8 @@
 import 'package:eat/domain/models/dish.dart';
 
-/// 饭点的时间段（产品 4.5）：早饭 05:00–10:30、午饭 10:30–14:30、晚饭 14:30–20:30、
-/// 夜宵 20:30–次日 05:00。
+/// 按时刻划分饭点. 每个饭点从 [_starts] 中的时刻开始, 到下一个饭点开始时结束.
 abstract final class MealRules {
-  /// 每个饭点从一天里的第几分钟开始。
+  /// 各饭点的起始时刻, 以一天中的分钟数表示.
   static const _starts = {
     MealTime.breakfast: 5 * 60,
     MealTime.lunch: 10 * 60 + 30,
@@ -20,7 +19,9 @@ abstract final class MealRules {
     return MealTime.night;
   }
 
-  /// [time] 所在时间段在什么时候结束。手动选的饭点保持到这个时候，之后回到按时间（产品 4.5）。
+  /// [time] 所在饭点时间段的结束时刻.
+  ///
+  /// 手动选择的饭点保持到该时刻, 之后恢复为按当前时间判断.
   static DateTime periodEnd(DateTime time) {
     final day = DateTime(time.year, time.month, time.day);
     DateTime atMinute(int minute, {int addDays = 0}) =>

@@ -11,9 +11,9 @@ import 'package:go_router/go_router.dart';
 import 'fakes.dart';
 import 'screen.dart';
 
-/// 在 [env] 的假环境里启动整个 App，停在 [location]。
+/// 在 [env] 的模拟环境中启动完整 App, 并导航到 [location].
 ///
-/// 关掉动画：登录页的转盘一直在转，开着动画 `pumpAndSettle` 永远等不到停。
+/// 启动前关闭动画. 登录页的转盘持续旋转, 开启动画时 `pumpAndSettle` 无法结束.
 Future<(ProviderContainer, GoRouter)> pumpApp(
   WidgetTester tester,
   TestEnv env, {
@@ -41,12 +41,14 @@ Future<(ProviderContainer, GoRouter)> pumpApp(
   return (container, router);
 }
 
-/// 地址栏里的地址。
+/// 当前路由地址, 对应 Web 地址栏中的内容.
 String locationOf(GoRouter router) =>
     router.routerDelegate.currentConfiguration.uri.toString();
 
-/// 测试结束前收起 App 并释放 Provider：详情页的 Provider 没人看以后还要留 5 分钟
-/// （`cacheFor` 的定时器），不在测试里先释放，测试框架会报定时器没走完。
+/// 卸载 App 并释放 Provider.
+///
+/// 详情页的 Provider 在失去监听者后仍由 `cacheFor` 的定时器保留一段时间.
+/// 测试结束前不释放, 测试框架会报告未完成的定时器.
 Future<void> unmountApp(
   WidgetTester tester,
   ProviderContainer container,

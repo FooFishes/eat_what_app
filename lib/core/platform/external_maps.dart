@@ -4,13 +4,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 part 'external_maps.g.dart';
 
-/// 「导航去店里」能用的一个地图 App。
+/// "导航去店里" 可用的地图 App.
 class const MapApp(final String name, final Uri uri);
 
-/// 打开手机上的地图 App 走路去店里（技术架构 14.5）。坐标都是 GCJ-02。
+/// 打开地图 App 规划到店的步行路线. 坐标均为 GCJ-02.
 ///
-/// 装了几个列几个；一个都没有、或者在 Web 上，就用高德网页版。检测是否安装要在 iOS 的
-/// `Info.plist`（`LSApplicationQueriesSchemes`）和安卓的 `<queries>` 里声明这些 scheme。
+/// 列出所有已安装的地图 App. 均未安装或运行在 Web 上时, 使用高德地图网页版.
+/// 检测安装状态需要声明这些 scheme: iOS 在 `Info.plist` 的 `LSApplicationQueriesSchemes` 中,
+/// Android 在 `AndroidManifest.xml` 的 `<queries>` 中.
 abstract interface class ExternalMaps {
   Future<List<MapApp>> available({
     required double lat,
@@ -91,7 +92,7 @@ class UrlLauncherExternalMaps implements ExternalMaps {
     ];
     final installed = <MapApp>[];
     for (final app in candidates) {
-      // Apple 地图是系统自带的，总是列出。
+      // Apple 地图为系统内置, 不检测, 始终列出.
       if (app.uri.scheme == 'maps' || await _canOpen(app.uri)) {
         installed.add(app);
       }

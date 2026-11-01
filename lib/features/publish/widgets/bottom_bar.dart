@@ -3,15 +3,15 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// 发布流程页面底部固定的一条：主按钮和它上面的说明。
+/// 发布流程页面底部的固定操作栏: 主按钮和按钮上方的说明.
 ///
-/// 键盘弹起时收起来，让输入框和键盘之间不被它隔开；收起键盘再点。
+/// 键盘弹起时隐藏, 避免操作栏夹在输入框和键盘之间. 用户收起键盘后才能点击主按钮.
 class PublishBottomBar extends StatelessWidget {
   const new({super.key, required this.child, this.note});
 
   final Widget child;
 
-  /// 按钮上方的一行，如「请填写价格和分类」，用 `warn`。
+  /// 按钮上方的说明, 以 `warn` 色显示, 如 "请填写价格和分类".
   final String? note;
 
   @override

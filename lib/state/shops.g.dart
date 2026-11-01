@@ -8,17 +8,23 @@ part of 'shops.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+///
+/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
 
 @ProviderFor(shop)
 final shopProvider = ShopFamily._();
 
-/// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+///
+/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
 
 final class ShopProvider
     extends $FunctionalProvider<AsyncValue<Shop>, Shop, FutureOr<Shop>>
     with $FutureModifier<Shop>, $FutureProvider<Shop> {
-  /// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+  /// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+  ///
+  /// 离开页面后继续缓存一段时间, 期间返回不重新请求.
   ShopProvider._({required ShopFamily super.from, required int super.argument})
     : super(
         retry: null,
@@ -62,7 +68,9 @@ final class ShopProvider
 
 String _$shopHash() => r'c6f2d60e45fd6a8ea6248a8c91f59cf6fd9ee6ba';
 
-/// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+///
+/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
 
 final class ShopFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Shop>, int> {
@@ -75,7 +83,9 @@ final class ShopFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的资料。菜品详情的店卡、餐厅详情都用它，看不见以后再留 5 分钟（技术架构 10.5）。
+  /// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+  ///
+  /// 离开页面后继续缓存一段时间, 期间返回不重新请求.
 
   ShopProvider call(int shopId) => ShopProvider._(argument: shopId, from: this);
 
@@ -83,17 +93,17 @@ final class ShopFamily extends $Family
   String toString() => r'shopProvider';
 }
 
-/// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
 
 @ProviderFor(hubName)
 final hubNameProvider = HubNameFamily._();
 
-/// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
 
 final class HubNameProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
-  /// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+  /// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
   HubNameProvider._({
     required HubNameFamily super.from,
     required int? super.argument,
@@ -147,7 +157,7 @@ final class HubNameProvider
 
 String _$hubNameHash() => r'24cae425bbe142010ccb4c13702d1d992cb4a913';
 
-/// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
 
 final class HubNameFamily extends $Family
     with $FunctionalFamilyOverride<String?, int?> {
@@ -160,7 +170,7 @@ final class HubNameFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 商圈 id 对应的名字；商圈列表还没拉到或者对不上时为 null。
+  /// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
 
   HubNameProvider call(int? hubId) =>
       HubNameProvider._(argument: hubId, from: this);
@@ -169,17 +179,17 @@ final class HubNameFamily extends $Family
   String toString() => r'hubNameProvider';
 }
 
-/// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
 
 @ProviderFor(distanceTo)
 final distanceToProvider = DistanceToFamily._();
 
-/// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
 
 final class DistanceToProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
-  /// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+  /// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
   DistanceToProvider._({
     required DistanceToFamily super.from,
     required GcjPoint? super.argument,
@@ -233,7 +243,7 @@ final class DistanceToProvider
 
 String _$distanceToHash() => r'593b3c7f5beff5a8d864be72c46364ee605225ed';
 
-/// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
 
 final class DistanceToFamily extends $Family
     with $FunctionalFamilyOverride<String?, GcjPoint?> {
@@ -246,7 +256,7 @@ final class DistanceToFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 从我这里到 [point] 的距离写法；没有定位、或者人离校区太远时为 null（产品 6.4）。
+  /// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
 
   DistanceToProvider call(GcjPoint? point) =>
       DistanceToProvider._(argument: point, from: this);

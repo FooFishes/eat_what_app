@@ -8,7 +8,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'verify_providers.g.dart';
 
-/// 认证页的状态：认证链接发到了哪、多久后能重发，统一认证是不是跳出去过，以及最近一次提示。
+/// 认证页的状态.
+///
+/// - [emailSentTo]: 认证邮件的收件地址.
+/// - [resendAt]: 允许重发的时间.
+/// - [ssoStarted]: 是否已跳转过统一认证页.
+/// - [notice]: 最近一次提示.
 class const VerifyState({
   final String? emailSentTo,
   final DateTime? resendAt,
@@ -17,7 +22,7 @@ class const VerifyState({
   final String? notice,
 });
 
-/// 邮件 60 秒后可以重发，和验证码一样。
+/// 认证邮件的重发间隔, 与短信验证码一致.
 const emailResendInterval = Duration(seconds: 60);
 
 @riverpod
@@ -25,7 +30,7 @@ class Verify extends _$Verify {
   @override
   VerifyState build() => const VerifyState();
 
-  /// 跳到学校的统一认证页。地址一次有效，每次点都重新拿。
+  /// 跳转到学校的统一认证页. 认证地址只能使用一次, 因此每次点击都重新获取.
   Future<void> startSso() async {
     if (state.busy) return;
     state = _copy(busy: true, notice: null);
@@ -44,7 +49,7 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 先过人机验证再发认证邮件。
+  /// 通过人机验证后发送认证邮件.
   Future<void> sendEmail(CaptchaPresenter present, String email) async {
     if (state.busy) return;
     state = _copy(busy: true, notice: null);
@@ -67,12 +72,13 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 换个邮箱：回到填邮箱的样子。
+  /// 更换邮箱: 清除已发送状态, 回到邮箱输入.
   void editEmail() => state = VerifyState(ssoStarted: state.ssoStarted);
 
-  /// 回到页面或点「我已完成，刷新状态」时重新拉认证状态。跳出去认证过、回来还没认证时，提示重新认证。
+  // TODO: 统一认证失败时后端不重定向回客户端, 客户端无法区分链接失效和学号已认证其他账号, 只能统一提示重新认证. 后端失败时也重定向并带上错误码后, 按错误码分别提示.
+  /// 重新请求认证状态. 在回到页面或点击 "我已完成, 刷新状态" 时调用.
   ///
-  /// 统一认证失败时后端现在不跳回来，分不出是链接失效还是学号认证过别的账号（现状差距 2.1）。
+  /// 跳转过统一认证或用户主动刷新, 而账号仍未认证时, 提示重新认证.
   Future<void> refresh({bool userAsked = false}) async {
     await ref.read(sessionProvider.notifier).refreshUser();
     if (!ref.mounted) return;

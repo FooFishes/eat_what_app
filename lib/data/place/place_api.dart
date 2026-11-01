@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_api.g.dart';
 
-/// 地点相关的三个接口分组：Campus（校区）、Hub（商圈）、Restaurant（餐厅的浏览、搜索和新建）。
+/// 地点相关的三个接口分组: Campus (校区), Hub (商圈), Restaurant (餐厅的浏览, 搜索和新建).
 class PlaceApi {
   PlaceApi(this._client);
 
@@ -41,7 +41,7 @@ class PlaceApi {
     HubDto.fromJson,
   );
 
-  /// 这个点在哪个商圈里；不在任何商圈里时 `data` 是 null。
+  /// 查询坐标所在的商圈. 不在任何商圈内时返回 null.
   Future<HubDto?> locateHub(double gcjLat, double gcjLng) async {
     final data = await _client.get(
       '/hub/locate',
@@ -50,7 +50,7 @@ class PlaceApi {
     return data == null ? null : decodeJson(data, HubDto.fromJson);
   }
 
-  /// 新建一家店，返回店的 id。
+  /// 新建店铺, 返回店铺 id.
   Future<int> createRestaurant(CreateRestaurantDto body) async =>
       decodeCreatedId(
         await _client.post('/restaurant/add', body: body.toJson()),
@@ -62,7 +62,7 @@ class PlaceApi {
         RestaurantDto.fromJson,
       );
 
-  /// 按店名、商圈、位置找店。给了位置时按离它的远近排，[radius] 单位米。
+  /// 按店名, 商圈或位置搜索店铺. 传入位置时按与该位置的距离排序, [radius] 单位为米.
   Future<Paged<RestaurantDto>> searchRestaurants({
     String? keyword,
     int? hubId,

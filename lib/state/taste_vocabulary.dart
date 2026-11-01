@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'taste_vocabulary.g.dart';
 
-/// 口味词表，运营维护，整个 App 用一份。加标签面板和发布时选标签都用它。
+/// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
 @Riverpod(keepAlive: true)
 Future<List<TasteTag>> tasteVocabulary(Ref ref) => ref
     .watch(foodRepositoryProvider)

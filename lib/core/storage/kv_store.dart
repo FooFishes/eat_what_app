@@ -3,10 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 part 'kv_store.g.dart';
 
-/// 丢了也无所谓的键值：偏好、同意记录、接口缓存。值都是字符串，结构化的内容存 JSON。
+/// 允许丢失的键值数据: 偏好, 同意记录, 接口缓存. 值均为字符串, 结构化内容存为 JSON.
 ///
-/// 键按用途加前缀分组（`prefs.*`、`cache.*`），退出登录时按前缀清掉账号作用域的数据。
-/// 必须可靠的数据（登录 token）放 `SecureStore`。
+/// 键按用途加前缀分组 (`prefs.*`, `cache.*`), 退出登录时按前缀清除账号作用域的数据.
+/// 必须可靠保存的数据 (如登录 token) 使用 `SecureStore`.
 abstract interface class KvStore {
   Future<String?> read(String key);
 
@@ -14,11 +14,11 @@ abstract interface class KvStore {
 
   Future<void> delete(String key);
 
-  /// 删掉键以 [prefix] 开头的全部数据。
+  /// 删除键以 [prefix] 开头的全部数据.
   Future<void> deletePrefix(String prefix);
 }
 
-/// 存在 `shared_preferences` 里：安卓 DataStore、iOS NSUserDefaults、Web localStorage。
+/// 基于 `shared_preferences` 的实现. Android 为 DataStore, iOS 为 NSUserDefaults, Web 为 localStorage.
 class PrefsKvStore implements KvStore {
   PrefsKvStore([SharedPreferencesAsync? prefs])
     : _prefs = prefs ?? SharedPreferencesAsync();
@@ -42,6 +42,6 @@ class PrefsKvStore implements KvStore {
   }
 }
 
-/// 应用里唯一的 [KvStore]，测试里换成内存实现。
+/// 应用唯一的 [KvStore]. 测试中替换为内存实现.
 @Riverpod(keepAlive: true)
 KvStore kvStore(Ref ref) => PrefsKvStore();

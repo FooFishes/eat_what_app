@@ -8,17 +8,17 @@ part of 'secure_store.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 应用里唯一的 [SecureStore]，测试里换成内存实现。
+/// 应用唯一的 [SecureStore]. 测试中替换为内存实现.
 
 @ProviderFor(secureStore)
 final secureStoreProvider = SecureStoreProvider._();
 
-/// 应用里唯一的 [SecureStore]，测试里换成内存实现。
+/// 应用唯一的 [SecureStore]. 测试中替换为内存实现.
 
 final class SecureStoreProvider
     extends $FunctionalProvider<SecureStore, SecureStore, SecureStore>
     with $Provider<SecureStore> {
-  /// 应用里唯一的 [SecureStore]，测试里换成内存实现。
+  /// 应用唯一的 [SecureStore]. 测试中替换为内存实现.
   SecureStoreProvider._()
     : super(
         from: null,

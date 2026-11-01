@@ -32,10 +32,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 「我的」（`G-Me`）：舞台上是我获赞最多的那道菜，头像、昵称、签名和四个统计；
-/// 抽屉里是上传、收藏、评论三栏。右上角是设置。
+// TODO: 评论和收藏的店没有接口, 对应分栏带 "待接入". 接口上线后接入并去掉标记.
+// TODO: 编辑资料, 我的标签, 足迹, 粉丝和关注列表未实现, 页面上没有入口. 实现对应页面后在 "我的" 加上入口.
+/// "我的" 页面.
 ///
-/// 评论、收藏的店还没有接口，带「待接入」；编辑资料、我的标签、足迹、粉丝和关注列表在阶段六做。
+/// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和四项统计.
+/// - 抽屉: 上传, 收藏, 评论三个分栏.
+/// - 右上角: 设置入口.
 class MePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -46,7 +49,7 @@ class MePage extends ConsumerStatefulWidget {
 class _MePageState extends ConsumerState<MePage> {
   int _tab = 0;
 
-  /// 收藏栏顶部的「菜」「店」。
+  /// 收藏分栏是否显示店. 为 false 时显示菜. 由分栏顶部的 "菜" 和 "店" 切换.
   bool _favoriteShops = false;
 
   @override
@@ -141,7 +144,10 @@ class _MePageState extends ConsumerState<MePage> {
   }
 }
 
-/// 舞台：右边获赞最多的那道菜（还没发过菜时是插画空盘），左下头像、昵称、用户名、签名和统计。
+/// "我的" 舞台内容.
+///
+/// - 右侧: 获赞最多的菜. 没有上传过菜时显示插画.
+/// - 左下: 头像, 昵称, 用户名, 签名和统计.
 class _StageContent extends ConsumerWidget {
   const new({required this.user, required this.top, required this.loading});
 
@@ -273,7 +279,7 @@ class _StageContent extends ConsumerWidget {
   }
 }
 
-/// 未认证时「认证后可以发布和互动」和「去认证」；封禁中写封禁的原因（产品 6.10）。
+/// 账号状态提示. 未认证时提示认证并提供 "去认证", 封禁中时显示封禁原因.
 class _StatusNotice extends ConsumerWidget {
   const new();
 
@@ -325,7 +331,7 @@ class _StatusNotice extends ConsumerWidget {
   }
 }
 
-/// 上传、收藏的菜：两列方块，菜名右边是赞数，滑到底接着加载。
+/// 上传或收藏的菜. 两列方块, 菜名右侧显示赞数, 滚动到底部时加载下一页.
 class _DishGrid extends ConsumerWidget {
   const new({required this.favorites});
 
@@ -413,7 +419,7 @@ class _DishGrid extends ConsumerWidget {
   }
 }
 
-/// 还没有接口的分栏：照样画出来，标题旁边放「待接入」。
+/// 没有接口的分栏. 正常绘制, 标题旁显示 "待接入".
 class _Pending extends StatelessWidget {
   const new({required this.title, required this.feature});
 

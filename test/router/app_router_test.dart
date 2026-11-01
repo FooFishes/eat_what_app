@@ -41,7 +41,7 @@ String _location(GoRouter router) =>
 
 Finder _visible(Type type) => find.byType(type).hitTestable();
 
-/// 页面本身的纵向滚动，不算分类栏这类横向滚动。
+/// 页面主体的纵向滚动视图, 不含分类栏等横向滚动视图.
 final _verticalScrollable = find.byWidgetPredicate(
   (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
 );

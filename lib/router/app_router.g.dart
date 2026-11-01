@@ -8,29 +8,29 @@ part of 'app_router.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 路由表。
+/// 路由表.
 ///
-/// 三个主页面是 `StatefulShellRoute` 的三个分支，切换时各自的页面状态留着，导航悬浮在上面；
-/// 其余页面都放在根导航器上，盖住导航（详情和流程页不显示导航）。没登录能进的页面在 `metadata`
-/// 上标 [publicRoute]，其余页面由守卫送去登录（[resolveRedirect]）。
+/// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
+/// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
+/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
 
 @ProviderFor(appRouter)
 final appRouterProvider = AppRouterProvider._();
 
-/// 路由表。
+/// 路由表.
 ///
-/// 三个主页面是 `StatefulShellRoute` 的三个分支，切换时各自的页面状态留着，导航悬浮在上面；
-/// 其余页面都放在根导航器上，盖住导航（详情和流程页不显示导航）。没登录能进的页面在 `metadata`
-/// 上标 [publicRoute]，其余页面由守卫送去登录（[resolveRedirect]）。
+/// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
+/// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
+/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
 
 final class AppRouterProvider
     extends $FunctionalProvider<GoRouter, GoRouter, GoRouter>
     with $Provider<GoRouter> {
-  /// 路由表。
+  /// 路由表.
   ///
-  /// 三个主页面是 `StatefulShellRoute` 的三个分支，切换时各自的页面状态留着，导航悬浮在上面；
-  /// 其余页面都放在根导航器上，盖住导航（详情和流程页不显示导航）。没登录能进的页面在 `metadata`
-  /// 上标 [publicRoute]，其余页面由守卫送去登录（[resolveRedirect]）。
+  /// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
+  /// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
+  /// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
   AppRouterProvider._()
     : super(
         from: null,

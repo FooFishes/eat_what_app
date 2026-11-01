@@ -4,9 +4,9 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// 只有图标的按钮：返回、关闭、分享、收藏。点击区域 44×44，没有底色。
+/// 只有图标的按钮, 如返回, 关闭, 分享和收藏. 点击区域为 44×44, 无底色.
 ///
-/// [label] 必须写清动作（「返回」「关闭」「分享」），读屏只读这一句。
+/// [label] 必须写明动作, 如 "返回" "关闭" "分享". 读屏只朗读 [label].
 class EatIconButton extends StatelessWidget {
   const new(
     this.icon, {
@@ -21,10 +21,10 @@ class EatIconButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
 
-  /// 顶栏 22–24，列表行 20–22。
+  /// 图标边长. 顶栏用 22–24, 列表行用 20–22.
   final double size;
 
-  /// 不传时跟着所在的文字。
+  /// 图标颜色. 不传时继承所在文字的颜色.
   final Color? color;
 
   @override

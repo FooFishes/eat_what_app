@@ -5,9 +5,11 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 胶囊搜索框，没有描边：白底页面上 `mist` 底，浮在地图上时 [floating] 用 `paper` 底加 `shadow-float`。
+/// 无描边的胶囊搜索框.
 ///
-/// [hintText] 说清楚能搜什么（「搜店名」「搜店名或菜名」），读屏也读这一句。
+/// 白底页面上为 `mist` 底. [floating] 为 true 时浮于地图之上, 使用 `paper` 底加 `shadow-float`.
+///
+/// [hintText] 写明可搜索的内容, 如 "搜店名" "搜店名或菜名". 读屏同样朗读这段文字.
 class EatSearchField extends StatelessWidget {
   const new({
     super.key,
@@ -29,7 +31,7 @@ class EatSearchField extends StatelessWidget {
   final bool autofocus;
   final bool floating;
 
-  /// 传了就在胶囊右端放一个 42px 的圆形筛选按钮。
+  /// 筛选按钮的回调. 不为 null 时在胶囊右端显示圆形筛选按钮.
   final VoidCallback? onFilter;
 
   @override

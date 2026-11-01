@@ -8,12 +8,12 @@ part of 'nearby_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+/// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
 
 @ProviderFor(nearbyShops)
 final nearbyShopsProvider = NearbyShopsFamily._();
 
-/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+/// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
 
 final class NearbyShopsProvider
     extends
@@ -23,7 +23,7 @@ final class NearbyShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+  /// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
   NearbyShopsProvider._({
     required NearbyShopsFamily super.from,
     required NearbyQuery super.argument,
@@ -69,7 +69,7 @@ final class NearbyShopsProvider
 
 String _$nearbyShopsHash() => r'a54b51effbb9636b2d09cd7ab28ecde5ff7ce242';
 
-/// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+/// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
 
 final class NearbyShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, NearbyQuery> {
@@ -82,7 +82,7 @@ final class NearbyShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 附近的店，按离我的远近排（没有定位时按离地图中心）。已关门的店接口还不区分（现状差距 2.1）。
+  /// 附近的店, 按与我的距离升序排列. 没有定位时按与地图中心的距离排列.
 
   NearbyShopsProvider call(NearbyQuery query) =>
       NearbyShopsProvider._(argument: query, from: this);
@@ -91,17 +91,23 @@ final class NearbyShopsFamily extends $Family
   String toString() => r'nearbyShopsProvider';
 }
 
-/// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+/// 我当前所在的商圈, 附近页默认选中该商圈.
+///
+/// 没有定位或不在任何商圈内时为 null.
 
 @ProviderFor(myHub)
 final myHubProvider = MyHubProvider._();
 
-/// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+/// 我当前所在的商圈, 附近页默认选中该商圈.
+///
+/// 没有定位或不在任何商圈内时为 null.
 
 final class MyHubProvider
     extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
     with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
-  /// 我现在在哪个商圈里，附近页默认选中它；不在任何商圈里、或者没有定位时为 null（产品 6.7）。
+  /// 我当前所在的商圈, 附近页默认选中该商圈.
+  ///
+  /// 没有定位或不在任何商圈内时为 null.
   MyHubProvider._()
     : super(
         from: null,

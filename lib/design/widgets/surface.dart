@@ -2,10 +2,10 @@ import 'package:eat/design/widgets/painting.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// 组件的底：上下两色的竖向渐变（两色相同就是纯色）、外阴影、内阴影和可选的虚线描边。
+/// 组件的底: 上下两色的纵向渐变 (两色相同即纯色), 外阴影, 内阴影和可选的虚线描边.
 ///
-/// 实线描边也写成内阴影（`spreadRadius` 是线宽），这样描边颜色能和底色、阴影一起插值，
-/// 按下、选中时整块平滑过渡。
+/// 实线描边也用内阴影表示, `spreadRadius` 即线宽.
+/// 这样描边颜色能与底色和阴影一起插值, 按下和选中时整体平滑过渡.
 @immutable
 class const SurfaceStyle({
   required final Color top,
@@ -18,7 +18,7 @@ class const SurfaceStyle({
   const SurfaceStyle.flat(Color color, {List<BoxShadow> inset = const []})
     : this(top: color, bottom: color, inset: inset);
 
-  /// 只有虚线描边，没有底色和厚度。
+  /// 只有虚线描边, 没有底色和厚度.
   const SurfaceStyle.dashed(Color color, {double width = 1.5})
     : this(
         top: const Color(0x00000000),
@@ -58,7 +58,7 @@ class const SurfaceStyle({
   );
 }
 
-/// 按 [shape] 的轮廓画 [style]；[duration] 不为零时，样式变化平滑过渡。
+/// 按 [shape] 的轮廓绘制 [style]. [duration] 不为零时, 样式变化平滑过渡.
 class Surface extends StatelessWidget {
   const new({
     super.key,

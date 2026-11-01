@@ -6,7 +6,9 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 登录表单下面的一句出错说明：`warn` 加警示图标，说清楚哪里不对、下一步怎么做。
+/// 登录表单下方的错误说明, `warn` 色文字配警示图标.
+///
+/// 文字须说明错误原因和下一步操作.
 class FormMessage extends StatelessWidget {
   const new(this.text, {super.key});
 
@@ -37,7 +39,7 @@ class FormMessage extends StatelessWidget {
   }
 }
 
-/// 表单下方居中的文字链接（「用密码登录」「用验证码登录」），点击区域 44px 高。
+/// 表单下方居中的文字链接, 如 "用密码登录" 和 "用验证码登录". 点击区域高 44px.
 class FormLink extends StatelessWidget {
   const new(this.label, {super.key, required this.onTap});
 
@@ -74,10 +76,10 @@ class FormLink extends StatelessWidget {
   }
 }
 
-/// 手机号输入：只留数字，最多 11 位。
+/// 手机号输入格式化: 只保留数字, 最多 11 位.
 ///
-/// 从通讯录、短信里复制来的号码常带「+86」、空格和横线，粘贴时去掉区号再截，
-/// 不然「+86 138 1234 5678」会被截成「86138123456」。
+/// 从通讯录和短信复制的号码常带 +86 前缀, 空格和横线. 粘贴时先去掉区号再截断,
+/// 否则 "+86 138 1234 5678" 会被截成 "86138123456".
 class MobileInputFormatter extends TextInputFormatter {
   const new();
 

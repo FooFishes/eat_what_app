@@ -2,9 +2,10 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:flutter/widgets.dart';
 
-/// 主页面外壳告诉页面：悬浮导航占了底部多高，滚动内容最后要留出这段，最后一项才不会被盖住。
+/// 悬浮导航在页面底部占用的高度, 由主页面外壳提供.
 ///
-/// 不在主页面里（详情页、流程页）时是 0。
+/// 滚动内容末尾须留出这段高度, 否则最后一项会被导航遮挡.
+/// 不在主页面中 (详情页, 流程页) 时为 0.
 class NavBarInset extends InheritedWidget {
   const new({super.key, required this.bottom, required super.child});
 
@@ -17,13 +18,15 @@ class NavBarInset extends InheritedWidget {
   bool updateShouldNotify(NavBarInset oldWidget) => bottom != oldWidget.bottom;
 }
 
-/// 在当前所在的标签上再点一次时发出的信号，主页面收到后滚回顶部。
+/// 再次点击当前标签时发出的信号. 主页面收到后滚动到顶部.
 class TabReselect extends InheritedWidget {
   const new({super.key, required this.signal, required super.child});
 
   final Listenable signal;
 
-  /// 不在主页面里时返回 null。只取信号、不建立依赖，信号触发时页面不重建。
+  /// 不在主页面中时返回 null.
+  ///
+  /// 只读取信号, 不建立依赖, 信号触发时页面不会重建.
   static Listenable? maybeOf(BuildContext context) =>
       context.getInheritedWidgetOfExactType<TabReselect>()?.signal;
 
@@ -31,14 +34,16 @@ class TabReselect extends InheritedWidget {
   bool updateShouldNotify(TabReselect oldWidget) => signal != oldWidget.signal;
 }
 
-/// 返回的兜底：有上一页就回上一页，没有时（从分享链接直接打开、Web 上刷新了页面）调用 [fallback]，
-/// 一般是回到发现页。由 App 根部提供，组件不用知道兜底去哪。
+/// 返回的后备行为. 有上一页时返回上一页, 否则调用 [fallback], 通常为前往发现页.
+///
+/// 从分享链接直接打开或在 Web 上刷新页面时, 没有上一页.
+/// 由 App 根部提供, 组件无需知道后备目标.
 class BackFallback extends InheritedWidget {
   const new({super.key, required this.fallback, required super.child});
 
   final VoidCallback fallback;
 
-  /// 返回上一页，没有上一页时走兜底。
+  /// 返回上一页. 没有上一页时执行后备行为.
   static void back(BuildContext context) {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
@@ -52,11 +57,13 @@ class BackFallback extends InheritedWidget {
   bool updateShouldNotify(BackFallback oldWidget) => false;
 }
 
-/// 页面左上角 44×44 的返回，按 [BackFallback] 的规则回去。
+/// 页面左上角的返回按钮, 按 [BackFallback] 的规则返回.
 class EatBackButton extends StatelessWidget {
   const new({super.key, this.onPressed});
 
-  /// 不传时返回上一页或走兜底；发布流程这类要先确认的页面自己处理。
+  /// 点击回调. 不传时按 [BackFallback.back] 返回.
+  ///
+  /// 发布流程等需要先确认的页面自行处理返回.
   final VoidCallback? onPressed;
 
   @override
@@ -68,7 +75,7 @@ class EatBackButton extends StatelessWidget {
   );
 }
 
-/// 页面骨架共用：持有页面的滚动控制器，收到 [TabReselect] 的信号时滚回顶部。
+/// 页面骨架共用的混入: 持有页面的滚动控制器, 收到 [TabReselect] 信号时滚动到顶部.
 mixin ScrollToTopOnReselect<T extends StatefulWidget> on State<T> {
   final scrollController = ScrollController();
   Listenable? _signal;

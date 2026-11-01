@@ -2,10 +2,11 @@ import 'dart:math' as math;
 
 import 'package:eat/domain/models/geo.dart';
 
-/// 坐标转换、距离和距离的写法（技术架构 14.1）。
+/// 坐标转换, 距离计算和距离文字.
 ///
-/// WGS-84 → GCJ-02 是公开的偏移算法；GCJ-02 → WGS-84 没有解析解，用迭代反算，误差在米级。
-/// 境外不加偏移，原样返回。
+/// - WGS-84 转 GCJ-02 使用公开的偏移算法.
+/// - GCJ-02 转 WGS-84 没有解析解, 使用迭代反算, 误差在米级.
+/// - 境外坐标不做偏移, 原样返回.
 abstract final class GeoRules {
   static const _a = 6378245.0;
   static const _ee = 0.00669342162296594323;
@@ -29,7 +30,7 @@ abstract final class GeoRules {
     return WgsPoint(lat, lng);
   }
 
-  /// 两点之间的球面距离，单位米。
+  /// 两点之间的球面距离, 单位为米.
   static double distance(GcjPoint a, GcjPoint b) {
     final dLat = _rad(b.lat - a.lat);
     final dLng = _rad(b.lng - a.lng);
@@ -41,7 +42,9 @@ abstract final class GeoRules {
     return 2 * _earthRadius * math.asin(math.min(1, math.sqrt(h)));
   }
 
-  /// 「320 m」「1.2 km」：1 km 以内按 10 米取整，以上保留一位小数，10 km 以上取整。
+  /// 距离的显示文字, 如 "320 m" "1.2 km".
+  ///
+  /// 1 km 以内按 10 米取整. 1–10 km 保留一位小数. 10 km 及以上取整.
   static String formatDistance(double meters) {
     if (meters < 1000) {
       final rounded = math.max(10, (meters / 10).round() * 10);
@@ -53,10 +56,10 @@ abstract final class GeoRules {
     return '${text.endsWith('.0') ? text.substring(0, text.length - 2) : text} km';
   }
 
-  /// 人离校区中心超过这么远（米）就不显示距离，改显示商圈名（产品 6.4）。
+  /// 用户与校区中心的距离上限, 单位为米. 超过该值时不显示距离, 改为显示商圈名.
   static const maxDistanceFromCampus = 5000.0;
 
-  /// 从 [me] 到 [target] 的距离写法；没有定位、或者人离 [campusCenter] 太远时为 null。
+  /// 从 [me] 到 [target] 的距离文字. 没有定位或用户离 [campusCenter] 过远时返回 null.
   static String? distanceLabel({
     required GcjPoint? me,
     required GcjPoint? target,

@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_api.g.dart';
 
-/// 列表接口的排序。
+/// 列表接口的排序方式.
 enum FoodSort {
   newest('NEWEST'),
   popular('POPULAR');
@@ -17,7 +17,7 @@ enum FoodSort {
   final String api;
 }
 
-/// 接口分组 Food：推荐、详情、列表、发布、赞和收藏、标签。
+/// 接口分组 Food: 推荐, 详情, 列表, 发布, 赞和收藏, 标签.
 class FoodApi {
   FoodApi(this._client);
 
@@ -41,7 +41,7 @@ class FoodApi {
     'DELETE /foods/{id}/tags/{tagId}',
   ];
 
-  /// 推荐一批菜。游客靠 [deviceId] 当天去重。
+  /// 推荐一批菜品. 游客按 [deviceId] 在当天内去重.
   Future<Paged<FoodDto>> recommend({
     int? campusId,
     String? mealTime,
@@ -70,7 +70,9 @@ class FoodApi {
         FoodDto.fromJson,
       );
 
-  /// 按条件查菜：一家店的菜单、跨店搜菜名、我的标签下的菜。条件之间是「并且」。
+  /// 按条件查询菜品. 多个条件之间为 "与" 关系.
+  ///
+  /// 用于店铺菜单, 跨店按菜名搜索, 按我的标签筛选.
   Future<Paged<FoodDto>> list({
     int? restaurantId,
     int? hubId,
@@ -123,8 +125,9 @@ class FoodApi {
     FoodDto.fromJson,
   );
 
-  /// 发布一道菜，返回新菜的 id。同一家店已有同名的菜时失败，码是 `BizCodes.duplicateDish`，
-  /// `data.id` 是已有的那道。
+  /// 发布菜品, 返回新菜品的 id.
+  ///
+  /// 同一店铺已有同名菜品时失败, 业务码为 `BizCodes.duplicateDish`, `data.id` 为已有菜品的 id.
   Future<int> create(CreateFoodDto body) async =>
       decodeCreatedId(await _client.post('/foods/upload', body: body.toJson()));
 
@@ -136,7 +139,7 @@ class FoodApi {
 
   Future<void> unfavorite(int id) => _client.post('/foods/$id/unfavorite');
 
-  /// 口味词表，由运营维护。
+  /// 口味词表, 由运营维护.
   Future<List<FoodTagDto>> systemTags({CancelToken? cancelToken}) async =>
       decodeList(
         await _client.get('/foods/tags/system', cancelToken: cancelToken),
@@ -155,7 +158,7 @@ class FoodApi {
   Future<void> addCustomTags(int id, List<String> names) =>
       _client.post('/foods/$id/tags/custom', body: {'names': names});
 
-  /// 撤回一个口味标签或去掉一个我的标签，两种标签共用这个接口。
+  /// 撤回口味标签或移除我的标签. 两种标签共用此接口.
   Future<void> removeTag(int id, int tagId) =>
       _client.delete('/foods/$id/tags/$tagId');
 }

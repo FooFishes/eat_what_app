@@ -4,13 +4,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_api.g.dart';
 
-/// 接口分组 Auth：登录、发验证码、人机验证参数、学生认证。
+/// 接口分组 Auth: 登录, 发送验证码, 人机验证参数, 学生认证.
 class AuthApi {
   AuthApi(this._client);
 
   final ApiClient _client;
 
-  /// 这个类调用的接口，契约测试逐个检查它们都在 `docs/api.openapi.yml` 里。
+  /// 本类调用的接口. 契约测试逐个检查它们是否在 `docs/api.openapi.yml` 中.
   static const endpoints = [
     'GET /auth/captcha/config',
     'POST /auth/phone/code',
@@ -21,7 +21,7 @@ class AuthApi {
     'GET /auth/sendEmail',
   ];
 
-  /// 每次人机验证前重新拿，接口要求不缓存。
+  /// 人机验证参数. 接口要求不缓存, 每次验证前重新请求.
   Future<CaptchaConfigDto> captchaConfig() async => decodeJson(
     await _client.get(
       '/auth/captcha/config',
@@ -30,7 +30,7 @@ class AuthApi {
     CaptchaConfigDto.fromJson,
   );
 
-  /// [captchaHeaders] 是人机验证票据的两个请求头；人机验证关闭时为空。
+  /// [captchaHeaders] 为人机验证票据的两个请求头, 人机验证关闭时为空.
   Future<void> sendLoginCode(
     String mobile, {
     Map<String, String> captchaHeaders = const {},
@@ -54,7 +54,7 @@ class AuthApi {
 
   Future<void> logout() => _client.post('/auth/logout');
 
-  /// [client] 决定学校页面完成后跳回哪里：`app` 回 App，`web` 回网页。
+  /// [client] 决定学校认证页完成后的重定向目标: `app` 回到 App, `web` 回到网页.
   Future<SsoStartDto> startSso({required String client}) async => decodeJson(
     await _client.get('/auth/sdu', query: {'client': client}),
     SsoStartDto.fromJson,

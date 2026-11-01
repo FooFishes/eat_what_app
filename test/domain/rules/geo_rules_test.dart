@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('WGS-84 转 GCJ-02 和公开算法的结果一致', () {
-    // 天安门：常用的对照点。
+    // 对照点为天安门, 是公开算法常用的示例坐标.
     final gcj = GeoRules.toGcj(const WgsPoint(39.908692, 116.397477));
     expect(gcj.lat, closeTo(39.910093, 0.00002));
     expect(gcj.lng, closeTo(116.403714, 0.00002));

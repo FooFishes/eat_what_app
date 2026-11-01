@@ -14,9 +14,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 受限的按钮都先过这一道（技术架构 8.3）：能做就返回 true；不能做就弹拦截面板，返回 false。
+/// 受限操作的权限检查. 允许时返回 true, 不允许时弹出拦截面板并返回 false.
 ///
-/// 按钮照常显示，不隐藏、不置灰（产品 7.3）。
+/// 受限按钮正常显示, 不隐藏也不置灰. 点击后由拦截面板说明原因和下一步.
 Future<bool> guardAction(
   BuildContext context,
   WidgetRef ref,
@@ -88,9 +88,12 @@ Future<void> _showBanned(
   ),
 );
 
-/// 动作失败后的反馈：服务端说没权限时按最新的账号状态弹拦截面板，其余给一句轻提示。
+/// 操作失败后的反馈.
 ///
-/// [fallback] 是这个动作失败时的说法，如「点赞失败，请重试」；没网、太频繁这类有固定说法的用固定的。
+/// - 服务端判定无权限时, 刷新账号状态后弹出拦截面板.
+/// - 其余失败显示轻提示.
+///
+/// [fallback] 是该操作的失败提示, 如 "点赞失败, 请重试". 只在失败类型没有固定提示时使用.
 Future<void> reportActionFailure(
   BuildContext context,
   WidgetRef ref,
@@ -114,6 +117,8 @@ Future<void> reportActionFailure(
   }
 }
 
-/// 「待接入」的入口点了以后：不发请求，只说一句。[feature] 标明是哪一项，接口上线后好找到入口。
+/// 点击 "待接入" 入口后的反馈. 不发请求, 只显示轻提示.
+///
+/// [feature] 不影响提示内容, 用于在接口上线时按枚举值找到所有入口.
 void showPending(BuildContext context, PendingFeature feature) =>
     showToast(context, '该功能暂未开放');

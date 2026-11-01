@@ -9,15 +9,15 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 有舞台的页面骨架：上面是舞台，下面是白色抽屉，抽屉往上压住舞台 32px，跟着页面一起滚。
+/// 有舞台的页面骨架: 上方为舞台, 下方为白色抽屉. 抽屉向上压住舞台, 随页面滚动.
 ///
-/// 页面只给舞台色、舞台内容和抽屉里的 sliver，舞台多高、抽屉从哪开始、宽屏怎么排都由这里决定：
-/// - 手机：舞台高度按屏幕高度算（844 高时 520，夹在 420–560），[stageContent] 拿到整个舞台的高度，
-///   但底部 32px 会被抽屉盖住，菜名、价格、按钮要贴着底部留出这段再排。
-/// - 宽屏（600 及以上）：舞台铺满整个屏幕、不滚动，[stageContent] 排在左侧面板右边；抽屉变成
-///   左侧 400 宽的悬浮面板，内容在面板里单独滚，[topBar] 挪到面板顶部、用 `ink`。
+/// 页面只提供舞台色, 舞台内容和抽屉中的 sliver. 舞台高度, 抽屉起点和宽屏布局由本组件决定:
+/// - 手机: 舞台高度按屏幕高度计算. [stageContent] 获得整个舞台的高度,
+///   但底部 [EatSize.sheetOverlap] 会被抽屉遮挡, 菜名, 价格和按钮须排在这段之上.
+/// - 宽屏: 舞台铺满屏幕且不滚动, [stageContent] 排在左侧面板的右边.
+///   抽屉变为左侧的悬浮面板, 内容在面板内单独滚动, [topBar] 移到面板顶部并使用 `ink`.
 ///
-/// 抽屉里的 sliver 自己留左右 `space-20`；底部会自动留出悬浮导航（或系统安全区）的高度。
+/// 抽屉中的 sliver 自行留出左右 `space-20`. 底部自动留出悬浮导航或系统安全区的高度.
 class StageScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -27,7 +27,7 @@ class StageScaffold extends StatefulWidget {
     this.topBar,
   }) : map = null;
 
-  /// 附近页这类用地图当舞台的页面：地图铺在下面，抽屉压在地图上要加阴影。
+  /// 以地图为舞台的页面, 如附近页. 地图铺在底层, 压在地图上的抽屉加阴影.
   const new map({
     super.key,
     required Widget this.map,
@@ -41,7 +41,7 @@ class StageScaffold extends StatefulWidget {
   final Widget? map;
   final List<Widget> sheetSlivers;
 
-  /// 舞台顶部的一行：返回、收藏、分享，或发现页的地点、搜索、通知。
+  /// 舞台顶部的一行, 如返回, 收藏和分享, 或发现页的地点, 搜索和通知.
   final Widget? topBar;
 
   @override
@@ -139,7 +139,7 @@ class _StageScaffoldState extends State<StageScaffold>
       final height = layout.stageHeight;
       body = Stack(
         children: [
-          // 只在页面顶部回弹（iOS）时露出来，让舞台上方不出现白边。
+          // 只在页面顶部回弹 (iOS) 时露出, 避免舞台上方出现白边.
           if (palette != null)
             ListenableBuilder(
               listenable: scrollController,
@@ -197,7 +197,7 @@ class _StageScaffoldState extends State<StageScaffold>
                   ],
                 ),
               ),
-              // 内容不满一屏时把白底铺到底，抽屉不会在页面中间断开。
+              // 内容不满一屏时白底延伸到底部, 避免抽屉在页面中间断开.
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: ColoredBox(color: eat.colors.paper),
@@ -218,9 +218,10 @@ class _StageScaffoldState extends State<StageScaffold>
   }
 }
 
-/// 布局高度比内容少 [overlap] 的 sliver：后面的 sliver 从它底部往上 [overlap] 处开始排，
-/// 多出来的那段画在自己的范围外面，配合 `SliverPaintOrder.lastIsTop` 被后面的抽屉盖住，
-/// 形成抽屉压住舞台的样子。
+/// 布局高度比内容少 [overlap] 的 sliver.
+///
+/// 后续 sliver 从其底部向上 [overlap] 处开始排列. 多出的部分绘制在自身范围之外,
+/// 配合 `SliverPaintOrder.lastIsTop` 被后续的抽屉覆盖, 形成抽屉压住舞台的效果.
 class _OverlappedSliver extends SingleChildRenderObjectWidget {
   const new({required this.overlap, required Widget super.child});
 
@@ -253,8 +254,8 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
     child.layout(constraints.asBoxConstraints(), parentUsesSize: true);
     final extent = child.size.height;
     final scrollExtent = (extent - _overlap).clamp(0.0, extent);
-    // 绘制范围报成和布局范围一样，多出来的 [_overlap] 画在范围外面：报大了的话，视口会把后面那个
-    // sliver 的语义按重叠的高度裁掉，抽屉最上面一行的按钮在读屏里就少了一截。
+    // 绘制范围报告为与布局范围相同, 多出的 [_overlap] 绘制在范围之外.
+    // 若报告更大的绘制范围, 视口会按重叠高度裁掉后续 sliver 的语义, 抽屉第一行按钮在读屏中不完整.
     final layoutExtent = calculatePaintOffset(
       constraints,
       from: 0,
@@ -271,8 +272,9 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
   }
 }
 
-/// 抽屉的白底。和 `DecoratedSliver` 一样画，但白底本身也接住点击：
-/// 抽屉压住舞台的那 32px 里点不到下面舞台上的东西，抽屉里的空白处也不会点穿。
+/// 抽屉的白底. 绘制方式与 `DecoratedSliver` 相同, 但白底本身也拦截点击.
+///
+/// 因此点击抽屉压住舞台的区域不会传到下方舞台的组件, 点击抽屉内的空白处也不会穿透.
 class _SheetSliver extends DecoratedSliver {
   const new({required super.decoration, super.sliver});
 

@@ -15,7 +15,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_repository.g.dart';
 
-/// 菜：把接口的 DTO 转成 [Dish]，并缓存上一批推荐和看过的菜品详情（技术架构 10.1）。
+/// 菜品数据. 把接口 DTO 转换为 [Dish], 并缓存上一批推荐和浏览过的菜品详情.
 class FoodRepository {
   FoodRepository(this._api, this._cache, this._assetBaseUrl);
 
@@ -26,7 +26,10 @@ class FoodRepository {
   static const _recommendGroup = 'recommend';
   static const _detailGroup = 'dish';
 
-  /// 推荐一批。拿到了就存成这个校区和饭点的「上一批」，拿不到时页面用 [lastBatch]。
+  /// 请求一批推荐.
+  ///
+  /// 未按分类筛选且结果非空时, 结果保存为该校区和饭点的 "上一批".
+  /// 请求失败时, 页面使用 [lastBatch].
   Future<List<Dish>> recommend({
     required int? campusId,
     required MealTime meal,
@@ -50,7 +53,7 @@ class FoodRepository {
     return page.items.map(toDish).toList();
   }
 
-  /// 这个校区和饭点上一次拿到的那批推荐；没有返回空列表。
+  /// 该校区和饭点上次获取的推荐. 没有缓存时返回空列表.
   Future<List<Dish>> lastBatch({
     required int? campusId,
     required MealTime meal,
@@ -81,7 +84,7 @@ class FoodRepository {
     return toDish(dto);
   }
 
-  /// 7 天内看过的这道菜，离线时先显示。
+  /// 缓存的菜品详情, 用于离线或请求返回前先行显示. 过期的缓存不返回.
   Future<Dish?> cachedDetail(int id) async {
     final raw = await _cache.read(
       _detailGroup,
@@ -118,8 +121,11 @@ class FoodRepository {
     ),
   );
 
-  /// 一家店的全部菜，按赞数排。餐厅详情要用全部菜算招牌和口味汇总，接口没有汇总字段（现状差距 2.1），
-  /// 所以一次拉完，最多 [limit] 道。
+  // TODO: 接口没有店铺的招牌菜和口味汇总字段, 只能取回全部菜品在客户端计算.
+  // 接口提供汇总字段后改为直接读取, 不再一次取完全部菜品.
+  /// 一家店的全部菜品, 按赞数排序, 最多 [limit] 道.
+  ///
+  /// 餐厅详情需要用全部菜品计算招牌菜和口味汇总, 因此分页一次取完.
   Future<List<Dish>> menu(
     int shopId, {
     int limit = 200,
@@ -150,7 +156,7 @@ class FoodRepository {
   Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
       _map(await _api.mine(page: page, cancelToken: cancelToken));
 
-  /// 发布，返回新菜的 id。
+  /// 发布菜品, 返回新菜品的 id.
   Future<int> publish(NewDish dish) => _api.create(
     CreateFoodDto(
       restaurantId: dish.shopId,
@@ -173,7 +179,7 @@ class FoodRepository {
     ),
   );
 
-  /// 这家店里和 [name] 同名（忽略空格）的菜，没有返回 null（产品 9.2）。
+  /// 该店中与 [name] 同名 (忽略空白) 的菜品. 没有时返回 null.
   Future<Dish?> sameName(
     int shopId,
     String name, {
@@ -199,14 +205,13 @@ class FoodRepository {
   Future<void> setFavorite(int id, {required bool favorite}) =>
       favorite ? _api.favorite(id) : _api.unfavorite(id);
 
-  /// 口味词表。
   Future<List<TasteTag>> tasteVocabulary({CancelToken? cancelToken}) async => [
     for (final dto in await _api.systemTags(cancelToken: cancelToken))
       if (dto.id != null && dto.name != null)
         TasteTag(id: dto.id!, name: dto.name!),
   ];
 
-  /// 这道菜现在的口味标签和我的标签。
+  /// 该菜品当前的口味标签和我的标签.
   Future<({List<TasteTag> taste, List<MyTag> mine})> tagsOf(
     int id, {
     CancelToken? cancelToken,

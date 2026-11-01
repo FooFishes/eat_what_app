@@ -6,9 +6,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'upload_client.g.dart';
 
-/// 往预签名地址 `PUT` 图片的客户端（技术架构 7.2）。
+/// 向预签名地址 `PUT` 图片的客户端.
 ///
-/// 不加鉴权头：加了会把 token 发给存储服务，还会破坏签名。`Content-Type` 必须和申请签名时声明的一样。
+/// 不添加鉴权头: 鉴权头会把 token 泄露给存储服务, 还会破坏签名.
+/// `Content-Type` 必须与申请签名时声明的值一致.
 class UploadClient {
   UploadClient({HttpClientAdapter? adapter})
     : _dio = Dio(
@@ -23,8 +24,10 @@ class UploadClient {
 
   final Dio _dio;
 
-  /// [onProgress] 收到 0–1 的进度。失败都转成 [AppFailure]：取消是 `cancelled`，其余算没网，
-  /// 由队列让用户单张重试。
+  /// [onProgress] 接收 0–1 的进度.
+  ///
+  /// 失败统一转换为 [AppFailure]: 取消为 `cancelled`, 5xx 和无响应为 `network`, 其余为 `unknown`.
+  /// 上传队列据此提供单张重试.
   Future<void> put(
     String url,
     Uint8List bytes, {

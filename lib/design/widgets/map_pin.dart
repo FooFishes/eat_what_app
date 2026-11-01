@@ -5,10 +5,12 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:flutter/widgets.dart';
 
-/// 附近页地图上的店铺标记（规范 `MapPin`）：白色小圆盘里放招牌菜的圆图。
+/// 附近页地图上的店铺标记: 白色小圆盘中放招牌菜的圆图.
 ///
-/// 普通 44px（里面 38px 圆图）；选中 72px（里面 64px），外圈 4px [ring] 色，下面一个 `ink` 底的店名胶囊。
-/// 同时只放大一个。没有图时圆里是 `mist` 底。整个标记是一个按钮，读屏念店名。
+/// - 选中时放大, 外圈为 [ring] 色, 下方显示 `ink` 底的店名胶囊.
+/// - 同一时刻只放大一个标记.
+/// - 没有图片时圆内显示 `mist` 底.
+/// - 整个标记是一个按钮, 读屏朗读店名.
 class MapPin extends StatelessWidget {
   const new({
     super.key,
@@ -25,7 +27,7 @@ class MapPin extends StatelessWidget {
   final Color ring;
   final VoidCallback onTap;
 
-  /// 标记整体占的大小：选中时下面还有店名胶囊。地图层按这个尺寸给 `Marker`。
+  /// 标记整体占用的尺寸, 包含选中时下方的店名胶囊. 地图层按此尺寸创建 `Marker`.
   static const size = Size(160, 110);
 
   @override
@@ -93,7 +95,7 @@ class MapPin extends StatelessWidget {
   }
 }
 
-/// 地图上我的位置：15px `map-me` 圆点、3px 白边，外面 48px 的 16% 光晕。
+/// 地图上我的位置: 带白边的 `map-me` 圆点, 外有半透明光晕.
 class MyLocationDot extends StatelessWidget {
   const new({super.key});
 

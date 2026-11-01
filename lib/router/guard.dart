@@ -1,13 +1,15 @@
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 
-/// 路由的 `metadata`：没登录也能进的页面。守卫只看这个标记，不写死路径表。
+/// 未登录也可访问的页面, 用作路由的 `metadata`.
+///
+/// 守卫只读取该标记, 不维护路径白名单.
 const publicRoute = <String, dynamic>{'public': true};
 
-/// 顶层守卫：要去 [location] 时该不该改道、改去哪；不用改道返回 null（技术架构 5.3）。
+// TODO: 强制更新和停服维护的跳转未实现. 远程配置接口上线后在此加入对应规则.
+/// 顶层守卫. 返回访问 [location] 时应重定向到的地址, 无需重定向时返回 null.
 ///
-/// [isPublic] 是目标页面的「未登录可进」标记，[canMatch] 判断一个站内地址能不能对上路由表。
-/// 强制更新和停服维护要等远程配置接口，现在只有登录的两条。
+/// [isPublic] 是目标页面的未登录可访问标记. [canMatch] 判断站内地址能否匹配路由表.
 String? resolveRedirect({
   required Uri location,
   required bool isPublic,
@@ -17,7 +19,7 @@ String? resolveRedirect({
   switch (session) {
     case SignedOut(:final reason):
       if (isPublic) return null;
-      // 自己退出的不记原地址；要去的本来就是发现页也不用记，登录后默认就去那里。
+      // 用户主动退出时不记录原地址. 目标是发现页时也不记录, 因为登录后默认进入发现页.
       final remember =
           reason != SignOutReason.loggedOut && location.path != Paths.discover;
       return Uri(
@@ -43,9 +45,9 @@ String? resolveRedirect({
 bool isLoginPath(String path) =>
     path == Paths.login || path.startsWith('${Paths.login}/');
 
-/// 登录后要回去的地址：只接受对得上路由表的站内路径，且不是登录页本身。
+/// 登录后返回的地址. 只接受能匹配路由表的站内路径, 且不能是登录页本身.
 ///
-/// `from` 来自地址栏，谁都能拼；不校验的话，一个拼好的链接能在登录后把人带到外站。
+/// `from` 来自地址栏, 任何人都能构造. 不校验时, 构造的链接可以在登录后把用户带到外站.
 String? safeReturnPath(String? from, bool Function(Uri location) canMatch) {
   if (from == null || !from.startsWith('/') || from.startsWith('//')) {
     return null;

@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- 调业务接口、加载人机验证。模板只在 debug 和 profile 的清单里加了它，release 包没有就连不上网。 -->
+    <!-- 调用业务接口和加载人机验证. 模板只在 debug 和 profile 清单中声明此权限, release 包缺少它会无法联网. -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- 发现页的距离、附近页的地图：只在用的时候定位一次，不后台定位。 -->
+    <!-- 发现页的距离和附近页的地图. 仅在使用时单次定位, 不在后台定位. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
@@ -46,7 +46,7 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
-        <!-- url_launcher 打开协议页和学校的统一认证页：安卓 11 起要声明才查得到浏览器和 Custom Tabs。 -->
+        <!-- url_launcher 打开协议页和学校统一认证页. Android 11 起必须声明, 才能查询到浏览器和 Custom Tabs. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
@@ -54,7 +54,7 @@
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService"/>
         </intent>
-        <!-- 「导航去店里」列出装了的地图 App。 -->
+        <!-- "导航去店里" 列出已安装的地图 App. 必须声明这些 scheme 才能检测安装状态. -->
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="androidamap"/>

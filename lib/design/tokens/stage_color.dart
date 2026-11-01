@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:eat/design/tokens/eat_palette.dart';
 
-/// 舞台只能用的 9 个颜色。每个值带着自己整套配色，深浅写死，不在运行时按亮度去猜。
+/// 舞台可用的全部颜色.
+///
+/// 每个值自带整套配色, 深浅固定写在枚举值上, 不在运行时按亮度推断.
 enum StageColor {
   broth(EatPalette.stageBroth, '汤色', isDark: false),
   mango(EatPalette.stageMango, '芒果黄', isDark: false),
@@ -16,19 +18,19 @@ enum StageColor {
 
   const new(this.color, this.label, {required this.isDark});
 
-  /// 舞台底色。
+  /// 舞台底色.
   final Color color;
 
-  /// 给人看的名字，「调整照片」里色圆下面写的。
+  /// 界面上显示的颜色名, 出现在 "调整照片" 的色圆下方.
   final String label;
 
-  /// 深色舞台上文字用 `paper`，浅色舞台上用 `ink`。
+  /// 是否为深色舞台. 深色舞台上的文字用 `paper`, 浅色舞台上用 `ink`.
   final bool isDark;
 
-  /// 令牌名，如 `stage-broth`。接口里的舞台色字段也用这个写法。
+  /// 令牌名, 如 `stage-broth`. 接口中的舞台色字段使用相同写法.
   String get token => 'stage-$name';
 
-  /// 按令牌名找舞台色，不认识的返回 null。
+  /// 按令牌名查找舞台色. 无法识别时返回 null.
   static StageColor? fromToken(String token) {
     for (final value in values) {
       if (value.token == token) return value;
@@ -36,35 +38,35 @@ enum StageColor {
     return null;
   }
 
-  /// 舞台上的主文字：菜名、价格、按钮文字。
+  /// 舞台上的主文字色, 用于菜名, 价格和按钮文字.
   Color get foreground => isDark ? EatPalette.paper : EatPalette.ink;
 
-  /// 舞台上的次级文字：签名、说明。
+  /// 舞台上的次级文字色, 用于签名和说明.
   ///
-  /// 次级文字平时比主文字淡一档（浅色舞台 `ink-soft`，深色舞台 85% 的 `paper`），但 `chili` 上
-  /// `ink-soft` 只有 2.9:1、`tomato` 上 85% 的 `paper` 只有 3.9:1，都不到 4.5:1，这两个舞台的
-  /// 次级文字和主文字同色。
+  /// 次级文字通常比主文字淡一档: 浅色舞台用 `ink-soft`, 深色舞台用 85% 不透明度的 `paper`.
+  /// `chili` 和 `tomato` 例外, 次级文字与主文字同色.
+  /// 原因是 `ink-soft` 在 `chili` 上的对比度只有 2.9:1, 85% 的 `paper` 在 `tomato` 上只有 3.9:1, 都低于 4.5:1.
   Color get secondaryForeground => switch (this) {
     chili || tomato => foreground,
     _ when isDark => _paper85,
     _ => EatPalette.inkSoft,
   };
 
-  /// 次按钮（换一个、编辑资料）的底色，文字用 [foreground]。
+  /// 舞台上次按钮的底色, 如 "换一个" "编辑资料". 文字用 [foreground].
   Color get ghost =>
       isDark ? EatPalette.stageGhostDark : EatPalette.stageGhostLight;
 
-  /// 转盘桌面。
+  /// 转盘桌面的颜色.
   Color get table => isDark ? EatPalette.tableDark : EatPalette.tableLight;
 
-  /// 转盘的细边。
+  /// 转盘细边的颜色.
   Color get tableRing =>
       isDark ? EatPalette.tableRingDark : EatPalette.tableRingLight;
 
-  /// 实心按钮渐变的顶部颜色。按钮文字用舞台色 [color]。
+  /// 实心按钮渐变的顶部颜色. 按钮文字用舞台色 [color].
   Color get solidTop => isDark ? EatPalette.paper : EatPalette.inkTop;
 
-  /// 实心按钮渐变的底部颜色。
+  /// 实心按钮渐变的底部颜色.
   Color get solidBottom => isDark ? EatPalette.paperBottom : EatPalette.ink;
 }
 

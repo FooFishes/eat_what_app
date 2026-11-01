@@ -8,6 +8,6 @@ analyzer:
     - web/**
     - "**/*.g.dart"
 
-# 分析器插件由分析器自己拉取，不进 pubspec.yaml；结果由 dart analyze 报告。
+# 分析器插件由分析器自行拉取, 不写入 pubspec.yaml. 插件结果只由 dart analyze 报告.
 plugins:
   riverpod_lint: ^3.1.9

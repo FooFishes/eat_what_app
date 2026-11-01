@@ -16,9 +16,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 设置（`G-Settings`）：头像和昵称、各个子页，最下面「退出登录」。
-///
-/// 隐私和通知两页放在后面的阶段做（开发计划阶段六），现在不列入口。
+// TODO: 隐私和通知两个子页面未实现, 不显示入口. 实现对应页面后加上入口.
+/// 设置页面: 头像和昵称, 各子页面入口, 底部的 "退出登录".
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
@@ -91,12 +90,13 @@ class SettingsPage extends ConsumerWidget {
         ),
       ),
     );
-    // 清掉登录态后守卫会把页面带到登录页。
+    // 登录态清除后, 路由守卫负责跳转到登录页.
     if (confirmed == true) await ref.read(sessionProvider.notifier).logout();
   }
 }
 
-/// 头像、昵称和认证状态。编辑资料在阶段六接上，现在不能点。
+// TODO: 编辑资料未实现, 该区域不可点. 实现编辑资料页后改为可点并跳转.
+/// 头像, 昵称和认证状态.
 class _Profile extends StatelessWidget {
   const new({required this.user});
 

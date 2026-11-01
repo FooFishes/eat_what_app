@@ -6,10 +6,12 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// 整行可点的单选项：选中的那行铺一层 `mist`，右边的圆圈同时变成 `ink` 实心加勾。
+/// 整行可点的单选项. 选中行铺 `mist` 底, 右侧圆圈变为 `ink` 实心加对勾.
 ///
-/// 带缩略图时（发布第 1 步选店）行高 68；不带时（面板里的选项）行高 52，选中时文字加粗。
-/// 整组的左右各有 10–12px 内边距，放进页面时把这段往外挪（如 `margin: 0 -10px`），文字才和页面边距对齐。
+/// - 带缩略图的行用于选店, 行高较高.
+/// - 不带缩略图的行用于面板选项, 选中时文字加粗.
+///
+/// 行自带左右内边距. 放入页面时整组需向外偏移相同距离, 文字才能与页面边距对齐.
 class EatRadioRow extends StatelessWidget {
   const new({
     super.key,
@@ -22,10 +24,10 @@ class EatRadioRow extends StatelessWidget {
 
   final String title;
 
-  /// 第二行，如距离加商圈。
+  /// 第二行文字, 如距离和商圈.
   final Widget? subtitle;
 
-  /// 52px 的 `ListThumb`。
+  /// 缩略图, 通常为 52px 的 `ListThumb`.
   final Widget? thumbnail;
 
   final bool selected;

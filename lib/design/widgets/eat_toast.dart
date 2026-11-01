@@ -7,10 +7,12 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 
-/// 一句轻提示：「发布成功」「点赞失败，请重试」。
+// TODO: 轻提示的样式尚未经设计确认. 确认后按结论调整位置, 颜色和停留时长.
+/// 显示一条轻提示, 如 "发布成功" "点赞失败, 请重试".
 ///
-/// 样式按技术架构待确认 A6 的推荐：页面底部、导航上方的 `ink` 底胶囊，2 秒后消失，不挡操作。
-/// 同时只显示一条，新的顶掉旧的；读屏会念出来。
+/// - 显示在页面底部, 导航上方, 为 `ink` 底胶囊, 不阻挡操作.
+/// - 同一时刻只显示一条, 新提示替换旧提示.
+/// - 读屏会朗读提示内容.
 void showToast(BuildContext context, String message) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;

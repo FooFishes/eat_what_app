@@ -11,11 +11,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_repository.g.dart';
 
-/// 当前用户：拉最新的、存一份到本地，启动时先用本地那份显示。
+/// 当前用户数据. 请求最新信息并保存到本地, 启动时先用本地副本显示.
 class UserRepository {
   UserRepository(this._api, this._kv, this._assetBaseUrl);
 
-  /// 在 `cache.` 下，退出登录时和别的接口缓存一起删掉。
+  /// 位于 `cache.` 前缀下, 退出登录时与其他接口缓存一并删除.
   static const cacheKey = 'cache.user.current';
 
   final UserApi _api;
@@ -28,7 +28,7 @@ class UserRepository {
     return _toUser(dto);
   }
 
-  /// 上一次拉到的用户信息；没有或者读坏了返回 null。
+  /// 上次获取的用户信息. 没有缓存或缓存损坏时返回 null, 损坏的缓存同时删除.
   Future<CurrentUser?> readCached() async {
     final raw = await _kv.read(cacheKey);
     if (raw == null) return null;
@@ -42,7 +42,7 @@ class UserRepository {
     }
   }
 
-  /// 一个用户对外的资料和统计；「我的」也用它拿自己的统计。
+  /// 指定用户的公开资料和统计. "我的" 页面也用它获取自己的统计.
   Future<UserProfile> profile(int userId, {CancelToken? cancelToken}) async {
     final dto = await _api.profile(userId, cancelToken: cancelToken);
     return UserProfile(

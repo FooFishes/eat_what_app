@@ -8,17 +8,17 @@ part of 'kv_store.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 应用里唯一的 [KvStore]，测试里换成内存实现。
+/// 应用唯一的 [KvStore]. 测试中替换为内存实现.
 
 @ProviderFor(kvStore)
 final kvStoreProvider = KvStoreProvider._();
 
-/// 应用里唯一的 [KvStore]，测试里换成内存实现。
+/// 应用唯一的 [KvStore]. 测试中替换为内存实现.
 
 final class KvStoreProvider
     extends $FunctionalProvider<KvStore, KvStore, KvStore>
     with $Provider<KvStore> {
-  /// 应用里唯一的 [KvStore]，测试里换成内存实现。
+  /// 应用唯一的 [KvStore]. 测试中替换为内存实现.
   KvStoreProvider._()
     : super(
         from: null,

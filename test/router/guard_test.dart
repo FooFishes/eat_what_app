@@ -3,7 +3,7 @@ import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// 路由表里有的地址，按前缀粗略判断，够测守卫用。
+/// 按前缀判断地址是否在路由表中. 判断较粗略, 只满足守卫测试的需要.
 bool _known(Uri uri) => const [
   '/discover',
   '/nearby',

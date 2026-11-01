@@ -50,7 +50,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('从相册选'));
     await tester.pumpAndSettle();
-    // 第一张加好后自动进「调整照片」，直接完成。
+    // 加入第一张照片后自动打开 "调整照片", 此处直接点 "完成".
     expect(find.text('调整照片'), findsWidgets);
     await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();

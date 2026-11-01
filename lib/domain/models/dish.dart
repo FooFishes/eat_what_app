@@ -1,7 +1,9 @@
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/geo.dart';
 
-/// 菜的分类（产品 4.4）。[api] 是接口里的写法，[stage] 是取色不可靠、或者菜没存舞台色时的默认色。
+/// 菜品分类.
+///
+/// [api] 是接口中的取值. [stage] 是默认舞台色, 在取色不可靠或菜品未保存舞台色时使用.
 enum DishCategory {
   staple('staple', '主食', StageColor.broth),
   snack('snack', '小吃', StageColor.chili),
@@ -20,7 +22,7 @@ enum DishCategory {
   final String label;
   final StageColor stage;
 
-  /// 发现页分类栏里单独成栏的分类，配菜和其他不单独列（产品 6.4）。
+  /// 发现页分类栏中单独成栏的分类. 配菜和其他不单独成栏.
   static const shelf = [
     staple,
     snack,
@@ -42,7 +44,7 @@ enum DishCategory {
   }
 }
 
-/// 饭点（产品 4.5）。时间段见 `MealTimeRules`。
+/// 饭点. 各饭点的时间段见 `MealTimeRules`.
 enum MealTime {
   breakfast('breakfast', '早饭'),
   lunch('lunch', '午饭'),
@@ -62,15 +64,17 @@ enum MealTime {
   }
 }
 
-/// 封面的圆形取景：圆心在原图里的位置（0–1，按原图宽高归一）和直径占原图短边的比例。
-/// 默认居中的短边内切圆（技术架构 13.4）。
+/// 封面的圆形取景.
+///
+/// [centerX] 和 [centerY] 是圆心在原图中的位置, 按原图宽高归一化到 0–1.
+/// [diameter] 是直径占原图短边的比例. 默认值表示居中的短边内切圆.
 class const CoverCrop({
   final double centerX = 0.5,
   final double centerY = 0.5,
   final double diameter = 1,
 });
 
-/// 一道菜上的一个口味标签：多少人打过，我打过没有。
+/// 菜品上的一个口味标签. [count] 是打过该标签的人数, [mine] 表示当前用户是否打过.
 class const TasteTag({
   required final int id,
   required final String name,
@@ -78,17 +82,20 @@ class const TasteTag({
   final bool mine = false,
 });
 
-/// 我给菜写的标签，只有自己看得见。[usage] 是用在了几道菜上，只有「我的标签」列表才有。
+/// 当前用户给菜品写的标签, 只有本人可见.
+///
+/// [usage] 是该标签用于多少道菜, 只有 "我的标签" 列表返回该值.
 class const MyTag({
   required final int id,
   required final String name,
   final int? usage,
 });
 
-/// 一道菜，转盘、方块和详情都用它。
+/// 菜品. 转盘, 菜品方块和详情页共用.
 ///
-/// 照片 [images] 第一张是封面。舞台色接口没给时按分类默认色，分类也没有时用 `broth`；
-/// [shopPoint]、[hubName]、[shopAddress] 只有推荐接口带，别的列表里是 null。
+/// - [images] 的第一张是封面.
+/// - 接口未返回舞台色时使用分类默认色, 分类也缺失时使用 `broth`.
+/// - [shopPoint], [hubName], [shopAddress] 只有推荐接口返回, 其他列表中为 null.
 class const Dish({
   required final int id,
   required final String name,
@@ -118,8 +125,10 @@ class const Dish({
   String? get cover => images.isEmpty ? null : images.first;
 }
 
-/// 发布一道菜时填好的内容（产品 9.1）。[imageKeys] 是上传后拿到的存储 key，第一张是封面；
-/// [crop]、[stage]、[stageAlternates] 都是封面的。
+/// 发布菜品时填写的内容.
+///
+/// [imageKeys] 是上传后获得的存储 key, 第一张是封面.
+/// [crop], [stage], [stageAlternates] 都针对封面.
 class const NewDish({
   required final int shopId,
   required final String name,

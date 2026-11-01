@@ -8,16 +8,20 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'location.g.dart';
 
-/// 定位权限和最近一次位置（GCJ-02）。位置只在内存里，不落盘（产品 7.6）。
+/// 定位权限和最近一次位置 (GCJ-02).
+///
+/// 位置只保存在内存中, 不写入本地存储. 产品按最少够用原则处理个人信息, 位置不需要跨启动保留.
 class const LocationState({
   final LocationAccess access = LocationAccess.notAsked,
   final GcjPoint? point,
 
-  /// 第一次申请权限前的说明展示过没有（产品 6.13）。读出来之前是 null。
+  /// 首次申请权限前的说明是否已展示. 从本地存储读出之前为 null.
   final bool? explained,
 });
 
-/// 当前位置：进发现页、附近页时定位一次。还没问过系统时不主动弹权限框，先由页面给说明。
+/// 当前位置. 进入发现页和附近页时各定位一次.
+///
+/// 尚未申请过权限时不主动弹出系统权限框, 先由页面展示说明.
 @Riverpod(keepAlive: true)
 class CurrentLocation extends _$CurrentLocation {
   static const explainedKey = 'prefs.location.explained';
@@ -43,7 +47,7 @@ class CurrentLocation extends _$CurrentLocation {
     if (access == LocationAccess.granted) await refresh();
   }
 
-  /// 有权限时重新定位一次。
+  /// 已有权限时重新定位一次.
   Future<void> refresh() async {
     if (state.access != LocationAccess.granted) return;
     final raw = await _service.current();
@@ -55,7 +59,7 @@ class CurrentLocation extends _$CurrentLocation {
     );
   }
 
-  /// 用户看过说明、点了允许：记下说明展示过，再弹系统的权限框。
+  /// 用户在说明面板点击允许后调用: 记录说明已展示, 再弹出系统权限框.
   Future<LocationAccess> request() async {
     await ref.read(kvStoreProvider).write(explainedKey, '1');
     final access = await _service.request();
@@ -65,7 +69,7 @@ class CurrentLocation extends _$CurrentLocation {
     return access;
   }
 
-  /// 说明面板点了「先不用」：记下来，不再反复弹（技术架构 14.2）。
+  /// 用户在说明面板点击 "先不用" 后调用: 记录说明已展示, 之后不再弹出说明.
   Future<void> dismissExplanation() async {
     await ref.read(kvStoreProvider).write(explainedKey, '1');
     if (!ref.mounted) return;

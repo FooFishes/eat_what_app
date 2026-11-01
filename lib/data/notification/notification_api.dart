@@ -11,7 +11,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'notification_api.g.dart';
 
-/// 接口分组 Notification：消息列表、未读数、已读。
+/// 接口分组 Notification: 消息列表, 未读数, 标记已读.
 class NotificationApi {
   NotificationApi(this._client);
 
@@ -67,7 +67,7 @@ class const NotificationDto({
       _$NotificationDtoFromJson(json);
 }
 
-/// 消息：DTO 转成 [Notice]，`data` 是 JSON 字符串，先解析开。
+/// 消息数据. 把 DTO 转换为 [Notice], 并把 JSON 字符串形式的 `data` 解析为 Map.
 class NotificationRepository {
   NotificationRepository(this._api, this._assetBaseUrl);
 

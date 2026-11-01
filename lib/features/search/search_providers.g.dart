@@ -8,12 +8,12 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+/// 按菜名跨店搜索菜品.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+/// 按菜名跨店搜索菜品.
 
 final class DishSearchProvider
     extends
@@ -23,7 +23,7 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+  /// 按菜名跨店搜索菜品.
   DishSearchProvider._({
     required DishSearchFamily super.from,
     required String super.argument,
@@ -69,7 +69,7 @@ final class DishSearchProvider
 
 String _$dishSearchHash() => r'c7308db1e1d3d2eae0259aa344175006ee4c9f02';
 
-/// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+/// 按菜名跨店搜索菜品.
 
 final class DishSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
@@ -82,7 +82,7 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 搜菜名：跨店按菜名查。接口不能按距离排（现状差距 2.1），先按热度。
+  /// 按菜名跨店搜索菜品.
 
   DishSearchProvider call(String keyword) =>
       DishSearchProvider._(argument: keyword, from: this);
@@ -91,12 +91,12 @@ final class DishSearchFamily extends $Family
   String toString() => r'dishSearchProvider';
 }
 
-/// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+/// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
 
 @ProviderFor(shopSearch)
 final shopSearchProvider = ShopSearchFamily._();
 
-/// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+/// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
 
 final class ShopSearchProvider
     extends
@@ -106,7 +106,7 @@ final class ShopSearchProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+  /// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
   ShopSearchProvider._({
     required ShopSearchFamily super.from,
     required String super.argument,
@@ -152,7 +152,7 @@ final class ShopSearchProvider
 
 String _$shopSearchHash() => r'cecccdbbccdb2c63d9aa0c42f5b6de5248c0c1dc';
 
-/// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+/// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
 
 final class ShopSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -165,7 +165,7 @@ final class ShopSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 搜店名：离我近的在前，没有定位时按离校区中心的远近。
+  /// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
 
   ShopSearchProvider call(String keyword) =>
       ShopSearchProvider._(argument: keyword, from: this);
@@ -174,15 +174,21 @@ final class ShopSearchFamily extends $Family
   String toString() => r'shopSearchProvider';
 }
 
-/// 最近搜过的词，最多 10 个，新的在前。按账号存，退出登录时删（技术架构 9.1）。
+/// 最近搜索的词, 按时间倒序, 数量有上限.
+///
+/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
 
 @ProviderFor(SearchHistory)
 final searchHistoryProvider = SearchHistoryProvider._();
 
-/// 最近搜过的词，最多 10 个，新的在前。按账号存，退出登录时删（技术架构 9.1）。
+/// 最近搜索的词, 按时间倒序, 数量有上限.
+///
+/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
 final class SearchHistoryProvider
     extends $AsyncNotifierProvider<SearchHistory, List<String>> {
-  /// 最近搜过的词，最多 10 个，新的在前。按账号存，退出登录时删（技术架构 9.1）。
+  /// 最近搜索的词, 按时间倒序, 数量有上限.
+  ///
+  /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
   SearchHistoryProvider._()
     : super(
         from: null,
@@ -204,7 +210,9 @@ final class SearchHistoryProvider
 
 String _$searchHistoryHash() => r'417efa840e7ff95199a6ccaf3b8082d99dfbf5b8';
 
-/// 最近搜过的词，最多 10 个，新的在前。按账号存，退出登录时删（技术架构 9.1）。
+/// 最近搜索的词, 按时间倒序, 数量有上限.
+///
+/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
 
 abstract class _$SearchHistory extends $AsyncNotifier<List<String>> {
   FutureOr<List<String>> build();

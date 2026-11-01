@@ -1,19 +1,22 @@
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// 屏幕宽度的三档。
+/// 屏幕宽度分档.
 enum WidthClass {
-  /// 360 以下：铺满，舞台菜名、价格按宽度缩小。
+  /// 宽度小于 [EatLayout.narrowBreakpoint]. 舞台菜名和价格按宽度等比缩小.
   narrow,
 
-  /// 360–599：铺满，左右边距 `space-20`。
+  /// 宽度介于两个断点之间. 内容铺满屏幕, 左右边距为 `space-20`.
   phone,
 
-  /// 600 及以上：舞台铺满，抽屉变成左侧悬浮面板；白底页面居中一栏。
+  /// 宽度不小于 [EatLayout.wideBreakpoint].
+  ///
+  /// - 舞台铺满屏幕, 抽屉改为左侧悬浮面板.
+  /// - 白底页面的内容收窄为居中的一栏.
   wide,
 }
 
-/// 按屏幕尺寸算好的版式参数，页面和骨架从这里取，不自己算。
+/// 按屏幕尺寸计算的版式参数. 页面和骨架统一使用本类, 不各自计算断点和尺寸.
 @immutable
 class const EatLayout({
   required final WidthClass widthClass,
@@ -34,20 +37,23 @@ class const EatLayout({
   static const narrowBreakpoint = 360.0;
   static const wideBreakpoint = 600.0;
 
-  /// 宽屏左侧悬浮面板的宽度和离屏幕边的距离。
+  /// 宽屏左侧悬浮面板的宽度. [widePanelInset] 是面板与屏幕边缘的距离.
   static const widePanelWidth = 400.0;
   static const widePanelInset = EatSpace.s16;
 
-  /// 宽屏时导航放在面板底部，离面板左右和底部的距离。
+  /// 宽屏时导航位于面板底部. 该值是导航与面板左右边缘及底边的距离.
   static const widePanelNavInset = EatSpace.s20;
 
-  /// 宽屏白底页面那一栏的最大宽度（含左右边距）。
+  /// 宽屏白底页面内容栏的最大宽度, 含左右边距.
   static const plainMaxWidth = 480.0;
 
   bool get isWide => widthClass == WidthClass.wide;
 
-  /// 手机上舞台的高度：844 高的屏幕正好 520，按屏幕高度伸缩，夹在 420 到 560 之间；
-  /// 高屏多出来的高度给抽屉。宽屏的舞台铺满整个屏幕。
+  /// 舞台高度.
+  ///
+  /// 手机上以 844 高的屏幕为基准, 按屏幕高度等比缩放 [EatSize.stage], 并限制在
+  /// [EatSize.stageMin] 到 [EatSize.stageMax] 之间. 超出上限的屏幕高度留给抽屉.
+  /// 宽屏时舞台铺满屏幕.
   double get stageHeight => isWide
       ? screen.height
       : (screen.height * EatSize.stage / 844).clamp(
@@ -55,14 +61,17 @@ class const EatLayout({
           EatSize.stageMax,
         );
 
-  /// 盘子、转盘跟着舞台高度等比缩放的系数。
+  /// 盘子和转盘随舞台高度等比缩放的系数.
   double get stageScale => stageHeight / EatSize.stage;
 
-  /// 窄手机上舞台菜名、价格的缩小系数（菜名最小 36px 由页面再夹）。
+  // TODO: 舞台页未把菜名字号限制在 36px 以上, 320 宽的屏幕上三行菜名只有约 34px. 各舞台页按 36px 下限夹取字号后删除本条.
+  /// 窄屏上舞台菜名和价格的缩小系数. 其余宽度为 1.
   double get stageTextScale =>
       widthClass == WidthClass.narrow ? screen.width / narrowBreakpoint : 1;
 
-  /// 白底页面内容两侧的留白：手机上是页面边距，宽屏时再把一栏挤到中间。
+  /// 白底页面内容的左右留白.
+  ///
+  /// 手机上等于页面边距. 宽屏时额外加上使内容栏居中所需的留白.
   double get plainHorizontalPadding => isWide
       ? ((screen.width - plainMaxWidth) / 2).clamp(0.0, double.infinity) +
             EatSpace.s20

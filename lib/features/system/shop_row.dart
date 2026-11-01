@@ -6,10 +6,11 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 店铺行：缩略图、店名、距离和商圈、地址。附近的抽屉、搜索的「店」栏都用它（产品 6.7、6.8）。
+// TODO: 缩略图应为招牌菜封面, 店铺列表接口没有该字段, 目前用门头照片代替. 接口返回招牌菜封面后改用封面.
+/// 店铺行: 缩略图, 店名, 距离和商圈, 地址. 用于附近页抽屉和搜索页的 "店" 分栏.
 ///
-/// 缩略图该用招牌菜的封面，店铺列表接口还没有这个字段（现状差距 2.1），有门头照片用门头照片，
-/// 没有时是 `mist` 底。[extra] 是行里额外的一句，如搜菜名时「有 酸辣粉 ¥12」。
+/// 没有门头照片时缩略图为 `mist` 底.
+/// [extra] 是额外的一行说明, 如按菜名搜索时的 "有 酸辣粉 ¥12".
 class ShopRow extends ConsumerWidget {
   const new({
     super.key,
@@ -22,7 +23,7 @@ class ShopRow extends ConsumerWidget {
   final Shop shop;
   final String? extra;
 
-  /// 不传时用门头照片。
+  /// 缩略图地址. 不传时使用门头照片.
   final String? image;
 
   final VoidCallback onTap;

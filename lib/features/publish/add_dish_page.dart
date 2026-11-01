@@ -40,11 +40,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 发布第 2 步：加菜（`G-AddDish`）。舞台上是封面和它的舞台色；抽屉里是照片、店、菜名、价格、
-/// 分类、饭点、标签和说两句（产品 6.9）。
+/// 发布流程第 2 步: 加菜.
 ///
-/// 照片加进来就在后台上传；第一张加好后自动进「调整照片」。填过内容再返回时先确认，不存草稿。
-/// 发布成功后退出发布流程的所有页面，再打开这道菜（技术架构 5.5）。
+/// - 舞台: 封面和封面的舞台色.
+/// - 抽屉: 照片, 店, 菜名, 价格, 分类, 饭点, 标签和 "说两句".
+///
+/// 照片添加后立即在后台上传. 添加第一张照片后自动打开 "调整照片".
+/// 已填写内容时返回需要确认. 草稿不保存.
+/// 发布成功后关闭发布流程的所有页面, 再打开新发布的菜.
 class AddDishPage extends ConsumerStatefulWidget {
   const new({super.key, required this.shopId});
 
@@ -57,7 +60,7 @@ class AddDishPage extends ConsumerStatefulWidget {
 class _AddDishPageState extends ConsumerState<AddDishPage> {
   late int _shopId = widget.shopId;
 
-  /// 「换一家」选回来的店，有它就不用再拉一次。
+  /// 通过 "换一家" 选中的店. 不为 null 时直接使用, 不再请求店铺资料.
   Shop? _changedShop;
   final _name = TextEditingController();
   final _price = TextEditingController();
@@ -66,7 +69,7 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
   var _writingTag = false;
   var _busy = false;
 
-  /// 发布时服务端说重名了，已有那道菜的 id。
+  /// 发布时服务端判定重名, 返回的已有菜品 id.
   int? _duplicateId;
   late final AppLifecycleListener _lifecycle;
 
@@ -136,7 +139,7 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
     if (first) await _crop();
   }
 
-  /// 打开「调整照片」调封面。
+  /// 打开 "调整照片" 调整封面.
   Future<void> _crop() async {
     final notifier = ref.read(draftProvider.notifier);
     final draft = ref.read(draftProvider);
@@ -268,7 +271,9 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
     }
   }
 
-  /// 退出发布流程的所有页面，再压入这道菜：从详情返回时回到发起发布的页面（产品 6.9）。
+  /// 关闭发布流程的所有页面, 再压入新发布的菜.
+  ///
+  /// 先关闭再压入, 用户从菜品详情返回时回到发起发布的页面, 而不是回到发布流程.
   void _finish(int dishId) {
     final toastContext = Navigator.of(context, rootNavigator: true).context;
     final router = GoRouter.of(context);
@@ -496,8 +501,10 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// 舞台：右边是封面盘子，点了调整照片；还没照片时是一个虚线圆「加一张照片」。
-/// 左下按填好的分类、菜名、价格预览这道菜上舞台的样子。
+/// 加菜页舞台内容.
+///
+/// - 右侧: 封面盘子, 点击打开 "调整照片". 没有照片时显示虚线圆 "加一张照片".
+/// - 左下: 按已填写的分类, 菜名和价格预览这道菜在舞台上的样子.
 class _StageContent extends StatelessWidget {
   const new({
     required this.draft,
@@ -613,7 +620,7 @@ class _StageContent extends StatelessWidget {
   }
 }
 
-/// 还没照片时盘子的位置：虚线圆「加一张照片」。
+/// 没有照片时占据盘子位置的虚线圆 "加一张照片".
 class _AddPlate extends StatelessWidget {
   const new({required this.size, required this.onTap});
 
@@ -653,7 +660,9 @@ class _AddPlate extends StatelessWidget {
   }
 }
 
-/// 照片条：已加的照片（第一张是封面，带上传进度）、「＋」再加一张、「1 / 9」。
+/// 照片条: 已添加的照片, 添加按钮和张数.
+///
+/// 第一张是封面. 每张照片显示上传进度.
 class _PhotoStrip extends StatelessWidget {
   const new({required this.photos, required this.onAdd, required this.onTap});
 
@@ -819,7 +828,7 @@ class _PhotoThumb extends StatelessWidget {
   }
 }
 
-/// 「发布到 袁记云饺」和「换一家」。
+/// 发布到哪家店, 以及 "换一家".
 class _ShopLine extends StatelessWidget {
   const new({required this.shop, required this.onChange});
 
@@ -854,7 +863,9 @@ class _ShopLine extends StatelessWidget {
   }
 }
 
-/// 「这家店已有鲜虾蟹籽云吞」和「去看看」：重名不能发布，引去已有的那道（产品 9.2）。
+/// 重名提示和 "去看看".
+///
+/// 同一家店内菜名重复时不能发布, 提示引导用户查看已有的菜.
 class _DuplicateNotice extends StatelessWidget {
   const new({required this.name, required this.onOpen});
 
@@ -884,7 +895,7 @@ class _DuplicateNotice extends StatelessWidget {
   }
 }
 
-/// 抽屉里的一组：13px 的小标题，下面是内容。
+/// 抽屉中的一组字段: 小标题和内容.
 class _Group extends StatelessWidget {
   const new({required this.title, required this.child});
 
@@ -914,7 +925,10 @@ class _Group extends StatelessWidget {
   }
 }
 
-/// 口味词表多选，加「＋ 自己写」写进我的标签，写的时候说明只有自己看得见（产品 4.6）。
+/// 标签选择.
+///
+/// - 口味词表中的标签可多选.
+/// - "+ 自己写" 添加的是我的标签. 输入时说明我的标签只有自己可见.
 class _Tags extends ConsumerWidget {
   const new({
     required this.draft,
@@ -997,7 +1011,7 @@ class _Tags extends ConsumerWidget {
   }
 }
 
-/// 「说两句」：多行，最多 300 字，右下角计数。
+/// "说两句" 输入框. 多行输入, 右下角显示字数.
 class _NoteField extends StatelessWidget {
   const new({required this.controller, required this.onChanged});
 

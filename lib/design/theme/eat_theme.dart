@@ -3,7 +3,7 @@ import 'package:eat/design/theme/eat_shadows.dart';
 import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 挂在 `ThemeData` 上的设计令牌，组件用 `context.eat` 取。
+/// 挂载在 `ThemeData` 上的设计令牌. 组件通过 `context.eat` 读取.
 class const EatTheme({
   required final EatColors colors,
   required final EatTextStyles text,
@@ -26,24 +26,24 @@ class const EatTheme({
     shadows: shadows ?? this.shadows,
   );
 
-  /// 只有一套浅色主题，主题之间不会过渡，所以不做逐项插值，过半就换成目标值。
+  /// 应用只有一套浅色主题, 不存在主题之间的过渡, 因此不逐项插值. 进度过半时切换为目标值.
   @override
   EatTheme lerp(EatTheme? other, double t) =>
       other != null && t >= 0.5 ? other : this;
 }
 
 extension EatThemeContext on BuildContext {
-  /// 当前的设计令牌。
+  /// 当前的设计令牌.
   ///
-  /// 上下文里没挂 `EatTheme` 时（比如单测里直接 pump 一个组件）退回 [EatTheme.light]：只有这一套
-  /// 主题，退回去的值和挂上的一样。
+  /// 上下文中没有 `EatTheme` 时返回 [EatTheme.light], 例如单元测试中直接 pump 组件.
+  /// 应用只有这一套主题, 因此回退值与挂载值相同.
   EatTheme get eat => Theme.of(this).extension<EatTheme>() ?? EatTheme.light;
 }
 
-/// 应用的 `ThemeData`：固定浅色，关掉水波纹，背景 `paper`。
+/// 应用的 `ThemeData`: 固定浅色, 关闭水波纹, 背景为 `paper`.
 ///
-/// 按钮、标签、开关、面板都用 `design/widgets/` 里自己的组件，这里只照顾仍会用到的 Material
-/// 部件（输入框、文本选择菜单、光标），让它们取 `ink`，不混进 M3 默认的紫色。
+/// 按钮, 标签, 开关和面板都使用 `design/widgets/` 中的自有组件.
+/// 本主题只配置仍会用到的 Material 部件 (输入框, 文本选择菜单, 光标), 使其使用 `ink`, 避免出现 M3 默认的紫色.
 ThemeData eatThemeData() {
   final theme = EatTheme.light;
   final colors = theme.colors;

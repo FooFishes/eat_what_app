@@ -8,12 +8,16 @@ part of 'publish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 选店列表：离我近的在前，没有定位时按离校区中心的远近（产品 6.9）。[keyword] 为空时是附近的店。
+/// 选店列表. [keyword] 为空时列出附近的店.
+///
+/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
 
 @ProviderFor(pickableShops)
 final pickableShopsProvider = PickableShopsFamily._();
 
-/// 选店列表：离我近的在前，没有定位时按离校区中心的远近（产品 6.9）。[keyword] 为空时是附近的店。
+/// 选店列表. [keyword] 为空时列出附近的店.
+///
+/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
 
 final class PickableShopsProvider
     extends
@@ -23,7 +27,9 @@ final class PickableShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 选店列表：离我近的在前，没有定位时按离校区中心的远近（产品 6.9）。[keyword] 为空时是附近的店。
+  /// 选店列表. [keyword] 为空时列出附近的店.
+  ///
+  /// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
   PickableShopsProvider._({
     required PickableShopsFamily super.from,
     required String super.argument,
@@ -69,7 +75,9 @@ final class PickableShopsProvider
 
 String _$pickableShopsHash() => r'f1b76821ed1aafbbf9b76abf5886d85867b26514';
 
-/// 选店列表：离我近的在前，没有定位时按离校区中心的远近（产品 6.9）。[keyword] 为空时是附近的店。
+/// 选店列表. [keyword] 为空时列出附近的店.
+///
+/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
 
 final class PickableShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -82,7 +90,9 @@ final class PickableShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 选店列表：离我近的在前，没有定位时按离校区中心的远近（产品 6.9）。[keyword] 为空时是附近的店。
+  /// 选店列表. [keyword] 为空时列出附近的店.
+  ///
+  /// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
 
   PickableShopsProvider call(String keyword) =>
       PickableShopsProvider._(argument: keyword, from: this);
@@ -91,17 +101,17 @@ final class PickableShopsFamily extends $Family
   String toString() => r'pickableShopsProvider';
 }
 
-/// 「你在万达金街附近」：有定位时我所在的商圈，不在任何商圈里或没有定位时为 null。
+/// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
 
 @ProviderFor(myHub)
 final myHubProvider = MyHubProvider._();
 
-/// 「你在万达金街附近」：有定位时我所在的商圈，不在任何商圈里或没有定位时为 null。
+/// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
 
 final class MyHubProvider
     extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
     with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
-  /// 「你在万达金街附近」：有定位时我所在的商圈，不在任何商圈里或没有定位时为 null。
+  /// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
   MyHubProvider._()
     : super(
         from: null,
@@ -129,17 +139,17 @@ final class MyHubProvider
 
 String _$myHubHash() => r'30801ea7c162f9ef6f0eb76904ef25536364c232';
 
-/// 地图中心所在的商圈，新建店时按位置自动判断（产品 6.9）。
+/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
 
 @ProviderFor(hubAt)
 final hubAtProvider = HubAtFamily._();
 
-/// 地图中心所在的商圈，新建店时按位置自动判断（产品 6.9）。
+/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
 
 final class HubAtProvider
     extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
     with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
-  /// 地图中心所在的商圈，新建店时按位置自动判断（产品 6.9）。
+  /// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
   HubAtProvider._({
     required HubAtFamily super.from,
     required GcjPoint super.argument,
@@ -185,7 +195,7 @@ final class HubAtProvider
 
 String _$hubAtHash() => r'ab05209d56ed9b3cb37591fce54c1858cb7aa031';
 
-/// 地图中心所在的商圈，新建店时按位置自动判断（产品 6.9）。
+/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
 
 final class HubAtFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Hub?>, GcjPoint> {
@@ -198,7 +208,7 @@ final class HubAtFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 地图中心所在的商圈，新建店时按位置自动判断（产品 6.9）。
+  /// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
 
   HubAtProvider call(GcjPoint point) =>
       HubAtProvider._(argument: point, from: this);
@@ -207,17 +217,17 @@ final class HubAtFamily extends $Family
   String toString() => r'hubAtProvider';
 }
 
-/// 新建店时附近 200 m 内的同名店（产品 9.2）。
+/// 新建店时, 地图中心附近的同名店. 没有时为 null.
 
 @ProviderFor(sameNameShop)
 final sameNameShopProvider = SameNameShopFamily._();
 
-/// 新建店时附近 200 m 内的同名店（产品 9.2）。
+/// 新建店时, 地图中心附近的同名店. 没有时为 null.
 
 final class SameNameShopProvider
     extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
     with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
-  /// 新建店时附近 200 m 内的同名店（产品 9.2）。
+  /// 新建店时, 地图中心附近的同名店. 没有时为 null.
   SameNameShopProvider._({
     required SameNameShopFamily super.from,
     required (String, GcjPoint) super.argument,
@@ -263,7 +273,7 @@ final class SameNameShopProvider
 
 String _$sameNameShopHash() => r'216076e5af1e0172d878cb6e234620ce9ed5f53b';
 
-/// 新建店时附近 200 m 内的同名店（产品 9.2）。
+/// 新建店时, 地图中心附近的同名店. 没有时为 null.
 
 final class SameNameShopFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
@@ -276,7 +286,7 @@ final class SameNameShopFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 新建店时附近 200 m 内的同名店（产品 9.2）。
+  /// 新建店时, 地图中心附近的同名店. 没有时为 null.
 
   SameNameShopProvider call(String name, GcjPoint point) =>
       SameNameShopProvider._(argument: (name, point), from: this);
@@ -285,17 +295,17 @@ final class SameNameShopFamily extends $Family
   String toString() => r'sameNameShopProvider';
 }
 
-/// 输完菜名就查重：这家店已有同名的菜时返回那道（产品 6.9）。
+/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 
 @ProviderFor(sameNameDish)
 final sameNameDishProvider = SameNameDishFamily._();
 
-/// 输完菜名就查重：这家店已有同名的菜时返回那道（产品 6.9）。
+/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 
 final class SameNameDishProvider
     extends $FunctionalProvider<AsyncValue<Dish?>, Dish?, FutureOr<Dish?>>
     with $FutureModifier<Dish?>, $FutureProvider<Dish?> {
-  /// 输完菜名就查重：这家店已有同名的菜时返回那道（产品 6.9）。
+  /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
   SameNameDishProvider._({
     required SameNameDishFamily super.from,
     required (int, String) super.argument,
@@ -341,7 +351,7 @@ final class SameNameDishProvider
 
 String _$sameNameDishHash() => r'dcc1779df716a0b10b6230f13a5eed45d9e997a3';
 
-/// 输完菜名就查重：这家店已有同名的菜时返回那道（产品 6.9）。
+/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 
 final class SameNameDishFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish?>, (int, String)> {
@@ -354,7 +364,7 @@ final class SameNameDishFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 输完菜名就查重：这家店已有同名的菜时返回那道（产品 6.9）。
+  /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 
   SameNameDishProvider call(int shopId, String name) =>
       SameNameDishProvider._(argument: (shopId, name), from: this);
@@ -363,20 +373,26 @@ final class SameNameDishFamily extends $Family
   String toString() => r'sameNameDishProvider';
 }
 
-/// 加菜页的草稿和照片上传队列，随页面释放，不存草稿（产品 6.9）。
+/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
-/// 照片加进来就在后台传，同时最多 2 张（技术架构 13.3）；失败的单张重试，回到前台时失败的自动重试一次。
+/// - 照片添加后立即在后台上传, 并发数有上限.
+/// - 上传失败的照片可以单张重试.
+/// - 回到前台时, 失败的照片自动重试一次.
 
 @ProviderFor(Draft)
 final draftProvider = DraftProvider._();
 
-/// 加菜页的草稿和照片上传队列，随页面释放，不存草稿（产品 6.9）。
+/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
-/// 照片加进来就在后台传，同时最多 2 张（技术架构 13.3）；失败的单张重试，回到前台时失败的自动重试一次。
+/// - 照片添加后立即在后台上传, 并发数有上限.
+/// - 上传失败的照片可以单张重试.
+/// - 回到前台时, 失败的照片自动重试一次.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
-  /// 加菜页的草稿和照片上传队列，随页面释放，不存草稿（产品 6.9）。
+  /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
   ///
-  /// 照片加进来就在后台传，同时最多 2 张（技术架构 13.3）；失败的单张重试，回到前台时失败的自动重试一次。
+  /// - 照片添加后立即在后台上传, 并发数有上限.
+  /// - 上传失败的照片可以单张重试.
+  /// - 回到前台时, 失败的照片自动重试一次.
   DraftProvider._()
     : super(
         from: null,
@@ -406,9 +422,11 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
 
 String _$draftHash() => r'74843abe9ceb74e308cb64cbfa99337978f84c2d';
 
-/// 加菜页的草稿和照片上传队列，随页面释放，不存草稿（产品 6.9）。
+/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
-/// 照片加进来就在后台传，同时最多 2 张（技术架构 13.3）；失败的单张重试，回到前台时失败的自动重试一次。
+/// - 照片添加后立即在后台上传, 并发数有上限.
+/// - 上传失败的照片可以单张重试.
+/// - 回到前台时, 失败的照片自动重试一次.
 
 abstract class _$Draft extends $Notifier<PublishDraft> {
   PublishDraft build();

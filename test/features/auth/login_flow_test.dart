@@ -269,7 +269,8 @@ void main() {
       location: Paths.me,
     );
 
-    // 请求要靠 pump 推进假时间才完成，先挂上错误处理，再 pump。
+    // 请求在 pump 推进模拟时间后才完成.
+    // 先注册错误处理再 pump, 否则请求失败会被报告为未处理的异常.
     final request = container
         .read(apiClientProvider)
         .get('/anything')

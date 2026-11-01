@@ -8,33 +8,34 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'photo_picker.g.dart';
 
-/// 选好、压好的一张照片：JPEG 字节和像素尺寸。
+/// 选取并压缩后的照片: JPEG 字节和像素尺寸.
 class const PickedPhoto({
   required final Uint8List bytes,
   required final int width,
   required final int height,
 });
 
-/// 选不出照片的原因。用户取消不算失败，返回空列表。
+/// 无法取得照片的原因. 用户取消不算失败, 返回空列表.
 enum PhotoPickFailure {
-  /// 没有相机或相册权限。
+  /// 没有相机或相册权限.
   denied,
 
-  /// 解不开（Web 上的 HEIC 这类）。
+  /// 无法解码, 例如 Web 上的 HEIC.
   unsupported,
 }
 
 class const PhotoPickException(final PhotoPickFailure reason)
     implements Exception;
 
-/// 拍照、从相册多选，选到的照片压成长边不超过 2048、质量 85 的 JPEG，去掉 EXIF（技术架构 13.2）。
+/// 拍照或从相册多选. 照片压缩为 JPEG 并去除 EXIF, 长边不超过 [PlatformPhotoPicker.maxSide].
 ///
-/// 一张一张顺序压缩，避免同时解码多张大图占内存。Web 上是文件选择框，手机浏览器能直接拍。
+/// 逐张顺序压缩, 避免同时解码多张大图导致内存占用过高.
+/// Web 上为文件选择框, 手机浏览器可直接调用相机.
 abstract interface class PhotoPicker {
-  /// 从相册选，最多 [limit] 张。
+  /// 从相册选取, 最多 [limit] 张.
   Future<List<PickedPhoto>> pickFromGallery({required int limit});
 
-  /// 拍一张；取消返回 null。
+  /// 拍摄一张照片. 用户取消时返回 null.
   Future<PickedPhoto?> takePhoto();
 }
 
@@ -70,8 +71,8 @@ class PlatformPhotoPicker implements PhotoPicker {
     try {
       return await pick();
     } on Object catch (e) {
-      // 插件把权限被拒报成 PlatformException，码在不同平台不一样（camera_access_denied、
-      // photo_access_denied），只按字面判断。
+      // 插件把权限被拒报告为 PlatformException, 错误码因平台而异
+      // (camera_access_denied, photo_access_denied), 因此按异常文本匹配.
       if ('$e'.contains('denied')) {
         throw const PhotoPickException(PhotoPickFailure.denied);
       }
@@ -79,8 +80,10 @@ class PlatformPhotoPicker implements PhotoPicker {
     }
   }
 
-  /// 压成长边不超过 [maxSide] 的 JPEG。`flutter_image_compress` 的 `minWidth`、`minHeight` 其实是
-  /// 按「短边」缩的上限，要先读出原图尺寸，按长边换算成它要的两个值。
+  /// 压缩为长边不超过 [maxSide] 的 JPEG.
+  ///
+  /// `flutter_image_compress` 的 `minWidth` 和 `minHeight` 实际按短边限制缩放.
+  /// 因此先读取原图尺寸, 再按长边换算出这两个参数.
   static Future<PickedPhoto> compress(Uint8List bytes) async {
     final (width, height) = await _size(bytes);
     final scale = math.max(width, height) / maxSide;
@@ -94,7 +97,7 @@ class PlatformPhotoPicker implements PhotoPicker {
     return PickedPhoto(bytes: out, width: outWidth, height: outHeight);
   }
 
-  /// 只读文件头里的尺寸，不解码整张图。
+  /// 只读取文件头中的尺寸, 不解码整张图片.
   static Future<(int, int)> _size(Uint8List bytes) async {
     try {
       final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);

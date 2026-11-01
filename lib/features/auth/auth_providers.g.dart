@@ -8,15 +8,21 @@ part of 'auth_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 登录页的协议勾选。手机号登录、密码登录都要先勾过；登录成功后写进本机的同意记录。
+/// 登录页的协议勾选状态.
+///
+/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
 
 @ProviderFor(LoginAgreement)
 final loginAgreementProvider = LoginAgreementProvider._();
 
-/// 登录页的协议勾选。手机号登录、密码登录都要先勾过；登录成功后写进本机的同意记录。
+/// 登录页的协议勾选状态.
+///
+/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
 final class LoginAgreementProvider
     extends $NotifierProvider<LoginAgreement, bool> {
-  /// 登录页的协议勾选。手机号登录、密码登录都要先勾过；登录成功后写进本机的同意记录。
+  /// 登录页的协议勾选状态.
+  ///
+  /// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
   LoginAgreementProvider._()
     : super(
         from: null,
@@ -46,7 +52,9 @@ final class LoginAgreementProvider
 
 String _$loginAgreementHash() => r'7cc20187bd7bdd547dd4ef1c5856be844ee14ef8';
 
-/// 登录页的协议勾选。手机号登录、密码登录都要先勾过；登录成功后写进本机的同意记录。
+/// 登录页的协议勾选状态.
+///
+/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
 
 abstract class _$LoginAgreement extends $Notifier<bool> {
   bool build();

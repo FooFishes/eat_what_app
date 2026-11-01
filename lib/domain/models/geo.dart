@@ -1,6 +1,6 @@
-/// GCJ-02（火星坐标系）的一个点：接口参数和返回、导航链接都用它，距离也只按它算。
+/// GCJ-02 坐标系中的点. 接口参数和返回值, 导航链接都使用该坐标系, 距离也只按该坐标系计算.
 ///
-/// 和 [WgsPoint] 是两个类型，混用会差几百米（技术架构 14.1）。
+/// 与 [WgsPoint] 是不同类型. 两种坐标混用会产生数百米的偏差.
 class const GcjPoint(final double lat, final double lng) {
   @override
   bool operator ==(Object other) =>
@@ -13,7 +13,7 @@ class const GcjPoint(final double lat, final double lng) {
   String toString() => 'GcjPoint($lat, $lng)';
 }
 
-/// WGS-84 的一个点：设备定位、天地图瓦片、接口里的 GeoJSON 用它。
+/// WGS-84 坐标系中的点. 设备定位, 天地图瓦片和接口中的 GeoJSON 使用该坐标系.
 class const WgsPoint(final double lat, final double lng) {
   @override
   bool operator ==(Object other) =>

@@ -8,17 +8,17 @@ part of 'app_config.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 当前构建的环境配置，测试里用 `overrideWithValue` 换掉。
+/// 当前构建的环境配置. 测试中用 `overrideWithValue` 替换.
 
 @ProviderFor(appConfig)
 final appConfigProvider = AppConfigProvider._();
 
-/// 当前构建的环境配置，测试里用 `overrideWithValue` 换掉。
+/// 当前构建的环境配置. 测试中用 `overrideWithValue` 替换.
 
 final class AppConfigProvider
     extends $FunctionalProvider<AppConfig, AppConfig, AppConfig>
     with $Provider<AppConfig> {
-  /// 当前构建的环境配置，测试里用 `overrideWithValue` 换掉。
+  /// 当前构建的环境配置. 测试中用 `overrideWithValue` 替换.
   AppConfigProvider._()
     : super(
         from: null,

@@ -6,10 +6,12 @@ import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 从底部弹出一个面板，背后盖一层 `scrim`，点遮罩或下拉都会关掉。不改地址，不跳新页面。
+/// 从底部弹出面板, 背后覆盖 `scrim`. 点击遮罩或下拉均可关闭.
 ///
-/// 面板高度跟着内容走，最高到屏幕的 85%；出现和收起 240ms，减少动态效果时直接显示。
-/// [builder] 一般返回 [EatPanel]。面板里不再开面板。
+/// - 不修改地址, 不跳转新页面.
+/// - 面板高度随内容变化, 不超过最大高度.
+/// - 系统开启减少动态效果时没有进出动画.
+/// - [builder] 通常返回 [EatPanel]. 面板内不再打开面板.
 Future<T?> showPanel<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -39,11 +41,14 @@ Future<T?> showPanel<T>(
   );
 }
 
-/// 底部面板的内容：把手、标题、可选的一行说明、内容和底部按钮。
+/// 底部面板的内容: 把手, 标题, 可选的说明行, 内容和底部按钮.
 ///
-/// 两种头部：普通面板是标题加右边的关闭按钮；提示类面板（拦截、功能暂时关了、操作受限）传 [icon]，
-/// 左边一个 52px 的 `mist` 圆底图标、右边一句说清现在怎样的标题，不放关闭按钮，靠底部按钮给下一步。
-/// 内容超出时只有中间这段滚动，标题和按钮不动。
+/// 头部有两种:
+/// - 普通面板: 标题和右侧的关闭按钮.
+/// - 提示类面板 (拦截, 功能关闭, 操作受限): 传入 [icon]. 左侧为 `mist` 圆底图标, 右侧标题说明当前状况.
+///   不显示关闭按钮, 下一步操作由底部按钮提供.
+///
+/// 内容超出时只有中间部分滚动, 标题和按钮固定.
 class EatPanel extends StatelessWidget {
   const new({
     super.key,
@@ -60,11 +65,13 @@ class EatPanel extends StatelessWidget {
   final EatIcons? icon;
   final Widget? child;
 
-  /// 一个主按钮，或「次按钮 + 主按钮」的一行。主按钮的文字带上结果，如「看 12 家」；
-  /// 破坏性的确认写动作本身（「退出」「先不退」），不写「确定」「取消」。
+  /// 底部按钮: 一个主按钮, 或 "次按钮 + 主按钮" 一行.
+  ///
+  /// 主按钮文字包含结果, 如 "看 12 家".
+  /// 破坏性确认写动作本身, 如 "退出" "先不退", 不写 "确定" "取消".
   final Widget? actions;
 
-  /// 不传时关闭按钮收起面板。
+  /// 点击关闭按钮的回调. 不传时关闭面板.
   final VoidCallback? onClose;
 
   @override
@@ -134,11 +141,11 @@ class EatPanel extends StatelessWidget {
   }
 }
 
-/// 提示类面板里「原因」「恢复」这样左右对齐的几行。
+/// 提示类面板中左右对齐的信息行, 如 "原因" "恢复".
 class PanelFacts extends StatelessWidget {
   const new(this.facts, {super.key});
 
-  /// 每行的标签、内容，以及内容要不要加粗（恢复时间一般加粗）。
+  /// 每行的标签, 内容, 以及内容是否加粗. 恢复时间通常加粗.
   final List<({String label, String value, bool strong})> facts;
 
   @override

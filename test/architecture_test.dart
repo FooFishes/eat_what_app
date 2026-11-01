@@ -1,7 +1,10 @@
-/// 检查 `lib/` 的分层方向和导入约定，规则和技术架构文档「依赖方向」一节的表一致。
+/// 检查 `lib/` 的分层依赖方向和导入约定.
 ///
-/// 只用正则读 import / export 指令，不依赖分析器：指令总在文件开头，格式由
-/// `dart format` 固定，正则足够，也不用把 `analyzer` 加成直接依赖。
+/// 依赖只能指向下层, 功能目录之间不互相导入. 各层允许依赖的层见 [_allowedLayers].
+///
+/// 用正则读取 import 和 export 指令, 不使用分析器:
+/// - 指令总在文件开头, 格式由 `dart format` 固定, 正则足以解析.
+/// - 无需把 `analyzer` 加为直接依赖.
 library;
 
 import 'dart:io';
@@ -58,7 +61,7 @@ void main() {
   });
 }
 
-/// 每一层能导入的 `lib/` 内的层。`design/tokens` 谁都能导入，不必列出。
+/// 每一层允许导入的 `lib/` 内的层. `design/tokens` 对所有层开放, 不在此列出.
 const _allowedLayers = <String, Set<String>>{
   'core': {'core'},
   'design/tokens': {},
@@ -69,14 +72,15 @@ const _allowedLayers = <String, Set<String>>{
   'features': {'core', 'design', 'domain', 'data', 'state', 'features'},
 };
 
-/// 各功能都能导入的功能目录：拦截面板、轻提示这类所有页面共用、又要读账号状态的东西
-/// （技术架构 2.1 的 `system/`）。
+/// 所有功能都可以导入的共享功能目录.
+///
+/// 拦截面板和轻提示被所有页面使用, 又需要读取账号状态, 因此放在功能层而不是 `design`.
 const _sharedFeature = 'system';
 
-/// 功能目录唯一能导入的 `router/` 文件：跳转用的路径常量。
+/// 功能目录唯一允许导入的 `router/` 文件, 提供跳转用的路径常量.
 const _routerPathsFile = 'router/paths.dart';
 
-/// `domain` 是纯 Dart 的产品规则，只能用这些外部库。
+/// `domain` 允许使用的外部库. `domain` 只放纯 Dart 的产品规则, 不做 IO.
 const _domainExternals = {
   'dart:async',
   'dart:collection',
@@ -93,11 +97,13 @@ List<File> _dartFiles(String dir) =>
         .toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
-/// `lib/` 下的相对路径，分隔符统一成 `/`。
+/// 文件相对 `lib/` 的路径, 分隔符统一为 `/`.
 String _libPath(File file) =>
     file.path.replaceAll(r'\', '/').replaceFirst(RegExp('^lib/'), '');
 
-/// 文件所在的层；`lib/` 根下的入口文件（main、bootstrap、app）返回 `root`。
+/// 文件所在的层, 不属于任何层时返回 null.
+///
+/// `lib/` 根目录下的入口文件 (main, bootstrap, app) 返回 `root`.
 String? _layerOf(String libPath) {
   final segments = libPath.split('/');
   if (segments.length == 1) return 'root';
@@ -119,7 +125,7 @@ String? _layerOf(String libPath) {
 final _directive = RegExp(r'^(?:import|export)\s[^;]*;', multiLine: true);
 final _quoted = RegExp(r'''['"]([^'"]+)['"]''');
 
-/// 文件里 import / export 的全部 URI，条件导入的每个分支都算。
+/// 文件中 import 和 export 指令引用的全部 URI, 包含条件导入的每个分支.
 Iterable<String> _importedUris(File file) sync* {
   for (final directive in _directive.allMatches(file.readAsStringSync())) {
     for (final uri in _quoted.allMatches(directive[0]!)) {
@@ -128,7 +134,7 @@ Iterable<String> _importedUris(File file) sync* {
   }
 }
 
-/// 指向 `lib/` 内的 URI 转成 `lib/` 下的路径；外部库返回 null。
+/// 把指向 `lib/` 内的 URI 转换为相对 `lib/` 的路径. 外部库返回 null.
 String? _resolveInLib(String from, String uri) {
   const self = 'package:eat/';
   if (uri.startsWith(self)) return uri.substring(self.length);

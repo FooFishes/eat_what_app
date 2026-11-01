@@ -9,14 +9,16 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 三个主页面的外壳：下面是各分支的页面，上面悬浮 [EatNavBar]。
+/// 三个主页面的外壳: 下层是各分支的页面, 上层悬浮 [EatNavBar].
 ///
-/// 手机上导航离屏幕左右 `space-16`、离底部 `space-24` 加安全区；宽屏时放进页面左侧悬浮面板的底部，
-/// 三个页面的面板位置一样，所以切换时导航不动。安卓的返回键在附近、我的先回发现，在发现才退出。
+/// - 手机: 导航与屏幕左右相距 `space-16`, 与底部相距 `space-24` 加安全区.
+/// - 宽屏: 导航放在页面左侧悬浮面板的底部. 三个页面的面板位置相同, 因此切换时导航不移动.
+///
+/// 安卓返回键在附近页和 "我的" 页先回到发现页, 在发现页才退出应用.
 class MainShell extends ConsumerStatefulWidget {
   const new({super.key, required this.shell});
 
-  /// go_router 给的分支外壳，里面是 [MainBranches] 排好的各分支页面。
+  /// go_router 提供的分支外壳, 包含由 [MainBranches] 排列的各分支页面.
   final StatefulNavigationShell shell;
 
   @override
@@ -50,7 +52,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       currentIndex: shell.currentIndex,
       onSelected: _select,
       onPublish: () async {
-        // 没认证、封禁中在入口就拦下，不进发布流程（技术架构 5.5）。
+        // 未认证或封禁中的账号在入口处拦截, 不进入发布流程.
         if (await guardAction(context, ref, Capability.publishDish) &&
             context.mounted) {
           await context.push(Paths.publish);
@@ -97,10 +99,12 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-/// 各分支的页面叠在一起，只显示当前那个；切走的分支不销毁，滚动位置和页面状态都留着。
+/// 叠放各分支的页面, 只显示当前分支. 切走的分支不销毁, 保留滚动位置和页面状态.
 ///
-/// 和 `StatefulShellRoute.indexedStack` 自带的做法一样，看不见的分支关掉动画（`TickerMode`），
-/// Riverpod 据此暂停它们的监听；另外给每个分支一个 [TabReselect]，再点当前标签时页面滚回顶部。
+/// 与 `StatefulShellRoute.indexedStack` 的默认实现相同, 不可见的分支通过 `TickerMode` 关闭动画.
+/// Riverpod 据此暂停这些分支的监听.
+///
+/// 另外为每个分支提供 [TabReselect], 再次点击当前标签时页面滚回顶部.
 class MainBranches extends StatelessWidget {
   const new({super.key, required this.shell, required this.children});
 

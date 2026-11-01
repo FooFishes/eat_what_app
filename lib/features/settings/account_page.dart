@@ -10,10 +10,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 账号与安全（`G-SettingsAccount`）：认证状态和入口，手机号、用户名、密码的现状。
-///
-/// 设置用户名、换绑手机、设置或修改密码在阶段六接上，现在只显示；登录设备和注销还没有接口，
-/// 带「待接入」。
+// TODO: 登录设备和注销账号没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
+// TODO: 换绑手机和设置用户名未实现, 对应行只显示当前值, 不可点. 实现对应页面后改为可点并跳转.
+// TODO: 设置或修改密码未实现, 该行带 "待接入". 实现密码页面后改为可点并去掉标记.
+/// 账号与安全页面: 学生认证状态和入口, 以及手机号, 用户名, 密码的当前状态.
 class AccountPage extends ConsumerWidget {
   const new({super.key});
 

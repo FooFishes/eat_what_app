@@ -9,10 +9,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 HumanVerifier createHumanVerifier(AppConfig config) =>
     _WebViewHumanVerifier(config.webBaseUrl);
 
-/// App 里的人机验证：盖一层全屏页，里面的 WebView 加载腾讯的 JS，结果经 JS 通道传回来。
+/// App 中的人机验证. 推入一个全屏透明页面, 其中的 WebView 加载腾讯的 JS, 结果经 JS 通道返回.
 ///
-/// 页面内容由 [_page] 给出，用 `loadHtmlString` 加载，`baseUrl` 设成 Web 版的地址：腾讯按页面来源
-/// 校验域名时看到的是我们自己的域名，也不用等 Web 版部署好一个单独的验证页。
+/// 页面内容为 [_page], 通过 `loadHtmlString` 加载, `baseUrl` 设为 Web 版地址.
+/// 腾讯按页面来源校验域名, 因此校验到的是本站域名, 且无需在 Web 版单独部署验证页.
 class _WebViewHumanVerifier implements HumanVerifier {
   _WebViewHumanVerifier(this._baseUrl);
 
@@ -71,7 +71,8 @@ class _CaptchaViewState extends State<_CaptchaView> {
         ),
       )
       ..loadHtmlString(_page, baseUrl: widget.baseUrl);
-    // 脚本一直加载不出来时不让用户干等；加载出来以后用户可能要动手验证，就不再计时。
+    // 脚本加载超时按失败处理.
+    // 脚本加载完成 (收到 `ready`) 后停止计时, 因为用户可能正在手动验证.
     _timeout = Timer(
       const Duration(seconds: 20),
       () => _finish(const CaptchaFailed()),
@@ -119,11 +120,13 @@ class _CaptchaViewState extends State<_CaptchaView> {
   );
 }
 
-/// 验证页：按接口给的地址加载腾讯的 JS，新建一个验证实例渲染进居中的容器；回调结果原样交回 Flutter。
+/// 验证页的 HTML.
 ///
-/// `TJNCaptcha-global.js` 的构造函数第一个参数必须是 DOM 容器，照旧版只传 appId 会直接抛错。
-/// 控制台配的「我是人类」勾选框渲染在容器里、没有关闭按钮，所以点遮罩空白处当作用户关掉。
-/// 每次验证都是新页面、新实例，不复用上一次的实例（接口要求）。
+/// 按接口给出的地址加载腾讯的 JS, 新建验证实例并渲染到居中的容器中. 回调结果原样传回 Flutter.
+///
+/// - `TJNCaptcha-global.js` 的构造函数第一个参数必须是 DOM 容器, 只传 appId 会直接抛出异常.
+/// - 控制台配置的 "我是人类" 勾选框渲染在容器内且没有关闭按钮, 因此点击遮罩空白处视为用户关闭.
+/// - 接口要求每次验证使用新页面和新实例, 不复用上一次的实例.
 const _page = '''
 <!doctype html>
 <html lang="zh-CN">

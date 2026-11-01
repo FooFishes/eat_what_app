@@ -4,11 +4,13 @@ import 'package:share_plus/share_plus.dart';
 
 part 'share.g.dart';
 
-/// 分享的结果：弹了系统分享，还是退回复制链接。
+/// 分享的结果: 已弹出系统分享, 已退回复制链接, 或失败.
 enum ShareOutcome { shared, copied, failed }
 
-/// 分享一个链接：安卓、iOS 弹系统分享；Web 在支持 Web Share 的浏览器上弹系统分享，
-/// 不支持时（微信内置浏览器）复制链接，由页面提示一句（技术架构 6.4、依赖选型）。
+/// 分享链接.
+///
+/// Android, iOS 和支持 Web Share 的浏览器弹出系统分享.
+/// 不支持时 (如微信内置浏览器) 复制链接, 由页面显示提示.
 abstract interface class LinkSharer {
   Future<ShareOutcome> share(Uri link, {required String title});
 
@@ -26,7 +28,7 @@ class PlatformLinkSharer implements LinkSharer {
         return ShareOutcome.shared;
       }
     } on Object {
-      // 浏览器不支持 Web Share，退回复制链接。
+      // 浏览器不支持 Web Share, 退回复制链接.
     }
     return copy(link);
   }
