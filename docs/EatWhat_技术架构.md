@@ -1189,8 +1189,8 @@ class PushNotice({
 ### 21.3 CI 里跑什么
 
 - `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、依赖方向测试都在 `flutter test` 里，不单独加任务。
-- `web` 任务：改成 `flutter build web --release --no-web-resources-cdn --build-number=<run_number> --dart-define-from-file=...`。
-- 打 tag 的发版构建：安卓、iOS 加混淆和符号表上传；Web 生成并上传 source map。热更新接入后改用 `shorebird release`（第 16.2 节）。
+- `android`、`ios`、`web` 任务都带 `--build-number=<run_number>`，配了 `APP_CONFIG` 时写成 `config/ci.json` 用 `--dart-define-from-file` 传入；`web` 另带 `--no-web-resources-cdn`。安卓配了上传密钥时还原 `android/key.properties`，否则 debug 签名。
+- 打 tag 的发版构建：安卓加混淆，上传符号表；Web 生成 source map，上传后从产物里删掉。配了 `SHOREBIRD_TOKEN` 且有 `shorebird.yaml` 时安卓改用 `shorebird release`（第 16.2 节）。iOS 签名前只做未签名构建，不混淆。补丁用手动触发的 `patch.yml`。凭据都缺省可跳过，清单见 AGENTS.md「CI」。
 - 带原生代码的新依赖：单独一个 PR，看 CI 的 `android`、`ios` 任务能否编过（本地只构建 Web）。
 
 ### 21.4 手动检查

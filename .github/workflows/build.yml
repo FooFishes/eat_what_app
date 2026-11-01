@@ -16,6 +16,20 @@ concurrency:
 permissions:
   contents: read
 
+# 用到的 Secrets 和 Variables 都可以缺省, 缺了就跳过对应步骤:
+# - APP_CONFIG: config/*.json 的内容. 缺省时不传环境配置, 产物调不了接口.
+# - ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD:
+#   上传密钥. 缺省时 release 回落到 debug 签名.
+# - SENTRY_AUTH_TOKEN 和 Variables 中的 SENTRY_URL, SENTRY_ORG, SENTRY_PROJECT: 发版时上传符号表和 source map.
+# - SHOREBIRD_TOKEN: 发版时 Android 改用 shorebird release. 还需要仓库里有 shorebird.yaml.
+env:
+  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  APP_CONFIG: ${{ secrets.APP_CONFIG }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  SENTRY_URL: ${{ vars.SENTRY_URL }}
+  SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+
 jobs:
   check:
     name: Format, analyze & test
@@ -48,6 +62,9 @@ jobs:
     name: Android
     needs: check
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -65,9 +82,80 @@ jobs:
 
       - run: flutter pub get
 
-      # TODO: release 使用 debug 签名, 产物只能用于测试. 接入上传密钥后改用正式签名.
-      - run: flutter build apk --release --build-number=${{ github.run_number }}
-      - run: flutter build appbundle --release --build-number=${{ github.run_number }}
+      - name: Prepare build arguments
+        run: |
+          # DEFINES 交给 flutter build. RELEASE_FLAGS 是 flutter build 和 shorebird release 都认的选项,
+          # shorebird release 要求写在 -- 之前.
+          defines=""
+          if [ -n "$APP_CONFIG" ]; then
+            printf '%s' "$APP_CONFIG" > config/ci.json
+            defines="--dart-define-from-file=config/ci.json"
+          fi
+          flags="--build-number=${{ github.run_number }}"
+          # 发版构建混淆 Dart 代码, 符号表留给 Sentry 还原堆栈.
+          if [ "$IS_RELEASE" = true ]; then
+            flags="$flags --obfuscate --split-debug-info=build/symbols"
+          fi
+          echo "DEFINES=$defines" >> "$GITHUB_ENV"
+          echo "RELEASE_FLAGS=$flags" >> "$GITHUB_ENV"
+          if [ "$IS_RELEASE" = true ] && [ -n "$SHOREBIRD_TOKEN" ] && [ -f shorebird.yaml ]; then
+            echo "USE_SHOREBIRD=true" >> "$GITHUB_ENV"
+          fi
+
+      # 没有上传密钥时 build.gradle.kts 回落到 debug 签名, 产物只能用于测试.
+      - name: Restore upload key
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=../upload-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build with Flutter
+        if: env.USE_SHOREBIRD != 'true'
+        run: |
+          # 混淆映射让 Sentry 还原错误标题中的类名.
+          map=""
+          if [ "$IS_RELEASE" = true ]; then
+            map="--extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json"
+          fi
+          flutter build apk --release $RELEASE_FLAGS $DEFINES $map
+          flutter build appbundle --release $RELEASE_FLAGS $DEFINES $map
+
+      # 用 Shorebird 的引擎构建, 之后才能对这个版本推补丁. Flutter 版本必须和 .fvmrc 一致.
+      - uses: shorebirdtech/setup-shorebird@v1
+        if: env.USE_SHOREBIRD == 'true'
+        with:
+          cache: true
+      - name: Build with Shorebird
+        if: env.USE_SHOREBIRD == 'true'
+        # --artifact=apk 在 aab 之外再出一个 apk, 供安装测试.
+        run: |
+          shorebird release android --artifact=apk \
+            --flutter-version=${{ needs.check.outputs.flutter-version }} \
+            $RELEASE_FLAGS -- $DEFINES
+
+      - name: Upload symbols to Sentry
+        if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          dart run sentry_dart_plugin \
+            --sentry-define=url="$SENTRY_URL" \
+            --sentry-define=org="$SENTRY_ORG" \
+            --sentry-define=project="$SENTRY_PROJECT" \
+            --sentry-define=release="eat@$version+${{ github.run_number }}" \
+            --sentry-define=upload_debug_symbols=true \
+            --sentry-define=upload_source_maps=false \
+            --sentry-define=symbols_path=build/symbols \
+            --sentry-define=dart_symbol_map_path=build/app/obfuscation.map.json \
+            --sentry-define=ignore_missing=true
 
       - uses: actions/upload-artifact@v7
         with:
@@ -93,8 +181,17 @@ jobs:
 
       - run: flutter pub get
 
-      # 未签名构建, 只验证能否编译. 签名和上传 TestFlight 另行配置.
-      - run: flutter build ios --release --no-codesign --build-number=${{ github.run_number }}
+      - name: Prepare build arguments
+        run: |
+          args="--build-number=${{ github.run_number }}"
+          if [ -n "$APP_CONFIG" ]; then
+            printf '%s' "$APP_CONFIG" > config/ci.json
+            args="$args --dart-define-from-file=config/ci.json"
+          fi
+          echo "BUILD_ARGS=$args" >> "$GITHUB_ENV"
+
+      # TODO: 未签名构建, 只验证能否编译, 不混淆, 也不上传符号表. 有 Apple 开发者账号后加签名, TestFlight 上传和 shorebird release ios.
+      - run: flutter build ios --release --no-codesign $BUILD_ARGS
 
       - name: Package Runner.app
         run: ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
@@ -120,7 +217,36 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build web --release
+
+      # CanvasKit 从自己的域名加载, 默认的 www.gstatic.com 在大陆访问不到.
+      # 构建号写进 version.json, 启动时读出, 作为崩溃上报的 release.
+      - name: Build
+        run: |
+          args="--build-number=${{ github.run_number }} --no-web-resources-cdn"
+          if [ -n "$APP_CONFIG" ]; then
+            printf '%s' "$APP_CONFIG" > config/ci.json
+            args="$args --dart-define-from-file=config/ci.json"
+          fi
+          if [ "$IS_RELEASE" = true ]; then
+            args="$args --source-maps"
+          fi
+          flutter build web --release $args
+
+      - name: Upload source maps to Sentry
+        if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          dart run sentry_dart_plugin \
+            --sentry-define=url="$SENTRY_URL" \
+            --sentry-define=org="$SENTRY_ORG" \
+            --sentry-define=project="$SENTRY_PROJECT" \
+            --sentry-define=release="eat@$version+${{ github.run_number }}" \
+            --sentry-define=upload_debug_symbols=false \
+            --sentry-define=upload_source_maps=true \
+            --sentry-define=web_build_path=build/web
+
+      # source map 只给 Sentry, 不随产物部署.
+      - run: find build/web -name '*.map' -delete
 
       - uses: actions/upload-artifact@v7
         with:

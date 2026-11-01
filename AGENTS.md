@@ -87,7 +87,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 - `applicationId` 与 `namespace` 都是 `you.v50to.eat`，入口 `android/app/src/main/kotlin/you/v50to/eat/MainActivity.kt`。
 - Gradle 用 Kotlin DSL：AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0，Java / JVM target 17。`targetSdk` 跟随 Flutter 默认值；`minSdk` 取 Flutter 默认值和 26 中较大的一个（`sentry_flutter` 要求 26）。
-- release 目前用 debug 签名。接入上传密钥时，密钥和 `android/key.properties` 不入库，CI 通过 Secrets 注入；`legacy` 分支的 `android/app/build.gradle.kts` 有读取 `key.properties`、缺失时回落 debug 签名的写法可参考。
+- release 用 `android/key.properties` 指向的上传密钥签名，文件不存在时回落 debug 签名。密钥和 `key.properties` 不入库，CI 从 Secrets 还原（见下文 CI）。
 
 **iOS**
 
@@ -151,8 +151,21 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 1. `check`（ubuntu）：读取 `.fvmrc` 版本，生成文件检查（`build_runner build --only-check`）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
 2. 通过后并行构建，产物保留 14 天：
-   - `android`（ubuntu，JDK 17）：release APK 与 AAB，debug 签名。
+   - `android`（ubuntu，JDK 17）：release APK 与 AAB。配了上传密钥用它签名，否则 debug 签名。
    - `ios`（macOS）：未签名的 `Runner.app`，打包为 zip。
-   - `web`（ubuntu）：`build/web`。
+   - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
+3. `v*` tag 的构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`。
 
-构建号取 `github.run_number`，版本名取 `pubspec.yaml` 的 `version`。目前没有部署和发布步骤；加签名、上传商店或部署 Web 时，凭据走 GitHub Secrets。
+`.github/workflows/patch.yml` 手动触发，给已发布的 Android 版本推 Shorebird 补丁，默认只试跑不上传。
+
+构建号取 `github.run_number`，版本名取 `pubspec.yaml` 的 `version`。用到的凭据和配置都在 GitHub 上，缺了就跳过对应步骤：
+
+| 名字 | 类型 | 用途 |
+| --- | --- | --- |
+| `APP_CONFIG` | Secret | `config/*.json` 的内容，构建时写成 `config/ci.json` 传入；缺了产物调不了接口 |
+| `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` | Secret | 安卓上传密钥（keystore 文件经 base64 编码） |
+| `SENTRY_AUTH_TOKEN` | Secret | 上传符号表和 source map |
+| `SENTRY_URL`、`SENTRY_ORG`、`SENTRY_PROJECT` | Variable | Sentry 服务地址、组织和项目 |
+| `SHOREBIRD_TOKEN` | Secret | `shorebird release` 和 `shorebird patch` |
+
+还没有部署 Web 和上传商店的步骤。
