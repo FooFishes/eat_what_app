@@ -434,7 +434,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
-- **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`（后端完整源码契约的副本），检查每个 `XxxApi` 的 `endpoints` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。评论接口在后端按配置条件注册，生成契约时没有收进去，测试里列为豁免（`_missingFromSpec`），后端补齐契约后删掉。
+- **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`（对应后端当前源码的完整契约，从 Apifox 同步），检查每个 `XxxApi` 的 `endpoints` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。评论接口在后端按配置条件注册，生成契约时没有收进去，测试里列为豁免（`_missingFromSpec`），后端补齐契约后删掉。
 
 ### 7.7 分页、防重复
 
@@ -1269,7 +1269,7 @@ class PushNotice({
 | 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、放量分组、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
 | 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
-| 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml`（后端完整源码契约的副本）里；评论接口没收进契约，列为豁免（7.6） | `test/contract/` |
+| 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml`（对应后端当前源码的完整契约，从 Apifox 同步）里；评论接口没收进契约，列为豁免（7.6） | `test/contract/` |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。

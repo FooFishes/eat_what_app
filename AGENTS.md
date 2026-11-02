@@ -37,7 +37,7 @@ lib/
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的字体和许可证）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从后端仓库同步接口定义）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
@@ -102,7 +102,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 ## 接口
 
-- 依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它是后端仓库 `docs/api/business-openapi.yaml` 的副本：按后端当前源码生成的完整契约，包含尚未部署的接口。客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `EATWHAT_BACKEND_DIR=<后端仓库目录> tool/sync_api.sh`。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
+- 依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它对应后端当前源码的完整契约，包含尚未部署的接口，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh`，从 Apifox 业务模块导出 OpenAPI 3.1 YAML 覆盖该文件；令牌只放环境变量，不入库。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
 - 客户端按后端最新源码开发，不为已部署的旧版本写兼容分支。字段、校验、业务码有疑问时直接读后端源码和 `docs/api/frontend-contract.md`。
 - 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。

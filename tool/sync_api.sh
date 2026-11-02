@@ -1,38 +1,60 @@
 #!/usr/bin/env bash
-# 从本地的后端仓库复制完整源码契约, 覆盖 docs/api.openapi.yml.
+# 从 Apifox 导出业务模块的 OpenAPI 3.1 YAML, 覆盖 docs/api.openapi.yml.
 #
 # 用法:
 #
-#     EATWHAT_BACKEND_DIR=<后端仓库目录> tool/sync_api.sh
+#     APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh
 #
-# 完整源码契约 (docs/api/business-openapi.yaml) 由后端按当前源码离线生成, 包含尚未部署的接口.
-# 客户端按后端最新源码开发, 不使用只含已部署接口的 business-openapi-deployed.yaml.
+# 令牌在 Apifox "账号设置 → API 访问令牌" 中创建, 只从环境变量读取, 不写入仓库.
 #
-# 复制前先在后端仓库切到要对齐的分支并拉取最新提交.
-# 源文件不是 OpenAPI 3.1 YAML 时不覆盖原文件. 同步后用 git diff 检查改动, 再一并提交.
+# 使用开放 API 的 /v1/projects/{id}/export-openapi.
+# CLI 使用的 /api/v1 接口会忽略 oasVersion 和 exportFormat, 只返回 3.0.1 JSON.
+# 环境必须选测试环境, 导出结果的 servers 才包含 https://v50to.you/api.
+#
+# 下载结果不是 3.1 YAML 时不覆盖原文件. 同步后用 git diff 检查改动, 再一并提交.
 
 set -euo pipefail
 
-: "${EATWHAT_BACKEND_DIR:?需要设置环境变量 EATWHAT_BACKEND_DIR}"
+PROJECT_ID=7737416
+MODULE_ID=8746030
+ENVIRONMENT_ID=41960666
+
+: "${APIFOX_TOKEN:?需要设置环境变量 APIFOX_TOKEN}"
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-source="$EATWHAT_BACKEND_DIR/docs/api/business-openapi.yaml"
 target="$root/docs/api.openapi.yml"
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
 
-if [[ ! -f "$source" ]]; then
-  echo "找不到 $source" >&2
-  exit 1
-fi
+status="$(curl -sS -o "$tmp" -w '%{http_code}' -X POST \
+  "https://api.apifox.com/v1/projects/$PROJECT_ID/export-openapi?locale=zh-CN" \
+  -H 'X-Apifox-Api-Version: 2024-03-28' \
+  -H "Authorization: Bearer $APIFOX_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d "{
+    \"scope\": {\"type\": \"ALL\"},
+    \"moduleId\": $MODULE_ID,
+    \"environmentIds\": [$ENVIRONMENT_ID],
+    \"oasVersion\": \"3.1\",
+    \"exportFormat\": \"YAML\",
+    \"options\": {\"includeApifoxExtensionProperties\": false, \"addFoldersToTags\": false}
+  }")"
 
-if ! head -n 1 "$source" | grep -q '^openapi: 3\.1\.'; then
-  echo "源文件不是 OpenAPI 3.1 YAML，未覆盖原文件。开头是：" >&2
-  head -c 300 "$source" >&2
+if [[ "$status" != 200 ]]; then
+  echo "导出失败：HTTP $status" >&2
+  head -c 500 "$tmp" >&2
   echo >&2
   exit 1
 fi
 
-cp "$source" "$target"
-branch="$(git -C "$EATWHAT_BACKEND_DIR" branch --show-current 2>/dev/null || true)"
-commit="$(git -C "$EATWHAT_BACKEND_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+if ! head -n 1 "$tmp" | grep -q '^openapi: 3\.1\.'; then
+  echo "导出结果不是 OpenAPI 3.1 YAML，未覆盖原文件。开头是：" >&2
+  head -c 300 "$tmp" >&2
+  echo >&2
+  exit 1
+fi
+
+mv "$tmp" "$target"
+trap - EXIT
 version="$(grep -m 1 '^  version:' "$target" | sed 's/^  version: *//')"
-echo "已更新 docs/api.openapi.yml（info.version: $version，后端 $branch@$commit）"
+echo "已更新 docs/api.openapi.yml（info.version: $version）"
