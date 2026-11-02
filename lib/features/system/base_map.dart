@@ -1,4 +1,5 @@
 import 'package:eat/core/config/app_config.dart';
+import 'package:eat/core/platform/map_tiles.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
@@ -31,7 +32,7 @@ class BaseMapLayers extends ConsumerWidget {
       urlTemplate:
           'https://t{s}.tianditu.gov.cn/DataServer?T=$layer&x={x}&y={y}&l={z}&tk=$key',
       subdomains: const ['0', '1', '2', '3', '4', '5', '6', '7'],
-      userAgentPackageName: 'you.v50to.eat',
+      tileProvider: NetworkTileProvider(headers: mapTileHeaders()),
       errorTileCallback: (_, _, _) => onTileError?.call(),
     );
     return Stack(
