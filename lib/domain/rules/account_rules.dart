@@ -11,13 +11,19 @@ abstract final class AccountRules {
 
   static bool isSmsCode(String value) => _smsCode.hasMatch(value);
 
+  /// 用户名为 3–10 位字母, 数字或下划线, 区分大小写.
+  static bool isUsername(String value) => _username.hasMatch(value);
+
   /// 密码长度为 6–64 位.
   static bool isPassword(String value) =>
       value.length >= 6 && value.length <= 64;
 
-  /// 密码登录的账号: 手机号, 或 3–10 位由字母, 数字, 下划线组成的用户名.
+  /// 密码登录的账号: 手机号, 用户名或邮箱. 与登录接口一致, 只要求长度为 3–64 位.
+  ///
+  /// 不按 [isUsername] 校验: 系统生成的登录名形如 `p_` 加 12 位十六进制, 超过 10 位.
+  /// 按用户名规则拦截会让这些账号和邮箱都无法用密码登录.
   static bool isLoginAccount(String value) =>
-      isMobile(value) || _username.hasMatch(value);
+      value.length >= 3 && value.length <= 64;
 
   /// 是否为可用于学生认证的山大邮箱 (`@mail.sdu.edu.cn` 或 `@sdu.edu.cn`). 服务端会再次校验.
   static bool isSduEmail(String value) {

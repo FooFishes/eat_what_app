@@ -49,4 +49,4 @@ final class PlaceRepositoryProvider
   }
 }
 
-String _$placeRepositoryHash() => r'5a78cc9601ea0482eb371e452d7fb33aef9ee64a';
+String _$placeRepositoryHash() => r'1cc7b66277065d2d3ad35c755001d6f62c2af6ae';

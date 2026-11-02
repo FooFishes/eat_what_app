@@ -8,21 +8,21 @@ part of 'unread_count.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 未读消息数, 用于发现页铃铛上的圆点和消息页的未读条数.
+/// 有未读消息的行数, 用于发现页铃铛上的圆点和消息页的未读条数.
 ///
-/// 回到前台和回到发现页时由页面调用 [refresh]. 阅读消息后直接递减.
+/// 回到前台和回到发现页时由页面调用 [refresh]. 点击一行后由页面调用 [markRead] 在本地扣减, 不重新请求.
 
 @ProviderFor(UnreadCount)
 final unreadCountProvider = UnreadCountProvider._();
 
-/// 未读消息数, 用于发现页铃铛上的圆点和消息页的未读条数.
+/// 有未读消息的行数, 用于发现页铃铛上的圆点和消息页的未读条数.
 ///
-/// 回到前台和回到发现页时由页面调用 [refresh]. 阅读消息后直接递减.
+/// 回到前台和回到发现页时由页面调用 [refresh]. 点击一行后由页面调用 [markRead] 在本地扣减, 不重新请求.
 final class UnreadCountProvider
     extends $AsyncNotifierProvider<UnreadCount, int> {
-  /// 未读消息数, 用于发现页铃铛上的圆点和消息页的未读条数.
+  /// 有未读消息的行数, 用于发现页铃铛上的圆点和消息页的未读条数.
   ///
-  /// 回到前台和回到发现页时由页面调用 [refresh]. 阅读消息后直接递减.
+  /// 回到前台和回到发现页时由页面调用 [refresh]. 点击一行后由页面调用 [markRead] 在本地扣减, 不重新请求.
   UnreadCountProvider._()
     : super(
         from: null,
@@ -44,9 +44,9 @@ final class UnreadCountProvider
 
 String _$unreadCountHash() => r'6f923fedcb3c0aa49e10306ee7cd48750592cf2e';
 
-/// 未读消息数, 用于发现页铃铛上的圆点和消息页的未读条数.
+/// 有未读消息的行数, 用于发现页铃铛上的圆点和消息页的未读条数.
 ///
-/// 回到前台和回到发现页时由页面调用 [refresh]. 阅读消息后直接递减.
+/// 回到前台和回到发现页时由页面调用 [refresh]. 点击一行后由页面调用 [markRead] 在本地扣减, 不重新请求.
 
 abstract class _$UnreadCount extends $AsyncNotifier<int> {
   FutureOr<int> build();

@@ -7,10 +7,11 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
+import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-// TODO: 反馈没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
 /// 关于页面: 应用说明, 版本号, 反馈入口和两份协议.
 ///
 /// 版本写作 "版本 0.3.0（30）补丁 2", 依次是版本名, 构建号和热更新的补丁号. 没有补丁时不显示补丁号.
@@ -56,11 +57,11 @@ class AboutPage extends ConsumerWidget {
                 style: eat.text.meta.copyWith(color: c.inkMuted),
               ),
             const SizedBox(height: EatSpace.s20),
-            const SettingsRow(
+            SettingsRow(
               icon: EatIcons.feedback,
               label: '反馈',
-              value: '问题与建议',
-              pending: true,
+              value: '出问题、提建议都行',
+              onTap: () => context.push(Paths.feedback()),
             ),
             SettingsRow(
               icon: EatIcons.document,

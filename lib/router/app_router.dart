@@ -3,12 +3,21 @@ import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/features/comments/comments_page.dart';
+import 'package:eat/features/comments/write_comment_page.dart';
 import 'package:eat/features/discover/discover_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/inbox/inbox_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
+import 'package:eat/features/profile/edit_profile_page.dart';
+import 'package:eat/features/profile/follows_page.dart';
+import 'package:eat/features/profile/history_page.dart';
 import 'package:eat/features/profile/me_page.dart';
+import 'package:eat/features/profile/my_tags_page.dart';
+import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/profile/tag_dishes_page.dart';
+import 'package:eat/features/profile/user_page.dart';
 import 'package:eat/features/publish/add_dish_page.dart';
 import 'package:eat/features/publish/new_shop_page.dart';
 import 'package:eat/features/publish/publish_page.dart';
@@ -16,9 +25,21 @@ import 'package:eat/features/search/search_page.dart';
 import 'package:eat/features/settings/about_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/features/settings/account_page.dart';
+import 'package:eat/features/settings/blocked_page.dart';
+import 'package:eat/features/settings/delete_account_page.dart';
+import 'package:eat/features/settings/devices_page.dart';
+import 'package:eat/features/settings/feedback_page.dart';
+import 'package:eat/features/settings/notify_page.dart';
+import 'package:eat/features/settings/password_page.dart';
+import 'package:eat/features/settings/phone_page.dart';
+import 'package:eat/features/settings/privacy_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
+import 'package:eat/features/settings/username_page.dart';
 import 'package:eat/features/system/not_found_page.dart';
+import 'package:eat/features/topic/topic_archive_page.dart';
+import 'package:eat/features/topic/topic_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
+import 'package:eat/router/deep_links.dart';
 import 'package:eat/router/guard.dart';
 import 'package:eat/router/main_shell.dart';
 import 'package:eat/router/paths.dart';
@@ -107,7 +128,15 @@ GoRouter appRouter(Ref ref) {
             state.uri.queryParameters['from'],
             (uri) => router.configuration.findMatch(uri).isNotEmpty,
           ),
+          sso: DeepLinks.ssoResultOf(state.uri.queryParameters),
         ),
+      ),
+      // 统一认证的回跳地址. App 中由 DeepLinkHandler 转换, 不经过本路由.
+      // Web 部署在同一域名时, 浏览器直接打开该地址, 由本路由转换为同一个认证页地址.
+      GoRoute(
+        path: Paths.ssoCallback,
+        redirect: (_, state) =>
+            DeepLinks.ssoLocation(state.uri.queryParameters),
       ),
       GoRoute(
         path: Paths.settings,
@@ -116,10 +145,93 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _child(Paths.settingsAccount, Paths.settings),
             builder: (_, _) => const AccountPage(),
+            routes: [
+              GoRoute(
+                path: _child(Paths.settingsUsername, Paths.settingsAccount),
+                builder: (_, _) => const UsernamePage(),
+              ),
+              GoRoute(
+                path: _child(Paths.settingsPassword, Paths.settingsAccount),
+                builder: (_, _) => const PasswordPage(),
+              ),
+              GoRoute(
+                path: _child(Paths.settingsPhone, Paths.settingsAccount),
+                builder: (_, _) => const PhonePage(),
+              ),
+              GoRoute(
+                path: _child(Paths.settingsDevices, Paths.settingsAccount),
+                builder: (_, _) => const DevicesPage(),
+              ),
+              GoRoute(
+                path: _child(Paths.settingsDelete, Paths.settingsAccount),
+                builder: (_, _) => const DeleteAccountPage(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: _child(Paths.settingsPrivacy, Paths.settings),
+            builder: (_, _) => const PrivacyPage(),
+            routes: [
+              GoRoute(
+                path: _child(Paths.settingsBlocked, Paths.settingsPrivacy),
+                builder: (_, _) => const BlockedPage(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: _child(Paths.settingsNotify, Paths.settings),
+            builder: (_, _) => const NotifyPage(),
           ),
           GoRoute(
             path: _child(Paths.settingsAbout, Paths.settings),
             builder: (_, _) => const AboutPage(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: Paths.feedbackPattern,
+        builder: (_, state) => FeedbackPage(
+          dishId: int.tryParse(state.uri.queryParameters['dishId'] ?? ''),
+          shopId: int.tryParse(state.uri.queryParameters['shopId'] ?? ''),
+        ),
+      ),
+      // "我的" 的子页面覆盖导航, 因此放在根导航器上, 不放进 "我的" 分支.
+      GoRoute(path: Paths.meEdit, builder: (_, _) => const EditProfilePage()),
+      GoRoute(
+        path: Paths.myTags,
+        builder: (_, _) => const MyTagsPage(),
+        routes: [
+          GoRoute(
+            path: _child(Paths.myTagPattern, Paths.myTags),
+            builder: (_, state) => switch (_idOf(state, 'tagId')) {
+              final id? => TagDishesPage(
+                tagId: id,
+                name: state.uri.queryParameters['name'] ?? '',
+              ),
+              null => const NotFoundPage(),
+            },
+          ),
+        ],
+      ),
+      GoRoute(path: Paths.history, builder: (_, _) => const HistoryPage()),
+      GoRoute(
+        path: Paths.userPattern,
+        builder: (_, state) => switch (_idOf(state, 'userId')) {
+          final id? => UserPage(userId: id),
+          null => const NotFoundPage(),
+        },
+        routes: [
+          GoRoute(
+            path: _child(Paths.followsPattern, Paths.userPattern),
+            builder: (_, state) => switch (_idOf(state, 'userId')) {
+              final id? => FollowsPage(
+                userId: id,
+                initial: state.uri.queryParameters['tab'] == 'followings'
+                    ? FollowListKind.followings
+                    : FollowListKind.fans,
+              ),
+              null => const NotFoundPage(),
+            },
           ),
         ],
       ),
@@ -150,14 +262,49 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(path: Paths.search, builder: (_, _) => const SearchPage()),
       GoRoute(path: Paths.inbox, builder: (_, _) => const InboxPage()),
+      // 专题页不作为往期专题的子路由. 作为子路由时, 从菜品详情或消息打开专题页会在下面叠一层往期专题, 返回时先回到往期专题.
+      GoRoute(path: Paths.topics, builder: (_, _) => const TopicArchivePage()),
+      GoRoute(
+        path: Paths.topicPattern,
+        builder: (_, state) => switch (_idOf(state, 'topicId')) {
+          final id? => TopicPage(topicId: id),
+          null => const NotFoundPage(),
+        },
+      ),
       GoRoute(
         path: Paths.dishPattern,
         builder: (_, state) => switch (_idOf(state, 'dishId')) {
           final id? => DishPage(
             dishId: id,
             initial: state.extra is Dish ? state.extra! as Dish : null,
+            focusComment: int.tryParse(
+              state.uri.queryParameters['comment'] ?? '',
+            ),
           ),
           null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
+        path: Paths.commentsPattern,
+        builder: (_, state) => switch (_idOf(state, 'dishId')) {
+          final id? => CommentsPage(dishId: id),
+          null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
+        path: Paths.writeCommentPattern,
+        builder: (_, state) {
+          final query = state.uri.queryParameters;
+          return switch (_idOf(state, 'dishId')) {
+            final id? => WriteCommentPage(
+              dishId: id,
+              rootId: int.tryParse(query['reply'] ?? ''),
+              replyToId: int.tryParse(query['to'] ?? ''),
+              replyToName: query['name'],
+              pickOnOpen: query['photo'] == '1',
+            ),
+            null => const NotFoundPage(),
+          };
         },
       ),
       GoRoute(
@@ -171,7 +318,10 @@ GoRouter appRouter(Ref ref) {
         GoRoute(path: Paths.kit, builder: (_, _) => const KitPage()),
     ],
   );
+  final links = DeepLinkHandler(router)
+    ..listen(ref.read(linkSourceProvider).links);
   ref.onDispose(() {
+    links.dispose();
     router.dispose();
     refresh.dispose();
   });

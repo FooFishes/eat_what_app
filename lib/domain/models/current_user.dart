@@ -27,4 +27,7 @@ class const CurrentUser({
   required final bool banned,
   final String? banReason,
   final DateTime? bannedAt,
+
+  /// 封禁截止时间. 只在封禁且有期限时有值, null 表示永久封禁或没有期限.
+  final DateTime? banUntil,
 });

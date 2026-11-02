@@ -1,9 +1,12 @@
 import 'package:eat/features/dish/dish_page.dart';
+import 'package:eat/features/topic/topic_archive_page.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
 import '../../support/fakes.dart';
+import '../../support/topic_json.dart';
 
 const _names = ['铁锅炖', '粘豆包', '红烧肉', '酸辣粉', '烤冷面'];
 
@@ -14,7 +17,10 @@ void main() {
     env = TestEnv();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /notification/unread/count', [FakeAdapter.ok(3)])
+      ..on('GET /notification/cards/unread/count', [
+        FakeAdapter.ok({'cards': 3, 'members': 5}),
+      ])
+      ..on('GET /topics/current', [FakeAdapter.ok()])
       ..on('GET /foods/recommend', [
         FakeAdapter.ok([
           for (final (i, name) in _names.indexed)
@@ -70,6 +76,60 @@ void main() {
         .sent('GET /foods/recommend')
         .map((r) => r.query['category']);
     expect(categories, contains('snack'));
+  });
+
+  testWidgets('没有当期专题时分类栏不显示专题', (tester) async {
+    await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+    expect(find.text('今日推荐'), findsOneWidget);
+    expect(find.text('期末续命餐'), findsNothing);
+    expect(
+      env.adapter.sent('GET /topics/current').map((r) => r.query['campusId']),
+      everyElement(1),
+    );
+  });
+
+  testWidgets('有当期专题时紧跟「今日推荐」；选中后列出介绍、专题里的菜和「往期专题」', (tester) async {
+    env.adapter
+      ..on('GET /topics/current', [FakeAdapter.ok(topicJson())])
+      ..on('GET /topics/7', [FakeAdapter.ok(topicDetailJson())])
+      ..on('GET /topics/history', [
+        FakeAdapter.ok(pageJson([topicJson(id: 3, name: '降温了喝碗汤')])),
+      ])
+      ..on('GET /topics/3', [FakeAdapter.ok(topicDetailJson())]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+
+    final tabs = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data)
+        .where((d) => d == '今日推荐' || d == '期末续命餐' || d == '主食')
+        .toList();
+    expect(tabs, ['今日推荐', '期末续命餐', '主食']);
+
+    await tester.tap(find.text('期末续命餐'));
+    await tester.pumpAndSettle();
+    expect(find.text('复习到半夜，来点热的。'), findsOneWidget);
+    expect(find.textContaining('本周专题，'), findsOneWidget);
+    await tester.ensureVisible(find.text('往期专题'));
+    await tester.pumpAndSettle();
+    expect(find.text('柳州螺蛳粉'), findsWidgets);
+    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+
+    // 往期专题页的请求分两轮: 首轮请求列表, 列表返回后逐行请求专题详情.
+    // 两轮请求都在当前帧之后发出, 单独调用 pumpAndSettle 等不到这些请求.
+    await tester.tap(find.text('往期专题'));
+    for (var i = 0; i < 3; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await tester.pumpAndSettle();
+    expect(find.byType(TopicArchivePage), findsOneWidget);
+    expect(find.text('「降温了喝碗汤」'), findsOneWidget);
+    await unmountApp(tester, container);
   });
 
   testWidgets('一道菜都没有时，舞台写「这附近还没人发过菜」并给「发布一道菜」', (tester) async {

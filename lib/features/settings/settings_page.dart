@@ -7,17 +7,20 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
+import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 隐私和通知两个子页面未实现, 不显示入口. 实现对应页面后加上入口.
-/// 设置页面: 头像和昵称, 各子页面入口, 底部的 "退出登录".
+/// 设置页面: 头像和昵称 (点击进入编辑资料), 各子页面入口, 底部的 "退出登录".
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
@@ -31,7 +34,17 @@ class SettingsPage extends ConsumerWidget {
     return PlainScaffold(
       title: '设置',
       slivers: [
-        SliverToBoxAdapter(child: _Profile(user: user)),
+        SliverToBoxAdapter(
+          child: _Profile(
+            user: user,
+            onTap: () async {
+              if (await guardAction(context, ref, Capability.editProfile) &&
+                  context.mounted) {
+                await context.push(Paths.meEdit);
+              }
+            },
+          ),
+        ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
         SliverList.list(
           children: [
@@ -39,6 +52,16 @@ class SettingsPage extends ConsumerWidget {
               icon: EatIcons.shield,
               label: '账号与安全',
               onTap: () => context.push(Paths.settingsAccount),
+            ),
+            SettingsRow(
+              icon: EatIcons.lock,
+              label: '隐私',
+              onTap: () => context.push(Paths.settingsPrivacy),
+            ),
+            SettingsRow(
+              icon: EatIcons.bell,
+              label: '通知',
+              onTap: () => context.push(Paths.settingsNotify),
             ),
             SettingsRow(
               icon: EatIcons.info,
@@ -95,12 +118,12 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-// TODO: 编辑资料未实现, 该区域不可点. 实现编辑资料页后改为可点并跳转.
-/// 头像, 昵称和认证状态.
+/// 头像, 昵称和认证状态. 点击进入编辑资料.
 class _Profile extends StatelessWidget {
-  const new({required this.user});
+  const new({required this.user, required this.onTap});
 
   final CurrentUser? user;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -110,14 +133,20 @@ class _Profile extends StatelessWidget {
     final name = user?.nickname ?? '同学';
     final avatar = user?.avatarUrl;
     final verified = user?.verified ?? false;
-    return MergeSemantics(
-      child: Row(
+    return EatTappable(
+      onTap: onTap,
+      button: false,
+      focusShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(EatRadius.thumb),
+      ),
+      builder: (context, _) => Row(
         spacing: EatSpace.s14,
         children: [
           EatAvatar(
             name: name,
-            color: StageColor.mango,
-            image: avatar == null ? null : NetworkImage(avatar),
+            color:
+                StageColor.values[(user?.id ?? 0) % StageColor.values.length],
+            image: networkImage(avatar, width: 56),
             size: 56,
           ),
           Expanded(
@@ -145,6 +174,7 @@ class _Profile extends StatelessWidget {
               ],
             ),
           ),
+          EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
         ],
       ),
     );

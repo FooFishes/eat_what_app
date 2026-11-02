@@ -66,11 +66,21 @@ abstract final class GeoRules {
     GcjPoint? campusCenter,
   }) {
     if (me == null || target == null) return null;
+    return meterLabel(distance(me, target), me: me, campusCenter: campusCenter);
+  }
+
+  /// 接口计算的距离 [meters] 的显示文字. 规则与 [distanceLabel] 相同.
+  static String? meterLabel(
+    double? meters, {
+    required GcjPoint? me,
+    GcjPoint? campusCenter,
+  }) {
+    if (meters == null || me == null) return null;
     if (campusCenter != null &&
         distance(me, campusCenter) > maxDistanceFromCampus) {
       return null;
     }
-    return formatDistance(distance(me, target));
+    return formatDistance(meters);
   }
 
   static double _rad(double degrees) => degrees * math.pi / 180;

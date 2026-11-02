@@ -11,6 +11,7 @@ enum _Kind { choice, tag, add, district }
 /// 胶囊小标签.
 ///
 /// 点击区域上下扩展到 [EatSize.touch], 布局高度因此等于点击区域的高度.
+/// 宽度不小于 [EatSize.touch], 单字标签的点击区域也满足下限.
 /// 放入 `Wrap` 时 `spacing` 用 `space-8`, `runSpacing` 用 0, 行距由扩展出的点击区域提供.
 ///
 /// - 不使用舞台色着色.
@@ -96,21 +97,24 @@ class EatChip extends StatelessWidget {
               style: style,
               duration: duration,
               curve: EatMotion.select.curve,
-              child: SizedBox(
-                height: EatSize.chip,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Center(
-                    widthFactor: 1,
-                    child: Text(
-                      label,
-                      style: eat.text.body.copyWith(
-                        fontSize: 14,
-                        height: 20 / 14,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: foreground,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: EatSize.touch),
+                child: SizedBox(
+                  height: EatSize.chip,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Text(
+                        label,
+                        style: eat.text.body.copyWith(
+                          fontSize: 14,
+                          height: 20 / 14,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: foreground,
+                        ),
                       ),
                     ),
                   ),

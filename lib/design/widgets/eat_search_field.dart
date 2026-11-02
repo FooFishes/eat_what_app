@@ -21,6 +21,7 @@ class EatSearchField extends StatelessWidget {
     this.autofocus = false,
     this.floating = false,
     this.onFilter,
+    this.filterCount = 0,
   });
 
   final String hintText;
@@ -33,6 +34,9 @@ class EatSearchField extends StatelessWidget {
 
   /// 筛选按钮的回调. 不为 null 时在胶囊右端显示圆形筛选按钮.
   final VoidCallback? onFilter;
+
+  /// 已选的筛选项数. 大于 0 时在筛选按钮右上角显示该数字.
+  final int filterCount;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +67,12 @@ class EatSearchField extends StatelessWidget {
                 textInputAction: TextInputAction.search,
                 style: textStyle,
                 cursorColor: c.ink,
-                decoration: InputDecoration.collapsed(
+
+                /// 文字行高 22px, 低于最小点击高度. 上下留白把输入区补足到胶囊的 48px.
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
                   hintText: hintText,
                   hintStyle: textStyle.copyWith(color: c.inkMuted),
                 ),
@@ -73,18 +82,53 @@ class EatSearchField extends StatelessWidget {
           if (onFilter case final onFilter?)
             EatTappable(
               onTap: onFilter,
-              label: '筛选',
+              label: filterCount > 0 ? '筛选，已选 $filterCount 项' : '筛选',
               focusShape: const CircleBorder(),
-              builder: (context, _) => Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: c.mist,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: EatIcon(EatIcons.filter, size: 18, color: c.ink),
-                ),
+              builder: (context, _) => Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: EatSize.touch,
+                    height: EatSize.touch,
+                    decoration: BoxDecoration(
+                      color: c.mist,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: EatIcon(EatIcons.filter, size: 18, color: c.ink),
+                    ),
+                  ),
+                  if (filterCount > 0)
+                    Positioned(
+                      right: -3,
+                      top: -3,
+                      child: ExcludeSemantics(
+                        child: Container(
+                          constraints: const BoxConstraints(minWidth: 18),
+                          height: 18,
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: BoxDecoration(
+                            color: c.ink,
+                            borderRadius: BorderRadius.circular(9),
+                            boxShadow: [
+                              BoxShadow(spreadRadius: 2, color: c.paper),
+                            ],
+                          ),
+                          child: Center(
+                            widthFactor: 1,
+                            child: Text(
+                              '$filterCount',
+                              style: eat.text.count.copyWith(
+                                fontSize: 11,
+                                height: 1,
+                                color: c.paper,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
         ],

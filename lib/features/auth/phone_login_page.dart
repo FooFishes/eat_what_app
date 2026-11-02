@@ -14,7 +14,9 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
+import 'package:eat/features/system/consent_panel.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/cross_site_consent.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -69,6 +71,12 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     return ref.read(humanVerifierProvider).verify(context, params);
   }
 
+  /// 在本页弹出同意面板. 页面已关闭时按用户不同意处理.
+  Future<bool> _presentConsent(ConsentPolicy policy) async {
+    if (!mounted) return false;
+    return showConsentPanel(context, policy);
+  }
+
   void _onChanged() => setState(() {});
 
   String _withQuery(String path) => Uri(
@@ -104,14 +112,16 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
 
   void _submit() {
     FocusScope.of(context).unfocus();
-    ref.read(phoneLoginProvider.notifier).submit(_mobile.text, _code.text);
+    ref
+        .read(phoneLoginProvider.notifier)
+        .submit(_presentConsent, _mobile.text, _code.text);
   }
 
-  void _showLimited() => showPanel<void>(
+  void _showLimited(AppFailure failure) => showPanel<void>(
     context,
     builder: (panel) => EatPanel(
       icon: EatIcons.time,
-      title: '验证码发送次数已达上限，请明天再试',
+      title: '发送太频繁，${failure.retryHint}',
       actions: Row(
         spacing: EatSpace.s10,
         children: [
@@ -133,7 +143,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         ],
       ),
       child: Text(
-        '同一号码每小时最多发送 5 次，每天最多 10 次。已设置密码的账号可使用密码登录。',
+        '已设置密码的账号可使用密码登录。',
         style: panel.eat.text.body.copyWith(height: 22 / 15),
       ),
     ),
@@ -145,7 +155,13 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     final c = eat.colors;
     final login = ref.watch(phoneLoginProvider);
     ref.listen(phoneLoginProvider.select((s) => s.event), (_, event) {
-      if (event is AuthCodeLimited) _showLimited();
+      switch (event) {
+        case AuthCodeLimited(:final failure):
+          _showLimited(failure);
+        case AuthCodeConsumed():
+          _code.clear();
+        default:
+      }
     });
     final resendAt = login.resendAt;
     final secondsLeft = resendAt == null
@@ -157,7 +173,14 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         failure,
       _ => null,
     };
-    final wrongCode = failure?.code == BizCodes.wrongCode;
+    // 20010 在验证码登录中表示发码后账号绑定已变化, 旧验证码不能再用.
+    // 未登录时网络层不清除会话, 因此页面就地提示重新获取, 不显示 "登录已过期".
+    final codeError = switch (failure?.code) {
+      BizCodes.wrongCode => failure!.message,
+      BizCodes.authorizationExpired => '验证码已失效，请重新获取',
+      _ when login.event is AuthCodeConsumed => '验证码已失效，请重新获取',
+      _ => null,
+    };
     final ready =
         AccountRules.isMobile(_mobile.text) &&
         AccountRules.isSmsCode(_code.text);
@@ -203,7 +226,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                   onSubmitted: (_) {
                     if (ready && !login.submitting) _submit();
                   },
-                  errorText: wrongCode ? failure!.message : null,
+                  errorText: codeError,
                   trailing: secondsLeft > 0
                       ? Semantics(
                           liveRegion: true,
@@ -236,7 +259,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                   style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),
                 const SizedBox(height: 40),
-                if (failure != null && !wrongCode) ...[
+                if (failure != null && codeError == null) ...[
                   FormMessage(failure.message),
                   const SizedBox(height: EatSpace.s14),
                 ],

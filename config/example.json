@@ -2,7 +2,6 @@
   "ENV_NAME": "dev",
   "API_BASE_URL": "https://example.com/api",
   "WEB_BASE_URL": "https://example.com",
-  "ASSET_BASE_URL": "",
   "SENTRY_DSN": "",
   "TIANDITU_KEY": "",
   "PRIVACY_URL": "https://example.com/legal/privacy.html",

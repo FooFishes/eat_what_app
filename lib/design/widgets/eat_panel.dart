@@ -12,6 +12,8 @@ import 'package:material_ui/material_ui.dart';
 /// - 面板高度随内容变化, 不超过最大高度.
 /// - 系统开启减少动态效果时没有进出动画.
 /// - [builder] 通常返回 [EatPanel]. 面板内不再打开面板.
+///
+/// 面板放在根导航器上. 主页面的导航栏悬浮在分支导航器之上, 面板若放在分支导航器上, 底部按钮会被导航栏遮住.
 Future<T?> showPanel<T>(
   BuildContext context, {
   required WidgetBuilder builder,
@@ -19,6 +21,7 @@ Future<T?> showPanel<T>(
   final eat = context.eat;
   return showModalBottomSheet<T>(
     context: context,
+    useRootNavigator: true,
     builder: builder,
     isScrollControlled: true,
     backgroundColor: eat.colors.paper,

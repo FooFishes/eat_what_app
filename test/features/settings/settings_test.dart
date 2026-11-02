@@ -77,7 +77,7 @@ void main() {
     expect(env.adapter.sent('POST /auth/logout'), hasLength(1));
     expect(find.byType(LoginPage), findsOneWidget);
     expect(locationOf(router), Paths.login);
-    expect(env.secure.values, isEmpty);
+    expect(env.secure.values.keys, isNot(contains(startsWith('auth.'))));
     expect(env.kv.values.containsKey(PrivacyConsentStore.key), isTrue);
   });
 
@@ -103,7 +103,7 @@ void main() {
     expect(find.text('138 **** 5678'), findsOneWidget);
     expect(find.text('已认证，山大邮箱'), findsOneWidget);
     expect(find.text('修改密码'), findsOneWidget);
-    expect(find.text('待接入'), findsNWidgets(3));
+    expect(find.text('待接入'), findsOneWidget);
     expect(
       tester.getTopRight(find.text('未设置')).dx,
       tester.getTopRight(find.text('138 **** 5678')).dx,

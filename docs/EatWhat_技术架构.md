@@ -10,6 +10,10 @@
 >
 > 2026-11-02：按阶段四的实现更新：发布流程的路由和「换一家」（5.1、5.5），业务码 40016（7.4），舞台取色的做法和验收结果（13.5），裁切参数已在接口里（13.4），各功能共用的底图（2.2），发布后通知相关列表的共享状态（4.2）。
 >
+> 2026-11-02：按阶段六的实现更新：他人资料和关注关系的共享状态（4.2），粉丝和关注、标签下的菜的地址参数（5.1），换头像和「调整照片」共用的取景组件（2.1），下线其他设备和换绑手机后的会话换发（9.2）。
+>
+> 2026-11-02：按评论、专题、消息卡片、举报和反馈的实现更新：目录和共用组件（2.1、2.2），评论、未读数和往期专题的 Provider（4.1、4.2），评论、专题、认证回跳的路由（5.1、6.3），契约测试（7.6、21.1），写操作防重（7.7），权限（8.1、8.3），组件约定（11.8），消息页（15.5）。
+>
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
@@ -34,7 +38,8 @@ lib/
   app.dart                  EatApp：MaterialApp.router、主题、本地化、字号上限
   core/                     基础设施，不含产品规则
     config/                 AppConfig：编译期传入的环境配置
-    network/                ApiClient、拦截器、响应外壳解析、ApiException、分页
+    network/                ApiClient、拦截器、响应外壳解析、ApiException、分页、
+                            写操作的 Idempotency-Key（idempotency.dart，7.7）
     storage/                SecureStore、KvStore（shared_preferences）、CacheStore
     failure/                AppFailure 分类；失败 → 用户能看懂的提示
     copy/                   通用文案：动作叫法、错误提示
@@ -53,33 +58,41 @@ lib/
                             EatRadioRow、EatSwitch、EatSearchField、EatFormField、EatSheet、EatStage、
                             EatPanel（showPanel）、EatNavBar、DishPlate、DishTile、Skeleton、EmptyState、
                             FailureState；以后的 StageScaffold、PlainScaffold、Turntable、TasteCloud、
-                            StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳
+                            StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳。
+                            CropViewport、CropZoomSlider 是圆形取景的拖动、缩放和滑条，「调整照片」和换头像共用；
+                            PhotoViewer（photo_viewer.dart）是看大图，菜品详情和评论卡片共用
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
     models/                 Dish、Shop、Campus、Hub、MealTime、DishCategory、TasteTag、Comment、
                             Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T>、GcjPoint、WgsPoint …
     rules/                  权限表、饭点、价格与名称校验、推荐率、消息 → 跳转、菜名断行、
                             坐标转换和距离（geo_rules.dart）
   data/                     数据层：按后端资源分组，做 IO
-    auth/ consent/ user/ food/ restaurant/ hub/ notification/ upload/ history/ config/ analytics/ …
-                            每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）
+    auth/ consent/ user/ sessions/ food/ place/ comment/ topic/ feedback/ notification/ upload/ history/ push/ …
+                            每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）。
+                            place/ 是校区、商圈和餐厅；comment/ 是评论、回复、评论的赞和照片；topic/ 是当期专题、
+                            往期专题和收录了某道菜的专题；feedback/ 是信息有误、举报和意见反馈
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点和饭点、菜的赞和收藏、未读数、网络状态
+                            当前位置、地点和饭点、菜的赞和收藏、未读数、网络状态；
+                            评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
     verify/                 认证
     discover/               发现、转盘、地点和饭点面板
     search/                 搜索
     topic/                  专题、往期专题
-    dish/                   菜品详情、大图、全部评论、写评论、加标签面板、举报面板
-    shop/                   餐厅详情、信息有误
+    dish/                   菜品详情、专题提示、加标签面板
+    comments/               全部评论、写评论和回复
+    shop/                   餐厅详情、信息有误面板
     nearby/                 附近、地图、筛选面板
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
     profile/                我的、他人主页、编辑资料、我的标签、标签下的菜、足迹、粉丝和关注
     inbox/                  消息
     settings/               设置、账号与安全、登录设备、注销、隐私、屏蔽的人、通知、关于、反馈
-    system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示、没找到页面
+    system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示、没找到页面；
+                            各功能共用的评论卡片、举报和信息有误的原因面板、跨站同步同意面板（见 2.2）
     kit/                    组件页，只在 debug 构建里有
-  router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、深链处理、
+  router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、
+                            深链处理（deep_links.dart：DeepLinks、DeepLinkHandler、linkSourceProvider，6.3）、
                             MainShell（NavBar 外壳）
 assets/
   fonts/  icons/  illustrations/（从 prototype/assets/dishes 复制）  config/remote_defaults.json
@@ -104,7 +117,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的天地图底图（`base_map.dart`）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的天地图底图（`base_map.dart`）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -133,11 +146,11 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 | 用途 | 写法 | 例子 |
 | --- | --- | --- |
-| 单例服务 | `@Riverpod(keepAlive: true)` 函数 | `apiClientProvider`、`kvStoreProvider`、`appConfigProvider`、`clockProvider` |
+| 单例服务 | `@Riverpod(keepAlive: true)` 函数 | `apiClientProvider`、`kvStoreProvider`、`appConfigProvider`、`clockProvider`；`linkSourceProvider`（`router/deep_links.dart`，外部链接的来源，测试里换成假的） |
 | 跨页面状态 | `@Riverpod(keepAlive: true)` 类（`extends _$Xxx`） | `sessionProvider`、`remoteConfigProvider`、`placeAndMealProvider` |
-| 页面数据 | `@riverpod` 类，`build` 带参数（默认自动释放，参数即 family） | `dishDetailProvider(dishId)`、`shopDetailProvider(shopId)` |
+| 页面数据 | `@riverpod` 类，`build` 带参数（默认自动释放，参数即 family） | `dishDetailProvider(dishId)`、`shopDetailProvider(shopId)`；分页列表也写成类，`build` 拉第一页，`loadMore` 追加下一页，如往期专题 `topicArchiveProvider` |
 | 派生值 | `@riverpod` 函数 | `accountStatusProvider`、`featureStateProvider(feature)` |
-| 一次性异步 | 返回 `Future` 的 `@riverpod` 函数 | 往期专题列表 |
+| 一次性异步 | 返回 `Future` 的 `@riverpod` 函数 | 专题详情 `topicDetailProvider(topicId)` |
 
 `StateProvider`、`StateNotifierProvider` 在 3.x 已移到 `legacy.dart`，不用。实验性的 `Mutation` 和离线持久化也不用。
 
@@ -153,17 +166,28 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | --- | --- | --- |
 | `sessionProvider` | 未登录 / 已登录（token、当前用户）；过期时带上原因和原地址 | 登录、退出、过期、刷新用户信息 |
 | `accountStatusProvider` | 未登录、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
-| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意由客户端自动发送，不进这里，见 9.5） | 登录页 |
+| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意不进这里，见 9.5） | 登录页 |
+| `crossSiteConsentProvider` | 读跨站同步政策、弹同意面板、提交同意（9.5） | `ApiHooks.requestConsent`、登录流程 |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
 | `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
 | `locationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
 | `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束 | 地点和饭点面板 |
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
-| `unreadCountProvider` | 未读消息数 | 回到前台、回到发现页、读消息 |
+| `unreadCountProvider` | 有未读的消息行数（`/notification/cards/unread/count` 的 `cards`，不是未读条数），发现页铃铛和消息页「N 条未读」共用 | 回到前台、回到发现页时重新拉；点一行减 1；全部已读后重新拉（15.5） |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表，加标签面板和发布共用 | 只读 |
 | `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次登录时 |
 | `publishedCountProvider` | 这次打开以来发布了几道菜、建了几家店；「我的」的统计和上传、餐厅详情的菜单监听它，发布后重新拉 | 加菜页、新建店页 |
+| `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
+| `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
+| `dishCommentsProvider(dishId, sort)` | 一道菜的评论，分页；菜品详情只显示「最有用」的前几条，全部评论两种排序都用。离开后保留 5 分钟 | 滚到底 `loadMore`；删除后 `removeLocal`，发表后重新拉 |
+| `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，按时间倒序拉、正序显示 | 同上 |
+| `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表、`myCommentIdsProvider` 和 `myCommentsProvider`。进入审核的评论不刷新公开列表 | 写评论页、评论的「更多」 |
+| `commentLikeOfProvider(commentId)` | 我有没有赞过这条评论；未登录、封禁中不请求（受限会话不能调这个接口） | 只读 |
+| `commentLikesProvider` | 评论赞的本地覆盖值，按评论 id；详情和全部评论同一条一起变，失败退回 | 评论的赞按钮 |
+| `myCommentIdsProvider` | 我写过的评论和回复的 id（「我的评论」最近 100 条加本次发表的），决定「更多」里是「删除」还是「举报」 | 发表、删除 |
+| `myCommentsProvider` | 「我的」里的评论分栏，分页 | 发表、删除后重新拉 |
+| `commentedDishProvider(dishId)` | 「我的评论」一行要显示的菜：先用本地缓存的详情，没有再请求 | 只读 |
 
 ### 4.3 约定
 
@@ -191,21 +215,21 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 手机号登录 | `/login/phone` | 根 | 是 | `G-PhoneLogin` |
 | 密码登录 | `/login/password` | 根 | 是 | `G-PasswordLogin` |
 | 认证 | `/verify` | 根 | 否 | `G-Verify` |
-| 菜品详情 | `/dishes/:dishId` | 根 | 否 | `G-Dish` |
+| 统一认证回跳 | `/app/auth/callback?result=&code=`（不是页面，重定向到 `/verify?sso=&code=`，6.3） | 根 | 否 | — |
+| 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 否 | `G-Dish` |
 | 全部评论 | `/dishes/:dishId/comments` | 根 | 否 | `G-Comments` |
-| 写评论、回复 | `/dishes/:dishId/comments/new` | 根 | 否 | `G-WriteComment` |
+| 写评论、回复 | `/dishes/:dishId/comments/new`；回复时带 `reply=<所属评论 id>`，回复某条回复时再带 `to=<那条回复的 id>`，`name` 是被回复人的昵称（刷新后「回复 小林」还在）；`photo=1` 打开后先选照片 | 根 | 否 | `G-WriteComment` |
 | 编辑菜品 | `/dishes/:dishId/edit` | 根 | 否 | `G-AddDish` |
 | 餐厅详情 | `/shops/:shopId` | 根 | 否 | `G-Detail` |
-| 信息有误 | `/shops/:shopId/report` | 根 | 否 | `G-WrongInfo` |
 | 往期专题 | `/topics` | 根 | 否 | `G-TopicArchive` |
 | 专题 | `/topics/:topicId` | 根 | 否 | `G-Topic` |
 | 搜索 | `/search` | 根 | 否 | `G-Search` |
 | 消息 | `/inbox` | 根 | 否 | `G-Inbox` |
 | 他人主页 | `/users/:userId` | 根 | 否 | `G-UserProfile` |
-| 粉丝、关注 | `/users/:userId/follows` | 根 | 否 | `G-Follows` |
+| 粉丝、关注 | `/users/:userId/follows?tab=fans\|followings` | 根 | 否 | `G-Follows` |
 | 编辑资料 | `/me/edit` | 根 | 否 | `G-EditProfile` |
 | 我的标签 | `/me/tags` | 根 | 否 | `G-MyTags` |
-| 标签下的菜 | `/me/tags/:tagId` | 根 | 否 | `G-TagDishes` |
+| 标签下的菜 | `/me/tags/:tagId?name=`（标签名放在地址里，刷新后标题还在） | 根 | 否 | `G-TagDishes` |
 | 足迹 | `/me/history` | 根 | 否 | `G-History` |
 | 设置 | `/settings` | 根 | 否 | `G-Settings` |
 | 账号与安全 | `/settings/account` | 根 | 否 | `G-SettingsAccount` |
@@ -223,9 +247,11 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 强制更新 | `/update` | 根 | 是 | `G-ForceUpdate` |
 | 停服维护 | `/maintenance` | 根 | 是 | `G-Maintenance` |
 
+- 地址看着有层级，路由不一定嵌套：嵌套的子路由打开时，下面会先叠一层父页面。全部评论、写评论是和菜品详情并列的顶层路由；专题 `/topics/:topicId` 也不挂在往期专题下面，否则从菜品详情或消息打开专题，返回时会先回到往期专题。
+
 **不进路由表的**：
 
-- 底部面板（地点和饭点、筛选、加标签、举报、拦截、分享、退出确认、建议更新、定位说明、推送询问）：用统一的 `showPanel()` 弹出，不改地址。
+- 底部面板（地点和饭点、筛选、加标签、举报、信息有误、拦截、分享、退出确认、建议更新、定位说明、推送询问）：用统一的 `showPanel()` 弹出，不改地址。
 - 调整照片（`G-Crop`）、看大图：发布流程或详情页内用 `Navigator.push` 打开的全屏页。它们依赖内存里的照片，刷新页面后无法恢复，所以不给地址。
 - 重要公告弹窗、人机验证：弹窗。
 
@@ -301,13 +327,16 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 6.3 统一入口：DeepLinkHandler
 
 - 关闭 Flutter 自带的深链处理（安卓 `flutter_deeplinking_enabled=false`、iOS `FlutterDeepLinkingEnabled=false`），所有外部来的链接由 `app_links` 收下，交给 `router/deep_links.dart` 的 `DeepLinkHandler`。原因：统一入口方便做白名单和埋点；以后接远程推送时，安卓厂商通道的离线推送点开会被 Flutter 当成深链而白屏，现在关掉可以提前避开（依赖选型第 10 节）。
-- 来源：App Links / Universal Links、自定义 Scheme、通知点击、消息页点击（站内调用同一个函数）。
+- 来源：App Links / Universal Links、自定义 Scheme、通知点击。链接从 `linkSourceProvider` 来（App 上是 `app_links`，Web 上为空，地址直接由路由表解析），测试里换成假的来源。
 - 处理：
   1. 只接受 `https://<Web 域名>/...` 和 `you.v50to.eat://...`，取出路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
-  3. App 在运行：`push` 到目标，返回回到原来的页面。冷启动：目标就是初始地址，返回去 `/discover`。
+     - 目前只接了统一认证回跳：`https://v50to.you/app/auth/callback?result=..&code=..`（只认 https、这个域名、默认端口、没有 userinfo、这一条路径），转成 `/verify?sso=..&code=..`（18.1）。Web 上 `/app/auth/callback` 也是一条路由，复用同一个转换。其余白名单随分享链接一起接。
+     - 安卓的 `MainActivity` 用 `singleTask`：认证页开在 Custom Tabs 里，回跳时回到原来的页面并关掉 Custom Tabs，不再叠一个 Activity 和 Flutter 引擎。代价是认证中途从桌面图标回来时 Custom Tabs 也会关掉。iOS 回跳后主动关掉 SFSafariViewController。
+     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）由后端放在 `v50to.you` 上，内容见 `docs/EatWhat_后端反馈.md`。
+  3. App 在运行：`push` 到目标，返回回到原来的页面；当前页和目标都是认证页时换掉当前页，保留 `onboarding` 和 `from`。冷启动：等首帧后再 `push`，返回去 `/discover`。
   4. 没登录：守卫先去登录页，登录后回到目标（5.4）。
-- 消息、推送的「点了去哪」由 `domain/rules/notice_target.dart` 把消息的 `type`、`targetType`、`targetId`、`data` 转成站内路径（产品 10.2 那张表），单元测试覆盖每种类型。
+- 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`TopicTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
 
 ### 6.4 微信内置浏览器
 
@@ -327,7 +356,6 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `ENV_NAME` | `dev` / `staging` / `prod` | `prod` |
 | `API_BASE_URL` | 业务接口前缀，对应接口文档 `servers` 第一项的反代 `/api` | `https://<域名>/api` |
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
-| `ASSET_BASE_URL` | 图片字段是 key 时拼接用的前缀（待确认 A3） | — |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `TIANDITU_KEY` | 地图瓦片 Key | — |
 | `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页和关于里打开 | `https://<域名>/legal/privacy.html` |
@@ -358,10 +386,13 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | 0 | 成功 | — |
 | 10001、10002 | 参数非法、缺失 | 表单就地提示；上报 |
-| 10003 | 请求频率过高 | 「操作过于频繁，请稍后再试」；验证码场景「验证码发送次数已达上限，请明天再试」 |
+| 10003 | 请求频率过高，`data.retryAfterSeconds` 给出等待秒数（密码锁定最多 900 秒，验证码 24 小时上限） | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
 | 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4） |
-| 20004 | 权限不足 | 重新拉用户信息，按新的账号状态弹拦截面板（第 8 节） |
-| 20005、20006 | 接口文档：海外未同意、授权过期或未同步 | `ApiClient` 自动同意后重发原请求，用户看不到（9.5） |
+| 20004 | 权限不足，受限会话访问未登记的接口也是这个码 | 重新拉用户信息，按新的账号状态弹拦截面板（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」 |
+| 20005、20009 | 需要跨站同步同意、同意政策已更新 | 弹同意面板，用户同意后重发原请求（9.5） |
+| 20006 | 数据同步中 | 提示「数据正在同步，请稍后再试」，不重发写请求 |
+| 20007、20008 | 同意失败、proof 无效 | 清会话回登录页（9.5） |
+| 20010 | 账号授权已过期 | 同登录过期 |
 | 30xxx | 用户模块（密码错、验证码错、邮箱不对……） | 每个码一句话，表在 `core/failure/messages.dart` |
 | 30003 | 接口文档：用户名已被占用 | 设置用户名页就地提示 |
 | 30005 | 接口文档：验证码不对 | 验证码输入框就地提示 |
@@ -371,7 +402,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 30014 | 接口文档：用户名注册已关闭 | 客户端不调 `/auth/register`，不会遇到 |
 | 30015、30016 | 接口文档：缺少人机验证票据；票据无效、过期或被判有风险 | 重新走一遍人机验证（18.3） |
 | 50004 | 接口文档：人机验证服务暂不可用 | 「人机验证暂不可用，请稍后再试」，不发验证码 |
-| `STATE_NOT_ALLOWED` | 接口文档：没认证（`/auth/getCode`、`/user/getCode`） | 和 20004 一样，按新的账号状态弹拦截面板 |
+| 40002 | 当前状态不允许该操作（如没认证时发换绑验证码、重复设置用户名） | 「当前状态无法进行该操作」；调用方先按账号状态拦住 |
+| 30002 | 用户被禁用：不支持受限会话的路径上封禁账号登录；解封后受限 token 的请求 | 登录时「账号已被封禁」；带登录态时按登录过期处理 |
 | 40016 | 接口文档：发布的菜和这家店已有的菜重名（忽略空格），`data.id` 是已有的那道 | 加菜页在菜名下提示「这家店已有……」和「去看看」，不能发布。`ApiClient` 失败时把外壳里的 `data` 带在 `AppFailure.data` 上 |
 | 9xxxx、HTTP 5xx | 系统错误 | 「服务器出错，请稍后再试」；上报 |
 
@@ -402,20 +434,33 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
-- **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`，检查每个 `XxxApi` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。
+- **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`（后端完整源码契约的副本），检查每个 `XxxApi` 的 `endpoints` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。评论接口在后端按配置条件注册，生成契约时没有收进去，测试里列为豁免（`_missingFromSpec`），后端补齐契约后删掉。
 
 ### 7.7 分页、防重复
 
 - 分页统一成 `Paged<T>`（`items`、`page`、`hasNext`），对应接口的 `PageResult_*`。列表滚到底自动加载下一页，加载中不重复发。
-- 提交类按钮在请求期间不可再点；发布、评论这类在服务端也要防重（后端事项，记入 A2）。
+- 图片字段（`avatar`、`pictureUrl`、`coverUrl`）都是后端签好的完整地址，直接展示，不拼前缀；空串当作没有图。地址带有效期，图片缓存按去掉查询串的地址做 key（10.4）。
+- `/foods/recommend` 返回数组，不是 `PageResult`，接口文档写错了，按后端源码解析。
+- 客户端直接按后端最新源码的契约写，不为已部署的旧版本做兼容分支。
+- 提交类按钮在请求期间不可再点。
+- 写操作在服务端防重：发布、新建店、评论、回复、删除评论、赞评论、举报、信息有误、意见反馈都带 `Idempotency-Key` 请求头，值是 UUID v4（`core/network/idempotency.dart` 的 `newIdempotencyKey`）。服务端对同一个键只受理一次，重放时返回第一次的结果；同一个键配不同的正文会被拒绝。
+  - 同一份内容重试时沿用上一次的键，内容变了或上次已成功就换新的。键由知道「两次是不是同一份内容」的一方保存：发布在 `FoodRepository` 里比对正文；新建店、意见反馈在页面状态里；评论和回复在写评论页的 Provider 里；举报和信息有误在 `ReasonPanel` 里。
+  - 删除评论、赞和取消赞每次点击都是新的一次操作，每次生成新键。
+  - 下线其他设备、换绑手机、推送开关的 `commandId` 也用同一个函数生成。
 
 ## 8. 账号状态、权限与拦截
 
 ### 8.1 建模
 
-- `AccountStatus`：`signedOut`、`unverified`、`verified`、`banned(原因, 解封时间)`。由 `GET /user/info` 的 `verified`、`banned`、`banReason`、`bannedAt` 等字段算出（`AccountStatusVO` 还有 `banExpireAt`）。
-- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签、写我的标签、评论、回复、评价店、关注、发布菜、新建店、编辑删除自己的菜、编辑资料。浏览类、消息、设置、反馈、信息有误、举报、屏蔽、退出、注销对所有已登录状态都开放，不进这张表。
-- `domain/rules/permission_policy.dart` 一个纯函数：`check(账号状态, 能力) → 允许 | 需要认证(动作词) | 封禁中(原因, 解封时间)`。产品 7.2 的表一格一格写成单元测试。
+- `AccountStatus`：`signedOut`、`unverified`、`verified`、`banned(原因, 解封时间)`。由 `GET /user/info` 的 `verified`、`banned`、`banReason`、`bannedAt`、`banUntil`（null 表示永久或没有期限证明）算出。登录响应带 `restricted: true` 时，在拿到用户信息之前就按封禁处理。
+- 受限会话：封禁账号登录拿到的是受限 token（有效 1 小时），后端只放行登记过的接口（浏览、本人信息、通知、屏蔽、登录设备、反馈和举报、退出、注销申请），其余返回 20004。解封后受限 token 的请求返回 30002，按登录过期处理，重新登录拿普通 token。封禁中「我的」的上传列表改用公开的 `/foods/by-user`，收藏和我的标签不请求。
+- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签、写我的标签、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑删除自己的菜、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、消息、屏蔽、登录设备、退出、注销对所有已登录状态都开放，不进这张表。
+- 每个能力带两个开关：
+  - `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误。其余要求已认证。
+  - `openToBanned`：封禁中也能做。只有举报和信息有误（受限会话放行反馈、举报和信息有误）。其余封禁中都拦。
+- 举报和信息有误对所有已登录状态都开放，仍然进这张表：为了复用拦截入口和失败反馈，服务端拒绝时按刷新后的账号状态弹面板。
+- 受限会话放行的接口比产品 7.2「封禁中」一列窄，两者不一致时以后端为准，所以看足迹起的几项（产品允许封禁中做、后端没登记）也在表里，只拦封禁中。
+- `domain/rules/permission_policy.dart` 一个纯函数：`checkPermission(账号状态, 能力) → Allowed | NeedsSignIn | NeedsVerification | BlockedByBan(封禁状态)`，拦截面板的动作词取 `Capability.verb`。产品 7.2 的表一格一格写成单元测试。
 
 ### 8.2 功能状态
 
@@ -435,7 +480,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 8.3 统一拦截入口
 
-- 所有受限的按钮都调同一个函数 `guardedAction(ref, context, Capability.like, () { ... })`：依次判断 8.2 的状态，被拦就弹对应的面板或提示并返回，否则执行动作。
+- 所有受限的按钮都先调同一个函数 `guardAction(context, ref, Capability.like)`（`features/system/guard.dart`）：按账号状态调 `checkPermission`，被拦就弹拦截面板并返回 false，否则返回 true，按钮再执行动作。8.2 里远程配置的几种状态，等远程配置接上后也在这里判断。动作失败时调 `reportActionFailure`：服务端判定没权限就刷新账号状态再弹面板，其余给轻提示。
 - 按钮永远照常显示，不隐藏、不置灰（产品 7.3）。
 - 拦截面板文案按动作换词：未认证「认证后才能点赞」，主按钮「去认证」（到 `/verify`），次按钮「先逛逛」；封禁中「账号封禁中，暂时不能点赞」，加原因和解封时间，没有「去认证」。动作词表放在 `core/copy/`。
 - 服务端和客户端判断不一致时（客户端以为能做，服务端返回没权限）：重新拉用户信息，按新状态弹面板。回到前台时也刷新一次用户信息（产品 7.3「账号状态在别处变了，下一次操作时按新状态处理」）。
@@ -482,6 +527,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 启动：有 token 就先按已登录进发现页（用缓存的用户信息），后台再校验；校验返回过期就走过期流程。
 - 登录一直保持，直到退出、长时间没用、改密码、换绑手机、设置用户名（产品 7.4），失效由服务端判断，客户端不做 token 续期。
 - 同一账号可以同时在手机和 Web 上登录，客户端不做互斥。
+- 会话换发：「让其他设备都下线」和换绑手机成功后，服务端把本机的会话也换成新的。客户端在提交前生成一次性的恢复凭据（32 字节随机值，不带填充的 Base64URL，`core/network/recovery_capability.dart`），只放在内存里，随请求提交；之后带着它调对应的 `resume` 接口取回新凭证（`data/sessions/session_rotation.dart`，最多 5 次，间隔 1 秒）。取回后 `sessionProvider.adoptRotation` 保存新凭证并刷新用户信息，用户不用重新登录；取不回（换发过期、被取代或次数用完）就清掉本机登录态回登录页。
 
 ### 9.3 退出登录
 
@@ -498,20 +544,33 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 9.4 同意记录与 SDK 初始化
 
 - 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
-- 跨站同步同意由客户端替用户自动发送，不进本地同意记录，见 9.5。
+- 跨站同步同意由用户在面板里确认、记在服务端，不进本地同意记录，见 9.5。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 
 ### 9.5 跨站同步同意
 
-默认所有用户都同意，客户端替每个用户发送同意，不做任何同意相关的页面：设计稿里的 `G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 不做，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
+由用户在面板里点同意，客户端不代用户同意（2026-11-02 定，后端契约 `frontend-contract.md` 和 biz-codes 20010 都要求不得代为同意）。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
 
-- 只接同意接口 `/auth/consent/grant`。同意和注册都要带当前的政策版本，用 `/auth/consent/policy` 读出来。查询状态、撤回不接。
-- 代码放在 `data/consent/` 的 `ConsentApi`，以后要接别的同意接口也放这里。
-- 注册：手机号登录遇到新号码时直接注册，所以 `/auth/phone/login` 的请求一律带 `crossBorderConsent: true` 和 `consentPolicyVersion`，没有「完成注册」这一步。
-- 登录或注册返回 `consentProof`：不算登录成功。带上 proof 调同意，成功后用同一组账号密码自动再登录一次；账号密码只为这一次留在内存里。
-- 已登录时接口返回 20005 / 20006：`ApiClient` 通过构造时传入的回调（和登录过期一样，`core/network` 不导入 `data/`）不带 proof 调一次同意，用的是当前会话，成功后把原请求重发一次。几个请求同时遇到时只同意一次（请求发出后已经有别的请求同意成功了，就直接重发）；同意失败，或重发后还是这两个码，就按 7.5 的「未知」处理。
-- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → 自动同意），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
-- 页面不用管这些。20005 和 20006 各指什么、proof 多久过期、不带 proof 的同意在哪些部署下可用，做登录时和后端核对（A2）。
+- 接口：`/auth/consent/policy` 读当前政策的版本和地址，`/auth/consent/grant` 提交同意（带政策版本，登录时还带 `proof`）。查询状态、撤回不接。代码在 `data/consent/` 的 `ConsentApi`。
+- 面板：`features/system/consent_panel.dart`。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹。读政策、弹面板、提交同意由 `state/cross_site_consent.dart` 的 `crossSiteConsentProvider` 负责；没有挂上 `ConsentHost` 时按不同意处理。
+- 业务码：
+
+  | 码 | 含义 | 处理 |
+  | --- | --- | --- |
+  | 20005 | 需要跨站同步同意，登录时 `data` 里可能带 `consentProof` | 弹面板 |
+  | 20009 | 同意政策已更新 | 弹面板，用新版本同意 |
+  | 20007、20008 | 同意失败、proof 无效（境外站的会话不带 proof 不能同意） | 清会话、回登录页，重新登录时会拿到 proof |
+  | 20010 | 账号授权已过期 | 按登录过期处理 |
+  | 20006 | 数据同步中，不是同意问题 | 只提示「数据正在同步，请稍后再试」，不同意、不重发写请求 |
+
+- 登录：返回 20005 时不算登录成功，弹面板。
+  - 密码登录：同意后带 proof 提交，再用同一组账号密码自动登录一次；账号密码只为这一次留在内存里。
+  - 验证码登录：验证码已经被核销，同意后清空验证码，提示「验证码已失效，请重新获取」。
+  - 不同意：停在登录页。
+- 注册：手机号登录遇到新号码时直接注册。后端对不带同意的新号码先核销验证码，再返回不带 proof 的 20005，所以默认不带同意；收到它时弹面板，用户同意后重新获取验证码，下一次登录带上 `crossBorderConsent: true` 和 `consentPolicyVersion`。代价是境外站的新用户要收两次验证码。
+- 已登录时接口返回 20005 / 20009：`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请求用户同意。同意成功后把原请求重发一次；不同意或同意失败时，原请求按失败处理。几个请求同时遇到时只弹一次面板。未登录时不弹，交给登录流程。
+- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → `crossSiteConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
+- 已知不足：会话中用户不同意以后，后面每个返回 20005 的请求还会再弹一次。
 
 ## 10. 离线与缓存
 
@@ -542,7 +601,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 10.4 图片
 
-- 安卓、iOS：`cached_network_image` 的磁盘缓存，看过的图离线能看。
+- 安卓、iOS：`cached_network_image` 的磁盘缓存，看过的图离线能看。图片地址是带有效期的签名地址，缓存 key 用去掉查询串的地址（`design/widgets/images.dart`），换了签名也能命中。
 - Web：靠浏览器 HTTP 缓存，图片服务器要返回合适的缓存头（A3）。
 - 列表和方块按显示尺寸解码（`memCacheWidth`），不把 2048 像素的原图整张解码。图片服务能出缩略图的话按尺寸请求缩略图（A3）。
 
@@ -665,6 +724,18 @@ extension RefCache on Ref {
 - 不跟随系统深色模式：`themeMode` 固定浅色（产品 11.2、5.2）。
 - 键盘焦点：自定义组件的焦点样式统一画「2px `paper` 内圈 + 2px `ink` 外圈」（规范「状态」）。
 
+### 11.8 组件约定
+
+`design/widgets/` 里几个组件的用法，页面按这里写：
+
+| 组件 | 约定 |
+| --- | --- |
+| `showPanel`（`eat_panel.dart`） | 在根导航器上打开（`useRootNavigator: true`）。主页面的 `NavBar` 悬浮在分支导航器上面，面板开在分支导航器上时底部按钮会被导航栏挡住。面板里不再开面板 |
+| `EatChip` | 点击区域上下扩到 `EatSize.touch`（44），宽度也不小于 44，单字标签也够点。放进 `Wrap` 时 `spacing` 用 `space-8`，`runSpacing` 用 0，行距由扩出来的点击区域提供 |
+| `EatTabItem` | 除了文字，可带 `count`（如「上传 42」）、`pending`（文字后接「待接入」）、`icon`（文字前的图标，如发现页分类栏里专题的图标） |
+| `EatTappable`、`EatListRow` | `tapHint` 是读屏朗读的点击结果，不传时是平台默认的「激活」。点了不跳转的地方要传，如消息页没有跳转目标的行传「标为已读」，否则读屏用户分不清点了会不会离开当前页 |
+| `DishTile` | `distance` 是距离文字（如「320 m」），跟在店名后面；店名太长时只截断店名，距离总是完整显示 |
+
 ## 12. 屏幕适配
 
 ### 12.1 断点
@@ -748,6 +819,10 @@ extension RefCache on Ref {
   → 发布：等所有照片传完，提交 key 列表、裁切参数、舞台色和备选色
 ```
 
+- 发布和新建店带 `Idempotency-Key`，做法见 7.7。
+- 启用原生审核时，返回 `moderationStatus: PENDING`：提示「已提交审核，通过后公开」，不打开详情、不去加菜；没有这个字段表示没启用审核，已直接公开。待审核的菜不在 `/foods/my` 里。
+- 给已关门的店加菜由客户端拦住（服务端不拦）。
+
 ### 13.2 选图与压缩
 
 - `image_picker`：拍照或相册多选（最多补到 9 张）；Web 上是文件选择框。
@@ -770,7 +845,8 @@ extension RefCache on Ref {
 - 「调整照片」只产出参数，不生成裁好的图：`CoverCrop(centerX, centerY, diameter)`。`centerX`、`centerY` 是圆心在原图里的位置（0–1，按原图宽高归一），`diameter` 是圆的直径占原图短边的比例（默认 1，即短边内切圆，居中）。
 - 和分辨率无关：缩略图、原图、不同尺寸的盘子都按同一组参数裁。`DishPlate` 收图片地址和这组参数。
 - 手势：拖动、双指缩放，缩放滑条是替代操作（规范「无障碍」）。参数限制在圆不超出原图的范围内。
-- 接口的 `coverCrop` 就是这三个字段，发布时提交。
+- 接口的 `coverCrop` 就是这三个字段，发布时提交，每个最多 4 位小数（后端 `@Digits`）。取整由 data 层做：直径向下取、圆心朝 0.5 取，保证取整后圆仍在图内。
+- 显示时，`pictureKeys` 和 `pictureUrl` 张数不同说明有图被审核滤掉，封面无法确认，不用裁切，按居中内切圆显示。原封面被滤掉、两者张数却相同的情况客户端识别不了，已反馈后端。
 - 头像需要真的裁：把圆形区域画到 `PictureRecorder`，导出 PNG，再压成 JPEG 上传。
 
 ### 13.5 舞台取色算法
@@ -813,7 +889,7 @@ extension RefCache on Ref {
 | --- | --- | --- |
 | 设备定位（安卓、iOS、浏览器） | WGS-84 | 拿到后立刻转 GCJ-02 |
 | 接口参数和返回（`gcjLng`、`gcjLat`） | GCJ-02 | 原样用 |
-| 接口里的 GeoJSON（餐厅 `location`、商圈 `boundary`、`center`） | 未说明（目录导入同时有 `centerWgs`、`centerGcj`，推测 GeoJSON 是 WGS-84） | 待后端确认（A3） |
+| 接口里的 GeoJSON（餐厅 `location`、商圈 `boundary`、`center`） | WGS-84，`[经度, 纬度]`（已部署契约写明，后端 `JacksonConfig` 按此输出） | 已确认（2026-11-02） |
 | 天地图瓦片 | CGCS2000（与 WGS-84 差厘米级） | 画到地图上之前，GCJ-02 转 WGS-84 |
 | 高德、腾讯、百度的导航 URL | GCJ-02（百度用 `coord_type=gcj02` 指定） | 原样用 |
 | Apple 地图 URL | 大陆境内的处理方式没查到资料 | 真机验证后定 |
@@ -942,6 +1018,14 @@ class PushNotice({
 - **推送出问题不影响消息页**（产品 12.6）：消息页只依赖接口。
 - **Web**：没有推送。设置 → 通知里写「网页版不支持推送，请在消息页查看」。
 
+### 15.5 消息页
+
+- 接口用消息卡片（`data/notification/` 的 `NotificationApi`）：`GET /notification/cards` 按分栏分页拉，服务端已把同一对象、同一类互动合并成一行；`GET /notification/cards/unread/count` 给有未读的行数（`cards`）和未读条数（`members`），未读数只用行数（4.2）；`POST /notification/cards/{id}/read` 把一行标为已读。
+- 分栏：全部、评论、赞和收藏、关注、系统（`NoticeColumn`，对应接口的 `ALL`、`COMMENTS`、`LIKES_AND_FAVORITES`、`FOLLOWS`、`SYSTEM`）。每个分栏是一个 `inboxProvider(column)`，切换分栏重新请求；行按「今天」「本周」「更早」分组。
+- 点一行：先在本地标为已读、未读数减 1，再请求标为已读（失败不退回，下次进来以服务端为准）；有跳转目标的行同时跳过去（6.3）。没有目标的行读屏朗读为「标为已读」（`tapHint`，11.8），已读后不能再点。
+- 「全部已读」的过渡做法：后端还没有卡片的全部已读接口，先调旧接口 `POST /notification/read/all`（只标关注和旧版活动的赞），再逐条标记已加载的未读卡片；成功后重新拉未读数。没加载到的页里，旧接口管不到的消息仍是未读。后端补上卡片的全部已读后改调新接口，删掉逐条标记（`NotificationRepository.readAll` 的 TODO）。
+- 关注消息右侧的「回关」按对方的资料决定文字，每个可回关的行单独拉一次 `userProfileProvider`；卡片带上关注关系后改用卡片数据。
+
 ## 16. 版本与更新
 
 ### 16.1 建议更新、强制更新
@@ -1068,9 +1152,19 @@ class PushNotice({
 - 流程：
   1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。App 带 `client=app`，Web 带 `client=web`，后端按它选跳回的预设链接；客户端不能自己指定跳回地址。
   2. 打开 `url`：App 用 `url_launcher` 的应用内浏览器（iOS SFSafariViewController，安卓 Custom Tabs）；Web 在当前标签页跳转。
-  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功时 302 到预设的链接：App 回到 App，Web 回到 `<Web>/verify`。预设链接还没配置。
-  4. 回到 App（`AppLifecycleListener` 的恢复事件）或回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。
-- 失败时现在不跳转，浏览器里直接显示 JSON：30012 认证链接失效（过期、已用过、不存在），30013 学号已认证过其他账号。客户端读不到这个页面，只能在回来后看到「还没认证」，提示「认证未完成，请重新认证」。后端改成失败也跳回、在参数里带 code 之后，按 code 显示「认证链接已失效，请重新发起认证」「该学号已认证其他账号」（现状差距 2.1）。
+  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 `https://v50to.you/app/auth/callback?result=success|failure&code=<业务码>`（已在两站部署）。App 用 App Links / Universal Links 收下（6.3），转到认证页显示结果。
+  4. 收到回跳，或回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为回跳不一定能唤起 App（域名校验没过，或应用内浏览器没把 302 交给 App）。认证页读到结果后马上从地址里去掉 `sso`、`code`，避免路由重建时重复处理。
+- 结果提示（`features/verify/verify_providers.dart` 的 `ssoFailureMessage`，不显示错误码）：
+
+  | 码 | 提示 |
+  | --- | --- |
+  | 30012 | 认证链接已失效，请重新发起认证 |
+  | 30013 | 该学号已认证其他账号 |
+  | 其他 | 认证没有完成，请重新认证 |
+  | 成功但账号还没显示已认证 | 认证结果尚未同步，请稍后刷新状态 |
+
+- Web：`client=web` 时后端跳回 `app.oauth-success-redirect`，线上没配，默认是 `/home?result=..&code=..`，Flutter 里没有这个路径。已请后端把它设成 `https://<Web 域名>/app/auth/callback`（`docs/EatWhat_后端反馈.md`）。
+- 未登录时收到回跳：守卫先去登录页，登录后回到认证页。
 - 不用 WebView 打开学校页面：认证页写着「我们看不到你的统一认证密码」，用系统浏览器页更站得住；也不需要像 legacy 那样把 `satoken` 放进 WebView 请求头。
 - 不把登录 token 放进 URL。
 
@@ -1098,7 +1192,7 @@ class PushNotice({
 
 ### 19.1 埋点
 
-方案待确认 D5，推荐自建（依赖选型第 14 节）。
+自建，批量上报到业务后端的 `/telemetry`（依赖选型第 14 节 D5）。接口带上报同意的管理，后端源码已有、还没部署，部署后按它的契约接；没部署之前只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
 
 - 接口：`Analytics.track(事件)`。事件是一组固定的类型（`sealed class`），属性只有枚举、id、数字、时长，**没有自由文本**，从类型上保证不采集输入框内容（产品 12.5）。
 
@@ -1175,7 +1269,7 @@ class PushNotice({
 | 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、放量分组、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
 | 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
-| 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml` 里 | `test/contract/` |
+| 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml`（后端完整源码契约的副本）里；评论接口没收进契约，列为豁免（7.6） | `test/contract/` |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。
@@ -1202,7 +1296,7 @@ class PushNotice({
 | 编号 | 事项 | 推荐 | 需要谁 |
 | --- | --- | --- | --- |
 | A1 | Web 和分享链接的域名、托管位置 | 一个 HTTPS 域名同时放 Web、反代 `/api`、放 `/.well-known/` 的 App Links / Universal Links 文件。要确认：域名；有没有 ICP 备案（境内 CDN 需要备案，境外托管在大陆首屏慢）；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
-| A2 | 后端的业务码和约定 | 后端给出完整的错误码表，包括：登录过期、权限不足、需要同意、账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限、内容违规；确认 legacy 的 2xxxx、3xxxx 码是否仍然有效；`ErrorResponse` 字符串 `code` 的取值；发布、评论的服务端防重；推送附带数据里的 `link` 字段格式 | 后端 |
+| A2 | 后端的业务码和约定 | 后端给出完整的错误码表，包括：登录过期、权限不足、需要同意、账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限、内容违规；确认 legacy 的 2xxxx、3xxxx 码是否仍然有效；`ErrorResponse` 字符串 `code` 的取值；推送附带数据里的 `link` 字段格式 | 后端 |
 | A3 | 后端数据格式和存储 | 确认：GeoJSON（`location`、`boundary`、`center`）的坐标系；图片字段是完整 URL 还是 key；图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT` 和读取（直传和取色都要），图片返回长缓存头；舞台色、两个备选色、封面裁切参数的字段格式（推荐 `stage-broth` 这样的字符串和 13.4 的三个数） | 后端 |
 | A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用应用内浏览器打开，结果记到当前账号，成功时 302 回预设链接（18.1）。还差：失败时也跳回并在参数里带 code；成功、失败跳回的链接（App、Web 各一个）在后端配置 | 后端 |
 | A5 | 远程配置接口的形状 | 按 17.1 做一个接口，包含开关、参数、校区、公告、维护、版本线、补丁放量、实验分组、隐私政策版本 | 后端、产品负责人 |

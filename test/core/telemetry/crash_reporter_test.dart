@@ -13,7 +13,6 @@ void main() {
       envName: 'dev',
       apiBaseUrl: '',
       webBaseUrl: '',
-      assetBaseUrl: '',
       sentryDsn: '',
       tiandituKey: '',
       privacyUrl: '',

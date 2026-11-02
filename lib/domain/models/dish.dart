@@ -105,6 +105,9 @@ class const Dish({
   final GcjPoint? shopPoint,
   final int? hubId,
   final String? hubName,
+
+  /// 店铺与查询坐标的距离, 单位米. 只有带坐标查询菜品时有值.
+  final double? distance,
   final double? price,
   final DishCategory? category,
   final List<MealTime> mealTimes = const [],

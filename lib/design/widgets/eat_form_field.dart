@@ -32,7 +32,30 @@ class EatFormField extends StatefulWidget {
     this.inputFormatters,
     this.obscureText = false,
     this.autofillHints,
-  }) : price = false;
+  }) : price = false,
+       multiline = false;
+
+  /// 多行输入, 如反馈内容. 使用正文字号, 至少显示 4 行, 超过 8 行时在框内滚动.
+  const new multiline({
+    super.key,
+    required this.label,
+    this.controller,
+    this.focusNode,
+    this.hintText,
+    this.errorText,
+    this.onChanged,
+    this.autofocus = false,
+    this.trailing,
+    this.inputFormatters,
+  }) : price = false,
+       multiline = true,
+       numeric = false,
+       prefix = null,
+       onSubmitted = null,
+       textInputAction = TextInputAction.newline,
+       keyboardType = TextInputType.multiline,
+       obscureText = false,
+       autofillHints = null;
 
   /// 价格输入. 使用数字字体, 带前缀 "¥", 只接受数字和小数点.
   const new price({
@@ -53,7 +76,8 @@ class EatFormField extends StatefulWidget {
        keyboardType = const TextInputType.numberWithOptions(decimal: true),
        inputFormatters = null,
        obscureText = false,
-       autofillHints = null;
+       autofillHints = null,
+       multiline = false;
 
   final String label;
   final TextEditingController? controller;
@@ -67,6 +91,7 @@ class EatFormField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final bool autofocus;
   final bool price;
+  final bool multiline;
   final bool numeric;
   final String? prefix;
   final Widget? trailing;
@@ -113,7 +138,9 @@ class _EatFormFieldState extends State<EatFormField> {
     final eat = context.eat;
     final c = eat.colors;
     final error = widget.errorText;
-    final inputStyle = widget.numeric
+    final inputStyle = widget.multiline
+        ? eat.text.body.copyWith(fontSize: 16, height: 24 / 16)
+        : widget.numeric
         ? eat.text.priceInline.copyWith(fontSize: 22, height: 30 / 22)
         : eat.text.sectionTitle.copyWith(fontSize: 22, height: 30 / 22);
     final lineColor = error != null
@@ -133,6 +160,8 @@ class _EatFormFieldState extends State<EatFormField> {
         keyboardType: widget.keyboardType,
         obscureText: widget.obscureText,
         autofillHints: widget.autofillHints,
+        minLines: widget.multiline ? 4 : null,
+        maxLines: widget.multiline ? 8 : 1,
         inputFormatters: widget.price
             ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
             : widget.inputFormatters,

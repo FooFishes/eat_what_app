@@ -1,3 +1,5 @@
+import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
@@ -14,6 +16,9 @@ class const EatTabItem(
 
   /// 功能尚未对接接口. 分类正常列出, 文字后接 "待接入".
   final bool pending = false,
+
+  /// 文字前的图标, 如发现页分类栏中专题的图标.
+  final EatIcons? icon,
 });
 
 /// 文字分类栏. 选中项靠字重区分, 没有下划线和底色.
@@ -100,6 +105,10 @@ class _Tab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
+            if (tab.icon case final icon?) ...[
+              EatIcon(icon, size: 16, color: color),
+              const SizedBox(width: EatSpace.s4),
+            ],
             Text(tab.label, style: labelStyle),
             if (tab.count case final count?) ...[
               const SizedBox(width: EatSpace.s4),

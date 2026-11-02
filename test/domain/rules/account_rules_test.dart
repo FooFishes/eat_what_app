@@ -23,12 +23,19 @@ void main() {
     expect(AccountRules.isPassword('x' * 65), isFalse);
   });
 
-  test('密码登录的账号是手机号或 3–10 位用户名', () {
+  test('密码登录的账号按登录接口放宽到 3–64 位，手机号、用户名、邮箱都可以', () {
     expect(AccountRules.isLoginAccount('13812345678'), isTrue);
     expect(AccountRules.isLoginAccount('chi_fan'), isTrue);
+    expect(AccountRules.isLoginAccount('p_0123456789ab'), isTrue);
+    expect(AccountRules.isLoginAccount('zhang@mail.sdu.edu.cn'), isTrue);
+    expect(AccountRules.isLoginAccount('a' * 64), isTrue);
     expect(AccountRules.isLoginAccount('ab'), isFalse);
-    expect(AccountRules.isLoginAccount('a' * 11), isFalse);
-    expect(AccountRules.isLoginAccount('吃饭'), isFalse);
+    expect(AccountRules.isLoginAccount('a' * 65), isFalse);
+    expect(
+      AccountRules.isUsername('p_0123456789ab'),
+      isFalse,
+      reason: '设置用户名的规则不变',
+    );
   });
 
   test('只认山大的两个邮箱后缀，不分大小写', () {

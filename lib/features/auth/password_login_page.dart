@@ -9,13 +9,15 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
+import 'package:eat/features/system/consent_panel.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/cross_site_consent.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 密码登录页. 账号为手机号或用户名, 只有设置过密码的账号可用.
+/// 密码登录页. 账号为手机号, 用户名或邮箱, 只有设置过密码的账号可用.
 ///
 /// 出错时就地提示, 不清空账号输入.
 /// 不提供找回密码, 忘记密码时改用验证码登录.
@@ -52,6 +54,12 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     super.dispose();
   }
 
+  /// 在本页弹出同意面板. 页面已关闭时按用户不同意处理.
+  Future<bool> _presentConsent(ConsentPolicy policy) async {
+    if (!mounted) return false;
+    return showConsentPanel(context, policy);
+  }
+
   void _onChanged() => setState(() {});
 
   String _withQuery(String path) => Uri(
@@ -63,7 +71,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     FocusScope.of(context).unfocus();
     ref
         .read(passwordLoginProvider.notifier)
-        .submit(_account.text.trim(), _password.text);
+        .submit(_presentConsent, _account.text.trim(), _password.text);
   }
 
   /// 切换到验证码登录.
@@ -102,11 +110,12 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
               children: [
                 const SizedBox(height: EatSpace.s14),
                 EatFormField(
-                  label: '手机号或用户名',
+                  label: '账号',
                   controller: _account,
-                  hintText: '11 位手机号或用户名',
+                  hintText: '手机号、用户名或邮箱',
                   autofocus: true,
                   textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.username],
                   inputFormatters: [LengthLimitingTextInputFormatter(64)],
                 ),

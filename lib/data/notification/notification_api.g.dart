@@ -6,19 +6,46 @@ part of 'notification_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-NotificationDto _$NotificationDtoFromJson(Map<String, dynamic> json) =>
-    NotificationDto(
-      id: (json['id'] as num?)?.toInt(),
-      actorId: (json['actorId'] as num?)?.toInt(),
-      actorName: json['actorName'] as String?,
-      actorAvatar: json['actorAvatar'] as String?,
-      type: json['type'] as String?,
-      targetType: json['targetType'] as String?,
-      targetId: (json['targetId'] as num?)?.toInt(),
-      data: json['data'] as String?,
-      read: json['read'] as bool?,
-      createdAt: (json['createdAt'] as num?)?.toInt(),
+NoticeCardDto _$NoticeCardDtoFromJson(Map<String, dynamic> json) =>
+    NoticeCardDto(
+      id: json['id'] as String?,
+      column: json['column'] as String?,
+      kind: json['kind'] as String?,
+      target: json['target'] == null
+          ? null
+          : NoticeTargetDto.fromJson(json['target'] as Map<String, dynamic>),
+      memberCount: (json['memberCount'] as num?)?.toInt(),
+      unreadMemberCount: (json['unreadMemberCount'] as num?)?.toInt(),
+      latestAt: (json['latestAt'] as num?)?.toInt(),
+      actors: (json['actors'] as List<dynamic>?)
+          ?.map((e) => NoticeActorDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      data: json['data'] == null
+          ? null
+          : NoticeDataDto.fromJson(json['data'] as Map<String, dynamic>),
     );
+
+NoticeTargetDto _$NoticeTargetDtoFromJson(Map<String, dynamic> json) =>
+    NoticeTargetDto(
+      domain: json['domain'] as String?,
+      id: (json['id'] as num?)?.toInt(),
+      unavailable: json['unavailable'] as bool?,
+    );
+
+NoticeActorDto _$NoticeActorDtoFromJson(Map<String, dynamic> json) =>
+    NoticeActorDto(
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      avatar: json['avatar'] as String?,
+    );
+
+NoticeDataDto _$NoticeDataDtoFromJson(Map<String, dynamic> json) =>
+    NoticeDataDto(detail: json['detail'] as Map<String, dynamic>?);
+
+UnreadDto _$UnreadDtoFromJson(Map<String, dynamic> json) => UnreadDto(
+  cards: (json['cards'] as num?)?.toInt(),
+  members: (json['members'] as num?)?.toInt(),
+);
 
 // **************************************************************************
 // RiverpodGenerator
@@ -115,4 +142,4 @@ final class NotificationRepositoryProvider
 }
 
 String _$notificationRepositoryHash() =>
-    r'b2a459190a9b47237ece8dacbc3d54899d7ee30e';
+    r'13ef3b682c1d1e5ec5d79594aef649e4b3571d30';

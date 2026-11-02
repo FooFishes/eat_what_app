@@ -13,11 +13,60 @@ abstract final class Paths {
   static const loginPassword = '/login/password';
 
   /// 学生认证. `onboarding=1` 表示新号码注册后的认证引导, 左上角显示 "先逛逛" 而不是返回.
+  ///
+  /// `sso=success|failure` 和 `code` 是统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
   static const verify = '/verify';
+
+  /// 统一认证结束后后端重定向到的地址, 带 `result=success|failure` 和业务码 `code`.
+  ///
+  /// App 经 App Links / Universal Links 收到完整链接 `https://v50to.you/app/auth/callback`.
+  /// 该地址不是页面, 路由表把它重定向到 [verify]. 改动需同步 Android 和 iOS 的链接声明以及后端配置.
+  static const ssoCallback = '/app/auth/callback';
+
+  static const meEdit = '/me/edit';
+  static const myTags = '/me/tags';
+
+  /// 标签下的菜. [name] 是标签名, 放在地址中, 刷新页面后标题仍能显示.
+  static const myTagPattern = '/me/tags/:tagId';
+  static String myTag(int id, String name) =>
+      Uri(path: '/me/tags/$id', queryParameters: {'name': name}).toString();
+
+  /// 足迹.
+  static const history = '/me/history';
+
+  /// 他人主页. 从菜品详情的上传者, 消息, 粉丝和关注列表进入.
+  static const userPattern = '/users/:userId';
+  static String user(int id) => '/users/$id';
+
+  /// 粉丝和关注列表. [fans] 为 true 时打开 "粉丝" 分栏, 否则打开 "关注".
+  static const followsPattern = '/users/:userId/follows';
+  static String follows(int userId, {required bool fans}) =>
+      '/users/$userId/follows?tab=${fans ? 'fans' : 'followings'}';
 
   static const settings = '/settings';
   static const settingsAccount = '/settings/account';
+  static const settingsUsername = '/settings/account/username';
+  static const settingsPassword = '/settings/account/password';
+  static const settingsPhone = '/settings/account/phone';
+  static const settingsDevices = '/settings/account/devices';
+  static const settingsDelete = '/settings/account/delete';
+  static const settingsPrivacy = '/settings/privacy';
+  static const settingsBlocked = '/settings/privacy/blocked';
+  static const settingsNotify = '/settings/notify';
   static const settingsAbout = '/settings/about';
+
+  /// 反馈. 从菜品或店铺进入时传入 [dishId] 或 [shopId], 页面显示 "关于 某某".
+  static const feedbackPattern = '/feedback';
+  static String feedback({int? dishId, int? shopId}) {
+    final query = {
+      'dishId': ?dishId?.toString(),
+      'shopId': ?shopId?.toString(),
+    };
+    return Uri(
+      path: feedbackPattern,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
 
   /// 发布第 1 步: 选店.
   static const publish = '/publish';
@@ -45,8 +94,40 @@ abstract final class Paths {
   static String publishDish(int shopId) => '/publish/dish?shopId=$shopId';
 
   /// 菜品详情. 从列表进入时把已有的菜品数据放在 `extra` 中, 舞台无需等待接口即可显示.
+  ///
+  /// [comment] 是要滚动到的评论 id, 来自消息和 "我的评论".
   static const dishPattern = '/dishes/:dishId';
-  static String dish(int id) => '/dishes/$id';
+  static String dish(int id, {int? comment}) =>
+      comment == null ? '/dishes/$id' : '/dishes/$id?comment=$comment';
+
+  /// 一道菜的全部评论.
+  static const commentsPattern = '/dishes/:dishId/comments';
+  static String comments(int dishId) => '/dishes/$dishId/comments';
+
+  /// 写评论或回复.
+  ///
+  /// - 回复时 [reply] 是所属评论的 id, [to] 是被回复的那条回复的 id, [name] 是被回复人的昵称.
+  ///   昵称放在地址中, 刷新页面后 "回复 小林" 仍能显示.
+  /// - [photo] 为 true 时打开页面后立即选择照片, 入口是全部评论底部的相机按钮.
+  static const writeCommentPattern = '/dishes/:dishId/comments/new';
+  static String writeComment(
+    int dishId, {
+    int? reply,
+    int? to,
+    String? name,
+    bool photo = false,
+  }) {
+    final query = {
+      'reply': ?reply?.toString(),
+      'to': ?to?.toString(),
+      if (reply != null) 'name': ?name,
+      if (photo) 'photo': '1',
+    };
+    return Uri(
+      path: '/dishes/$dishId/comments/new',
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
 
   /// 餐厅详情.
   static const shopPattern = '/shops/:shopId';
@@ -54,6 +135,13 @@ abstract final class Paths {
 
   /// 搜索, 入口在发现页右上角.
   static const search = '/search';
+
+  /// 往期专题, 入口在发现页选中专题时的列表底部.
+  static const topics = '/topics';
+
+  /// 专题. 从发现页, 往期专题, 菜品详情的专题提示和消息进入.
+  static const topicPattern = '/topics/:topicId';
+  static String topic(int id) => '/topics/$id';
 
   /// 消息, 入口是发现页右上角的铃铛.
   static const inbox = '/inbox';

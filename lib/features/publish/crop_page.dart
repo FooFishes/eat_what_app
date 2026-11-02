@@ -1,13 +1,11 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:eat/core/env/pending_features.dart';
-import 'package:eat/design/icons/eat_icon.dart';
-import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:eat/design/widgets/crop_viewport.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/stage_color_picker.dart';
@@ -90,10 +88,6 @@ class _CropPageState extends State<CropPage> {
   StageSample? _sample;
   StageSuggestion? _suggestion;
   Timer? _debounce;
-  CoverCrop? _gestureStart;
-
-  /// 取景圈直径占照片短边比例的下限, 决定最大放大倍数.
-  static const _minDiameter = 0.25;
 
   @override
   void initState() {
@@ -134,24 +128,23 @@ class _CropPageState extends State<CropPage> {
   /// 更新裁切. 照片位置立即更新, 推荐色在裁切停止变化后经过防抖再重算.
   ///
   /// 取色在主线程执行, 防抖避免拖动的每一帧都重算.
-  void _setCrop(CoverCrop crop) {
-    setState(() => _crop = _clamp(crop));
+  void _setCrop(CircleCrop crop) {
+    setState(
+      () => _crop = CoverCrop(
+        centerX: crop.centerX,
+        centerY: crop.centerY,
+        diameter: crop.diameter,
+      ),
+    );
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 100), _resuggest);
   }
 
-  /// 把裁切限制在照片范围内: 直径限制在 [_minDiameter] 到 1, 取景圈不超出照片边缘.
-  CoverCrop _clamp(CoverCrop crop) {
-    final diameter = crop.diameter.clamp(_minDiameter, 1.0);
-    final short = math.min(widget.width, widget.height).toDouble();
-    final rx = diameter * short / 2 / widget.width;
-    final ry = diameter * short / 2 / widget.height;
-    return CoverCrop(
-      centerX: crop.centerX.clamp(rx, 1 - rx),
-      centerY: crop.centerY.clamp(ry, 1 - ry),
-      diameter: diameter,
-    );
-  }
+  CircleCrop get _circle => (
+    centerX: _crop.centerX,
+    centerY: _crop.centerY,
+    diameter: _crop.diameter,
+  );
 
   void _done() {
     final sample = _sample;
@@ -190,32 +183,12 @@ class _CropPageState extends State<CropPage> {
                 onDone: _done,
               ),
               Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) => _Viewport(
-                    image: widget.image,
-                    width: widget.width,
-                    height: widget.height,
-                    crop: _crop,
-                    circle: math.min(
-                      math.min(constraints.maxWidth - 48, 320),
-                      constraints.maxHeight - 48,
-                    ),
-                    onStart: () => _gestureStart = _crop,
-                    onUpdate: (scale, delta, pxPerImage) {
-                      final start = _gestureStart ?? _crop;
-                      _setCrop(
-                        CoverCrop(
-                          centerX:
-                              _crop.centerX -
-                              delta.dx / pxPerImage / widget.width,
-                          centerY:
-                              _crop.centerY -
-                              delta.dy / pxPerImage / widget.height,
-                          diameter: start.diameter / scale,
-                        ),
-                      );
-                    },
-                  ),
+                child: CropViewport(
+                  image: widget.image,
+                  width: widget.width,
+                  height: widget.height,
+                  crop: _circle,
+                  onChanged: _setCrop,
                 ),
               ),
               Text(
@@ -224,16 +197,11 @@ class _CropPageState extends State<CropPage> {
                   color: c.paper.withValues(alpha: 0.7),
                 ),
               ),
-              _ZoomSlider(
-                zoom: 1 / _crop.diameter,
-                max: 1 / _minDiameter,
-                onChanged: (zoom) => _setCrop(
-                  CoverCrop(
-                    centerX: _crop.centerX,
-                    centerY: _crop.centerY,
-                    diameter: 1 / zoom,
-                  ),
-                ),
+              CropZoomSlider(
+                crop: _circle,
+                width: widget.width,
+                height: widget.height,
+                onChanged: _setCrop,
               ),
               DecoratedBox(
                 decoration: BoxDecoration(
@@ -325,165 +293,6 @@ class _TopBar extends StatelessWidget {
         ),
         action('完成', onDone, strong: true),
       ],
-    );
-  }
-}
-
-/// 取景区域. 照片位于取景圈下方, 圈外覆盖 `crop-scrim`. 手势同时处理拖动和双指缩放.
-class _Viewport extends StatelessWidget {
-  const new({
-    required this.image,
-    required this.width,
-    required this.height,
-    required this.crop,
-    required this.circle,
-    required this.onStart,
-    required this.onUpdate,
-  });
-
-  final ImageProvider image;
-  final int width;
-  final int height;
-  final CoverCrop crop;
-
-  /// 取景圈在屏幕上的直径.
-  final double circle;
-  final VoidCallback onStart;
-
-  /// 手势更新回调.
-  ///
-  /// - [scale]: 本次手势开始以来的累计缩放.
-  /// - [delta]: 本帧手指的位移.
-  /// - [pxPerImage]: 照片一个像素在屏幕上的宽度.
-  final void Function(double scale, Offset delta, double pxPerImage) onUpdate;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.eat.colors;
-    final short = math.min(width, height);
-    final pxPerImage = circle / (crop.diameter * short);
-    return Semantics(
-      label: '照片取景，拖动调整位置，双指缩放',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onScaleStart: (_) => onStart(),
-        onScaleUpdate: (d) => onUpdate(d.scale, d.focalPointDelta, pxPerImage),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final center = constraints.biggest.center(Offset.zero);
-            final w = width * pxPerImage;
-            final h = height * pxPerImage;
-            return ClipRect(
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: center.dx - crop.centerX * w,
-                    top: center.dy - crop.centerY * h,
-                    width: w,
-                    height: h,
-                    child: Image(
-                      image: image,
-                      fit: BoxFit.fill,
-                      excludeFromSemantics: true,
-                      gaplessPlayback: true,
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _ScrimPainter(
-                        center: center,
-                        radius: circle / 2,
-                        scrim: c.cropScrim,
-                        ring: c.paper,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _ScrimPainter extends CustomPainter {
-  _ScrimPainter({
-    required this.center,
-    required this.radius,
-    required this.scrim,
-    required this.ring,
-  });
-
-  final Offset center;
-  final double radius;
-  final Color scrim;
-  final Color ring;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final hole = Rect.fromCircle(center: center, radius: radius);
-    canvas
-      ..drawPath(
-        Path()
-          ..fillType = PathFillType.evenOdd
-          ..addRect(Offset.zero & size)
-          ..addOval(hole),
-        Paint()..color = scrim,
-      )
-      ..drawOval(
-        hole,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = ring,
-      );
-  }
-
-  @override
-  bool shouldRepaint(_ScrimPainter old) =>
-      old.center != center ||
-      old.radius != radius ||
-      old.scrim != scrim ||
-      old.ring != ring;
-}
-
-/// 缩放滑条. 无障碍要求每个手势操作都有非手势的替代, 它是双指缩放的替代.
-class _ZoomSlider extends StatelessWidget {
-  const new({required this.zoom, required this.max, required this.onChanged});
-
-  final double zoom;
-  final double max;
-  final ValueChanged<double> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.eat.colors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-      child: Row(
-        children: [
-          ExcludeSemantics(
-            child: EatIcon(EatIcons.image, size: 16, color: c.paper),
-          ),
-          Expanded(
-            child: Slider(
-              value: zoom.clamp(1.0, max),
-              min: 1,
-              max: max,
-              activeColor: c.paper,
-              inactiveColor: c.paper.withValues(alpha: 0.25),
-              thumbColor: c.paper,
-              semanticFormatterCallback: (v) => '放大 ${v.toStringAsFixed(1)} 倍',
-              onChanged: onChanged,
-            ),
-          ),
-          ExcludeSemantics(
-            child: EatIcon(EatIcons.image, size: 22, color: c.paper),
-          ),
-        ],
-      ),
     );
   }
 }

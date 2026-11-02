@@ -16,7 +16,6 @@ void main() {
       envName: 'staging',
       apiBaseUrl: 'https://example.com/api',
       webBaseUrl: 'https://example.com',
-      assetBaseUrl: '',
       sentryDsn: '',
       tiandituKey: '',
       privacyUrl: '',

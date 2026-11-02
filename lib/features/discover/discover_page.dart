@@ -25,9 +25,11 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/topic.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/domain/rules/topic_rules.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/router/paths.dart';
@@ -38,11 +40,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 专题接口未提供, 分类栏不显示专题. 接口上线后在分类栏加入专题.
 /// 发现页.
 ///
 /// - 舞台: 转盘. 拖动或点击 "换一个" 切换菜品, 点击 "就它了" 进入菜品详情.
-/// - 抽屉: 分类栏和两列推荐流.
+/// - 抽屉: 分类栏和两列推荐流. 有当期专题时, 专题紧跟 "今日推荐" 出现在分类栏中.
 /// - 顶栏: 左侧为地点和饭点, 右侧为搜索和消息.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -53,6 +54,9 @@ class DiscoverPage extends ConsumerStatefulWidget {
 
 class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   DishCategory? _category;
+
+  /// 分类栏选中了专题. 当期专题消失 (如切换到没有专题的校区) 时按 "今日推荐" 显示.
+  var _topicSelected = false;
   late final AppLifecycleListener _lifecycle;
   var _staleNoticed = false;
   var _explaining = false;
@@ -67,6 +71,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       onResume: () {
         ref.read(unreadCountProvider.notifier).refresh();
         ref.invalidate(currentPlaceProvider);
+        ref.invalidate(currentTopicProvider);
       },
     );
     _scheduleMealChange();
@@ -167,6 +172,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent = const StagePlaceholder();
     }
 
+    final topic = ref.watch(currentTopicProvider).value;
+    final topicShown = _topicSelected && topic != null;
+    final shelfStart = topic == null ? 1 : 2;
+
     return StageScaffold(
       stage: stage,
       topBar: const _TopBar(),
@@ -176,22 +185,30 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
           child: EatTabs(
             tabs: [
               const EatTabItem('今日推荐'),
+              if (topic != null) EatTabItem(topic.name, icon: EatIcons.topic),
               for (final category in DishCategory.shelf)
                 EatTabItem(category.label),
             ],
-            selected: _category == null
+            selected: topicShown
+                ? 1
+                : _category == null
                 ? 0
-                : DishCategory.shelf.indexOf(_category!) + 1,
-            onSelected: (i) => setState(
-              () => _category = i == 0 ? null : DishCategory.shelf[i - 1],
-            ),
+                : DishCategory.shelf.indexOf(_category!) + shelfStart,
+            onSelected: (i) => setState(() {
+              _topicSelected = topic != null && i == 1;
+              _category = i < shelfStart
+                  ? null
+                  : DishCategory.shelf[i - shelfStart];
+            }),
             padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-          sliver: _DishList(category: _category),
+          sliver: topicShown
+              ? _TopicList(topic: topic)
+              : _DishList(category: _category),
         ),
       ],
     );
@@ -641,6 +658,114 @@ class _DishList extends ConsumerWidget {
                   ref.read(discoverListProvider(category).notifier).loadMore(),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// 分类栏选中专题时的抽屉内容: 介绍, 称呼和起止时间, 专题里的菜, 底部为 "往期专题".
+///
+/// 专题里的菜由运营排定, 不受饭点影响.
+class _TopicList extends ConsumerWidget {
+  const new({required this.topic});
+
+  final Topic topic;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final now = clock.now();
+    final provider = discoverTopicProvider(topic.id);
+    final value = ref.watch(provider);
+    final dishes = value.value?.dishes;
+
+    final Widget list;
+    if (!value.hasValue) {
+      list = SliverToBoxAdapter(
+        child: value.hasError && !value.isLoading
+            ? FailureState(
+                message: (value.error as AppFailure?)?.message,
+                onRetry: () => ref.invalidate(provider),
+              )
+            : const TileGridPlaceholder(count: 4),
+      );
+    } else if (dishes == null || dishes.isEmpty) {
+      list = SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
+          child: dishes == null
+              ? const EmptyState(icon: EatIcons.topic, title: '这期专题已撤下')
+              : const EmptyState(icon: EatIcons.bowl, title: '这期专题的菜都已删除'),
+        ),
+      );
+    } else {
+      final tileWidth = (MediaQuery.sizeOf(context).width - 54) / 2;
+      list = SliverTileGrid(
+        count: dishes.length,
+        builder: (context, i) => DishTile(
+          image: networkImage(dishes[i].cover, width: tileWidth),
+          name: dishes[i].name,
+          shop: dishes[i].shopName,
+          onTap: () => context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
+        ),
+      );
+    }
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: EatSpace.s4,
+            children: [
+              if (topic.introduction.isNotEmpty)
+                Text(
+                  topic.introduction,
+                  style: eat.text.body.copyWith(height: 22 / 15, color: c.ink),
+                ),
+              Text(
+                '${TopicRules.kind(topic, now)}，${TopicRules.range(topic, now)}',
+                style: eat.text.meta.copyWith(color: c.inkMuted),
+              ),
+            ],
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s16)),
+        list,
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: EatSpace.s8),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: EatTappable(
+                onTap: () => context.push(Paths.topics),
+                label: '往期专题',
+                focusShape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                builder: (context, _) => SizedBox(
+                  height: EatSize.touch,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        '往期专题',
+                        style: eat.text.body.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: c.ink,
+                        ),
+                      ),
+                      EatIcon(EatIcons.chevronRight, size: 16, color: c.ink),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

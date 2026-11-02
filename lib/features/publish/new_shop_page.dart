@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/network/idempotency.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
@@ -10,11 +11,13 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/code_point_limit.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
@@ -26,6 +29,7 @@ import 'package:eat/features/publish/widgets/bottom_bar.dart';
 import 'package:eat/features/publish/widgets/photo_source.dart';
 import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
@@ -42,6 +46,7 @@ import 'package:go_router/go_router.dart';
 /// - 附近已有同名店时显示提示. 用户可以选择已有的店, 也可以继续新建.
 ///
 /// 创建成功后的去向:
+/// - 新店进入审核时, 提示 "已提交审核" 并返回上一页. 审核通过前店铺不公开, 不能挂菜.
 /// - [returnShop] 为 true 时, 带着新店返回上一页. 用于加菜页的 "换一家".
 /// - 否则替换为新店的加菜页.
 class NewShopPage extends ConsumerStatefulWidget {
@@ -69,6 +74,14 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   /// 按在地图上时禁止页面滚动, 否则纵向拖动会被页面滚动拦截, 地图无法拖动.
   var _onMap = false;
   var _busy = false;
+
+  /// 已上传的门头照片及其存储 key. 重试提交时不重复上传.
+  ({PickedPhoto photo, String key})? _uploaded;
+
+  /// 本次新建的 `Idempotency-Key` 及对应的提交内容.
+  ///
+  /// 超时后重试同一份内容时复用 key, 服务端据此去重. 内容变化后换新 key, 服务端拒绝同一 key 提交不同内容.
+  ({String content, String key})? _request;
 
   @override
   void initState() {
@@ -106,11 +119,25 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
       final hub = ref.read(hubAtProvider(point)).value;
       String? photoKey;
       if (_photo case final photo?) {
-        photoKey = await ref
-            .read(uploaderProvider)
-            .upload(photo.bytes, biz: UploadBiz.restaurants);
+        photoKey = identical(_uploaded?.photo, photo)
+            ? _uploaded!.key
+            : await ref
+                  .read(uploaderProvider)
+                  .upload(photo.bytes, biz: UploadBiz.restaurants);
+        _uploaded = (photo: photo, key: photoKey);
       }
-      final id = await ref
+      final content = [
+        name,
+        address,
+        point.lat,
+        point.lng,
+        hub?.id,
+        photoKey,
+      ].join('|');
+      if (_request?.content != content) {
+        _request = (content: content, key: newIdempotencyKey());
+      }
+      final (:id, :pending) = await ref
           .read(placeRepositoryProvider)
           .createShop(
             name: name,
@@ -118,15 +145,23 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
             point: point,
             hubId: hub?.id,
             photoKey: photoKey,
+            idempotencyKey: _request!.key,
           );
-      ref.read(publishedCountProvider.notifier).published();
       if (!mounted) return;
+      if (pending) {
+        showToast(context, '已提交审核，通过后公开');
+        context.pop();
+        return;
+      }
+      ref.read(publishedCountProvider.notifier).published();
       final shop = Shop(
         id: id,
         name: name,
         address: address,
         point: point,
         hubId: hub?.id,
+        status: ShopStatus.open,
+        dishCount: 0,
       );
       if (widget.returnShop) {
         context.pop(shop);
@@ -146,8 +181,9 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     }
   }
 
-  /// 在同名店提示中选择已有的店.
+  /// 在同名店提示中选择已有的店. 已关门的店不能选.
   void _useExisting(Shop shop) {
+    if (!ensureShopOpen(context, shop)) return;
     if (widget.returnShop) {
       context.pop(shop);
     } else {
@@ -192,12 +228,12 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     autofocus: widget.initialName.isEmpty,
                     textInputAction: TextInputAction.next,
                     inputFormatters: [
-                      LengthLimitingTextInputFormatter(
+                      CodePointLengthLimitingFormatter(
                         PublishRules.shopNameMax,
                       ),
                     ],
                     trailing: _Counter(
-                      _name.text.length,
+                      codePointLength(_name.text),
                       PublishRules.shopNameMax,
                     ),
                     onChanged: (_) => setState(() => _keepNew = false),

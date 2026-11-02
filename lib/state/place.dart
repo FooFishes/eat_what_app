@@ -5,6 +5,7 @@ import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
@@ -168,6 +169,29 @@ CurrentPlace currentPlace(Ref ref) {
     autoMeal: manual == null,
     ready: choice.restored && !campusList.isLoading,
   );
+}
+
+/// 搜店的参照坐标和校区.
+///
+/// - [point]: 我的定位, 没有定位时为当前校区的中心. 两者都没有时为 null, 后端按新建时间倒序排列.
+/// - [campusId]: 当前校区. 搜店接口不传校区时只查默认校区.
+typedef ShopSearchScope = ({GcjPoint? point, int? campusId});
+
+/// 当前的搜店范围. 校区列表正在加载时等待加载完成.
+///
+/// 调用方等待期间被释放时返回 null.
+Future<ShopSearchScope?> shopSearchScope(Ref ref) async {
+  if (ref.read(campusesProvider).isLoading) {
+    try {
+      await ref.read(campusesProvider.future);
+    } on Object {
+      // 校区列表获取失败时按没有校区处理, 仍可使用定位.
+    }
+    if (!ref.mounted) return null;
+  }
+  final campus = ref.read(currentPlaceProvider).campus;
+  final point = ref.read(currentLocationProvider).point ?? campus?.center;
+  return (point: point, campusId: campus?.id);
 }
 
 /// 当前饭点的失效时间: 手动选择的到期时间, 或当前时间段的结束时间.

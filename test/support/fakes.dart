@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -14,6 +15,7 @@ import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/storage/secure_store.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/router/deep_links.dart';
 import 'package:eat/state/api_hooks.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -78,6 +80,12 @@ class FakeAdapter implements HttpClientAdapter {
   void on(String route, List<Object> responses) =>
       _routes[route] = [...responses];
 
+  /// 登记匹配 [pattern] 的路由的响应, 用于路径里带随机 id 的请求. 精确登记的路由优先.
+  void onPattern(RegExp pattern, List<Object> responses) =>
+      _patterns.add((pattern, [...responses]));
+
+  final _patterns = <(RegExp, List<Object>)>[];
+
   /// 业务成功的响应外壳.
   static Map<String, Object?> ok([Object? data]) => {
     'code': 0,
@@ -113,7 +121,9 @@ class FakeAdapter implements HttpClientAdapter {
         options.data,
       ),
     );
-    final queue = _routes[route];
+    final queue =
+        _routes[route] ??
+        _patterns.where((p) => p.$1.hasMatch(route)).firstOrNull?.$2;
     if (queue == null || queue.isEmpty) {
       return ResponseBody.fromString('{}', 404, headers: _json);
     }
@@ -157,6 +167,21 @@ class FakePhotoPicker implements PhotoPicker {
 
   @override
   Future<PickedPhoto?> takePhoto() async => next.firstOrNull;
+
+  /// 最近一次裁切的参数.
+  ({double centerX, double centerY, double diameter})? lastCrop;
+
+  @override
+  Future<Uint8List> cropSquare(
+    PickedPhoto photo, {
+    required double centerX,
+    required double centerY,
+    required double diameter,
+    int size = 512,
+  }) async {
+    lastCrop = (centerX: centerX, centerY: centerY, diameter: diameter);
+    return photo.bytes;
+  }
 }
 
 /// 测试用的环境配置.
@@ -164,7 +189,6 @@ const testConfig = AppConfig(
   envName: 'test',
   apiBaseUrl: 'https://api.test/api',
   webBaseUrl: 'https://eat.test',
-  assetBaseUrl: 'https://img.test',
   sentryDsn: '',
   tiandituKey: '',
   privacyUrl: 'https://eat.test/privacy.html',
@@ -306,6 +330,17 @@ final transparentImage = Uint8List.fromList(const [
   0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
 ]);
 
+/// 由测试发出外部链接的 [LinkSource].
+class FakeLinkSource implements LinkSource {
+  final _controller = StreamController<Uri>.broadcast();
+
+  @override
+  Stream<Uri> get links => _controller.stream;
+
+  /// 模拟系统向 App 传入外部链接 [link].
+  void open(Uri link) => _controller.add(link);
+}
+
 /// 测试用的模拟环境. 网络和存储都在内存中, 网络层回调连接到登录态.
 class TestEnv {
   final adapter = FakeAdapter();
@@ -315,6 +350,7 @@ class TestEnv {
   final location = FakeLocationService();
   final photos = FakePhotoPicker();
   final updater = FakeShorebirdUpdater();
+  final links = FakeLinkSource();
 
   /// 创建 Provider 容器. 给定 [session] 时以 [session] 为初始登录态.
   ///
@@ -338,6 +374,7 @@ class TestEnv {
         humanVerifierProvider.overrideWithValue(verifier),
         locationServiceProvider.overrideWithValue(location),
         photoPickerProvider.overrideWithValue(photos),
+        linkSourceProvider.overrideWithValue(links),
         hotUpdateProvider.overrideWithValue(HotUpdate(updater)),
         uploadClientProvider.overrideWithValue(UploadClient(adapter: adapter)),
         apiClientProvider.overrideWith(
@@ -437,6 +474,15 @@ Map<String, Object?> restaurantJson({
   'hubId': 3,
   'POI': null,
   'pictureUrl': <String>[],
+  'operatingStatus': 'OPEN',
+  'permanentlyClosed': false,
+  'visibleFoodCount': 0,
+  'ratingSummaryState': 'SYNC_PENDING',
+  'signatureFoods': <Object>[],
+  'matchedFoods': <Object>[],
+  'publicTastes': <Object>[],
+  'publicTastesState': 'SYNC_PENDING',
+  'personalState': 'NOT_LOGGED_IN',
   'createdAt': 1792763739329,
   'updatedAt': 1792763739329,
 };

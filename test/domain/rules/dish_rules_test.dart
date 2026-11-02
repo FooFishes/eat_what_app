@@ -8,7 +8,6 @@ Dish _dish(
   StageColor stage = StageColor.broth,
   List<StageColor> alternates = const [],
   int likes = 0,
-  List<TasteTag> tags = const [],
 }) => Dish(
   id: id,
   name: '菜$id',
@@ -16,7 +15,6 @@ Dish _dish(
   stage: stage,
   stageAlternates: alternates,
   likes: likes,
-  tasteTags: tags,
 );
 
 void main() {
@@ -74,26 +72,5 @@ void main() {
       _dish(4, likes: 1),
     ];
     expect(DishRules.signatures(dishes).map((d) => d.id), [2, 3, 1]);
-  });
-
-  test('一家店的口味标签按人数汇总，最多 6 个', () {
-    final dishes = [
-      _dish(
-        1,
-        tags: const [
-          TasteTag(id: 1, name: '皮薄', count: 3),
-          TasteTag(id: 2, name: '量大', count: 1),
-        ],
-      ),
-      _dish(
-        2,
-        tags: const [
-          TasteTag(id: 2, name: '量大', count: 5),
-          TasteTag(id: 3, name: '排队久'),
-        ],
-      ),
-    ];
-    final summary = DishRules.tasteSummary(dishes);
-    expect(summary.map((t) => (t.name, t.count)), [('量大', 6), ('皮薄', 3)]);
   });
 }

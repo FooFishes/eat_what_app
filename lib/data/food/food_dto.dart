@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'food_dto.g.dart';
 
-/// 菜品接口返回的菜品 (`FoodVO`, `FoodRecommendationVO`). 字段按接口声明均为可空.
+/// 菜品接口返回的菜品 (`FoodVO`, `FoodRecommendationVO`). 除 [pictureKeys] 外字段按接口声明均为可空.
 ///
 /// 推荐的上一批和菜品详情会原样存入本地缓存, 因此需要支持转回 JSON.
 @JsonSerializable(includeIfNull: false)
@@ -12,6 +12,9 @@ class const FoodDto({
   final String? uploaderName,
   final int? restaurantId,
   final String? restaurantName,
+
+  /// 店铺与请求坐标的距离, 单位米. 请求不带坐标时为 null.
+  final double? distanceMeters,
   final String? restaurantAddress,
   final double? restaurantGcjLng,
   final double? restaurantGcjLat,
@@ -22,6 +25,9 @@ class const FoodDto({
   final double? price,
   final String? category,
   final List<String>? pictureUrl,
+
+  /// 图片的持久化引用, 已滤掉未通过审核的图. 与 [pictureUrl] 不保证逐项对应.
+  required final List<String> pictureKeys,
   final List<FoodTagDto>? systemTags,
   final List<FoodTagDto>? myCustomTags,
   final bool? isLiked,

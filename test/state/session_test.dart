@@ -7,6 +7,7 @@ import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/state/cross_site_consent.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,7 +161,7 @@ void main() {
     );
   });
 
-  test('已登录时服务端要求同意，用当前会话自动同意后重发', () async {
+  test('已登录时服务端要求同意，用户在面板中同意后用当前会话提交，再重发', () async {
     env.adapter
       ..on('GET /user/info', [
         FakeAdapter.fail(20005),
@@ -174,6 +175,8 @@ void main() {
       session: const SignedIn(),
       token: _token,
     );
+    container.read(crossSiteConsentProvider).sessionPresenter = (_) async =>
+        true;
 
     await container.read(sessionProvider.notifier).refreshUser();
     expect((container.read(sessionProvider) as SignedIn).user, isNotNull);
@@ -182,12 +185,12 @@ void main() {
     });
   });
 
-  test('用户信息转领域模型时补默认值，图片 key 拼上前缀', () async {
+  test('用户信息转领域模型时补默认值，头像地址原样使用', () async {
     env.adapter.on('GET /user/info', [
       FakeAdapter.ok({
         'id': 7,
         'displayName': '',
-        'avatar': 'avatars/7.jpg',
+        'avatar': 'https://img.test/avatars/7.jpg',
         'hasUsername': true,
         'userName': 'chi_fan',
       }),
@@ -200,5 +203,24 @@ void main() {
     expect(user.avatarUrl, 'https://img.test/avatars/7.jpg');
     expect(user.verified, isFalse);
     expect(user.hasPassword, isFalse);
+  });
+
+  test('封禁截止时间按 Unix 毫秒解析，null 表示永久封禁', () async {
+    final until = DateTime.utc(2026, 11, 30, 4);
+    for (final (raw, expected) in [
+      (until.millisecondsSinceEpoch, until.toLocal()),
+      (null, null),
+    ]) {
+      env.adapter.on('GET /user/info', [
+        FakeAdapter.ok({...userInfoJson(banned: true), 'banUntil': raw}),
+      ]);
+      final container = await env.container();
+
+      final user = await container.read(userRepositoryProvider).fetchCurrent();
+      expect(user.banned, isTrue);
+      expect(user.banUntil, expected, reason: '$raw');
+      final status = AccountStatus.of(signedIn: true, user: user);
+      expect((status as BannedStatus).until, expected, reason: '$raw');
+    }
   });
 }

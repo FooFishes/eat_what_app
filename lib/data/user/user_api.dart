@@ -1,18 +1,39 @@
 import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
+import 'package:eat/data/common/convert.dart';
+import 'package:eat/data/sessions/sessions_api.dart';
+import 'package:eat/domain/models/paged.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_api.g.dart';
 
-// TODO: 未对接编辑资料, 关注和隐私设置的接口. 实现对应页面时在此添加接口方法.
-/// 接口分组 User: 当前用户, 指定用户的公开资料和统计.
+/// 接口分组 User: 当前用户, 资料, 关注, 隐私, 屏蔽, 个性化推荐和换绑手机.
 class UserApi {
   UserApi(this._client);
 
   final ApiClient _client;
 
-  static const endpoints = ['GET /user/info', 'GET /user/userInfo'];
+  static const endpoints = [
+    'GET /user/info',
+    'GET /user/userInfo',
+    'PUT /user/updateInfo',
+    'POST /user/follow',
+    'POST /user/unfollow',
+    'GET /user/followers',
+    'GET /user/followings',
+    'POST /user/changePrivacy',
+    'GET /user/blocks',
+    'GET /user/blocks/{userId}',
+    'PUT /user/blocks/{userId}',
+    'DELETE /user/blocks/{userId}',
+    'GET /user/recommendation-settings',
+    'PUT /user/recommendation-settings',
+    'POST /user/mobile/commands',
+    'POST /user/mobile/commands/{command}/codes',
+    'POST /user/mobile/commands/{command}/commit',
+    'POST /user/mobile/commands/{commandId}/resume',
+  ];
 
   Future<UserInfoDto> info() async =>
       decodeJson(await _client.get('/user/info'), UserInfoDto.fromJson);
@@ -28,6 +49,200 @@ class UserApi {
     ),
     UserProfileDto.fromJson,
   );
+
+  /// 更新昵称, 头像和签名. [avatar] 是上传后得到的存储 key, 为 null 时不修改头像.
+  Future<void> updateInfo({
+    required String displayName,
+    required String signature,
+    String? avatar,
+  }) => _client.put(
+    '/user/updateInfo',
+    body: {
+      'displayName': displayName,
+      'signature': signature,
+      'avatar': ?avatar,
+    },
+  );
+
+  Future<void> follow(int userId) =>
+      _client.post('/user/follow', query: {'userId': userId});
+
+  Future<void> unfollow(int userId) =>
+      _client.post('/user/unfollow', query: {'userId': userId});
+
+  /// [userId] 的粉丝. 对方不公开粉丝列表时失败, 业务码为 `BizCodes.notSupported`.
+  Future<Paged<FansDto>> followers(
+    int userId, {
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      '/user/followers',
+      query: {'userId': userId, 'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    FansDto.fromJson,
+  );
+
+  /// [userId] 关注的人. 对方不公开关注列表时失败, 业务码为 `BizCodes.notSupported`.
+  Future<Paged<FansDto>> followings(
+    int userId, {
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      '/user/followings',
+      query: {'userId': userId, 'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    FansDto.fromJson,
+  );
+
+  /// 是否公开关注列表 ([following]) 和粉丝列表 ([follower]).
+  Future<void> changePrivacy({
+    required bool following,
+    required bool follower,
+  }) => _client.post(
+    '/user/changePrivacy',
+    body: {'following': following, 'follower': follower},
+  );
+
+  Future<Paged<BlockedUserDto>> blocks({
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      '/user/blocks',
+      query: {'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    BlockedUserDto.fromJson,
+  );
+
+  /// 当前用户是否屏蔽了 [userId].
+  Future<bool> blocked(int userId, {CancelToken? cancelToken}) async =>
+      _blocked(
+        await _client.get('/user/blocks/$userId', cancelToken: cancelToken),
+      );
+
+  Future<void> block(int userId) => _client.put('/user/blocks/$userId');
+
+  Future<void> unblock(int userId) => _client.delete('/user/blocks/$userId');
+
+  /// 个性化推荐开关. 默认开启.
+  Future<bool> personalized({CancelToken? cancelToken}) async => _personalized(
+    await _client.get(
+      '/user/recommendation-settings',
+      cancelToken: cancelToken,
+    ),
+  );
+
+  Future<void> setPersonalized({required bool personalized}) => _client.put(
+    '/user/recommendation-settings',
+    body: {'personalized': personalized},
+  );
+
+  static bool _blocked(Object? data) => data is Map && data['blocked'] == true;
+
+  static bool _personalized(Object? data) =>
+      !(data is Map && data['personalized'] == false);
+
+  /// 开始换绑到 [mobile]. 返回的 `oldProofRequired` 表示提交时是否要验证旧手机或密码.
+  Future<MobileCommandDto> prepareMobileChange({
+    required String commandId,
+    required String mobile,
+  }) async => decodeJson(
+    await _client.post(
+      '/user/mobile/commands',
+      body: {'commandId': commandId, 'mobile': mobile},
+    ),
+    MobileCommandDto.fromJson,
+  );
+
+  /// 给新手机 (`NEW_PHONE`) 或旧手机 (`OLD_PHONE`) 发验证码. 发送前需完成人机验证.
+  Future<void> sendMobileChangeCode(
+    String commandId, {
+    required String type,
+    Map<String, String> captchaHeaders = const {},
+  }) => _client.post(
+    '/user/mobile/commands/$commandId/codes',
+    body: {'type': type},
+    headers: captchaHeaders,
+  );
+
+  /// 提交换绑. 旧手机用 [oldCode] 或 [password] 证明, 不需要时都为 null.
+  Future<MobileCommitDto> commitMobileChange(
+    String commandId, {
+    required String newCode,
+    String? oldCode,
+    String? password,
+    required String recoveryCapability,
+  }) async => decodeJson(
+    await _client.post(
+      '/user/mobile/commands/$commandId/commit',
+      body: {
+        'newCode': newCode,
+        'oldCode': ?oldCode,
+        'password': ?password,
+        'recoveryCapability': recoveryCapability,
+      },
+    ),
+    MobileCommitDto.fromJson,
+  );
+
+  Future<SessionOutcomeDto> resumeMobileChange(
+    String commandId, {
+    required String recoveryCapability,
+  }) async => decodeJson(
+    await _client.post(
+      '/user/mobile/commands/$commandId/resume',
+      headers: {'X-Recovery-Capability': recoveryCapability},
+    ),
+    SessionOutcomeDto.fromJson,
+  );
+}
+
+/// 换绑手机的准备结果.
+@JsonSerializable(createToJson: false)
+class const MobileCommandDto({
+  final String? commandId,
+  final bool? oldProofRequired,
+}) {
+  factory MobileCommandDto.fromJson(Map<String, dynamic> json) =>
+      _$MobileCommandDtoFromJson(json);
+}
+
+/// 换绑手机的提交结果. [currentDevice] 为 `READY` 时 [replacement] 是本机的新会话,
+/// `PENDING` 时需通过恢复接口获取, `REAUTHENTICATION_REQUIRED` 时需要重新登录.
+@JsonSerializable(createToJson: false)
+class const MobileCommitDto({
+  final String? currentDevice,
+  final SessionOutcomeDto? replacement,
+}) {
+  factory MobileCommitDto.fromJson(Map<String, dynamic> json) =>
+      _$MobileCommitDtoFromJson(json);
+}
+
+/// `/user/followers` 和 `/user/followings` 的一项. [createdAt] 是关注的时间.
+@JsonSerializable(createToJson: false)
+class const FansDto({
+  final int? id,
+  final String? displayName,
+  final String? avatar,
+  final int? createdAt,
+}) {
+  factory FansDto.fromJson(Map<String, dynamic> json) =>
+      _$FansDtoFromJson(json);
+}
+
+/// `/user/blocks` 的一项. 对方账号已注销时 [displayName] 为 null.
+@JsonSerializable(createToJson: false)
+class const BlockedUserDto({final int? userId, final String? displayName}) {
+  factory BlockedUserDto.fromJson(Map<String, dynamic> json) =>
+      _$BlockedUserDtoFromJson(json);
 }
 
 /// `/user/userInfo` 的 `data`: 指定用户的公开资料, 统计, 以及与当前用户的关注关系.
@@ -62,6 +277,10 @@ class const UserInfoDto({
   final bool? banned,
   final String? banReason,
   final int? bannedAt,
+
+  // TODO: 契约声明 banUntil 为 ISO-8601 字符串, 后端的 Jackson 配置实际把 `Instant` 写成 Unix 毫秒, 本字段按实际返回解析. 契约与后端统一格式后按统一的格式解析.
+  /// 封禁截止时间, Unix 毫秒. null 表示永久封禁或没有期限证明.
+  final int? banUntil,
   final String? phone,
   final bool? verified,
   final String? method,

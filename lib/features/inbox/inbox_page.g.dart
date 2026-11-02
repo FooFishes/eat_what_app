@@ -8,47 +8,100 @@ part of 'inbox_page.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 消息列表, 滚动到底部时加载下一页.
+/// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
 ///
-/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
+/// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
 
 @ProviderFor(Inbox)
-final inboxProvider = InboxProvider._();
+final inboxProvider = InboxFamily._();
 
-/// 消息列表, 滚动到底部时加载下一页.
+/// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
 ///
-/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
+/// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
 final class InboxProvider extends $AsyncNotifierProvider<Inbox, InboxPages> {
-  /// 消息列表, 滚动到底部时加载下一页.
+  /// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
   ///
-  /// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
-  InboxProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'inboxProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  /// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
+  InboxProvider._({
+    required InboxFamily super.from,
+    required NoticeColumn super.argument,
+  }) : super(
+         retry: null,
+         name: r'inboxProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$inboxHash();
 
+  @override
+  String toString() {
+    return r'inboxProvider'
+        ''
+        '($argument)';
+  }
+
   @$internal
   @override
   Inbox create() => Inbox();
+
+  @override
+  bool operator ==(Object other) {
+    return other is InboxProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
-String _$inboxHash() => r'8b055980f0f2260d11c95b805b9e43633f65c22a';
+String _$inboxHash() => r'fa0555ba21da8a8d8c0f7eaf785962df66dadca5';
 
-/// 消息列表, 滚动到底部时加载下一页.
+/// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
 ///
-/// 点击单条消息和全部已读时, 先修改本地状态, 再通知服务端.
+/// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
+
+final class InboxFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          Inbox,
+          AsyncValue<InboxPages>,
+          InboxPages,
+          FutureOr<InboxPages>,
+          NoticeColumn
+        > {
+  InboxFamily._()
+    : super(
+        retry: null,
+        name: r'inboxProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
+  ///
+  /// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
+
+  InboxProvider call(NoticeColumn column) =>
+      InboxProvider._(argument: column, from: this);
+
+  @override
+  String toString() => r'inboxProvider';
+}
+
+/// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
+///
+/// 点击一行和全部已读时, 先修改本地状态, 再通知服务端.
 
 abstract class _$Inbox extends $AsyncNotifier<InboxPages> {
-  FutureOr<InboxPages> build();
+  late final _$args = ref.$arg as NoticeColumn;
+  NoticeColumn get column => _$args;
+
+  FutureOr<InboxPages> build(NoticeColumn column);
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -61,6 +114,6 @@ abstract class _$Inbox extends $AsyncNotifier<InboxPages> {
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, build);
+    return element.handleCreate(ref, () => build(_$args));
   }
 }

@@ -14,6 +14,7 @@ LoginReplyDto _$LoginReplyDtoFromJson(Map<String, dynamic> json) =>
       newUser: json['newUser'] as bool?,
       consentProof: json['consentProof'] as String?,
       status: json['status'] as String?,
+      restricted: json['restricted'] as bool?,
     );
 
 Map<String, dynamic> _$PhoneLoginRequestDtoToJson(

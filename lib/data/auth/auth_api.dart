@@ -4,7 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_api.g.dart';
 
-/// 接口分组 Auth: 登录, 发送验证码, 人机验证参数, 学生认证.
+/// 接口分组 Auth: 登录, 发送验证码, 人机验证参数, 学生认证, 设置用户名和密码.
 class AuthApi {
   AuthApi(this._client);
 
@@ -19,6 +19,11 @@ class AuthApi {
     'POST /auth/logout',
     'GET /auth/sdu',
     'GET /auth/sendEmail',
+    'POST /auth/checkUsername',
+    'POST /auth/password/code',
+    'POST /auth/password/reset',
+    'POST /auth/changePassword',
+    'POST /auth/username/set',
   ];
 
   /// 人机验证参数. 接口要求不缓存, 每次验证前重新请求.
@@ -67,6 +72,43 @@ class AuthApi {
     '/auth/sendEmail',
     query: {'email': email},
     headers: captchaHeaders,
+  );
+
+  /// 用户名是否可用. 已被占用时失败, 业务码为 `BizCodes.usernameTaken`.
+  Future<void> checkUsername(String userName) =>
+      _client.post('/auth/checkUsername', query: {'userName': userName});
+
+  /// 向当前账号绑定的手机发送验证码, 供设置用户名和设置或修改密码使用.
+  Future<void> sendAccountCode({
+    Map<String, String> captchaHeaders = const {},
+  }) => _client.post('/auth/password/code', headers: captchaHeaders);
+
+  /// 用验证码设置或修改密码, 不需要旧密码.
+  Future<void> resetPassword({
+    required String code,
+    required String newPassword,
+  }) => _client.post(
+    '/auth/password/reset',
+    body: {'code': code, 'newPassword': newPassword},
+  );
+
+  /// 用旧密码修改密码. 账号还没设过密码时失败, 业务码为 `BizCodes.passwordNotSet`.
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) => _client.post(
+    '/auth/changePassword',
+    body: {'oldPassword': oldPassword, 'newPassword': newPassword},
+  );
+
+  /// 首次设置用户名. [newPassword] 为 null 时不设置密码. 成功后所有设备都要重新登录.
+  Future<void> setUsername({
+    required String userName,
+    required String code,
+    String? newPassword,
+  }) => _client.post(
+    '/auth/username/set',
+    body: {'userName': userName, 'code': code, 'newPassword': ?newPassword},
   );
 }
 

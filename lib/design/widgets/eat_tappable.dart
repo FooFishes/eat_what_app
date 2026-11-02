@@ -20,6 +20,7 @@ class EatTappable extends StatefulWidget {
     this.toggled,
     this.inMutuallyExclusiveGroup = false,
     this.role,
+    this.tapHint,
   });
 
   final VoidCallback? onTap;
@@ -38,6 +39,9 @@ class EatTappable extends StatefulWidget {
   final bool? toggled;
   final bool inMutuallyExclusiveGroup;
   final SemanticsRole? role;
+
+  /// 读屏朗读的点击结果, 如 "标为已读". 不传时使用平台默认的 "激活".
+  final String? tapHint;
 
   @override
   State<EatTappable> createState() => _EatTappableState();
@@ -68,6 +72,7 @@ class _EatTappableState extends State<EatTappable> {
         inMutuallyExclusiveGroup: widget.inMutuallyExclusiveGroup,
         role: widget.role,
         onTap: enabled ? _activate : null,
+        onTapHint: enabled ? widget.tapHint : null,
         child: FocusableActionDetector(
           enabled: enabled,
           mouseCursor: enabled

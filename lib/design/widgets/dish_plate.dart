@@ -12,7 +12,7 @@ import 'package:flutter/widgets.dart';
 /// - [diameter]: 直径占原图短边的比例. 默认 1, 即居中的短边内切圆.
 ///
 /// 盘沿绘制在 [size] 之外, 宽度由 [rimFor] 按尺寸计算.
-/// 图片加载完成前显示 `mist` 底.
+/// 图片加载完成前和 [image] 为 null 时显示 `mist` 底.
 /// 列表缩略图使用 `ListThumb`, 不使用本组件.
 class DishPlate extends StatelessWidget {
   const new({
@@ -81,14 +81,17 @@ class DishPlate extends StatelessWidget {
             BoxShadow(spreadRadius: rimFor(size), color: eat.colors.paper),
           ],
         ),
-        child: ClipOval(
-          child: _CroppedImage(
-            image: image!,
-            centerX: centerX,
-            centerY: centerY,
-            diameter: diameter,
+        child: switch (image) {
+          final image? => ClipOval(
+            child: _CroppedImage(
+              image: image,
+              centerX: centerX,
+              centerY: centerY,
+              diameter: diameter,
+            ),
           ),
-        ),
+          null => null,
+        },
       );
     }
     return semantics == null

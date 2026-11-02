@@ -12,12 +12,17 @@ part 'api_client.g.dart';
 
 /// 网络层把会话相关的事件交给上层处理的回调.
 ///
-/// 登录过期和自动同意都要修改登录态, 登录态属于 `state`.
+/// 处理登录过期和请用户同意需要访问 `state` 中的登录态和 `features` 中的界面.
 /// `core` 不能导入 `state`, 因此由 `state` 构造回调并注入.
 class const ApiHooks({
   final VoidCallback? onSessionExpired,
   final VoidCallback? onForbidden,
-  final Future<bool> Function()? grantConsent,
+
+  /// 已登录时收到要求同意的业务码 ([BizCodes.consentCodes]) 后调用: 请用户同意, 并提交同意.
+  ///
+  /// 正常返回表示已同意, 网络层随后重发一次原请求.
+  /// 用户不同意或提交失败时抛出 [AppFailure], 网络层把它作为原请求的失败.
+  final Future<void> Function()? requestConsent,
 });
 
 /// 业务接口客户端. 负责添加鉴权头, 解开 `{code, msg, data}` 外壳, 把失败统一转换为 [AppFailure].
@@ -48,11 +53,11 @@ class ApiClient {
   final Dio _dio;
   final TokenStore _tokens;
   final ApiHooks _hooks;
-  Future<bool>? _granting;
+  Future<void>? _consenting;
 
-  /// 自动同意成功的累计次数.
+  /// 同意成功的累计次数.
   ///
-  /// 请求发出后若计数已变化, 说明其他请求已完成同意. 此时收到要求同意的业务码直接重发, 不再次同意.
+  /// 请求发出后若计数已变化, 说明其他请求已完成同意. 此时收到要求同意的业务码时重发原请求, 不再次请用户同意.
   var _grants = 0;
 
   Future<Object?> get(
@@ -62,10 +67,11 @@ class ApiClient {
     CancelToken? cancelToken,
   }) => _send('GET', path, query: query, headers: headers, cancel: cancelToken);
 
-  /// [consentRetry] 为 false 时, 收到要求同意的业务码不自动同意. 同意接口本身以 false 调用.
+  /// [consentRetry] 为 false 时, 收到要求同意的业务码不请用户同意. 同意接口本身以 false 调用.
   Future<Object?> post(
     String path, {
     Object? body,
+    Map<String, Object?>? query,
     Map<String, String>? headers,
     CancelToken? cancelToken,
     bool consentRetry = true,
@@ -73,16 +79,31 @@ class ApiClient {
     'POST',
     path,
     body: body,
+    query: query,
     headers: headers,
     cancel: cancelToken,
     consentRetry: consentRetry,
   );
 
-  Future<Object?> delete(String path, {CancelToken? cancelToken}) =>
-      _send('DELETE', path, cancel: cancelToken);
+  Future<Object?> delete(
+    String path, {
+    Map<String, Object?>? query,
+    Map<String, String>? headers,
+    CancelToken? cancelToken,
+  }) => _send(
+    'DELETE',
+    path,
+    query: query,
+    headers: headers,
+    cancel: cancelToken,
+  );
 
-  Future<Object?> put(String path, {Object? body, CancelToken? cancelToken}) =>
-      _send('PUT', path, body: body, cancel: cancelToken);
+  Future<Object?> put(
+    String path, {
+    Object? body,
+    Map<String, String>? headers,
+    CancelToken? cancelToken,
+  }) => _send('PUT', path, body: body, headers: headers, cancel: cancelToken);
 
   Future<Object?> _send(
     String method,
@@ -115,25 +136,26 @@ class ApiClient {
       if (BizCodes.consentCodes.contains(e.code) &&
           consentRetry &&
           token != null &&
-          _hooks.grantConsent != null) {
-        if (_grants != grants || await _grantOnce()) {
-          return _send(
-            method,
-            path,
-            query: query,
-            body: body,
-            headers: headers,
-            cancel: cancel,
-            consentRetry: false,
-          );
-        }
-        throw AppFailure(
-          FailureKind.unknown,
-          code: e.code,
-          serverMessage: e.msg,
+          _hooks.requestConsent != null) {
+        if (_grants == grants) await _consentOnce();
+        return _send(
+          method,
+          path,
+          query: query,
+          body: body,
+          headers: headers,
+          cancel: cancel,
+          consentRetry: false,
         );
       }
       final failure = switch (e.code) {
+        // 受限会话在解封后收到封禁码, 要重新登录才能取得普通会话, 因此按登录过期处理.
+        // 登录请求不带凭证, 仍按码表提示封禁.
+        BizCodes.userDisabled when token != null => AppFailure(
+          FailureKind.sessionExpired,
+          code: BizCodes.userDisabled,
+          serverMessage: e.msg,
+        ),
         final Object code => AppFailure.fromCode(
           code,
           serverMessage: e.msg,
@@ -151,23 +173,24 @@ class ApiClient {
     }
   }
 
-  /// 并发的多个请求要求同意时只调用一次同意接口, 其余请求等待同一结果.
+  /// 并发的多个请求要求同意时只请用户确认一次, 其余请求等待同一结果.
   ///
-  /// 同意失败返回 false, 不抛出异常.
-  Future<bool> _grantOnce() async {
-    final pending = _granting ??= () async {
+  /// 用户不同意或提交失败时抛出 [AppFailure].
+  Future<void> _consentOnce() async {
+    final pending = _consenting ??= () async {
       try {
-        final granted = await _hooks.grantConsent!();
-        if (granted) _grants++;
-        return granted;
-      } on Object {
-        return false;
+        await _hooks.requestConsent!();
+        _grants++;
+      } on AppFailure {
+        rethrow;
+      } on Object catch (e) {
+        throw AppFailure(FailureKind.unknown, serverMessage: '$e');
       }
     }();
     try {
-      return await pending;
+      await pending;
     } finally {
-      if (identical(_granting, pending)) _granting = null;
+      if (identical(_consenting, pending)) _consenting = null;
     }
   }
 

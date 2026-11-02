@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,13 +88,29 @@ void main() {
 
     test('非 200 的 ErrorResponse 保留字符串码', () async {
       final (client, adapter, _) = await _client();
-      adapter.on('GET /user/getCode', [
-        const FakeResponse(status: 403, body: {'code': 'STATE_NOT_ALLOWED'}),
+      adapter.on('GET /x', [
+        const FakeResponse(
+          status: 503,
+          body: {'code': 'SITE_ENROLLMENT_REQUIRED'},
+        ),
       ]);
 
-      final failure = await _failure(client.get('/user/getCode'));
-      expect(failure.kind, FailureKind.forbidden);
-      expect(failure.code, 'STATE_NOT_ALLOWED');
+      final failure = await _failure(client.get('/x'));
+      expect(failure.kind, FailureKind.unknown);
+      expect(failure.code, 'SITE_ENROLLMENT_REQUIRED');
+    });
+
+    test('40002 不当作无权限，不刷新账号状态', () async {
+      var forbidden = 0;
+      final (client, adapter, _) = await _client(
+        hooks: ApiHooks(onForbidden: () => forbidden++),
+      );
+      adapter.on('POST /auth/username/set', [FakeAdapter.fail(40002)]);
+
+      final failure = await _failure(client.post('/auth/username/set'));
+      expect(failure.kind, FailureKind.business);
+      expect(failure.code, 40002);
+      expect(forbidden, 0);
     });
 
     test('连不上是「没网」，提示网络连接失败', () async {
@@ -110,6 +129,21 @@ void main() {
       final failure = await _failure(client.post('/auth/phone/code'));
       expect(failure.kind, FailureKind.tooFrequent);
       expect(failure.message, '操作过于频繁，请稍后再试');
+    });
+
+    test('频率过高时带出服务端给的等待秒数', () async {
+      final (client, adapter, _) = await _client();
+      adapter.on('POST /auth/login', [
+        {
+          'code': 10003,
+          'msg': '请求频率过高',
+          'data': {'retryAfterSeconds': 900},
+        },
+      ]);
+
+      final failure = await _failure(client.post('/auth/login'));
+      expect(failure.retryAfter, const Duration(minutes: 15));
+      expect(failure.message, '操作过于频繁，请 15 分钟后再试');
     });
 
     test('取消的请求不提示', () async {
@@ -158,6 +192,59 @@ void main() {
       expect(expired, 1);
     });
 
+    test('账号授权过期和集群会话失效也按登录过期处理', () async {
+      for (final response in [
+        FakeAdapter.fail(20010),
+        const FakeResponse(
+          status: 401,
+          body: {'code': 'CLUSTER_SESSION_INVALID'},
+        ),
+        const FakeResponse(
+          status: 401,
+          body: {'code': 'CLUSTER_SESSION_REVOKED'},
+        ),
+      ]) {
+        var expired = 0;
+        var grants = 0;
+        final (client, adapter, _) = await _client(
+          hooks: ApiHooks(
+            onSessionExpired: () => expired++,
+            requestConsent: () async => grants++,
+          ),
+        );
+        adapter.on('GET /a', [response]);
+
+        final failure = await _failure(client.get('/a'));
+        expect(failure.kind, FailureKind.sessionExpired, reason: '$response');
+        expect(expired, 1, reason: '$response');
+        expect(grants, 0, reason: '不得自动续同意');
+      }
+    });
+
+    test('受限会话收到封禁码 (解封后) 按登录过期处理；登录请求不带凭证时提示封禁', () async {
+      var expired = 0;
+      final (client, adapter, _) = await _client(
+        token: const AuthToken(name: 'satoken', value: 'rbs1_x'),
+        hooks: ApiHooks(onSessionExpired: () => expired++),
+      );
+      adapter.on('GET /user/info', [FakeAdapter.fail(30002)]);
+
+      final failure = await _failure(client.get('/user/info'));
+      expect(failure.kind, FailureKind.sessionExpired);
+      expect(failure.message, '登录已过期，请重新登录');
+      expect(expired, 1);
+
+      final (login, loginAdapter, _) = await _client(
+        token: null,
+        hooks: ApiHooks(onSessionExpired: () => expired++),
+      );
+      loginAdapter.on('POST /auth/login', [FakeAdapter.fail(30002)]);
+      final rejected = await _failure(login.post('/auth/login'));
+      expect(rejected.kind, FailureKind.business);
+      expect(rejected.message, '账号已被封禁');
+      expect(expired, 1);
+    });
+
     test('没登录时遇到 2000x 不当作过期', () async {
       var expired = 0;
       final (client, adapter, _) = await _client(
@@ -178,46 +265,112 @@ void main() {
     );
     adapter.on('GET /a', [FakeAdapter.fail(20004)]);
 
-    expect((await _failure(client.get('/a'))).kind, FailureKind.forbidden);
+    final failure = await _failure(client.get('/a'));
+    expect(failure.kind, FailureKind.forbidden);
+    expect(failure.message, '当前账号不能进行该操作');
     expect(forbidden, 1);
   });
 
   group('跨站同步同意', () {
-    test('要求同意时自动同意一次，再把原请求重发', () async {
-      var grants = 0;
+    test('要求同意时请用户确认，同意后把原请求重发一次', () async {
+      var asks = 0;
+      final (client, adapter, _) = await _client(
+        hooks: ApiHooks(requestConsent: () async => asks++),
+      );
+      adapter.on('POST /a', [FakeAdapter.fail(20005), FakeAdapter.ok('A')]);
+      adapter.on('GET /b', [FakeAdapter.fail(20009), FakeAdapter.ok('B')]);
+
+      expect(await client.post('/a'), 'A');
+      expect(await client.get('/b'), 'B');
+      expect(asks, 2);
+      expect(adapter.sent('POST /a'), hasLength(2));
+      expect(adapter.sent('GET /b'), hasLength(2));
+    });
+
+    test('几个请求同时要求同意时只问一次', () async {
+      var asks = 0;
+      final answer = Completer<void>();
       final (client, adapter, _) = await _client(
         hooks: ApiHooks(
-          grantConsent: () async {
-            grants++;
-            return true;
+          requestConsent: () {
+            asks++;
+            return answer.future;
           },
         ),
       );
       adapter.on('GET /a', [FakeAdapter.fail(20005), FakeAdapter.ok('A')]);
-      adapter.on('GET /b', [FakeAdapter.fail(20006), FakeAdapter.ok('B')]);
+      adapter.on('GET /b', [FakeAdapter.fail(20005), FakeAdapter.ok('B')]);
 
-      final results = await Future.wait([client.get('/a'), client.get('/b')]);
-      expect(results, ['A', 'B']);
-      expect(grants, 1, reason: '同时要求同意时只同意一次');
-      expect(adapter.sent('GET /a'), hasLength(2));
+      final results = Future.wait([client.get('/a'), client.get('/b')]);
+      await pumpEventQueue();
+      answer.complete();
+      expect(await results, ['A', 'B']);
+      expect(asks, 1);
     });
 
-    test('同意失败或重发后还要求同意，按「未知」处理', () async {
+    test('用户不同意时原请求失败，不重发', () async {
       final (client, adapter, _) = await _client(
-        hooks: ApiHooks(grantConsent: () async => true),
+        hooks: ApiHooks(
+          requestConsent: () async =>
+              throw AppFailure.fromCode(BizCodes.consentRequired),
+        ),
+      );
+      adapter.on('POST /a', [FakeAdapter.fail(20005), FakeAdapter.ok()]);
+
+      final failure = await _failure(client.post('/a'));
+      expect(failure.kind, FailureKind.business);
+      expect(failure.message, '需要同意跨站同步后才能继续');
+      expect(adapter.sent('POST /a'), hasLength(1));
+    });
+
+    test('同意出错或重发后还要求同意时失败，只重发一次', () async {
+      final (client, adapter, _) = await _client(
+        hooks: ApiHooks(requestConsent: () async {}),
       );
       adapter.on('GET /a', [FakeAdapter.fail(20005)]);
 
       final failure = await _failure(client.get('/a'));
-      expect(failure.kind, FailureKind.unknown);
+      expect(failure.code, BizCodes.consentRequired);
       expect(adapter.sent('GET /a'), hasLength(2), reason: '只重发一次，不一直绕圈');
 
       final (failing, adapter2, _) = await _client(
-        hooks: ApiHooks(grantConsent: () async => throw Exception('down')),
+        hooks: ApiHooks(requestConsent: () async => throw Exception('down')),
       );
-      adapter2.on('GET /a', [FakeAdapter.fail(20006)]);
+      adapter2.on('GET /a', [FakeAdapter.fail(20005)]);
       expect((await _failure(failing.get('/a'))).kind, FailureKind.unknown);
       expect(adapter2.sent('GET /a'), hasLength(1));
+    });
+
+    test('没登录时不问，交给登录流程处理', () async {
+      var asks = 0;
+      final (client, adapter, _) = await _client(
+        token: null,
+        hooks: ApiHooks(requestConsent: () async => asks++),
+      );
+      adapter.on('POST /auth/login', [FakeAdapter.fail(20005)]);
+
+      expect(
+        (await _failure(client.post('/auth/login'))).code,
+        BizCodes.consentRequired,
+      );
+      expect(asks, 0);
+    });
+
+    test('数据同步中 (20006) 不请用户同意，也不重发写请求', () async {
+      var asks = 0;
+      final (client, adapter, _) = await _client(
+        hooks: ApiHooks(requestConsent: () async => asks++),
+      );
+      adapter.on('POST /foods/1/like', [
+        FakeAdapter.fail(20006),
+        FakeAdapter.ok(),
+      ]);
+
+      final failure = await _failure(client.post('/foods/1/like'));
+      expect(failure.kind, FailureKind.business);
+      expect(failure.message, '数据正在同步，请稍后再试');
+      expect(asks, 0);
+      expect(adapter.sent('POST /foods/1/like'), hasLength(1));
     });
   });
 

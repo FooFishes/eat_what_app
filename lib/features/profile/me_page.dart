@@ -1,44 +1,37 @@
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
-import 'package:eat/design/icons/illustrations.dart';
-import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
-import 'package:eat/design/widgets/dish_plate.dart';
-import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
-import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
-import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
-import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/features/profile/my_comments.dart';
 import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/profile/widgets/profile_stage.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
+import 'package:eat/state/social.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 评论和收藏的店没有接口, 对应分栏带 "待接入". 接口上线后接入并去掉标记.
-// TODO: 编辑资料, 我的标签, 足迹, 粉丝和关注列表未实现, 页面上没有入口. 实现对应页面后在 "我的" 加上入口.
 /// "我的" 页面.
 ///
 /// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和四项统计.
-/// - 抽屉: 上传, 收藏, 评论三个分栏.
-/// - 右上角: 设置入口.
+/// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 评论三个分栏.
+/// - 右上角: 编辑资料和设置.
 class MePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -58,37 +51,57 @@ class _MePageState extends ConsumerState<MePage> {
       SignedIn(:final user) => user,
       SignedOut() => null,
     };
+    final profile = user == null
+        ? null
+        : ref.watch(userProfileProvider(user.id)).value;
     final uploads = ref.watch(myUploadsProvider);
+    final banned = ref.watch(accountStatusProvider) is BannedStatus;
     final top = DishRules.signatures(
       uploads.value?.pages.items ?? const <Dish>[],
       count: 1,
     ).firstOrNull;
     return StageScaffold(
       stage: top?.stage ?? StageColor.mango,
-      topBar: Align(
-        alignment: Alignment.centerRight,
-        child: EatIconButton(
-          EatIcons.settings,
-          label: '设置',
-          onPressed: () => context.push(Paths.settings),
-        ),
+      topBar: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          EatIconButton(
+            EatIcons.edit,
+            label: '编辑资料',
+            onPressed: () async {
+              if (await guardAction(context, ref, Capability.editProfile) &&
+                  context.mounted) {
+                await context.push(Paths.meEdit);
+              }
+            },
+          ),
+          EatIconButton(
+            EatIcons.settings,
+            label: '设置',
+            onPressed: () => context.push(Paths.settings),
+          ),
+        ],
       ),
-      stageContent: _StageContent(
-        user: user,
+      stageContent: ProfileStage(
+        userId: user?.id ?? 0,
+        name: user?.nickname ?? '同学',
+        avatarUrl: user?.avatarUrl,
+        username: user?.username,
+        signature: user?.signature,
+        profile: profile,
         top: top,
         loading: uploads.isLoading,
       ),
       sheetSlivers: [
         const SliverToBoxAdapter(child: _StatusNotice()),
+        const SliverToBoxAdapter(child: _Shortcuts()),
+        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
         SliverToBoxAdapter(
           child: EatTabs(
             tabs: [
-              EatTabItem(
-                '上传',
-                count: ref.watch(myProfileProvider).value?.uploadedDishes,
-              ),
+              EatTabItem('上传', count: profile?.uploadedDishes),
               const EatTabItem('收藏'),
-              const EatTabItem('评论', pending: true),
+              const EatTabItem('评论'),
             ],
             selected: _tab,
             onSelected: (tab) => setState(() => _tab = tab),
@@ -99,7 +112,31 @@ class _MePageState extends ConsumerState<MePage> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
           sliver: switch (_tab) {
-            0 => const _DishGrid(favorites: false),
+            0 => DishGridSliver(
+              value: uploads,
+              onRetry: () => ref.invalidate(myUploadsProvider),
+              onLoadMore: () => ref.read(myUploadsProvider.notifier).loadMore(),
+              empty: EmptyState(
+                icon: EatIcons.bowl,
+                title: '还没发布过菜',
+                message: '吃到好吃的，发一道让同学们知道。',
+                action: EatButton.outline(
+                  '发布一道菜',
+                  icon: EatIcons.add,
+                  height: 48,
+                  onPressed: () async {
+                    if (await guardAction(
+                          context,
+                          ref,
+                          Capability.publishDish,
+                        ) &&
+                        context.mounted) {
+                      await context.push(Paths.publish);
+                    }
+                  },
+                ),
+              ),
+            ),
             1 => SliverMainAxisGroup(
               slivers: [
                 SliverToBoxAdapter(
@@ -121,22 +158,32 @@ class _MePageState extends ConsumerState<MePage> {
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s10)),
                 if (_favoriteShops)
+                  const _FavoriteShops()
+                // 受限会话不能调用 `/foods/favorites`, 封禁中不请求.
+                else if (banned)
                   const SliverToBoxAdapter(
-                    child: _Pending(
-                      title: '收藏的店',
-                      feature: PendingFeature.shopFavorite,
+                    child: EmptyState(
+                      icon: EatIcons.block,
+                      title: '账号封禁中',
+                      message: '封禁期间暂时不能查看收藏的菜。',
                     ),
                   )
                 else
-                  const _DishGrid(favorites: true),
+                  DishGridSliver(
+                    value: ref.watch(myFavoritesProvider),
+                    showShop: true,
+                    onRetry: () => ref.invalidate(myFavoritesProvider),
+                    onLoadMore: () =>
+                        ref.read(myFavoritesProvider.notifier).loadMore(),
+                    empty: const EmptyState(
+                      icon: EatIcons.bookmark,
+                      title: '还没收藏过菜',
+                      message: '在菜品详情右上角点收藏，想吃的菜都在这里。',
+                    ),
+                  ),
               ],
             ),
-            _ => const SliverToBoxAdapter(
-              child: _Pending(
-                title: '我写过的评论',
-                feature: PendingFeature.comments,
-              ),
-            ),
+            _ => const MyCommentsSliver(),
           },
         ),
       ],
@@ -144,136 +191,61 @@ class _MePageState extends ConsumerState<MePage> {
   }
 }
 
-/// "我的" 舞台内容.
+/// 收藏分栏的 "店": 与附近页抽屉相同的店铺行, 点击进入餐厅详情.
 ///
-/// - 右侧: 获赞最多的菜. 没有上传过菜时显示插画.
-/// - 左下: 头像, 昵称, 用户名, 签名和统计.
-class _StageContent extends ConsumerWidget {
-  const new({required this.user, required this.top, required this.loading});
-
-  final CurrentUser? user;
-  final Dish? top;
-  final bool loading;
+/// 封禁中仍然请求, 因为受限会话可以调用 `/restaurant/favorites`.
+class _FavoriteShops extends ConsumerWidget {
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final palette = StageTheme.of(context);
-    final layout = EatLayout.of(context);
-    final scale = layout.stageScale;
-    final profile = ref.watch(myProfileProvider).value;
-    final user = this.user;
-    final top = this.top;
-    final plate = 220 * scale;
-    final name = user?.nickname ?? '同学';
-    final stats = [
-      ('获赞', profile?.earnedLikes),
-      ('上传的菜', profile?.uploadedDishes),
-      ('粉丝', profile?.fans),
-      ('关注', profile?.followings),
-    ];
-    return Stack(
-      children: [
-        Positioned(
-          right: -plate * 0.22,
-          top: 112 * scale,
-          child: top != null
-              ? DishPlate(
-                  image: networkImage(top.cover, width: plate),
-                  size: plate,
-                  centerX: top.crop.centerX,
-                  centerY: top.crop.centerY,
-                  diameter: top.crop.diameter,
-                )
-              : loading
-              ? const SizedBox()
-              : DishPlate.illustration(
-                  IllustrationImage(Illustration.niunan, size: plate),
-                  size: plate,
-                ),
-        ),
-        Positioned(
-          left: EatSpace.s20,
-          right: EatSpace.s20,
-          bottom: EatSize.sheetOverlap + 24,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              EatAvatar(
-                name: name,
-                color: StageColor
-                    .values[(user?.id ?? 0) % StageColor.values.length],
-                image: networkImage(user?.avatarUrl, width: 72),
-                size: 72,
-              ),
-              const SizedBox(height: EatSpace.s14),
-              Semantics(
-                header: true,
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textScaler: TextScaler.noScaling,
-                  style: eat.text.profileName.copyWith(
-                    color: palette.foreground,
-                  ),
-                ),
-              ),
-              if (user?.username case final username?)
-                Text(
-                  '@$username',
-                  style: eat.text.meta.copyWith(
-                    color: palette.secondaryForeground,
-                  ),
-                ),
-              if (user?.signature case final signature?)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    signature,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: eat.text.body.copyWith(
-                      fontSize: 14,
-                      color: palette.secondaryForeground,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: EatSpace.s16),
-              Row(
-                children: [
-                  for (final (label, value) in stats)
-                    Expanded(
-                      child: Semantics(
-                        label: '$label ${value ?? '加载中'}',
-                        child: ExcludeSemantics(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                value == null ? '–' : '$value',
-                                textScaler: TextScaler.noScaling,
-                                style: eat.text.stat.copyWith(
-                                  fontSize: 26,
-                                  color: palette.foreground,
-                                ),
-                              ),
-                              Text(
-                                label,
-                                style: eat.text.caption.copyWith(
-                                  color: palette.secondaryForeground,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+    final value = ref.watch(myFavoriteShopsProvider);
+    final data = value.value;
+    if (data == null) {
+      if (value.hasError && !value.isLoading) {
+        return SliverToBoxAdapter(
+          child: FailureState(
+            message: (value.error as AppFailure?)?.message,
+            onRetry: () => ref.invalidate(myFavoriteShopsProvider),
+          ),
+        );
+      }
+      return const SliverToBoxAdapter(
+        child: RowListPlaceholder(thumbSize: EatSize.thumbLg),
+      );
+    }
+    final shops = data.pages.items;
+    if (shops.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: EatSpace.s24),
+          child: EmptyState(
+            icon: EatIcons.bookmark,
+            title: '还没收藏过店',
+            message: '在餐厅详情右上角点收藏，常去的店都在这里。',
           ),
         ),
+      );
+    }
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverList.separated(
+          itemCount: shops.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 18),
+          itemBuilder: (context, i) => ShopRow(
+            shop: shops[i],
+            onTap: () => context.push(Paths.shop(shops[i].id)),
+          ),
+        ),
+        if (data.pages.hasNext)
+          SliverToBoxAdapter(
+            child: LoadMoreTrigger(
+              generation: shops.length,
+              failed: data.moreError != null,
+              onVisible: () =>
+                  ref.read(myFavoriteShopsProvider.notifier).loadMore(),
+            ),
+          ),
       ],
     );
   }
@@ -285,168 +257,123 @@ class _StatusNotice extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
     final status = ref.watch(accountStatusProvider);
-    final (String text, Widget? action) = switch (status) {
-      UnverifiedStatus() => (
-        '认证后可以发布和互动',
-        EatButton.solid(
+    return switch (status) {
+      UnverifiedStatus() => StageNotice(
+        icon: EatIcons.verify,
+        text: '认证后可以发布和互动',
+        action: EatButton.solid(
           '去认证',
           height: 36,
           onPressed: () => context.push(Paths.verify),
         ),
       ),
-      BannedStatus(:final reason, :final since) => (
-        [
+      final BannedStatus banned => StageNotice(
+        icon: EatIcons.block,
+        text: [
           '账号封禁中',
-          if (since != null) '${TimeFormat.date(since, DateTime.now())}起',
-          ?reason,
+          banTerm(banned, DateTime.now()),
+          if (banned.reason case final reason?) '原因：$reason',
         ].join('，'),
-        null,
       ),
-      _ => ('', null),
+      _ => const SizedBox(),
     };
-    if (text.isEmpty) return const SizedBox();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        EatSpace.s20,
-        0,
-        EatSpace.s20,
-        EatSpace.s14,
-      ),
-      child: Row(
-        spacing: EatSpace.s10,
-        children: [
-          EatIcon(EatIcons.verify, size: 20, color: eat.colors.ink),
-          Expanded(
-            child: Text(
-              text,
-              style: eat.text.body.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          ?action,
-        ],
-      ),
-    );
   }
 }
 
-/// 上传或收藏的菜. 两列方块, 菜名右侧显示赞数, 滚动到底部时加载下一页.
-class _DishGrid extends ConsumerWidget {
-  const new({required this.favorites});
-
-  final bool favorites;
+/// "我的标签" 和 "足迹" 两个入口, 并排显示.
+class _Shortcuts extends ConsumerWidget {
+  const new();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final value = favorites
-        ? ref.watch(myFavoritesProvider)
-        : ref.watch(myUploadsProvider);
-    final data = value.value;
-    if (data == null) {
-      if (value.hasError && !value.isLoading) {
-        return SliverToBoxAdapter(
-          child: FailureState(
-            message: (value.error as AppFailure?)?.message,
-            onRetry: () => favorites
-                ? ref.invalidate(myFavoritesProvider)
-                : ref.invalidate(myUploadsProvider),
-          ),
-        );
-      }
-      return const SliverToBoxAdapter(child: TileGridPlaceholder(count: 4));
-    }
-    final dishes = data.pages.items;
-    if (dishes.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
-          child: favorites
-              ? const EmptyState(
-                  icon: EatIcons.bookmark,
-                  title: '还没收藏过菜',
-                  message: '在菜品详情右上角点收藏，想吃的菜都在这里。',
-                )
-              : EmptyState(
-                  icon: EatIcons.bowl,
-                  title: '还没发布过菜',
-                  message: '吃到好吃的，发一道让同学们知道。',
-                  action: EatButton.outline(
-                    '发布一道菜',
-                    icon: EatIcons.add,
-                    height: 48,
-                    onPressed: () async {
-                      if (await guardAction(
-                            context,
-                            ref,
-                            Capability.publishDish,
-                          ) &&
-                          context.mounted) {
-                        await context.push(Paths.publish);
-                      }
-                    },
-                  ),
-                ),
-        ),
-      );
-    }
-    final width = (MediaQuery.sizeOf(context).width - 54) / 2;
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverTileGrid(
-          count: dishes.length,
-          builder: (context, i) => DishTile(
-            image: networkImage(dishes[i].cover, width: width),
-            name: dishes[i].name,
-            shop: favorites ? dishes[i].shopName : null,
-            likes: favorites ? null : dishes[i].likes,
-            onTap: () =>
-                context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
-          ),
-        ),
-        if (data.pages.hasNext)
-          SliverToBoxAdapter(
-            child: LoadMoreTrigger(
-              generation: dishes.length,
-              failed: data.moreError != null,
-              onVisible: () => favorites
-                  ? ref.read(myFavoritesProvider.notifier).loadMore()
-                  : ref.read(myUploadsProvider.notifier).loadMore(),
+  Widget build(BuildContext context, WidgetRef ref) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    child: IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: _Shortcut(
+              icon: EatIcons.tag,
+              title: '我的标签',
+              subtitle: '用来给菜分类',
+              onTap: () => context.push(Paths.myTags),
             ),
           ),
-      ],
-    );
-  }
+          Expanded(
+            child: _Shortcut(
+              icon: EatIcons.history,
+              title: '足迹',
+              subtitle: '最近看过的菜和店',
+              onTap: () async {
+                if (await guardAction(context, ref, Capability.viewHistory) &&
+                    context.mounted) {
+                  await context.push(Paths.history);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
-/// 没有接口的分栏. 正常绘制, 标题旁显示 "待接入".
-class _Pending extends StatelessWidget {
-  const new({required this.title, required this.feature});
+class _Shortcut extends StatelessWidget {
+  const new({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
+  final EatIcons icon;
   final String title;
-  final PendingFeature feature;
+  final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
-      child: Column(
-        spacing: EatSpace.s10,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: EatSpace.s8,
+    final c = eat.colors;
+    return EatTappable(
+      onTap: onTap,
+      focusShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(EatRadius.thumb),
+      ),
+      builder: (context, _) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.mist,
+          borderRadius: const BorderRadius.all(EatRadius.thumb),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(EatSpace.s14),
+          child: Row(
+            spacing: EatSpace.s10,
             children: [
-              Text(title, style: eat.text.sectionTitle),
-              const PendingTag(),
+              EatIcon(icon, size: 22, color: c.ink),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
+                  children: [
+                    Text(
+                      title,
+                      style: eat.text.rowTitle.copyWith(color: c.ink),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: eat.text.caption.copyWith(color: c.inkMuted),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          Text(
-            '接口上线后显示在这里',
-            style: eat.text.body.copyWith(color: eat.colors.inkMuted),
-          ),
-        ],
+        ),
       ),
     );
   }

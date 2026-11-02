@@ -21,6 +21,7 @@ class EatListRow extends StatelessWidget {
     this.action,
     this.unread = false,
     this.onTap,
+    this.tapHint,
   });
 
   /// 缩略图 [ListThumb] 或头像 [EatAvatar].
@@ -40,6 +41,9 @@ class EatListRow extends StatelessWidget {
   final bool unread;
 
   final VoidCallback? onTap;
+
+  /// 读屏朗读的点击结果. 点击整行不跳转时传入, 如 "标为已读".
+  final String? tapHint;
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +97,7 @@ class EatListRow extends StatelessWidget {
       content = EatTappable(
         onTap: onTap,
         button: false,
+        tapHint: tapHint,
         focusShape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(EatRadius.thumb),
         ),

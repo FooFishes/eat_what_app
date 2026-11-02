@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:eat/core/config/app_config.dart';
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
-import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/domain/models/geo.dart';
-import 'package:eat/features/system/guard.dart';
+import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/models/report.dart';
+import 'package:eat/features/system/report_panel.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,14 +62,24 @@ Future<void> navigateToShop(
   }
 }
 
-// TODO: 举报没有接口, 入口带 "待接入". 接口上线后接入并去掉标记.
-/// 分享面板: 分享渠道和 "复制链接". [reportable] 为 true 时末尾增加 "举报".
+/// 加菜前检查店铺是否营业. 已关门时显示提示并返回 false.
+///
+/// 服务端不拒绝给已关门的店加菜, 由客户端拦截.
+bool ensureShopOpen(BuildContext context, Shop shop) {
+  if (!shop.closed) return true;
+  showToast(context, '这家店已关门，不能加菜');
+  return false;
+}
+
+/// 分享面板: 分享渠道和 "复制链接". 传入 [reportTarget] 时末尾增加 "举报".
+///
+/// 点击 "举报" 时关闭分享面板后打开举报面板, 不在面板上叠加面板.
 Future<void> showSharePanel(
   BuildContext context,
   WidgetRef ref, {
   required String path,
   required String title,
-  bool reportable = false,
+  ReportTarget? reportTarget,
 }) async {
   final base = ref.read(appConfigProvider).webBaseUrl;
   final link = Uri.parse(base.isEmpty ? path : '$base$path');
@@ -85,7 +95,7 @@ Future<void> showSharePanel(
     }
   }
 
-  await showPanel<void>(
+  final reporting = await showPanel<bool>(
     context,
     builder: (panel) => EatPanel(
       title: '分享',
@@ -110,31 +120,27 @@ Future<void> showSharePanel(
               unawaited(sharer.copy(link).then(report));
             },
           ),
-          if (reportable)
+          if (reportTarget != null)
             _PanelRow(
               icon: EatIcons.report,
               label: '举报',
-              pending: true,
-              onTap: () => showPending(panel, PendingFeature.report),
+              onTap: () => Navigator.of(panel).pop(true),
             ),
         ],
       ),
     ),
   );
+  if (reporting == true && reportTarget != null && context.mounted) {
+    await showReportPanel(context, ref, reportTarget);
+  }
 }
 
 class _PanelRow extends StatelessWidget {
-  const new({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.pending = false,
-  });
+  const new({required this.icon, required this.label, required this.onTap});
 
   final EatIcons icon;
   final String label;
   final VoidCallback onTap;
-  final bool pending;
 
   @override
   Widget build(BuildContext context) {
@@ -146,10 +152,7 @@ class _PanelRow extends StatelessWidget {
         decoration: BoxDecoration(color: c.mist, shape: BoxShape.circle),
         child: Center(child: EatIcon(icon, size: 20, color: c.ink)),
       ),
-      title: Row(
-        spacing: EatSpace.s8,
-        children: [Text(label), if (pending) const PendingTag()],
-      ),
+      title: Text(label),
       onTap: onTap,
     );
   }

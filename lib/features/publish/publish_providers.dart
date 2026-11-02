@@ -29,25 +29,26 @@ part 'publish_providers.g.dart';
 /// 防抖期间参数变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-// TODO: 接口不区分已关门的店, 已关门的店仍会出现在选店列表. 接口返回营业状态后过滤已关门的店.
-/// 选店列表. [keyword] 为空时列出附近的店.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
 ///
-/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
 @riverpod
 Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
+  // 定位或校区变化时重新请求. 搜店范围由 shopSearchScope 读取.
+  ref.watch(currentLocationProvider.select((s) => s.point));
+  ref.watch(currentPlaceProvider.select((p) => p.campus));
   if (keyword.isNotEmpty) {
     await Future<void>.delayed(_debounce);
     if (!ref.mounted) return const [];
   }
-  final me = ref.watch(currentLocationProvider.select((s) => s.point));
-  final campus = ref.watch(currentPlaceProvider.select((p) => p.campus));
-  final near = me ?? campus?.center;
-  if (near == null && keyword.isEmpty) return const [];
+  final scope = await shopSearchScope(ref);
+  if (!ref.mounted || scope == null) return const [];
   final page = await ref
       .watch(placeRepositoryProvider)
       .searchShops(
         keyword: keyword.isEmpty ? null : keyword,
-        near: near,
+        campusId: scope.campusId,
+        near: scope.point,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
@@ -70,15 +71,21 @@ Future<Hub?> hubAt(Ref ref, GcjPoint point) async {
   return ref.watch(placeRepositoryProvider).locateHub(point);
 }
 
-/// 新建店时, 地图中心附近的同名店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
 @riverpod
 Future<Shop?> sameNameShop(Ref ref, String name, GcjPoint point) async {
   if (name.trim().isEmpty) return null;
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return null;
+  final campusId = ref.watch(currentPlaceProvider.select((p) => p.campus?.id));
   return ref
       .watch(placeRepositoryProvider)
-      .sameNameNearby(name, point, cancelToken: ref.cancelToken());
+      .sameNameNearby(
+        name,
+        point,
+        campusId: campusId,
+        cancelToken: ref.cancelToken(),
+      );
 }
 
 /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.

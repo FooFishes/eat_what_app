@@ -55,4 +55,6 @@ Future<void> unmountApp(
 ) async {
   await tester.pumpWidget(const SizedBox());
   container.dispose();
+  // 容器释放时取消的请求仍有 dio 的零时长定时器未触发. 推进一帧使该定时器到期.
+  await tester.pump();
 }

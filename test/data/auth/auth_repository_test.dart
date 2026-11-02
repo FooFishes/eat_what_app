@@ -25,17 +25,32 @@ void main() {
   });
 
   group('验证码登录', () {
-    test('一律带上跨站同步同意和当前政策版本，新号码就此注册', () async {
-      env.adapter
-        ..on('GET /auth/consent/policy', [_policy])
-        ..on('POST /auth/phone/login', [_token(newUser: true)]);
+    test('默认不带跨站同步同意，不替用户同意', () async {
+      env.adapter.on('POST /auth/phone/login', [_token(newUser: true)]);
 
       final result = await auth.loginWithCode('13812345678', '246810');
       expect(result.token.name, 'satoken');
       expect(result.token.value, 'tk');
       expect(result.newUser, isTrue);
-      final body = env.adapter.sent('POST /auth/phone/login').single.body;
-      expect(body, {
+      expect(env.adapter.sent('POST /auth/phone/login').single.body, {
+        'mobile': '13812345678',
+        'code': '246810',
+        'device': 'APP',
+      });
+      expect(env.adapter.sent('GET /auth/consent/policy'), isEmpty);
+    });
+
+    test('用户同意后才带上同意和当前政策版本，新号码据此注册', () async {
+      env.adapter
+        ..on('GET /auth/consent/policy', [_policy])
+        ..on('POST /auth/phone/login', [_token(newUser: true)]);
+
+      await auth.loginWithCode(
+        '13812345678',
+        '246810',
+        crossBorderConsent: true,
+      );
+      expect(env.adapter.sent('POST /auth/phone/login').single.body, {
         'mobile': '13812345678',
         'code': '246810',
         'device': 'APP',
@@ -47,44 +62,57 @@ void main() {
     test('读不到政策版本时照常登录，只是不带同意参数', () async {
       env.adapter.on('POST /auth/phone/login', [_token()]);
 
-      await auth.loginWithCode('13812345678', '246810');
+      await auth.loginWithCode(
+        '13812345678',
+        '246810',
+        crossBorderConsent: true,
+      );
       final body =
           env.adapter.sent('POST /auth/phone/login').single.body as Map;
       expect(body.containsKey('crossBorderConsent'), isFalse);
       expect(body.containsKey('consentPolicyVersion'), isFalse);
     });
 
-    test('只带回临时 proof 时先同意，再用同样的参数登录一次', () async {
-      env.adapter
-        ..on('GET /auth/consent/policy', [_policy])
-        ..on('POST /auth/consent/grant', [FakeAdapter.ok()])
-        ..on('POST /auth/phone/login', [
-          FakeAdapter.ok({'consentProof': 'proof-1', 'status': 'NOT_GRANTED'}),
-          _token(),
-        ]);
+    test('要求同意时不自动同意，把临时凭证交给页面', () async {
+      env.adapter.on('POST /auth/phone/login', [
+        {
+          'code': 20005,
+          'msg': '需要跨境同步同意',
+          'data': {'consentProof': 'proof-1', 'status': 'NOT_GRANTED'},
+        },
+      ]);
 
-      final result = await auth.loginWithCode('13812345678', '246810');
-      expect(result.token.value, 'tk');
-      expect(env.adapter.sent('POST /auth/consent/grant').single.body, {
-        'policyVersion': 'cb-v3',
-        'proof': 'proof-1',
-      });
-      final logins = env.adapter.sent('POST /auth/phone/login').toList();
-      expect(logins, hasLength(2));
-      expect(logins[0].body, logins[1].body);
+      final failure = await auth
+          .loginWithCode('13812345678', '246810')
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect(failure, isA<AppFailure>());
+      expect(consentProofOf(failure! as AppFailure), 'proof-1');
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+      expect(env.adapter.sent('POST /auth/phone/login'), hasLength(1));
     });
 
-    test('同意之后还是没有 token，不算登录成功', () async {
-      env.adapter
-        ..on('GET /auth/consent/policy', [_policy])
-        ..on('POST /auth/consent/grant', [FakeAdapter.ok()])
-        ..on('POST /auth/phone/login', [
-          FakeAdapter.ok({'consentProof': 'proof-1'}),
-        ]);
+    test('成功外壳里只有临时凭证时按要求同意处理', () async {
+      env.adapter.on('POST /auth/login', [
+        FakeAdapter.ok({'consentProof': 'proof-1'}),
+      ]);
 
-      expect(
-        () => auth.loginWithCode('13812345678', '246810'),
-        throwsA(isA<AppFailure>()),
+      await expectLater(
+        auth.loginWithPassword('chi_fan', 'secret1'),
+        throwsA(isA<AppFailure>().having(consentProofOf, 'proof', 'proof-1')),
+      );
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+    });
+
+    test('新号码要求同意但没有凭证时，凭证为空', () async {
+      env.adapter.on('POST /auth/phone/login', [FakeAdapter.fail(20005)]);
+
+      await expectLater(
+        auth.loginWithCode('13812345678', '246810'),
+        throwsA(
+          isA<AppFailure>()
+              .having((f) => f.code, 'code', 20005)
+              .having(consentProofOf, 'proof', isNull),
+        ),
       );
     });
 
@@ -100,7 +128,7 @@ void main() {
     });
   });
 
-  test('密码登录用手机号或用户名', () async {
+  test('密码登录用手机号、用户名或邮箱', () async {
     env.adapter.on('POST /auth/login', [_token()]);
 
     final result = await auth.loginWithPassword('chi_fan', 'secret1');

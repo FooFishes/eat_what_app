@@ -59,11 +59,29 @@ class const AppFailure(
     FailureKind.network => '网络连接失败，请重试',
     FailureKind.server => '服务器出错，请稍后再试',
     FailureKind.sessionExpired => '登录已过期，请重新登录',
-    FailureKind.tooFrequent => '操作过于频繁，请稍后再试',
+    FailureKind.tooFrequent => '操作过于频繁，$retryHint',
     FailureKind.business => failureMessages[code] ?? '操作失败，请重试',
-    FailureKind.forbidden ||
-    FailureKind.cancelled ||
-    FailureKind.unknown => '操作失败，请重试',
+    FailureKind.forbidden => '当前账号不能进行该操作',
+    FailureKind.cancelled || FailureKind.unknown => '操作失败，请重试',
+  };
+
+  /// 限流响应给出的等待时间, 取自 `data.retryAfterSeconds`. 没有给出时为 null.
+  Duration? get retryAfter => switch (data) {
+    {'retryAfterSeconds': final num seconds} when seconds > 0 => Duration(
+      seconds: seconds.ceil(),
+    ),
+    _ => null,
+  };
+
+  /// 何时可以重试的短句, 例如 "请 15 分钟后再试". 没有 [retryAfter] 时为 "请稍后再试".
+  ///
+  /// 不足一分钟按秒提示, 不足一小时向上取整到分钟, 其余向上取整到小时.
+  /// 验证码的 24 小时上限会给出以小时计的等待时间.
+  String get retryHint => switch (retryAfter?.inSeconds) {
+    null => '请稍后再试',
+    final s when s < 60 => '请 $s 秒后再试',
+    final s when s <= 3600 => '请 ${(s / 60).ceil()} 分钟后再试',
+    final s => '请 ${(s / 3600).ceil()} 小时后再试',
   };
 
   @override

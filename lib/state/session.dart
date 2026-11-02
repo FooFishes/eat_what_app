@@ -4,6 +4,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/auth/auth_repository.dart';
+import 'package:eat/data/sessions/session_rotation.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/current_user.dart';
@@ -35,7 +36,11 @@ final class SignedOut extends SessionState {
 }
 
 final class SignedIn extends SessionState {
-  const SignedIn({this.user, this.justRegistered = false});
+  const SignedIn({
+    this.user,
+    this.justRegistered = false,
+    this.restricted = false,
+  });
 
   /// 当前用户信息. 登录后尚未获取成功时为 null, 例如登录后立即断网.
   ///
@@ -44,6 +49,11 @@ final class SignedIn extends SessionState {
 
   /// 新号码刚完成自动注册. 守卫据此把页面从登录页导向认证引导, 而不是返回原页面.
   final bool justRegistered;
+
+  /// 本次登录得到的是受限会话, 即登录时账号已被封禁. 只保存在内存中, 重启后为 false.
+  ///
+  /// 账号状态以 [user] 的 `banned` 为准, 本字段只在尚未获取用户信息时使用.
+  final bool restricted;
 }
 
 /// 登录态. 路由守卫根据它决定跳转.
@@ -95,7 +105,11 @@ class Session extends _$Session {
     } on AppFailure catch (e) {
       if (e.kind == FailureKind.sessionExpired) return;
     }
-    state = SignedIn(user: user, justRegistered: result.newUser);
+    state = SignedIn(
+      user: user,
+      justRegistered: result.newUser,
+      restricted: result.restricted,
+    );
   }
 
   /// 重新获取用户信息. 回到前台, 认证完成和服务端返回无权限时调用.
@@ -105,8 +119,12 @@ class Session extends _$Session {
     if (state is! SignedIn) return;
     try {
       final user = await _users.fetchCurrent();
-      if (state case SignedIn(:final justRegistered)) {
-        state = SignedIn(user: user, justRegistered: justRegistered);
+      if (state case SignedIn(:final justRegistered, :final restricted)) {
+        state = SignedIn(
+          user: user,
+          justRegistered: justRegistered,
+          restricted: restricted,
+        );
       }
     } on AppFailure {
       // 登录过期由网络层调用 [expire] 处理. 其他失败 (如网络不可达) 等待下次刷新.
@@ -115,8 +133,12 @@ class Session extends _$Session {
 
   /// 标记认证引导已显示. 之后守卫按普通的已登录状态处理, 不再导向认证引导.
   void finishOnboarding() {
-    if (state case SignedIn(:final user, justRegistered: true)) {
-      state = SignedIn(user: user);
+    if (state case SignedIn(
+      :final user,
+      :final restricted,
+      justRegistered: true,
+    )) {
+      state = SignedIn(user: user, restricted: restricted);
     }
   }
 
@@ -136,6 +158,36 @@ class Session extends _$Session {
     state = const SignedOut(SignOutReason.loggedOut);
   }
 
+  /// 服务端已让所有设备的会话失效 (如刚设置了用户名) 时调用. 清除本机登录态, 不再通知服务端.
+  ///
+  /// 和主动退出一样, 登录后进入发现页.
+  Future<void> reauthenticate() async {
+    await _clearLocal();
+    state = const SignedOut(SignOutReason.loggedOut);
+  }
+
+  /// 下线其他设备或换绑手机后, 采用服务端换发的会话.
+  ///
+  /// 换发完成时保存新凭证并刷新用户信息, 返回 true. 未能获取新凭证时清除本机登录态并回到登录页, 返回 false.
+  Future<bool> adoptRotation(Rotation rotation) async {
+    switch (rotation) {
+      case RotationReady(:final token, :final restricted):
+        await _tokens.save(token);
+        if (state case SignedIn(:final user, :final justRegistered)) {
+          state = SignedIn(
+            user: user,
+            justRegistered: justRegistered,
+            restricted: restricted,
+          );
+        }
+        await refreshUser();
+        return true;
+      case RotationNeedsSignIn():
+        await reauthenticate();
+        return false;
+    }
+  }
+
   /// 清除账号作用域的本地数据: 凭证和接口缓存.
   ///
   /// 设备级偏好 (同意记录, 校区选择) 保留.
@@ -149,5 +201,9 @@ class Session extends _$Session {
 @riverpod
 AccountStatus accountStatus(Ref ref) => switch (ref.watch(sessionProvider)) {
   SignedOut() => AccountStatus.of(signedIn: false),
-  SignedIn(:final user) => AccountStatus.of(signedIn: true, user: user),
+  SignedIn(:final user, :final restricted) => AccountStatus.of(
+    signedIn: true,
+    user: user,
+    restricted: restricted,
+  ),
 };

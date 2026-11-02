@@ -15,11 +15,14 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/search/search_providers.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/location.dart';
+import 'package:eat/state/place.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,6 +96,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   List<Widget> _results(String keyword) {
+    final me = ref.watch(currentLocationProvider.select((s) => s.point));
+    final campus = ref.watch(
+      currentPlaceProvider.select((p) => p.campus?.center),
+    );
     final dishes = ref.watch(dishSearchProvider(keyword));
     final shops = ref.watch(shopSearchProvider(keyword));
     final dishCount = dishes.value?.length;
@@ -125,13 +132,19 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             count: items.length,
             builder: (context, i) {
               final dish = items[i];
+              final shop = [?dish.shopName, ?dish.hubName].join(' · ');
               return DishTile(
                 image: networkImage(
                   dish.cover,
                   width: MediaQuery.sizeOf(context).width / 2,
                 ),
                 name: dish.name,
-                shop: dish.shopName,
+                shop: shop.isEmpty ? null : shop,
+                distance: GeoRules.meterLabel(
+                  dish.distance,
+                  me: me,
+                  campusCenter: campus,
+                ),
                 onTap: () {
                   remember();
                   context.push(Paths.dish(dish.id), extra: dish);

@@ -10,6 +10,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:eat/design/widgets/code_point_limit.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
@@ -31,11 +32,11 @@ import 'package:eat/features/publish/publish_providers.dart';
 import 'package:eat/features/publish/widgets/bottom_bar.dart';
 import 'package:eat/features/publish/widgets/photo_source.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/published.dart';
 import 'package:eat/state/shops.dart';
 import 'package:eat/state/taste_vocabulary.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -164,7 +165,7 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
 
   Future<void> _changeShop() async {
     final shop = await context.push<Shop>(Paths.publishChangeShop);
-    if (shop == null || !mounted) return;
+    if (shop == null || !mounted || !ensureShopOpen(context, shop)) return;
     setState(() {
       _shopId = shop.id;
       _changedShop = shop;
@@ -221,6 +222,8 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
     if (!await guardAction(context, ref, Capability.publishDish) || !mounted) {
       return;
     }
+    final shop = _changedShop ?? ref.read(shopProvider(_shopId)).value;
+    if (shop != null && !ensureShopOpen(context, shop)) return;
     final draft = ref.read(draftProvider);
     final price = PublishRules.parsePrice(_price.text);
     final category = draft.category;
@@ -248,9 +251,9 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
       description: _note.text.trim().isEmpty ? null : _note.text.trim(),
     );
     try {
-      final id = await ref.read(foodRepositoryProvider).publish(dish);
+      final result = await ref.read(foodRepositoryProvider).publish(dish);
       ref.read(publishedCountProvider.notifier).published();
-      if (mounted) _finish(id);
+      if (mounted) _finish(result);
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -273,20 +276,31 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
 
   /// 关闭发布流程的所有页面, 再压入新发布的菜.
   ///
-  /// 先关闭再压入, 用户从菜品详情返回时回到发起发布的页面, 而不是回到发布流程.
-  void _finish(int dishId) {
-    final toastContext = Navigator.of(context, rootNavigator: true).context;
+  /// - 先关闭再压入, 用户从菜品详情返回时回到发起发布的页面, 而不是回到发布流程.
+  /// - 菜品进入审核时不打开详情: 审核通过前详情接口返回菜品不存在.
+  ///   没有发起页面 (发布流程是第一个页面) 时回到发现页.
+  ///
+  /// 轻提示在离开页面前显示. 提示插入根 Overlay, 页面关闭后继续显示.
+  /// 根 Navigator 自身的 context 位于其 Overlay 之上, 以该 context 查找 Overlay 会失败, 提示不显示.
+  void _finish(PublishResult result) {
+    showToast(context, result.pending ? '已提交审核，通过后公开' : '发布成功');
     final router = GoRouter.of(context);
     while (router.canPop() &&
         router.state.matchedLocation.startsWith(Paths.publish)) {
       router.pop();
     }
-    if (router.state.matchedLocation.startsWith(Paths.publish)) {
-      router.go(Paths.dish(dishId));
-    } else {
-      unawaited(router.push(Paths.dish(dishId)));
+    final stillPublishing = router.state.matchedLocation.startsWith(
+      Paths.publish,
+    );
+    if (result.pending) {
+      if (stillPublishing) router.go(Paths.discover);
+      return;
     }
-    showToast(toastContext, '发布成功');
+    if (stillPublishing) {
+      router.go(Paths.dish(result.id));
+    } else {
+      unawaited(router.push(Paths.dish(result.id)));
+    }
   }
 
   @override
@@ -376,8 +390,8 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
                               controller: _name,
                               hintText: '比如 鲜虾蟹籽云吞',
                               textInputAction: TextInputAction.next,
-                              inputFormatters: [
-                                LengthLimitingTextInputFormatter(
+                              inputFormatters: const [
+                                CodePointLengthLimitingFormatter(
                                   PublishRules.dishNameMax,
                                 ),
                               ],
@@ -992,8 +1006,8 @@ class _Tags extends ConsumerWidget {
             autofocus: true,
             hintText: '比如 考试周',
             textInputAction: TextInputAction.done,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(PublishRules.myTagMax),
+            inputFormatters: const [
+              CodePointLengthLimitingFormatter(PublishRules.myTagMax),
             ],
             onSubmitted: (_) => add(),
             trailing: EatButton.outline('加上', height: 36, onPressed: add),
@@ -1039,8 +1053,8 @@ class _NoteField extends StatelessWidget {
               minLines: 3,
               maxLines: 6,
               onChanged: (_) => onChanged(),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(PublishRules.noteMax),
+              inputFormatters: const [
+                CodePointLengthLimitingFormatter(PublishRules.noteMax),
               ],
               style: eat.text.body.copyWith(color: c.ink),
               cursorColor: c.ink,
@@ -1054,7 +1068,7 @@ class _NoteField extends StatelessWidget {
           ),
           ExcludeSemantics(
             child: Text(
-              '${controller.text.length} / ${PublishRules.noteMax}',
+              '${codePointLength(controller.text)} / ${PublishRules.noteMax}',
               style: eat.text.caption.copyWith(color: c.inkMuted),
             ),
           ),

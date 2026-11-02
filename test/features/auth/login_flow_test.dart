@@ -3,6 +3,8 @@ import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
+import 'package:eat/domain/models/account_status.dart';
+import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
@@ -166,11 +168,45 @@ void main() {
     await _enter(tester, '手机号', '13812345678');
     await tester.tap(find.text('获取验证码'));
     await tester.pumpAndSettle();
-    expect(find.text('验证码发送次数已达上限，请明天再试'), findsOneWidget);
+    expect(find.text('发送太频繁，请稍后再试'), findsOneWidget);
 
     await tester.tap(find.text('用密码登录').last);
     await tester.pumpAndSettle();
     expect(find.byType(PasswordLoginPage), findsOneWidget);
+  });
+
+  testWidgets('限流带等待秒数时，面板按秒数提示', (tester) async {
+    env.adapter.on('POST /auth/phone/code', [
+      {
+        'code': 10003,
+        'msg': '请求频率过高',
+        'data': {'retryAfterSeconds': 45},
+      },
+    ]);
+    await pumpApp(tester, env);
+    await _agreeAndOpenPhoneLogin(tester);
+
+    await _enter(tester, '手机号', '13812345678');
+    await tester.tap(find.text('获取验证码'));
+    await tester.pumpAndSettle();
+    expect(find.text('发送太频繁，请 45 秒后再试'), findsOneWidget);
+  });
+
+  testWidgets('发码后账号授权已变化时，提示重新获取验证码', (tester) async {
+    env.adapter
+      ..on('POST /auth/phone/code', [FakeAdapter.ok()])
+      ..on('POST /auth/phone/login', [FakeAdapter.fail(20010)]);
+    await pumpApp(tester, env);
+    await _agreeAndOpenPhoneLogin(tester);
+    await _enter(tester, '手机号', '13812345678');
+    await tester.tap(find.text('获取验证码'));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, '验证码', '000000');
+    await tester.tap(find.text('登录'));
+    await tester.pumpAndSettle();
+    expect(find.text('验证码已失效，请重新获取'), findsOneWidget);
+    expect(find.text('登录已过期，请重新登录'), findsNothing);
   });
 
   testWidgets('验证码不对时在验证码下面提示，不清空', (tester) async {
@@ -220,7 +256,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectAccessible(tester);
 
-    await _enter(tester, '手机号或用户名', 'chi_fan');
+    await _enter(tester, '账号', 'chi_fan');
     await _enter(tester, '密码', 'wrong-1');
     await tester.tap(find.text('登录'));
     await tester.pumpAndSettle();
@@ -239,7 +275,7 @@ void main() {
     await tester.tap(find.text('用密码登录'));
     await tester.pumpAndSettle();
 
-    await _enter(tester, '手机号或用户名', '13812345678');
+    await _enter(tester, '账号', '13812345678');
     await _enter(tester, '密码', 'whatever');
     await tester.tap(find.text('登录'));
     await tester.pumpAndSettle();
@@ -248,6 +284,257 @@ void main() {
     await tester.tap(find.text('用验证码登录'));
     await tester.pumpAndSettle();
     expect(find.byType(PhoneLoginPage), findsOneWidget);
+  });
+
+  group('封禁', () {
+    Future<void> passwordLogin(WidgetTester tester) async {
+      await _agreeAndOpenPhoneLogin(tester);
+      await tester.tap(find.text('用密码登录'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '账号', 'chi_fan');
+      await _enter(tester, '密码', 'secret-1');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('登录返回 30002 时提示账号已被封禁，不显示业务码', (tester) async {
+      env.adapter.on('POST /auth/login', [FakeAdapter.fail(30002, '用户被禁用')]);
+      final (container, _) = await pumpApp(tester, env);
+      await passwordLogin(tester);
+
+      expect(find.text('账号已被封禁'), findsOneWidget);
+      expect(find.textContaining('30002'), findsNothing);
+      expect(find.textContaining('用户被禁用'), findsNothing);
+      expect(container.read(sessionProvider), isA<SignedOut>());
+    });
+
+    testWidgets('拿到受限会话时照常登录，账号状态按用户信息的封禁和期限', (tester) async {
+      env.adapter
+        ..on('POST /auth/login', [
+          FakeAdapter.ok({
+            'tokenName': 'satoken',
+            'tokenValue': 'rbs1_restricted',
+            'isLogin': true,
+            'tag': 'restricted',
+            'restricted': true,
+            'newUser': false,
+          }),
+        ])
+        ..on('GET /user/info', [
+          FakeAdapter.ok({
+            ...userInfoJson(banned: true),
+            'banUntil': DateTime.utc(2026, 11, 30, 4).millisecondsSinceEpoch,
+          }),
+        ]);
+      final (container, router) = await pumpApp(
+        tester,
+        env,
+        location: Paths.settings,
+      );
+      await passwordLogin(tester);
+
+      expect(locationOf(router), Paths.settings);
+      expect(
+        env.adapter.sent('GET /user/info').last.headers['satoken'],
+        'Bearer rbs1_restricted',
+      );
+      final status = container.read(accountStatusProvider);
+      expect(status, isA<BannedStatus>());
+      status as BannedStatus;
+      expect(status.reason, '多次发布不是实拍的照片');
+      expect(status.until, DateTime.utc(2026, 11, 30, 4).toLocal());
+    });
+
+    testWidgets('受限会话还没取到用户信息时也按封禁中处理', (tester) async {
+      env.adapter
+        ..on('POST /auth/login', [
+          FakeAdapter.ok({
+            'tokenName': 'satoken',
+            'tokenValue': 'rbs1_restricted',
+            'restricted': true,
+          }),
+        ])
+        ..on('GET /user/info', [const FakeResponse.offline()]);
+      final (container, _) = await pumpApp(tester, env);
+      await passwordLogin(tester);
+
+      expect(container.read(sessionProvider), isA<SignedIn>());
+      expect(container.read(accountStatusProvider), isA<BannedStatus>());
+    });
+
+    testWidgets('受限会话在解封后收到 30002，回到登录页重新登录', (tester) async {
+      env.adapter.on('GET /anything', [FakeAdapter.fail(30002)]);
+      final (container, router) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: testUser, restricted: true),
+        token: const AuthToken(name: 'satoken', value: 'rbs1_restricted'),
+        location: Paths.me,
+      );
+
+      final request = container
+          .read(apiClientProvider)
+          .get('/anything')
+          .then<Object?>((value) => value, onError: (Object e) => e);
+      await tester.pumpAndSettle();
+      final failure = await request;
+      expect(failure, isA<AppFailure>());
+      expect((failure! as AppFailure).kind, FailureKind.sessionExpired);
+      expect(container.read(sessionProvider), isA<SignedOut>());
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.text('登录已过期，请重新登录'), findsOneWidget);
+      expect(Uri.parse(locationOf(router)).queryParameters['from'], Paths.me);
+
+      // 离开 "我的" 后, 页面 Provider 的缓存计时器仍未到期. 推进 10 分钟使这些计时器到期.
+      await tester.pump(const Duration(minutes: 10));
+    });
+  });
+
+  group('跨站同步同意', () {
+    Map<String, Object?> consentRequired([String? proof]) => {
+      'code': 20005,
+      'msg': '需要跨境同步同意',
+      'data': {'consentProof': ?proof},
+    };
+
+    Future<void> openPasswordLogin(WidgetTester tester) async {
+      await _agreeAndOpenPhoneLogin(tester);
+      await tester.tap(find.text('用密码登录'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '账号', 'zhang@mail.sdu.edu.cn');
+      await _enter(tester, '密码', 'secret1');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('密码登录：弹出同意面板，同意后提交同意并自动重新登录', (tester) async {
+      env.adapter
+        ..on('POST /auth/login', [consentRequired('proof-1'), _token()])
+        ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
+      final (_, router) = await pumpApp(tester, env, location: Paths.settings);
+      await openPasswordLogin(tester);
+
+      expect(find.text('同意跨站同步后继续'), findsOneWidget);
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+      await tester.tap(find.text('同意'));
+      await tester.pumpAndSettle();
+
+      expect(env.adapter.sent('POST /auth/consent/grant').single.body, {
+        'policyVersion': 'cb-v3',
+        'proof': 'proof-1',
+      });
+      final logins = env.adapter.sent('POST /auth/login').toList();
+      expect(logins, hasLength(2));
+      expect(logins[1].body, logins[0].body);
+      expect(locationOf(router), Paths.settings);
+    });
+
+    testWidgets('不同意时停在登录页，不提交同意也不登录', (tester) async {
+      env.adapter.on('POST /auth/login', [consentRequired('proof-1')]);
+      await pumpApp(tester, env);
+      await openPasswordLogin(tester);
+
+      await tester.tap(find.text('不同意'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PasswordLoginPage), findsOneWidget);
+      expect(find.text('需要同意跨站同步后才能继续'), findsOneWidget);
+      expect(find.text('zhang@mail.sdu.edu.cn'), findsOneWidget);
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+      expect(env.adapter.sent('POST /auth/login'), hasLength(1));
+      expect(env.secure.values['auth.tokenValue'], isNull);
+    });
+
+    testWidgets('验证码登录：同意后清空验证码，要求重新获取；再登录时带上同意', (tester) async {
+      env.adapter
+        ..on('POST /auth/phone/code', [FakeAdapter.ok()])
+        ..on('POST /auth/phone/login', [
+          consentRequired(),
+          _token(newUser: true),
+        ]);
+      await pumpApp(tester, env);
+      await _agreeAndOpenPhoneLogin(tester);
+      await _enter(tester, '手机号', '13812345678');
+      await tester.tap(find.text('获取验证码'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '验证码', '246810');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('同意'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PhoneLoginPage), findsOneWidget);
+      expect(find.text('验证码已失效，请重新获取'), findsOneWidget);
+      expect(find.text('246810'), findsNothing);
+      expect(
+        env.adapter.sent('POST /auth/consent/grant'),
+        isEmpty,
+        reason: '新号码没有临时凭证，同意随注册请求提交',
+      );
+      expect(
+        (env.adapter.sent('POST /auth/phone/login').single.body as Map)
+            .containsKey('crossBorderConsent'),
+        isFalse,
+      );
+
+      await tester.pump(resendInterval);
+      await tester.tap(find.text('获取验证码'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '验证码', '135790');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+      final retry = env.adapter.sent('POST /auth/phone/login').last.body as Map;
+      expect(retry['crossBorderConsent'], isTrue);
+      expect(retry['consentPolicyVersion'], 'cb-v3');
+      expect(find.byType(VerifyPage), findsOneWidget);
+    });
+
+    testWidgets('已有账号验证码登录要求同意时，同意后用凭证提交同意', (tester) async {
+      env.adapter
+        ..on('POST /auth/phone/code', [FakeAdapter.ok()])
+        ..on('POST /auth/phone/login', [consentRequired('proof-2')])
+        ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
+      await pumpApp(tester, env);
+      await _agreeAndOpenPhoneLogin(tester);
+      await _enter(tester, '手机号', '13812345678');
+      await tester.tap(find.text('获取验证码'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '验证码', '246810');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('同意'));
+      await tester.pumpAndSettle();
+      expect(env.adapter.sent('POST /auth/consent/grant').single.body, {
+        'policyVersion': 'cb-v3',
+        'proof': 'proof-2',
+      });
+      expect(env.adapter.sent('POST /auth/phone/login'), hasLength(1));
+      expect(find.text('验证码已失效，请重新获取'), findsOneWidget);
+    });
+
+    testWidgets('已登录时要求同意：在当前页面弹出面板，同意后原请求完成', (tester) async {
+      env.adapter
+        ..on('GET /anything', [FakeAdapter.fail(20005), FakeAdapter.ok('A')])
+        ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: testUser),
+        token: const AuthToken(name: 'satoken', value: 'tk'),
+        location: Paths.me,
+      );
+
+      final request = container
+          .read(apiClientProvider)
+          .get('/anything')
+          .then<Object?>((value) => value, onError: (Object e) => e);
+      await tester.pumpAndSettle();
+      expect(find.text('同意跨站同步后继续'), findsOneWidget);
+      await tester.tap(find.text('同意'));
+      await tester.pumpAndSettle();
+      expect(await request, 'A');
+      expect(find.text('同意跨站同步后继续'), findsNothing);
+    });
   });
 
   testWidgets('直接打开手机号登录页但还没勾协议，退回登录页', (tester) async {

@@ -12,9 +12,15 @@ abstract interface class Browser {
   /// 打开学校的统一认证页.
   ///
   /// - App: 使用应用内浏览器 (iOS 为 SFSafariViewController, Android 为 Custom Tabs).
-  ///   回到 App 后由页面刷新认证状态.
-  /// - Web: 在当前标签页跳转. 认证完成后, 后端重定向回 `/verify`.
+  ///   认证结束后, 后端重定向到回跳链接, 由 App Links / Universal Links 唤起 App.
+  /// - Web: 在当前标签页跳转. 认证结束后, 后端重定向到服务端配置的网页地址.
   Future<bool> openSso(Uri url);
+
+  /// 回跳链接唤起 App 后, 关闭仍停留在认证页的应用内浏览器. 平台不支持时不做任何操作.
+  ///
+  /// iOS 的 SFSafariViewController 在 App 收到链接后仍覆盖在页面上方, 需要主动关闭.
+  /// Android 的 Custom Tabs 无法通过 url_launcher 关闭, 由 `singleTask` 启动模式关闭.
+  Future<void> closeSso();
 }
 
 class UrlLauncherBrowser implements Browser {
@@ -26,6 +32,14 @@ class UrlLauncherBrowser implements Browser {
   Future<bool> openSso(Uri url) => kIsWeb
       ? launchUrl(url, webOnlyWindowName: '_self')
       : launchUrl(url, mode: LaunchMode.inAppBrowserView);
+
+  @override
+  Future<void> closeSso() async {
+    if (kIsWeb) return;
+    if (await supportsCloseForLaunchMode(LaunchMode.inAppBrowserView)) {
+      await closeInAppWebView();
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)

@@ -47,6 +47,7 @@ class DishTile extends StatelessWidget {
     required this.image,
     required this.name,
     this.shop,
+    this.distance,
     this.likes,
     required this.onTap,
   });
@@ -54,8 +55,11 @@ class DishTile extends StatelessWidget {
   final ImageProvider? image;
   final String name;
 
-  /// 店名, 用于推荐流.
+  /// 店名, 用于推荐流和搜索结果.
   final String? shop;
+
+  /// 距离文字, 如 "320 m". 跟在店名后面, 店名过长时只截断店名.
+  final String? distance;
 
   /// 赞数, 用于 "我的". 显示在菜名右侧, 此时不传店名.
   final int? likes;
@@ -106,7 +110,28 @@ class DishTile extends StatelessWidget {
                 )
               else
                 title,
-              if (shop case final shop?)
+              if (distance case final distance?)
+                Row(
+                  spacing: EatSpace.s8,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    if (shop case final shop?)
+                      Flexible(
+                        child: Text(
+                          shop,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: eat.text.meta.copyWith(color: c.inkMuted),
+                        ),
+                      ),
+                    Text(
+                      distance,
+                      style: eat.text.distance.copyWith(color: c.inkMuted),
+                    ),
+                  ],
+                )
+              else if (shop case final shop?)
                 Text(
                   shop,
                   maxLines: 1,

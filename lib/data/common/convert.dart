@@ -1,10 +1,7 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/domain/models/paged.dart';
 
-// TODO: /foods/recommend 文档声明返回 `PageResult`, 实际返回数组. 后端统一格式后删除数组分支.
 /// 把接口的 `PageResult` (`items`, `currentPage`, `hasNext`) 转换为 [Paged].
-///
-/// 也接受数组, 视为只有一页.
 Paged<T> decodePage<T>(
   Object? data,
   T Function(Map<String, dynamic> json) item,
@@ -12,7 +9,6 @@ Paged<T> decodePage<T>(
   try {
     return switch (data) {
       null => const Paged.empty(),
-      final List<dynamic> list => Paged(items: _items(list, item)),
       final Map<String, dynamic> page => Paged(
         items: _items(page['items'] as List<dynamic>? ?? const [], item),
         page: (page['currentPage'] as num?)?.toInt() ?? 1,
@@ -51,23 +47,12 @@ DateTime? dateFromMillis(int? millis) => millis == null || millis <= 0
     ? null
     : DateTime.fromMillisecondsSinceEpoch(millis);
 
-// TODO: 后端未确认图片字段是完整 URL 还是存储 key. 确认后只保留对应的一种处理.
-/// 把图片字段解析为可加载的地址. 空串视为没有图片, 返回 null.
+/// 图片字段. 空串视为没有图片, 返回 null.
 ///
-/// 图片字段可能是完整 URL, 也可能是存储 key.
-/// 是 key 时拼接 [assetBaseUrl]; 未配置 [assetBaseUrl] 时原样返回.
-String? resolveImageUrl(String? value, String assetBaseUrl) {
-  if (value == null || value.isEmpty) return null;
-  if (value.startsWith('http://') ||
-      value.startsWith('https://') ||
-      assetBaseUrl.isEmpty) {
-    return value;
-  }
-  final base = assetBaseUrl.endsWith('/')
-      ? assetBaseUrl.substring(0, assetBaseUrl.length - 1)
-      : assetBaseUrl;
-  return value.startsWith('/') ? '$base$value' : '$base/$value';
-}
+/// `avatar`, `pictureUrl` 和 `coverUrl` 都是可直接展示的完整地址, 为有时效的预签名 URL.
+/// 后端对空的存储 key 原样返回空串, 不返回 null.
+String? imageUrl(String? value) =>
+    value == null || value.isEmpty ? null : value;
 
 /// 解析新增类接口返回的 `{id}`.
 int decodeCreatedId(Object? data) {

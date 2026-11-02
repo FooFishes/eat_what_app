@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/data/food/food_repository.dart';
+import 'package:eat/data/topic/topic_repository.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/topic.dart';
 import 'package:eat/state/place.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'discover_providers.g.dart';
@@ -131,6 +135,37 @@ class TurntableQueue extends _$TurntableQueue {
     } finally {
       _loading = false;
     }
+  }
+}
+
+/// 当前校区的当期专题, 没有时为 null. 切换校区后重新请求, 回到前台时由页面刷新.
+///
+/// 分类栏只在有当期专题时显示专题. 请求失败时页面按没有专题处理, 不影响推荐.
+@Riverpod(keepAlive: true)
+Future<Topic?> currentTopic(Ref ref) async {
+  final (:campusId, :ready) = ref.watch(
+    currentPlaceProvider.select(
+      (p) => (campusId: p.campus?.id, ready: p.ready),
+    ),
+  );
+  if (!ready) return Completer<Topic?>().future;
+  if (campusId == null) return null;
+  return ref
+      .watch(topicRepositoryProvider)
+      .current(campusId, cancelToken: ref.cancelToken());
+}
+
+/// 分类栏选中专题时抽屉中的专题详情. 专题已撤下或尚未开始时为 null.
+@riverpod
+Future<TopicDetail?> discoverTopic(Ref ref, int topicId) async {
+  ref.cacheFor(const Duration(minutes: 5));
+  try {
+    return await ref
+        .watch(topicRepositoryProvider)
+        .detail(topicId, cancelToken: ref.cancelToken());
+  } on AppFailure catch (e) {
+    if (e.code == BizCodes.stateNotAllowed) return null;
+    rethrow;
   }
 }
 

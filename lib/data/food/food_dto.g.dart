@@ -12,6 +12,7 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   uploaderName: json['uploaderName'] as String?,
   restaurantId: (json['restaurantId'] as num?)?.toInt(),
   restaurantName: json['restaurantName'] as String?,
+  distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
   restaurantAddress: json['restaurantAddress'] as String?,
   restaurantGcjLng: (json['restaurantGcjLng'] as num?)?.toDouble(),
   restaurantGcjLat: (json['restaurantGcjLat'] as num?)?.toDouble(),
@@ -23,6 +24,9 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   category: json['category'] as String?,
   pictureUrl: (json['pictureUrl'] as List<dynamic>?)
       ?.map((e) => e as String)
+      .toList(),
+  pictureKeys: (json['pictureKeys'] as List<dynamic>)
+      .map((e) => e as String)
       .toList(),
   systemTags: (json['systemTags'] as List<dynamic>?)
       ?.map((e) => FoodTagDto.fromJson(e as Map<String, dynamic>))
@@ -52,6 +56,7 @@ Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'uploaderName': ?instance.uploaderName,
   'restaurantId': ?instance.restaurantId,
   'restaurantName': ?instance.restaurantName,
+  'distanceMeters': ?instance.distanceMeters,
   'restaurantAddress': ?instance.restaurantAddress,
   'restaurantGcjLng': ?instance.restaurantGcjLng,
   'restaurantGcjLat': ?instance.restaurantGcjLat,
@@ -62,6 +67,7 @@ Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'price': ?instance.price,
   'category': ?instance.category,
   'pictureUrl': ?instance.pictureUrl,
+  'pictureKeys': instance.pictureKeys,
   'systemTags': ?instance.systemTags,
   'myCustomTags': ?instance.myCustomTags,
   'isLiked': ?instance.isLiked,

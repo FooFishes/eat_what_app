@@ -26,14 +26,20 @@ import 'package:go_router/go_router.dart';
 /// - 认证引导: 新号码注册后进入, [onboarding] 为 true, 右上角显示 "先逛逛".
 /// - 普通页面: 从设置或拦截面板进入, 左上角显示返回.
 ///
-/// 打开页面和回到前台时自动刷新认证状态.
+/// 打开页面和回到前台时自动刷新认证状态. 由统一认证回跳链接打开时, 同时显示认证结果.
 class VerifyPage extends ConsumerStatefulWidget {
-  const new({super.key, this.onboarding = false, this.from});
+  const new({super.key, this.onboarding = false, this.from, this.sso});
 
   final bool onboarding;
 
   /// 认证引导结束后的目标地址, 即登录前要去的页面. 为 null 时去发现页.
   final String? from;
+
+  /// 统一认证回跳链接带来的结果, 来自地址中的 `sso` 和 `code`.
+  ///
+  /// 页面读取后立即从地址中移除这两个参数. 否则登录态变化引起的重建会重复读取,
+  /// 再次刷新登录态并形成循环. 移除后 Web 刷新页面时不会重复显示结果.
+  final SsoResult? sso;
 
   @override
   ConsumerState<VerifyPage> createState() => _VerifyPageState();
@@ -48,13 +54,45 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
   @override
   void initState() {
     super.initState();
+    // 回跳链接不一定能唤起 App: 系统可能未通过域名校验, 应用内浏览器可能不将重定向转交给 App.
+    // 此时用户关闭浏览器回到 App, 回到前台时的刷新获取认证结果.
     _lifecycle = AppLifecycleListener(onResume: _refresh);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(sessionProvider.notifier).finishOnboarding();
-      // Web 上完成统一认证后整页重定向回本页, 因此打开页面时刷新一次认证状态.
-      _refresh();
+      // 认证可能已在其他页面或浏览器标签页中完成, 因此打开页面时刷新认证状态.
+      if (!_takeSsoResult()) _refresh();
     });
+  }
+
+  @override
+  void didUpdateWidget(VerifyPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 当前页面已是认证页时, 新的回跳链接替换地址但沿用本页面.
+    // 构建过程中不能修改路由, 因此在本帧结束后读取.
+    if (oldWidget.sso == null && widget.sso != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _takeSsoResult();
+      });
+    }
+  }
+
+  /// 显示地址中的统一认证结果, 并从地址中移除. 地址中没有结果时返回 false.
+  bool _takeSsoResult() {
+    final sso = widget.sso;
+    if (sso == null) return false;
+    final uri = GoRouterState.of(context).uri;
+    final query = Map.of(uri.queryParameters)
+      ..remove('sso')
+      ..remove('code');
+    context.replace(
+      Uri(
+        path: uri.path,
+        queryParameters: query.isEmpty ? null : query,
+      ).toString(),
+    );
+    ref.read(verifyProvider.notifier).showSsoResult(sso);
+    return true;
   }
 
   @override

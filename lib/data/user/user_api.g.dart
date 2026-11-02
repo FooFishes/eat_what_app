@@ -6,6 +6,35 @@ part of 'user_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+MobileCommandDto _$MobileCommandDtoFromJson(Map<String, dynamic> json) =>
+    MobileCommandDto(
+      commandId: json['commandId'] as String?,
+      oldProofRequired: json['oldProofRequired'] as bool?,
+    );
+
+MobileCommitDto _$MobileCommitDtoFromJson(Map<String, dynamic> json) =>
+    MobileCommitDto(
+      currentDevice: json['currentDevice'] as String?,
+      replacement: json['replacement'] == null
+          ? null
+          : SessionOutcomeDto.fromJson(
+              json['replacement'] as Map<String, dynamic>,
+            ),
+    );
+
+FansDto _$FansDtoFromJson(Map<String, dynamic> json) => FansDto(
+  id: (json['id'] as num?)?.toInt(),
+  displayName: json['displayName'] as String?,
+  avatar: json['avatar'] as String?,
+  createdAt: (json['createdAt'] as num?)?.toInt(),
+);
+
+BlockedUserDto _$BlockedUserDtoFromJson(Map<String, dynamic> json) =>
+    BlockedUserDto(
+      userId: (json['userId'] as num?)?.toInt(),
+      displayName: json['displayName'] as String?,
+    );
+
 UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
     UserProfileDto(
       displayName: json['displayName'] as String?,
@@ -29,6 +58,7 @@ UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   banned: json['banned'] as bool?,
   banReason: json['banReason'] as String?,
   bannedAt: (json['bannedAt'] as num?)?.toInt(),
+  banUntil: (json['banUntil'] as num?)?.toInt(),
   phone: json['phone'] as String?,
   verified: json['verified'] as bool?,
   method: json['method'] as String?,
@@ -47,6 +77,7 @@ Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
       'banned': ?instance.banned,
       'banReason': ?instance.banReason,
       'bannedAt': ?instance.bannedAt,
+      'banUntil': ?instance.banUntil,
       'phone': ?instance.phone,
       'verified': ?instance.verified,
       'method': ?instance.method,

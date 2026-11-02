@@ -8,16 +8,16 @@ part of 'publish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 选店列表. [keyword] 为空时列出附近的店.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
 ///
-/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
 
 @ProviderFor(pickableShops)
 final pickableShopsProvider = PickableShopsFamily._();
 
-/// 选店列表. [keyword] 为空时列出附近的店.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
 ///
-/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
 
 final class PickableShopsProvider
     extends
@@ -27,9 +27,9 @@ final class PickableShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 选店列表. [keyword] 为空时列出附近的店.
+  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
   ///
-  /// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+  /// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
   PickableShopsProvider._({
     required PickableShopsFamily super.from,
     required String super.argument,
@@ -73,11 +73,11 @@ final class PickableShopsProvider
   }
 }
 
-String _$pickableShopsHash() => r'f1b76821ed1aafbbf9b76abf5886d85867b26514';
+String _$pickableShopsHash() => r'86738175957e99747c1478d7bba3985e85f1a669';
 
-/// 选店列表. [keyword] 为空时列出附近的店.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
 ///
-/// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
 
 final class PickableShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -90,9 +90,9 @@ final class PickableShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 选店列表. [keyword] 为空时列出附近的店.
+  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
   ///
-  /// 按与我的距离升序排列. 没有定位时按与校区中心的距离排列.
+  /// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
 
   PickableShopsProvider call(String keyword) =>
       PickableShopsProvider._(argument: keyword, from: this);
@@ -217,17 +217,17 @@ final class HubAtFamily extends $Family
   String toString() => r'hubAtProvider';
 }
 
-/// 新建店时, 地图中心附近的同名店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
 
 @ProviderFor(sameNameShop)
 final sameNameShopProvider = SameNameShopFamily._();
 
-/// 新建店时, 地图中心附近的同名店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
 
 final class SameNameShopProvider
     extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
     with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
-  /// 新建店时, 地图中心附近的同名店. 没有时为 null.
+  /// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
   SameNameShopProvider._({
     required SameNameShopFamily super.from,
     required (String, GcjPoint) super.argument,
@@ -271,9 +271,9 @@ final class SameNameShopProvider
   }
 }
 
-String _$sameNameShopHash() => r'216076e5af1e0172d878cb6e234620ce9ed5f53b';
+String _$sameNameShopHash() => r'caca0dee6c04bdc969c1e531a304cca94d8dcd20';
 
-/// 新建店时, 地图中心附近的同名店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
 
 final class SameNameShopFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
@@ -286,7 +286,7 @@ final class SameNameShopFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 新建店时, 地图中心附近的同名店. 没有时为 null.
+  /// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
 
   SameNameShopProvider call(String name, GcjPoint point) =>
       SameNameShopProvider._(argument: (name, point), from: this);

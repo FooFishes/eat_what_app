@@ -88,22 +88,4 @@ abstract final class DishRules {
     final sorted = [...dishes]..sort((a, b) => b.likes.compareTo(a.likes));
     return sorted.take(count).toList();
   }
-
-  /// 汇总一家店所有菜品的口味标签, 按人数降序, 最多返回 [count] 个.
-  static List<TasteTag> tasteSummary(List<Dish> dishes, {int count = 6}) {
-    final totals = <int, TasteTag>{};
-    for (final dish in dishes) {
-      for (final tag in dish.tasteTags) {
-        final sum = totals[tag.id];
-        totals[tag.id] = TasteTag(
-          id: tag.id,
-          name: tag.name,
-          count: (sum?.count ?? 0) + tag.count,
-        );
-      }
-    }
-    final sorted = totals.values.where((tag) => tag.count > 0).toList()
-      ..sort((a, b) => b.count.compareTo(a.count));
-    return sorted.take(count).toList();
-  }
 }

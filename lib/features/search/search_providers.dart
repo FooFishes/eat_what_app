@@ -19,36 +19,43 @@ part 'search_providers.g.dart';
 /// 防抖期间关键词变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-// TODO: 接口不支持按距离排序菜品, 目前按热度排序. 接口支持后改为按距离排序.
+// TODO: `/foods/list` 不返回商圈, 搜菜结果只显示店名和距离. 接口返回 `hubName` 后补充测试, 确认菜品方块显示商圈名.
 /// 按菜名跨店搜索菜品.
+///
+/// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
+/// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
 @riverpod
 Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return const [];
+  final me = ref.read(currentLocationProvider).point;
   final page = await ref
       .watch(foodRepositoryProvider)
       .list(
         keyword: keyword,
-        sort: FoodSort.popular,
+        near: me,
+        sort: me == null ? null : FoodSort.distance,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
   return page.items;
 }
 
-// TODO: 接口不返回营业状态, 已关门的店没有排到最后并标明. 接口返回营业状态后补上.
-/// 按店名搜索店铺. 按与我的距离升序排列, 没有定位时按与校区中心的距离排列.
+/// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+///
+/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
 @riverpod
 Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return const [];
-  final me = ref.read(currentLocationProvider).point;
-  final campus = ref.read(currentPlaceProvider).campus;
+  final scope = await shopSearchScope(ref);
+  if (!ref.mounted || scope == null) return const [];
   final page = await ref
       .watch(placeRepositoryProvider)
-      .searchShops(
+      .browseShops(
         keyword: keyword,
-        near: me ?? campus?.center,
+        campusId: scope.campusId,
+        near: scope.point,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );

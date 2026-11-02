@@ -4,8 +4,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'upload_api.g.dart';
 
-/// 上传用途, 决定文件的存储位置和所需权限: 头像只需登录, 菜品和店铺需要认证.
-enum UploadBiz { avatar, foods, restaurants }
+/// 上传用途, 决定文件的存储位置和所需权限: 头像和反馈截图只需登录, 菜品, 店铺和评论需要认证.
+///
+/// 评论照片存放在私有空间, 审核通过后才出现在公开的评论和菜的大图里.
+enum UploadBiz { avatar, foods, restaurants, comments, feedback }
 
 /// 接口分组 Upload: 申请签名, 确认上传完成.
 ///

@@ -14,6 +14,9 @@ class const LoginReplyDto({
   final bool? newUser,
   final String? consentProof,
   final String? status,
+
+  /// 封禁账号登录时为 true, 此时 token 是受限会话, 只能调用后端登记的接口. 普通登录不带该字段.
+  final bool? restricted,
 }) {
   factory LoginReplyDto.fromJson(Map<String, dynamic> json) =>
       _$LoginReplyDtoFromJson(json);

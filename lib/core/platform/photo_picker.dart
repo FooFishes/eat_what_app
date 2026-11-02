@@ -37,6 +37,17 @@ abstract interface class PhotoPicker {
 
   /// 拍摄一张照片. 用户取消时返回 null.
   Future<PickedPhoto?> takePhoto();
+
+  /// 把 [photo] 中的圆形取景裁成边长 [size] 的正方形 JPEG, 用于头像.
+  ///
+  /// [centerX], [centerY] 是圆心按照片宽高归一化的位置, [diameter] 是直径占照片短边的比例.
+  Future<Uint8List> cropSquare(
+    PickedPhoto photo, {
+    required double centerX,
+    required double centerY,
+    required double diameter,
+    int size = 512,
+  });
 }
 
 class PlatformPhotoPicker implements PhotoPicker {
@@ -65,6 +76,45 @@ class PlatformPhotoPicker implements PhotoPicker {
       () => _picker.pickImage(source: ImageSource.camera),
     );
     return file == null ? null : compress(await file.readAsBytes());
+  }
+
+  @override
+  Future<Uint8List> cropSquare(
+    PickedPhoto photo, {
+    required double centerX,
+    required double centerY,
+    required double diameter,
+    int size = 512,
+  }) async {
+    final codec = await ui.instantiateImageCodec(photo.bytes);
+    final image = (await codec.getNextFrame()).image;
+    final side = math.min(image.width, image.height) * diameter;
+    final source = ui.Rect.fromCenter(
+      center: ui.Offset(centerX * image.width, centerY * image.height),
+      width: side,
+      height: side,
+    );
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawImageRect(
+      image,
+      source,
+      ui.Rect.fromLTWH(0, 0, size.toDouble(), size.toDouble()),
+      ui.Paint()..filterQuality = ui.FilterQuality.high,
+    );
+    final cropped = await recorder.endRecording().toImage(size, size);
+    final png = await cropped.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    cropped.dispose();
+    codec.dispose();
+    if (png == null) {
+      throw const PhotoPickException(PhotoPickFailure.unsupported);
+    }
+    return FlutterImageCompress.compressWithList(
+      png.buffer.asUint8List(),
+      minWidth: size,
+      minHeight: size,
+      quality: quality,
+    );
   }
 
   static Future<T> _guard<T>(Future<T> Function() pick) async {

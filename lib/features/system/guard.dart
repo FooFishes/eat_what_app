@@ -78,15 +78,16 @@ Future<void> _showBanned(
     child: PanelFacts([
       if (status.reason case final reason?)
         (label: '原因', value: reason, strong: false),
-      if (status.since case final since?)
-        (
-          label: '开始',
-          value: TimeFormat.date(since, DateTime.now()),
-          strong: false,
-        ),
+      (label: '期限', value: banTerm(status, DateTime.now()), strong: false),
     ]),
   ),
 );
+
+/// 封禁期限, 如 "封禁至 11 月 30 日". 没有截止时间时为 "永久封禁".
+String banTerm(BannedStatus status, DateTime now) => switch (status.until) {
+  final until? => '封禁至 ${TimeFormat.date(until, now)}',
+  null => '永久封禁',
+};
 
 /// 操作失败后的反馈.
 ///
@@ -106,7 +107,10 @@ Future<void> reportActionFailure(
       return;
     case FailureKind.forbidden:
       await ref.read(sessionProvider.notifier).refreshUser();
-      if (context.mounted) await guardAction(context, ref, capability);
+      // 刷新后仍判定为允许时, 拦截面板不会出现. 此时显示无权限的统一提示, 否则点击后界面没有任何反馈.
+      if (context.mounted && await guardAction(context, ref, capability)) {
+        if (context.mounted) showToast(context, failure.message);
+      }
     case FailureKind.network ||
         FailureKind.tooFrequent ||
         FailureKind.server ||

@@ -146,4 +146,51 @@ void main() {
     expect(find.text('举报'), findsOneWidget);
     await unmountApp(tester, container);
   });
+
+  testWidgets('菜不存在时显示「找不到这道菜」，没有重试，能返回', (tester) async {
+    env.adapter.on('GET /foods/detail/2', [FakeAdapter.fail(40008)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(2),
+    );
+
+    expect(find.text('找不到这道菜'), findsOneWidget);
+    expect(find.text('重试'), findsNothing);
+    expect(find.text('加载失败'), findsNothing);
+    expect(find.bySemanticsLabel('返回'), findsOneWidget);
+    expect(env.adapter.sent('GET /foods/detail/2'), hasLength(1));
+    await expectAccessible(tester);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('加标签面板一次最多写 20 个我的标签，超出时提示且不提交', (tester) async {
+    env.adapter
+      ..on('GET /foods/tags/system', [FakeAdapter.ok(<Object>[])])
+      ..on('POST /foods/1/tags/custom', [FakeAdapter.ok()]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.tap(find.text('＋ 加标签'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('＋ 自己写'));
+    await tester.pumpAndSettle();
+    for (var i = 1; i <= 21; i++) {
+      await tester.enterText(find.byType(EditableText), '标签$i');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+    }
+    expect(find.text('一次最多添加 20 个标签'), findsOneWidget);
+    expect(find.text('标签20'), findsOneWidget);
+
+    await tester.tap(find.text('完成'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('POST /foods/1/tags/custom'), isEmpty);
+    await unmountApp(tester, container);
+  });
 }

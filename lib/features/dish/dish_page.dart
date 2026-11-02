@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -20,17 +20,24 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/photo_viewer.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/taste_cloud.dart';
+import 'package:eat/data/comment/comment_repository.dart';
+import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/report.dart';
+import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/dish/dish_providers.dart';
-import 'package:eat/features/dish/photo_viewer.dart';
+import 'package:eat/features/dish/dish_topic.dart';
 import 'package:eat/features/dish/tag_panel.dart';
+import 'package:eat/features/system/comment_card.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/comments.dart';
 import 'package:eat/state/dish_interactions.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/shops.dart';
@@ -38,23 +45,26 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 评论, 专题和举报缺少接口, 入口标注 "待接入". 接口上线后对接.
 // TODO: 编辑自己的菜品未实现, 页面缺少编辑入口. 实现编辑流程后为上传者本人显示编辑入口.
 /// 菜品详情页.
 ///
 /// - 舞台: 封面, 分类, 菜名, 价格.
-/// - 抽屉: 依次为店卡, 赞和导航, "大家怎么说", 上传者, "吃过的人说".
+/// - 抽屉: 依次为店卡, 专题提示, 赞和导航, "大家怎么说", 上传者, "吃过的人说".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
-  const new({super.key, required this.dishId, this.initial});
+  const new({super.key, required this.dishId, this.initial, this.focusComment});
 
   final int dishId;
   final Dish? initial;
 
+  /// 打开后滚动到的评论 id, 来自消息和 "我的评论".
+  final int? focusComment;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(dishDetailProvider(dishId));
+    if (_isNotFound(detail)) return const _NotFound();
     final dish = detail.value ?? initial;
     if (dish == null) {
       return StageScaffold(
@@ -93,6 +103,7 @@ class DishPage extends ConsumerWidget {
           sliver: SliverList.list(
             children: [
               _ShopCard(dish: dish),
+              DishTopicHint(dishId: dishId),
               const SizedBox(height: EatSpace.s16),
               _Actions(dish: dish),
               const SizedBox(height: 28),
@@ -108,13 +119,46 @@ class DishPage extends ConsumerWidget {
               const SizedBox(height: 28),
               _Uploader(dish: dish),
               const SizedBox(height: 28),
-              const _Comments(),
+              _Comments(dishId: dishId, focus: focusComment),
             ],
           ),
         ),
       ],
     );
   }
+}
+
+/// 详情请求返回菜品不存在. 此时从列表传入的 [DishPage.initial] 已过时, 不再显示.
+bool _isNotFound(AsyncValue<Dish> detail) =>
+    !detail.isLoading &&
+    detail.error is AppFailure &&
+    (detail.error! as AppFailure).code == BizCodes.foodNotFound;
+
+/// 菜品不存在时的页面. 重试不会改变结果, 因此只提供返回.
+class _NotFound extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => StageScaffold(
+    stage: StageColor.broth,
+    topBar: const _TopBar(dish: null),
+    stageContent: const SizedBox(),
+    sheetSlivers: const [
+      SliverPadding(
+        padding: EdgeInsets.symmetric(
+          horizontal: EatSpace.s20,
+          vertical: EatSpace.s24,
+        ),
+        sliver: SliverToBoxAdapter(
+          child: EmptyState(
+            icon: EatIcons.bowl,
+            title: '找不到这道菜',
+            message: '这道菜可能已被删除',
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 class _TopBar extends ConsumerWidget {
@@ -151,7 +195,9 @@ class _TopBar extends ConsumerWidget {
               ref,
               path: Paths.dish(dish.id),
               title: dish.name,
-              reportable: dish.uploaderId != me,
+              reportTarget: dish.uploaderId == me
+                  ? null
+                  : ReportTarget.dish(dish.id),
             ),
           ),
         ],
@@ -184,13 +230,13 @@ Future<void> _toggleFavorite(
 ///
 /// - 右侧: 封面盘子, 点击查看大图.
 /// - 左下: 分类, 菜名, 价格.
-class _StageContent extends StatelessWidget {
+class _StageContent extends ConsumerWidget {
   const new({required this.dish});
 
   final Dish dish;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
     final layout = EatLayout.of(context);
@@ -216,14 +262,7 @@ class _StageContent extends StatelessWidget {
               left: center.dx - plate / 2,
               top: center.dy - plate / 2,
               child: EatTappable(
-                onTap: dish.images.isEmpty
-                    ? null
-                    : () => Navigator.of(context).push(
-                        PhotoViewer.route(
-                          images: dish.images,
-                          uploader: dish.uploaderName,
-                        ),
-                      ),
+                onTap: () => _openPhotos(context, ref, dish),
                 label: '看大图',
                 focusShape: const CircleBorder(),
                 builder: (context, _) => DishPlate(
@@ -291,6 +330,38 @@ class _StageContent extends StatelessWidget {
       },
     );
   }
+}
+
+// TODO: 图库接口不返回拍摄者, 评论照片的作者昵称只能从已加载的评论中查找, 查找不到时不标注. 接口返回作者昵称后改为读取接口字段.
+/// 打开大图浏览: 上传者的照片在前, 评论中的照片在后.
+///
+/// 评论照片的地址 30 秒后失效, 因此每次打开时重新请求图库, 不复用打开详情时的结果.
+/// 图库请求失败时只显示上传者的照片.
+Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
+  var gallery = const <GalleryPhoto>[];
+  try {
+    gallery = await ref.read(commentRepositoryProvider).gallery(dish.id);
+  } on AppFailure {
+    gallery = const [];
+  }
+  if (!context.mounted) return;
+  final known = {
+    for (final c
+        in ref
+                .read(dishCommentsProvider(dish.id, CommentSort.mostUseful))
+                .value
+                ?.items ??
+            const <Comment>[])
+      c.id: c.authorName,
+  };
+  final photos = [
+    for (final url in dish.images)
+      ViewerPhoto(url: url, credit: dish.uploaderName),
+    for (final photo in gallery)
+      ViewerPhoto(url: photo.url, credit: known[photo.commentId]),
+  ];
+  if (photos.isEmpty) return;
+  await Navigator.of(context).push(PhotoViewer.route(photos: photos));
 }
 
 /// 店卡: 店名, 距离, 商圈和地址. 点击进入餐厅详情.
@@ -463,8 +534,7 @@ class _TasteSection extends ConsumerWidget {
   }
 }
 
-// TODO: 他人主页未实现, 该行不可点. 实现他人主页后点击跳转到上传者主页.
-/// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明.
+/// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明. 点击进入上传者主页.
 class _Uploader extends StatelessWidget {
   const new({required this.dish});
 
@@ -490,6 +560,10 @@ class _Uploader extends StatelessWidget {
             if (created != null)
               Text('${TimeFormat.date(created, clock.now())}上传'),
           ],
+          onTap: switch (dish.uploaderId) {
+            final id? => () => context.push(Paths.user(id)),
+            null => null,
+          },
         ),
         if (dish.description case final description?)
           Text(
@@ -501,39 +575,126 @@ class _Uploader extends StatelessWidget {
   }
 }
 
-// TODO: 评论缺少接口, 只显示标题和 "写一条" 入口. 接口上线后显示评论列表并对接发表评论.
-/// "吃过的人说" 评论区.
-class _Comments extends StatelessWidget {
-  const new();
+/// "吃过的人说" 评论区: 标题后跟评论条数, 右侧 "写一条". 显示最有用的 3 条, 其下为 "看全部 N 条".
+///
+/// [focus] 是要滚动到的评论. 该评论在前 3 条中时滚动到该条并以底色标出, 否则滚动到评论区标题.
+class _Comments extends ConsumerStatefulWidget {
+  const new({required this.dishId, this.focus});
+
+  final int dishId;
+  final int? focus;
+
+  @override
+  ConsumerState<_Comments> createState() => _CommentsState();
+}
+
+class _CommentsState extends ConsumerState<_Comments> {
+  final _header = GlobalKey();
+  final _focused = GlobalKey();
+
+  /// 是否已经滚动过. 只在首次获得评论时滚动, 之后列表刷新不改变滚动位置.
+  var _scrolled = false;
+
+  void _scrollToFocus(bool found) {
+    _scrolled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = (found ? _focused : _header).currentContext;
+      if (target == null || !target.mounted) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.2,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+        ),
+      );
+    });
+  }
+
+  Future<void> _write() async {
+    if (!await guardAction(context, ref, Capability.comment) || !mounted) {
+      return;
+    }
+    await context.push(Paths.writeComment(widget.dishId));
+  }
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
+    final provider = dishCommentsProvider(
+      widget.dishId,
+      CommentSort.mostUseful,
+    );
+    final comments = ref.watch(provider);
+    final list = comments.value;
+    final total = list?.data.total ?? 0;
+    final shown =
+        list?.items.take(CommentRules.dishPreview).toList() ??
+        const <Comment>[];
+    final focus = widget.focus;
+    if (focus != null && list != null && !_scrolled) {
+      _scrollToFocus(shown.any((c) => c.id == focus));
+    }
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: EatSpace.s10,
       children: [
         Row(
+          key: _header,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Semantics(
               header: true,
               child: Text('吃过的人说', style: eat.text.sectionTitle),
             ),
-            const SizedBox(width: EatSpace.s8),
-            const PendingTag(),
+            if (total > 0) ...[
+              const SizedBox(width: EatSpace.s8),
+              Text(
+                '$total',
+                style: eat.text.count.copyWith(color: eat.colors.ink),
+              ),
+            ],
             const Spacer(),
             EatButton.outline(
               '写一条',
               icon: EatIcons.edit,
               height: 36,
-              onPressed: () => showPending(context, PendingFeature.comments),
+              onPressed: _write,
             ),
           ],
         ),
-        Text(
-          '吃过的话，说两句',
-          style: eat.text.body.copyWith(color: eat.colors.inkMuted),
-        ),
+        if (list == null)
+          comments.hasError && !comments.isLoading
+              ? FailureState(
+                  message: (comments.error as AppFailure?)?.message,
+                  onRetry: () => ref.invalidate(provider),
+                )
+              : const RowListPlaceholder(count: 2, thumbSize: 36)
+        else if (shown.isEmpty)
+          Text(
+            '吃过的话，说两句',
+            style: eat.text.body.copyWith(color: eat.colors.inkMuted),
+          )
+        else ...[
+          for (final comment in shown)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: CommentCard(
+                key: comment.id == focus ? _focused : null,
+                comment: comment,
+                highlighted: comment.id == focus,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: EatButton.mist(
+              '看全部 $total 条',
+              height: 48,
+              onPressed: () => context.push(Paths.comments(widget.dishId)),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
       ],
     );
