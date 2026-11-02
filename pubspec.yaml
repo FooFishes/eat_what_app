@@ -71,6 +71,7 @@ flutter:
         - package: vector_graphics_compiler
     - assets/fonts/OFL-NotoSansSC.txt
     - assets/fonts/OFL-Inter.txt
+    - shorebird.yaml
 
   # 可变字体, 单个文件覆盖全部字重. 由 tool/subset_fonts.py 子集化生成.
   fonts:
