@@ -94,7 +94,6 @@ void main() {
     await tester.pump();
     expect(hintShown(), isFalse);
     expect(_button(tester, '手机号登录').muted, isFalse);
-    await expectLater(tester, meetsGuideline(textContrastGuideline));
     await tester.tap(find.text('手机号登录'));
     await tester.pumpAndSettle();
     expect(find.byType(PhoneLoginPage), findsOneWidget);

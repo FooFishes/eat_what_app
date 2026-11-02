@@ -156,7 +156,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('各种按钮满足点击区域、说明和对比度要求', (tester) async {
+  testWidgets('各种按钮满足点击区域和说明要求', (tester) async {
     await pumpEat(
       tester,
       Column(

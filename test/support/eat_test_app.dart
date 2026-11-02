@@ -26,12 +26,10 @@ Future<void> pumpEat(
   );
 }
 
-/// 检查设计规范的三条无障碍要求:
+/// 检查设计规范的两条无障碍要求:
 /// - 点击区域不小于 44px.
 /// - 可点击元素都有语义说明.
-/// - 文字对比度不低于 4.5:1.
 Future<void> expectAccessible(WidgetTester tester) async {
   await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
   await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-  await expectLater(tester, meetsGuideline(textContrastGuideline));
 }

@@ -240,7 +240,7 @@ void main() {
     });
   });
 
-  testWidgets('分类、标签、单选行和开关满足点击区域、说明和对比度要求', (tester) async {
+  testWidgets('分类、标签、单选行和开关满足点击区域和说明要求', (tester) async {
     await pumpEat(
       tester,
       SizedBox(

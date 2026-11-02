@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
+import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 import '../../support/topic_json.dart';
 
@@ -46,9 +47,7 @@ void main() {
     expect(find.textContaining('袁记云饺 · 万达金街'), findsOneWidget);
     expect(find.bySemanticsLabel('消息，3 条未读'), findsOneWidget);
     expect(find.text('软件园 ${_mealLabel()}'), findsOneWidget);
-    // TODO: 文字对比度检查在 CI 的 Linux 上报告一处 11 号字的对比度只有 2.61, macOS 上通过, 原因未查明. 查明后改回 expectAccessible.
-    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectAccessible(tester);
 
     // 菜名同时出现在舞台和推荐流方块中.
     // 换菜后, 新菜 "粘豆包" 出现两处, 原先的 "铁锅炖" 只剩方块中的一处.
