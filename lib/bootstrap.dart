@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 启动应用. 首帧前只读取本地数据, 不等待网络.
 ///
@@ -25,8 +26,13 @@ Future<void> bootstrap() async {
   await container.read(sessionProvider.notifier).restore();
   // 崩溃上报要在首帧前启动, 才能收到启动过程中的错误. 本机没有同意记录时不启动.
   await container.read(consentedServicesProvider.notifier).start();
+  // 导航的液态玻璃用自定义着色器绘制. 首帧前载入着色器, 避免导航先闪一帧白.
+  await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   runApp(
-    UncontrolledProviderScope(container: container, child: const EatApp()),
+    UncontrolledProviderScope(
+      container: container,
+      child: LiquidGlassWidgets.wrap(child: const EatApp()),
+    ),
   );
 }
 

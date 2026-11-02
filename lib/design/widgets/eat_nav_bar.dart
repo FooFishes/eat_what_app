@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
@@ -7,12 +5,12 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 /// 三个主页面底部的悬浮导航.
 ///
-/// - 左侧: "发现" "附近" "我的" 三个标签组成的胶囊.
+/// - 左侧: "发现" "附近" "我的" 三个标签组成的液态玻璃胶囊, 选中指示可以拖动.
 /// - 右侧: 紧邻胶囊的黑色圆形发布按钮.
 ///
 /// 本组件只绘制导航本身, 与屏幕边缘的距离和安全区由主页面外壳负责.
@@ -41,6 +39,7 @@ class EatNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
+    final c = eat.colors;
     // 导航高度固定. 系统字号过大时文字会撑破胶囊, 因此限制文字缩放的上限.
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.3,
@@ -50,91 +49,35 @@ class EatNavBar extends StatelessWidget {
           spacing: EatSpace.s10,
           children: [
             Expanded(
-              child: Semantics(
-                role: SemanticsRole.tabBar,
-                child: DecoratedBox(
-                  decoration: ShapeDecoration(
-                    shape: const StadiumBorder(),
-                    shadows: eat.shadows.float.outer,
-                  ),
-                  child: ClipPath(
-                    clipper: const ShapeBorderClipper(shape: StadiumBorder()),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                      child: ColoredBox(
-                        color: eat.colors.paper.withValues(alpha: 0.94),
-                        child: Padding(
-                          padding: const EdgeInsets.all(5),
-                          child: Row(
-                            spacing: 2,
-                            children: [
-                              for (final (i, tab) in _tabs.indexed)
-                                Expanded(
-                                  child: _NavTab(
-                                    icon: tab.icon,
-                                    label: tab.label,
-                                    selected: i == currentIndex,
-                                    onTap: () => onSelected(i),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
+              // 与屏幕边缘的距离由外壳负责, 因此去掉组件自带的外边距.
+              // 组件把每个标签读作带选中状态的按钮, 不是 tab 角色, 因此外层不能声明 tabBar.
+              child: GlassTabBar.bottom(
+                tabs: [
+                  for (final tab in _tabs)
+                    GlassTab(
+                      icon: EatIcon(tab.icon, size: 22, color: c.inkMuted),
+                      activeIcon: EatIcon(tab.icon, size: 22, color: c.ink),
+                      label: tab.label,
                     ),
-                  ),
+                ],
+                selectedIndex: currentIndex,
+                onTabSelected: onSelected,
+                horizontalPadding: 0,
+                verticalPadding: 0,
+                barHeight: EatSize.nav,
+                iconLabelSpacing: 1,
+                textStyle: eat.text.navLabel,
+                selectedLabelColor: c.ink,
+                unselectedLabelColor: c.inkMuted,
+                selectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             _PublishButton(onPressed: onPublish),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavTab extends StatelessWidget {
-  const new({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final EatIcons icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    final c = eat.colors;
-    final color = selected ? c.ink : c.inkMuted;
-    return EatTappable(
-      onTap: onTap,
-      button: false,
-      role: SemanticsRole.tab,
-      selected: selected,
-      builder: (context, _) => AnimatedContainer(
-        duration: context.motion(EatMotion.select),
-        decoration: ShapeDecoration(
-          shape: const StadiumBorder(),
-          color: selected ? c.mist : c.mist.withValues(alpha: 0),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 1,
-          children: [
-            EatIcon(icon, size: 22, color: color),
-            Text(
-              label,
-              style: eat.text.navLabel.copyWith(
-                color: color,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
           ],
         ),
       ),

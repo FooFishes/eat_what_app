@@ -86,13 +86,13 @@ void main() {
   testWidgets('切换主页面时各页的状态留着', (tester) async {
     await _start(tester);
 
-    await tester.tap(find.text('我的'));
+    await tester.tap(find.bySemanticsLabel('我的'));
     await tester.pumpAndSettle();
     expect(find.byType(MePage), findsOneWidget);
     await tester.tap(find.text('收藏'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('发现'));
+    await tester.tap(find.bySemanticsLabel('发现'));
     await tester.pumpAndSettle();
     await tester.dragFrom(const Offset(195, 700), const Offset(0, -200));
     await tester.pumpAndSettle();
@@ -107,12 +107,12 @@ void main() {
         .pixels;
     expect(discoverOffset, greaterThan(0));
 
-    await tester.tap(find.text('我的'));
+    await tester.tap(find.bySemanticsLabel('我的'));
     await tester.pumpAndSettle();
     final tabs = tester.widget<EatTabs>(find.byType(EatTabs));
     expect(tabs.selected, 1, reason: '回到「我的」时还停在「收藏」');
 
-    await tester.tap(find.text('发现'));
+    await tester.tap(find.bySemanticsLabel('发现'));
     await tester.pumpAndSettle();
     final back = tester
         .state<ScrollableState>(
@@ -131,7 +131,7 @@ void main() {
     await tester.dragFrom(const Offset(195, 700), const Offset(0, -300));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('发现'));
+    await tester.tap(find.bySemanticsLabel('发现'));
     await tester.pumpAndSettle();
     final scrollable = tester.state<ScrollableState>(
       find.descendant(
@@ -144,7 +144,7 @@ void main() {
 
   testWidgets('发布按钮打开发布页，盖住导航；返回回到原来的页面', (tester) async {
     final router = await _start(tester, user: verifiedUser);
-    await tester.tap(find.text('附近'));
+    await tester.tap(find.bySemanticsLabel('附近'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.bySemanticsLabel('发布一道菜'));
@@ -171,7 +171,7 @@ void main() {
 
   testWidgets('安卓返回键：在附近先回发现', (tester) async {
     final router = await _start(tester);
-    await tester.tap(find.text('附近'));
+    await tester.tap(find.bySemanticsLabel('附近'));
     await tester.pumpAndSettle();
     expect(find.byType(NearbyPage).hitTestable(), findsOneWidget);
 

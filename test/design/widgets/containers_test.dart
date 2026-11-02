@@ -174,7 +174,7 @@ void main() {
   });
 
   group('EatNavBar', () {
-    testWidgets('三个标签读作标签页，当前项是选中的；发布按钮有说明', (tester) async {
+    testWidgets('三个标签读作按钮，当前项是选中的；发布按钮有说明', (tester) async {
       final picked = <int>[];
       var published = 0;
       await pumpEat(
@@ -189,14 +189,14 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('附近'));
+      await tester.tap(find.bySemanticsLabel('附近'));
       await tester.tap(find.bySemanticsLabel('发布一道菜'));
       expect(picked, [1]);
       expect(published, 1);
       expect(tester.getSize(find.byType(EatNavBar)).height, 60);
 
       final selected = tester
-          .getSemantics(find.text('发现'))
+          .getSemantics(find.bySemanticsLabel('发现'))
           .getSemanticsData()
           .flagsCollection
           .isSelected;
