@@ -39,7 +39,7 @@ class _FakeBrowser implements Browser {
 String _top(GoRouter router) => router.state.uri.toString();
 
 Uri _callback(String query) =>
-    Uri.parse('https://v50to.you/app/auth/callback?$query');
+    Uri.parse('https://eat.v50to.you/app/auth/callback?$query');
 
 void main() {
   late TestEnv env;
@@ -215,7 +215,7 @@ void main() {
         ..open(
           Uri.parse('https://evil.example/app/auth/callback?result=success'),
         )
-        ..open(Uri.parse('https://v50to.you/dishes/1'));
+        ..open(Uri.parse('https://eat.v50to.you/dishes/1'));
       await tester.pumpAndSettle();
 
       expect(_top(router), Paths.discover);

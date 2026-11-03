@@ -8,7 +8,9 @@ void main() {
   group('统一认证回跳链接', () {
     test('成功转到认证页，不带业务码', () {
       expect(
-        _location('https://v50to.you/app/auth/callback?result=success&code=0'),
+        _location(
+          'https://eat.v50to.you/app/auth/callback?result=success&code=0',
+        ),
         '/verify?sso=success',
       );
     });
@@ -17,7 +19,7 @@ void main() {
       for (final code in ['30012', '30013', '50003', '20006', '90002']) {
         expect(
           _location(
-            'https://v50to.you/app/auth/callback?result=failure&code=$code',
+            'https://eat.v50to.you/app/auth/callback?result=failure&code=$code',
           ),
           '/verify?sso=failure&code=$code',
         );
@@ -26,31 +28,32 @@ void main() {
 
     test('路径末尾带斜杠也认', () {
       expect(
-        _location('https://v50to.you/app/auth/callback/?result=failure'),
+        _location('https://eat.v50to.you/app/auth/callback/?result=failure'),
         '/verify?sso=failure',
       );
     });
 
     test('没有 result 或 result 不认识时只打开认证页', () {
-      expect(_location('https://v50to.you/app/auth/callback'), '/verify');
+      expect(_location('https://eat.v50to.you/app/auth/callback'), '/verify');
       expect(
-        _location('https://v50to.you/app/auth/callback?result=ok&code=0'),
+        _location('https://eat.v50to.you/app/auth/callback?result=ok&code=0'),
         '/verify',
       );
     });
 
     test('不在白名单的链接忽略', () {
       for (final link in [
-        'http://v50to.you/app/auth/callback?result=success&code=0',
+        'http://eat.v50to.you/app/auth/callback?result=success&code=0',
         'https://evil.example/app/auth/callback?result=success&code=0',
-        'https://a.v50to.you/app/auth/callback?result=success&code=0',
-        'https://v50to.you.evil.example/app/auth/callback?result=success',
-        'https://v50to.you:8443/app/auth/callback?result=success&code=0',
-        'https://u@v50to.you/app/auth/callback?result=success&code=0',
-        'https://v50to.you/app/auth/callbackx?result=success&code=0',
-        'https://v50to.you/app/auth?result=success&code=0',
-        'https://v50to.you/verify?sso=success',
-        'https://v50to.you/dishes/1',
+        'https://v50to.you/app/auth/callback?result=success&code=0',
+        'https://a.eat.v50to.you/app/auth/callback?result=success&code=0',
+        'https://eat.v50to.you.evil.example/app/auth/callback?result=success',
+        'https://eat.v50to.you:8443/app/auth/callback?result=success&code=0',
+        'https://u@eat.v50to.you/app/auth/callback?result=success&code=0',
+        'https://eat.v50to.you/app/auth/callbackx?result=success&code=0',
+        'https://eat.v50to.you/app/auth?result=success&code=0',
+        'https://eat.v50to.you/verify?sso=success',
+        'https://eat.v50to.you/dishes/1',
         'you.v50to.eat://app/auth/callback?result=success&code=0',
       ]) {
         expect(_location(link), isNull, reason: link);

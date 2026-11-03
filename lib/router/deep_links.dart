@@ -16,7 +16,7 @@ part 'deep_links.g.dart';
 /// Flutter 自带的深链已在 Android 和 iOS 上关闭, App 收到的链接全部经过本类.
 abstract final class DeepLinks {
   /// 回跳链接和 App Links / Universal Links 校验文件所在的域名.
-  static const host = 'v50to.you';
+  static const host = 'eat.v50to.you';
 
   /// 外部链接对应的站内地址. 不在白名单中的链接返回 null, 调用方忽略该链接.
   static String? locationOf(Uri link) {

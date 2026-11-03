@@ -19,7 +19,7 @@ abstract final class Paths {
 
   /// 统一认证结束后后端重定向到的地址, 带 `result=success|failure` 和业务码 `code`.
   ///
-  /// App 经 App Links / Universal Links 收到完整链接 `https://v50to.you/app/auth/callback`.
+  /// App 经 App Links / Universal Links 收到完整链接 `https://eat.v50to.you/app/auth/callback`.
   /// 该地址不是页面, 路由表把它重定向到 [verify]. 改动需同步 Android 和 iOS 的链接声明以及后端配置.
   static const ssoCallback = '/app/auth/callback';
 

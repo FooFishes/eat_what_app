@@ -331,9 +331,9 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 处理：
   1. 只接受 `https://<Web 域名>/...` 和 `you.v50to.eat://...`，取出路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
-     - 目前只接了统一认证回跳：`https://v50to.you/app/auth/callback?result=..&code=..`（只认 https、这个域名、默认端口、没有 userinfo、这一条路径），转成 `/verify?sso=..&code=..`（18.1）。Web 上 `/app/auth/callback` 也是一条路由，复用同一个转换。其余白名单随分享链接一起接。
+     - 目前只接了统一认证回跳：`https://eat.v50to.you/app/auth/callback?result=..&code=..`（只认 https、这个域名、默认端口、没有 userinfo、这一条路径），转成 `/verify?sso=..&code=..`（18.1）。Web 上 `/app/auth/callback` 也是一条路由，复用同一个转换。其余白名单随分享链接一起接。
      - 安卓的 `MainActivity` 用 `singleTask`：认证页开在 Custom Tabs 里，回跳时回到原来的页面并关掉 Custom Tabs，不再叠一个 Activity 和 Flutter 引擎。代价是认证中途从桌面图标回来时 Custom Tabs 也会关掉。iOS 回跳后主动关掉 SFSafariViewController。
-     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）由后端放在 `v50to.you` 上，内容见 `docs/EatWhat_后端反馈.md`。
+     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）由后端放在 `eat.v50to.you` 上（校验只看链接所在的主机名，根域名 `v50to.you` 上的文件不起作用），内容见 `docs/EatWhat_后端反馈.md`。
   3. App 在运行：`push` 到目标，返回回到原来的页面；当前页和目标都是认证页时换掉当前页，保留 `onboarding` 和 `from`。冷启动：等首帧后再 `push`，返回去 `/discover`。
   4. 没登录：守卫先去登录页，登录后回到目标（5.4）。
 - 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`TopicTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
@@ -1152,7 +1152,7 @@ class PushNotice({
 - 流程：
   1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。App 带 `client=app`，Web 带 `client=web`，后端按它选跳回的预设链接；客户端不能自己指定跳回地址。
   2. 打开 `url`：App 用 `url_launcher` 的应用内浏览器（iOS SFSafariViewController，安卓 Custom Tabs）；Web 在当前标签页跳转。
-  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 `https://v50to.you/app/auth/callback?result=success|failure&code=<业务码>`（已在两站部署）。App 用 App Links / Universal Links 收下（6.3），转到认证页显示结果。
+  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 `https://eat.v50to.you/app/auth/callback?result=success|failure&code=<业务码>`（后端默认值还是 `https://v50to.you/app/auth/callback`，已请后端把 `app.oauth-app-success-redirect` 改成新地址，见 `docs/EatWhat_后端反馈.md`）。App 用 App Links / Universal Links 收下（6.3），转到认证页显示结果。
   4. 收到回跳，或回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为回跳不一定能唤起 App（域名校验没过，或应用内浏览器没把 302 交给 App）。认证页读到结果后马上从地址里去掉 `sso`、`code`，避免路由重建时重复处理。
 - 结果提示（`features/verify/verify_providers.dart` 的 `ssoFailureMessage`，不显示错误码）：
 

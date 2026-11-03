@@ -35,14 +35,14 @@
             <!-- 外部链接一律由 app_links 接收, 交给 lib/router/deep_links.dart 按白名单处理.
                  Flutter 自带的深链会把链接直接交给路由, 绕过白名单. 以后接入厂商通道推送时, 离线推送点开也会被它当成深链而白屏. -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>
-            <!-- App Links: 统一认证结束后后端重定向到该地址. 只匹配这一路径前缀, 其余 v50to.you 的链接仍在浏览器打开.
-                 校验文件为 https://v50to.you/.well-known/assetlinks.json, 需写入签名证书的 SHA-256 指纹. -->
+            <!-- App Links: 统一认证结束后后端重定向到该地址. 只匹配这一路径前缀, 其余 eat.v50to.you 的链接仍在浏览器打开.
+                 校验文件为 https://eat.v50to.you/.well-known/assetlinks.json, 需写入签名证书的 SHA-256 指纹. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"/>
-                <data android:host="v50to.you"/>
+                <data android:host="eat.v50to.you"/>
                 <data android:pathPrefix="/app/auth/callback"/>
             </intent-filter>
         </activity>
