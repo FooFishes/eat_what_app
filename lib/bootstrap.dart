@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'package:material_ui/material_ui.dart' show Theme;
 
 /// 启动应用. 首帧前只读取本地数据, 不等待网络.
 ///
@@ -31,7 +32,11 @@ Future<void> bootstrap() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: LiquidGlassWidgets.wrap(child: const EatApp()),
+      // 玻璃默认跟随系统的深浅色. 应用固定浅色主题, 因此改为读取主题, 否则系统开深色模式时玻璃会变暗.
+      child: LiquidGlassWidgets.wrap(
+        brightnessResolver: Theme.maybeBrightnessOf,
+        child: const EatApp(),
+      ),
     ),
   );
 }

@@ -23,9 +23,6 @@ class const EatShadows({
   /// 悬浮元素: 导航胶囊, 地图上的搜索框和商圈标签.
   required final EatShadow float,
 
-  /// 导航中的发布按钮.
-  required final EatShadow fab,
-
   /// `ink` 实心按钮, 搭配 `ink-top` 到 `ink` 的渐变.
   required final EatShadow button,
   required final EatShadow buttonPressed,
@@ -68,22 +65,6 @@ class const EatShadows({
           color: Color.fromRGBO(35, 28, 24, 0.14),
         ),
         BoxShadow(spreadRadius: 1, color: Color.fromRGBO(35, 28, 24, 0.06)),
-      ],
-    ),
-    fab: EatShadow(
-      outer: [
-        BoxShadow(
-          offset: Offset(0, 8),
-          blurRadius: 20,
-          color: Color.fromRGBO(35, 28, 24, 0.3),
-        ),
-      ],
-      inset: [
-        BoxShadow(offset: Offset(0, -3), color: Color.fromRGBO(0, 0, 0, 0.28)),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.16),
-        ),
       ],
     ),
     button: EatShadow(
