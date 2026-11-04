@@ -40,10 +40,9 @@ class EatRadioRow extends StatelessWidget {
     final hasThumb = thumbnail != null;
     final radius = hasThumb ? EatRadius.tile : const Radius.circular(18);
     final titleStyle = hasThumb
-        ? eat.text.rowTitle
-        : eat.text.body.copyWith(
-            fontSize: 16,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+        ? eat.text.subhead
+        : eat.text.subhead.copyWith(
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           );
     final duration = context.motion(EatMotion.select);
     return EatTappable(

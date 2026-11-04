@@ -74,7 +74,7 @@ class DishTile extends StatelessWidget {
       name,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: eat.text.tileTitle.copyWith(color: c.ink),
+      style: eat.text.subhead.copyWith(color: c.ink),
     );
     return EatTappable(
       onTap: onTap,
@@ -127,7 +127,7 @@ class DishTile extends StatelessWidget {
                       ),
                     Text(
                       distance,
-                      style: eat.text.distance.copyWith(color: c.inkMuted),
+                      style: eat.text.count.copyWith(color: c.inkMuted),
                     ),
                   ],
                 )

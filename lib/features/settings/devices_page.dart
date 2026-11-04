@@ -172,10 +172,7 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
         ),
         child: Text(
           '其他设备要重新登录，这台设备不受影响。',
-          style: panel.eat.text.body.copyWith(
-            fontSize: 14,
-            color: panel.eat.colors.inkSoft,
-          ),
+          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
         ),
       ),
     );

@@ -216,8 +216,6 @@ class UserPage extends ConsumerWidget {
             '对方也不能关注你，已有的关注关系会解除。'
             '对方上传的菜不会出现在你的转盘里。可以在设置 → 隐私里解除。',
             style: panel.eat.text.body.copyWith(
-              fontSize: 14,
-              height: 22 / 14,
               color: panel.eat.colors.inkSoft,
             ),
           ),

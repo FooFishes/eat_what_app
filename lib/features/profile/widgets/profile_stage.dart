@@ -119,9 +119,7 @@ class ProfileStage extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textScaler: TextScaler.noScaling,
-                  style: eat.text.profileName.copyWith(
-                    color: palette.foreground,
-                  ),
+                  style: eat.text.title.copyWith(color: palette.foreground),
                 ),
               ),
               if (username case final username?)
@@ -139,7 +137,6 @@ class ProfileStage extends ConsumerWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: eat.text.body.copyWith(
-                      fontSize: 14,
                       color: palette.secondaryForeground,
                     ),
                   ),
@@ -182,10 +179,7 @@ class _Stat extends StatelessWidget {
           Text(
             value == null ? '–' : '$value',
             textScaler: TextScaler.noScaling,
-            style: eat.text.stat.copyWith(
-              fontSize: 26,
-              color: palette.foreground,
-            ),
+            style: eat.text.stat.copyWith(color: palette.foreground),
           ),
           Text(
             label,

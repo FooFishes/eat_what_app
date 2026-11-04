@@ -106,7 +106,7 @@ class EmptyState extends StatelessWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: eat.text.sectionTitle.copyWith(color: c.ink),
+              style: eat.text.heading.copyWith(color: c.ink),
             ),
           ),
         ),
@@ -114,11 +114,7 @@ class EmptyState extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: eat.text.body.copyWith(
-              fontSize: 14,
-              height: 22 / 14,
-              color: c.inkMuted,
-            ),
+            style: eat.text.body.copyWith(color: c.inkMuted),
           ),
         if (action case final action?)
           Padding(padding: const EdgeInsets.only(top: 8), child: action),

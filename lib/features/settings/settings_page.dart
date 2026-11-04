@@ -105,11 +105,7 @@ class SettingsPage extends ConsumerWidget {
         ),
         child: Text(
           '将清除本设备上的登录信息和个人数据，账号和内容不受影响，可用手机号重新登录。',
-          style: panel.eat.text.body.copyWith(
-            fontSize: 14,
-            height: 22 / 14,
-            color: panel.eat.colors.inkSoft,
-          ),
+          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
         ),
       ),
     );
@@ -158,7 +154,7 @@ class _Profile extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: eat.text.rowTitle.copyWith(fontSize: 18, color: c.ink),
+                  style: eat.text.heading.copyWith(color: c.ink),
                 ),
                 Row(
                   spacing: 4,

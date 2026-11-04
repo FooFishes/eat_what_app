@@ -226,7 +226,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
       children: [
         Semantics(
           header: true,
-          child: Text(text, style: context.eat.text.sectionTitle),
+          child: Text(text, style: context.eat.text.heading),
         ),
         ?trailing,
       ],
@@ -503,9 +503,9 @@ class _StageContent extends ConsumerWidget {
     final distance = ref.watch(distanceToProvider(shop.point));
     final hub = ref.watch(hubNameProvider(shop.hubId));
     final lines = DishRules.stageLines(shop.name);
-    final nameSize = (lines.length >= 3 ? 38.0 : 46.0) * textScale;
+    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
     final hero = shop.signatures.firstOrNull;
-    final numberStyle = eat.text.distance.copyWith(
+    final numberStyle = eat.text.count.copyWith(
       fontSize: 16,
       color: palette.foreground,
     );
@@ -554,7 +554,7 @@ class _StageContent extends ConsumerWidget {
                           lines.join('\n'),
                           semanticsLabel: shop.name,
                           textScaler: TextScaler.noScaling,
-                          style: eat.text.stageDish.copyWith(
+                          style: eat.text.stage.copyWith(
                             fontSize: nameSize,
                             height: (nameSize + 4) / nameSize,
                             color: palette.foreground,
@@ -570,7 +570,6 @@ class _StageContent extends ConsumerWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: eat.text.meta.copyWith(
-                            fontSize: 14,
                             color: palette.secondaryForeground,
                           ),
                         ),

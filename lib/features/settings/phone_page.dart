@@ -192,7 +192,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
                   const SizedBox(height: 28),
                   Text(
                     '确认是你本人',
-                    style: eat.text.rowTitle.copyWith(color: c.ink),
+                    style: eat.text.subhead.copyWith(color: c.ink),
                   ),
                   if (canUsePassword) ...[
                     const SizedBox(height: EatSpace.s10),

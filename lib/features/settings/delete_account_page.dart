@@ -24,18 +24,14 @@ class DeleteAccountPage extends ConsumerWidget {
       SignedIn(:final user) => user?.phone,
       SignedOut() => null,
     };
-    final body = eat.text.body.copyWith(
-      fontSize: 15,
-      height: 24 / 15,
-      color: c.ink,
-    );
+    final body = eat.text.body.copyWith(color: c.ink);
     Widget section(String title, String text) => Padding(
       padding: const EdgeInsets.only(bottom: EatSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 4,
         children: [
-          Text(title, style: eat.text.rowTitle.copyWith(color: c.ink)),
+          Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
           Text(text, style: body),
         ],
       ),

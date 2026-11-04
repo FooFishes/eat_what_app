@@ -36,10 +36,10 @@ class TasteCloud extends StatelessWidget {
   final String selectedLabel;
 
   static const _tiers = [
-    (size: 28.0, weight: FontWeight.w900, strong: true),
-    (size: 22.0, weight: FontWeight.w700, strong: true),
-    (size: 18.0, weight: FontWeight.w600, strong: false),
-    (size: 15.0, weight: FontWeight.w500, strong: false),
+    (size: 26.0, weight: FontWeight.w700, strong: true),
+    (size: 20.0, weight: FontWeight.w700, strong: true),
+    (size: 16.0, weight: FontWeight.w600, strong: false),
+    (size: 15.0, weight: FontWeight.w400, strong: false),
   ];
 
   @override
@@ -96,7 +96,7 @@ class TasteCloud extends StatelessWidget {
               style: eat.text.body.copyWith(
                 fontSize: tier.size,
                 height: 1.25,
-                fontWeight: word.selected ? FontWeight.w900 : tier.weight,
+                fontWeight: word.selected ? FontWeight.w800 : tier.weight,
                 color: color,
                 decoration: word.selected ? TextDecoration.underline : null,
                 decorationThickness: 2,

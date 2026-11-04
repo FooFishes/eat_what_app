@@ -264,9 +264,8 @@ class _TopBar extends StatelessWidget {
                 widthFactor: 1,
                 child: Text(
                   label,
-                  style: eat.text.body.copyWith(
-                    fontSize: 16,
-                    fontWeight: strong ? FontWeight.w700 : FontWeight.w400,
+                  style: eat.text.subhead.copyWith(
+                    fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
                     color: eat.colors.paper,
                   ),
                 ),
@@ -283,11 +282,7 @@ class _TopBar extends StatelessWidget {
             child: Text(
               '调整照片',
               textAlign: TextAlign.center,
-              style: eat.text.body.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: eat.colors.paper,
-              ),
+              style: eat.text.subhead.copyWith(color: eat.colors.paper),
             ),
           ),
         ),

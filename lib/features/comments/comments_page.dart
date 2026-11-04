@@ -68,10 +68,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
                         Text.rich(
                           TextSpan(
                             children: [
-                              TextSpan(
-                                text: '$total',
-                                style: eat.text.count.copyWith(fontSize: 13),
-                              ),
+                              TextSpan(text: '$total', style: eat.text.count),
                               const TextSpan(text: ' 条'),
                             ],
                           ),

@@ -177,10 +177,7 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
-    final intro = eat.text.body.copyWith(
-      height: 22 / 15,
-      color: palette.secondaryForeground,
-    );
+    final intro = eat.text.body.copyWith(color: palette.secondaryForeground);
     return Semantics(
       header: true,
       label: '沙软今天吃什么',
@@ -190,17 +187,13 @@ class _Brand extends StatelessWidget {
           children: [
             Text(
               '沙软',
-              style: eat.text.body.copyWith(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: palette.foreground,
-              ),
+              style: eat.text.heading.copyWith(color: palette.foreground),
             ),
             const SizedBox(height: 2),
             Text(
               '今天\n吃什么',
               textScaler: TextScaler.noScaling,
-              style: eat.text.loginDisplay.copyWith(color: palette.foreground),
+              style: eat.text.display.copyWith(color: palette.foreground),
             ),
             const SizedBox(height: EatSpace.s14),
             Text.rich(
@@ -455,7 +448,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
         TextSpan(text: '》', recognizer: recognizer),
       ],
     );
-    final style = eat.text.meta.copyWith(color: c.inkSoft, height: 20 / 13);
+    final style = eat.text.meta.copyWith(color: c.inkSoft);
 
     /// 勾选框的点击区域比圆大, 圆的左右各空出 [inset].
     /// 文字左移到离圆 [gap] 处, 行尾补同样宽的空白, 整行左右的空白相等,

@@ -706,11 +706,12 @@ extension RefCache on Ref {
 ### 11.5 字体与字号
 
 - 字体文件、子集化见依赖选型第 9 节。两个都是可变字体，文字样式只设 `fontWeight`：Flutter 3.47 起 `FontWeight` 会直接设置可变字体的 `wght` 轴，任意值（如 650）都行，不用再写 `FontVariation.weight`。
-- 中文样式用 `NotoSansSC`；数字样式（`price-hero`、`price-inline`、`stat`、`distance`、`count`）用 `Inter`，回落到 `NotoSansSC`。
+- 中文样式用 `NotoSansSC`；数字样式（`priceHero`、`priceInline`、`stat`、`count`）用 `Inter`，回落到 `NotoSansSC`。
+- 字号分 8 级：`display` 56、`stage` 44、`title` 26、`heading` 20、`subhead` 16、`body` 15、`meta` 13、`caption` 12；数字样式沿用这几级（56、26、16、13）。字重只用 400、600、700、800：800 只给舞台上的主角，标题 700，强调 600，正文 400。先用预设，偏差不大的地方改用预设，不另写字号。
 - Inter 还有光学尺寸轴 `opsz`，范围 14 到 32：数字样式把 `opsz` 设成字号，超出范围的取两端，大字号的价格用的是显示用的紧凑字形。
 - `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
 - 字体文件由 `tool/subset_fonts.py` 生成，三端都在 `pubspec.yaml` 的 `fonts` 里声明。Web 上后台加载中文字体的做法（待确认 D7）等做 Web 实验时再改。许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。
-- 选中态靠字重，不靠颜色：`tab-active` 900，`tab` 400。
+- 选中态靠字重，不靠颜色：分类标签选中 600，未选中 400。
 
 ### 11.6 图标
 
@@ -786,7 +787,7 @@ extension RefCache on Ref {
 - 结构：一个 `CustomScrollView`。第一个 sliver 是舞台，它的布局高度是 `H - 32`、绘制高度是 `H`（自定义一个很小的 `RenderSliver`，`layoutExtent < paintExtent`），后面的抽屉 sliver 从 `H - 32` 开始画，正好压住舞台底部 32px；抽屉用 `DecoratedSliver` 画白底和顶部 `radius-sheet` 圆角，压在舞台色上不加阴影。
 - 抽屉跟着页面一起滚（规范 `Sheet`）。附近页例外，用自己的可拖动面板。
 - 有 Widget 测试保证：舞台高度按 12.4 计算；抽屉顶部在 `H - 32`；舞台按钮不被抽屉盖住。
-- 白底页面用 `PlainScaffold`：52×52 返回与 `page-title` 标题同一行（标题不跟系统字号）、`space-20` 边距。
+- 白底页面用 `PlainScaffold`：52×52 返回与 `heading` 标题同一行（标题不跟系统字号）、`space-20` 边距。
 - 实现：`CustomScrollView(paintOrder: SliverPaintOrder.lastIsTop)`，后面的 sliver 画在上面、先接点击，抽屉才能盖住舞台底部。抽屉的白底用 `DecoratedSliver` 的子类画，白底本身也接住点击，压住舞台的那 32px 和抽屉里的空白都不会点穿到舞台上。舞台后面另垫一块舞台色，只在 iOS 顶部回弹时露出来。
 - `StageScaffold.map` 给附近页这类用地图当舞台的页面：抽屉在手机上加 `shadow-sheet`，宽屏面板加 `shadow-float`。附近页可拖动的抽屉在阶段三再换。
 - App 根部（`app.dart` 的 `builder`）给了默认文字样式（`body`、`ink`）：页面不用 Material 的 `Scaffold`，没有这一层时没写样式的文字会显示成 Flutter 的兜底样子（红字加黄色下划线）。

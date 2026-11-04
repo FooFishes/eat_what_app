@@ -67,14 +67,14 @@ class EatNavBar extends StatelessWidget {
                 verticalPadding: 0,
                 barHeight: EatSize.nav,
                 iconLabelSpacing: 1,
-                textStyle: eat.text.navLabel,
+                textStyle: eat.text.caption,
                 selectedLabelColor: c.ink,
                 unselectedLabelColor: c.inkMuted,
                 selectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ),

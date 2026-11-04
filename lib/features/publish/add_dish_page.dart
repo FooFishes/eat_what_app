@@ -605,7 +605,7 @@ class _StageContent extends StatelessWidget {
                         Text(
                           lines.join('\n'),
                           textScaler: TextScaler.noScaling,
-                          style: eat.text.stageDish.copyWith(
+                          style: eat.text.stage.copyWith(
                             fontSize:
                                 (lines.length >= 3 ? 30.0 : 36.0) *
                                 layout.stageTextScale,
@@ -788,7 +788,7 @@ class _PhotoThumb extends StatelessWidget {
       UploadStatus.waiting => null,
       UploadStatus.uploading => Text(
         '${(photo.progress * 100).round()}%',
-        style: eat.text.priceInline.copyWith(fontSize: 13, color: c.paper),
+        style: eat.text.count.copyWith(color: c.paper),
       ),
     };
     return EatTappable(
@@ -827,10 +827,7 @@ class _PhotoThumb extends StatelessWidget {
                     child: Text(
                       '封面',
                       textAlign: TextAlign.center,
-                      style: eat.text.caption.copyWith(
-                        fontSize: 11,
-                        color: c.paper,
-                      ),
+                      style: eat.text.caption.copyWith(color: c.paper),
                     ),
                   ),
                 ),
@@ -862,7 +859,7 @@ class _ShopLine extends StatelessWidget {
                 const TextSpan(text: '发布到 '),
                 TextSpan(
                   text: shop?.name ?? '…',
-                  style: eat.text.rowTitle.copyWith(color: c.ink),
+                  style: eat.text.subhead.copyWith(color: c.ink),
                 ),
               ],
             ),

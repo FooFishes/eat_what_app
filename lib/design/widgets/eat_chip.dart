@@ -107,9 +107,7 @@ class EatChip extends StatelessWidget {
                       widthFactor: 1,
                       child: Text(
                         label,
-                        style: eat.text.body.copyWith(
-                          fontSize: 14,
-                          height: 20 / 14,
+                        style: eat.text.meta.copyWith(
                           fontWeight: selected
                               ? FontWeight.w600
                               : FontWeight.w400,
@@ -148,9 +146,6 @@ class PendingTag extends StatelessWidget {
           child: Text(
             '待接入',
             style: eat.text.caption.copyWith(
-              fontSize: 11,
-              height: 18 / 11,
-              fontWeight: FontWeight.w500,
               color: DefaultTextStyle.of(context).style.color,
             ),
           ),

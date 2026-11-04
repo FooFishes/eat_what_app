@@ -213,7 +213,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           child: Text(
             '改过的头像、昵称和签名都不会保存。',
             style: panel.eat.text.body.copyWith(
-              fontSize: 14,
               color: panel.eat.colors.inkSoft,
             ),
           ),
@@ -231,7 +230,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         ? user?.nickname ?? '同学'
         : _nickname.text.trim();
     final avatar = _avatar;
-    final counter = eat.text.count.copyWith(fontSize: 13, color: c.inkMuted);
+    final counter = eat.text.count.copyWith(color: c.inkMuted);
     Widget count(String value, int max) => Text.rich(
       TextSpan(
         children: [
@@ -261,7 +260,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   child: Text(
                     saving ? '保存中' : '保存',
                     style: eat.text.body.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                       color: saving ? c.disabledFg : c.ink,
                     ),
                   ),

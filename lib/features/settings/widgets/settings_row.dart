@@ -35,7 +35,7 @@ class SettingsRow extends StatelessWidget {
     final c = eat.colors;
     final valueStyle = numericValue
         ? eat.text.count.copyWith(fontSize: 15, color: c.inkMuted)
-        : eat.text.body.copyWith(fontSize: 14, color: c.inkMuted);
+        : eat.text.body.copyWith(color: c.inkMuted);
     final row = SizedBox(
       height: 56,
       child: LayoutBuilder(
@@ -52,7 +52,10 @@ class SettingsRow extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: eat.text.body.copyWith(fontSize: 16, color: c.ink),
+                      style: eat.text.subhead.copyWith(
+                        fontWeight: FontWeight.w400,
+                        color: c.ink,
+                      ),
                     ),
                   ),
                   if (pending) const PendingTag(),

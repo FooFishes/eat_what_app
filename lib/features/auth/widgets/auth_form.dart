@@ -63,7 +63,6 @@ class FormLink extends StatelessWidget {
               child: Text(
                 label,
                 style: eat.text.body.copyWith(
-                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: eat.colors.ink,
                 ),

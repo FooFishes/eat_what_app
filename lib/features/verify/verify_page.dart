@@ -140,7 +140,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     };
     final verify = ref.watch(verifyProvider);
     final verified = user?.verified ?? false;
-    final small = eat.text.meta.copyWith(height: 20 / 13, color: c.inkMuted);
+    final small = eat.text.meta.copyWith(color: c.inkMuted);
 
     return PlainScaffold(
       title: '学生认证',
@@ -211,7 +211,7 @@ class _Unverified extends StatelessWidget {
     final secondsLeft = resendAt == null
         ? 0
         : (resendAt.difference(clock.now()).inMilliseconds / 1000).ceil();
-    final body = eat.text.body.copyWith(height: 22 / 15, color: c.ink);
+    final body = eat.text.body.copyWith(color: c.ink);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -362,10 +362,7 @@ class _Verified extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '已认证',
-                    style: eat.text.sectionTitle.copyWith(color: c.ink),
-                  ),
+                  Text('已认证', style: eat.text.heading.copyWith(color: c.ink)),
                   if (method case final method?)
                     Text(
                       method.label,
@@ -379,7 +376,7 @@ class _Verified extends StatelessWidget {
         const SizedBox(height: EatSpace.s16),
         Text(
           '认证长期有效，毕业后不会收回。之前受限的操作现在可以继续。',
-          style: eat.text.body.copyWith(height: 22 / 15, color: c.inkSoft),
+          style: eat.text.body.copyWith(color: c.inkSoft),
         ),
         if (onboarding) ...[
           const SizedBox(height: EatSpace.s24),
@@ -423,7 +420,7 @@ class _MethodRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: eat.text.rowTitle.copyWith(color: c.ink)),
+              Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
               Text(subtitle, style: eat.text.meta.copyWith(color: c.inkMuted)),
             ],
           ),
@@ -469,7 +466,6 @@ class _TextAction extends StatelessWidget {
             child: Text(
               label,
               style: eat.text.body.copyWith(
-                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: eat.colors.ink,
               ),

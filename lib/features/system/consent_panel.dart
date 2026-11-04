@@ -54,10 +54,7 @@ class _ConsentPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '账号信息和使用记录会在境内外站点之间同步，同意后才能继续使用。',
-            style: eat.text.body.copyWith(height: 22 / 15),
-          ),
+          Text('账号信息和使用记录会在境内外站点之间同步，同意后才能继续使用。', style: eat.text.body),
           if (policy.url case final url?)
             EatTappable(
               onTap: () => ref.read(browserProvider).open(url),
@@ -69,7 +66,6 @@ class _ConsentPanel extends ConsumerWidget {
                   child: Text(
                     '查看数据同步说明',
                     style: eat.text.body.copyWith(
-                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: c.ink,
                       decoration: TextDecoration.underline,

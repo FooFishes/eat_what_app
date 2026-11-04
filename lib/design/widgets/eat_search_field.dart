@@ -42,7 +42,7 @@ class EatSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final textStyle = eat.text.body.copyWith(height: 22 / 15, color: c.ink);
+    final textStyle = eat.text.body.copyWith(color: c.ink);
     return Container(
       height: 48,
       padding: EdgeInsets.only(left: 16, right: onFilter == null ? 16 : 4),

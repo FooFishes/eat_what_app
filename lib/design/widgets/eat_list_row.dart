@@ -61,7 +61,7 @@ class EatListRow extends StatelessWidget {
             spacing: 2,
             children: [
               DefaultTextStyle.merge(
-                style: eat.text.rowTitle.copyWith(color: eat.colors.ink),
+                style: eat.text.subhead.copyWith(color: eat.colors.ink),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 child: title,
@@ -207,10 +207,10 @@ class EatAvatar extends StatelessWidget {
                   child: Center(
                     child: Text(
                       name.characters.firstOrNull ?? '',
-                      style: eat.text.rowTitle.copyWith(
+                      style: eat.text.subhead.copyWith(
                         fontSize: size * 17 / 44,
                         height: 1,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         color: color.foreground,
                       ),
                     ),

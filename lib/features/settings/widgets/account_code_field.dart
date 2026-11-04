@@ -122,10 +122,7 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
                         const TextSpan(text: ' 秒后重发'),
                       ],
                     ),
-                    style: eat.text.body.copyWith(
-                      fontSize: 14,
-                      color: c.inkMuted,
-                    ),
+                    style: eat.text.body.copyWith(color: c.inkMuted),
                   ),
                 )
               : EatButton.mist(
@@ -142,7 +139,7 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
                 const TextSpan(text: '验证码发到 '),
                 TextSpan(
                   text: AccountRules.maskMobile(phone),
-                  style: eat.text.count.copyWith(fontSize: 13),
+                  style: eat.text.count,
                 ),
                 const TextSpan(text: '，5 分钟内有效'),
               ],

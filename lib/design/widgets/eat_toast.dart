@@ -84,11 +84,7 @@ class _Toast extends StatelessWidget {
                 child: Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: eat.text.body.copyWith(
-                    fontSize: 14,
-                    height: 20 / 14,
-                    color: eat.colors.paper,
-                  ),
+                  style: eat.text.body.copyWith(color: eat.colors.paper),
                 ),
               ),
             ),

@@ -358,10 +358,7 @@ class _Shortcut extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 2,
                   children: [
-                    Text(
-                      title,
-                      style: eat.text.rowTitle.copyWith(color: c.ink),
-                    ),
+                    Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
                     Text(
                       subtitle,
                       maxLines: 1,

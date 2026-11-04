@@ -131,7 +131,7 @@ class _ReasonPanelState<T> extends ConsumerState<ReasonPanel<T>> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final counter = eat.text.count.copyWith(fontSize: 13, color: c.inkMuted);
+    final counter = eat.text.count.copyWith(color: c.inkMuted);
     final selected = _selected;
     return EatPanel(
       title: widget.title,

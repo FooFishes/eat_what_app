@@ -53,7 +53,6 @@ class StageColorPicker extends StatelessWidget {
             Text(
               '舞台颜色',
               style: eat.text.body.copyWith(
-                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: paper,
               ),
@@ -111,7 +110,6 @@ class StageColorPicker extends StatelessWidget {
                         Text(
                           color.label,
                           style: eat.text.caption.copyWith(
-                            fontSize: 11,
                             fontWeight: color == selected
                                 ? FontWeight.w600
                                 : FontWeight.w400,
@@ -151,9 +149,8 @@ class StageColorPicker extends StatelessWidget {
                     dishName.isEmpty ? '这道菜' : dishName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: eat.text.stageDish.copyWith(
-                      fontSize: 22,
-                      height: 1.2,
+                    style: eat.text.heading.copyWith(
+                      fontWeight: FontWeight.w800,
                       color: selected.foreground,
                     ),
                   ),

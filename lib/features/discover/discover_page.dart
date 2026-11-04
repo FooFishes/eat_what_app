@@ -230,7 +230,7 @@ class _TopBar extends ConsumerWidget {
     final unread = ref.watch(unreadCountProvider).value ?? 0;
     final where = place.campus?.name ?? '软件园';
     final what = place.meal.label;
-    final strong = eat.text.rowTitle.copyWith(fontSize: 17);
+    final strong = eat.text.subhead;
     final plain = strong.copyWith(fontWeight: FontWeight.w400);
     final dotBorder =
         StageTheme.maybeOf(context)?.background ?? eat.colors.paper;
@@ -391,7 +391,7 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
               header: true,
               child: Text(
                 '吃哪顿？',
-                style: eat.text.sectionTitle.copyWith(color: eat.colors.ink),
+                style: eat.text.heading.copyWith(color: eat.colors.ink),
               ),
             ),
           ),
@@ -432,7 +432,7 @@ class _TurntableStage extends ConsumerWidget {
     final queue = ref.read(turntableQueueProvider.notifier);
     final price = DishRules.priceText(dish.price);
     final lines = DishRules.stageLines(dish.name);
-    final nameSize = (lines.length >= 3 ? 38.0 : 46.0) * textScale;
+    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
     final where = [?dish.shopName, distance ?? dish.hubName].join('  ');
 
     return LayoutBuilder(
@@ -489,7 +489,7 @@ class _TurntableStage extends ConsumerWidget {
                               lines.join('\n'),
                               semanticsLabel: dish.name,
                               textScaler: TextScaler.noScaling,
-                              style: eat.text.stageDish.copyWith(
+                              style: eat.text.stage.copyWith(
                                 fontSize: nameSize,
                                 height: (nameSize + 4) / nameSize,
                                 color: palette.foreground,
@@ -503,7 +503,6 @@ class _TurntableStage extends ConsumerWidget {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: eat.text.meta.copyWith(
-                                    fontSize: 14,
                                     color: palette.secondaryForeground,
                                   ),
                                 ),
@@ -515,7 +514,7 @@ class _TurntableStage extends ConsumerWidget {
                                   price,
                                   textScaler: TextScaler.noScaling,
                                   style: eat.text.priceHero.copyWith(
-                                    fontSize: 52 * textScale,
+                                    fontSize: 56 * textScale,
                                     color: palette.foreground,
                                   ),
                                 ),
@@ -599,11 +598,7 @@ class _EmptyStage extends ConsumerWidget {
                 width: 210,
                 child: Text(
                   '这附近还没人发过菜，发第一道',
-                  style: eat.text.sectionTitle.copyWith(
-                    fontSize: 26,
-                    height: 34 / 26,
-                    color: palette.foreground,
-                  ),
+                  style: eat.text.title.copyWith(color: palette.foreground),
                 ),
               ),
               EatButton.stageSolid(
@@ -648,10 +643,7 @@ class _StageFailure extends StatelessWidget {
         children: [
           Text(
             '加载失败',
-            style: eat.text.sectionTitle.copyWith(
-              fontSize: 26,
-              color: palette.foreground,
-            ),
+            style: eat.text.title.copyWith(color: palette.foreground),
           ),
           EatButton.stageGhost(
             '重试',
@@ -796,7 +788,7 @@ class _TopicList extends ConsumerWidget {
               if (topic.introduction.isNotEmpty)
                 Text(
                   topic.introduction,
-                  style: eat.text.body.copyWith(height: 22 / 15, color: c.ink),
+                  style: eat.text.body.copyWith(color: c.ink),
                 ),
               Text(
                 '${TopicRules.kind(topic, now)}，${TopicRules.range(topic, now)}',
@@ -827,7 +819,6 @@ class _TopicList extends ConsumerWidget {
                       Text(
                         '往期专题',
                         style: eat.text.body.copyWith(
-                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: c.ink,
                         ),

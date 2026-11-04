@@ -105,10 +105,7 @@ class _CodeFieldState extends State<CodeField> {
                         const TextSpan(text: ' 秒后重发'),
                       ],
                     ),
-                    style: eat.text.body.copyWith(
-                      fontSize: 14,
-                      color: c.inkMuted,
-                    ),
+                    style: eat.text.body.copyWith(color: c.inkMuted),
                   ),
                 )
               : EatButton.mist(

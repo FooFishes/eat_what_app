@@ -87,8 +87,9 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? eat.colors.ink : eat.colors.inkMuted;
-    final labelStyle = (selected ? eat.text.tabActive : eat.text.tab).copyWith(
+    final labelStyle = eat.text.subhead.copyWith(
       color: color,
+      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
     );
     return EatTappable(
       onTap: onTap,
@@ -116,7 +117,7 @@ class _Tab extends StatelessWidget {
                 '$count',
                 style: eat.text.count.copyWith(
                   color: color,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: selected ? FontWeight.w700 : null,
                 ),
               ),
             ],

@@ -125,10 +125,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
         slivers: [
           SliverList.list(
             children: [
-              Text(
-                username,
-                style: eat.text.sectionTitle.copyWith(color: c.ink),
-              ),
+              Text(username, style: eat.text.heading.copyWith(color: c.ink)),
               const SizedBox(height: EatSpace.s8),
               Text('用户名设好后不能再改，可以用它和密码登录。', style: note),
             ],

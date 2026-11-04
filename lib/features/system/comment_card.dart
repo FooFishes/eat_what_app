@@ -64,8 +64,8 @@ class CommentCard extends ConsumerWidget {
                       children: [
                         Text(
                           comment.authorName,
-                          style: eat.text.rowTitle.copyWith(
-                            fontSize: 14,
+                          style: eat.text.body.copyWith(
+                            fontWeight: FontWeight.w600,
                             color: c.ink,
                           ),
                         ),
@@ -195,10 +195,7 @@ class CommentLikeButton extends ConsumerWidget {
                 ),
                 Text(
                   '${like.likes}',
-                  style: eat.text.count.copyWith(
-                    fontSize: 13,
-                    color: eat.colors.ink,
-                  ),
+                  style: eat.text.count.copyWith(color: eat.colors.ink),
                 ),
               ],
             ),
@@ -420,11 +417,7 @@ class _ReplyLine extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
-    final style = eat.text.body.copyWith(
-      fontSize: 14,
-      height: 22 / 14,
-      color: c.ink,
-    );
+    final style = eat.text.body.copyWith(color: c.ink);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

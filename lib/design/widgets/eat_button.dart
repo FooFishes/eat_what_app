@@ -121,11 +121,6 @@ class EatButton extends StatelessWidget {
       _ => null,
     };
     final compact = height < EatSize.touch;
-    final fontSize = height >= 50
-        ? 16.0
-        : compact
-        ? 14.0
-        : 15.0;
     return EatTappable(
       onTap: loading ? null : onPressed,
       label: loading ? '$label，进行中' : null,
@@ -154,10 +149,8 @@ class EatButton extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: eat.text.buttonLabel.copyWith(
-                    fontSize: fontSize,
-                    color: foreground,
-                  ),
+                  style: (height >= 50 ? eat.text.subhead : eat.text.body)
+                      .copyWith(fontWeight: FontWeight.w600, color: foreground),
                 ),
               ),
             ],

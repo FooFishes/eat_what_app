@@ -92,7 +92,7 @@ void main() {
   });
 
   group('EatTabs', () {
-    testWidgets('选中项 900 字重，其他 400；点别的分类回调序号', (tester) async {
+    testWidgets('选中项 600 字重，其他 400；点别的分类回调序号', (tester) async {
       final picked = <int>[];
       await pumpEat(
         tester,
@@ -107,7 +107,7 @@ void main() {
         ),
       );
 
-      expect(_weight(tester, '上传'), FontWeight.w900);
+      expect(_weight(tester, '上传'), FontWeight.w600);
       expect(_weight(tester, '收藏'), FontWeight.w400);
       expect(find.text('117'), findsOneWidget);
       expect(find.byType(PendingTag), findsOneWidget);

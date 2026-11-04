@@ -142,10 +142,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
           ),
         ],
       ),
-      child: Text(
-        '已设置密码的账号可使用密码登录。',
-        style: panel.eat.text.body.copyWith(height: 22 / 15),
-      ),
+      child: Text('已设置密码的账号可使用密码登录。', style: panel.eat.text.body),
     ),
   );
 
@@ -240,10 +237,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                                 const TextSpan(text: ' 秒后重发'),
                               ],
                             ),
-                            style: eat.text.body.copyWith(
-                              fontSize: 14,
-                              color: c.inkMuted,
-                            ),
+                            style: eat.text.body.copyWith(color: c.inkMuted),
                           ),
                         )
                       : EatButton.mist(

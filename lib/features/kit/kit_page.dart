@@ -57,13 +57,7 @@ class _KitPageState extends State<KitPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: EatSpace.s14,
           children: [
-            Text(
-              title,
-              style: eat.text.meta.copyWith(
-                fontWeight: FontWeight.w500,
-                color: c.inkMuted,
-              ),
-            ),
+            Text(title, style: eat.text.meta.copyWith(color: c.inkMuted)),
             ...children,
           ],
         ),
@@ -101,15 +95,10 @@ class _KitPageState extends State<KitPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              stage.label,
-                              style: eat.text.rowTitle.copyWith(
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                            Text(stage.label, style: eat.text.subhead),
                             Text(
                               hex(stage.color),
-                              style: eat.text.distance.copyWith(
+                              style: eat.text.count.copyWith(
                                 color: stage.foreground,
                               ),
                             ),
@@ -138,7 +127,7 @@ class _KitPageState extends State<KitPage> {
               Text(
                 '鲜虾蟹籽\n云吞',
                 textScaler: TextScaler.noScaling,
-                style: eat.text.stageDish,
+                style: eat.text.stage,
               ),
               Text(
                 '¥18',
@@ -303,10 +292,7 @@ class _KitPageState extends State<KitPage> {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    '600 m',
-                    style: eat.text.distance.copyWith(color: c.ink),
-                  ),
+                  Text('600 m', style: eat.text.count.copyWith(color: c.ink)),
                   const Text('万达金街 B1'),
                 ],
               ),
@@ -363,10 +349,7 @@ class _KitPageState extends State<KitPage> {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    distance,
-                    style: eat.text.distance.copyWith(color: c.ink),
-                  ),
+                  Text(distance, style: eat.text.count.copyWith(color: c.ink)),
                   Text(place),
                 ],
               ),
@@ -460,7 +443,7 @@ class _KitPageState extends State<KitPage> {
                 child: EatSheet(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: EatSpace.s20),
-                    child: Text('今日推荐', style: eat.text.sectionTitle),
+                    child: Text('今日推荐', style: eat.text.heading),
                   ),
                 ),
               ),

@@ -58,8 +58,8 @@ class EatSwitch extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: eat.text.body.copyWith(
-                          fontSize: 16,
+                        style: eat.text.subhead.copyWith(
+                          fontWeight: FontWeight.w400,
                           color: c.ink,
                         ),
                       ),

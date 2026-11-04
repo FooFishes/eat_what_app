@@ -129,7 +129,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
         .value;
     final version = ref.watch(appVersionProvider).value;
     final patch = ref.watch(currentPatchProvider).value;
-    final counter = eat.text.count.copyWith(fontSize: 13, color: c.inkMuted);
+    final counter = eat.text.count.copyWith(color: c.inkMuted);
     final length = _text.text.trim().runes.length;
     final sending = ref.watch(feedbackSenderProvider);
     return PlainScaffold(
@@ -145,7 +145,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
                     const TextSpan(text: '关于 '),
                     TextSpan(
                       text: subject,
-                      style: eat.text.rowTitle.copyWith(color: c.ink),
+                      style: eat.text.subhead.copyWith(color: c.ink),
                     ),
                   ],
                 ),

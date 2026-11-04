@@ -100,7 +100,7 @@ class _PlainScaffoldState extends State<PlainScaffold>
                                 child: Text(
                                   widget.title,
                                   textScaler: TextScaler.noScaling,
-                                  style: eat.text.pageTitle.copyWith(
+                                  style: eat.text.heading.copyWith(
                                     color: eat.colors.ink,
                                   ),
                                 ),
@@ -125,8 +125,6 @@ class _PlainScaffoldState extends State<PlainScaffold>
                           child: Text(
                             subtitle,
                             style: eat.text.body.copyWith(
-                              fontSize: 14,
-                              height: 22 / 14,
                               color: eat.colors.inkMuted,
                             ),
                           ),

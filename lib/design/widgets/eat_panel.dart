@@ -84,7 +84,7 @@ class EatPanel extends StatelessWidget {
     final media = MediaQuery.of(context);
     final titleText = Semantics(
       header: true,
-      child: Text(title, style: eat.text.sectionTitle.copyWith(color: c.ink)),
+      child: Text(title, style: eat.text.heading.copyWith(color: c.ink)),
     );
     final header = switch (icon) {
       final icon? => Row(
@@ -154,10 +154,7 @@ class PanelFacts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final style = eat.text.body.copyWith(
-      height: 22 / 15,
-      color: eat.colors.ink,
-    );
+    final style = eat.text.body.copyWith(color: eat.colors.ink);
     return Table(
       columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
       children: [

@@ -139,10 +139,10 @@ class _EatFormFieldState extends State<EatFormField> {
     final c = eat.colors;
     final error = widget.errorText;
     final inputStyle = widget.multiline
-        ? eat.text.body.copyWith(fontSize: 16, height: 24 / 16)
+        ? eat.text.subhead.copyWith(fontWeight: FontWeight.w400)
         : widget.numeric
-        ? eat.text.priceInline.copyWith(fontSize: 22, height: 30 / 22)
-        : eat.text.sectionTitle.copyWith(fontSize: 22, height: 30 / 22);
+        ? eat.text.priceInline.copyWith(fontSize: 20, height: 28 / 20)
+        : eat.text.heading;
     final lineColor = error != null
         ? c.warn
         : _focusNode.hasFocus
@@ -171,7 +171,7 @@ class _EatFormFieldState extends State<EatFormField> {
         decoration: InputDecoration(
           isCollapsed: true,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 7),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
           hintText: widget.hintText,
           hintStyle: inputStyle.copyWith(color: c.inkMuted),
         ),

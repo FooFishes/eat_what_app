@@ -9,54 +9,39 @@ abstract final class EatFonts {
   static const numeral = 'Inter';
 }
 
-/// 设计规范中的文字样式.
+/// 文字样式.
+///
+/// 中文 8 级字号, 数字 4 级并沿用中文的字号. 字重只用 400, 600, 700, 800:
+/// 800 只给舞台上的主角, 标题 700, 强调 600, 正文 400.
+/// 先用预设; 和预设差得不多的地方, 优先改用预设而不是另写字号.
 ///
 /// 样式不含颜色. 同一样式在白底上用 `ink`, 在舞台上用舞台文字色, 颜色由所在组件指定.
 class EatTextStyles({
+  /// 登录页的品牌字.
+  required final TextStyle display,
+
   /// 舞台上的菜名和店名. 每行不超过四个字.
-  required final TextStyle stageDish,
+  required final TextStyle stage,
 
-  /// 登录页的品牌字, 不用于其他位置.
-  required final TextStyle loginDisplay,
+  /// 大标题: 流程页的问句, 主页上的昵称.
+  required final TextStyle title,
 
-  /// 白底页面的标题, 与返回按钮在同一行.
-  required final TextStyle pageTitle,
+  /// 页面标题和抽屉中的分区标题.
+  required final TextStyle heading,
 
-  /// 流程页的问句式标题.
-  required final TextStyle questionTitle,
-
-  /// "我的" 和他人主页上的昵称.
-  required final TextStyle profileName,
-
-  /// 抽屉中的分区标题.
-  required final TextStyle sectionTitle,
-
-  /// 分类标签的选中项. 选中态通过字重区分, 不通过颜色区分.
-  required final TextStyle tabActive,
-
-  /// 分类标签的未选中项, 搭配 `ink-muted`.
-  required final TextStyle tab,
-
-  /// 列表行的主标题.
-  required final TextStyle rowTitle,
-
-  /// 菜品方块下方的菜名.
-  required final TextStyle tileTitle,
+  /// 列表行标题, 按钮文字, 菜品方块下的菜名, 分类标签.
+  ///
+  /// 分类标签未选中时字重改为 400. 选中态通过字重区分, 不通过颜色区分.
+  required final TextStyle subhead,
 
   /// 正文: 描述, 上传者的说明, 消息内容.
   required final TextStyle body,
 
-  /// 主按钮文字.
-  required final TextStyle buttonLabel,
-
   /// 次级信息, 搭配 `ink-muted` 或 `ink-soft`.
   required final TextStyle meta,
 
-  /// 辅助信息: 时间, 数量单位, 表单标签下的说明.
+  /// 辅助信息: 时间, 数量单位, 表单说明, 底部导航文字.
   required final TextStyle caption,
-
-  /// 底部导航文字. 选中项的字重改为 700.
-  required final TextStyle navLabel,
 
   /// 舞台上的价格.
   required final TextStyle priceHero,
@@ -67,33 +52,22 @@ class EatTextStyles({
   /// 列表和菜品方块中的价格.
   required final TextStyle priceInline,
 
-  /// 距离. 数字和单位之间留一个空格.
-  required final TextStyle distance,
-
-  /// 跟在文字后面的计数, 如标签次数和赞数.
+  /// 距离和跟在文字后面的计数. 距离的数字和单位之间留一个空格.
   required final TextStyle count,
 }) {
   static final standard = EatTextStyles(
-    stageDish: _sans(46, 50, 900, letterSpacing: -1),
-    loginDisplay: _sans(60, 64, 900, letterSpacing: -1.5),
-    pageTitle: _sans(20, 28, 500),
-    questionTitle: _sans(32, 40, 900),
-    profileName: _sans(30, 38, 900, letterSpacing: -0.5),
-    sectionTitle: _sans(20, 28, 900),
-    tabActive: _sans(17, 24, 900),
-    tab: _sans(15, 24, 400),
-    rowTitle: _sans(16, 24, 700),
-    tileTitle: _sans(15, 22, 600),
-    body: _sans(15, 24, 400),
-    buttonLabel: _sans(16, 24, 600),
+    display: _sans(56, 60, 800, letterSpacing: -1.5),
+    stage: _sans(44, 48, 800, letterSpacing: -1),
+    title: _sans(26, 34, 700, letterSpacing: -0.5),
+    heading: _sans(20, 28, 700),
+    subhead: _sans(16, 24, 600),
+    body: _sans(15, 22, 400),
     meta: _sans(13, 20, 400),
-    caption: _sans(12, 18, 400),
-    navLabel: _sans(11, 16, 500),
-    priceHero: _numeral(60, 60, 800, letterSpacing: -1),
-    stat: _numeral(30, 32, 800),
-    priceInline: _numeral(18, 24, 800),
-    distance: _numeral(14, 20, 600),
-    count: _numeral(13, 18, 800, tabular: true),
+    caption: _sans(12, 16, 400),
+    priceHero: _numeral(56, 56, 700, letterSpacing: -1),
+    stat: _numeral(26, 32, 700),
+    priceInline: _numeral(16, 24, 700),
+    count: _numeral(13, 18, 600, tabular: true),
   );
 }
 

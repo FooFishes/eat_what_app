@@ -543,7 +543,7 @@ class _ListHeader extends StatelessWidget {
                   TextSpan(text: count == null ? '' : ' 家'),
                 ],
               ),
-              style: eat.text.sectionTitle,
+              style: eat.text.heading,
             ),
           ),
           const Spacer(),

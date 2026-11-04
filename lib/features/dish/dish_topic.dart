@@ -60,11 +60,7 @@ class DishTopicHint extends ConsumerWidget {
                   text,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: eat.text.body.copyWith(
-                    fontSize: 14,
-                    height: 20 / 14,
-                    color: eat.colors.ink,
-                  ),
+                  style: eat.text.body.copyWith(color: eat.colors.ink),
                 ),
               ),
             ],

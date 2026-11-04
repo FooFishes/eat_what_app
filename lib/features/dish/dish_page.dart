@@ -243,7 +243,7 @@ class _StageContent extends ConsumerWidget {
     final scale = layout.stageScale;
     final textScale = layout.stageTextScale;
     final lines = DishRules.stageLines(dish.name);
-    final nameSize = (lines.length >= 3 ? 38.0 : 46.0) * textScale;
+    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
     final price = DishRules.priceText(dish.price);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -289,7 +289,6 @@ class _StageContent extends ConsumerWidget {
                           child: Text(
                             category.label,
                             style: eat.text.meta.copyWith(
-                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: palette.secondaryForeground,
                             ),
@@ -301,7 +300,7 @@ class _StageContent extends ConsumerWidget {
                           lines.join('\n'),
                           semanticsLabel: dish.name,
                           textScaler: TextScaler.noScaling,
-                          style: eat.text.stageDish.copyWith(
+                          style: eat.text.stage.copyWith(
                             fontSize: nameSize,
                             height: (nameSize + 4) / nameSize,
                             color: palette.foreground,
@@ -315,7 +314,7 @@ class _StageContent extends ConsumerWidget {
                             price,
                             textScaler: TextScaler.noScaling,
                             style: eat.text.priceHero.copyWith(
-                              fontSize: 52 * textScale,
+                              fontSize: 56 * textScale,
                               color: palette.foreground,
                             ),
                           ),
@@ -490,10 +489,7 @@ class _TasteSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: EatSpace.s8,
       children: [
-        Semantics(
-          header: true,
-          child: Text('大家怎么说', style: eat.text.sectionTitle),
-        ),
+        Semantics(header: true, child: Text('大家怎么说', style: eat.text.heading)),
         if (taste.isEmpty) ...[
           Text(
             '还没人说过，来第一个',
@@ -646,7 +642,7 @@ class _CommentsState extends ConsumerState<_Comments> {
           children: [
             Semantics(
               header: true,
-              child: Text('吃过的人说', style: eat.text.sectionTitle),
+              child: Text('吃过的人说', style: eat.text.heading),
             ),
             if (total > 0) ...[
               const SizedBox(width: EatSpace.s8),

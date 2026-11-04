@@ -211,7 +211,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
       reply: _reply,
     );
     final name = widget.replyToName ?? '同学';
-    final counter = eat.text.count.copyWith(fontSize: 13, color: c.inkMuted);
+    final counter = eat.text.count.copyWith(color: c.inkMuted);
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) {

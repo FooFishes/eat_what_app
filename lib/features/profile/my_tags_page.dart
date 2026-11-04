@@ -157,10 +157,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
           usage == null || usage == 0
               ? '只删掉标签，菜不受影响。'
               : '只删掉标签，标过的 $usage 道菜不受影响。',
-          style: panel.eat.text.body.copyWith(
-            fontSize: 14,
-            color: panel.eat.colors.inkSoft,
-          ),
+          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
         ),
       ),
     );

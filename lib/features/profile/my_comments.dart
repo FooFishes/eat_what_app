@@ -111,11 +111,7 @@ class _Row extends ConsumerWidget {
             comment.isReply ? '回复：$text' : text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: eat.text.body.copyWith(
-              fontSize: 14,
-              height: 22 / 14,
-              color: c.inkSoft,
-            ),
+            style: eat.text.body.copyWith(color: c.inkSoft),
           ),
         if (status != null)
           Text(status, style: eat.text.caption.copyWith(color: c.inkMuted)),
