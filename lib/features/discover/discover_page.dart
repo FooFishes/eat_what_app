@@ -28,6 +28,7 @@ import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/topic.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
+import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/topic_rules.dart';
 import 'package:eat/features/system/guard.dart';
@@ -227,33 +228,54 @@ class _TopBar extends ConsumerWidget {
     final eat = context.eat;
     final place = ref.watch(currentPlaceProvider);
     final unread = ref.watch(unreadCountProvider).value ?? 0;
-    final label = '${place.campus?.name ?? '软件园'} ${place.meal.label}';
+    final where = place.campus?.name ?? '软件园';
+    final what = place.meal.label;
+    final strong = eat.text.rowTitle.copyWith(fontSize: 17);
+    final plain = strong.copyWith(fontWeight: FontWeight.w400);
     final dotBorder =
         StageTheme.maybeOf(context)?.background ?? eat.colors.paper;
     return Row(
       children: [
-        EatTappable(
-          onTap: () => _showPlacePanel(context, ref),
-          label: '当前是$label，点击切换地点和饭点',
-          focusShape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          builder: (context, _) => SizedBox(
-            height: EatSize.touch,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: EatSpace.s4,
-                children: [
-                  Text(label, style: eat.text.rowTitle.copyWith(fontSize: 17)),
-                  const EatIcon(EatIcons.chevronDown, size: 18),
-                ],
+        Expanded(
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: EatTappable(
+              onTap: () => _showPlacePanel(context, ref),
+              label: '在$where吃$what，点击切换地点和饭点',
+              focusShape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+              builder: (context, _) => SizedBox(
+                height: EatSize.touch,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: EatSpace.s4,
+                    children: [
+                      Flexible(
+                        child: Text.rich(
+                          TextSpan(
+                            style: plain,
+                            children: [
+                              TextSpan(text: '在 ', style: strong),
+                              TextSpan(text: where),
+                              TextSpan(text: ' 吃 ', style: strong),
+                              TextSpan(text: what),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const EatIcon(EatIcons.chevronDown, size: 18),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        const Spacer(),
         EatIconButton(
           EatIcons.search,
           label: '搜索',
@@ -289,57 +311,101 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// "地点和饭点" 面板: 校区和饭点两组单选, 另有 "按现在的时间" 选项. 选择后立即生效.
+/// "地点和饭点" 面板: 校区和饭点两组单选, 另有 "按现在的时间" 选项.
+///
+/// 面板里的选择先暂存, 点击 "确定" 才生效; 直接关闭面板则不改动.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
-    showPanel<void>(
-      context,
-      builder: (panel) => Consumer(
-        builder: (context, ref, _) {
-          final eat = context.eat;
-          final place = ref.watch(currentPlaceProvider);
-          final campuses = ref.watch(campusesProvider).value ?? const [];
-          final notifier = ref.read(placeAndMealProvider.notifier);
-          Widget group(String title) => Padding(
-            padding: const EdgeInsets.only(top: EatSpace.s8, bottom: 4),
-            child: Text(
-              title,
-              style: eat.text.meta.copyWith(
-                fontWeight: FontWeight.w600,
-                color: eat.colors.inkMuted,
-              ),
-            ),
-          );
-          return EatPanel(
-            title: '在哪吃，吃哪顿',
-            actions: EatButton.mist(
+    showPanel<void>(context, builder: (panel) => const _PlacePanel());
+
+class _PlacePanel extends ConsumerStatefulWidget {
+  const new();
+
+  @override
+  ConsumerState<_PlacePanel> createState() => _PlacePanelState();
+}
+
+class _PlacePanelState extends ConsumerState<_PlacePanel> {
+  late int? _campusId;
+
+  /// 手动选择的饭点. 为 null 时按当前时间自动选择.
+  late MealTime? _meal;
+
+  @override
+  void initState() {
+    super.initState();
+    final place = ref.read(currentPlaceProvider);
+    _campusId = place.campus?.id;
+    _meal = place.autoMeal ? null : place.meal;
+  }
+
+  void _confirm() {
+    final place = ref.read(currentPlaceProvider);
+    final notifier = ref.read(placeAndMealProvider.notifier);
+    if (_campusId case final id? when id != place.campus?.id) {
+      unawaited(notifier.selectCampus(id));
+    }
+    switch (_meal) {
+      case null when !place.autoMeal:
+        unawaited(notifier.autoMeal());
+      case final meal? when place.autoMeal || meal != place.meal:
+        unawaited(notifier.selectMeal(meal));
+      default:
+    }
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final campuses = ref.watch(campusesProvider).value ?? const [];
+    final meal = _meal ?? MealRules.at(clock.now());
+    return EatPanel(
+      title: '在哪吃？',
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.mist(
               '按现在的时间',
               icon: EatIcons.time,
-              onPressed: place.autoMeal ? null : notifier.autoMeal,
+              onPressed: _meal == null
+                  ? null
+                  : () => setState(() => _meal = null),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                group('地点'),
-                for (final campus in campuses)
-                  EatRadioRow(
-                    title: campus.name,
-                    selected: campus.id == place.campus?.id,
-                    onSelected: () => notifier.selectCampus(campus.id),
-                  ),
-                const SizedBox(height: EatSpace.s8),
-                group('饭点'),
-                for (final meal in MealTime.values)
-                  EatRadioRow(
-                    title: meal.label,
-                    selected: meal == place.meal,
-                    onSelected: () => notifier.selectMeal(meal),
-                  ),
-              ],
+          ),
+          Expanded(child: EatButton.solid('确定', onPressed: _confirm)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final campus in campuses)
+            EatRadioRow(
+              title: campus.name,
+              selected: campus.id == _campusId,
+              onSelected: () => setState(() => _campusId = campus.id),
             ),
-          );
-        },
+          Padding(
+            padding: const EdgeInsets.only(top: EatSpace.s20, bottom: 4),
+            child: Semantics(
+              header: true,
+              child: Text(
+                '吃哪顿？',
+                style: eat.text.sectionTitle.copyWith(color: eat.colors.ink),
+              ),
+            ),
+          ),
+          for (final m in MealTime.values)
+            EatRadioRow(
+              title: m.label,
+              selected: m == meal,
+              onSelected: () => setState(() => _meal = m),
+            ),
+        ],
       ),
     );
+  }
+}
 
 /// 发现页舞台: 转盘, 菜名, 店名和距离, 价格, 批次圆点, 以及 "换一个" 和 "就它了" 按钮.
 class _TurntableStage extends ConsumerWidget {

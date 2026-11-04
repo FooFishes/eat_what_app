@@ -46,7 +46,7 @@ void main() {
     );
     expect(find.textContaining('袁记云饺  万达金街'), findsOneWidget);
     expect(find.bySemanticsLabel('消息，3 条未读'), findsOneWidget);
-    expect(find.text('软件园 ${_mealLabel()}'), findsOneWidget);
+    expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
     await expectAccessible(tester);
 
     // 菜名同时出现在舞台和推荐流方块中.
@@ -139,24 +139,36 @@ void main() {
     expect(find.text('加一道菜'), findsWidgets);
   });
 
-  testWidgets('地点和饭点面板：手动选的饭点立即生效，再点「按现在的时间」恢复', (tester) async {
+  testWidgets('地点和饭点面板：点「确定」后才生效，再点「按现在的时间」恢复', (tester) async {
     await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
 
+    expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
     await tester.tap(find.textContaining('软件园'));
     await tester.pumpAndSettle();
-    expect(find.text('在哪吃，吃哪顿'), findsOneWidget);
+    expect(find.text('在哪吃？'), findsOneWidget);
+    expect(find.text('吃哪顿？'), findsOneWidget);
     final other = _mealLabel() == '夜宵' ? '早饭' : '夜宵';
+    final api = other == '夜宵' ? 'night' : 'breakfast';
     await tester.tap(find.text(other));
     await tester.pumpAndSettle();
+    expect(env.kv.values['prefs.meal'], isNull);
 
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    expect(find.text('在 软件园 吃 $other'), findsOneWidget);
     final meals = env.adapter
         .sent('GET /foods/recommend')
         .map((r) => r.query['mealTime']);
-    expect(meals, contains(other == '夜宵' ? 'night' : 'breakfast'));
-    expect(
-      env.kv.values['prefs.meal'],
-      startsWith(other == '夜宵' ? 'night|' : 'breakfast|'),
-    );
+    expect(meals, contains(api));
+    expect(env.kv.values['prefs.meal'], startsWith('$api|'));
+
+    await tester.tap(find.textContaining('软件园'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('按现在的时间'));
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+    expect(env.kv.values['prefs.meal'], isNull);
+    expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
   });
 }
 
