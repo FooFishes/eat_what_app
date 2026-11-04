@@ -376,7 +376,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 1. **鉴权**：有登录态就加头。头名用登录返回的 `tokenName`（当前部署是 `satoken`），值是 `Bearer <tokenValue>`，两者都存在安全存储里，不写死头名。
 2. **响应外壳**：所有业务响应都是 `{code, msg, data, timestamp}`。`code == 0` 取 `data` 往下传；否则抛 `ApiException(code, msg)`。HTTP 200 也要判断 `code`。`ErrorResponse` 的 `code` 可能是字符串（集群或授权拦截），按字符串保留。
 3. **错误转换**：把 `DioException`、`ApiException` 转成 `AppFailure`（7.5），顺带更新 `networkStatusProvider`、记 Sentry 面包屑（方法、路径模板、业务码，不记参数和响应体）。
-4. **日志**：只在调试构建打开，鉴权头和手机号打码。
+4. **日志**：只在调试构建打开（`_DebugBodyLogger`），打印方法、完整地址、请求体和响应体；不打印请求头，地址和正文里的手机号打码。
 
 ### 7.4 业务码
 

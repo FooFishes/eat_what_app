@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
@@ -48,6 +50,7 @@ class ApiClient {
     if (adapter != null) _dio.httpClientAdapter = adapter;
     // 只给崩溃上报加上最近请求的面包屑. 失败的请求由页面处理, 不作为错误上报.
     _dio.addSentry(captureFailedRequests: false);
+    if (kDebugMode) _dio.interceptors.add(const _DebugBodyLogger());
   }
 
   final Dio _dio;
@@ -250,6 +253,57 @@ class ApiClient {
   static void _log(String method, String path, Object? code) {
     if (kDebugMode) debugPrint('[api] $method $path → $code');
     CrashReporter.recordRequestFailure(method, path, code);
+  }
+}
+
+/// 调试构建打印每个请求的请求体和响应体.
+///
+/// 不打印请求头, 以免凭证进入日志. 地址和正文里的手机号打码.
+/// 只在 [kDebugMode] 下添加, 发布构建不含此拦截器.
+class const _DebugBodyLogger() extends Interceptor {
+  static final _mobile = RegExp(r'(?<!\d)(1\d{2})\d{4}(\d{4})(?!\d)');
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    _print('[api] → ${_line(options)}${_body(options.data)}');
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(
+    Response<Object?> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    _print(
+      '[api] ← ${response.statusCode} ${_line(response.requestOptions)}'
+      '${_body(response.data)}',
+    );
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final response = err.response;
+    _print(
+      '[api] ✕ ${response?.statusCode ?? err.type.name} '
+      '${_line(err.requestOptions)}${_body(response?.data)}',
+    );
+    handler.next(err);
+  }
+
+  static void _print(String text) =>
+      debugPrint(text.replaceAllMapped(_mobile, (m) => '${m[1]}****${m[2]}'));
+
+  static String _line(RequestOptions options) =>
+      '${options.method} ${options.uri}';
+
+  static String _body(Object? data) {
+    if (data == null) return '';
+    try {
+      return '\n${const JsonEncoder.withIndent('  ').convert(data)}';
+    } on Object {
+      return '\n$data';
+    }
   }
 }
 
