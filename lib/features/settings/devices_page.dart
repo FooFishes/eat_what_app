@@ -30,7 +30,7 @@ class DevicesPage extends ConsumerWidget {
     final others = devices?.where((d) => !d.current).length ?? 0;
     return PlainScaffold(
       title: '登录设备',
-      subtitle: '看到不认识的设备，先让它下线，再改一下密码。',
+      subtitle: '看到不认识的设备，先让它下线，再修改密码。',
       slivers: [
         if (devices == null)
           SliverToBoxAdapter(

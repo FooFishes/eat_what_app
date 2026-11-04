@@ -52,7 +52,7 @@ void main() {
       location: Paths.topic(9),
     );
 
-    expect(find.text('专题不存在或尚未开始'), findsOneWidget);
+    expect(find.text('找不到这期专题'), findsOneWidget);
     expect(find.text('重试'), findsNothing);
     await unmountApp(tester, container);
   });

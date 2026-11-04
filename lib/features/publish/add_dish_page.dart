@@ -897,7 +897,7 @@ class _DuplicateNotice extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '这家店已有$name',
+                '这家店已有「$name」',
                 style: eat.text.meta.copyWith(color: eat.colors.warn),
               ),
             ),

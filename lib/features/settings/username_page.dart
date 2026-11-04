@@ -182,7 +182,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
                     errorText: _passwordError,
                   ),
                   const SizedBox(height: 6),
-                  Text('顺便设一个密码，之后可以用用户名和密码登录', style: note),
+                  Text('同时设置密码后，可直接用用户名和密码登录', style: note),
                 ],
                 const SizedBox(height: 40),
                 Text('设好后，这台和其他设备都要重新登录。', style: note),

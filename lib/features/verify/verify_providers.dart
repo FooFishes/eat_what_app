@@ -49,9 +49,9 @@ String ssoFailureMessage(int? code) => switch (code) {
   SsoCodes.studentIdTaken => '该学号已认证其他账号',
   SsoCodes.badSchoolResponse => '学校返回的认证结果无效，请重新认证',
   BizCodes.consentRequired || BizCodes.dataSyncPending => '账号正在同步，请稍后重新认证',
-  BizCodes.userDisabled => '账号已停用',
+  BizCodes.userDisabled => '账号已被封禁',
   final int code when code ~/ 10000 == 9 => '暂时无法认证，请稍后再试',
-  _ => '认证没有完成，请重新认证',
+  _ => '认证未完成，请重新认证',
 };
 
 @riverpod

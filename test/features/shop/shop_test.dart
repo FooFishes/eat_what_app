@@ -255,8 +255,8 @@ void main() {
       );
 
       await openPanel(tester);
-      expect(find.text('哪里不对'), findsOneWidget);
-      expect(find.text('袁记云饺 · 万达金街 1 层'), findsOneWidget);
+      expect(find.text('信息有误'), findsNWidgets(2));
+      expect(find.text('袁记云饺  万达金街 1 层'), findsOneWidget);
       expect(find.text('选一个原因'), findsOneWidget, reason: '没选原因时不能提交');
       await expectAccessible(tester);
 
@@ -266,7 +266,7 @@ void main() {
       await tester.tap(find.text('提交'));
       await tester.pumpAndSettle();
       expect(find.text('网络连接失败，请重试'), findsOneWidget);
-      expect(find.text('哪里不对'), findsOneWidget, reason: '失败时面板保留');
+      expect(find.text('信息有误'), findsNWidgets(2), reason: '失败时面板保留');
 
       await tester.tap(find.text('提交'));
       await tester.pumpAndSettle();
@@ -281,7 +281,7 @@ void main() {
         sent.last.headers['Idempotency-Key'],
         sent.first.headers['Idempotency-Key'],
       );
-      expect(find.text('哪里不对'), findsNothing);
+      expect(find.text('信息有误'), findsOneWidget);
       expect(find.text('已提交，核实后会通过消息通知你'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
       await unmountApp(tester, container);

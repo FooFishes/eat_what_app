@@ -511,7 +511,7 @@ class _KitPageState extends State<KitPage> {
                         spacing: EatSpace.s10,
                         children: [
                           Expanded(
-                            child: EatButton.mist('觉得误伤了', onPressed: () {}),
+                            child: EatButton.mist('去反馈', onPressed: () {}),
                           ),
                           Expanded(
                             child: EatButton.solid(

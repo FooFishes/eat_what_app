@@ -33,7 +33,7 @@ class ShopRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final distance = ref.watch(distanceToProvider(shop.point));
     final hub = ref.watch(hubNameProvider(shop.hubId));
-    final where = [if (shop.closed) '已关门', ?distance, ?hub].join(' · ');
+    final where = [if (shop.closed) '已关门', ?distance, ?hub].join('  ');
     final matched = shop.matched.firstOrNull;
     final matchedLine = matched == null
         ? null

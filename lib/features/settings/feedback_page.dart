@@ -134,7 +134,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
     final sending = ref.watch(feedbackSenderProvider);
     return PlainScaffold(
       title: '反馈',
-      subtitle: '出问题、提建议、觉得被误伤了，都可以说',
+      subtitle: '遇到问题、有建议，或者对处理结果有疑问，都可以说',
       slivers: [
         SliverList.list(
           children: [

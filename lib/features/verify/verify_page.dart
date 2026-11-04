@@ -218,7 +218,7 @@ class _Unverified extends StatelessWidget {
         Text.rich(
           TextSpan(
             children: [
-              const TextSpan(text: '现在 '),
+              const TextSpan(text: '当前状态：'),
               TextSpan(
                 text: '未认证',
                 style: TextStyle(fontWeight: FontWeight.w700, color: c.ink),

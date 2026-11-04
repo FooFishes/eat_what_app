@@ -106,7 +106,9 @@ class _PhonePageState extends ConsumerState<PhonePage> {
         _submitting = false;
         switch (e.code) {
           case BizCodes.wrongCode:
-            _newCodeError = '验证码不对，请检查新旧两个号码收到的验证码';
+            _newCodeError = oldProofRequired && !_byPassword
+                ? '验证码错误，请检查新旧两个号码收到的验证码'
+                : '验证码错误，请重新输入';
           case BizCodes.wrongPassword:
             _oldError = '密码错误，请重新输入';
           default:

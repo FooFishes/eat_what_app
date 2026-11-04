@@ -51,7 +51,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
               title: '吃过的人说',
               subtitle: dish == null
                   ? null
-                  : [dish.name, ?dish.shopName].join(' · '),
+                  : [dish.name, ?dish.shopName].join('  '),
               slivers: [
                 SliverToBoxAdapter(
                   child: Row(

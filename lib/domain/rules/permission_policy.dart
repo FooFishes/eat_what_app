@@ -97,7 +97,7 @@ enum Capability {
     changePrivacy => '修改隐私设置',
     changePassword => '修改密码',
     setUsername => '设置用户名',
-    verify => '认证',
+    verify => '进行学生认证',
     report => '举报',
     reportShopError => '反馈信息有误',
   };

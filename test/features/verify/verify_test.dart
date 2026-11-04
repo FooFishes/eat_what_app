@@ -61,7 +61,7 @@ void main() {
         FakeAdapter.ok(userInfoJson(verified: true, method: 'school_email')),
       ]);
     await pumpAppWithBrowser(tester, env, browser);
-    expect(find.text('现在 未认证', findRichText: true), findsOneWidget);
+    expect(find.text('当前状态：未认证', findRichText: true), findsOneWidget);
     await expectAccessible(tester);
 
     final field = find.descendant(
@@ -129,7 +129,7 @@ void main() {
       expect(_top(router), Paths.verify);
       expect(find.text('该学号已认证其他账号'), findsOneWidget);
       expect(find.textContaining('30013'), findsNothing);
-      expect(find.text('现在 未认证', findRichText: true), findsOneWidget);
+      expect(find.text('当前状态：未认证', findRichText: true), findsOneWidget);
       expect(env.adapter.sent('GET /user/info'), isNotEmpty);
       expect(browser.closed, 1);
 
@@ -156,16 +156,16 @@ void main() {
 
       env.links.open(_callback('result=failure&code=40001'));
       await tester.pumpAndSettle();
-      expect(find.text('认证没有完成，请重新认证'), findsOneWidget);
+      expect(find.text('认证未完成，请重新认证'), findsOneWidget);
       expect(find.text('认证链接已失效，请重新发起认证'), findsNothing);
 
       // 重新发起后又收到同样的结果, 仍然提示.
       await tester.tap(find.text('山大统一认证'));
       await tester.pumpAndSettle();
-      expect(find.text('认证没有完成，请重新认证'), findsNothing);
+      expect(find.text('认证未完成，请重新认证'), findsNothing);
       env.links.open(_callback('result=failure&code=40001'));
       await tester.pumpAndSettle();
-      expect(find.text('认证没有完成，请重新认证'), findsOneWidget);
+      expect(find.text('认证未完成，请重新认证'), findsOneWidget);
     });
 
     testWidgets('成功：刷新到已认证；认证引导中保留引导参数', (tester) async {

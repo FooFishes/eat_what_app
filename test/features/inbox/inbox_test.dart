@@ -201,7 +201,9 @@ void main() {
     final caseRow = tester.getSemantics(find.text('你举报的内容已处理'));
     expect(caseRow.hintOverrides?.onTapHint, '标为已读', reason: '不跳转的行读作「标为已读」');
     expect(caseRow.getSemanticsData().flagsCollection.isButton, isFalse);
-    final topicRow = tester.getSemantics(find.text('你上传的玉米鲜肉饺子被收进了专题「期末续命餐」'));
+    final topicRow = tester.getSemantics(
+      find.text('你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」'),
+    );
     expect(topicRow.hintOverrides, isNull, reason: '会跳转的行使用平台默认的说法');
 
     await tester.tap(find.text('你举报的内容已处理'));
@@ -214,7 +216,7 @@ void main() {
     expect(find.byType(UnreadDot), findsOneWidget, reason: '只剩专题收录那一行未读');
     handle.dispose();
 
-    await tester.tap(find.text('你上传的玉米鲜肉饺子被收进了专题「期末续命餐」'));
+    await tester.tap(find.text('你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」'));
     await tester.pumpAndSettle();
     expect(
       env.adapter.sent('POST /notification/cards/$_topicId/read'),

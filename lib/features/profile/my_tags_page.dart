@@ -48,7 +48,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
         if (tags != null && tags.isNotEmpty)
           EatTappable(
             onTap: () => setState(() => _editing = !_editing),
-            label: _editing ? '好了' : '编辑',
+            label: _editing ? '完成' : '编辑',
             builder: (context, _) => SizedBox(
               height: EatSize.touch,
               child: Padding(
@@ -56,7 +56,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
                 child: Center(
                   widthFactor: 1,
                   child: Text(
-                    _editing ? '好了' : '编辑',
+                    _editing ? '完成' : '编辑',
                     style: eat.text.body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: eat.colors.ink,
@@ -100,7 +100,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
               child: EmptyState(
                 icon: EatIcons.tag,
                 title: '还没有标签',
-                message: '在菜品详情点「加标签」，写下自己的分类，比如「宵夜」「请客」。',
+                message: '在菜品详情点「加标签」，写下自己的分类，比如「考试周」「请客」。',
               ),
             ),
           )

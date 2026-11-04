@@ -85,7 +85,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
               [
                 '${_index + 1} / ${widget.photos.length}',
                 if (credit != null) '$credit 拍的',
-              ].join('  ·  '),
+              ].join('  '),
               style: eat.text.meta.copyWith(color: eat.colors.paper),
             ),
           ),

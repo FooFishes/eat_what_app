@@ -219,7 +219,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
       },
       child: PlainScaffold(
         title: _reply ? '回复' : '写一条',
-        subtitle: dish == null ? null : [dish.name, ?dish.shopName].join(' · '),
+        subtitle: dish == null ? null : [dish.name, ?dish.shopName].join('  '),
         onBack: _leave,
         actions: [
           EatButton.solid(
@@ -259,7 +259,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
               const SizedBox(height: EatSpace.s20),
               if (_reply)
                 Text(
-                  '回复只能写字，挂在这条评论下面',
+                  '回复暂不支持添加照片',
                   style: eat.text.caption.copyWith(color: c.inkMuted),
                 )
               else ...[

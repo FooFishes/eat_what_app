@@ -44,7 +44,11 @@ class TopicArchivePage extends ConsumerWidget {
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.only(top: 40),
-              child: EmptyState(icon: EatIcons.topic, title: '还没有往期专题'),
+              child: EmptyState(
+                icon: EatIcons.topic,
+                title: '还没有往期专题',
+                message: '当期专题结束后会归档在这里。',
+              ),
             ),
           )
         else ...[

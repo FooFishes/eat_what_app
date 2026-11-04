@@ -509,7 +509,7 @@ class _StageContent extends ConsumerWidget {
       fontSize: 16,
       color: palette.foreground,
     );
-    final where = [?hub, ?shop.address].join(' · ');
+    final where = [?hub, ?shop.address].join('  ');
     return LayoutBuilder(
       builder: (context, constraints) {
         final plate = layout.isWide

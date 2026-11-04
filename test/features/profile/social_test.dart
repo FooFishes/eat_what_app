@@ -131,7 +131,7 @@ void main() {
     expect(find.text('举报'), findsOneWidget);
     await tester.tap(find.text('屏蔽'));
     await tester.pumpAndSettle();
-    expect(find.text('屏蔽阿哲？'), findsOneWidget);
+    expect(find.text('屏蔽「阿哲」？'), findsOneWidget);
     await tester.tap(find.text('屏蔽'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /user/blocks/9'), hasLength(1));
@@ -154,8 +154,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('阿哲的粉丝和关注'), findsOneWidget);
-    expect(find.text('对方没有公开'), findsOneWidget);
-    expect(find.text('阿哲关掉了公开粉丝列表'), findsOneWidget);
+    expect(find.text('对方未公开'), findsOneWidget);
+    expect(find.text('「阿哲」未公开粉丝列表'), findsOneWidget);
     expect(env.adapter.sent('GET /user/followers'), isEmpty);
     await unmountApp(tester, container);
   });

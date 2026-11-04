@@ -323,7 +323,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
               ? '请填写店名和地址描述'
               : null,
           child: EatButton.solid(
-            widget.returnShop ? '建好了' : '建好了，去加菜',
+            widget.returnShop ? '完成' : '下一步：去加菜',
             loading: _busy,
             onPressed: ready ? _submit : null,
           ),
@@ -379,7 +379,7 @@ class _SameNameNotice extends StatelessWidget {
           spacing: EatSpace.s8,
           children: [
             Text(
-              '附近已经有一家${shop.name}了，$distance',
+              '附近已有一家「${shop.name}」，相距 $distance',
               style: eat.text.body.copyWith(color: c.warn),
             ),
             Row(

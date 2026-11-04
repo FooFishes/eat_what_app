@@ -20,7 +20,7 @@ void main() {
     await tester.enterText(find.byType(EditableText).at(1), '万达金街 1 层');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('建好了，去加菜'));
+    await tester.tap(find.text('下一步：去加菜'));
     await tester.pumpAndSettle();
   }
 
@@ -42,7 +42,7 @@ void main() {
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('建好了，去加菜'));
+    await tester.tap(find.text('下一步：去加菜'));
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('已提交审核，通过后公开'), findsOneWidget);

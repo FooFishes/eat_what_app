@@ -152,8 +152,8 @@ class _NotFound extends StatelessWidget {
         sliver: SliverToBoxAdapter(
           child: EmptyState(
             icon: EatIcons.bowl,
-            title: '找不到这道菜',
-            message: '这道菜可能已被删除',
+            title: '这道菜已删除',
+            message: '去看看店里的其他菜。',
           ),
         ),
       ),
@@ -380,7 +380,7 @@ class _ShopCard extends ConsumerWidget {
     final hub =
         ref.watch(hubNameProvider(shop?.hubId ?? dish.hubId)) ?? dish.hubName;
     final address = shop?.address ?? dish.shopAddress;
-    final meta = [?distance, ?hub, ?address].join(' · ');
+    final meta = [?distance, ?hub, ?address].join('  ');
     return EatListRow(
       leading: Container(
         width: EatSize.thumb,

@@ -156,7 +156,7 @@ void main() {
       location: Paths.dish(2),
     );
 
-    expect(find.text('找不到这道菜'), findsOneWidget);
+    expect(find.text('这道菜已删除'), findsOneWidget);
     expect(find.text('重试'), findsNothing);
     expect(find.text('加载失败'), findsNothing);
     expect(find.bySemanticsLabel('返回'), findsOneWidget);

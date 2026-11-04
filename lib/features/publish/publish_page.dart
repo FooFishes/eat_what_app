@@ -112,7 +112,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
                       ),
                       child: Text(
                         _keyword.trim().isEmpty
-                            ? '附近还没有店，新建一家吧。'
+                            ? '这附近还没有店，可以新建一家。'
                             : '没找到「${_keyword.trim()}」',
                         style: eat.text.body.copyWith(
                           color: eat.colors.inkMuted,
@@ -215,7 +215,7 @@ class _ShopOption extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final distance = ref.watch(distanceToProvider(shop.point));
     final hub = ref.watch(hubNameProvider(shop.hubId));
-    final where = [?distance, ?hub, ?shop.address].join(' · ');
+    final where = [?distance, ?hub, ?shop.address].join('  ');
     return EatRadioRow(
       title: shop.name,
       subtitle: where.isEmpty ? null : Text(where),

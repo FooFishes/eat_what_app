@@ -193,7 +193,7 @@ class UserPage extends ConsumerWidget {
       await showPanel<bool>(
         context,
         builder: (panel) => EatPanel(
-          title: '屏蔽$name？',
+          title: '屏蔽「$name」？',
           actions: Row(
             spacing: EatSpace.s10,
             children: [

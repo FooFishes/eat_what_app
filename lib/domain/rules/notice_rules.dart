@@ -139,11 +139,11 @@ abstract final class NoticeRules {
       : const NoTarget();
 
   static String _topicSentence(NoticeDetail? detail) {
-    if (detail is! TopicIncludedDetail) return '你上传的菜被收进了专题';
-    final dish = detail.dishId == null ? '菜' : detail.dishName;
+    if (detail is! TopicIncludedDetail) return '你上传的菜已被收录到专题';
+    final dish = detail.dishId == null ? '菜' : '「${detail.dishName}」';
     return detail.topicId == null
-        ? '你上传的$dish被收进了专题，该专题已撤下'
-        : '你上传的$dish被收进了专题「${detail.topicName}」';
+        ? '你上传的$dish已被收录到专题，该专题已撤下'
+        : '你上传的$dish已被收录到专题「${detail.topicName}」';
   }
 
   static String _moderationSentence(NoticeDetail? detail) => switch (detail) {
@@ -151,11 +151,11 @@ abstract final class NoticeRules {
     ModerationDetail(shop: true) => '你新建的店未通过审核',
     ModerationDetail(approved: true) => '你上传的菜已通过审核',
     ModerationDetail() => '你上传的菜未通过审核',
-    _ => '你的投稿有了审核结果',
+    _ => '你发布的内容已审核',
   };
 
   static String _caseSentence(NoticeDetail? detail) {
-    if (detail is! CaseResultDetail) return '你提交的内容有了处理结果';
+    if (detail is! CaseResultDetail) return '你提交的内容已处理';
     final outcome = detail.outcome;
     switch (detail.kind) {
       case CaseKind.feedback:
@@ -163,20 +163,20 @@ abstract final class NoticeRules {
           'ACCEPTED' => '你的反馈已被采纳',
           'RESOLVED' => '你的反馈已处理',
           'REJECTED' => '你的反馈未被采纳',
-          _ => '你的反馈有了处理结果',
+          _ => '你的反馈已处理',
         };
       case CaseKind.catalogError:
         final problem = '你反馈的店铺${_catalogErrorOf(detail.reasonCode)}问题';
         return switch (outcome) {
           'ACCEPTED' => '$problem已修正',
           'REJECTED' => '$problem经核实无误',
-          _ => '$problem有了处理结果',
+          _ => '$problem已处理',
         };
       case CaseKind.report:
         return switch (outcome) {
           'ACCEPTED' => '你举报的内容已处理',
           'REJECTED' => '你举报的内容经核实未违规',
-          _ => '你的举报有了处理结果',
+          _ => '你的举报已处理',
         };
     }
   }

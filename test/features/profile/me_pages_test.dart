@@ -180,7 +180,7 @@ void main() {
     expect(env.adapter.sent('DELETE /foods/tags/my/2'), hasLength(1));
     expect(find.text('请客'), findsNothing);
 
-    await tester.tap(find.text('好了'));
+    await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('考试周'));
     await tester.pumpAndSettle();

@@ -121,7 +121,7 @@ class _MePageState extends ConsumerState<MePage> {
                 title: '还没发布过菜',
                 message: '吃到好吃的，发一道让同学们知道。',
                 action: EatButton.outline(
-                  '发布一道菜',
+                  '加一道菜',
                   icon: EatIcons.add,
                   height: 48,
                   onPressed: () async {

@@ -256,7 +256,7 @@ void main() {
     final before = env.adapter.requests.length;
     await tester.tap(find.text('申请注销'));
     await tester.pump();
-    expect(find.text('该功能暂未开放'), findsOneWidget);
+    expect(find.text('该功能正在接入中'), findsOneWidget);
     expect(env.adapter.requests.length, before);
     await tester.pump(const Duration(seconds: 2));
   });

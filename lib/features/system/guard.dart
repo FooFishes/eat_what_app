@@ -125,4 +125,4 @@ Future<void> reportActionFailure(
 ///
 /// [feature] 不影响提示内容, 用于在接口上线时按枚举值找到所有入口.
 void showPending(BuildContext context, PendingFeature feature) =>
-    showToast(context, '该功能暂未开放');
+    showToast(context, '该功能正在接入中');

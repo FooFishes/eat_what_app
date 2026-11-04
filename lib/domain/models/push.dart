@@ -1,6 +1,6 @@
 /// 推送的栏目. 和消息页的分栏对应, 每个栏目单独开关, 默认开启.
 enum PushCategory {
-  comments('COMMENTS', '评论和回复', '一条一推'),
+  comments('COMMENTS', '评论和回复', '有人评论或回复你时推送'),
   likes('LIKES_AND_FAVORITES', '赞和收藏', '同一道菜 1 小时内的合成一条'),
   follows('FOLLOWS', '关注', '有人关注了你'),
   system('SYSTEM', '系统消息', '认证结果、反馈和举报的处理结果');

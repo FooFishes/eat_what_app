@@ -112,7 +112,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                 EatFormField(
                   label: '账号',
                   controller: _account,
-                  hintText: '手机号、用户名或邮箱',
+                  hintText: '手机号或用户名',
                   autofocus: true,
                   textInputAction: TextInputAction.next,
                   keyboardType: TextInputType.emailAddress,

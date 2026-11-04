@@ -367,7 +367,7 @@ class _TurntableStage extends ConsumerWidget {
     final price = DishRules.priceText(dish.price);
     final lines = DishRules.stageLines(dish.name);
     final nameSize = (lines.length >= 3 ? 38.0 : 46.0) * textScale;
-    final where = [?dish.shopName, distance ?? dish.hubName].join(' · ');
+    final where = [?dish.shopName, distance ?? dish.hubName].join('  ');
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -541,7 +541,7 @@ class _EmptyStage extends ConsumerWidget {
                 ),
               ),
               EatButton.stageSolid(
-                '发布一道菜',
+                '加一道菜',
                 icon: EatIcons.add,
                 onPressed: () async {
                   if (await guardAction(context, ref, Capability.publishDish) &&
@@ -695,8 +695,16 @@ class _TopicList extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
           child: dishes == null
-              ? const EmptyState(icon: EatIcons.topic, title: '这期专题已撤下')
-              : const EmptyState(icon: EatIcons.bowl, title: '这期专题的菜都已删除'),
+              ? const EmptyState(
+                  icon: EatIcons.topic,
+                  title: '这期专题已撤下',
+                  message: '去看看其他推荐的菜。',
+                )
+              : const EmptyState(
+                  icon: EatIcons.bowl,
+                  title: '这期专题的菜都已删除',
+                  message: '去看看其他推荐的菜。',
+                ),
         ),
       );
     } else {

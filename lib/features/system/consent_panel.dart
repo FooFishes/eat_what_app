@@ -33,7 +33,7 @@ class _ConsentPanel extends ConsumerWidget {
     final c = eat.colors;
     return EatPanel(
       icon: EatIcons.earth,
-      title: '同意跨站同步后继续',
+      title: '同意数据同步后继续',
       actions: Row(
         spacing: EatSpace.s10,
         children: [
@@ -61,13 +61,13 @@ class _ConsentPanel extends ConsumerWidget {
           if (policy.url case final url?)
             EatTappable(
               onTap: () => ref.read(browserProvider).open(url),
-              label: '查看跨站同步说明',
+              label: '查看数据同步说明',
               builder: (context, _) => SizedBox(
                 height: EatSize.touch,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '查看跨站同步说明',
+                    '查看数据同步说明',
                     style: eat.text.body.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

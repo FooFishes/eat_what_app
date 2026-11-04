@@ -31,7 +31,7 @@ Future<void> showReportPanel(
     context,
     builder: (panel) => ReasonPanel<ReportReason>(
       title: '举报${target.kind.noun}',
-      subtitle: '处理结果会在消息里告诉你',
+      subtitle: '处理结果会通过消息通知你',
       options: target.reasons,
       label: (reason) => reason.label,
       capability: Capability.report,
@@ -44,7 +44,7 @@ Future<void> showReportPanel(
     ),
   );
   if (sent == true && context.mounted) {
-    showToast(context, '已提交，我们会尽快处理');
+    showToast(context, '已提交，处理结果会通过消息通知你');
   }
 }
 

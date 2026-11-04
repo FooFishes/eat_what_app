@@ -139,7 +139,7 @@ class _UserList extends ConsumerWidget {
               FollowListKind.followings => '还没关注任何人',
             },
             message: switch (kind) {
-              FollowListKind.fans => '多发几道好菜，会有同学关注的。',
+              FollowListKind.fans => '多发几道好菜，让更多同学认识你。',
               FollowListKind.followings => '在菜品详情点上传者，可以进主页关注。',
             },
           ),
@@ -207,10 +207,10 @@ class _Hidden extends StatelessWidget {
     padding: const EdgeInsets.only(top: 40),
     child: EmptyState(
       icon: EatIcons.lock,
-      title: '对方没有公开',
+      title: '对方未公开',
       message: switch (kind) {
-        FollowListKind.fans => '$name关掉了公开粉丝列表',
-        FollowListKind.followings => '$name关掉了公开关注列表',
+        FollowListKind.fans => '「$name」未公开粉丝列表',
+        FollowListKind.followings => '「$name」未公开关注列表',
       },
     ),
   );

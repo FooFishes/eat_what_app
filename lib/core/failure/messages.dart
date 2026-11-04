@@ -112,13 +112,13 @@ const failureMessages = <Object, String>{
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
-  BizCodes.consentRequired: '需要同意跨站同步后才能继续',
+  BizCodes.consentRequired: '需要同意数据同步后才能继续',
   BizCodes.dataSyncPending: '数据正在同步，请稍后再试',
   BizCodes.authUnavailable: '身份验证暂不可用，请稍后再试',
-  BizCodes.consentProofInvalid: '同意已失效，请重新登录',
-  BizCodes.consentPolicyChanged: '跨站同步说明已更新，请重新确认',
-  BizCodes.stateNotAllowed: '当前状态无法进行该操作',
-  BizCodes.foodNotFound: '这道菜找不到了',
+  BizCodes.consentProofInvalid: '验证信息已过期，请重新登录',
+  BizCodes.consentPolicyChanged: '数据同步说明已更新，请重新确认',
+  BizCodes.stateNotAllowed: '当前无法执行此操作，请刷新后重试',
+  BizCodes.foodNotFound: '这道菜已删除',
   BizCodes.duplicateDish: '这家店已有这道菜',
 };
 

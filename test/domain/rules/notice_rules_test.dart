@@ -93,7 +93,7 @@ void main() {
       detail: included,
     );
     expect(NoticeRules.actorsOf(notice), isNull);
-    expect(NoticeRules.sentenceOf(notice), '你上传的玉米鲜肉饺子被收进了专题「期末续命餐」');
+    expect(NoticeRules.sentenceOf(notice), '你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」');
     expect(
       NoticeRules.targetOf(notice),
       isA<TopicTarget>().having((t) => t.topicId, 'topicId', 7),
@@ -109,7 +109,7 @@ void main() {
       ),
     );
     expect(NoticeRules.targetOf(withdrawn), isA<NoTarget>());
-    expect(NoticeRules.sentenceOf(withdrawn), '你上传的菜被收进了专题，该专题已撤下');
+    expect(NoticeRules.sentenceOf(withdrawn), '你上传的菜已被收录到专题，该专题已撤下');
   });
 
   test('审核通过去菜或店，未通过不跳转', () {

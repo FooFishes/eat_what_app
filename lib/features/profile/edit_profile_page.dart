@@ -198,14 +198,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             children: [
               Expanded(
                 child: EatButton.mist(
-                  '继续编辑',
-                  onPressed: () => Navigator.of(panel).pop(false),
+                  '放弃',
+                  onPressed: () => Navigator.of(panel).pop(true),
                 ),
               ),
               Expanded(
                 child: EatButton.solid(
-                  '放弃',
-                  onPressed: () => Navigator.of(panel).pop(true),
+                  '继续编辑',
+                  onPressed: () => Navigator.of(panel).pop(false),
                 ),
               ),
             ],

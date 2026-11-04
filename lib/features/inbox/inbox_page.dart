@@ -236,18 +236,22 @@ class _Empty extends StatelessWidget {
     NoticeColumn.comments => const EmptyState(
       icon: EatIcons.comment,
       title: '还没有评论',
+      message: '有人评论或回复你时，会在这里告诉你。',
     ),
     NoticeColumn.likes => const EmptyState(
       icon: EatIcons.heart,
       title: '还没有赞和收藏',
+      message: '有人赞了、收藏了你上传的菜，会在这里告诉你。',
     ),
     NoticeColumn.follows => const EmptyState(
       icon: EatIcons.follow,
       title: '还没有人关注你',
+      message: '有同学关注你时，会在这里告诉你。',
     ),
     NoticeColumn.system => const EmptyState(
       icon: EatIcons.bell,
       title: '还没有系统消息',
+      message: '认证、专题收录和反馈的处理结果会在这里通知你。',
     ),
   };
 }

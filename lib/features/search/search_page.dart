@@ -132,7 +132,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             count: items.length,
             builder: (context, i) {
               final dish = items[i];
-              final shop = [?dish.shopName, ?dish.hubName].join(' · ');
+              final shop = [?dish.shopName, ?dish.hubName].join('  ');
               return DishTile(
                 image: networkImage(
                   dish.cover,

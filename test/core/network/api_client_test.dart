@@ -267,7 +267,7 @@ void main() {
 
     final failure = await _failure(client.get('/a'));
     expect(failure.kind, FailureKind.forbidden);
-    expect(failure.message, '当前账号不能进行该操作');
+    expect(failure.message, '当前账号暂无此权限');
     expect(forbidden, 1);
   });
 
@@ -319,7 +319,7 @@ void main() {
 
       final failure = await _failure(client.post('/a'));
       expect(failure.kind, FailureKind.business);
-      expect(failure.message, '需要同意跨站同步后才能继续');
+      expect(failure.message, '需要同意数据同步后才能继续');
       expect(adapter.sent('POST /a'), hasLength(1));
     });
 

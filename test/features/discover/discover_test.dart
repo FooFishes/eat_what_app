@@ -44,7 +44,7 @@ void main() {
       everyElement(1),
       reason: '校区定下来之前不拉推荐：推荐按天去重，发错的请求也会占掉菜',
     );
-    expect(find.textContaining('袁记云饺 · 万达金街'), findsOneWidget);
+    expect(find.textContaining('袁记云饺  万达金街'), findsOneWidget);
     expect(find.bySemanticsLabel('消息，3 条未读'), findsOneWidget);
     expect(find.text('软件园 ${_mealLabel()}'), findsOneWidget);
     await expectAccessible(tester);
@@ -136,7 +136,7 @@ void main() {
     await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
 
     expect(find.text('这附近还没人发过菜，发第一道'), findsOneWidget);
-    expect(find.text('发布一道菜'), findsWidgets);
+    expect(find.text('加一道菜'), findsWidgets);
   });
 
   testWidgets('地点和饭点面板：手动选的饭点立即生效，再点「按现在的时间」恢复', (tester) async {

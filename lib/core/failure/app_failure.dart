@@ -61,7 +61,7 @@ class const AppFailure(
     FailureKind.sessionExpired => '登录已过期，请重新登录',
     FailureKind.tooFrequent => '操作过于频繁，$retryHint',
     FailureKind.business => failureMessages[code] ?? '操作失败，请重试',
-    FailureKind.forbidden => '当前账号不能进行该操作',
+    FailureKind.forbidden => '当前账号暂无此权限',
     FailureKind.cancelled || FailureKind.unknown => '操作失败，请重试',
   };
 

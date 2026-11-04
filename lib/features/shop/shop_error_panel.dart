@@ -23,8 +23,8 @@ Future<void> showShopErrorPanel(
   final sent = await showPanel<bool>(
     context,
     builder: (panel) => ReasonPanel<ShopErrorType>(
-      title: '哪里不对',
-      subtitle: [shop.name, ?shop.address].join(' · '),
+      title: '信息有误',
+      subtitle: [shop.name, ?shop.address].join('  '),
       options: ShopErrorType.values,
       label: (type) => type.label,
       capability: Capability.reportShopError,

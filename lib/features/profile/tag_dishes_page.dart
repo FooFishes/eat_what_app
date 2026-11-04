@@ -20,7 +20,7 @@ class TagDishesPage extends ConsumerWidget {
     final provider = tagDishesProvider(tagId);
     return PlainScaffold(
       title: name.isEmpty ? '我的标签' : name,
-      subtitle: '只有你看得见',
+      subtitle: '只有你自己看得见',
       slivers: [
         DishGridSliver(
           value: ref.watch(provider),
@@ -30,7 +30,7 @@ class TagDishesPage extends ConsumerWidget {
           empty: const EmptyState(
             icon: EatIcons.tag,
             title: '这个标签下还没有菜',
-            message: '在菜品详情点「加标签」，选上这个标签。',
+            message: '在菜品详情点「加标签」，用「＋ 自己写」加上这个标签。',
           ),
         ),
       ],

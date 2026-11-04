@@ -62,7 +62,7 @@ void main() {
       matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-')),
     );
     expect(find.text('举报这道菜'), findsNothing);
-    expect(find.text('已提交，我们会尽快处理'), findsOneWidget);
+    expect(find.text('已提交，处理结果会通过消息通知你'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
