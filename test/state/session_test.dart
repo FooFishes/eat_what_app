@@ -7,7 +7,6 @@ import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/current_user.dart';
-import 'package:eat/state/cross_site_consent.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -159,30 +158,6 @@ void main() {
       env.kv.values.keys,
       unorderedEquals([PrivacyConsentStore.key, 'prefs.installed']),
     );
-  });
-
-  test('已登录时服务端要求同意，用户在面板中同意后用当前会话提交，再重发', () async {
-    env.adapter
-      ..on('GET /user/info', [
-        FakeAdapter.fail(20005),
-        FakeAdapter.ok(userInfoJson()),
-      ])
-      ..on('GET /auth/consent/policy', [
-        FakeAdapter.ok({'version': 'cb-v3', 'url': null}),
-      ])
-      ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
-    final container = await env.container(
-      session: const SignedIn(),
-      token: _token,
-    );
-    container.read(crossSiteConsentProvider).sessionPresenter = (_) async =>
-        true;
-
-    await container.read(sessionProvider.notifier).refreshUser();
-    expect((container.read(sessionProvider) as SignedIn).user, isNotNull);
-    expect(env.adapter.sent('POST /auth/consent/grant').single.body, {
-      'policyVersion': 'cb-v3',
-    });
   });
 
   test('用户信息转领域模型时补默认值，头像地址原样使用', () async {

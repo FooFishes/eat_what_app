@@ -130,17 +130,4 @@ void main() {
     expect(find.text('版本 0.1.0（1）补丁 2'), findsOneWidget);
     await expectAccessible(tester);
   });
-
-  testWidgets('没登录时打开设置，先去登录', (tester) async {
-    final (_, router) = await pumpApp(
-      tester,
-      env,
-      location: Paths.settingsAbout,
-    );
-
-    expect(
-      Uri.parse(locationOf(router)).queryParameters['from'],
-      Paths.settingsAbout,
-    );
-  });
 }

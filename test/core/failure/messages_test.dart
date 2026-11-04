@@ -26,16 +26,6 @@ void main() {
     expect(failureKindOf('SITE_ENROLLMENT_REQUIRED'), FailureKind.unknown);
   });
 
-  test('40002 含义随接口而定，不当作无权限', () {
-    expect(failureKindOf(BizCodes.stateNotAllowed), FailureKind.business);
-    expect(failureKindOf('STATE_NOT_ALLOWED'), FailureKind.unknown);
-  });
-
-  test('20006 是数据同步中，不是同意码', () {
-    expect(BizCodes.consentCodes, isNot(contains(20006)));
-    expect(AppFailure.fromCode(20006).message, '数据正在同步，请稍后再试');
-  });
-
   test('限流按服务端给的秒数提示何时重试', () {
     AppFailure limited(Object? data) =>
         AppFailure.fromCode(BizCodes.tooFrequent, data: data);

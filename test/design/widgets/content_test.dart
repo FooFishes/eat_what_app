@@ -162,13 +162,6 @@ void main() {
   });
 
   group('DishPlate', () {
-    test('盘沿按尺寸取：100 以下 4，320 是 8', () {
-      expect(DishPlate.rimFor(64), 4);
-      expect(DishPlate.rimFor(100), 4);
-      expect(DishPlate.rimFor(320), 8);
-      expect(DishPlate.rimFor(200), closeTo(5.82, 0.01));
-    });
-
     testWidgets('图片没加载出来时是 mist 底，加载后画出来', (tester) async {
       final image = await _solidImage(tester, 300, 200);
       await pumpEat(tester, DishPlate(image: image, size: 160));

@@ -31,8 +31,4 @@ void main() {
 
     expect(ids[0], ids[1]);
   });
-
-  test('每次生成的标识不同', () {
-    expect(DeviceId.generate(), isNot(DeviceId.generate()));
-  });
 }

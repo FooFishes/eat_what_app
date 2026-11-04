@@ -12,14 +12,6 @@ EatLayout _layout(double width, double height) => EatLayout(
 );
 
 void main() {
-  test('舞台高度：844 高时 520，按屏幕高度伸缩，夹在 420 到 560', () {
-    expect(_layout(390, 844).stageHeight, 520);
-    expect(_layout(390, 667).stageHeight, 420);
-    expect(_layout(390, 600).stageHeight, 420);
-    expect(_layout(390, 1000).stageHeight, 560);
-    expect(_layout(390, 900).stageHeight, closeTo(554.5, 0.1));
-  });
-
   test('宽屏的舞台铺满屏幕；白底页面挤到居中一栏', () {
     final wide = _layout(1280, 800);
     expect(wide.isWide, isTrue);

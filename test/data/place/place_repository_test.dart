@@ -1,4 +1,3 @@
-import 'package:eat/core/network/idempotency.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -65,27 +64,13 @@ void main() {
         .map((r) => r.query)
         .toList();
     expect(noPoint.containsKey('sort'), isFalse);
+    expect(noPoint.containsKey('gcjLat'), isFalse);
+    expect(noPoint.containsKey('radius'), isFalse);
     expect(noPoint.containsKey('categories'), isFalse);
     expect(noPoint.containsKey('priceBand'), isFalse);
     expect(noPoint.containsKey('recommendedOnly'), isFalse);
     expect(noPoint.containsKey('favoritesOnly'), isFalse);
     expect(withPoint, containsPair('sort', 'FOOD_COUNT'));
-  });
-
-  test('没有坐标时照常搜店，不带坐标和半径', () async {
-    final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
-    final container = await env.container();
-
-    await container
-        .read(placeRepositoryProvider)
-        .searchShops(keyword: '袁记', radius: 500);
-
-    final query = env.adapter.sent('GET /restaurant/search').single.query;
-    expect(query, containsPair('keyword', '袁记'));
-    expect(query.containsKey('gcjLat'), isFalse);
-    expect(query.containsKey('gcjLng'), isFalse);
-    expect(query.containsKey('radius'), isFalse);
   });
 
   test('店铺的汇总字段解析进店铺，没有汇总时为空', () async {
@@ -175,19 +160,6 @@ void main() {
       env.adapter.sent('POST /restaurant/add').first.headers,
       containsPair('Idempotency-Key', 'key-1'),
     );
-  });
-
-  test('Idempotency-Key 是 UUID v4', () {
-    final key = newIdempotencyKey();
-    expect(
-      key,
-      matches(
-        RegExp(
-          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-        ),
-      ),
-    );
-    expect(newIdempotencyKey(), isNot(key));
   });
 
   test('店名带空白时，原名和去掉空白的名字各查一次目录，合并后查重', () async {

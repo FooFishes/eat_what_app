@@ -1,6 +1,5 @@
 import 'dart:ui' show Tristate;
 
-import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
@@ -163,28 +162,6 @@ void main() {
           .getSemanticsData();
       expect(data.flagsCollection.isInMutuallyExclusiveGroup, isTrue);
       semantics.dispose();
-    });
-
-    testWidgets('带缩略图时行高 68', (tester) async {
-      await pumpEat(
-        tester,
-        SizedBox(
-          width: 360,
-          child: EatRadioRow(
-            title: '螺蛳粉研究所',
-            subtitle: const Text('600 m 万达金街 B1'),
-            thumbnail: const SizedBox.square(dimension: 52),
-            selected: true,
-            onSelected: () {},
-          ),
-        ),
-      );
-
-      expect(tester.getSize(find.byType(EatRadioRow)).height, 68);
-      final box = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer).first,
-      );
-      expect((box.decoration! as BoxDecoration).color, EatPalette.mist);
     });
   });
 

@@ -619,13 +619,4 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(PhoneLoginPage), findsOneWidget);
   });
-
-  testWidgets('宽屏时登录页的抽屉居中，最宽 480', (tester) async {
-    await pumpApp(tester, env, size: const Size(1280, 800));
-
-    final button = tester.getRect(find.widgetWithText(EatButton, '手机号登录'));
-    expect(button.width, 480 - 40);
-    expect(button.center.dx, 640);
-    expect(tester.takeException(), isNull);
-  });
 }

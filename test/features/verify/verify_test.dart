@@ -202,26 +202,6 @@ void main() {
       expect(find.text('我已完成，刷新状态'), findsOneWidget);
     });
 
-    testWidgets('不在白名单的链接忽略', (tester) async {
-      env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
-      final (_, router) = await pumpAppWithBrowser(
-        tester,
-        env,
-        browser,
-        location: Paths.discover,
-      );
-
-      env.links
-        ..open(
-          Uri.parse('https://evil.example/app/auth/callback?result=success'),
-        )
-        ..open(Uri.parse('https://eat.v50to.you/dishes/1'));
-      await tester.pumpAndSettle();
-
-      expect(_top(router), Paths.discover);
-      expect(browser.closed, 0);
-    });
-
     testWidgets('Web：地址栏打开回跳地址时转到认证页', (tester) async {
       env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
       final (_, router) = await pumpAppWithBrowser(

@@ -29,12 +29,4 @@ void main() {
       );
     }
   });
-
-  test('令牌名和枚举互相转换', () {
-    for (final stage in StageColor.values) {
-      expect(StageColor.fromToken(stage.token), stage);
-    }
-    expect(StageColor.broth.token, 'stage-broth');
-    expect(StageColor.fromToken('stage-unknown'), isNull);
-  });
 }

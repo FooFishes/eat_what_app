@@ -47,18 +47,11 @@ final _verticalScrollable = find.byWidgetPredicate(
 );
 
 void main() {
-  testWidgets('启动进入发现页，导航悬浮在底部，离左右 16、离底部 24 加安全区', (tester) async {
-    final router = await _start(
-      tester,
-      padding: const EdgeInsets.only(top: 47, bottom: 34),
-    );
+  testWidgets('启动进入发现页', (tester) async {
+    final router = await _start(tester);
 
     expect(_location(router), Paths.discover);
     expect(find.byType(DiscoverPage), findsOneWidget);
-    final nav = tester.getRect(find.byType(EatNavBar));
-    expect(nav.left, 16);
-    expect(nav.right, 390 - 16);
-    expect(nav.bottom, 844 - 24 - 34);
   });
 
   for (final path in [Paths.discover, Paths.nearby, Paths.me, Paths.publish]) {

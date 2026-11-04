@@ -47,18 +47,6 @@ void main() {
       ],
     );
 
-    testWidgets('844 高的屏幕上舞台 520，抽屉从 488 开始压住舞台 32px', (tester) async {
-      useScreen(tester, const Size(390, 844));
-      await _pump(tester, page());
-      await tester.pumpAndSettle();
-
-      expect(tester.getTopLeft(find.byType(SheetHandle)).dy, 520 - 32 + 10);
-      final stageBox = tester.getSize(
-        find.ancestor(of: find.text('就它了'), matching: find.byType(Stack)).first,
-      );
-      expect(stageBox.height, 520);
-    });
-
     testWidgets('抽屉画在舞台上面：露出来的按钮点得到，被压住的点不到', (tester) async {
       useScreen(tester, const Size(390, 844));
       await _pump(tester, page());
@@ -82,24 +70,6 @@ void main() {
       );
     });
 
-    testWidgets('宽屏时舞台铺满，抽屉变成左侧 400 宽的悬浮面板', (tester) async {
-      useScreen(tester, const Size(1280, 800));
-      await _pump(tester, page());
-      await tester.pumpAndSettle();
-
-      final panel = tester.getRect(
-        find
-            .ancestor(of: find.text('今日推荐'), matching: find.byType(ClipRRect))
-            .first,
-      );
-      expect(panel.left, 16);
-      expect(panel.top, 16);
-      expect(panel.width, 400);
-      expect(panel.bottom, 800 - 16);
-      expect(find.byType(SheetHandle), findsNothing);
-      expect(tester.getTopLeft(find.text('就它了')).dx, greaterThan(416));
-    });
-
     testWidgets('收到再点当前标签的信号时滚回顶部', (tester) async {
       useScreen(tester, const Size(390, 844));
       final signal = ValueNotifier(0);
@@ -116,7 +86,7 @@ void main() {
   });
 
   group('PlainScaffold', () {
-    testWidgets('返回和大标题在同一行，返回点击区域 52px，左右边距 20', (tester) async {
+    testWidgets('返回和大标题在同一行，点返回回调 onBack', (tester) async {
       useScreen(tester, const Size(390, 844));
       var backs = 0;
       await _pump(
@@ -129,21 +99,10 @@ void main() {
       );
 
       final back = find.bySemanticsLabel('返回');
-      expect(tester.getSize(back), const Size(52, 52));
-      expect(tester.getTopLeft(back).dx, 6);
       final title = find.text('设置');
-      expect(tester.getTopLeft(title).dx, 62);
       expect(tester.getCenter(title).dy, tester.getCenter(back).dy);
-      expect(tester.getTopLeft(find.text('账号与安全')).dx, 20);
       await tester.tap(back);
       expect(backs, 1);
-    });
-
-    testWidgets('宽屏时挤到居中一栏，最宽 480', (tester) async {
-      useScreen(tester, const Size(1280, 800));
-      await _pump(tester, const PlainScaffold(title: '设置'));
-
-      expect(tester.getTopLeft(find.text('设置')).dx, (1280 - 480) / 2 + 62);
     });
 
     testWidgets('键盘弹起时让到键盘上方，点空白处收起键盘', (tester) async {

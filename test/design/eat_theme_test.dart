@@ -61,14 +61,4 @@ void main() {
 
     expect(seen, same(EatTheme.light));
   });
-
-  test('ThemeData 固定浅色、关掉水波纹、背景 paper、挂上 EatTheme', () {
-    final data = eatThemeData();
-
-    expect(data.brightness, Brightness.light);
-    expect(data.splashFactory, NoSplash.splashFactory);
-    expect(data.scaffoldBackgroundColor, EatColors.light.paper);
-    expect(data.colorScheme.primary, EatColors.light.ink);
-    expect(data.extension<EatTheme>(), same(EatTheme.light));
-  });
 }

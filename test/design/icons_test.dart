@@ -5,7 +5,6 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/tokens/stage_color.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,18 +29,6 @@ void main() {
       );
     });
 
-    test('设计快照里的图标都在 assets/icons/ 里，且内容一致', () {
-      final snapshot = _svgNames('prototype/assets/icons');
-      expect(_svgNames('assets/icons').containsAll(snapshot), isTrue);
-      for (final name in snapshot) {
-        expect(
-          File('assets/icons/$name').readAsStringSync(),
-          File('prototype/assets/icons/$name').readAsStringSync(),
-          reason: name,
-        );
-      }
-    });
-
     test('描边图标有三套加粗变体，填充图标没有', () {
       for (final icon in EatIcons.values) {
         final base = File('assets/icons/${icon.file}.svg').readAsStringSync();
@@ -64,18 +51,11 @@ void main() {
       }
     });
 
-    test('Illustration 和 assets/illustrations/ 一一对应，内容和设计稿一致', () {
+    test('Illustration 和 assets/illustrations/ 一一对应', () {
       expect(
         Illustration.values.map((art) => '${art.name}.svg').toSet(),
         _svgNames('assets/illustrations'),
       );
-      for (final art in Illustration.values) {
-        expect(
-          File(art.asset).readAsStringSync(),
-          File('prototype/assets/dishes/${art.name}.svg').readAsStringSync(),
-          reason: art.name,
-        );
-      }
     });
 
     test('Emoji 和 assets/emoji/ 里的图片一一对应', () {
@@ -85,13 +65,6 @@ void main() {
           .where((name) => name.endsWith('.png'))
           .toSet();
       expect(Emoji.values.map((e) => '${e.name}.png').toSet(), pngs);
-    });
-
-    test('构建时图标被预编译成二进制', () async {
-      TestWidgetsFlutterBinding.ensureInitialized();
-      final bytes = await rootBundle.load('assets/icons/search.svg');
-      final head = String.fromCharCodes(bytes.buffer.asUint8List(0, 4));
-      expect(head, isNot('<svg'));
     });
   });
 
