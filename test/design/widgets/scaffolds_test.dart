@@ -116,7 +116,7 @@ void main() {
   });
 
   group('PlainScaffold', () {
-    testWidgets('左上角 44px 的返回，下面大标题，左右边距 20', (tester) async {
+    testWidgets('返回和大标题在同一行，返回点击区域 52px，左右边距 20', (tester) async {
       useScreen(tester, const Size(390, 844));
       var backs = 0;
       await _pump(
@@ -129,9 +129,11 @@ void main() {
       );
 
       final back = find.bySemanticsLabel('返回');
-      expect(tester.getSize(back), const Size(44, 44));
-      expect(tester.getTopLeft(back).dx, 8);
-      expect(tester.getTopLeft(find.text('设置')).dx, 20);
+      expect(tester.getSize(back), const Size(52, 52));
+      expect(tester.getTopLeft(back).dx, 6);
+      final title = find.text('设置');
+      expect(tester.getTopLeft(title).dx, 62);
+      expect(tester.getCenter(title).dy, tester.getCenter(back).dy);
       expect(tester.getTopLeft(find.text('账号与安全')).dx, 20);
       await tester.tap(back);
       expect(backs, 1);
@@ -141,7 +143,7 @@ void main() {
       useScreen(tester, const Size(1280, 800));
       await _pump(tester, const PlainScaffold(title: '设置'));
 
-      expect(tester.getTopLeft(find.text('设置')).dx, (1280 - 480) / 2 + 20);
+      expect(tester.getTopLeft(find.text('设置')).dx, (1280 - 480) / 2 + 62);
     });
 
     testWidgets('键盘弹起时让到键盘上方，点空白处收起键盘', (tester) async {

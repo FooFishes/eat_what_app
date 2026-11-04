@@ -785,7 +785,7 @@ extension RefCache on Ref {
 - 结构：一个 `CustomScrollView`。第一个 sliver 是舞台，它的布局高度是 `H - 32`、绘制高度是 `H`（自定义一个很小的 `RenderSliver`，`layoutExtent < paintExtent`），后面的抽屉 sliver 从 `H - 32` 开始画，正好压住舞台底部 32px；抽屉用 `DecoratedSliver` 画白底和顶部 `radius-sheet` 圆角，压在舞台色上不加阴影。
 - 抽屉跟着页面一起滚（规范 `Sheet`）。附近页例外，用自己的可拖动面板。
 - 有 Widget 测试保证：舞台高度按 12.4 计算；抽屉顶部在 `H - 32`；舞台按钮不被抽屉盖住。
-- 白底页面用 `PlainScaffold`：44×44 返回、`page-title` 大标题（不跟系统字号）、`space-20` 边距。
+- 白底页面用 `PlainScaffold`：52×52 返回与 `page-title` 标题同一行（标题不跟系统字号）、`space-20` 边距。
 - 实现：`CustomScrollView(paintOrder: SliverPaintOrder.lastIsTop)`，后面的 sliver 画在上面、先接点击，抽屉才能盖住舞台底部。抽屉的白底用 `DecoratedSliver` 的子类画，白底本身也接住点击，压住舞台的那 32px 和抽屉里的空白都不会点穿到舞台上。舞台后面另垫一块舞台色，只在 iOS 顶部回弹时露出来。
 - `StageScaffold.map` 给附近页这类用地图当舞台的页面：抽屉在手机上加 `shadow-sheet`，宽屏面板加 `shadow-float`。附近页可拖动的抽屉在阶段三再换。
 - App 根部（`app.dart` 的 `builder`）给了默认文字样式（`body`、`ink`）：页面不用 Material 的 `Scaffold`，没有这一层时没写样式的文字会显示成 Flutter 的兜底样子（红字加黄色下划线）。

@@ -19,7 +19,7 @@ class EatTextStyles({
   /// 登录页的品牌字, 不用于其他位置.
   required final TextStyle loginDisplay,
 
-  /// 白底页面的大标题.
+  /// 白底页面的标题, 与返回按钮在同一行.
   required final TextStyle pageTitle,
 
   /// 流程页的问句式标题.
@@ -76,7 +76,7 @@ class EatTextStyles({
   static final standard = EatTextStyles(
     stageDish: _sans(46, 50, 900, letterSpacing: -1),
     loginDisplay: _sans(60, 64, 900, letterSpacing: -1.5),
-    pageTitle: _sans(34, 42, 900),
+    pageTitle: _sans(20, 28, 500),
     questionTitle: _sans(32, 40, 900),
     profileName: _sans(30, 38, 900, letterSpacing: -0.5),
     sectionTitle: _sans(20, 28, 900),

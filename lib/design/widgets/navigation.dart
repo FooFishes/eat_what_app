@@ -1,5 +1,6 @@
 import 'package:eat/design/icons/eat_icons.dart';
-import 'package:eat/design/widgets/eat_icon_button.dart';
+import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
 /// 悬浮导航在页面底部占用的高度, 由主页面外壳提供.
@@ -58,8 +59,18 @@ class BackFallback extends InheritedWidget {
 }
 
 /// 页面左上角的返回按钮, 按 [BackFallback] 的规则返回.
+///
+/// 点击区域为 [extent] 见方, 比普通图标按钮大, 方便单手点到屏幕角落.
 class EatBackButton extends StatelessWidget {
   const new({super.key, this.onPressed});
+
+  /// 点击区域的边长.
+  static const extent = 52.0;
+
+  /// 图标与点击区域左边缘的距离. 父组件左移这段距离, 图标即与页面边距对齐.
+  static const inset = (extent - _iconSize) / 2;
+
+  static const _iconSize = 24.0;
 
   /// 点击回调. 不传时按 [BackFallback.back] 返回.
   ///
@@ -67,11 +78,14 @@ class EatBackButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => EatIconButton(
-    EatIcons.back,
+  Widget build(BuildContext context) => EatTappable(
+    onTap: onPressed ?? () => BackFallback.back(context),
     label: '返回',
-    size: 24,
-    onPressed: onPressed ?? () => BackFallback.back(context),
+    focusShape: const CircleBorder(),
+    builder: (context, _) => const SizedBox.square(
+      dimension: extent,
+      child: Center(child: EatIcon(EatIcons.back, size: _iconSize)),
+    ),
   );
 }
 

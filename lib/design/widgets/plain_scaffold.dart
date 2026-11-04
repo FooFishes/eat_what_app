@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 
 /// 白底页面骨架, 用于消息, 选店, 搜索, 评论和设置.
 ///
-/// - 左上角为返回按钮, 下方为 `page-title` 大标题, 左右边距 `space-20`.
+/// - 返回按钮和 `page-title` 标题在同一行, 标题过长时换行, 左右边距 `space-20`.
 /// - 宽屏时整页收窄为居中的一栏.
 /// - 分组靠小标题和留白分隔, 不加卡片. [slivers] 已包含左右边距.
 /// - 键盘弹出时页面避让到键盘上方, 获得焦点的输入框会滚动到可见位置.
@@ -80,55 +80,58 @@ class _PlainScaffoldState extends State<PlainScaffold>
                   slivers: [
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
-                        padding - 12,
-                        media.padding.top + 2,
-                        padding - 4,
-                        0,
+                        widget.showBack
+                            ? padding - EatBackButton.inset
+                            : padding,
+                        media.padding.top + 4,
+                        widget.actions.isEmpty ? padding : padding - 4,
+                        widget.subtitle == null ? 24 : 8,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: EatSize.touch,
-                          child: Row(
-                            children: [
-                              if (widget.showBack)
-                                EatBackButton(onPressed: widget.onBack),
-                              const Spacer(),
-                              ...widget.actions,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(padding, 8, padding, 24),
-                      sliver: SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: EatSpace.s4,
+                        child: Row(
                           children: [
-                            Semantics(
-                              header: true,
-                              child: Text(
-                                widget.title,
-                                textScaler: TextScaler.noScaling,
-                                style: eat.text.pageTitle.copyWith(
-                                  color: eat.colors.ink,
+                            if (widget.showBack) ...[
+                              EatBackButton(onPressed: widget.onBack),
+                              const SizedBox(width: EatSpace.s4),
+                            ],
+                            Expanded(
+                              child: Semantics(
+                                header: true,
+                                child: Text(
+                                  widget.title,
+                                  textScaler: TextScaler.noScaling,
+                                  style: eat.text.pageTitle.copyWith(
+                                    color: eat.colors.ink,
+                                  ),
                                 ),
                               ),
                             ),
-                            if (widget.subtitle case final subtitle?)
-                              Text(
-                                subtitle,
-                                style: eat.text.body.copyWith(
-                                  fontSize: 14,
-                                  height: 22 / 14,
-                                  color: eat.colors.inkMuted,
+                            if (widget.actions.isNotEmpty)
+                              SizedBox(
+                                height: EatBackButton.extent,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: widget.actions,
                                 ),
                               ),
                           ],
                         ),
                       ),
                     ),
+                    if (widget.subtitle case final subtitle?)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),
+                        sliver: SliverToBoxAdapter(
+                          child: Text(
+                            subtitle,
+                            style: eat.text.body.copyWith(
+                              fontSize: 14,
+                              height: 22 / 14,
+                              color: eat.colors.inkMuted,
+                            ),
+                          ),
+                        ),
+                      ),
                     SliverPadding(
                       padding: EdgeInsets.symmetric(horizontal: padding),
                       sliver: SliverMainAxisGroup(slivers: widget.slivers),
