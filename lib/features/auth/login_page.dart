@@ -532,7 +532,9 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
         alignment: Alignment.topCenter,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: inset - _opticalLift + 20),
+            padding: const EdgeInsets.only(
+              top: inset - _opticalLift + 20 + EatSpace.s4,
+            ),
             child: hint,
           ),
           Transform.translate(offset: Offset(bracketSpace / 2, 0), child: row),
