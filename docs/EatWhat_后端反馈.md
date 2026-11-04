@@ -19,7 +19,7 @@
 | 6 | `/foods/recommend` 实际返回数组，接口文档写的是分页对象 | 后端已确认不改返回格式 | 请修正 OpenAPI，客户端同步后删掉兼容分支 |
 | 7 | 联调约定写 `/user/info` 的 `banUntil` 是 ISO-8601 Instant，但 `JacksonConfig` 把 `Instant` 序列化成毫秒 | 客户端按源码的实际输出解析毫秒 | 把联调约定改成 Unix 毫秒 |
 | 8 | 受限会话没有放行足迹、粉丝和关注列表、取消赞、取消收藏、取消关注、`/foods/my`、`/foods/favorites`、`/foods/tags/my`（反馈、信息有误、举报已在 `81e4cad` 放行） | 客户端已按后端范围拦截，产品文档 7.2 也跟着改了 | 这几项如果是有意不放行，请确认；尤其是取消赞和取消收藏，封禁后自己的记录撤不掉 |
-| 9 | 完整源码契约 `business-openapi.yaml` 里没有评论接口（`/foods/{foodId}/comments`、`/comments/*`、`/foods/{foodId}/gallery`），因为评论控制器带 `@ConditionalOnProperty`，生成时没有注册 | 客户端已经把这个文件当作接口依据，契约测试只能先把评论接口列为豁免 | 生成契约时打开评论相关的配置开关，或者在描述里标明注册条件 |
+| 9 | 完整源码契约 `business-openapi.yaml` 里没有评论接口（`/foods/{foodId}/comments`、`/comments/*`、`/foods/{foodId}/gallery`），因为评论控制器带 `@ConditionalOnProperty`，生成时没有注册 | 客户端已经把这个文件当作接口依据，评论接口在里面查不到 | 生成契约时打开评论相关的配置开关，或者在描述里标明注册条件 |
 | 10 | `POST /feedback/messages` 只收 `text`、`screenshotKeys`、`context`，没有版本、补丁号和设备型号；服务端也不从请求头记录这些 | 产品要求反馈自动带上版本、补丁号和设备型号，便于排查。客户端现在只在反馈页写出版本和补丁号，请用户自己写进内容 | 加上 `appVersion`、`patchNumber`、`deviceModel`、`platform` 这几个选填字段，或者从约定的请求头里记录 |
 | 11 | `/foods/list` 返回的菜没有 `hubName`、`hubId`，`FoodService.toVO` 没有设置这两个字段；进度说明里写的是菜品列表已带 `hubName` | 搜菜结果显示不了商圈名 | 在 `toVO` 里补上 |
 | 12 | 店铺的招牌菜摘要 `RestaurantFoodSummary` 没有封面取景 `coverCrop` | 店铺舞台上的招牌菜盘子只能居中裁切，和菜品详情不一致 | 在摘要里补上 `coverCrop` |
@@ -33,7 +33,7 @@
 | 20 | 评论图片的签名地址只有 30 秒有效 | 在列表里停留稍久后再滑到的图会加载失败 | 和菜品图一致，或者走公开读的稳定地址 |
 | 21 | `GET /foods/{foodId}/gallery` 不带拍摄者 | 大图里标不出评论照片是谁拍的，只能从已加载的评论里找 | 每张图带上作者的昵称和 id |
 | 22 | 通知卡片定义了 `CommentDetail`（`foodId`、`commentId`、`replyId`），但没有任何地方生成评论和回复的消息，`COMMENTS` 分栏也没有数据来源 | 评论、回复的消息收不到；客户端按 `kind` 为 `comment`、`reply` 实现了跳转，取值未经确认 | 补上评论、回复、评论被赞的消息来源，并在契约里写明 `kind` 的取值 |
-| 23 | Apifox 业务模块的接口文档还是 `user-blocks-consent-20261026`，客户端在用的 37 个接口不在里面（评论、专题、消息卡片、反馈、店铺评价和收藏、登录设备、推送开关、换绑手机等） | 客户端从 Apifox 同步接口文档，现在同步会让契约测试失败，只能先保留手里的完整源码契约 | 把按当前源码生成的完整契约（`business-openapi.yaml`）更新到 Apifox |
+| 23 | Apifox 业务模块的接口文档还是 `user-blocks-consent-20261026`，客户端在用的 37 个接口不在里面（评论、专题、消息卡片、反馈、店铺评价和收藏、登录设备、推送开关、换绑手机等） | 客户端从 Apifox 同步接口文档，现在同步会丢掉这些接口，只能先保留手里的完整源码契约 | 把按当前源码生成的完整契约（`business-openapi.yaml`）更新到 Apifox |
 
 ## 3. 统一认证回跳
 

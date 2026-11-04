@@ -12,7 +12,7 @@
 >
 > 2026-11-02：按阶段六的实现更新：他人资料和关注关系的共享状态（4.2），粉丝和关注、标签下的菜的地址参数（5.1），换头像和「调整照片」共用的取景组件（2.1），下线其他设备和换绑手机后的会话换发（9.2）。
 >
-> 2026-11-02：按评论、专题、消息卡片、举报和反馈的实现更新：目录和共用组件（2.1、2.2），评论、未读数和往期专题的 Provider（4.1、4.2），评论、专题、认证回跳的路由（5.1、6.3），契约测试（7.6、21.1），写操作防重（7.7），权限（8.1、8.3），组件约定（11.8），消息页（15.5）。
+> 2026-11-02：按评论、专题、消息卡片、举报和反馈的实现更新：目录和共用组件（2.1、2.2），评论、未读数和往期专题的 Provider（4.1、4.2），评论、专题、认证回跳的路由（5.1、6.3），接口路径的写法（7.6），写操作防重（7.7），权限（8.1、8.3），组件约定（11.8），消息页（15.5）。
 >
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
@@ -430,11 +430,12 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 7.6 模型与 JSON
 
 - 不从 `docs/api.openapi.yml` 生成接口客户端（理由见依赖选型第 5 节）。每个接口分组手写一个 `XxxApi`：方法名对应接口，返回 DTO。
+- 接口路径写在同一文件的 `XxxEndpoints` 里，`XxxApi` 用点调用取路径，不直接写字符串：没有路径参数的是 `static const`（`AuthEndpoints.login`），有路径参数的是静态方法（`FoodEndpoints.detail(id)`）。同一路径的不同方法共用一项，比如赞和取消赞都用 `CommentEndpoints.like(commentId)`。
 - DTO 用 `json_serializable`：类上标 `@JsonSerializable(createToJson: false)`（只发请求体的 DTO 才要 `toJson`），`fromJson` 转给生成的 `_$XxxFromJson`。字段名和接口一致，不一致的用 `@JsonKey(name: ...)`。
 - DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
-- **契约测试**：`test/contract/openapi_paths_test.dart` 用 `yaml` 包读 `docs/api.openapi.yml`（对应后端当前源码的完整契约，从 Apifox 同步），检查每个 `XxxApi` 的 `endpoints` 里登记的「方法 + 路径」都在文档里。后端更新接口文件后先跑它。评论接口在后端按配置条件注册，生成契约时没有收进去，测试里列为豁免（`_missingFromSpec`），后端补齐契约后删掉。
+- 同步新版 `docs/api.openapi.yml` 后看 `git diff`，按变化改 `XxxEndpoints` 和受影响的 DTO。不做契约测试：手写的路径清单和实际调用是两份，测试只能证明清单在文档里，证明不了实际调用的路径在文档里。
 
 ### 7.7 分页、防重复
 
@@ -1269,7 +1270,6 @@ class PushNotice({
 | 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、放量分组、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
 | 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
-| 契约测试 | 客户端用到的接口都在 `docs/api.openapi.yml`（对应后端当前源码的完整契约，从 Apifox 同步）里；评论接口没收进契约，列为豁免（7.6） | `test/contract/` |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。

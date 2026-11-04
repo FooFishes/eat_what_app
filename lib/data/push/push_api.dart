@@ -7,21 +7,22 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'push_api.g.dart';
 
 // TODO: 未接入推送 SDK, 设备登记接口未对接, 服务端无法向本机推送. 接入推送 SDK 后对接设备登记接口.
+/// PushApi 调用的接口路径, 相对于业务接口地址.
+abstract final class PushEndpoints {
+  static const enable = '/push/settings/enable';
+  static const disable = '/push/settings/disable';
+  static const settings = '/push/settings';
+}
+
 /// 接口分组 Push: 各推送栏目的开关.
 class PushApi {
   PushApi(this._client);
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'GET /push/settings',
-    'POST /push/settings/enable',
-    'POST /push/settings/disable',
-  ];
-
   Future<List<PushSettingDto>> settings({CancelToken? cancelToken}) async =>
       decodeList(
-        await _client.get('/push/settings', cancelToken: cancelToken),
+        await _client.get(PushEndpoints.settings, cancelToken: cancelToken),
         PushSettingDto.fromJson,
       );
 
@@ -35,7 +36,7 @@ class PushApi {
     required int revision,
     String? closeFrontier,
   }) => _client.post(
-    enabled ? '/push/settings/enable' : '/push/settings/disable',
+    enabled ? PushEndpoints.enable : PushEndpoints.disable,
     body: {
       'commandId': commandId,
       'operation': enabled ? 'ENABLE' : 'DISABLE',

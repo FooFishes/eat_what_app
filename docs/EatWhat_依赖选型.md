@@ -71,7 +71,6 @@
 | 字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
 | JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 已引入（阶段二） |
 | 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 第一次需要 mock 时。阶段二的测试用 `test/support/fakes.dart` 里的内存实现和假网络适配器就够了，没有加 |
-| 读 `docs/api.openapi.yml` 做契约测试 | `yaml` | `^3.1.4` | 2026-08-28 | 已引入（阶段二） |
 | 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 已引入（阶段五），只在 CI 的发版构建运行 |
 | 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 已引入（阶段五），CI 用 `shorebirdtech/setup-shorebird` 安装 |
 | Golden 测试 | `alchemist` | `^0.14.1` | 2026-10-08 | 组件稳定后（见技术架构「测试策略」） |
@@ -188,7 +187,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 接口还会大改 | 现状差距列了约 30 项接口变化（手机号登录、推荐参数、评论、专题……），生成的代码会频繁整体重来 |
 | 风格不合 | 生成代码用工厂构造或 `built_value`，不符合项目写法 |
 
-替代做法：每个接口分组手写一个 `XxxApi` 类，DTO 用 `json_serializable`；加一个**契约测试**，用 `yaml` 包读 `docs/api.openapi.yml`，检查客户端用到的每个「方法 + 路径」都在文档里。后端更新接口文件后跑测试就知道哪里对不上。
+替代做法：每个接口分组手写一个 `XxxApi` 类，路径写成 `XxxEndpoints` 常量，DTO 用 `json_serializable`。同步新版接口文件后看 `git diff`，按变化改路径和 DTO。
 
 ## 6. 本地存储与安全存储
 
@@ -419,7 +418,6 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
 | `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
-| `yaml` | `^3.1.4` | 契约测试读 `docs/api.openapi.yml` |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
 | `vector_graphics_compiler` | `^1.3.2` | SVG 资源转换器 |
 | `sentry_dart_plugin` | `^3.4.0` | CI 上传符号表、source map；令牌只从环境变量 `SENTRY_AUTH_TOKEN` 读 |

@@ -7,13 +7,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'history_api.g.dart';
 
+/// HistoryApi 调用的接口路径, 相对于业务接口地址.
+abstract final class HistoryEndpoints {
+  static const browse = '/history/browse';
+}
+
 /// 接口分组 History: 足迹. 浏览记录由服务端在请求详情时写入, 客户端只读取和清空.
 class HistoryApi {
   HistoryApi(this._client);
 
   final ApiClient _client;
-
-  static const endpoints = ['GET /history/browse', 'DELETE /history/browse'];
 
   /// [targetType] 为 `food` 或 `restaurant`, 按最近浏览时间倒序.
   Future<Paged<BrowseItemDto>> list(
@@ -23,7 +26,7 @@ class HistoryApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/history/browse',
+      HistoryEndpoints.browse,
       query: {'targetType': targetType, 'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -31,8 +34,10 @@ class HistoryApi {
   );
 
   /// 清空 [targetType] 分栏的足迹. 为 null 时两栏都清空.
-  Future<void> clear({String? targetType}) =>
-      _client.delete('/history/browse', query: {'targetType': ?targetType});
+  Future<void> clear({String? targetType}) => _client.delete(
+    HistoryEndpoints.browse,
+    query: {'targetType': ?targetType},
+  );
 }
 
 /// 足迹的一项. 按 [targetType] 只有 [food] 或 [restaurant] 其中之一.

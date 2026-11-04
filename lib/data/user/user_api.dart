@@ -8,42 +8,43 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_api.g.dart';
 
+/// UserApi 调用的接口路径, 相对于业务接口地址.
+abstract final class UserEndpoints {
+  static const info = '/user/info';
+  static const userInfo = '/user/userInfo';
+  static const updateInfo = '/user/updateInfo';
+  static const follow = '/user/follow';
+  static const unfollow = '/user/unfollow';
+  static const followers = '/user/followers';
+  static const followings = '/user/followings';
+  static const changePrivacy = '/user/changePrivacy';
+  static String block(int userId) => '/user/blocks/$userId';
+  static const blocks = '/user/blocks';
+  static const recommendationSettings = '/user/recommendation-settings';
+  static String mobileCommandCodes(String commandId) =>
+      '/user/mobile/commands/$commandId/codes';
+  static String mobileCommandCommit(String commandId) =>
+      '/user/mobile/commands/$commandId/commit';
+  static String mobileCommandResume(String commandId) =>
+      '/user/mobile/commands/$commandId/resume';
+  static const mobileCommands = '/user/mobile/commands';
+}
+
 /// 接口分组 User: 当前用户, 资料, 关注, 隐私, 屏蔽, 个性化推荐和换绑手机.
 class UserApi {
   UserApi(this._client);
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'GET /user/info',
-    'GET /user/userInfo',
-    'PUT /user/updateInfo',
-    'POST /user/follow',
-    'POST /user/unfollow',
-    'GET /user/followers',
-    'GET /user/followings',
-    'POST /user/changePrivacy',
-    'GET /user/blocks',
-    'GET /user/blocks/{userId}',
-    'PUT /user/blocks/{userId}',
-    'DELETE /user/blocks/{userId}',
-    'GET /user/recommendation-settings',
-    'PUT /user/recommendation-settings',
-    'POST /user/mobile/commands',
-    'POST /user/mobile/commands/{command}/codes',
-    'POST /user/mobile/commands/{command}/commit',
-    'POST /user/mobile/commands/{commandId}/resume',
-  ];
-
   Future<UserInfoDto> info() async =>
-      decodeJson(await _client.get('/user/info'), UserInfoDto.fromJson);
+      decodeJson(await _client.get(UserEndpoints.info), UserInfoDto.fromJson);
 
   Future<UserProfileDto> profile(
     int userId, {
     CancelToken? cancelToken,
   }) async => decodeJson(
     await _client.get(
-      '/user/userInfo',
+      UserEndpoints.userInfo,
       query: {'userId': userId},
       cancelToken: cancelToken,
     ),
@@ -56,7 +57,7 @@ class UserApi {
     required String signature,
     String? avatar,
   }) => _client.put(
-    '/user/updateInfo',
+    UserEndpoints.updateInfo,
     body: {
       'displayName': displayName,
       'signature': signature,
@@ -65,10 +66,10 @@ class UserApi {
   );
 
   Future<void> follow(int userId) =>
-      _client.post('/user/follow', query: {'userId': userId});
+      _client.post(UserEndpoints.follow, query: {'userId': userId});
 
   Future<void> unfollow(int userId) =>
-      _client.post('/user/unfollow', query: {'userId': userId});
+      _client.post(UserEndpoints.unfollow, query: {'userId': userId});
 
   /// [userId] 的粉丝. 对方不公开粉丝列表时失败, 业务码为 `BizCodes.notSupported`.
   Future<Paged<FansDto>> followers(
@@ -78,7 +79,7 @@ class UserApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/user/followers',
+      UserEndpoints.followers,
       query: {'userId': userId, 'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -93,7 +94,7 @@ class UserApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/user/followings',
+      UserEndpoints.followings,
       query: {'userId': userId, 'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -105,7 +106,7 @@ class UserApi {
     required bool following,
     required bool follower,
   }) => _client.post(
-    '/user/changePrivacy',
+    UserEndpoints.changePrivacy,
     body: {'following': following, 'follower': follower},
   );
 
@@ -115,7 +116,7 @@ class UserApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/user/blocks',
+      UserEndpoints.blocks,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -125,23 +126,27 @@ class UserApi {
   /// 当前用户是否屏蔽了 [userId].
   Future<bool> blocked(int userId, {CancelToken? cancelToken}) async =>
       _blocked(
-        await _client.get('/user/blocks/$userId', cancelToken: cancelToken),
+        await _client.get(
+          UserEndpoints.block(userId),
+          cancelToken: cancelToken,
+        ),
       );
 
-  Future<void> block(int userId) => _client.put('/user/blocks/$userId');
+  Future<void> block(int userId) => _client.put(UserEndpoints.block(userId));
 
-  Future<void> unblock(int userId) => _client.delete('/user/blocks/$userId');
+  Future<void> unblock(int userId) =>
+      _client.delete(UserEndpoints.block(userId));
 
   /// 个性化推荐开关. 默认开启.
   Future<bool> personalized({CancelToken? cancelToken}) async => _personalized(
     await _client.get(
-      '/user/recommendation-settings',
+      UserEndpoints.recommendationSettings,
       cancelToken: cancelToken,
     ),
   );
 
   Future<void> setPersonalized({required bool personalized}) => _client.put(
-    '/user/recommendation-settings',
+    UserEndpoints.recommendationSettings,
     body: {'personalized': personalized},
   );
 
@@ -156,7 +161,7 @@ class UserApi {
     required String mobile,
   }) async => decodeJson(
     await _client.post(
-      '/user/mobile/commands',
+      UserEndpoints.mobileCommands,
       body: {'commandId': commandId, 'mobile': mobile},
     ),
     MobileCommandDto.fromJson,
@@ -168,7 +173,7 @@ class UserApi {
     required String type,
     Map<String, String> captchaHeaders = const {},
   }) => _client.post(
-    '/user/mobile/commands/$commandId/codes',
+    UserEndpoints.mobileCommandCodes(commandId),
     body: {'type': type},
     headers: captchaHeaders,
   );
@@ -182,7 +187,7 @@ class UserApi {
     required String recoveryCapability,
   }) async => decodeJson(
     await _client.post(
-      '/user/mobile/commands/$commandId/commit',
+      UserEndpoints.mobileCommandCommit(commandId),
       body: {
         'newCode': newCode,
         'oldCode': ?oldCode,
@@ -198,7 +203,7 @@ class UserApi {
     required String recoveryCapability,
   }) async => decodeJson(
     await _client.post(
-      '/user/mobile/commands/$commandId/resume',
+      UserEndpoints.mobileCommandResume(commandId),
       headers: {'X-Recovery-Capability': recoveryCapability},
     ),
     SessionOutcomeDto.fromJson,

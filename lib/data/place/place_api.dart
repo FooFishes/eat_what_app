@@ -24,30 +24,29 @@ enum ShopSort {
   final String api;
 }
 
+/// PlaceApi 调用的接口路径, 相对于业务接口地址.
+abstract final class PlaceEndpoints {
+  static const campuses = '/campus/list';
+  static const hubs = '/hub/list';
+  static const locateHub = '/hub/locate';
+  static const addRestaurant = '/restaurant/add';
+  static String restaurant(int id) => '/restaurant/detail/$id';
+  static const searchRestaurants = '/restaurant/search';
+  static const browseRestaurants = '/restaurant/browse';
+  static String restaurantRating(int id) => '/restaurant/$id/rating';
+  static String restaurantFavorite(int id) => '/restaurant/$id/favorite';
+  static const favoriteRestaurants = '/restaurant/favorites';
+}
+
 /// 地点相关的三个接口分组: Campus (校区), Hub (商圈), Restaurant (餐厅的浏览, 搜索和新建).
 class PlaceApi {
   PlaceApi(this._client);
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'GET /campus/list',
-    'GET /hub/list',
-    'GET /hub/locate',
-    'GET /restaurant/detail/{id}',
-    'GET /restaurant/search',
-    'GET /restaurant/browse',
-    'POST /restaurant/add',
-    'PUT /restaurant/{id}/rating',
-    'DELETE /restaurant/{id}/rating',
-    'PUT /restaurant/{id}/favorite',
-    'DELETE /restaurant/{id}/favorite',
-    'GET /restaurant/favorites',
-  ];
-
   Future<List<CampusDto>> campuses({CancelToken? cancelToken}) async =>
       decodeList(
-        await _client.get('/campus/list', cancelToken: cancelToken),
+        await _client.get(PlaceEndpoints.campuses, cancelToken: cancelToken),
         CampusDto.fromJson,
       );
 
@@ -57,7 +56,7 @@ class PlaceApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/hub/list',
+      PlaceEndpoints.hubs,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -67,7 +66,7 @@ class PlaceApi {
   /// 查询坐标所在的商圈. 不在任何商圈内时返回 null.
   Future<HubDto?> locateHub(double gcjLat, double gcjLng) async {
     final data = await _client.get(
-      '/hub/locate',
+      PlaceEndpoints.locateHub,
       query: {'gcjLat': gcjLat, 'gcjLng': gcjLng},
     );
     return data == null ? null : decodeJson(data, HubDto.fromJson);
@@ -81,7 +80,7 @@ class PlaceApi {
     required String idempotencyKey,
   }) async {
     final data = await _client.post(
-      '/restaurant/add',
+      PlaceEndpoints.addRestaurant,
       body: body.toJson(),
       headers: {'Idempotency-Key': idempotencyKey},
     );
@@ -96,7 +95,10 @@ class PlaceApi {
 
   Future<RestaurantDto> restaurant(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
-        await _client.get('/restaurant/detail/$id', cancelToken: cancelToken),
+        await _client.get(
+          PlaceEndpoints.restaurant(id),
+          cancelToken: cancelToken,
+        ),
         RestaurantDto.fromJson,
       );
 
@@ -125,7 +127,7 @@ class PlaceApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/restaurant/search',
+      PlaceEndpoints.searchRestaurants,
       query: {
         'campusId': ?campusId,
         'keyword': ?keyword,
@@ -161,7 +163,7 @@ class PlaceApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/restaurant/browse',
+      PlaceEndpoints.browseRestaurants,
       query: {
         'campusId': ?campusId,
         'keyword': ?keyword,
@@ -182,9 +184,9 @@ class PlaceApi {
   /// 评价要求已认证, 撤回只要求登录.
   Future<String?> rateRestaurant(int id, String? rating) async {
     final data = rating == null
-        ? await _client.delete('/restaurant/$id/rating')
+        ? await _client.delete(PlaceEndpoints.restaurantRating(id))
         : await _client.put(
-            '/restaurant/$id/rating',
+            PlaceEndpoints.restaurantRating(id),
             body: RestaurantRatingDto(rating: rating).toJson(),
           );
     return data is Map<String, dynamic>
@@ -195,8 +197,8 @@ class PlaceApi {
   /// 收藏或取消收藏店铺. 收藏要求已认证, 取消只要求登录.
   Future<void> setRestaurantFavorite(int id, {required bool favorite}) =>
       favorite
-      ? _client.put('/restaurant/$id/favorite')
-      : _client.delete('/restaurant/$id/favorite');
+      ? _client.put(PlaceEndpoints.restaurantFavorite(id))
+      : _client.delete(PlaceEndpoints.restaurantFavorite(id));
 
   /// 我收藏的店, 包含已关门的店. 按营业中, 同步中, 已关门分组, 组内按新建时间倒序.
   Future<Paged<RestaurantDto>> favoriteRestaurants({
@@ -205,7 +207,7 @@ class PlaceApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/restaurant/favorites',
+      PlaceEndpoints.favoriteRestaurants,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),

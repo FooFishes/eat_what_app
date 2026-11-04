@@ -20,34 +20,34 @@ enum FoodSort {
   final String api;
 }
 
+/// FoodApi 调用的接口路径, 相对于业务接口地址.
+abstract final class FoodEndpoints {
+  static const recommend = '/foods/recommend';
+  static String detail(int id) => '/foods/detail/$id';
+  static const list = '/foods/list';
+  static const favorites = '/foods/favorites';
+  static const my = '/foods/my';
+  static const upload = '/foods/upload';
+  static String like(int id) => '/foods/$id/like';
+  static String unlike(int id) => '/foods/$id/unlike';
+  static String favorite(int id) => '/foods/$id/favorite';
+  static String unfavorite(int id) => '/foods/$id/unfavorite';
+  static const systemTags = '/foods/tags/system';
+  static String addSystemTags(int id) => '/foods/$id/tags/system';
+  static String addCustomTags(int id) => '/foods/$id/tags/custom';
+  static String foodTag(int id, int tagId) => '/foods/$id/tags/$tagId';
+  static String tagsOf(int id) => '/foods/$id/tags';
+  static String myTagFoods(int tagId) => '/foods/tags/my/$tagId/foods';
+  static String myTag(int tagId) => '/foods/tags/my/$tagId';
+  static const myTags = '/foods/tags/my';
+  static String byUser(int userId) => '/foods/by-user/$userId';
+}
+
 /// 接口分组 Food: 推荐, 详情, 列表, 发布, 赞和收藏, 标签, 他人的上传.
 class FoodApi {
   FoodApi(this._client);
 
   final ApiClient _client;
-
-  static const endpoints = [
-    'GET /foods/recommend',
-    'GET /foods/detail/{id}',
-    'GET /foods/list',
-    'GET /foods/favorites',
-    'GET /foods/my',
-    'POST /foods/upload',
-    'POST /foods/{id}/like',
-    'POST /foods/{id}/unlike',
-    'POST /foods/{id}/favorite',
-    'POST /foods/{id}/unfavorite',
-    'GET /foods/tags/system',
-    'GET /foods/{id}/tags',
-    'POST /foods/{id}/tags/system',
-    'POST /foods/{id}/tags/custom',
-    'DELETE /foods/{id}/tags/{tagId}',
-    'GET /foods/tags/my',
-    'PUT /foods/tags/my/{tagId}',
-    'DELETE /foods/tags/my/{tagId}',
-    'GET /foods/by-user/{userId}',
-    'GET /foods/tags/my/{tagId}/foods',
-  ];
 
   /// 推荐一批菜品. 游客按 [deviceId] 在当天内去重.
   ///
@@ -61,7 +61,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodeList(
     await _client.get(
-      '/foods/recommend',
+      FoodEndpoints.recommend,
       query: {
         'campusId': ?campusId,
         'mealTime': ?mealTime,
@@ -76,7 +76,7 @@ class FoodApi {
 
   Future<FoodDto> detail(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
-        await _client.get('/foods/detail/$id', cancelToken: cancelToken),
+        await _client.get(FoodEndpoints.detail(id), cancelToken: cancelToken),
         FoodDto.fromJson,
       );
 
@@ -98,7 +98,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/list',
+      FoodEndpoints.list,
       query: {
         'restaurantId': ?restaurantId,
         'hubId': ?hubId,
@@ -122,7 +122,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/favorites',
+      FoodEndpoints.favorites,
       query: {'page': page, 'pageSize': pageSize, 'sort': 'FAVORITED_AT'},
       cancelToken: cancelToken,
     ),
@@ -135,7 +135,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/my',
+      FoodEndpoints.my,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -152,7 +152,7 @@ class FoodApi {
     String? idempotencyKey,
   }) async {
     final data = await _client.post(
-      '/foods/upload',
+      FoodEndpoints.upload,
       body: body.toJson(),
       headers: {'Idempotency-Key': ?idempotencyKey},
     );
@@ -163,36 +163,36 @@ class FoodApi {
     );
   }
 
-  Future<void> like(int id) => _client.post('/foods/$id/like');
+  Future<void> like(int id) => _client.post(FoodEndpoints.like(id));
 
-  Future<void> unlike(int id) => _client.post('/foods/$id/unlike');
+  Future<void> unlike(int id) => _client.post(FoodEndpoints.unlike(id));
 
-  Future<void> favorite(int id) => _client.post('/foods/$id/favorite');
+  Future<void> favorite(int id) => _client.post(FoodEndpoints.favorite(id));
 
-  Future<void> unfavorite(int id) => _client.post('/foods/$id/unfavorite');
+  Future<void> unfavorite(int id) => _client.post(FoodEndpoints.unfavorite(id));
 
   /// 口味词表, 由运营维护.
   Future<List<FoodTagDto>> systemTags({CancelToken? cancelToken}) async =>
       decodeList(
-        await _client.get('/foods/tags/system', cancelToken: cancelToken),
+        await _client.get(FoodEndpoints.systemTags, cancelToken: cancelToken),
         FoodTagDto.fromJson,
       );
 
   Future<FoodTagsDto> tagsOf(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
-        await _client.get('/foods/$id/tags', cancelToken: cancelToken),
+        await _client.get(FoodEndpoints.tagsOf(id), cancelToken: cancelToken),
         FoodTagsDto.fromJson,
       );
 
   Future<void> addSystemTags(int id, List<int> tagIds) =>
-      _client.post('/foods/$id/tags/system', body: {'tagIds': tagIds});
+      _client.post(FoodEndpoints.addSystemTags(id), body: {'tagIds': tagIds});
 
   Future<void> addCustomTags(int id, List<String> names) =>
-      _client.post('/foods/$id/tags/custom', body: {'names': names});
+      _client.post(FoodEndpoints.addCustomTags(id), body: {'names': names});
 
   /// 撤回口味标签或移除我的标签. 两种标签共用此接口.
   Future<void> removeTag(int id, int tagId) =>
-      _client.delete('/foods/$id/tags/$tagId');
+      _client.delete(FoodEndpoints.foodTag(id, tagId));
 
   /// 我写过的标签和各自用于几道菜.
   Future<Paged<FoodTagDto>> myTags({
@@ -201,7 +201,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/tags/my',
+      FoodEndpoints.myTags,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -209,11 +209,11 @@ class FoodApi {
   );
 
   Future<void> renameMyTag(int tagId, String name) =>
-      _client.put('/foods/tags/my/$tagId', body: {'name': name});
+      _client.put(FoodEndpoints.myTag(tagId), body: {'name': name});
 
   /// 删除我的标签. 只去掉标签, 菜不受影响.
   Future<void> deleteMyTag(int tagId) =>
-      _client.delete('/foods/tags/my/$tagId');
+      _client.delete(FoodEndpoints.myTag(tagId));
 
   /// 我用个人标签 [tagId] 标过的菜, 跨店列出. 标签不存在或不是我的时失败, 业务码 40001.
   Future<Paged<FoodDto>> taggedWith(
@@ -223,7 +223,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/tags/my/$tagId/foods',
+      FoodEndpoints.myTagFoods(tagId),
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -238,7 +238,7 @@ class FoodApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/by-user/$userId',
+      FoodEndpoints.byUser(userId),
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),

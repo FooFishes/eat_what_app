@@ -5,6 +5,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'consent_api.g.dart';
 
+/// ConsentApi 调用的接口路径, 相对于业务接口地址.
+abstract final class ConsentEndpoints {
+  static const policy = '/auth/consent/policy';
+  static const grant = '/auth/consent/grant';
+}
+
 /// 接口分组 AccountConsent: 跨站同步同意.
 ///
 /// 同意由用户在同意面板中确认后提交. 客户端只对接读取政策和同意两个接口, 不对接状态查询和撤回.
@@ -13,15 +19,10 @@ class ConsentApi {
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'GET /auth/consent/policy',
-    'POST /auth/consent/grant',
-  ];
-
   /// 当前政策. 版本号为空时抛出 [AppFailure]. 说明页地址可能为空.
   Future<ConsentPolicyDto> policy() async {
     final policy = decodeJson(
-      await _client.get('/auth/consent/policy'),
+      await _client.get(ConsentEndpoints.policy),
       ConsentPolicyDto.fromJson,
     );
     if (policy.version?.isEmpty ?? true) {
@@ -38,7 +39,7 @@ class ConsentApi {
   /// 本接口收到要求同意的业务码时不再请用户同意, 否则会无限循环.
   Future<void> grant({required String policyVersion, String? proof}) =>
       _client.post(
-        '/auth/consent/grant',
+        ConsentEndpoints.grant,
         body: {'policyVersion': policyVersion, 'proof': ?proof},
         consentRetry: false,
       );

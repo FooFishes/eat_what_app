@@ -5,18 +5,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sessions_api.g.dart';
 
+/// SessionsApi 调用的接口路径, 相对于业务接口地址.
+abstract final class SessionsEndpoints {
+  static const revokeOthers = '/auth/sessions/revoke-others';
+  static String resume(String commandId) => '/auth/sessions/$commandId/resume';
+  static String session(String sessionId) => '/auth/sessions/$sessionId';
+  static const sessions = '/auth/sessions';
+}
+
 /// 接口分组 DeviceSessions: 登录设备的列表, 下线单个设备和其他设备, 以及换发后的会话恢复.
 class SessionsApi {
   SessionsApi(this._client);
 
   final ApiClient _client;
-
-  static const endpoints = [
-    'GET /auth/sessions',
-    'DELETE /auth/sessions/{sessionId}',
-    'POST /auth/sessions/revoke-others',
-    'POST /auth/sessions/{commandId}/resume',
-  ];
 
   /// 当前账号已登录的设备, 按登录时间倒序. [cursor] 是上一页最后一项的 `sessionId`.
   Future<DeviceSessionPageDto> list({
@@ -25,7 +26,7 @@ class SessionsApi {
     CancelToken? cancelToken,
   }) async => decodeJson(
     await _client.get(
-      '/auth/sessions',
+      SessionsEndpoints.sessions,
       query: {'cursor': ?cursor, 'size': size},
       cancelToken: cancelToken,
     ),
@@ -33,14 +34,14 @@ class SessionsApi {
   );
 
   Future<void> revoke(String sessionId) =>
-      _client.delete('/auth/sessions/$sessionId');
+      _client.delete(SessionsEndpoints.session(sessionId));
 
   /// 下线其他设备. 本机的会话随之换发, 之后用 [resume] 获取新凭证.
   Future<void> revokeOthers({
     required String commandId,
     required String recoveryCapability,
   }) => _client.post(
-    '/auth/sessions/revoke-others',
+    SessionsEndpoints.revokeOthers,
     body: {'commandId': commandId, 'recoveryCapability': recoveryCapability},
   );
 
@@ -49,7 +50,7 @@ class SessionsApi {
     required String recoveryCapability,
   }) async => decodeJson(
     await _client.post(
-      '/auth/sessions/$commandId/resume',
+      SessionsEndpoints.resume(commandId),
       headers: {'X-Recovery-Capability': recoveryCapability},
     ),
     SessionOutcomeDto.fromJson,

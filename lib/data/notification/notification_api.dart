@@ -8,18 +8,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'notification_api.g.dart';
 
+/// NotificationApi 调用的接口路径, 相对于业务接口地址.
+abstract final class NotificationEndpoints {
+  static const unreadCount = '/notification/cards/unread/count';
+  static String readCard(String id) => '/notification/cards/$id/read';
+  static const cards = '/notification/cards';
+  static const readLegacyAll = '/notification/read/all';
+}
+
 /// 接口分组 NotificationCards: 按分栏获取合并后的消息, 未读数, 标记已读.
 class NotificationApi {
   NotificationApi(this._client);
 
   final ApiClient _client;
-
-  static const endpoints = [
-    'GET /notification/cards',
-    'GET /notification/cards/unread/count',
-    'POST /notification/cards/{id}/read',
-    'POST /notification/read/all',
-  ];
 
   /// [column] 是分栏的接口取值, 如 `ALL`, `SYSTEM`. 按最近一条的时间倒序.
   Future<Paged<NoticeCardDto>> cards(
@@ -29,7 +30,7 @@ class NotificationApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/notification/cards',
+      NotificationEndpoints.cards,
       query: {'column': column, 'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -39,17 +40,19 @@ class NotificationApi {
   /// "全部" 分栏的未读数. `cards` 是有未读的行数, `members` 是未读的条数.
   Future<UnreadDto> unread({CancelToken? cancelToken}) async => decodeJson(
     await _client.get(
-      '/notification/cards/unread/count',
+      NotificationEndpoints.unreadCount,
       cancelToken: cancelToken,
     ),
     UnreadDto.fromJson,
   );
 
   /// 把一行合并的各条都标为已读. [id] 是卡片的 UUID.
-  Future<void> read(String id) => _client.post('/notification/cards/$id/read');
+  Future<void> read(String id) =>
+      _client.post(NotificationEndpoints.readCard(id));
 
   /// 只标记旧版通知表中的消息 (关注和旧版活动的赞), 不包括其他来源的卡片.
-  Future<void> readLegacyAll() => _client.post('/notification/read/all');
+  Future<void> readLegacyAll() =>
+      _client.post(NotificationEndpoints.readLegacyAll);
 }
 
 /// 消息卡片.

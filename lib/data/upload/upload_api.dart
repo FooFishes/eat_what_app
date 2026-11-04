@@ -9,6 +9,12 @@ part 'upload_api.g.dart';
 /// 评论照片存放在私有空间, 审核通过后才出现在公开的评论和菜的大图里.
 enum UploadBiz { avatar, foods, restaurants, comments, feedback }
 
+/// UploadApi 调用的接口路径, 相对于业务接口地址.
+abstract final class UploadEndpoints {
+  static const presign = '/upload/presign';
+  static const complete = '/upload/complete';
+}
+
 /// 接口分组 Upload: 申请签名, 确认上传完成.
 ///
 /// 两步之间的 `PUT` 由 `UploadClient` 直接发往存储服务, 不经过业务网关.
@@ -17,8 +23,6 @@ class UploadApi {
 
   final ApiClient _client;
 
-  static const endpoints = ['POST /upload/presign', 'POST /upload/complete'];
-
   Future<PresignDto> presign({
     required String fileName,
     required String contentType,
@@ -26,7 +30,7 @@ class UploadApi {
     required UploadBiz biz,
   }) async => decodeJson(
     await _client.post(
-      '/upload/presign',
+      UploadEndpoints.presign,
       body: {
         'fileName': fileName,
         'contentType': contentType,
@@ -38,7 +42,7 @@ class UploadApi {
   );
 
   Future<void> complete(String key) =>
-      _client.post('/upload/complete', body: {'key': key});
+      _client.post(UploadEndpoints.complete, body: {'key': key});
 }
 
 @Riverpod(keepAlive: true)

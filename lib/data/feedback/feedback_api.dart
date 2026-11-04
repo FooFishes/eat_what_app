@@ -4,6 +4,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'feedback_api.g.dart';
 
+/// FeedbackApi 调用的接口路径, 相对于业务接口地址.
+abstract final class FeedbackEndpoints {
+  static const catalogErrors = '/feedback/catalog-errors';
+  static const reports = '/feedback/reports';
+  static const messages = '/feedback/messages';
+}
+
 /// 接口分组 Feedback: 意见反馈, 店铺 "信息有误" 和举报.
 ///
 /// 提交都要求携带 `Idempotency-Key`. 同一个键重放时, 服务端返回第一次的结果.
@@ -15,24 +22,18 @@ class FeedbackApi {
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'POST /feedback/catalog-errors',
-    'POST /feedback/reports',
-    'POST /feedback/messages',
-  ];
-
   Future<void> submitCatalogError(
     CatalogErrorDto body, {
     required String idempotencyKey,
   }) => _client.post(
-    '/feedback/catalog-errors',
+    FeedbackEndpoints.catalogErrors,
     body: body.toJson(),
     headers: {'Idempotency-Key': idempotencyKey},
   );
 
   Future<void> submitReport(ReportDto body, {required String idempotencyKey}) =>
       _client.post(
-        '/feedback/reports',
+        FeedbackEndpoints.reports,
         body: body.toJson(),
         headers: {'Idempotency-Key': idempotencyKey},
       );
@@ -41,7 +42,7 @@ class FeedbackApi {
     FeedbackMessageDto body, {
     required String idempotencyKey,
   }) => _client.post(
-    '/feedback/messages',
+    FeedbackEndpoints.messages,
     body: body.toJson(),
     headers: {'Idempotency-Key': idempotencyKey},
   );

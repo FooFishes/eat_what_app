@@ -10,6 +10,18 @@ part 'comment_api.g.dart';
 /// 一页接口数据和 `PageResult.totalItems`.
 typedef CountedPage<T> = ({Paged<T> page, int total});
 
+/// CommentApi 调用的接口路径, 相对于业务接口地址.
+abstract final class CommentEndpoints {
+  static String replyToComment(int foodId, int commentId) =>
+      '/foods/$foodId/comments/$commentId/replies';
+  static String foodComments(int foodId) => '/foods/$foodId/comments';
+  static String replies(int commentId) => '/comments/$commentId/replies';
+  static String foodGallery(int foodId) => '/foods/$foodId/gallery';
+  static String like(int commentId) => '/comments/$commentId/like';
+  static String comment(int commentId) => '/comments/$commentId';
+  static const mySubmissions = '/comments/submissions/my';
+}
+
 /// 接口分组 Comment: 评论和回复的列表, 发表, 删除, 赞, 我的评论, 菜的图库.
 ///
 /// 写操作都要求 `Idempotency-Key` 请求头, 值为 UUID.
@@ -20,19 +32,6 @@ class CommentApi {
 
   final ApiClient _client;
 
-  static const endpoints = [
-    'GET /foods/{foodId}/comments',
-    'POST /foods/{foodId}/comments',
-    'POST /foods/{foodId}/comments/{commentId}/replies',
-    'GET /comments/{commentId}/replies',
-    'DELETE /comments/{commentId}',
-    'PUT /comments/{id}/like',
-    'DELETE /comments/{id}/like',
-    'GET /comments/{id}/like',
-    'GET /comments/submissions/my',
-    'GET /foods/{foodId}/gallery',
-  ];
-
   /// 一道菜的评论, 不含回复. [sort] 为 `MOST_USEFUL` 或 `NEWEST`.
   Future<CountedPage<CommentDto>> comments(
     int foodId, {
@@ -42,7 +41,7 @@ class CommentApi {
     CancelToken? cancelToken,
   }) async => _counted(
     await _client.get(
-      '/foods/$foodId/comments',
+      CommentEndpoints.foodComments(foodId),
       query: {'sort': sort, 'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -57,7 +56,7 @@ class CommentApi {
     CancelToken? cancelToken,
   }) async => _counted(
     await _client.get(
-      '/comments/$commentId/replies',
+      CommentEndpoints.replies(commentId),
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -72,7 +71,7 @@ class CommentApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/foods/$foodId/gallery',
+      CommentEndpoints.foodGallery(foodId),
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
@@ -89,7 +88,7 @@ class CommentApi {
     required String idempotencyKey,
   }) async => decodeJson(
     await _client.post(
-      '/foods/$foodId/comments',
+      CommentEndpoints.foodComments(foodId),
       body: {'text': text, 'pictureKeys': pictureKeys},
       headers: {'Idempotency-Key': idempotencyKey},
     ),
@@ -105,7 +104,7 @@ class CommentApi {
     required String idempotencyKey,
   }) async => decodeJson(
     await _client.post(
-      '/foods/$foodId/comments/$commentId/replies',
+      CommentEndpoints.replyToComment(foodId, commentId),
       body: {'text': text, 'replyToId': ?replyToId},
       headers: {'Idempotency-Key': idempotencyKey},
     ),
@@ -115,7 +114,7 @@ class CommentApi {
   /// 删除自己的评论或回复. 删除评论时下面的回复一起删除.
   Future<void> delete(int commentId, {required String idempotencyKey}) =>
       _client.delete(
-        '/comments/$commentId',
+        CommentEndpoints.comment(commentId),
         headers: {'Idempotency-Key': idempotencyKey},
       );
 
@@ -124,7 +123,7 @@ class CommentApi {
     required String idempotencyKey,
   }) async => decodeJson(
     await _client.put(
-      '/comments/$commentId/like',
+      CommentEndpoints.like(commentId),
       headers: {'Idempotency-Key': idempotencyKey},
     ),
     CommentLikeDto.fromJson,
@@ -135,7 +134,7 @@ class CommentApi {
     required String idempotencyKey,
   }) async => decodeJson(
     await _client.delete(
-      '/comments/$commentId/like',
+      CommentEndpoints.like(commentId),
       headers: {'Idempotency-Key': idempotencyKey},
     ),
     CommentLikeDto.fromJson,
@@ -146,7 +145,10 @@ class CommentApi {
     int commentId, {
     CancelToken? cancelToken,
   }) async => decodeJson(
-    await _client.get('/comments/$commentId/like', cancelToken: cancelToken),
+    await _client.get(
+      CommentEndpoints.like(commentId),
+      cancelToken: cancelToken,
+    ),
     CommentLikeDto.fromJson,
   );
 
@@ -157,7 +159,7 @@ class CommentApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      '/comments/submissions/my',
+      CommentEndpoints.mySubmissions,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),

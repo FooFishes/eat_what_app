@@ -4,32 +4,32 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_api.g.dart';
 
+/// AuthApi 调用的接口路径, 相对于业务接口地址.
+abstract final class AuthEndpoints {
+  static const captchaConfig = '/auth/captcha/config';
+  static const phoneCode = '/auth/phone/code';
+  static const phoneLogin = '/auth/phone/login';
+  static const login = '/auth/login';
+  static const logout = '/auth/logout';
+  static const sdu = '/auth/sdu';
+  static const sendEmail = '/auth/sendEmail';
+  static const checkUsername = '/auth/checkUsername';
+  static const passwordCode = '/auth/password/code';
+  static const passwordReset = '/auth/password/reset';
+  static const changePassword = '/auth/changePassword';
+  static const setUsername = '/auth/username/set';
+}
+
 /// 接口分组 Auth: 登录, 发送验证码, 人机验证参数, 学生认证, 设置用户名和密码.
 class AuthApi {
   AuthApi(this._client);
 
   final ApiClient _client;
 
-  /// 本类调用的接口. 契约测试逐个检查它们是否在 `docs/api.openapi.yml` 中.
-  static const endpoints = [
-    'GET /auth/captcha/config',
-    'POST /auth/phone/code',
-    'POST /auth/phone/login',
-    'POST /auth/login',
-    'POST /auth/logout',
-    'GET /auth/sdu',
-    'GET /auth/sendEmail',
-    'POST /auth/checkUsername',
-    'POST /auth/password/code',
-    'POST /auth/password/reset',
-    'POST /auth/changePassword',
-    'POST /auth/username/set',
-  ];
-
   /// 人机验证参数. 接口要求不缓存, 每次验证前重新请求.
   Future<CaptchaConfigDto> captchaConfig() async => decodeJson(
     await _client.get(
-      '/auth/captcha/config',
+      AuthEndpoints.captchaConfig,
       headers: const {'Cache-Control': 'no-store'},
     ),
     CaptchaConfigDto.fromJson,
@@ -40,28 +40,28 @@ class AuthApi {
     String mobile, {
     Map<String, String> captchaHeaders = const {},
   }) => _client.post(
-    '/auth/phone/code',
+    AuthEndpoints.phoneCode,
     body: {'mobile': mobile},
     headers: captchaHeaders,
   );
 
   Future<LoginReplyDto> phoneLogin(PhoneLoginRequestDto request) async =>
       decodeJson(
-        await _client.post('/auth/phone/login', body: request.toJson()),
+        await _client.post(AuthEndpoints.phoneLogin, body: request.toJson()),
         LoginReplyDto.fromJson,
       );
 
   Future<LoginReplyDto> passwordLogin(PasswordLoginRequestDto request) async =>
       decodeJson(
-        await _client.post('/auth/login', body: request.toJson()),
+        await _client.post(AuthEndpoints.login, body: request.toJson()),
         LoginReplyDto.fromJson,
       );
 
-  Future<void> logout() => _client.post('/auth/logout');
+  Future<void> logout() => _client.post(AuthEndpoints.logout);
 
   /// [client] 决定学校认证页完成后的重定向目标: `app` 回到 App, `web` 回到网页.
   Future<SsoStartDto> startSso({required String client}) async => decodeJson(
-    await _client.get('/auth/sdu', query: {'client': client}),
+    await _client.get(AuthEndpoints.sdu, query: {'client': client}),
     SsoStartDto.fromJson,
   );
 
@@ -69,26 +69,26 @@ class AuthApi {
     String email, {
     Map<String, String> captchaHeaders = const {},
   }) => _client.get(
-    '/auth/sendEmail',
+    AuthEndpoints.sendEmail,
     query: {'email': email},
     headers: captchaHeaders,
   );
 
   /// 用户名是否可用. 已被占用时失败, 业务码为 `BizCodes.usernameTaken`.
   Future<void> checkUsername(String userName) =>
-      _client.post('/auth/checkUsername', query: {'userName': userName});
+      _client.post(AuthEndpoints.checkUsername, query: {'userName': userName});
 
   /// 向当前账号绑定的手机发送验证码, 供设置用户名和设置或修改密码使用.
   Future<void> sendAccountCode({
     Map<String, String> captchaHeaders = const {},
-  }) => _client.post('/auth/password/code', headers: captchaHeaders);
+  }) => _client.post(AuthEndpoints.passwordCode, headers: captchaHeaders);
 
   /// 用验证码设置或修改密码, 不需要旧密码.
   Future<void> resetPassword({
     required String code,
     required String newPassword,
   }) => _client.post(
-    '/auth/password/reset',
+    AuthEndpoints.passwordReset,
     body: {'code': code, 'newPassword': newPassword},
   );
 
@@ -97,7 +97,7 @@ class AuthApi {
     required String oldPassword,
     required String newPassword,
   }) => _client.post(
-    '/auth/changePassword',
+    AuthEndpoints.changePassword,
     body: {'oldPassword': oldPassword, 'newPassword': newPassword},
   );
 
@@ -107,7 +107,7 @@ class AuthApi {
     required String code,
     String? newPassword,
   }) => _client.post(
-    '/auth/username/set',
+    AuthEndpoints.setUsername,
     body: {'userName': userName, 'code': code, 'newPassword': ?newPassword},
   );
 }
