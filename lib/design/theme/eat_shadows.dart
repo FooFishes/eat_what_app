@@ -43,7 +43,7 @@ class const EatShadows({
   /// 地图上的店铺标记.
   required final EatShadow pin,
 
-  /// 压在地图上的抽屉. 压在舞台色上的抽屉不加阴影.
+  /// 压在地图上的抽屉, 以及登录页的抽屉. 其他压在舞台色上的抽屉不加阴影.
   required final EatShadow sheet,
 }) {
   static const standard = EatShadows(

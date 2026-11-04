@@ -76,13 +76,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final sheet = DecoratedBox(
       decoration: BoxDecoration(
         color: c.paper,
-        borderRadius: const BorderRadius.vertical(top: EatRadius.sheet),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(_sheetRadius),
+        ),
+        boxShadow: eat.shadows.sheet.outer,
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          EatSpace.s20,
-          EatSpace.s24,
-          EatSpace.s20,
+          _sheetInset,
+          _sheetInset,
+          _sheetInset,
           _sheetBottom + media.padding.bottom,
         ),
         child: DefaultTextStyle.merge(
@@ -153,6 +156,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
+
+  /// 抽屉上边和左右的内边距, 三边相等, 圆角才能和按钮同心.
+  static const _sheetInset = EatSpace.s20;
+
+  /// 抽屉顶部的圆角. 取按钮的半径加内边距, 和按钮的圆角同心.
+  static const _sheetRadius = EatSize.button / 2 + _sheetInset;
 
   /// 抽屉内容与屏幕底边的距离. 大于上边距, 避免按钮贴近底边.
   static const _sheetBottom = 44.0;
