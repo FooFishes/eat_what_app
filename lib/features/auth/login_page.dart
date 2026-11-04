@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/layout/eat_layout.dart';
@@ -107,9 +108,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // 纵向布局: 品牌字在顶部, 抽屉贴底, 转盘绘制在两者之间, 下半部分被抽屉遮挡.
     // 屏幕的富余高度按 1:8 分给品牌字上方留白和转盘, 避免中间出现大块空白.
     // 矮屏或大字号下内容超出屏幕时整页滚动, 避免品牌字与抽屉重叠.
+    // 不回弹也不拉伸: 越界拖动会改变 SliverFillRemaining 的高度, 转盘随之变形.
     return EatStage(
       stage: StageColor.broth,
       child: CustomScrollView(
+        scrollBehavior: ScrollConfiguration.of(
+          context,
+        ).copyWith(overscroll: false, physics: const ClampingScrollPhysics()),
         slivers: [
           SliverFillRemaining(
             hasScrollBody: false,
@@ -153,7 +158,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   static const _sheetBottom = 44.0;
 
   /// 品牌字与状态栏的最小距离.
-  static const _brandTop = 56.0;
+  static const _brandTop = 36.0;
 }
 
 class _Brand extends StatelessWidget {
@@ -163,6 +168,10 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
+    final intro = eat.text.body.copyWith(
+      height: 22 / 15,
+      color: palette.secondaryForeground,
+    );
     return Semantics(
       header: true,
       label: '沙软今天吃什么',
@@ -173,7 +182,7 @@ class _Brand extends StatelessWidget {
             Text(
               '沙软',
               style: eat.text.body.copyWith(
-                fontSize: 16,
+                fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: palette.foreground,
               ),
@@ -185,12 +194,20 @@ class _Brand extends StatelessWidget {
               style: eat.text.loginDisplay.copyWith(color: palette.foreground),
             ),
             const SizedBox(height: EatSpace.s14),
-            Text(
-              '看看软件园的同学都在吃什么，\n再把你的好店分享出去。',
-              style: eat.text.body.copyWith(
-                height: 22 / 15,
-                color: palette.secondaryForeground,
+            Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: '是啊，吃什么'),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 2),
+                      child: EmojiImage(Emoji.thinking, size: intro.fontSize!),
+                    ),
+                  ),
+                ],
               ),
+              style: intro,
             ),
           ],
         ),
@@ -376,6 +393,10 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
   static const _shakeAmplitude = 6.0;
   static const _shakeCycles = 3;
 
+  /// 文字相对勾选框上移的距离. 汉字字面在行框里偏下,
+  /// 行框和圆按几何中心对齐时文字看起来比圆低, 上移后两者的视觉中心对齐.
+  static const _opticalLift = 1.0;
+
   @override
   void didUpdateWidget(AgreementCheck oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -409,82 +430,114 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
       ref.read(loginAgreementProvider.notifier).set(agreed: !agreed);
     }
 
-    TextSpan link(String text, TapGestureRecognizer recognizer) => TextSpan(
-      text: text,
+    /// 下划线只画在协议名下, 书名号不画, 否则线两端会悬空.
+    TextSpan link(String name, TapGestureRecognizer recognizer) => TextSpan(
       style: const TextStyle(fontWeight: FontWeight.w600),
-      recognizer: recognizer,
+      children: [
+        TextSpan(text: '《', recognizer: recognizer),
+        TextSpan(
+          text: name,
+          style: TextStyle(
+            decoration: TextDecoration.underline,
+            decorationColor: c.inkSoft,
+          ),
+          recognizer: recognizer,
+        ),
+        TextSpan(text: '》', recognizer: recognizer),
+      ],
     );
-    final style = eat.text.meta.copyWith(color: c.inkSoft);
+    final style = eat.text.meta.copyWith(color: c.inkSoft, height: 20 / 13);
+
+    /// 勾选框的点击区域比圆大, 圆的左右各空出 [inset].
+    /// 文字左移到离圆 [gap] 处, 行尾补同样宽的空白, 整行左右的空白相等,
+    /// 居中后看到的圆加文字一组正好在中间.
+    const inset = (EatSize.touch - 20) / 2;
+    const gap = 6.0;
     final row = Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Transform.translate(
-          offset: const Offset(-12, 0),
-          child: EatTappable(
-            onTap: toggle,
-            label: '同意隐私政策和用户协议',
-            checked: agreed,
-            button: false,
-            focusShape: const CircleBorder(),
-            builder: (context, _) => SizedBox.square(
-              dimension: EatSize.touch,
-              child: Center(child: _CheckCircle(checked: agreed)),
-            ),
+        EatTappable(
+          onTap: toggle,
+          label: '同意隐私政策和用户协议',
+          checked: agreed,
+          button: false,
+          focusShape: const CircleBorder(),
+          builder: (context, _) => SizedBox.square(
+            dimension: EatSize.touch,
+            child: Center(child: _CheckCircle(checked: agreed)),
           ),
         ),
-        Expanded(
+        Flexible(
           child: Transform.translate(
-            offset: const Offset(-12, 0),
+            offset: const Offset(gap - inset, 0),
             child: Padding(
-              padding: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(
+                top: (EatSize.touch - 20) / 2 - _opticalLift,
+              ),
               child: GestureDetector(
                 onTap: toggle,
                 behavior: HitTestBehavior.opaque,
                 excludeFromSemantics: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(text: '我已阅读并同意'),
-                          link('《隐私政策》', _privacy),
-                          const TextSpan(text: '和'),
-                          link('《用户协议》', _terms),
-                        ],
-                      ),
-                      style: style.copyWith(height: 20 / 13),
-                    ),
-                    ExcludeSemantics(
-                      excluding: !showHint,
-                      child: AnimatedSlide(
-                        offset: showHint ? Offset.zero : const Offset(0, -0.3),
-                        duration: fade,
-                        curve: EatMotion.select.curve,
-                        child: AnimatedOpacity(
-                          opacity: showHint ? 1 : 0,
-                          duration: fade,
-                          curve: EatMotion.select.curve,
-                          child: Semantics(
-                            liveRegion: true,
-                            child: Text(
-                              '请先勾选同意协议',
-                              style: style.copyWith(
-                                height: 20 / 13,
-                                color: c.warn,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: '我已阅读并同意'),
+                      link('隐私政策', _privacy),
+                      const TextSpan(text: '和'),
+                      link('用户协议', _terms),
+                    ],
+                  ),
+                  style: style,
                 ),
               ),
             ),
           ),
         ),
+        const SizedBox(width: gap),
       ],
+    );
+    final hint = ExcludeSemantics(
+      excluding: !showHint,
+      child: AnimatedSlide(
+        offset: showHint ? Offset.zero : const Offset(0, -0.3),
+        duration: fade,
+        curve: EatMotion.select.curve,
+        child: AnimatedOpacity(
+          opacity: showHint ? 1 : 0,
+          duration: fade,
+          curve: EatMotion.select.curve,
+          child: Semantics(
+            liveRegion: true,
+            child: Text(
+              '请先勾选同意协议',
+              textAlign: TextAlign.center,
+              style: style.copyWith(color: c.warn),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    /// 行尾的全角 "》" 字面只占左半边, 右半边是空白.
+    /// 整组按这段空白的一半右移, 看上去才居中.
+    final bracketSpace =
+        MediaQuery.textScalerOf(context).scale(style.fontSize!) / 2;
+
+    /// 提示紧贴协议文字下方, 和勾选框的点击区域重叠, 所以用 Stack 而不是 Column.
+    final content = Align(
+      heightFactor: 1,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: inset - _opticalLift + 20),
+            child: hint,
+          ),
+          Transform.translate(offset: Offset(bracketSpace / 2, 0), child: row),
+        ],
+      ),
     );
     return AnimatedBuilder(
       animation: _shake,
@@ -496,7 +549,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
             (1 - t);
         return Transform.translate(offset: Offset(dx, 0), child: child);
       },
-      child: row,
+      child: content,
     );
   }
 }

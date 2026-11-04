@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/services.dart';
@@ -75,6 +76,15 @@ void main() {
           reason: art.name,
         );
       }
+    });
+
+    test('Emoji 和 assets/emoji/ 里的图片一一对应', () {
+      final pngs = Directory('assets/emoji')
+          .listSync()
+          .map((f) => f.uri.pathSegments.last)
+          .where((name) => name.endsWith('.png'))
+          .toSet();
+      expect(Emoji.values.map((e) => '${e.name}.png').toSet(), pngs);
     });
 
     test('构建时图标被预编译成二进制', () async {

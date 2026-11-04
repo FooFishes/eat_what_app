@@ -19,7 +19,7 @@ Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Web 使用路径形式的地址 (/dishes/123) 而非 #/dishes/123, 与分享链接和 App Links 保持一致.
   usePathUrlStrategy();
-  LicenseRegistry.addLicense(_fontLicenses);
+  LicenseRegistry.addLicense(_assetLicenses);
   final container = ProviderContainer(
     overrides: stateOverrides,
     retry: retryOnNetworkFailure,
@@ -41,13 +41,14 @@ Future<void> bootstrap() async {
   );
 }
 
-/// 内置字体的 OFL 许可证. OFL 要求随字体分发许可证, 注册后显示在系统的许可证页中.
-Stream<LicenseEntry> _fontLicenses() async* {
-  const fonts = {
+/// 内置字体和 emoji 图片的许可证. OFL 和 MIT 都要求随资源分发许可证, 注册后显示在系统的许可证页中.
+Stream<LicenseEntry> _assetLicenses() async* {
+  const assets = {
     'Noto Sans SC': 'assets/fonts/OFL-NotoSansSC.txt',
     'Inter': 'assets/fonts/OFL-Inter.txt',
+    'Fluent Emoji': 'assets/emoji/LICENSE-FluentEmoji.txt',
   };
-  for (final MapEntry(key: font, value: path) in fonts.entries) {
-    yield LicenseEntryWithLineBreaks([font], await rootBundle.loadString(path));
+  for (final MapEntry(key: name, value: path) in assets.entries) {
+    yield LicenseEntryWithLineBreaks([name], await rootBundle.loadString(path));
   }
 }

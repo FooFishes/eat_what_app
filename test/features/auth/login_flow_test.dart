@@ -606,7 +606,7 @@ void main() {
     await pumpApp(tester, env, size: const Size(320, 480));
     expect(tester.takeException(), isNull);
 
-    final intro = tester.getRect(find.textContaining('看看软件园'));
+    final intro = tester.getRect(find.textContaining('是啊'));
     final button = find.widgetWithText(EatButton, '手机号登录');
     expect(intro.bottom, lessThan(tester.getRect(button).top));
     await tester.ensureVisible(find.bySemanticsLabel('同意隐私政策和用户协议'));

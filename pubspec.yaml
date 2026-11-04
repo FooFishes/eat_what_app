@@ -71,6 +71,8 @@ flutter:
     - path: assets/illustrations/
       transformers:
         - package: vector_graphics_compiler
+    - assets/emoji/thinking.png
+    - assets/emoji/LICENSE-FluentEmoji.txt
     - assets/fonts/OFL-NotoSansSC.txt
     - assets/fonts/OFL-Inter.txt
     - shorebird.yaml
