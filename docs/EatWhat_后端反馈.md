@@ -37,47 +37,11 @@
 
 ## 3. 统一认证回跳
 
-客户端用 App Links（Android）和 Universal Links（iOS）接收 `https://eat.v50to.you/app/auth/callback?result=..&code=..`。域名从 `v50to.you` 改成了 `eat.v50to.you`，需要后端做两件事。
+客户端改用系统认证会话（iOS `ASWebAuthenticationSession`、安卓 Chrome Auth Tab）接收回跳，回跳地址改成自定义 Scheme，不再用 App Links / Universal Links。原因是国内安卓机上 App Links 的域名校验经常过不了，回跳会停在浏览器里。
 
-**改 App 的回跳地址。** 把 `app.oauth-app-success-redirect`（环境变量 `APP_OAUTH_APP_SUCCESS_REDIRECT`）设成 `https://eat.v50to.you/app/auth/callback`。现在的默认值是 `https://v50to.you/app/auth/callback`（`AuthService.java:112`、`application.example.yml:120`），客户端已经不认这个域名，回跳会停在浏览器里。
+**改 App 的回跳地址。** 把 `app.oauth-app-success-redirect`（环境变量 `APP_OAUTH_APP_SUCCESS_REDIRECT`）设成 `you.v50to.eat://auth/callback`。成功和失败都照现在的样子带上 `result=success|failure&code=<业务码>`。现在的默认值是 `https://v50to.you/app/auth/callback`（`AuthService.java:112`、`application.example.yml:120`）。如果后端对这个配置做了 http/https 的校验，需要放开自定义 Scheme。
 
-**在 `eat.v50to.you` 上放两份校验文件。** 系统只到链接所在的主机名取文件，放在根域名 `v50to.you` 上不起作用。两份文件的要求：
-
-- 走 HTTPS，返回 200；
-- `Content-Type: application/json`；
-- 不能有重定向；
-- `/.well-known/` 不能被 SPA 的兜底页接走；
-- Apple 经自己的 CDN（`app-site-association.cdn-apple.com`）取文件，境外要能访问到。
-
-`https://eat.v50to.you/.well-known/assetlinks.json`：
-
-```json
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "you.v50to.eat",
-    "sha256_cert_fingerprints": [
-      "DC:93:FE:AD:DD:6F:85:D3:EA:0E:B8:A2:61:6E:CB:04:59:6E:39:82:EB:02:96:D6:03:8D:CF:AC:AF:40:47:4B"
-    ]
-  }
-}]
-```
-
-指纹是上传密钥（别名 `upload`）的。以后上了会重签名的商店，客户端再提供商店证书的指纹，加进数组。
-
-`https://eat.v50to.you/.well-known/apple-app-site-association`（不带扩展名）：
-
-```json
-{
-  "applinks": {
-    "details": [{
-      "appIDs": ["VX6R92VA32.you.v50to.eat"],
-      "components": [{ "/": "/app/auth/callback" }]
-    }]
-  }
-}
-```
+不再需要在 `eat.v50to.you` 上放 `assetlinks.json` 和 `apple-app-site-association`，以后接分享链接时再提。
 
 **Web 的回跳地址。** `client=web` 时，后端跳回 `app.oauth-success-redirect`。线上看起来没有配置这一项，默认值是 `/home?result=..&code=..`（`AuthService.java:109`），而 Flutter Web 没有 `/home` 这个路径，会显示「页面不存在」。请把 `APP_OAUTH_SUCCESS_REDIRECT` 设成 `https://<Web 域名>/app/auth/callback`，客户端已经有这条路由，不用再改。
 

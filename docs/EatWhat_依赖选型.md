@@ -41,7 +41,7 @@
 | 本地存储 | `shared_preferences` | `^2.5.6` | 2026-10-05 | ✅ | ✅ | ✅ | 已引入（阶段二：同意记录、卸载重装检测） |
 | 版本号 | `package_info_plus` | `^10.2.2` | 2026-10-01 | ✅ | ✅ | ✅ | 已引入（阶段二） |
 | 打开链接、外部地图、认证页 | `url_launcher` | `^6.3.3` | 2026-10-02 | ✅ | ✅ | ✅ | 已引入（阶段二） |
-| 人机验证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 直接加载 JS） | 已引入（阶段二）。只用于人机验证，见第 15 节；统一认证用 `url_launcher` 的应用内浏览器，不用 WebView（技术架构 18.1） |
+| 人机验证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 直接加载 JS） | 已引入（阶段二）。只用于人机验证，见第 15 节；统一认证用 `flutter_web_auth_2` 的系统认证会话，不用 WebView（技术架构 18.1） |
 | 可注入时钟 | `clock` | `^1.1.3` | 2026-08-28 | ✅ | ✅ | ✅ | 已引入（阶段二：验证码倒计时；阶段三还用于饭点、「12 分钟前」） |
 | Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 已引入（阶段二：Web 上加载人机验证的 JS；阶段三还用于判断微信内置浏览器） |
 | 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 已引入（阶段三） |
@@ -55,7 +55,8 @@
 | 网络请求的崩溃上下文 | `sentry_dio` | `^10.1.0`（解析到 10.2.0） | 2026-10-22 | ✅ | ✅ | ✅ | 已引入（阶段五） |
 | 热更新 | `shorebird_code_push` | `^2.0.7` | 2026-07-09 | ✅ | ✅ | —（Web 刷新即新版） | 已引入（阶段五），国内网络实测待确认 D3 |
 | 设备信息 | `device_info_plus` | `^13.3.0` | 2026-10-01 | ✅ | ✅ | ✅ | 暂不引入：反馈接口不收设备型号（见后端反馈），后端加上字段后随反馈一起加 |
-| 深链 | `app_links` | `^7.2.2` | 2026-10-06 | ✅ | ✅ | 不用 | 已引入（统一认证回跳，2026-11-02）；分享链接还没排 |
+| 深链 | `app_links` | `^7.2.2` | 2026-10-06 | ✅ | ✅ | 不用 | 已引入（2026-11-02）。统一认证回跳已改走 `flutter_web_auth_2`，白名单暂时为空，等分享链接 |
+| 统一认证会话 | `flutter_web_auth_2` | `^6.0.0-alpha.9` | 2026-10-25 | ✅ | ✅ | 不用（Web 整页跳转） | 已引入（2026-11-05），见第 10 节。用预发布版：5.1.0 的安卓工程直接套 `kotlin-android` 插件，和 AGP 9 的内置 Kotlin 冲突，README 写明 AGP 9 要用 6.x；正式版发布后换过去 |
 | 液态玻璃（底部导航） | `liquid_glass_widgets` | `^1.16.1` | 2026-10-30 | ✅ | ✅ | ✅（CanvasKit 上用轻量着色器） | 已引入（2026-11-03）。只用于 `EatNavBar`：标签胶囊和发布按钮。组件默认的玻璃偏薄，玻璃和选中透镜的参数在 `EatNavBar` 里调过。同类里近 30 天下载量最高（12 万），不依赖其他包；`liquid_glass_renderer` 点赞更多但只有 1.0.0-dev 预发布版，不选 |
 | 本地通知 | `flutter_local_notifications` | `^22.3.2` | 2026-10-12 | ✅ | ✅ | — | 开发计划还没排 |
 
@@ -90,7 +91,6 @@
 | `retrofit`、`go_router_builder` | 接口类和路由表手写，见第 4、5 节 |
 | `palette_generator` | pub.dev 已标为 discontinued，算法也和规范要求的不同 |
 | `image_cropper` | 原生裁切界面，做不出 `G-Crop` 的样子；我们只存裁切参数，不需要真的裁图 |
-| `flutter_web_auth_2` | 统一认证用应用内浏览器打开、回到 App 时刷新状态即可，见第 10 节和技术架构第 18 节 |
 | `map_launcher` | 用 `url_launcher` 自己拼外部地图 URL 就够，见第 7.3 节 |
 | `geocoding` | 安卓端依赖 Google 地理编码，没 GMS 就失败；商圈判断走接口 `/hub/locate` |
 | `connectivity_plus`、`permission_handler` | 暂不需要：没网从请求失败判断；定位、推送、相册的权限由各自的包申请 |
@@ -260,7 +260,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 **不选** `map_launcher` 7.0.0：它也要同样的声明，还要多一层坐标系处理的黑盒；我们只需要 4 个 Scheme。
 
-`url_launcher` 同时用来打开协议页、商店页、学校统一认证页（`LaunchMode.inAppBrowserView`，iOS 是 SFSafariViewController，安卓是 Custom Tabs）。
+`url_launcher` 同时用来打开协议页、商店页（`LaunchMode.inAppBrowserView`，iOS 是 SFSafariViewController，安卓是 Custom Tabs），以及 Web 上整页跳转到学校统一认证页。App 上的统一认证页用 `flutter_web_auth_2`（第 10 节）。
 
 ## 8. 图片选择、压缩、裁切、取色与去背景
 
@@ -311,11 +311,14 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | --- | --- | --- |
 | 系统分享面板 | `share_plus ^13.3.1` | 安卓、iOS 弹系统分享；Web 在支持 Web Share API 的浏览器上调起系统分享。微信内置浏览器不支持，改为复制链接 |
 | 复制链接 | SDK 的 `Clipboard` | 不用包 |
-| 深链（App Links、Universal Links、自定义 Scheme） | `app_links ^7.2.2` | 冷启动和运行中收到的链接都从它拿，统一交给我们自己的深链处理器 |
+| 深链（App Links、Universal Links） | `app_links ^7.2.2` | 冷启动和运行中收到的链接都从它拿，统一交给我们自己的深链处理器 |
+| 统一认证回跳 | `flutter_web_auth_2 ^6.0.0-alpha.9` | iOS `ASWebAuthenticationSession`，安卓 Chrome Auth Tab（不支持时退回 Custom Tabs），在会话里拦截 `you.v50to.eat://` 回跳并返回给调用方 |
 
-**为什么要 `app_links`，而不是 Flutter 自带的深链**：统一用 `app_links` 接收、自己分发，分享链接、通知点击、认证回跳只有一个入口，方便做白名单和埋点。另外，极光等推送的 README 写明，Flutter 3.29 起安卓厂商通道的离线推送点开会被 Flutter 当成深链处理而白屏，要在 `AndroidManifest.xml` 关掉 `flutter_deeplinking_enabled`；现在就关掉、自己接，以后接远程推送不用再改深链。iOS 同样关掉 `FlutterDeepLinkingEnabled`，保持两端一致。
+**为什么要 `app_links`，而不是 Flutter 自带的深链**：统一用 `app_links` 接收、自己分发，分享链接、通知点击只有一个入口，方便做白名单和埋点。另外，极光等推送的 README 写明，Flutter 3.29 起安卓厂商通道的离线推送点开会被 Flutter 当成深链处理而白屏，要在 `AndroidManifest.xml` 关掉 `flutter_deeplinking_enabled`；现在就关掉、自己接，以后接远程推送不用再改深链。iOS 同样关掉 `FlutterDeepLinkingEnabled`，保持两端一致。
 
-**不选**：微信 JS-SDK（自定义分享卡片需要认证公众号和备案域名，见技术架构待确认 A9）；`flutter_web_auth_2` 5.1.0（安卓上依赖 Chrome 的 Auth Tab，没装 Chrome 的国产机表现不确定；统一认证不需要回调拿结果，见技术架构第 18 节）。
+**不选**：微信 JS-SDK（自定义分享卡片需要认证公众号和备案域名，见技术架构待确认 A9）。
+
+**统一认证为什么用 `flutter_web_auth_2`，不用 App Links**（2026-11-05 改）：原先用 `url_launcher` 的应用内浏览器打开、后端 302 到 `https://eat.v50to.you/app/auth/callback`、靠 App Links / Universal Links 唤起 App。国内安卓机上 App Links 的域名校验经常过不了（GMS 要访问 Google 的接口，没有 GMS 的机型各家自己处理），Custom Tabs 里没有用户点击的 302 也常常不唤起 App，用户会停在浏览器里。认证会话在会话里直接拦截回跳地址，不依赖域名校验。没装 Chrome 的国产机上插件退回 Custom Tabs，自定义 Scheme 交给 `CallbackActivity`；万一也没回来，回到前台时刷新状态兜底（技术架构 18.1）。
 
 ## 11. 推送
 

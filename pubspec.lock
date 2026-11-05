@@ -281,6 +281,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.15"
+  desktop_webview_window:
+    dependency: transitive
+    description:
+      name: desktop_webview_window
+      sha256: e187a7a45d5c30b702be85870a74cc2e09e2bd85e528b8d867bdf75de460c211
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.1"
   dio:
     dependency: "direct main"
     description:
@@ -528,6 +536,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_web_auth_2:
+    dependency: "direct main"
+    description:
+      name: flutter_web_auth_2
+      sha256: dd8b5fbfb85e1c8c1f5c650e2edc4327b55dfda62d4204dd45acd2159f1e99e7
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0-alpha.9"
+  flutter_web_auth_2_platform_interface:
+    dependency: transitive
+    description:
+      name: flutter_web_auth_2_platform_interface
+      sha256: d1fabf4a00229e11570866045e5d0c203d7fd1f7680840cb190f315dd12da2fd
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0-alpha.9"
   flutter_web_plugins:
     dependency: "direct main"
     description: flutter
@@ -1634,6 +1658,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.4.0"
+  window_to_front:
+    dependency: transitive
+    description:
+      name: window_to_front
+      sha256: fe896421a872360fe38b40ab3371f94fd7ae24bd0413a0b9bbfd14e27d8cba5a
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   wkt_parser:
     dependency: transitive
     description:

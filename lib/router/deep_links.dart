@@ -10,30 +10,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'deep_links.g.dart';
 
-// TODO: 白名单只有统一认证的回跳链接, 分享链接无法打开对应页面. 实现分享后在 [locationOf] 中加入分享链接.
+// TODO: 白名单为空, 分享链接无法打开对应页面. 实现分享后在 [locationOf] 中加入 https://eat.v50to.you 的分享链接,
+// 并加回安卓清单的 intent-filter、iOS 的 Associated Domains 和域名校验文件.
 /// 外部链接的统一入口: 按白名单把外部链接转为站内地址.
 ///
 /// Flutter 自带的深链已在 Android 和 iOS 上关闭, App 收到的链接全部经过本类.
+/// App 的统一认证回跳由 `core/platform/browser.dart` 的认证会话直接收下, 不经过本类.
 abstract final class DeepLinks {
-  /// 回跳链接和 App Links / Universal Links 校验文件所在的域名.
-  static const host = 'eat.v50to.you';
-
   /// 外部链接对应的站内地址. 不在白名单中的链接返回 null, 调用方忽略该链接.
-  static String? locationOf(Uri link) {
-    if (link.scheme != 'https' ||
-        link.host != host ||
-        link.userInfo.isNotEmpty ||
-        link.port != 443) {
-      return null;
-    }
-    final path = link.path.endsWith('/')
-        ? link.path.substring(0, link.path.length - 1)
-        : link.path;
-    if (path == Paths.ssoCallback) return ssoLocation(link.queryParameters);
-    return null;
-  }
+  static String? locationOf(Uri link) => null;
 
-  /// 统一认证回跳的查询参数对应的认证页地址.
+  /// Web 的统一认证回跳地址 ([Paths.ssoCallback]) 的查询参数对应的认证页地址.
   ///
   /// `result` 既不是 success 也不是 failure 时只打开认证页, 认证页仍会刷新认证状态.
   static String ssoLocation(Map<String, String> query) {

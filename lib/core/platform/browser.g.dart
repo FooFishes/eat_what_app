@@ -48,4 +48,4 @@ final class BrowserProvider
   }
 }
 
-String _$browserHash() => r'e75f6cf8f4e6a9e9fc289c8fe8b6d782e93072fc';
+String _$browserHash() => r'4d32d496eab6a0269a689fe6d9983ea174a6b9e1';

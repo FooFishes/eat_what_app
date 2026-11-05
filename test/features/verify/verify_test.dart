@@ -17,6 +17,9 @@ const _token = AuthToken(name: 'satoken', value: 'tk');
 class _FakeBrowser implements Browser {
   final opened = <Uri>[];
 
+  /// 下一次打开统一认证页的结束方式.
+  SsoOutcome outcome = const SsoClosed();
+
   @override
   Future<bool> open(Uri url) async {
     opened.add(url);
@@ -24,22 +27,17 @@ class _FakeBrowser implements Browser {
   }
 
   @override
-  Future<bool> openSso(Uri url) async {
+  Future<SsoOutcome> openSso(Uri url) async {
     opened.add(url);
-    return true;
+    return outcome;
   }
-
-  int closed = 0;
-
-  @override
-  Future<void> closeSso() async => closed++;
 }
 
 /// 最上方页面的地址. push 打开的页面不改变 [locationOf] 读取的页面栈地址.
 String _top(GoRouter router) => router.state.uri.toString();
 
-Uri _callback(String query) =>
-    Uri.parse('https://eat.v50to.you/app/auth/callback?$query');
+SsoOutcome _returned(String query) =>
+    SsoReturned(Uri.parse('you.v50to.eat://auth/callback?$query'));
 
 void main() {
   late TestEnv env;
@@ -88,7 +86,7 @@ void main() {
     expect(find.text('山大邮箱'), findsWidgets);
   });
 
-  testWidgets('统一认证：每次重新拿一次性地址，在应用内浏览器打开；回来还没认证就提示', (tester) async {
+  testWidgets('统一认证：每次重新拿一次性地址，没回到 App 就关掉时提示未完成', (tester) async {
     env.adapter
       ..on('GET /auth/sdu', [
         FakeAdapter.ok({
@@ -106,65 +104,65 @@ void main() {
       'https://pass.sdu.edu.cn/cas?state=s1',
     );
     expect(env.adapter.sent('GET /auth/sdu').single.query, {'client': 'app'});
-
-    await tester.tap(find.text('我已完成，刷新状态'));
-    await tester.pumpAndSettle();
     expect(find.text('认证未完成，请重新认证'), findsOneWidget);
   });
 
+  testWidgets('统一认证：打不开认证页时提示', (tester) async {
+    env.adapter
+      ..on('GET /auth/sdu', [
+        FakeAdapter.ok({
+          'url': 'https://pass.sdu.edu.cn/cas',
+          'expiresIn': 300,
+        }),
+      ])
+      ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
+    browser.outcome = const SsoFailed();
+    await pumpAppWithBrowser(tester, env, browser);
+
+    await tester.tap(find.text('山大统一认证'));
+    await tester.pumpAndSettle();
+    expect(find.text('无法打开学校页面，请重试'), findsOneWidget);
+  });
+
   group('统一认证回跳', () {
-    testWidgets('失败：从其他页面打开认证页，按业务码提示，不显示业务码', (tester) async {
-      env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
-      final (_, router) = await pumpAppWithBrowser(
-        tester,
-        env,
-        browser,
-        location: Paths.discover,
-      );
+    setUp(() {
+      env.adapter.on('GET /auth/sdu', [
+        FakeAdapter.ok({
+          'url': 'https://pass.sdu.edu.cn/cas',
+          'expiresIn': 300,
+        }),
+      ]);
+    });
 
-      env.links.open(_callback('result=failure&code=30013'));
+    Future<void> startSso(WidgetTester tester, SsoOutcome outcome) async {
+      browser.outcome = outcome;
+      await tester.tap(find.text('山大统一认证'));
       await tester.pumpAndSettle();
+    }
 
-      // 读取结果后从地址中移除, Web 刷新时不重复显示.
-      expect(_top(router), Paths.verify);
+    testWidgets('失败：按业务码提示，不显示业务码', (tester) async {
+      env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
+      await pumpAppWithBrowser(tester, env, browser);
+
+      await startSso(tester, _returned('result=failure&code=30013'));
+
       expect(find.text('该学号已认证其他账号'), findsOneWidget);
       expect(find.textContaining('30013'), findsNothing);
       expect(find.text('当前状态：未认证', findRichText: true), findsOneWidget);
-      expect(env.adapter.sent('GET /user/info'), isNotEmpty);
-      expect(browser.closed, 1);
-
-      // 返回回到原来的页面.
-      router.pop();
-      await tester.pumpAndSettle();
-      expect(_top(router), Paths.discover);
     });
 
     testWidgets('失败：链接失效和码表里没有的业务码，重复收到同样的结果也提示', (tester) async {
-      env.adapter
-        ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())])
-        ..on('GET /auth/sdu', [
-          FakeAdapter.ok({
-            'url': 'https://pass.sdu.edu.cn/cas',
-            'expiresIn': 300,
-          }),
-        ]);
+      env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
       await pumpAppWithBrowser(tester, env, browser);
 
-      env.links.open(_callback('result=failure&code=30012'));
-      await tester.pumpAndSettle();
+      await startSso(tester, _returned('result=failure&code=30012'));
       expect(find.text('认证链接已失效，请重新发起认证'), findsOneWidget);
 
-      env.links.open(_callback('result=failure&code=40001'));
-      await tester.pumpAndSettle();
+      await startSso(tester, _returned('result=failure&code=40001'));
       expect(find.text('认证未完成，请重新认证'), findsOneWidget);
       expect(find.text('认证链接已失效，请重新发起认证'), findsNothing);
 
-      // 重新发起后又收到同样的结果, 仍然提示.
-      await tester.tap(find.text('山大统一认证'));
-      await tester.pumpAndSettle();
-      expect(find.text('认证未完成，请重新认证'), findsNothing);
-      env.links.open(_callback('result=failure&code=40001'));
-      await tester.pumpAndSettle();
+      await startSso(tester, _returned('result=failure&code=40001'));
       expect(find.text('认证未完成，请重新认证'), findsOneWidget);
     });
 
@@ -181,8 +179,7 @@ void main() {
       );
       expect(find.text('先逛逛'), findsOneWidget);
 
-      env.links.open(_callback('result=success&code=0'));
-      await tester.pumpAndSettle();
+      await startSso(tester, _returned('result=success&code=0'));
 
       final location = Uri.parse(_top(router));
       expect(location.path, Paths.verify);
@@ -195,8 +192,7 @@ void main() {
       env.adapter.on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
       await pumpAppWithBrowser(tester, env, browser);
 
-      env.links.open(_callback('result=success&code=0'));
-      await tester.pumpAndSettle();
+      await startSso(tester, _returned('result=success&code=0'));
 
       expect(find.text('认证结果尚未同步，请稍后刷新状态'), findsOneWidget);
       expect(find.text('我已完成，刷新状态'), findsOneWidget);

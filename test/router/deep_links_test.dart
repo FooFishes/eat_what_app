@@ -5,59 +5,45 @@ import 'package:flutter_test/flutter_test.dart';
 String? _location(String link) => DeepLinks.locationOf(Uri.parse(link));
 
 void main() {
-  group('统一认证回跳链接', () {
-    test('成功转到认证页，不带业务码', () {
+  test('白名单为空：认证回跳和其他链接都忽略', () {
+    for (final link in [
+      'https://eat.v50to.you/app/auth/callback?result=success&code=0',
+      'https://eat.v50to.you/dishes/1',
+      'you.v50to.eat://auth/callback?result=success&code=0',
+    ]) {
+      expect(_location(link), isNull, reason: link);
+    }
+  });
+
+  group('Web 回跳地址转认证页地址', () {
+    test('成功不带业务码，失败带上业务码', () {
       expect(
-        _location(
-          'https://eat.v50to.you/app/auth/callback?result=success&code=0',
-        ),
+        DeepLinks.ssoLocation({'result': 'success', 'code': '0'}),
         '/verify?sso=success',
       );
-    });
-
-    test('失败带上业务码', () {
-      for (final code in ['30012', '30013', '50003', '20006', '90002']) {
-        expect(
-          _location(
-            'https://eat.v50to.you/app/auth/callback?result=failure&code=$code',
-          ),
-          '/verify?sso=failure&code=$code',
-        );
-      }
-    });
-
-    test('路径末尾带斜杠也认', () {
       expect(
-        _location('https://eat.v50to.you/app/auth/callback/?result=failure'),
-        '/verify?sso=failure',
+        DeepLinks.ssoLocation({'result': 'failure', 'code': '30013'}),
+        '/verify?sso=failure&code=30013',
       );
     });
 
     test('没有 result 或 result 不认识时只打开认证页', () {
-      expect(_location('https://eat.v50to.you/app/auth/callback'), '/verify');
-      expect(
-        _location('https://eat.v50to.you/app/auth/callback?result=ok&code=0'),
-        '/verify',
-      );
+      expect(DeepLinks.ssoLocation({}), '/verify');
+      expect(DeepLinks.ssoLocation({'result': 'ok', 'code': '0'}), '/verify');
     });
+  });
 
-    test('不在白名单的链接忽略', () {
-      for (final link in [
-        'http://eat.v50to.you/app/auth/callback?result=success&code=0',
-        'https://evil.example/app/auth/callback?result=success&code=0',
-        'https://v50to.you/app/auth/callback?result=success&code=0',
-        'https://a.eat.v50to.you/app/auth/callback?result=success&code=0',
-        'https://eat.v50to.you.evil.example/app/auth/callback?result=success',
-        'https://eat.v50to.you:8443/app/auth/callback?result=success&code=0',
-        'https://u@eat.v50to.you/app/auth/callback?result=success&code=0',
-        'https://eat.v50to.you/app/auth/callbackx?result=success&code=0',
-        'https://eat.v50to.you/app/auth?result=success&code=0',
-        'https://eat.v50to.you/verify?sso=success',
-        'https://eat.v50to.you/dishes/1',
-        'you.v50to.eat://app/auth/callback?result=success&code=0',
-      ]) {
-        expect(_location(link), isNull, reason: link);
-      }
+  group('App 回跳链接中的结果', () {
+    test('解析成功和失败', () {
+      expect(SsoResult.fromCallback({'result': 'success'})!.success, isTrue);
+      final failure = SsoResult.fromCallback({
+        'result': 'failure',
+        'code': '50003',
+      })!;
+      expect(failure.success, isFalse);
+      expect(failure.code, 50003);
+      expect(SsoResult.fromCallback({'result': 'ok'}), isNull);
+      expect(SsoResult.fromCallback({}), isNull);
     });
   });
 

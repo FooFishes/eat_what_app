@@ -312,7 +312,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 6.1 链接格式
 
 - 分享链接就是 Web 地址：`https://<Web 域名>/dishes/<id>`、`/shops/<id>`、`/topics/<id>`。域名待确认 A1。
-- 自定义 Scheme `you.v50to.eat://` 只用于站内回跳（如认证完成后回 App），不对外分享。
+- 自定义 Scheme `you.v50to.eat://` 只用于统一认证回跳（18.1），由认证会话直接收下，不经过 `DeepLinkHandler`，不对外分享。
 
 ### 6.2 装了 App 打开 App，否则打开 Web
 
@@ -327,13 +327,12 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 6.3 统一入口：DeepLinkHandler
 
 - 关闭 Flutter 自带的深链处理（安卓 `flutter_deeplinking_enabled=false`、iOS `FlutterDeepLinkingEnabled=false`），所有外部来的链接由 `app_links` 收下，交给 `router/deep_links.dart` 的 `DeepLinkHandler`。原因：统一入口方便做白名单和埋点；以后接远程推送时，安卓厂商通道的离线推送点开会被 Flutter 当成深链而白屏，现在关掉可以提前避开（依赖选型第 10 节）。
-- 来源：App Links / Universal Links、自定义 Scheme、通知点击。链接从 `linkSourceProvider` 来（App 上是 `app_links`，Web 上为空，地址直接由路由表解析），测试里换成假的来源。
+- 来源：App Links / Universal Links、通知点击。链接从 `linkSourceProvider` 来（App 上是 `app_links`，Web 上为空，地址直接由路由表解析），测试里换成假的来源。
 - 处理：
-  1. 只接受 `https://<Web 域名>/...` 和 `you.v50to.eat://...`，取出路径和参数。
+  1. 只接受 `https://<Web 域名>/...`，取出路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
-     - 目前只接了统一认证回跳：`https://eat.v50to.you/app/auth/callback?result=..&code=..`（只认 https、这个域名、默认端口、没有 userinfo、这一条路径），转成 `/verify?sso=..&code=..`（18.1）。Web 上 `/app/auth/callback` 也是一条路由，复用同一个转换。其余白名单随分享链接一起接。
-     - 安卓的 `MainActivity` 用 `singleTask`：认证页开在 Custom Tabs 里，回跳时回到原来的页面并关掉 Custom Tabs，不再叠一个 Activity 和 Flutter 引擎。代价是认证中途从桌面图标回来时 Custom Tabs 也会关掉。iOS 回跳后主动关掉 SFSafariViewController。
-     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）由后端放在 `eat.v50to.you` 上（校验只看链接所在的主机名，根域名 `v50to.you` 上的文件不起作用），内容见 `docs/EatWhat_后端反馈.md`。
+     - 白名单目前是空的，随分享链接一起接（安卓清单的 intent-filter、iOS 的 Associated Domains 和 `Runner.entitlements` 也那时再加）。统一认证回跳原先走这里（`https://eat.v50to.you/app/auth/callback`），2026-11-05 改成认证会话加自定义 Scheme（18.1），因为国内机型上 App Links 的域名校验靠不住。Web 上 `/app/auth/callback` 仍是一条路由，转成 `/verify?sso=..&code=..`。
+     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）放在链接所在的主机名上（根域名上的文件不起作用），接分享链接时再请后端放。国内的安卓机上 App Links 校验经常过不了：装了 GMS 的手机由 GMS 访问 `digitalassetlinks.googleapis.com` 校验，大陆访问不到；没有 GMS 的手机各家厂商自己处理。分享链接校验失败只是退回浏览器打开 Web 版，可以接受；需要必达的跳转不能依赖它。
   3. App 在运行：`push` 到目标，返回回到原来的页面；当前页和目标都是认证页时换掉当前页，保留 `onboarding` 和 `from`。冷启动：等首帧后再 `push`，返回去 `/discover`。
   4. 没登录：守卫先去登录页，登录后回到目标（5.4）。
 - 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`TopicTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
@@ -1153,9 +1152,12 @@ class PushNotice({
 - 只用于认证，不是登录方式（产品 6.3、7.1）。结果记到发起认证的账号上，不签发新的登录，认证后现有的登录态马上有已认证的权限，不用重新登录。
 - 流程：
   1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。App 带 `client=app`，Web 带 `client=web`，后端按它选跳回的预设链接；客户端不能自己指定跳回地址。
-  2. 打开 `url`：App 用 `url_launcher` 的应用内浏览器（iOS SFSafariViewController，安卓 Custom Tabs）；Web 在当前标签页跳转。
-  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 `https://eat.v50to.you/app/auth/callback?result=success|failure&code=<业务码>`（后端默认值还是 `https://v50to.you/app/auth/callback`，已请后端把 `app.oauth-app-success-redirect` 改成新地址，见 `docs/EatWhat_后端反馈.md`）。App 用 App Links / Universal Links 收下（6.3），转到认证页显示结果。
-  4. 收到回跳，或回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为回跳不一定能唤起 App（域名校验没过，或应用内浏览器没把 302 交给 App）。认证页读到结果后马上从地址里去掉 `sso`、`code`，避免路由重建时重复处理。
+  2. 打开 `url`：App 用 `flutter_web_auth_2` 的系统认证会话（`core/platform/browser.dart` 的 `openSso`）：iOS 是 `ASWebAuthenticationSession`，安卓是 Chrome 的 Auth Tab，浏览器不支持 Auth Tab 时退回 Custom Tabs。Web 在当前标签页跳转。
+  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 App 的回跳地址 `you.v50to.eat://auth/callback?result=success|failure&code=<业务码>`（`app.oauth-app-success-redirect`，后端还没改，见 `docs/EatWhat_后端反馈.md`）。认证会话看到这个 Scheme 就关掉页面，把地址交回 `openSso` 的调用方，认证页按 `result`、`code` 显示结果。安卓上由插件的 `CallbackActivity` 收下这个 Scheme（`AndroidManifest.xml`），iOS 不用注册 Scheme。
+     - 为什么不用 App Links / Universal Links：国内安卓机上域名校验经常过不了（6.3）；Custom Tabs、SFSafariViewController 里服务端 302 到 App Links 时，没有用户点击也常常不唤起 App。认证会话在会话里直接拦截回跳地址，不依赖域名校验，也不管有没有点击，结束后页面自己关掉。
+     - 自定义 Scheme 可能被别的 App 抢注，但回跳只带 `result` 和 `code`，不带 token，认证状态仍以 `/auth/verify`、`/user/info` 为准，抢走也拿不到东西。
+     - https 回跳（iOS 17.4 起的 `Callback.https`）要 `webcredentials` 校验，最低 iOS 15 也用不上，不选。
+  4. 认证会话返回回跳地址、用户关掉认证页、回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为安卓退回 Custom Tabs 时，少数浏览器不把 Scheme 交给 App，用户只能自己切回来（插件把这种情况当成取消）。
 - 结果提示（`features/verify/verify_providers.dart` 的 `ssoFailureMessage`，不显示错误码）：
 
   | 码 | 提示 |
@@ -1165,7 +1167,7 @@ class PushNotice({
   | 其他 | 认证没有完成，请重新认证 |
   | 成功但账号还没显示已认证 | 认证结果尚未同步，请稍后刷新状态 |
 
-- Web：`client=web` 时后端跳回 `app.oauth-success-redirect`，线上没配，默认是 `/home?result=..&code=..`，Flutter 里没有这个路径。已请后端把它设成 `https://<Web 域名>/app/auth/callback`（`docs/EatWhat_后端反馈.md`）。
+- Web：`client=web` 时后端跳回 `app.oauth-success-redirect`，线上没配，默认是 `/home?result=..&code=..`，Flutter 里没有这个路径。已请后端把它设成 `https://<Web 域名>/app/auth/callback`（`docs/EatWhat_后端反馈.md`）。这条路由把参数转成 `/verify?sso=..&code=..`，认证页读到结果后马上从地址里去掉 `sso`、`code`，避免路由重建时重复处理。
 - 未登录时收到回跳：守卫先去登录页，登录后回到认证页。
 - 不用 WebView 打开学校页面：认证页写着「我们看不到你的统一认证密码」，用系统浏览器页更站得住；也不需要像 legacy 那样把 `satoken` 放进 WebView 请求头。
 - 不把登录 token 放进 URL。
@@ -1235,7 +1237,7 @@ class PushNotice({
 
 | 项 | Android | iOS | Web | 代码位置 |
 | --- | --- | --- | --- | --- |
-| 统一认证 | 应用内浏览器（Custom Tabs）打开学校页面，回到 App 时刷新状态 | 同左（SFSafariViewController） | 当前标签页跳转，完成后回 `/verify` | `features/verify/` |
+| 统一认证 | Auth Tab（不支持时退回 Custom Tabs）打开学校页面，自定义 Scheme 回跳；回到 App 时也刷新状态 | `ASWebAuthenticationSession`，自定义 Scheme 回跳 | 当前标签页跳转，完成后回 `/verify` | `features/verify/` |
 | 定位 | 系统权限；没 GMS 时用系统 LocationManager | 使用期间权限 | 浏览器权限，只在 HTTPS 下可用 | `core/platform/location/` |
 | 加照片 | 拍照、相册多选 | 拍照、相册多选（PHPicker 不需要相册权限） | 文件选择框，手机浏览器可直接拍 | `core/platform/media/` |
 | 压缩 | 原生编码 | 原生编码 | 浏览器 Canvas 编码 | 同上 |
@@ -1299,7 +1301,7 @@ class PushNotice({
 | A1 | Web 和分享链接的域名、托管位置 | 一个 HTTPS 域名同时放 Web、反代 `/api`、放 `/.well-known/` 的 App Links / Universal Links 文件。要确认：域名；有没有 ICP 备案（境内 CDN 需要备案，境外托管在大陆首屏慢）；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
 | A2 | 后端的业务码和约定 | 后端给出完整的错误码表，包括：登录过期、权限不足、需要同意、账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限、内容违规；确认 legacy 的 2xxxx、3xxxx 码是否仍然有效；`ErrorResponse` 字符串 `code` 的取值；推送附带数据里的 `link` 字段格式 | 后端 |
 | A3 | 后端数据格式和存储 | 确认：GeoJSON（`location`、`boundary`、`center`）的坐标系；图片字段是完整 URL 还是 key；图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT` 和读取（直传和取色都要），图片返回长缓存头；舞台色、两个备选色、封面裁切参数的字段格式（推荐 `stage-broth` 这样的字符串和 13.4 的三个数） | 后端 |
-| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用应用内浏览器打开，结果记到当前账号，成功时 302 回预设链接（18.1）。还差：失败时也跳回并在参数里带 code；成功、失败跳回的链接（App、Web 各一个）在后端配置 | 后端 |
+| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，结果记到当前账号，成功时 302 回预设链接（18.1）。还差：失败时也跳回并在参数里带 code；成功、失败跳回的链接（App、Web 各一个）在后端配置 | 后端 |
 | A5 | 远程配置接口的形状 | 按 17.1 做一个接口，包含开关、参数、校区、公告、维护、版本线、补丁放量、实验分组、隐私政策版本 | 后端、产品负责人 |
 | A6 | 轻提示的样式 | 产品里有「发布成功」「该功能暂时关闭」「点赞失败，请重试」这类短提示，设计规范没有对应组件。推荐在页面底部、`NavBar` 上方出现的 `ink` 底胶囊，2 秒消失，不挡操作 | 设计 |
 | A7 | 隐私政策、用户协议更新后的重新同意 | 不做「重新同意」页（9.5）。推荐用远程配置里的版本号判断，本地版本更旧时回登录页重新勾选协议，不清登录态 | 产品负责人 |

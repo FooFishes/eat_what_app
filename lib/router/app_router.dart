@@ -131,8 +131,7 @@ GoRouter appRouter(Ref ref) {
           sso: DeepLinks.ssoResultOf(state.uri.queryParameters),
         ),
       ),
-      // 统一认证的回跳地址. App 中由 DeepLinkHandler 转换, 不经过本路由.
-      // Web 部署在同一域名时, 浏览器直接打开该地址, 由本路由转换为同一个认证页地址.
+      // Web 统一认证的回跳地址, 由本路由转换为认证页地址. App 的回跳由认证会话收下, 不经过路由.
       GoRoute(
         path: Paths.ssoCallback,
         redirect: (_, state) =>

@@ -40,7 +40,7 @@ final class VerifyProvider extends $NotifierProvider<Verify, VerifyState> {
   }
 }
 
-String _$verifyHash() => r'f0924e74a163d00cfcffa778cb8ece63dd63c4e6';
+String _$verifyHash() => r'19bef0cca63eadb068e79ec2eb5a3b3a1a6701cd';
 
 abstract class _$Verify extends $Notifier<VerifyState> {
   VerifyState build();

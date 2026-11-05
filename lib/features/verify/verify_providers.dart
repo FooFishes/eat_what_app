@@ -29,7 +29,18 @@ const emailResendInterval = Duration(seconds: 60);
 /// 统一认证的结果, 来自后端重定向到回跳链接时附带的 `result` 和 `code`.
 ///
 /// 回跳链接任何人都能构造, 因此结果只用于提示, 不能作为认证凭证.
-class const SsoResult({required final bool success, final int? code});
+class const SsoResult({required final bool success, final int? code}) {
+  /// 回跳链接查询参数中的结果. `result` 既不是 success 也不是 failure 时返回 null.
+  static SsoResult? fromCallback(Map<String, String> query) =>
+      switch (query['result']) {
+        'success' => const SsoResult(success: true),
+        'failure' => SsoResult(
+          success: false,
+          code: int.tryParse(query['code'] ?? ''),
+        ),
+        _ => null,
+      };
+}
 
 /// 统一认证回跳链接中的失败业务码, 取值与后端 `AuthService` 重定向时附带的 `code` 一致.
 abstract final class SsoCodes {
@@ -59,22 +70,35 @@ class Verify extends _$Verify {
   @override
   VerifyState build() => const VerifyState();
 
-  /// 跳转到学校的统一认证页. 认证地址只能使用一次, 因此每次点击都重新获取.
+  /// 跳转到学校的统一认证页, 认证结束后显示结果. 认证地址只能使用一次, 因此每次点击都重新获取.
+  ///
+  /// 认证页打开期间 `ssoStarted` 已为 true, 这期间回到前台的刷新也会提示认证未完成.
   Future<void> startSso() async {
     if (state.busy) return;
+    final started = state.ssoStarted;
     state = _copy(busy: true, notice: null);
+    final Uri url;
     try {
-      final url = await ref.read(authRepositoryProvider).ssoUrl();
-      final opened = await ref.read(browserProvider).openSso(url);
-      if (!ref.mounted) return;
-      state = _copy(
-        busy: false,
-        ssoStarted: true,
-        notice: opened ? null : '无法打开学校页面，请重试',
-      );
+      url = await ref.read(authRepositoryProvider).ssoUrl();
     } on AppFailure catch (e) {
       if (!ref.mounted) return;
       state = _copy(busy: false, notice: _noticeOf(e));
+      return;
+    }
+    if (!ref.mounted) return;
+    state = _copy(busy: true, ssoStarted: true, notice: null);
+    final outcome = await ref.read(browserProvider).openSso(url);
+    if (!ref.mounted) return;
+    switch (outcome) {
+      case SsoReturned(:final link):
+        state = _copy(busy: false, notice: state.notice);
+        final result = SsoResult.fromCallback(link.queryParameters);
+        await (result == null ? refresh() : showSsoResult(result));
+      case SsoClosed():
+        state = _copy(busy: false, notice: state.notice);
+        await refresh();
+      case SsoFailed():
+        state = _copy(busy: false, ssoStarted: started, notice: '无法打开学校页面，请重试');
     }
   }
 
@@ -123,7 +147,6 @@ class Verify extends _$Verify {
   /// 是否已认证以服务端返回的当前账号为准: 期间切换过账号时, 结果不套用到新账号.
   /// 成功但账号仍未认证时, 可能是跨站同步尚未完成, 提示稍后刷新而不是重新认证.
   Future<void> showSsoResult(SsoResult result) async {
-    await ref.read(browserProvider).closeSso();
     await ref.read(sessionProvider.notifier).refreshUser();
     if (!ref.mounted) return;
     if (_verified) {

@@ -14,13 +14,13 @@ abstract final class Paths {
 
   /// 学生认证. `onboarding=1` 表示新号码注册后的认证引导, 左上角显示 "先逛逛" 而不是返回.
   ///
-  /// `sso=success|failure` 和 `code` 是统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
+  /// `sso=success|failure` 和 `code` 是 Web 统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
   static const verify = '/verify';
 
-  /// 统一认证结束后后端重定向到的地址, 带 `result=success|failure` 和业务码 `code`.
+  /// Web 统一认证结束后后端重定向到的地址, 带 `result=success|failure` 和业务码 `code`.
   ///
-  /// App 经 App Links / Universal Links 收到完整链接 `https://eat.v50to.you/app/auth/callback`.
-  /// 该地址不是页面, 路由表把它重定向到 [verify]. 改动需同步 Android 和 iOS 的链接声明以及后端配置.
+  /// 该地址不是页面, 路由表把它重定向到 [verify]. 改动需同步后端的 `app.oauth-success-redirect`.
+  /// App 的回跳地址是自定义 scheme, 见 `core/platform/browser.dart` 的 `ssoCallbackScheme`.
   static const ssoCallback = '/app/auth/callback';
 
   static const meEdit = '/me/edit';
