@@ -13,8 +13,7 @@ class const StagePalette({
   required final Color ghost,
   required final Color table,
   required final Color tableRing,
-  required final Color solidTop,
-  required final Color solidBottom,
+  required final Color solid,
 
   /// 实心按钮的文字色, 等于舞台色本身.
   required final Color solidForeground,
@@ -31,8 +30,7 @@ class const StagePalette({
     ghost: stage.ghost,
     table: stage.table,
     tableRing: stage.tableRing,
-    solidTop: stage.solidTop,
-    solidBottom: stage.solidBottom,
+    solid: stage.solid,
     solidForeground: stage.color,
     isDark: stage.isDark,
   );
@@ -49,8 +47,7 @@ class const StagePalette({
         ghost: Color.lerp(a.ghost, b.ghost, t)!,
         table: Color.lerp(a.table, b.table, t)!,
         tableRing: Color.lerp(a.tableRing, b.tableRing, t)!,
-        solidTop: Color.lerp(a.solidTop, b.solidTop, t)!,
-        solidBottom: Color.lerp(a.solidBottom, b.solidBottom, t)!,
+        solid: Color.lerp(a.solid, b.solid, t)!,
         solidForeground: Color.lerp(a.solidForeground, b.solidForeground, t)!,
         isDark: t < 0.5 ? a.isDark : b.isDark,
       );
@@ -64,8 +61,7 @@ class const StagePalette({
       other.ghost == ghost &&
       other.table == table &&
       other.tableRing == tableRing &&
-      other.solidTop == solidTop &&
-      other.solidBottom == solidBottom &&
+      other.solid == solid &&
       other.solidForeground == solidForeground &&
       other.isDark == isDark;
 
@@ -77,8 +73,7 @@ class const StagePalette({
     ghost,
     table,
     tableRing,
-    solidTop,
-    solidBottom,
+    solid,
     solidForeground,
     isDark,
   );

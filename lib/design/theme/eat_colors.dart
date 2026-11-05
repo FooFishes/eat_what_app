@@ -19,14 +19,8 @@ class const EatColors({
   /// 次级填充色, 用于次按钮, 搜索框, 导航选中项和未选中分类标签的底色.
   required final Color mist,
 
-  /// 实心按钮渐变的顶部颜色, 向下渐变到 [ink].
+  /// 开关打开时轨道渐变的顶部颜色, 向下渐变到 [ink].
   required final Color inkTop,
-
-  /// 雾面按钮渐变的顶部颜色, 向下渐变到 [mist].
-  required final Color mistTop,
-
-  /// 深色舞台上白色实心按钮渐变的底部颜色.
-  required final Color paperBottom,
 
   /// 多选标签选中后的底色, 搭配 [ink] 描边和文字.
   required final Color tagSelected,
@@ -40,7 +34,7 @@ class const EatColors({
   /// 底部面板背后的遮罩色.
   required final Color scrim,
 
-  /// 需要醒目的描边色, 用于虚线按钮, 未选中的单选圆圈和 "待接入" 标记.
+  /// 需要醒目的描边色, 用于补充入口标签, 未选中的单选圆圈和 "待接入" 标记.
   required final Color lineStrong,
   required final Color disabledBg,
   required final Color disabledFg,
@@ -62,8 +56,6 @@ class const EatColors({
     paper: EatPalette.paper,
     mist: EatPalette.mist,
     inkTop: EatPalette.inkTop,
-    mistTop: EatPalette.mistTop,
-    paperBottom: EatPalette.paperBottom,
     tagSelected: EatPalette.tagSelected,
     hairline: EatPalette.hairline,
     handle: EatPalette.handle,

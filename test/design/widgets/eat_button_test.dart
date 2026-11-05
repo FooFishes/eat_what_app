@@ -38,19 +38,19 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('虚线和不可用的按钮按下不下沉', (tester) async {
+  testWidgets('补充入口按下也下沉，不可用的按钮不下沉', (tester) async {
     await pumpEat(
       tester,
       Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          EatButton.dashed('＋ 新建一家店', onPressed: () {}),
+          EatButton.add('新建一家店', onPressed: () {}),
           const EatButton.solid('账号密码登录', onPressed: null),
         ],
       ),
     );
 
-    for (final label in ['＋ 新建一家店', '账号密码登录']) {
+    for (final (label, sink) in [('新建一家店', 1.0), ('账号密码登录', 0.0)]) {
       final gesture = await tester.startGesture(
         tester.getCenter(find.text(label)),
       );
@@ -61,8 +61,9 @@ void main() {
           matching: find.byType(AnimatedContainer),
         ),
       );
-      expect(container.transform!.getTranslation().y, 0, reason: label);
+      expect(container.transform!.getTranslation().y, sink, reason: label);
       await gesture.up();
+      await tester.pumpAndSettle();
     }
   });
 
@@ -166,7 +167,7 @@ void main() {
           EatButton.solid('加一道菜', onPressed: () {}),
           EatButton.outline('导航去店里', icon: EatIcons.navigate, onPressed: () {}),
           EatButton.mist('换一个', onPressed: () {}),
-          EatButton.dashed('＋ 新建一家店', onPressed: () {}),
+          EatButton.add('新建一家店', onPressed: () {}),
           EatButton.mist('回关', height: 36, onPressed: () {}),
         ],
       ),

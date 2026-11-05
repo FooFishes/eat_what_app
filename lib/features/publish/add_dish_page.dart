@@ -980,9 +980,10 @@ class _Tags extends ConsumerWidget {
                   ),
               ],
               AsyncError() => [
-                EatChip.add(
+                EatButton.mist(
                   '口味词加载失败，重试',
-                  onTap: () => ref.invalidate(tasteVocabularyProvider),
+                  height: EatSize.chip,
+                  onPressed: () => ref.invalidate(tasteVocabularyProvider),
                 ),
               ],
               _ => const [SizedBox(width: 120, child: Skeleton(height: 36))],
@@ -993,7 +994,7 @@ class _Tags extends ConsumerWidget {
                 selected: true,
                 onTap: () => notifier.removeMyTag(name),
               ),
-            if (!writing) EatChip.add('＋ 自己写', onTap: onWrite),
+            if (!writing) EatChip.add('自己写', onTap: onWrite),
           ],
         ),
         if (writing) ...[

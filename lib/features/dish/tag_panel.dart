@@ -198,7 +198,7 @@ class _TagPanelState extends ConsumerState<_TagPanel> {
                 ),
               if (!_writing)
                 EatChip.add(
-                  '＋ 自己写',
+                  '自己写',
                   onTap: () => setState(() => _writing = true),
                 ),
             ],

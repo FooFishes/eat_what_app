@@ -21,12 +21,7 @@ void main() {
         stage.ghost,
         stage.isDark ? EatPalette.stageGhostDark : EatPalette.stageGhostLight,
       );
-      expect(
-        (stage.solidTop, stage.solidBottom),
-        stage.isDark
-            ? (EatPalette.paper, EatPalette.paperBottom)
-            : (EatPalette.inkTop, EatPalette.ink),
-      );
+      expect(stage.solid, stage.isDark ? EatPalette.paper : EatPalette.ink);
     }
   });
 }

@@ -58,7 +58,7 @@ void main() {
 
     testWidgets('看上去 36px，点击区域 44px', (tester) async {
       var taps = 0;
-      await pumpEat(tester, EatChip.add('＋ 自己写', onTap: () => taps++));
+      await pumpEat(tester, EatChip.add('自己写', onTap: () => taps++));
 
       expect(tester.getSize(find.byType(EatChip)).height, 44);
       final visual = find.descendant(
@@ -232,7 +232,7 @@ void main() {
                 EatChip.choice('小吃', selected: false, onTap: () {}),
                 EatChip.tag('平价', selected: true, onTap: () {}),
                 EatChip.tag('量大', selected: false, onTap: () {}),
-                EatChip.add('＋ 自己写', onTap: () {}),
+                EatChip.add('自己写', onTap: () {}),
               ],
             ),
             EatTabs(

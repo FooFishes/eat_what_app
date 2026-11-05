@@ -13,8 +13,6 @@ void main() {
         paper: Color(0xFFFFFFFF),
         mist: Color(0xFF000004),
         inkTop: Color(0xFF000005),
-        mistTop: Color(0xFF000006),
-        paperBottom: Color(0xFF000007),
         tagSelected: Color(0xFF000008),
         hairline: Color(0xFF000009),
         handle: Color(0xFF00000A),

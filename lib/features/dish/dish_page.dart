@@ -476,7 +476,7 @@ class _TasteSection extends ConsumerWidget {
         .where((t) => t.count > 0)
         .toList();
     final add = EatChip.add(
-      '＋ 加标签',
+      '加标签',
       onTap: () async {
         if (!await guardAction(context, ref, Capability.tasteTag) ||
             !context.mounted) {

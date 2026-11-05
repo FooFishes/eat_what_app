@@ -1,6 +1,7 @@
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/add_mark.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/painting.dart';
 import 'package:eat/design/widgets/surface.dart';
@@ -33,7 +34,7 @@ class EatChip extends StatelessWidget {
     required this.onTap,
   }) : _kind = _Kind.tag;
 
-  /// 补充入口. 虚线描边, 文字如 "+ 自己写" "+ 加标签".
+  /// 补充入口, 如 "自己写" "加标签". 细描边, 文字前自带圆形加号, 文字不用再写 "+".
   const new add(this.label, {super.key, required this.onTap})
     : selected = false,
       _kind = _Kind.add;
@@ -77,7 +78,7 @@ class EatChip extends StatelessWidget {
         ),
         c.ink,
       ),
-      (_Kind.add, _) => (SurfaceStyle.dashed(c.lineStrong), c.ink),
+      (_Kind.add, _) => (_addStyle(c.paper, c.handle), c.ink),
     };
     final duration = context.motion(EatMotion.select);
     return MediaQuery.withClampedTextScaling(
@@ -89,12 +90,14 @@ class EatChip extends StatelessWidget {
         inMutuallyExclusiveGroup: _kind == _Kind.choice,
         toggled: _kind == _Kind.tag ? selected : null,
         selected: _kind == _Kind.district ? selected : null,
-        builder: (context, _) => SizedBox(
+        builder: (context, pressed) => SizedBox(
           height: EatSize.touch,
           child: Center(
             widthFactor: 1,
             child: Surface(
-              style: style,
+              style: _kind == _Kind.add && pressed
+                  ? _addStyle(c.mist, c.handle)
+                  : style,
               duration: duration,
               curve: EatMotion.select.curve,
               child: ConstrainedBox(
@@ -102,18 +105,26 @@ class EatChip extends StatelessWidget {
                 child: SizedBox(
                   height: EatSize.chip,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Text(
-                        label,
-                        style: eat.text.meta.copyWith(
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: foreground,
+                    padding: EdgeInsets.only(
+                      left: _kind == _Kind.add ? EatSpace.s8 : 14,
+                      right: 14,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      spacing: EatSpace.s4,
+                      children: [
+                        if (_kind == _Kind.add)
+                          AddMark(size: 18, color: c.ink, plus: c.paper),
+                        Text(
+                          label,
+                          style: eat.text.meta.copyWith(
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: foreground,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -127,6 +138,9 @@ class EatChip extends StatelessWidget {
 }
 
 BoxShadow _border(Color color) => BoxShadow(spreadRadius: 1.5, color: color);
+
+SurfaceStyle _addStyle(Color fill, Color border) =>
+    SurfaceStyle.flat(fill, inset: [BoxShadow(spreadRadius: 1, color: border)]);
 
 /// "待接入" 标记. 放在未对接接口的功能名后, 接口上线后移除.
 ///

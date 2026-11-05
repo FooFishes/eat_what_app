@@ -176,9 +176,9 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.tap(find.text('＋ 加标签'));
+    await tester.tap(find.text('加标签'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('＋ 自己写'));
+    await tester.tap(find.text('自己写'));
     await tester.pumpAndSettle();
     for (var i = 1; i <= 21; i++) {
       await tester.enterText(find.byType(EditableText), '标签$i');

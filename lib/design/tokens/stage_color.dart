@@ -63,11 +63,8 @@ enum StageColor {
   Color get tableRing =>
       isDark ? EatPalette.tableRingDark : EatPalette.tableRingLight;
 
-  /// 实心按钮渐变的顶部颜色. 按钮文字用舞台色 [color].
-  Color get solidTop => isDark ? EatPalette.paper : EatPalette.inkTop;
-
-  /// 实心按钮渐变的底部颜色.
-  Color get solidBottom => isDark ? EatPalette.paperBottom : EatPalette.ink;
+  /// 实心按钮的底色. 按钮文字用舞台色 [color].
+  Color get solid => isDark ? EatPalette.paper : EatPalette.ink;
 }
 
 const _paper85 = Color.fromRGBO(255, 255, 255, 0.85);

@@ -7,22 +7,23 @@ import 'package:eat/design/theme/eat_shadows.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/add_mark.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:material_ui/material_ui.dart' show CircularProgressIndicator;
 
-enum _Kind { solid, outline, mist, dashed, stageSolid, stageGhost }
+enum _Kind { solid, outline, mist, add, stageSolid, stageGhost }
 
-/// 有厚度的胶囊按钮.
+/// 胶囊按钮. 厚度画在胶囊内部的底边上, 按下时厚度消失, 按钮下沉.
 ///
 /// 文字写明按下后的结果, 如 "就它了" "导航去店里", 不写 "确定".
 ///
 /// 变体:
 /// - 白底主操作用 [EatButton.solid], 每屏最多一个.
 /// - 白底上并排的次操作用 [EatButton.outline] 或 [EatButton.mist].
-/// - "新建" "自己写" 这类补充入口用 [EatButton.dashed].
+/// - "新建一家店" "自己写" 这类补充入口用 [EatButton.add].
 /// - 舞台上用 [EatButton.stageSolid] 和 [EatButton.stageGhost], 颜色取自所在舞台.
 ///
 /// 状态:
@@ -64,17 +65,18 @@ class EatButton extends StatelessWidget {
     this.muted = false,
   }) : _kind = _Kind.mist;
 
-  const new dashed(
+  /// 补充入口. 细描边, 文字前自带圆形加号, 文字不用再写 "+".
+  const new add(
     this.label, {
     super.key,
     required this.onPressed,
-    this.icon,
     this.height = EatSize.button,
     this.loading = false,
     this.muted = false,
-  }) : _kind = _Kind.dashed;
+  }) : icon = null,
+       _kind = _Kind.add;
 
-  /// 舞台上的主操作. 浅色舞台为 `ink` 底, 深色舞台为白色渐变底, 文字均为舞台色.
+  /// 舞台上的主操作. 浅色舞台为 `ink` 底, 深色舞台为白底, 文字均为舞台色.
   const new stageSolid(
     this.label, {
     super.key,
@@ -126,8 +128,7 @@ class EatButton extends StatelessWidget {
       label: loading ? '$label，进行中' : null,
       builder: (context, pressed) {
         final look = _look(eat, stage, pressed: pressed);
-        final sinks =
-            onPressed != null && !loading && !muted && _kind != _Kind.dashed;
+        final sinks = onPressed != null && !loading && !muted;
         final duration = context.motion(EatMotion.press);
         // 按下使用按压时长. 松开以及切换可用状态时使用较长的选中态时长, 颜色渐变而非突变.
         final styleDuration = pressed
@@ -140,7 +141,14 @@ class EatButton extends StatelessWidget {
           builder: (context, foreground, _) => Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon case final icon?) ...[
+              if (_kind == _Kind.add) ...[
+                AddMark(
+                  size: compact ? 18 : 22,
+                  color: foreground ?? look.foreground,
+                  plus: eat.colors.paper,
+                ),
+                const SizedBox(width: EatSpace.s8),
+              ] else if (icon case final icon?) ...[
                 EatIcon(icon, size: compact ? 16 : 18, color: foreground),
                 const SizedBox(width: EatSpace.s8),
               ],
@@ -216,51 +224,45 @@ class EatButton extends StatelessWidget {
     final c = eat.colors;
     final s = eat.shadows;
     if (onPressed == null || muted) {
-      return _kind == _Kind.dashed
-          ? (style: SurfaceStyle.dashed(c.lineStrong), foreground: c.disabledFg)
+      return _kind == _Kind.add
+          ? (style: _addStyle(c.paper, c.handle), foreground: c.disabledFg)
           : (style: SurfaceStyle.flat(c.disabledBg), foreground: c.disabledFg);
     }
     switch (_kind) {
       case _Kind.solid:
         return (
-          style: _raised(c.inkTop, c.ink, pressed ? s.buttonPressed : s.button),
+          style: _raised(c.ink, pressed ? s.buttonPressed : s.button),
           foreground: c.paper,
         );
       case _Kind.outline:
         return (
-          style: _raised(
-            c.paper,
-            c.paper,
-            pressed ? _outlinePressed : s.buttonOutline,
-          ),
+          style: _raised(c.paper, pressed ? _outlinePressed : s.buttonOutline),
           foreground: c.ink,
         );
       case _Kind.mist:
         return (
           style: _raised(
-            c.mistTop,
             c.mist,
             pressed ? s.buttonLightPressed : s.buttonLight,
           ),
           foreground: c.ink,
         );
-      case _Kind.dashed:
-        return (style: SurfaceStyle.dashed(c.lineStrong), foreground: c.ink);
+      case _Kind.add:
+        return (
+          style: _addStyle(pressed ? c.mist : c.paper, c.handle),
+          foreground: c.ink,
+        );
       case _Kind.stageSolid:
         final shadow = stage!.isDark
             ? (pressed ? _onStagePressed : s.buttonOnStage)
             : (pressed ? s.buttonPressed : s.button);
         return (
-          style: _raised(stage.solidTop, stage.solidBottom, shadow),
+          style: _raised(stage.solid, shadow),
           foreground: stage.solidForeground,
         );
       case _Kind.stageGhost:
         return (
-          style: _raised(
-            stage!.ghost,
-            stage.ghost,
-            pressed ? _ghostPressed : s.buttonGhost,
-          ),
+          style: _raised(stage!.ghost, pressed ? _ghostPressed : s.buttonGhost),
           foreground: stage.foreground,
         );
     }
@@ -356,16 +358,19 @@ class _RenderSidePadding extends RenderShiftedBox {
   }
 }
 
-SurfaceStyle _raised(Color top, Color bottom, EatShadow shadow) => SurfaceStyle(
-  top: top,
-  bottom: bottom,
+SurfaceStyle _raised(Color color, EatShadow shadow) => SurfaceStyle(
+  top: color,
+  bottom: color,
   outer: shadow.outer,
   inset: shadow.inset,
 );
 
+SurfaceStyle _addStyle(Color fill, Color border) =>
+    SurfaceStyle.flat(fill, inset: [BoxShadow(spreadRadius: 1, color: border)]);
+
 // 以下三种按下阴影不在阴影令牌中, 只供本组件使用.
 
-/// 描边按钮按下: 保留描边, 去掉底边和投影.
+/// 描边按钮按下: 保留描边, 去掉投影.
 const _outlinePressed = EatShadow(
   inset: [BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18))],
 );
@@ -374,19 +379,13 @@ const _outlinePressed = EatShadow(
 const _onStagePressed = EatShadow(
   outer: [
     BoxShadow(
-      offset: Offset(0, 1),
-      blurRadius: 2,
-      color: Color.fromRGBO(0, 0, 0, 0.18),
+      offset: Offset(0, 2),
+      blurRadius: 4,
+      spreadRadius: -2,
+      color: Color.fromRGBO(0, 0, 0, 0.35),
     ),
-  ],
-  inset: [
-    BoxShadow(offset: Offset(0, -1), color: Color.fromRGBO(0, 0, 0, 0.14)),
   ],
 );
 
-/// 舞台次按钮按下: 顶边高光变暗, 去掉投影.
-const _ghostPressed = EatShadow(
-  inset: [
-    BoxShadow(offset: Offset(0, 1), color: Color.fromRGBO(255, 255, 255, 0.3)),
-  ],
-);
+/// 舞台次按钮按下: 去掉底边.
+const _ghostPressed = EatShadow();

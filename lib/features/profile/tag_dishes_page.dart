@@ -30,7 +30,7 @@ class TagDishesPage extends ConsumerWidget {
           empty: const EmptyState(
             icon: EatIcons.tag,
             title: '这个标签下还没有菜',
-            message: '在菜品详情点「加标签」，用「＋ 自己写」加上这个标签。',
+            message: '在菜品详情点「加标签」，用「自己写」加上这个标签。',
           ),
         ),
       ],

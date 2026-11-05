@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
@@ -143,11 +142,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: EatSpace.s16),
-                  child: EatButton.dashed(
-                    '没找到？新建一家店',
-                    icon: EatIcons.store,
-                    onPressed: _newShop,
-                  ),
+                  child: EatButton.add('没找到？新建一家店', onPressed: _newShop),
                 ),
               ),
             ],

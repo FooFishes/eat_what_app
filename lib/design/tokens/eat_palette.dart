@@ -11,8 +11,6 @@ abstract final class EatPalette {
   static const paper = Color(0xFFFFFFFF);
   static const mist = Color(0xFFF4EFEB);
   static const inkTop = Color(0xFF3B312B);
-  static const mistTop = Color(0xFFFBF8F6);
-  static const paperBottom = Color(0xFFEFE8E2);
   static const tagSelected = Color(0xFFFBEFD9);
   static const hairline = Color(0xFFEFE9E4);
   static const handle = Color(0xFFE6DED8);

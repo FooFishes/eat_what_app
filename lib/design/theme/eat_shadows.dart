@@ -23,18 +23,21 @@ class const EatShadows({
   /// 悬浮元素: 导航胶囊, 地图上的搜索框和商圈标签.
   required final EatShadow float,
 
-  /// `ink` 实心按钮, 搭配 `ink-top` 到 `ink` 的渐变.
+  /// 按钮的厚度画在胶囊内部: 底边一道内阴影, 外加一层收在按钮下方的柔和投影.
+  /// 按下时内阴影消失, 投影收拢.
+  ///
+  /// `ink` 实心按钮, 也用于浅色舞台上的实心按钮.
   required final EatShadow button,
   required final EatShadow buttonPressed,
 
-  /// 雾面按钮, 搭配 `mist-top` 到 `mist` 的渐变.
+  /// 雾面按钮.
   required final EatShadow buttonLight,
   required final EatShadow buttonLightPressed,
 
-  /// 描边按钮: `ink` 描边和浅色底边.
+  /// 描边按钮: `ink` 描边和柔和投影, 没有底边.
   required final EatShadow buttonOutline,
 
-  /// 深色舞台上的白色实心按钮, 搭配 `paper` 到 `paper-bottom` 的渐变.
+  /// 深色舞台上的白色实心按钮.
   required final EatShadow buttonOnStage,
 
   /// 舞台上的半透明次按钮.
@@ -72,128 +75,60 @@ class const EatShadows({
         BoxShadow(
           offset: Offset(0, 6),
           blurRadius: 14,
-          color: Color.fromRGBO(35, 28, 24, 0.16),
-        ),
-        BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 2,
-          color: Color.fromRGBO(35, 28, 24, 0.2),
+          spreadRadius: -6,
+          color: Color.fromRGBO(35, 28, 24, 0.4),
         ),
       ],
       inset: [
-        BoxShadow(offset: Offset(0, -2), color: Color.fromRGBO(0, 0, 0, 0.28)),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.16),
-        ),
+        BoxShadow(offset: Offset(0, -3), color: Color.fromRGBO(0, 0, 0, 0.35)),
       ],
     ),
     buttonPressed: EatShadow(
       outer: [
         BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 1,
-          color: Color.fromRGBO(35, 28, 24, 0.2),
-        ),
-      ],
-      inset: [
-        BoxShadow(offset: Offset(0, -1), color: Color.fromRGBO(0, 0, 0, 0.24)),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.1),
+          offset: Offset(0, 2),
+          blurRadius: 4,
+          spreadRadius: -2,
+          color: Color.fromRGBO(35, 28, 24, 0.4),
         ),
       ],
     ),
     buttonLight: EatShadow(
-      outer: [
-        BoxShadow(
-          offset: Offset(0, 3),
-          blurRadius: 8,
-          color: Color.fromRGBO(35, 28, 24, 0.06),
-        ),
-        BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 2,
-          color: Color.fromRGBO(35, 28, 24, 0.12),
-        ),
-      ],
-      inset: [
-        BoxShadow(
-          offset: Offset(0, -2),
-          color: Color.fromRGBO(35, 28, 24, 0.1),
-        ),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.9),
-        ),
-      ],
-    ),
-    buttonLightPressed: EatShadow(
-      outer: [
-        BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 1,
-          color: Color.fromRGBO(35, 28, 24, 0.1),
-        ),
-      ],
-      inset: [
-        BoxShadow(
-          offset: Offset(0, -1),
-          color: Color.fromRGBO(35, 28, 24, 0.1),
-        ),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.7),
-        ),
-      ],
-    ),
-    buttonOutline: EatShadow(
-      outer: [
-        BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 2,
-          color: Color.fromRGBO(35, 28, 24, 0.12),
-        ),
-      ],
       inset: [
         BoxShadow(
           offset: Offset(0, -3),
-          color: Color.fromRGBO(35, 28, 24, 0.08),
+          color: Color.fromRGBO(35, 28, 24, 0.06),
         ),
-        BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18)),
       ],
+    ),
+    buttonLightPressed: EatShadow(),
+    buttonOutline: EatShadow(
+      outer: [
+        BoxShadow(
+          offset: Offset(0, 4),
+          blurRadius: 10,
+          spreadRadius: -6,
+          color: Color.fromRGBO(35, 28, 24, 0.25),
+        ),
+      ],
+      inset: [BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18))],
     ),
     buttonOnStage: EatShadow(
       outer: [
         BoxShadow(
           offset: Offset(0, 8),
           blurRadius: 18,
-          color: Color.fromRGBO(0, 0, 0, 0.16),
-        ),
-        BoxShadow(
-          offset: Offset(0, 2),
-          blurRadius: 4,
-          color: Color.fromRGBO(0, 0, 0, 0.18),
+          spreadRadius: -8,
+          color: Color.fromRGBO(0, 0, 0, 0.4),
         ),
       ],
       inset: [
-        BoxShadow(offset: Offset(0, -2), color: Color.fromRGBO(0, 0, 0, 0.16)),
+        BoxShadow(offset: Offset(0, -3), color: Color.fromRGBO(0, 0, 0, 0.12)),
       ],
     ),
     buttonGhost: EatShadow(
-      outer: [
-        BoxShadow(
-          offset: Offset(0, 1),
-          blurRadius: 2,
-          color: Color.fromRGBO(0, 0, 0, 0.1),
-        ),
-      ],
       inset: [
-        BoxShadow(offset: Offset(0, -2), color: Color.fromRGBO(0, 0, 0, 0.1)),
-        BoxShadow(
-          offset: Offset(0, 1),
-          color: Color.fromRGBO(255, 255, 255, 0.4),
-        ),
+        BoxShadow(offset: Offset(0, -3), color: Color.fromRGBO(0, 0, 0, 0.06)),
       ],
     ),
     pin: EatShadow(

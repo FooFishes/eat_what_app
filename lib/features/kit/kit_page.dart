@@ -188,14 +188,14 @@ class _KitPageState extends State<KitPage> {
             spacing: EatSpace.s10,
             children: [
               Expanded(child: EatButton.mist('换一个', onPressed: () {})),
-              Expanded(child: EatButton.dashed('＋ 新建一家店', onPressed: () {})),
+              Expanded(child: EatButton.add('新建一家店', onPressed: () {})),
             ],
           ),
           const Row(
             spacing: EatSpace.s10,
             children: [
               Expanded(child: EatButton.solid('账号密码登录', onPressed: null)),
-              Expanded(child: EatButton.dashed('＋ 自己写', onPressed: null)),
+              Expanded(child: EatButton.add('自己写', onPressed: null)),
             ],
           ),
           Text('勾选后才能登录', style: eat.text.meta.copyWith(color: c.warn)),
@@ -234,7 +234,7 @@ class _KitPageState extends State<KitPage> {
                     () => _tags.contains(i) ? _tags.remove(i) : _tags.add(i),
                   ),
                 ),
-              EatChip.add('＋ 自己写', onTap: () {}),
+              EatChip.add('自己写', onTap: () {}),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 spacing: EatSpace.s8,

@@ -689,7 +689,7 @@ extension RefCache on Ref {
 | `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 |
 | `porcelain` | `#9db8d9` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 甜品 |
 | `matcha` | `#9dbf7a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 凉菜、配菜 |
-| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 到 `paper-bottom` 渐变，舞台色字 | — |
+| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 底，舞台色字 | — |
 | `redoil` | `#a8321c` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 火锅 |
 | `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 烧烤 |
 
