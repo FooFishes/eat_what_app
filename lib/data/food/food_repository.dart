@@ -173,7 +173,6 @@ class FoodRepository {
       stageColor: dish.stage.name,
       stageAlternates: [for (final c in dish.stageAlternates) c.name],
       coverCrop: _cropDto(roundCrop(dish.crop)),
-      removeBackground: dish.removeBackground,
     );
     final text = jsonEncode(body.toJson());
     final previous = _unconfirmedPublish;

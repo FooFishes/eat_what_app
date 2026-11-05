@@ -142,7 +142,6 @@ class const NewDish({
   required final StageColor stage,
   required final List<StageColor> stageAlternates,
   final CoverCrop crop = const CoverCrop(),
-  final bool removeBackground = false,
   final List<int> tasteTagIds = const [],
   final List<String> myTagNames = const [],
   final String? description,

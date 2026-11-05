@@ -51,7 +51,6 @@ Map<String, Object?> topicFoodJson({
   'coverCenterX': 0.4,
   'coverCenterY': 0.6,
   'coverDiameter': 0.8,
-  'removeBackground': false,
   'position': position,
 };
 

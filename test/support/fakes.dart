@@ -439,7 +439,6 @@ Map<String, Object?> foodJson({
   'stageColor': stageColor,
   'stageAlternates': alternates,
   'coverCrop': {'centerX': 0.5, 'centerY': 0.5, 'diameter': 1},
-  'removeBackground': false,
   'createdAt': 1792763739329,
   'updatedAt': 1792763739329,
 };

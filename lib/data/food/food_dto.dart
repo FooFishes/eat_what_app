@@ -105,7 +105,6 @@ class const CreateFoodDto({
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
-  final bool? removeBackground,
 }) {
   Map<String, dynamic> toJson() => _$CreateFoodDtoToJson(this);
 }

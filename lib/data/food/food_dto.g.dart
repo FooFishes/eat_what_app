@@ -133,5 +133,4 @@ Map<String, dynamic> _$CreateFoodDtoToJson(CreateFoodDto instance) =>
       'stageColor': ?instance.stageColor,
       'stageAlternates': ?instance.stageAlternates,
       'coverCrop': ?instance.coverCrop?.toJson(),
-      'removeBackground': ?instance.removeBackground,
     };

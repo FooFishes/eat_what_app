@@ -292,7 +292,7 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// TODO: 接口只保存 "自动去掉背景" 开关, 后端不生成去背景的图片. 后端支持后接入开关并去掉 "待接入".
+// TODO: 后端不生成去背景的图片, 也不保存 "自动去掉背景" 开关. 后端支持后接入开关并去掉 "待接入".
 /// "自动去掉背景" 开关.
 class _RemoveBackground extends StatelessWidget {
   const new();
