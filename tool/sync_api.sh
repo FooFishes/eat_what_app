@@ -57,4 +57,4 @@ fi
 mv "$tmp" "$target"
 trap - EXIT
 version="$(grep -m 1 '^  version:' "$target" | sed 's/^  version: *//')"
-echo "已更新 docs/api.openapi.yml（info.version: $version）"
+echo "已更新 docs/api.openapi.yml（info.version: ${version}）"
