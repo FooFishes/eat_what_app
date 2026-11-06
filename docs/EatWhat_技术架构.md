@@ -136,7 +136,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 7 | 首帧：有登录态进 `/discover`（先显示缓存），没有进 `/login`；舞台先用上一次的舞台色 | — |
 | 8 | 首帧后、已同意：拉远程配置 → 版本检查 → 热更新检查 → `GET /user/info` 校验登录态 → 初始化推送（已登录时） | 后台 |
 
-用户在登录页勾选同意并登录成功后，补做第 6、8 步里还没做的初始化。
+第一次写入同意记录后（登录成功，或在登录页点「去逛逛」并同意），补做第 6、8 步里还没做的初始化；游客不校验登录态、不初始化推送。第 7 步对游客不变：游客不落盘，冷启动没有登录态就进 `/login`（产品 7.4）。
 
 ## 4. 状态管理
 
@@ -164,9 +164,9 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 | Provider | 内容 | 谁改 |
 | --- | --- | --- |
-| `sessionProvider` | 未登录 / 已登录（token、当前用户）；过期时带上原因和原地址 | 登录、退出、过期、刷新用户信息 |
-| `accountStatusProvider` | 未登录、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
-| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意不进这里，见 9.5） | 登录页 |
+| `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期时带上原因和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
+| `accountStatusProvider` | 未登录（含游客）、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
+| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意不进这里，见 9.5） | 登录页（登录成功或「去逛逛」时） |
 | `crossSiteConsentProvider` | 读跨站同步政策、弹同意面板、提交同意（9.5） | `ApiHooks.requestConsent`、登录流程 |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
 | `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
@@ -176,7 +176,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `unreadCountProvider` | 有未读的消息行数（`/notification/cards/unread/count` 的 `cards`，不是未读条数），发现页铃铛和消息页「N 条未读」共用 | 回到前台、回到发现页时重新拉；点一行减 1；全部已读后重新拉（15.5） |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表，加标签面板和发布共用 | 只读 |
-| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次登录时 |
+| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次写入同意记录时 |
 | `publishedCountProvider` | 这次打开以来发布了几道菜、建了几家店；「我的」的统计和上传、餐厅详情的菜单监听它，发布后重新拉 | 加菜页、新建店页 |
 | `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
@@ -206,24 +206,26 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 「栈」一列：分支表示在主页面的分支导航器里（显示 `NavBar`）；根表示压在根导航器上（盖住 `NavBar`，产品 6.1 要求详情和流程页不显示导航）。所有登录后的子页面都设 `parentNavigatorKey` 为根导航器。
 
+「未登录可进」一列：「是」谁都能进；「游客」要登录或在登录页点过「去逛逛」（产品 6.2）；「否」只有登录后能进。游客进「设置」只显示「关于」一项，「我的」显示游客态（产品 6.10）。
+
 | 页面 | 路径 | 栈 | 未登录可进 | 画板 |
 | --- | --- | --- | --- | --- |
-| 发现 | `/discover` | 分支 0 | 否 | `G-HomePhoto` |
-| 附近 | `/nearby` | 分支 1 | 否 | `G-Nearby` |
-| 我的 | `/me` | 分支 2 | 否 | `G-Me` |
+| 发现 | `/discover` | 分支 0 | 游客 | `G-HomePhoto` |
+| 附近 | `/nearby` | 分支 1 | 游客 | `G-Nearby` |
+| 我的 | `/me` | 分支 2 | 游客 | `G-Me` |
 | 登录 | `/login` | 根 | 是 | `G-Login` |
 | 手机号登录 | `/login/phone` | 根 | 是 | `G-PhoneLogin` |
 | 密码登录 | `/login/password` | 根 | 是 | `G-PasswordLogin` |
 | 认证 | `/verify` | 根 | 否 | `G-Verify` |
 | 统一认证回跳 | `/app/auth/callback?result=&code=`（不是页面，重定向到 `/verify?sso=&code=`，6.3） | 根 | 否 | — |
-| 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 否 | `G-Dish` |
-| 全部评论 | `/dishes/:dishId/comments` | 根 | 否 | `G-Comments` |
+| 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 游客 | `G-Dish` |
+| 全部评论 | `/dishes/:dishId/comments` | 根 | 游客 | `G-Comments` |
 | 写评论、回复 | `/dishes/:dishId/comments/new`；回复时带 `reply=<所属评论 id>`，回复某条回复时再带 `to=<那条回复的 id>`，`name` 是被回复人的昵称（刷新后「回复 小林」还在）；`photo=1` 打开后先选照片 | 根 | 否 | `G-WriteComment` |
 | 编辑菜品 | `/dishes/:dishId/edit` | 根 | 否 | `G-AddDish` |
-| 餐厅详情 | `/shops/:shopId` | 根 | 否 | `G-Detail` |
-| 往期专题 | `/topics` | 根 | 否 | `G-TopicArchive` |
-| 专题 | `/topics/:topicId` | 根 | 否 | `G-Topic` |
-| 搜索 | `/search` | 根 | 否 | `G-Search` |
+| 餐厅详情 | `/shops/:shopId` | 根 | 游客 | `G-Detail` |
+| 往期专题 | `/topics` | 根 | 游客 | `G-TopicArchive` |
+| 专题 | `/topics/:topicId` | 根 | 游客 | `G-Topic` |
+| 搜索 | `/search` | 根 | 游客 | `G-Search` |
 | 消息 | `/inbox` | 根 | 否 | `G-Inbox` |
 | 他人主页 | `/users/:userId` | 根 | 否 | `G-UserProfile` |
 | 粉丝、关注 | `/users/:userId/follows?tab=fans\|followings` | 根 | 否 | `G-Follows` |
@@ -231,7 +233,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 我的标签 | `/me/tags` | 根 | 否 | `G-MyTags` |
 | 标签下的菜 | `/me/tags/:tagId?name=`（标签名放在地址里，刷新后标题还在） | 根 | 否 | `G-TagDishes` |
 | 足迹 | `/me/history` | 根 | 否 | `G-History` |
-| 设置 | `/settings` | 根 | 否 | `G-Settings` |
+| 设置 | `/settings` | 根 | 游客 | `G-Settings` |
 | 账号与安全 | `/settings/account` | 根 | 否 | `G-SettingsAccount` |
 | 设置用户名、换绑手机、设置或修改密码 | `/settings/account/username`、`/settings/account/phone`、`/settings/account/password` | 根 | 否 | 无画板，按白底页规则 |
 | 登录设备 | `/settings/account/devices` | 根 | 否 | `G-Devices` |
@@ -239,7 +241,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 隐私 | `/settings/privacy` | 根 | 否 | `G-SettingsPrivacy` |
 | 屏蔽的人 | `/settings/privacy/blocked` | 根 | 否 | `G-Blocked` |
 | 通知 | `/settings/notify` | 根 | 否 | `G-SettingsNotify` |
-| 关于 | `/settings/about` | 根 | 否 | `G-SettingsAbout` |
+| 关于 | `/settings/about` | 根 | 游客 | `G-SettingsAbout` |
 | 反馈 | `/feedback`（可带 `dishId`、`shopId`） | 根 | 否 | `G-Feedback` |
 | 发布 1/2 选店 | `/publish`；加菜页「换一家」打开时带 `change=1` | 根 | 否 | `G-PickShop` |
 | 新建店 | `/publish/shop`（可带 `name`；`return=1` 时建好后带着店返回） | 根 | 否 | `G-NewShop` |
@@ -274,10 +276,12 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | 1 | 当前版本低于强制更新线 | `/update` |
 | 2 | 停服维护中 | `/maintenance` |
-| 3 | 未登录，且目标不是「未登录可进」的页面 | `/login?from=<原地址>`；过期时再带 `expired=1` |
+| 3 | 未登录，且目标是「否」，或目标是「游客」而这次打开没点过「去逛逛」 | `/login?from=<原地址>`；过期时再带 `expired=1` |
 | 4 | 已登录还去 `/login*` | `from` 指的原地址（校验见 5.4），没有就 `/discover`；新号码刚注册先去 `/verify?onboarding=1` |
 
-`resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」，不在守卫里写死路径列表。
+`resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」（`router/guard.dart` 的 `RouteAccess`：`public`、`guest`、`signedIn`，不标的是 `signedIn`），不在守卫里写死路径列表。go_router 的 `metadata` 会被子路由继承，所以「设置」标了 `guest` 后，账号与安全、隐私、通知要标回 `signedIn`。
+
+游客停在 `/login*` 不跳走（第 4 条只管已登录），这样游客随时能回登录页。点「去逛逛」时登录页先写同意记录、把 `sessionProvider` 置成游客，再自己 `go`：`from` 能匹配路由表、标了 `public` 或 `guest` 就去 `from`，否则去 `/discover`。功能目录不能导入 `router/` 的其余文件，所以这个地址由路由表构造登录页时算好传进去（`browseTarget`）。这里不和守卫抢，因为守卫对游客停在 `/login*` 不做处理。
 
 ### 5.4 登录后回到原页面
 
@@ -386,7 +390,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 0 | 成功 | — |
 | 10001、10002 | 参数非法、缺失 | 表单就地提示；上报 |
 | 10003 | 请求频率过高，`data.retryAfterSeconds` 给出等待秒数（密码锁定最多 900 秒，验证码 24 小时上限） | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
-| 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4） |
+| 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4）；游客收到时不走过期流程，按 `NeedsSignIn` 弹登录面板（8.1） |
 | 20004 | 权限不足，受限会话访问未登记的接口也是这个码 | 重新拉用户信息，按新的账号状态弹拦截面板（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」 |
 | 20005、20009 | 需要跨站同步同意、同意政策已更新 | 弹同意面板，用户同意后重发原请求（9.5） |
 | 20006 | 数据同步中 | 提示「数据正在同步，请稍后再试」，不重发写请求 |
@@ -452,9 +456,11 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 8.1 建模
 
-- `AccountStatus`：`signedOut`、`unverified`、`verified`、`banned(原因, 解封时间)`。由 `GET /user/info` 的 `verified`、`banned`、`banReason`、`bannedAt`、`banUntil`（null 表示永久或没有期限证明）算出。登录响应带 `restricted: true` 时，在拿到用户信息之前就按封禁处理。
+- `AccountStatus`：`signedOut`（含游客）、`unverified`、`verified`、`banned(原因, 解封时间)`。游客能不能进某页由路由的 `guest` 标记决定（5.3），这里不区分。由 `GET /user/info` 的 `verified`、`banned`、`banReason`、`bannedAt`、`banUntil`（null 表示永久或没有期限证明）算出。登录响应带 `restricted: true` 时，在拿到用户信息之前就按封禁处理。
 - 受限会话：封禁账号登录拿到的是受限 token（有效 1 小时），后端只放行登记过的接口（浏览、本人信息、通知、屏蔽、登录设备、反馈和举报、退出、注销申请），其余返回 20004。解封后受限 token 的请求返回 30002，按登录过期处理，重新登录拿普通 token。封禁中「我的」的上传列表改用公开的 `/foods/by-user`，收藏和我的标签不请求。
-- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签、写我的标签、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑删除自己的菜、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、消息、屏蔽、登录设备、退出、注销对所有已登录状态都开放，不进这张表。
+- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签、写我的标签、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑删除自己的菜、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出、注销对所有已登录状态都开放，不进这张表。
+- 游客能点到、要登录才能进的入口也进这张表，好让游客看到「登录后才能看消息」的面板，而不是被守卫直接带去登录页（产品 7.3）：看消息（`viewInbox`）、看他人主页（`viewProfile`）、意见反馈（`feedback`）。这三项对所有已登录状态开放，只拦未登录。守卫第 3 条兜住地址栏和深链直接进的情况。
+- 未登录时 `checkPermission` 对所有能力都返回 `NeedsSignIn`，面板主按钮「去登录」，带 `from=<当前地址>` 进 `/login`。
 - 每个能力带两个开关：
   - `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误。其余要求已认证。
   - `openToBanned`：封禁中也能做。只有举报和信息有误（受限会话放行反馈、举报和信息有误）。其余封禁中都拦。
@@ -512,7 +518,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
 | 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | `prefs.*` | 设备 | 留 |
 | 热更新分组号（1–100） | `prefs.*` | 设备 | 留 |
-| 最近搜过的词（最多 10 个） | `prefs.*`，键带用户 id | 账号 | 删 |
+| 最近搜过的词（最多 10 个；游客不存） | `prefs.*`，键带用户 id | 账号 | 删 |
 | 接口缓存（第 10 节） | `cache.*`，键带用户 id | 账号 | `cache.*` 全部删掉 |
 | 远程配置快照 | `config.remote`（不在 `cache.*` 下） | 设备 | 留 |
 | 埋点队列 | `analytics.queue` | 设备 | 先尝试上报，再清空 |
@@ -543,7 +549,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 9.4 同意记录与 SDK 初始化
 
-- 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
+- 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）；点「去逛逛」并同意时当场写入（产品 6.2）。游客和登录用户共用这一份记录，退出登录不删。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
 - 跨站同步同意由用户在面板里确认、记在服务端，不进本地同意记录，见 9.5。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 
@@ -1219,12 +1225,13 @@ class PushNotice({
 - 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
 - 接口没上线前：只在调试日志里打印，不上报（现状差距 2.1）。
 - 只在同意隐私政策后采集。
+- 游客不采集：`/telemetry` 要求登录，游客期间的事件不记、不进队列。游客转化（点「去逛逛」后登录的比例）以后需要时再和后端定一个不要求登录的上报口。
 
 ### 19.2 崩溃上报
 
 方案待确认 D4，推荐自建 Sentry（依赖选型第 14 节）。
 
-- 同意隐私政策后才初始化；`SENTRY_DSN` 为空时不启用。`CrashReporter`（`core/telemetry/`）封装 Sentry，`consentedServicesProvider` 在启动时（本机已有同意记录）或首次登录写入同意记录后启动它。
+- 同意隐私政策后才初始化；`SENTRY_DSN` 为空时不启用。`CrashReporter`（`core/telemetry/`）封装 Sentry，`consentedServicesProvider` 在启动时（本机已有同意记录）或首次写入同意记录后（登录成功或「去逛逛」）启动它。游客期间不设用户 id。
 - 配置：`environment` 取 `ENV_NAME`；`release` 为 `eat@<版本名>+<构建号>`，`dist` 为补丁号；`sendDefaultPii: false`；不开会话回放，不截屏，不记录界面结构和点击；性能追踪先关（不设采样率）。
 - `beforeSend` 去掉请求头、Cookie、请求体和 URL 的查询参数；用户信息只放账号 id。
 - 面包屑：路由跳转（挂在 GoRouter 的观察者上，去掉路由参数）、网络请求（`sentry_dio` 记录地址和状态码，去掉查询参数；`ApiClient` 对失败的请求另记方法、路径和业务码）。`sentry_dio` 不把失败的请求作为错误上报。
@@ -1313,3 +1320,4 @@ class PushNotice({
 | A13 | 「后台上传」的范围 | 理解为在发布页填表时并行上传；App 切到后台时不保证继续，回到前台自动重试失败的照片 | 产品负责人 |
 | A14 | Web 在微信里的首屏 | Flutter Web 首屏要下载 CanvasKit（压缩后约 2–3 MB）、主程序和字体，在微信里打开分享链接会等几秒。推荐先做出来实测；不满意再考虑由服务端给分享链接输出一个轻量的菜品预览页，再进完整 Web 版 | 产品负责人 |
 | A15 | 舞台菜名按词断行 | 「每行不超过四个字、按词断行」需要中文分词，Flutter 在 App 上没有现成的分词能力。推荐后端在发布时分好词，接口返回断行位置；没有之前客户端用简单规则兜底（每行 ≤ 4 字，尽量不拆开常见结尾词如「粉」「面」「饭」「云吞」） | 后端、产品负责人 |
+| A16 | 首次启动的隐私弹窗 | 现在的做法是在登录页勾选协议，没勾时点「手机号登录」或「去逛逛」弹协议面板（产品 6.2）。iOS 和 Web 够用；国内安卓商店常按「首次启动弹窗提示隐私政策」审核，上这些商店时推荐改成第一次打开先弹同意面板，同意后登录页不再勾选。和 A12 一起定 | 产品负责人 |
