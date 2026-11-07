@@ -202,6 +202,7 @@ final class ShopSearchFamily extends $Family
 /// 最近搜索的词, 按时间倒序, 数量有上限.
 ///
 /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
+/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
 
 @ProviderFor(SearchHistory)
 final searchHistoryProvider = SearchHistoryProvider._();
@@ -209,11 +210,13 @@ final searchHistoryProvider = SearchHistoryProvider._();
 /// 最近搜索的词, 按时间倒序, 数量有上限.
 ///
 /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
+/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
 final class SearchHistoryProvider
     extends $AsyncNotifierProvider<SearchHistory, List<String>> {
   /// 最近搜索的词, 按时间倒序, 数量有上限.
   ///
   /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
+  /// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
   SearchHistoryProvider._()
     : super(
         from: null,
@@ -233,11 +236,12 @@ final class SearchHistoryProvider
   SearchHistory create() => SearchHistory();
 }
 
-String _$searchHistoryHash() => r'417efa840e7ff95199a6ccaf3b8082d99dfbf5b8';
+String _$searchHistoryHash() => r'c37f31660f43efbfb663994673a5364fa2564db1';
 
 /// 最近搜索的词, 按时间倒序, 数量有上限.
 ///
 /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
+/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
 
 abstract class _$SearchHistory extends $AsyncNotifier<List<String>> {
   FutureOr<List<String>> build();

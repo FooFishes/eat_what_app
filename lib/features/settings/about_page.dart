@@ -6,13 +6,17 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// 关于页面: 应用说明, 版本号, 反馈入口和两份协议.
+///
+/// 游客也能进. 游客点 "反馈" 时弹登录面板.
 ///
 /// 版本写作 "版本 0.3.0（30）补丁 2", 依次是版本名, 构建号和热更新的补丁号. 没有补丁时不显示补丁号.
 class AboutPage extends ConsumerWidget {
@@ -61,7 +65,12 @@ class AboutPage extends ConsumerWidget {
               icon: EatIcons.feedback,
               label: '反馈',
               value: '出问题、提建议都行',
-              onTap: () => context.push(Paths.feedback()),
+              onTap: () async {
+                if (await guardAction(context, ref, Capability.feedback) &&
+                    context.mounted) {
+                  await context.push(Paths.feedback());
+                }
+              },
             ),
             SettingsRow(
               icon: EatIcons.document,

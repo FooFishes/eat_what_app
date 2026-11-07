@@ -21,16 +21,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// 设置页面: 头像和昵称 (点击进入编辑资料), 各子页面入口, 底部的 "退出登录".
+///
+/// 游客只有 "关于" 一项.
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = switch (ref.watch(sessionProvider)) {
-      SignedIn(:final user) => user,
-      SignedOut() => null,
-    };
+    final session = ref.watch(sessionProvider);
     final version = ref.watch(appVersionProvider).value;
+    final about = SettingsRow(
+      icon: EatIcons.info,
+      label: '关于与反馈',
+      value: version,
+      numericValue: true,
+      onTap: () => context.push(Paths.settingsAbout),
+    );
+    final user = switch (session) {
+      SignedIn(:final user) => user,
+      SignedOut() || Guest() => null,
+    };
+    if (session is! SignedIn) {
+      return PlainScaffold(
+        title: '设置',
+        slivers: [
+          SliverList.list(children: [about]),
+        ],
+      );
+    }
     return PlainScaffold(
       title: '设置',
       slivers: [
@@ -63,13 +81,7 @@ class SettingsPage extends ConsumerWidget {
               label: '通知',
               onTap: () => context.push(Paths.settingsNotify),
             ),
-            SettingsRow(
-              icon: EatIcons.info,
-              label: '关于与反馈',
-              value: version,
-              numericValue: true,
-              onTap: () => context.push(Paths.settingsAbout),
-            ),
+            about,
           ],
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 28)),

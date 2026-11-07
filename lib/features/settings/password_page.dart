@@ -120,7 +120,7 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
     final eat = context.eat;
     final user = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final hasPassword = user?.hasPassword ?? false;
     final byCode = !hasPassword || _byCode;

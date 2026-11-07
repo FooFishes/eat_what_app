@@ -14,13 +14,26 @@ bool _known(Uri uri) => const [
   '/login',
 ].any((p) => uri.path == p || uri.path.startsWith('$p/'));
 
+/// 粗略的开放程度表, 只满足守卫测试的需要. 不在 [_known] 中的地址为 null.
+RouteAccess? _accessOf(Uri uri) {
+  if (!_known(uri)) return null;
+  if (uri.path.startsWith(Paths.login)) return RouteAccess.public;
+  if (uri.path == Paths.discover ||
+      uri.path == Paths.nearby ||
+      uri.path == Paths.me ||
+      uri.path == Paths.settings) {
+    return RouteAccess.guest;
+  }
+  return RouteAccess.signedIn;
+}
+
 String? _redirect(
   String location,
   SessionState session, {
-  bool isPublic = false,
+  RouteAccess access = RouteAccess.signedIn,
 }) => resolveRedirect(
   location: Uri.parse(location),
-  isPublic: isPublic,
+  access: access,
   session: session,
   canMatch: _known,
 );
@@ -58,10 +71,44 @@ void main() {
       );
     });
 
-    test('「未登录可进」的页面不拦', () {
+    test('谁都能进的页面不拦', () {
       expect(
-        _redirect('/login/phone', const SignedOut(), isPublic: true),
+        _redirect(
+          '/login/phone',
+          const SignedOut(),
+          access: RouteAccess.public,
+        ),
         isNull,
+      );
+    });
+
+    test('没点「去逛逛」时，游客能进的页面也去登录页', () {
+      expect(
+        _redirect('/nearby', const SignedOut(), access: RouteAccess.guest),
+        '/login?from=%2Fnearby',
+      );
+    });
+  });
+
+  group('游客', () {
+    const guest = Guest();
+
+    test('游客能进的页面和谁都能进的页面不拦', () {
+      expect(_redirect('/me', guest, access: RouteAccess.guest), isNull);
+      expect(_redirect('/login', guest, access: RouteAccess.public), isNull);
+    });
+
+    test('停在登录页不跳走，随时能回登录页', () {
+      expect(
+        _redirect('/login?from=%2Fsettings', guest, access: RouteAccess.public),
+        isNull,
+      );
+    });
+
+    test('从地址栏或链接进只给登录用户的页面，带着原地址去登录页', () {
+      expect(
+        _redirect('/settings/account', guest),
+        '/login?from=%2Fsettings%2Faccount',
       );
     });
   });
@@ -76,24 +123,51 @@ void main() {
 
     test('还在登录页时回到原地址，没有就去发现页', () {
       expect(
-        _redirect('/login/phone?from=%2Fsettings', signedIn, isPublic: true),
+        _redirect(
+          '/login/phone?from=%2Fsettings',
+          signedIn,
+          access: RouteAccess.public,
+        ),
         '/settings',
       );
-      expect(_redirect('/login', signedIn, isPublic: true), Paths.discover);
+      expect(
+        _redirect('/login', signedIn, access: RouteAccess.public),
+        Paths.discover,
+      );
     });
 
     test('新号码刚注册，先进认证引导，原地址接着带上', () {
       const registered = SignedIn(justRegistered: true);
       expect(
         Uri.parse(
-          _redirect('/login/phone?from=%2Fme', registered, isPublic: true)!,
+          _redirect(
+            '/login/phone?from=%2Fme',
+            registered,
+            access: RouteAccess.public,
+          )!,
         ),
         Uri.parse('/verify?onboarding=1&from=%2Fme'),
       );
       expect(
-        _redirect('/login/phone', registered, isPublic: true),
+        _redirect('/login/phone', registered, access: RouteAccess.public),
         '/verify?onboarding=1',
       );
+    });
+  });
+
+  group('「去逛逛」后去的地址', () {
+    test('游客能进的原地址照去', () {
+      expect(browseTarget('/me?tab=1', _accessOf), '/me?tab=1');
+    });
+
+    test('原地址游客看不了，去发现页', () {
+      expect(browseTarget('/settings/account', _accessOf), Paths.discover);
+    });
+
+    test('没有原地址、站外地址、对不上路由的地址，都去发现页', () {
+      for (final from in [null, 'https://evil.example/x', '/no-such-page']) {
+        expect(browseTarget(from, _accessOf), Paths.discover);
+      }
     });
   });
 

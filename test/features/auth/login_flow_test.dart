@@ -65,37 +65,35 @@ void main() {
       ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
   });
 
-  testWidgets('没登录时进登录页；没勾协议时按钮是灰的，点了提示先勾选，抽屉高度不变', (tester) async {
-    final (_, router) = await pumpApp(tester, env);
+  testWidgets('没登录时进登录页；没勾协议时按钮照常可点，点了弹协议面板', (tester) async {
+    final (container, router) = await pumpApp(tester, env);
 
     expect(locationOf(router), Paths.login);
     expect(find.byType(LoginPage), findsOneWidget);
-    bool hintShown() =>
-        tester
-            .widget<AnimatedOpacity>(
-              find.ancestor(
-                of: find.text('请先勾选同意协议'),
-                matching: find.byType(AnimatedOpacity),
-              ),
-            )
-            .opacity ==
-        1;
-    expect(hintShown(), isFalse);
-    expect(_button(tester, '手机号登录').muted, isTrue);
-    final buttonTop = tester.getTopLeft(find.text('手机号登录')).dy;
-
-    await tester.tap(find.text('手机号登录'));
-    await tester.pumpAndSettle();
-    expect(locationOf(router), Paths.login);
-    expect(hintShown(), isTrue);
-    expect(tester.getTopLeft(find.text('手机号登录')).dy, buttonTop);
-
-    await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
-    await tester.pump();
-    expect(hintShown(), isFalse);
     expect(_button(tester, '手机号登录').muted, isFalse);
+
     await tester.tap(find.text('手机号登录'));
     await tester.pumpAndSettle();
+    expect(find.text('同意后继续'), findsOneWidget);
+    await tester.tap(find.text('不同意'));
+    await tester.pumpAndSettle();
+    expect(find.text('同意后继续'), findsNothing);
+    expect(locationOf(router), Paths.login);
+    expect(container.read(loginAgreementProvider), isFalse);
+
+    await tester.tap(find.text('手机号登录'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('同意并继续'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PhoneLoginPage), findsOneWidget);
+    expect(container.read(loginAgreementProvider), isTrue);
+  });
+
+  testWidgets('已经勾了协议就不弹面板，直接进手机号登录页', (tester) async {
+    await pumpApp(tester, env);
+
+    await _agreeAndOpenPhoneLogin(tester);
+    expect(find.text('同意后继续'), findsNothing);
     expect(find.byType(PhoneLoginPage), findsOneWidget);
   });
 

@@ -48,7 +48,7 @@ final class MyUploadsProvider
   MyUploads create() => MyUploads();
 }
 
-String _$myUploadsHash() => r'8bbb75a096bbbc111ae97bb5cd418ce944d87e1c';
+String _$myUploadsHash() => r'8db7af5ec8e860f384a114828a60f74f00b2cc19';
 
 /// 我上传的菜. 发布成功后重新请求.
 ///

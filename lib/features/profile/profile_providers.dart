@@ -82,7 +82,7 @@ class MyUploads extends _$MyUploads {
             user: user,
             restricted: restricted,
           ) is BannedStatus,
-          SignedOut() => false,
+          SignedOut() || Guest() => false,
         },
       ),
     );

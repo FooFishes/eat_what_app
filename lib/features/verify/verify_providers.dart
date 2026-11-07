@@ -160,7 +160,7 @@ class Verify extends _$Verify {
 
   bool get _verified => switch (ref.read(sessionProvider)) {
     SignedIn(:final user) => user?.verified ?? false,
-    SignedOut() => false,
+    SignedOut() || Guest() => false,
   };
 
   VerifyState _copy({bool? busy, bool? ssoStarted, required String? notice}) =>

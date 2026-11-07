@@ -41,7 +41,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final CurrentUser? _user = switch (ref.read(sessionProvider)) {
     SignedIn(:final user) => user,
-    SignedOut() => null,
+    SignedOut() || Guest() => null,
   };
   late final _nickname = TextEditingController(text: _user?.nickname ?? '');
   late final _signature = TextEditingController(text: _user?.signature ?? '');

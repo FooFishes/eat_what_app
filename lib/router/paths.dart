@@ -9,6 +9,12 @@ abstract final class Paths {
 
   /// 登录. 可带 `from` (登录后返回的地址) 和 `expired=1` (因登录过期而进入).
   static const login = '/login';
+
+  /// 登录后回到 [from]. [from] 是发现页时不带, 因为登录后默认进入发现页.
+  static String loginFrom(String from) => from == discover
+      ? login
+      : Uri(path: login, queryParameters: {'from': from}).toString();
+
   static const loginPhone = '/login/phone';
   static const loginPassword = '/login/password';
 

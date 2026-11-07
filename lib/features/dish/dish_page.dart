@@ -175,7 +175,7 @@ class _TopBar extends ConsumerWidget {
               DishInteraction.of(dish);
     final me = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user?.id,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     return Row(
       children: [
@@ -531,13 +531,13 @@ class _TasteSection extends ConsumerWidget {
 }
 
 /// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明. 点击进入上传者主页.
-class _Uploader extends StatelessWidget {
+class _Uploader extends ConsumerWidget {
   const new({required this.dish});
 
   final Dish dish;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final name = dish.uploaderName ?? '同学';
     final created = dish.createdAt;
@@ -557,7 +557,12 @@ class _Uploader extends StatelessWidget {
               Text('${TimeFormat.date(created, clock.now())}上传'),
           ],
           onTap: switch (dish.uploaderId) {
-            final id? => () => context.push(Paths.user(id)),
+            final id? => () async {
+              if (await guardAction(context, ref, Capability.viewProfile) &&
+                  context.mounted) {
+                await context.push(Paths.user(id));
+              }
+            },
             null => null,
           },
         ),

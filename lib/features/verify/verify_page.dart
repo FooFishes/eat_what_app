@@ -136,7 +136,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     final c = eat.colors;
     final user = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final verify = ref.watch(verifyProvider);
     final verified = user?.verified ?? false;

@@ -12,7 +12,8 @@ part of 'app_router.dart';
 ///
 /// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
 /// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
-/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
+/// - 页面的开放程度标在 `metadata` 上: 谁都能进的标 [publicRoute], 游客能进的标 [guestRoute], 其余不标.
+///   守卫 [resolveRedirect] 把进不去的人导向登录页.
 
 @ProviderFor(appRouter)
 final appRouterProvider = AppRouterProvider._();
@@ -21,7 +22,8 @@ final appRouterProvider = AppRouterProvider._();
 ///
 /// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
 /// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
-/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
+/// - 页面的开放程度标在 `metadata` 上: 谁都能进的标 [publicRoute], 游客能进的标 [guestRoute], 其余不标.
+///   守卫 [resolveRedirect] 把进不去的人导向登录页.
 
 final class AppRouterProvider
     extends $FunctionalProvider<GoRouter, GoRouter, GoRouter>
@@ -30,7 +32,8 @@ final class AppRouterProvider
   ///
   /// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
   /// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
-  /// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
+  /// - 页面的开放程度标在 `metadata` 上: 谁都能进的标 [publicRoute], 游客能进的标 [guestRoute], 其余不标.
+  ///   守卫 [resolveRedirect] 把进不去的人导向登录页.
   AppRouterProvider._()
     : super(
         from: null,
@@ -64,4 +67,4 @@ final class AppRouterProvider
   }
 }
 
-String _$appRouterHash() => r'a2615877c2fa3af17ecbfe9444b63c8d6b595a81';
+String _$appRouterHash() => r'b8b4a60b7aa81f515fc87192a59703ed02257031';

@@ -1,9 +1,12 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/icons/illustrations.dart';
+import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
@@ -32,6 +35,8 @@ import 'package:go_router/go_router.dart';
 /// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和四项统计.
 /// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 评论三个分栏.
 /// - 右上角: 编辑资料和设置.
+///
+/// 游客看到的是 [_GuestMe].
 class MePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -47,10 +52,10 @@ class _MePageState extends ConsumerState<MePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = switch (ref.watch(sessionProvider)) {
-      SignedIn(:final user) => user,
-      SignedOut() => null,
-    };
+    final session = ref.watch(sessionProvider);
+    // 游客不请求上传和收藏等要求登录的接口, 因此在读取这些 Provider 之前返回.
+    if (session is! SignedIn) return const _GuestMe();
+    final user = session.user;
     final profile = user == null
         ? null
         : ref.watch(userProfileProvider(user.id)).value;
@@ -185,6 +190,75 @@ class _MePageState extends ConsumerState<MePage> {
             ),
             _ => const MyCommentsSliver(),
           },
+        ),
+      ],
+    );
+  }
+}
+
+/// 游客的 "我的": 芒果黄舞台加插画空盘, 下面一句说明和 "登录".
+///
+/// 不显示统计, 分栏和快捷入口, 右上角只留设置. 登录后回到 "我的".
+class _GuestMe extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return StageScaffold(
+      stage: StageColor.mango,
+      topBar: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          EatIconButton(
+            EatIcons.settings,
+            label: '设置',
+            onPressed: () => context.push(Paths.settings),
+          ),
+        ],
+      ),
+      stageContent: const _GuestPlate(),
+      sheetSlivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: EatSpace.s16,
+              children: [
+                Text(
+                  '登录后看你的收藏、评论和发布',
+                  style: eat.text.subhead.copyWith(color: eat.colors.ink),
+                ),
+                EatButton.solid(
+                  '登录',
+                  onPressed: () => context.go(Paths.loginFrom(Paths.me)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 游客舞台右侧的插画空盘, 位置和 [ProfileStage] 没有上传过菜时一致.
+class _GuestPlate extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final plate = 220 * EatLayout.of(context).stageScale;
+    return Stack(
+      children: [
+        Positioned(
+          right: -plate * 0.22,
+          top: 112 * EatLayout.of(context).stageScale,
+          child: DishPlate.illustration(
+            IllustrationImage(Illustration.niunan, size: plate),
+            size: plate,
+          ),
         ),
       ],
     );

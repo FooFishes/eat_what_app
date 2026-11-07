@@ -94,7 +94,15 @@ void main() {
       Capability.createShop,
       Capability.editOwnDish,
     ];
-    const openToAll = [Capability.report, Capability.reportShopError];
+
+    /// 所有已登录状态都能做, 只拦没登录 (含游客).
+    const openToAll = [
+      Capability.report,
+      Capability.reportShopError,
+      Capability.viewInbox,
+      Capability.viewProfile,
+      Capability.feedback,
+    ];
 
     test('已认证全部能做', () {
       for (final capability in Capability.values) {
@@ -120,7 +128,7 @@ void main() {
       );
     });
 
-    test('封禁中除了举报和信息有误什么都不能做，连资料也不能改，不引导去认证', () {
+    test('封禁中除了上面几项什么都不能做，连资料也不能改，不引导去认证', () {
       const banned = BannedStatus(reason: '刷赞');
       for (final capability in Capability.values) {
         if (capability.openToBanned) continue;
@@ -161,7 +169,7 @@ void main() {
       );
     });
 
-    test('举报和信息有误：没认证和封禁中都能做', () {
+    test('举报、信息有误、看消息、看他人主页、反馈：没认证和封禁中都能做', () {
       for (final capability in openToAll) {
         expect(
           checkPermission(const UnverifiedStatus(), capability),
@@ -176,7 +184,7 @@ void main() {
       }
     });
 
-    test('没登录先去登录', () {
+    test('没登录（含游客）先去登录', () {
       for (final capability in Capability.values) {
         expect(
           checkPermission(const SignedOutStatus(), capability),
@@ -184,5 +192,11 @@ void main() {
         );
       }
     });
+  });
+
+  test('登录面板的动作词', () {
+    expect(Capability.viewInbox.verb, '看消息');
+    expect(Capability.viewProfile.verb, '看主页');
+    expect(Capability.feedback.verb, '反馈');
   });
 }

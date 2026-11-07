@@ -116,7 +116,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
     final c = eat.colors;
     final user = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final note = eat.text.caption.copyWith(color: c.inkMuted);
     if (user?.username case final username?) {

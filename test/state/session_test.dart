@@ -138,6 +138,43 @@ void main() {
     expect(container.read(accountStatusProvider), isA<BannedStatus>());
   });
 
+  group('游客', () {
+    test('点「去逛逛」后成为游客，账号状态按没登录处理', () async {
+      final container = await env.container();
+
+      container.read(sessionProvider.notifier).browse();
+      expect(container.read(sessionProvider), isA<Guest>());
+      expect(container.read(accountStatusProvider), isA<SignedOutStatus>());
+    });
+
+    test('已登录时点「去逛逛」不变', () async {
+      final container = await env.container(
+        session: const SignedIn(user: testUser),
+      );
+
+      container.read(sessionProvider.notifier).browse();
+      expect(container.read(sessionProvider), isA<SignedIn>());
+    });
+
+    test('游客不走登录过期流程', () async {
+      final container = await env.container(session: const Guest());
+
+      container.read(sessionProvider.notifier).expire();
+      expect(container.read(sessionProvider), isA<Guest>());
+    });
+
+    test('游客不落盘：下次打开回到没登录', () async {
+      env.kv.values[Session.installedKey] = '1';
+      final first = await env.container();
+      first.read(sessionProvider.notifier).browse();
+      first.dispose();
+
+      final next = await env.container();
+      await next.read(sessionProvider.notifier).restore();
+      expect(next.read(sessionProvider), isA<SignedOut>());
+    });
+  });
+
   test('退出登录：通知服务端、清凭证和缓存，同意记录和设备级偏好留着', () async {
     env.kv.values
       ..[UserRepository.cacheKey] = '{}'

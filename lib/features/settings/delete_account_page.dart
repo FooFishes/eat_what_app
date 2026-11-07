@@ -22,7 +22,7 @@ class DeleteAccountPage extends ConsumerWidget {
     final c = eat.colors;
     final phone = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user?.phone,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final body = eat.text.body.copyWith(color: c.ink);
     Widget section(String title, String text) => Padding(

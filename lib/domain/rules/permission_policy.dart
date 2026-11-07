@@ -2,7 +2,7 @@ import 'package:eat/domain/models/account_status.dart';
 
 /// 需要按账号状态拦截的操作.
 ///
-/// 浏览, 消息, 屏蔽和退出对所有已登录账号开放, 不在本枚举中.
+/// 未登录 (含游客) 时所有操作都要先登录. 浏览, 屏蔽和退出对所有已登录账号开放, 不在本枚举中.
 ///
 /// 封禁账号的会话只能调用后端登记过的接口, 登记范围比产品允许封禁中账号执行的操作窄.
 /// 两者不一致时以后端为准, 否则入口放行后请求仍会被拒绝.
@@ -53,7 +53,18 @@ enum Capability {
   report,
 
   /// 店铺 "信息有误". 所有已登录账号都能执行, 列入本枚举的原因同 [report].
-  reportShopError;
+  reportShopError,
+
+  /// 看消息. 所有已登录账号都能执行.
+  ///
+  /// 游客能点到入口, 列入本枚举是为了让游客看到 "登录后才能看消息" 的面板, 而不是被守卫直接带去登录页.
+  viewInbox,
+
+  /// 看他人主页 (含他上传的菜). 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
+  viewProfile,
+
+  /// 意见反馈. 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
+  feedback;
 
   /// 未认证账号也能执行的操作. 其余操作要求已认证.
   bool get openToUnverified => switch (this) {
@@ -67,17 +78,20 @@ enum Capability {
     setUsername ||
     verify ||
     report ||
-    reportShopError => true,
+    reportShopError ||
+    viewInbox ||
+    viewProfile ||
+    feedback => true,
     _ => false,
   };
 
-  /// 封禁中的账号也能执行的操作. 后端的受限会话放行反馈, 信息有误和举报.
+  /// 封禁中的账号也能执行的操作. 后端的受限会话放行消息, 他人主页, 反馈, 信息有误和举报.
   bool get openToBanned => switch (this) {
-    report || reportShopError => true,
+    report || reportShopError || viewInbox || viewProfile || feedback => true,
     _ => false,
   };
 
-  /// 拦截面板中的动作词, 如 "认证后才能点赞" 中的 "点赞".
+  /// 拦截面板中的动作词, 如 "认证后才能点赞" 和 "登录后才能点赞" 中的 "点赞".
   String get verb => switch (this) {
     like => '点赞',
     favorite => '收藏',
@@ -100,6 +114,9 @@ enum Capability {
     verify => '进行学生认证',
     report => '举报',
     reportShopError => '反馈信息有误',
+    viewInbox => '看消息',
+    viewProfile => '看主页',
+    feedback => '反馈',
   };
 }
 
@@ -112,7 +129,9 @@ final class Allowed extends PermissionResult {
   const Allowed();
 }
 
-/// 未登录. 守卫会先把用户重定向到登录页, 正常流程不会得到该结果.
+/// 未登录, 只出现在游客身上. 拦截面板显示 "登录后才能...", 主按钮为 "去登录".
+///
+/// 没点 "去逛逛" 的未登录状态会被守卫带去登录页, 正常流程不会得到该结果.
 final class NeedsSignIn extends PermissionResult {
   const NeedsSignIn();
 }

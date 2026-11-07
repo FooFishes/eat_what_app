@@ -65,21 +65,22 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
 /// 最近搜索的词, 按时间倒序, 数量有上限.
 ///
 /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
+/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
 @riverpod
 class SearchHistory extends _$SearchHistory {
   static const _max = 10;
 
-  String get _key {
-    final id = switch (ref.read(sessionProvider)) {
-      SignedIn(:final user) => user?.id ?? 0,
-      SignedOut() => 0,
-    };
-    return 'cache.search.$id';
-  }
+  /// 存储的键. 未登录 (含游客) 时为 null, 不读也不写.
+  String? get _key => switch (ref.read(sessionProvider)) {
+    SignedIn(:final user) => 'cache.search.${user?.id ?? 0}',
+    SignedOut() || Guest() => null,
+  };
 
   @override
   Future<List<String>> build() async {
-    final raw = await ref.watch(kvStoreProvider).read(_key);
+    final key = _key;
+    if (key == null) return const [];
+    final raw = await ref.watch(kvStoreProvider).read(key);
     if (raw == null) return const [];
     try {
       return (jsonDecode(raw) as List<dynamic>).cast<String>();
@@ -89,18 +90,20 @@ class SearchHistory extends _$SearchHistory {
   }
 
   Future<void> add(String keyword) async {
+    final key = _key;
     final word = keyword.trim();
-    if (word.isEmpty) return;
+    if (key == null || word.isEmpty) return;
     final words = [
       word,
       ...?state.value?.where((w) => w != word),
     ].take(_max).toList();
     state = AsyncData(words);
-    await ref.read(kvStoreProvider).write(_key, jsonEncode(words));
+    await ref.read(kvStoreProvider).write(key, jsonEncode(words));
   }
 
   Future<void> clear() async {
+    final key = _key;
     state = const AsyncData([]);
-    await ref.read(kvStoreProvider).delete(_key);
+    if (key != null) await ref.read(kvStoreProvider).delete(key);
   }
 }

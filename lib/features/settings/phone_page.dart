@@ -124,7 +124,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
     final c = eat.colors;
     final user = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final current = user?.phone;
     final change = ref.watch(phoneChangeProvider);

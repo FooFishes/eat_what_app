@@ -54,7 +54,8 @@ part 'app_router.g.dart';
 ///
 /// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
 /// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
-/// - 未登录可访问的页面在 `metadata` 上标记 [publicRoute]. 其余页面由守卫 [resolveRedirect] 导向登录页.
+/// - 页面的开放程度标在 `metadata` 上: 谁都能进的标 [publicRoute], 游客能进的标 [guestRoute], 其余不标.
+///   守卫 [resolveRedirect] 把进不去的人导向登录页.
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
   // push 打开的页面也写入 Web 地址栏, 使地址栏始终对应当前页面, 刷新或复制链接都回到同一页.
@@ -70,7 +71,7 @@ GoRouter appRouter(Ref ref) {
     observers: [CrashReporter.navigatorObserver()],
     redirect: (context, state) => resolveRedirect(
       location: state.uri,
-      isPublic: state.metadata['public'] == true,
+      access: RouteAccess.of(state.metadata),
       session: ref.read(sessionProvider),
       canMatch: (uri) => router.configuration.findMatch(uri).isNotEmpty,
     ),
@@ -86,6 +87,7 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: Paths.discover,
+                metadata: guestRoute,
                 builder: (_, _) => const DiscoverPage(),
               ),
             ],
@@ -94,13 +96,18 @@ GoRouter appRouter(Ref ref) {
             routes: [
               GoRoute(
                 path: Paths.nearby,
+                metadata: guestRoute,
                 builder: (_, _) => const NearbyPage(),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: Paths.me, builder: (_, _) => const MePage()),
+              GoRoute(
+                path: Paths.me,
+                metadata: guestRoute,
+                builder: (_, _) => const MePage(),
+              ),
             ],
           ),
         ],
@@ -108,7 +115,13 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: Paths.login,
         metadata: publicRoute,
-        builder: (_, state) => LoginPage(query: _loginQuery(state)),
+        builder: (_, state) => LoginPage(
+          query: _loginQuery(state),
+          browseTarget: browseTarget(
+            state.uri.queryParameters['from'],
+            (uri) => _accessOf(router.configuration.findMatch(uri)),
+          ),
+        ),
         routes: [
           GoRoute(
             path: _child(Paths.loginPhone, Paths.login),
@@ -137,12 +150,15 @@ GoRouter appRouter(Ref ref) {
         redirect: (_, state) =>
             DeepLinks.ssoLocation(state.uri.queryParameters),
       ),
+      // 游客的设置页只有 "关于". 子页面继承设置页的标记, 只给登录用户的子页面要标回 signedIn.
       GoRoute(
         path: Paths.settings,
+        metadata: guestRoute,
         builder: (_, _) => const SettingsPage(),
         routes: [
           GoRoute(
             path: _child(Paths.settingsAccount, Paths.settings),
+            metadata: signedInRoute,
             builder: (_, _) => const AccountPage(),
             routes: [
               GoRoute(
@@ -169,6 +185,7 @@ GoRouter appRouter(Ref ref) {
           ),
           GoRoute(
             path: _child(Paths.settingsPrivacy, Paths.settings),
+            metadata: signedInRoute,
             builder: (_, _) => const PrivacyPage(),
             routes: [
               GoRoute(
@@ -179,6 +196,7 @@ GoRouter appRouter(Ref ref) {
           ),
           GoRoute(
             path: _child(Paths.settingsNotify, Paths.settings),
+            metadata: signedInRoute,
             builder: (_, _) => const NotifyPage(),
           ),
           GoRoute(
@@ -259,12 +277,21 @@ GoRouter appRouter(Ref ref) {
           shopId: int.parse(state.uri.queryParameters['shopId']!),
         ),
       ),
-      GoRoute(path: Paths.search, builder: (_, _) => const SearchPage()),
+      GoRoute(
+        path: Paths.search,
+        metadata: guestRoute,
+        builder: (_, _) => const SearchPage(),
+      ),
       GoRoute(path: Paths.inbox, builder: (_, _) => const InboxPage()),
       // 专题页不作为往期专题的子路由. 作为子路由时, 从菜品详情或消息打开专题页会在下面叠一层往期专题, 返回时先回到往期专题.
-      GoRoute(path: Paths.topics, builder: (_, _) => const TopicArchivePage()),
+      GoRoute(
+        path: Paths.topics,
+        metadata: guestRoute,
+        builder: (_, _) => const TopicArchivePage(),
+      ),
       GoRoute(
         path: Paths.topicPattern,
+        metadata: guestRoute,
         builder: (_, state) => switch (_idOf(state, 'topicId')) {
           final id? => TopicPage(topicId: id),
           null => const NotFoundPage(),
@@ -272,6 +299,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: Paths.dishPattern,
+        metadata: guestRoute,
         builder: (_, state) => switch (_idOf(state, 'dishId')) {
           final id? => DishPage(
             dishId: id,
@@ -285,6 +313,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: Paths.commentsPattern,
+        metadata: guestRoute,
         builder: (_, state) => switch (_idOf(state, 'dishId')) {
           final id? => CommentsPage(dishId: id),
           null => const NotFoundPage(),
@@ -308,6 +337,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: Paths.shopPattern,
+        metadata: guestRoute,
         builder: (_, state) => switch (_idOf(state, 'shopId')) {
           final id? => ShopPage(shopId: id),
           null => const NotFoundPage(),
@@ -325,6 +355,23 @@ GoRouter appRouter(Ref ref) {
     refresh.dispose();
   });
   return router;
+}
+
+/// 匹配结果中页面的开放程度. 子路由继承父路由的标记, 自己标了时以自己的为准.
+///
+/// 地址不能匹配路由表时为 null.
+RouteAccess? _accessOf(RouteMatchList match) {
+  if (match.isEmpty || match.isError) return null;
+  var metadata = <String, dynamic>{};
+  void visit(List<RouteMatchBase> matches) {
+    for (final m in matches) {
+      metadata = {...metadata, ...?m.route.metadata};
+      if (m is ShellRouteMatch) visit(m.matches);
+    }
+  }
+
+  visit(match.matches);
+  return RouteAccess.of(metadata);
 }
 
 /// 子路由使用相对路径: `/login` 下的 `/login/phone` 写作 `phone`.

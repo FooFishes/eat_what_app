@@ -286,7 +286,12 @@ class _TopBar extends ConsumerWidget {
             EatIconButton(
               EatIcons.bell,
               label: unread > 0 ? '消息，$unread 条未读' : '消息',
-              onPressed: () => context.push(Paths.inbox),
+              onPressed: () async {
+                if (await guardAction(context, ref, Capability.viewInbox) &&
+                    context.mounted) {
+                  await context.push(Paths.inbox);
+                }
+              },
             ),
             if (unread > 0)
               Positioned(

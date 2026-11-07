@@ -27,7 +27,7 @@ Future<bool> guardAction(
     case Allowed():
       return true;
     case NeedsSignIn():
-      context.go(Paths.login);
+      await _showSignIn(context, capability);
       return false;
     case NeedsVerification():
       await showPanel<void>(
@@ -65,6 +65,40 @@ Future<bool> guardAction(
   }
 }
 
+/// 游客的拦截面板. "去登录" 带上当前地址进登录页, 登录后回到这里, 不替用户完成刚才的动作.
+Future<void> _showSignIn(BuildContext context, Capability capability) {
+  final router = GoRouter.of(context);
+  return showPanel<void>(
+    context,
+    builder: (panel) => EatPanel(
+      icon: EatIcons.me,
+      title: '登录后才能${capability.verb}',
+      subtitle: '用手机号登录，没注册过的号码会自动注册。',
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.mist(
+              '先逛逛',
+              onPressed: () => Navigator.of(panel).pop(),
+            ),
+          ),
+          Expanded(
+            child: EatButton.solid(
+              '去登录',
+              onPressed: () {
+                final from = router.state.uri.toString();
+                Navigator.of(panel).pop();
+                router.go(Paths.loginFrom(from));
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 Future<void> _showBanned(
   BuildContext context,
   Capability capability,
@@ -92,6 +126,7 @@ String banTerm(BannedStatus status, DateTime now) => switch (status.until) {
 /// 操作失败后的反馈.
 ///
 /// - 服务端判定无权限时, 刷新账号状态后弹出拦截面板.
+/// - 游客收到要求登录的响应时弹出登录面板. 游客没有可过期的登录态, 不走登录过期流程.
 /// - 其余失败显示轻提示.
 ///
 /// [fallback] 是该操作的失败提示, 如 "点赞失败, 请重试". 只在失败类型没有固定提示时使用.
@@ -103,8 +138,13 @@ Future<void> reportActionFailure(
   required String fallback,
 }) async {
   switch (failure.kind) {
-    case FailureKind.cancelled || FailureKind.sessionExpired:
+    case FailureKind.cancelled:
       return;
+    case FailureKind.sessionExpired:
+      // 已登录时由网络层清除登录态, 守卫随后带去登录页, 这里不再提示.
+      if (ref.read(sessionProvider) is Guest) {
+        await guardAction(context, ref, capability);
+      }
     case FailureKind.forbidden:
       await ref.read(sessionProvider.notifier).refreshUser();
       // 刷新后仍判定为允许时, 拦截面板不会出现. 此时显示无权限的统一提示, 否则点击后界面没有任何反馈.

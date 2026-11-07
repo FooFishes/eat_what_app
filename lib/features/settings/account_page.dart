@@ -24,7 +24,7 @@ class AccountPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = switch (ref.watch(sessionProvider)) {
       SignedIn(:final user) => user,
-      SignedOut() => null,
+      SignedOut() || Guest() => null,
     };
     final verified = user?.verified ?? false;
     final method = user?.verifyMethod;

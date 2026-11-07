@@ -10,18 +10,18 @@ part of 'session.dart';
 // ignore_for_file: type=lint, type=warning
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
 
 @ProviderFor(Session)
 final sessionProvider = SessionProvider._();
 
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
 final class SessionProvider extends $NotifierProvider<Session, SessionState> {
   /// 登录态. 路由守卫根据它决定跳转.
   ///
-  /// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
+  /// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
   SessionProvider._()
     : super(
         from: null,
@@ -49,11 +49,11 @@ final class SessionProvider extends $NotifierProvider<Session, SessionState> {
   }
 }
 
-String _$sessionHash() => r'404bf10ae27893c33dec692dd32a5603597a778d';
+String _$sessionHash() => r'19ad1bd3af448faab5c8d70cb7e6c5fe040124cd';
 
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
 
 abstract class _$Session extends $Notifier<SessionState> {
   SessionState build();
@@ -74,16 +74,22 @@ abstract class _$Session extends $Notifier<SessionState> {
 }
 
 /// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+///
+/// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
 
 @ProviderFor(accountStatus)
 final accountStatusProvider = AccountStatusProvider._();
 
 /// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+///
+/// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
 
 final class AccountStatusProvider
     extends $FunctionalProvider<AccountStatus, AccountStatus, AccountStatus>
     with $Provider<AccountStatus> {
   /// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+  ///
+  /// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
   AccountStatusProvider._()
     : super(
         from: null,
@@ -117,4 +123,4 @@ final class AccountStatusProvider
   }
 }
 
-String _$accountStatusHash() => r'b5574b18715a23e192831a7d859c5ca6a3dd00c6';
+String _$accountStatusHash() => r'5841a62eac6519b1afcd50fa3cbe7744f8f57886';

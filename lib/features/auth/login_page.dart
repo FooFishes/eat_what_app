@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:eat/core/config/app_config.dart';
@@ -15,8 +16,12 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/consented_services.dart';
+import 'package:eat/state/privacy_consent.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -25,35 +30,41 @@ import 'package:go_router/go_router.dart';
 
 /// 登录页.
 ///
-/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介.
+/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "去逛逛", 点了不登录进去看看.
 /// - 抽屉: "手机号登录" 按钮和协议勾选.
 ///
-/// 未勾选协议时按钮显示为不可用样式, 但仍响应点击.
-/// 点击后不跳转, 而是晃动协议行, 触发轻震, 并显示勾选提示.
+/// 没勾协议时 "手机号登录" 和 "去逛逛" 照常可点, 点了先弹协议面板. 同意后勾上并直接继续刚才那一步.
 ///
 /// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页.
 /// 登录成功后, 守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
-  const new({super.key, this.query = const {}});
+  const new({
+    super.key,
+    this.query = const {},
+    this.browseTarget = Paths.discover,
+  });
 
   final Map<String, String> query;
+
+  /// 点 "去逛逛" 后去的地址. 由路由表按 `from` 算好传入, 游客进不去的地址已换成发现页.
+  final String browseTarget;
 
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  /// 未勾选协议时点击按钮的次数. 每次递增触发协议行晃动一次.
-  ///
-  /// 勾选后归零并隐藏提示. 之后取消勾选不会立即提示, 再次点击按钮时才提示.
-  var _nudges = 0;
+  /// 已勾选协议时返回 true. 没勾时弹协议面板, 同意后勾上并返回 true.
+  Future<bool> _ensureAgreed() async {
+    if (ref.read(loginAgreementProvider)) return true;
+    final agreed = await showAgreementPanel(context);
+    if (!agreed || !mounted) return false;
+    ref.read(loginAgreementProvider.notifier).set(agreed: true);
+    return true;
+  }
 
-  void _start() {
-    if (!ref.read(loginAgreementProvider)) {
-      HapticFeedback.mediumImpact();
-      setState(() => _nudges++);
-      return;
-    }
+  Future<void> _start() async {
+    if (!await _ensureAgreed() || !mounted) return;
     final query = widget.query;
     context.go(
       Uri(
@@ -63,15 +74,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
+  /// 不登录进去看看. 游客也要先同意隐私政策, 因为浏览同样会用到设备信息和使用记录.
+  ///
+  /// 先写入同意记录, 首次同意时补启动崩溃上报等服务, 再成为游客.
+  /// 守卫对停在登录页的游客不做处理, 所以由本页跳转.
+  Future<void> _browse() async {
+    if (!await _ensureAgreed() || !mounted) return;
+    await ref.read(privacyConsentStoreProvider).record();
+    unawaited(ref.read(consentedServicesProvider.notifier).start());
+    ref.read(sessionProvider.notifier).browse();
+    if (mounted) context.go(widget.browseTarget);
+  }
+
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
     final query = widget.query;
-    final agreed = ref.watch(loginAgreementProvider);
-    ref.listen(loginAgreementProvider, (_, agreed) {
-      if (agreed) setState(() => _nudges = 0);
-    });
     final media = MediaQuery.of(context);
     final sheet = DecoratedBox(
       decoration: BoxDecoration(
@@ -96,13 +115,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             spacing: EatSpace.s10,
             children: [
               if (query['expired'] == '1') const _Notice('登录已过期，请重新登录'),
-              EatButton.solid(
-                '手机号登录',
-                icon: EatIcons.phone,
-                muted: !agreed,
-                onPressed: _start,
-              ),
-              AgreementCheck(nudges: _nudges),
+              EatButton.solid('手机号登录', icon: EatIcons.phone, onPressed: _start),
+              const AgreementCheck(),
             ],
           ),
         ),
@@ -114,46 +128,55 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // 不回弹也不拉伸: 越界拖动会改变 SliverFillRemaining 的高度, 转盘随之变形.
     return EatStage(
       stage: StageColor.broth,
-      child: CustomScrollView(
-        scrollBehavior: ScrollConfiguration.of(
-          context,
-        ).copyWith(overscroll: false, physics: const ClampingScrollPhysics()),
-        slivers: [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Column(
-              children: [
-                const Spacer(),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    EatSpace.s24,
-                    media.padding.top + _brandTop,
-                    EatSpace.s24,
-                    EatSpace.s24,
-                  ),
-                  child: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: _Brand(),
-                  ),
-                ),
-                const Expanded(
-                  flex: 8,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [Positioned.fill(child: _Turntable())],
-                  ),
-                ),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: EatLayout.plainMaxWidth,
-                  ),
-                  child: sheet,
-                ),
-              ],
-            ),
-          ),
+      child: Stack(
+        children: [
+          Positioned.fill(child: _content(context, sheet)),
+          Positioned(top: 0, right: 0, child: _BrowseCorner(onTap: _browse)),
         ],
       ),
+    );
+  }
+
+  Widget _content(BuildContext context, Widget sheet) {
+    final media = MediaQuery.of(context);
+    return CustomScrollView(
+      scrollBehavior: ScrollConfiguration.of(context)
+          .copyWith(overscroll: false, physics: const ClampingScrollPhysics()),
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Column(
+            children: [
+              const Spacer(),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  EatSpace.s24,
+                  media.padding.top + _brandTop,
+                  EatSpace.s24,
+                  EatSpace.s24,
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: _Brand(),
+                ),
+              ),
+              const Expanded(
+                flex: 8,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [Positioned.fill(child: _Turntable())],
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: EatLayout.plainMaxWidth,
+                ),
+                child: sheet,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -364,60 +387,25 @@ class _TurntableState extends State<_Turntable>
   }
 }
 
-/// 协议勾选行. 左侧为勾选框, 协议名可点击查看.
-///
-/// [nudges] 每递增一次, 整行水平晃动一次.
-/// [nudges] 大于 0 时, 下方淡入 `warn` 色提示 "请先勾选同意协议".
-/// 提示行始终占位, 提示出现时抽屉高度不变.
+/// 协议勾选行. 左侧为勾选框, 协议名可点击查看. 默认不勾.
 class AgreementCheck extends ConsumerStatefulWidget {
-  const new({super.key, this.nudges = 0});
-
-  final int nudges;
+  const new({super.key});
 
   @override
   ConsumerState<AgreementCheck> createState() => _AgreementCheckState();
 }
 
-class _AgreementCheckState extends ConsumerState<AgreementCheck>
-    with SingleTickerProviderStateMixin {
-  late final _privacy = TapGestureRecognizer()
-    ..onTap = () => _open(ref.read(appConfigProvider).privacyUrl);
-  late final _terms = TapGestureRecognizer()
-    ..onTap = () => _open(ref.read(appConfigProvider).termsUrl);
-  late final _shake = AnimationController(
-    vsync: this,
-    duration: _shakeDuration,
-  );
-
-  static const _shakeDuration = Duration(milliseconds: 420);
-
-  /// 晃动的初始振幅和往返次数. 振幅随动画进度线性衰减到 0.
-  static const _shakeAmplitude = 6.0;
-  static const _shakeCycles = 3;
+class _AgreementCheckState extends ConsumerState<AgreementCheck> {
+  late final _links = _AgreementLinks(ref);
 
   /// 文字相对勾选框上移的距离. 汉字字面在行框里偏下,
   /// 行框和圆按几何中心对齐时文字看起来比圆低, 上移后两者的视觉中心对齐.
   static const _opticalLift = 1.0;
 
   @override
-  void didUpdateWidget(AgreementCheck oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.nudges > oldWidget.nudges &&
-        !MediaQuery.disableAnimationsOf(context)) {
-      _shake.forward(from: 0);
-    }
-  }
-
-  @override
   void dispose() {
-    _privacy.dispose();
-    _terms.dispose();
-    _shake.dispose();
+    _links.dispose();
     super.dispose();
-  }
-
-  void _open(String url) {
-    if (url.isNotEmpty) ref.read(browserProvider).open(Uri.parse(url));
   }
 
   @override
@@ -425,29 +413,11 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
     final eat = context.eat;
     final c = eat.colors;
     final agreed = ref.watch(loginAgreementProvider);
-    final showHint = widget.nudges > 0 && !agreed;
-    final fade = context.motion(EatMotion.select);
     void toggle() {
       HapticFeedback.selectionClick();
       ref.read(loginAgreementProvider.notifier).set(agreed: !agreed);
     }
 
-    /// 下划线只画在协议名下, 书名号不画, 否则线两端会悬空.
-    TextSpan link(String name, TapGestureRecognizer recognizer) => TextSpan(
-      style: const TextStyle(fontWeight: FontWeight.w600),
-      children: [
-        TextSpan(text: '《', recognizer: recognizer),
-        TextSpan(
-          text: name,
-          style: TextStyle(
-            decoration: TextDecoration.underline,
-            decorationColor: c.inkSoft,
-          ),
-          recognizer: recognizer,
-        ),
-        TextSpan(text: '》', recognizer: recognizer),
-      ],
-    );
     final style = eat.text.meta.copyWith(color: c.inkSoft);
 
     /// 勾选框的点击区域比圆大, 圆的左右各空出 [inset].
@@ -474,9 +444,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
           child: Transform.translate(
             offset: const Offset(gap - inset, 0),
             child: Padding(
-              padding: const EdgeInsets.only(
-                top: (EatSize.touch - 20) / 2 - _opticalLift,
-              ),
+              padding: const EdgeInsets.only(top: inset - _opticalLift),
               child: GestureDetector(
                 onTap: toggle,
                 behavior: HitTestBehavior.opaque,
@@ -485,9 +453,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
                   TextSpan(
                     children: [
                       const TextSpan(text: '我已阅读并同意'),
-                      link('隐私政策', _privacy),
-                      const TextSpan(text: '和'),
-                      link('用户协议', _terms),
+                      ..._links.spans(c.inkSoft),
                     ],
                   ),
                   style: style,
@@ -499,63 +465,312 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck>
         const SizedBox(width: gap),
       ],
     );
-    final hint = ExcludeSemantics(
-      excluding: !showHint,
-      child: AnimatedSlide(
-        offset: showHint ? Offset.zero : const Offset(0, -0.3),
-        duration: fade,
-        curve: EatMotion.select.curve,
-        child: AnimatedOpacity(
-          opacity: showHint ? 1 : 0,
-          duration: fade,
-          curve: EatMotion.select.curve,
-          child: Semantics(
-            liveRegion: true,
-            child: Text(
-              '请先勾选同意协议',
-              textAlign: TextAlign.center,
-              style: style.copyWith(color: c.warn),
-            ),
-          ),
-        ),
-      ),
-    );
 
     /// 行尾的全角 "》" 字面只占左半边, 右半边是空白.
     /// 整组按这段空白的一半右移, 看上去才居中.
     final bracketSpace =
         MediaQuery.textScalerOf(context).scale(style.fontSize!) / 2;
-
-    /// 提示紧贴协议文字下方, 和勾选框的点击区域重叠, 所以用 Stack 而不是 Column.
-    final content = Align(
+    return Align(
       heightFactor: 1,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              top: inset - _opticalLift + 20 + EatSpace.s4,
-            ),
-            child: hint,
-          ),
-          Transform.translate(offset: Offset(bracketSpace / 2, 0), child: row),
-        ],
+      child: Transform.translate(
+        offset: Offset(bracketSpace / 2, 0),
+        child: row,
       ),
     );
-    return AnimatedBuilder(
-      animation: _shake,
-      builder: (context, child) {
-        final t = _shake.value;
-        final dx =
-            math.sin(t * math.pi * 2 * _shakeCycles) *
-            _shakeAmplitude *
-            (1 - t);
-        return Transform.translate(offset: Offset(dx, 0), child: child);
-      },
-      child: content,
+  }
+}
+
+/// 《隐私政策》和《用户协议》两个链接, 点击用浏览器打开. 用完调用 [dispose].
+class _AgreementLinks {
+  _AgreementLinks(this._ref);
+
+  final WidgetRef _ref;
+
+  late final _privacy = TapGestureRecognizer()
+    ..onTap = () => _open(_ref.read(appConfigProvider).privacyUrl);
+  late final _terms = TapGestureRecognizer()
+    ..onTap = () => _open(_ref.read(appConfigProvider).termsUrl);
+
+  void _open(String url) {
+    if (url.isNotEmpty) _ref.read(browserProvider).open(Uri.parse(url));
+  }
+
+  /// "《隐私政策》和《用户协议》". 协议名加粗, 下划线用 [underline] 色.
+  List<InlineSpan> spans(Color underline) => [
+    _link('隐私政策', _privacy, underline),
+    const TextSpan(text: '和'),
+    _link('用户协议', _terms, underline),
+  ];
+
+  /// 下划线只画在协议名下, 书名号不画, 否则线两端会悬空.
+  static TextSpan _link(
+    String name,
+    TapGestureRecognizer recognizer,
+    Color underline,
+  ) => TextSpan(
+    style: const TextStyle(fontWeight: FontWeight.w600),
+    children: [
+      TextSpan(text: '《', recognizer: recognizer),
+      TextSpan(
+        text: name,
+        style: TextStyle(
+          decoration: TextDecoration.underline,
+          decorationColor: underline,
+        ),
+        recognizer: recognizer,
+      ),
+      TextSpan(text: '》', recognizer: recognizer),
+    ],
+  );
+
+  void dispose() {
+    _privacy.dispose();
+    _terms.dispose();
+  }
+}
+
+/// 协议面板. 没勾协议时点 "手机号登录" 或 "去逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
+///
+/// 两个按钮一样醒目, 不引导用户点同意. 点击 "不同意", 点击遮罩和下拉关闭都视为不同意, 停在登录页不再追问.
+Future<bool> showAgreementPanel(BuildContext context) async =>
+    await showPanel<bool>(
+      context,
+      builder: (panel) => const _AgreementPanel(),
+    ) ??
+    false;
+
+class _AgreementPanel extends ConsumerStatefulWidget {
+  const new();
+
+  @override
+  ConsumerState<_AgreementPanel> createState() => _AgreementPanelState();
+}
+
+class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
+  late final _links = _AgreementLinks(ref);
+
+  @override
+  void dispose() {
+    _links.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    return EatPanel(
+      title: '同意后继续',
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.outline(
+              '不同意',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+          ),
+          Expanded(
+            child: EatButton.outline(
+              '同意并继续',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ),
+        ],
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            const TextSpan(text: '使用时会用到设备信息和使用记录，详见'),
+            ..._links.spans(c.ink),
+            const TextSpan(text: '。'),
+          ],
+        ),
+        style: eat.text.body.copyWith(color: c.inkSoft),
+      ),
     );
   }
+}
+
+/// 登录页右上角的 "去逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "去逛逛".
+///
+/// 进页面时页角卷起, 按下时再多卷一点. 系统开启减少动态效果时直接显示卷好的样子.
+/// 这是登录页特有的入口, 不用胶囊按钮.
+///
+/// 卷起的部分是以折线为斜边的正方形: 折线右上方露出纸色, 左下方是翻过来的页角背面.
+/// 点击区域就是这个正方形.
+class _BrowseCorner extends StatefulWidget {
+  const new({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  State<_BrowseCorner> createState() => _BrowseCornerState();
+}
+
+class _BrowseCornerState extends State<_BrowseCorner>
+    with SingleTickerProviderStateMixin {
+  late final _curl = AnimationController(
+    vsync: this,
+    duration: EatMotion.snap.duration,
+  );
+  late final _curve = CurvedAnimation(
+    parent: _curl,
+    curve: EatMotion.snap.curve,
+  );
+
+  /// 卷好时正方形的边长, 不含状态栏. 要让 "去逛逛" 整个落在纸色三角里.
+  static const _rest = 112.0;
+
+  /// 按下时多卷的长度.
+  static const _pressExtra = 16.0;
+
+  /// "去逛逛" 与页面右边和状态栏的距离.
+  static const _labelInset = 14.0;
+  static const _labelTop = 10.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _curl.value = 1;
+    } else if (_curl.isDismissed) {
+      _curl.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _curl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final stage = StageTheme.of(context).background;
+    final top = MediaQuery.paddingOf(context).top;
+    final rest = top + _rest;
+    final label = Text(
+      '去逛逛',
+      textScaler: MediaQuery.textScalerOf(context)
+          .clamp(maxScaleFactor: _maxTextScale),
+      style: eat.text.subhead.copyWith(color: c.ink),
+    );
+    return EatTappable(
+      onTap: widget.onTap,
+      label: '去逛逛',
+      tapHint: '不登录先看看',
+      focusShape: const RoundedRectangleBorder(),
+      builder: (context, pressed) => TweenAnimationBuilder<double>(
+        tween: Tween(end: pressed ? 1 : 0),
+        duration: context.motion(EatMotion.press),
+        curve: EatMotion.press.curve,
+        builder: (context, press, _) => AnimatedBuilder(
+          animation: _curve,
+          builder: (context, _) {
+            final extent = math.max(
+              0.0,
+              rest * _curve.value + _pressExtra * press,
+            );
+            return SizedBox.square(
+              dimension: extent,
+              child: CustomPaint(
+                painter: _CurlPainter(
+                  paper: c.paper,
+                  back: stage,
+                  shadow: c.ink,
+                ),
+                child: ClipPath(
+                  clipper: const _RevealClipper(),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        top: top + _labelTop,
+                        right: _labelInset,
+                        child: label,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// "去逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
+  static const _maxTextScale = 1.2;
+}
+
+/// 折线右上方露出的纸色三角. 正方形的右上角是原来的页角.
+class _RevealClipper extends CustomClipper<Path> {
+  const new();
+
+  @override
+  Path getClip(Size size) => Path()
+    ..moveTo(0, 0)
+    ..lineTo(size.width, 0)
+    ..lineTo(size.width, size.height)
+    ..close();
+
+  @override
+  bool shouldReclip(_RevealClipper oldClipper) => false;
+}
+
+/// 画卷起的页角: 右上方露出纸色, 左下方是翻过来的页角背面, 背面下压一层投影.
+///
+/// 背面取舞台色和纸色之间的颜色, 靠近折线处更亮, 看起来像卷起的弧面.
+class _CurlPainter extends CustomPainter {
+  const new({required this.paper, required this.back, required this.shadow});
+
+  final Color paper;
+
+  /// 舞台色, 即页面正面的颜色.
+  final Color back;
+  final Color shadow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final e = size.width;
+    if (e <= 0) return;
+    final reveal = Path()
+      ..moveTo(0, 0)
+      ..lineTo(e, 0)
+      ..lineTo(e, e)
+      ..close();
+    canvas.drawPath(reveal, Paint()..color = paper);
+    final flap = Path()
+      ..moveTo(0, 0)
+      ..lineTo(e, e)
+      ..lineTo(0, e)
+      ..close();
+    canvas
+      ..drawShadow(flap, shadow, 4, false)
+      ..drawPath(
+        flap,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.center,
+            end: Alignment.bottomLeft,
+            colors: [
+              Color.lerp(back, paper, 0.7)!,
+              Color.lerp(back, paper, 0.25)!,
+            ],
+          ).createShader(Offset.zero & size),
+      );
+  }
+
+  @override
+  bool shouldRepaint(_CurlPainter oldDelegate) =>
+      oldDelegate.paper != paper ||
+      oldDelegate.back != back ||
+      oldDelegate.shadow != shadow;
 }
 
 /// 勾选框. 勾选时圆底由 `paper` 过渡到 `ink`, 对勾以回弹曲线放大出现.
