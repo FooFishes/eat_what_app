@@ -531,7 +531,8 @@ class _AgreementLinks {
 
 /// 协议面板. 没勾协议时点 "手机号登录" 或 "去逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
 ///
-/// 两个按钮一样醒目, 不引导用户点同意. 点击 "不同意", 点击遮罩和下拉关闭都视为不同意, 停在登录页不再追问.
+/// "同意并继续" 是主按钮, "不同意" 是次按钮, 和其他面板一致.
+/// 点击 "不同意", 点击遮罩和下拉关闭都视为不同意, 停在登录页不再追问.
 Future<bool> showAgreementPanel(BuildContext context) async =>
     await showPanel<bool>(
       context,
@@ -565,13 +566,13 @@ class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
         spacing: EatSpace.s10,
         children: [
           Expanded(
-            child: EatButton.outline(
+            child: EatButton.mist(
               '不同意',
               onPressed: () => Navigator.of(context).pop(false),
             ),
           ),
           Expanded(
-            child: EatButton.outline(
+            child: EatButton.solid(
               '同意并继续',
               onPressed: () => Navigator.of(context).pop(true),
             ),
