@@ -71,7 +71,7 @@ fvm dart format .
 fvm flutter analyze
 fvm dart analyze --fatal-infos           # riverpod_lint 等分析器插件的结果只在这里报告
 fvm flutter test
-fvm flutter build web --release          # 本地唯一允许的构建
+fvm flutter build web --release
 fvm flutter run -d chrome                # 要调接口时加 --dart-define-from-file=config/dev.json；端口固定 5173，见 web_dev_config.yaml
 ```
 
@@ -79,7 +79,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 环境配置（接口地址等）编译期传入：复制 `config/example.json` 为 `config/dev.json` 再填值，`config/` 下除样例外的 JSON 不入库。不传时也能启动，只是调不了接口。
 
-本地验证只允许构建 Web。不要在本地构建 Android、iOS（`flutter build apk`、`appbundle`、`ios`、`ipa` 等），也不要在模拟器或真机上实际运行 iOS，除非用户明确允许；Android、iOS 的构建交给 CI。
+本地验证默认用 Web，Android 也可以在本地构建和测试。不要在本地构建 iOS（`flutter build ios`、`ipa` 等），也不要在模拟器或真机上实际运行 iOS，除非用户明确允许；iOS 的构建交给 CI。
 
 ## 平台
 

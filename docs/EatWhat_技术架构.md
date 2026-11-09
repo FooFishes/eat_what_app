@@ -16,6 +16,8 @@
 >
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
+> 2026-11-09：地图改为百度地图（依赖选型 7.1）：`core/platform/map/` 的 `EatMap` 和自写原生桥 `packages/eat_baidu_map/`（2.1、2.2），百度 AK 的配置（7.1），SDK 的初始化时机（9.4），坐标系（14.1），地图的显示和交互（14.4），多平台差异（20），地图的假实现（21.1）。
+
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
 
 ## 1. 总体约定
@@ -44,8 +46,8 @@ lib/
     failure/                AppFailure 分类；失败 → 用户能看懂的提示
     copy/                   通用文案：动作叫法、错误提示
     format/                 价格「¥18」、时间「12 分钟前」、计数
-    platform/               平台能力的接口和各端实现：定位、选图压缩、分享、外部地图、
-                            推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
+    platform/               平台能力的接口和各端实现：定位、地图（map/，EatMap，14.4）、选图压缩、分享、
+                            外部地图、推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
     telemetry/              埋点 Analytics、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
     tokens/                 tokens.json 里只用 dart:ui 就能表达的部分：颜色原值、间距、圆角、尺寸、StageColor
@@ -99,6 +101,9 @@ assets/
 config/
   example.json              环境配置样例（真实的 dev.json、staging.json、prod.json 不入库）
 tool/                       一次性脚本：字体子集化、图标描边变体
+packages/
+  eat_baidu_map/            本地插件：Kotlin、Swift 包百度地图 SDK，只给 core/platform/map/ 用（14.4）；
+                            pigeons/ 里是 Pigeon 接口定义，生成的三端文件入库
 test/                       与 lib/ 同构；另有 support/（假实现）、fixtures/（样例 JSON、取色样图）
 ```
 
@@ -117,7 +122,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的天地图底图（`base_map.dart`）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图配置（`base_map.dart`：缩放范围、底图样式、加载失败的判断，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -360,7 +365,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `API_BASE_URL` | 业务接口前缀，对应接口文档 `servers` 第一项的反代 `/api` | `https://<域名>/api` |
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
-| `TIANDITU_KEY` | 地图瓦片 Key | — |
+| `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个；Android 的由 `build.gradle.kts` 从 `dart-defines` 解出来写进 `AndroidManifest.xml`（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
 | `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页和关于里打开 | `https://<域名>/legal/privacy.html` |
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
@@ -552,6 +557,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）；点「去逛逛」并同意时当场写入（产品 6.2）。游客和登录用户共用这一份记录，退出登录不删。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
 - 跨站同步同意由用户在面板里确认、记在服务端，不进本地同意记录，见 9.5。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
+- 百度地图 SDK 更晚：同意之后、第一次打开附近或新建店时才初始化（14.4）。
 
 ### 9.5 跨站同步同意
 
@@ -896,12 +902,14 @@ extension RefCache on Ref {
 | --- | --- | --- |
 | 设备定位（安卓、iOS、浏览器） | WGS-84 | 拿到后立刻转 GCJ-02 |
 | 接口参数和返回（`gcjLng`、`gcjLat`） | GCJ-02 | 原样用 |
-| 接口里的 GeoJSON（餐厅 `location`、商圈 `boundary`、`center`） | WGS-84，`[经度, 纬度]`（已部署契约写明，后端 `JacksonConfig` 按此输出） | 已确认（2026-11-02） |
-| 天地图瓦片 | CGCS2000（与 WGS-84 差厘米级） | 画到地图上之前，GCJ-02 转 WGS-84 |
+| 接口里的 GeoJSON（餐厅 `location`、商圈 `boundary`、`center`） | WGS-84，`[经度, 纬度]`（已部署契约写明，后端 `JacksonConfig` 按此输出，2026-11-02 确认） | `data` 层解析时转成 GCJ-02，领域模型里只有 `GcjPoint` |
+| 百度地图 SDK（App） | 全局坐标类型设成 GCJ-02 | 原样用 |
+| 百度地图 JS API GL（Web） | BD-09 | 只在 Web 实现内部和 GCJ-02 互转 |
 | 高德、腾讯、百度的导航 URL | GCJ-02（百度用 `coord_type=gcj02` 指定） | 原样用 |
 | Apple 地图 URL | 大陆境内的处理方式没查到资料 | 真机验证后定 |
 
-- 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法；GCJ-02 → WGS-84 用迭代反算，误差在米级。单元测试用几组已知点验证。
+- 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法；GCJ-02 ↔ BD-09 也是公开公式，反算误差在米级以下。换百度以后用不到 GCJ-02 → WGS-84。单元测试用几组已知点验证。
+- `WgsPoint` 只剩两处：设备定位的原始结果，`data` 层解析的 GeoJSON。出了这两处都是 `GcjPoint`。
 - 距离：两点都用 GCJ-02 算球面距离。显示「320 m」「1.2 km」。混用坐标系会差几百米，所以所有距离计算只接受 GCJ-02 的类型（用两个不同的类型 `GcjPoint`、`WgsPoint` 防止混用）。
 
 ### 14.2 定位
@@ -920,15 +928,95 @@ extension RefCache on Ref {
 
 ### 14.4 地图（附近页、新建店）
 
-方案待确认 D1（依赖选型第 7 节），下面按推荐的 `flutter_map` + 天地图写：
+用百度地图（依赖选型 7.1）：App 是我们自己的本地插件 `packages/eat_baidu_map/` 包着百度原生 SDK 的平台视图，Web 是 JS API GL。两套引擎藏在 `EatMap` 后面，页面不直接碰它们。
 
-- 图层从下到上：天地图底图（`vec_w`）→ 注记（`cva_w`）→ 商圈范围（虚线框，填充 24% 当前舞台色，规范 `MapPin`）→ 店铺标记 → 我的位置。
-- 标记是 Flutter 组件：普通 44px、选中 72px 加舞台色外圈和店名胶囊。同时只放大一个。每个标记带店名的语义标签。
-- 交互：禁止旋转；拖动结束后防抖 400 ms，用新的地图中心（转 GCJ-02）调 `/restaurant/search` 重新加载；点标记选中并让列表滚到它，再点进餐厅详情；点商圈胶囊把地图缩放到商圈范围，并带 `hubId` 过滤列表。
-- 底图颜色：整体加一个色彩矩阵滤镜，往 `map-ground` 的暖色靠。做不到严格按 `map-*` 令牌（D1）。
-- 地图左下角按天地图要求显示标识和审图号。
-- 出问题退回列表（产品 12.6）：瓦片连续加载失败超过阈值，或 Key 无效，附近页切成只有列表，提示「地图加载失败，已切换为列表」。
+**原则：跟着地理坐标走的由地图引擎画，跟着屏幕走的由 Flutter 画**
+
+- 店铺标记、商圈范围、我的位置跟着地图平移、缩放，交给引擎画成覆盖物，拖动、捏合时和底图一起动，不会错位。
+- 搜索框、商圈胶囊、「回到我的位置」、抽屉、新建店的中心图钉固定在屏幕上，照旧是 Flutter 组件，叠在地图上面，照常接点击，不会点穿到地图。
+- 不做「原生只画底图，Flutter 按相机位置把标记叠上去」：相机状态从平台通道异步回来，Flutter 层至少晚一帧，拖动时标记会漂。
+
+**标记还是 Flutter 组件，画成位图交给引擎**
+
+- `MapPin`（普通 44px；选中 72px，加舞台色外圈和店名胶囊）、`MyLocationDot` 仍是 `design/widgets/` 的组件，样子只有一份正本。`design/` 加一个离屏渲染工具 `MarkerBitmap`：组件在不上屏的渲染树里排版、绘制，按设备像素比导出 PNG。字体、令牌和屏幕上的一样。
+- 菜图先经 `cached_network_image` 的缓存解码好再画。没加载出来时先用空盘子，图到了换一次。
+- 位图按（店 id、封面 URL、是否选中、像素比）缓存。选中、取消只换这一家的图，再把它的 `zIndex` 提到最上面。引擎有缩放动画就用，系统减少动态效果时不放。
+- 点击由引擎回调标记 id，页面再按 id 找店。
+
+**`EatMap`：声明式的地图组件**（`core/platform/map/`）
+
+```dart
+EatMap(
+  controller: _map,              // 移到某点、缩放到一组点、屏幕点和坐标互转
+  initialCenter: center,         // GcjPoint
+  initialZoom: 16,
+  zoomRange: (min: 11, max: 18),
+  padding: EdgeInsets.only(top: 132, bottom: sheetHeight), // 被浮层盖住的部分
+  markers: [MapMarker(id: 'shop-12', point: p, image: png, zIndex: 1)],
+  polygons: [MapPolygon(id: 'hub-3', rings: rings, fill: fill, stroke: ink, dashed: true)],
+  onCameraIdle: (center, byGesture) { ... }, // 停下后可见区域的中心
+  onMarkerTap: (id) { ... },
+  onFailed: () { ... },
+)
+```
+
+- 页面每次 build 给出完整的标记和多边形列表，`EatMap` 按 id 比较新旧，只增、删、改变了的那几个。页面的写法和 `flutter_map` 时一样，不碰引擎的命令式接口。
+- 坐标只收 `GcjPoint`。App 实现把全局坐标类型设成 GCJ-02 直接传；Web 实现进出 JS 时转 BD-09。
+- 三个实现：`eat_map_io.dart`（调 `packages/eat_baidu_map/`）、`eat_map_web.dart`（JS API GL，`HtmlElementView`），按条件导入切换；测试用的假实现只画一块 `map-ground` 色块，记下收到的标记和多边形，Widget 测试直接断言（21.1）。
+- `core/platform/map/` 只收 PNG 字节，不认识组件；画位图的工具在 `design/`，页面把两者接起来。依赖方向不变。
+
+**被浮层盖住的地图**
+
+- 手机上抽屉盖住地图下半部分，顶部有搜索框和商圈胶囊。这些高度作为地图的内边距传进去（原生 SDK 的视野内边距、JS API GL 的视野边距）：
+  - 百度 logo 和比例尺跟着挪进可见区域（原生 SDK 设了视野内边距后会自己挪），不被抽屉盖住（条款 6.6 不允许掩藏标识）；
+  - 缩放到商圈范围时，范围落在可见区域里。
+- 拖抽屉时不实时改内边距（每次都要过平台通道），抽屉停到吸附位置后再改。
+- 「按地图中心找店」用可见区域的中心：停下后用屏幕点转坐标，不用整张地图的中心，否则抽屉拉高时找的店会偏到抽屉后面。
+- 宽屏：左侧面板（12.3）盖住的宽度作为左边距。
+
+**手势**
+
+- 禁止旋转和俯仰，只能平移、缩放。底图上的 POI 和地名照常显示（换百度主要就是为了它们），但点了没反应，不和店铺标记抢点击。
+- Android 用百度的 `TextureMapView`，Flutter 走纹理合成，能裁切它、在上面叠组件，比混合合成省；iOS 用 `UiKitView`。
+- 新建店的地图在可滚动的白底页里（220 高、圆角裁切）：手指按在地图上时手势归地图，页面从地图外面滚。
+
+**底图样式**
+
+- 先用百度默认样式（2026-11-09 定）。去掉天地图时期的色彩矩阵滤镜。
+
+**加载失败退回列表**（产品 12.6）
+
+- App：鉴权失败（AK 无效，或包名、SHA1 不对）、`mapRenderValidData` 回调报无效、打开后 8 秒内没收到加载完成的回调。
+- Web：脚本加载失败或超时、鉴权失败。
+- 都调 `onFailed`，附近页切成只有列表，提示「地图加载失败，已切换为列表」。AK 为空时直接不显示地图。
+
+**初始化**
+
+- 同意隐私政策之前不初始化（9.4、依赖选型 17）。第一次打开附近或新建店时由 `core/platform/map/` 懒初始化一次：先告诉 SDK 用户已同意（Android `setAgreePrivacy` 必须在 `initialize` 之前），再设坐标类型和 AK（依赖选型 7.1）；Web 这时才插入 JS API GL 的脚本。
+- 隐私政策的第三方 SDK 清单加百度地图，链接《百度地图开放平台产品和服务隐私政策》。
+
+**无障碍**
+
+- 引擎画的标记不在 Flutter 的语义树里，读屏用户点不到单个标记。地图整体给一个语义标签「地图，附近 N 家店」；抽屉里的列表是同一批店、同样能进详情，作为按钮替代。原来「每个标记带店名的语义标签」做不到了。
+
+**标识**
+
+- 去掉 `MapAttribution`（「© 天地图」）和 `map_tiles.dart`。百度 logo 和版权由引擎画，不隐藏、不遮挡。审图号在地图上是否显示要真机看，不显示就放进「关于」。
+
+**不变的部分**
+
+- 拖动停下后防抖 400 ms，按可见区域的中心调 `/restaurant/search`；只有手势移动才重新找店，代码移动（回到我的位置、点商圈）由页面自己设中心。
+- 点标记选中并让列表滚到它，再点一次进餐厅详情；点商圈胶囊缩放到商圈范围，并带 `hubId` 过滤列表。
 - 新建店选点：地图中心固定一个图钉，拖动地图对准店门口；停下后用中心点调 `/hub/locate` 显示所属商圈。默认中心是当前位置。
+
+**合并前的真机验证**
+
+| 编号 | 验证什么 |
+| --- | --- |
+| M1 | 同意之后再初始化 SDK 的顺序在两端都能用；同意之前 SDK 不联网 |
+| M2 | 审图号在不在地图上 |
+| M3 | 液态玻璃导航、阴影压在平台视图上的效果；360 宽安卓机上拖抽屉、拖地图的帧率 |
+| M4 | 免费配额够不够内测 |
 
 ### 14.5 导航去店里
 
@@ -1249,6 +1337,7 @@ class PushNotice({
 | 加照片 | 拍照、相册多选 | 拍照、相册多选（PHPicker 不需要相册权限） | 文件选择框，手机浏览器可直接拍 | `core/platform/media/` |
 | 压缩 | 原生编码 | 原生编码 | 浏览器 Canvas 编码 | 同上 |
 | 导航去店里 | 已装的高德、百度、腾讯 | Apple 地图 + 已装的三家 | 高德网页版 | `core/platform/external_maps/` |
+| 地图（附近、新建店） | 百度地图 SDK（`TextureMapView`），本地插件 `eat_baidu_map` | 百度地图 SDK，`UiKitView`，同一个本地插件 | 百度地图 JS API GL，`HtmlElementView` | `core/platform/map/` |
 | 分享 | 系统分享面板 | 系统分享面板 | 支持 Web Share 时用系统分享，否则复制链接；微信里复制链接 | `core/platform/share/` |
 | 打开分享链接 | App Links | Universal Links | 直接打开；微信里顶部「在 App 里打开」 | `router/deep_links.dart` |
 | 推送 | 本地通知，App 在后台存活时 | 本地通知，基本只在刚退到后台时 | 没有，只看消息页 | `core/platform/push/` |
@@ -1284,7 +1373,7 @@ class PushNotice({
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。
 - 网络用一个假的 `HttpClientAdapter`（放 `test/support/`）返回样例 JSON，不起真服务器。
-- 假实现放 `test/support/fakes.dart`：内存里的 `KvStore`、`SecureStore`，按「方法 路径」返回样例的 `FakeAdapter`，直接给结果的 `FakeHumanVerifier`，以及一键搭好这些的 `TestEnv`。真要 mock 时再加 `mocktail`。
+- 假实现放 `test/support/fakes.dart`：内存里的 `KvStore`、`SecureStore`，按「方法 路径」返回样例的 `FakeAdapter`，直接给结果的 `FakeHumanVerifier`，只记录标记和多边形、不起平台视图的假 `EatMap`（14.4），以及一键搭好这些的 `TestEnv`。真要 mock 时再加 `mocktail`。
 
 ### 21.2 Golden 测试
 
@@ -1295,7 +1384,8 @@ class PushNotice({
 - `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、依赖方向测试都在 `flutter test` 里，不单独加任务。
 - `android`、`ios`、`web` 任务都带 `--build-number=<run_number>`，配了 `APP_CONFIG` 时写成 `config/ci.json` 用 `--dart-define-from-file` 传入；`web` 另带 `--no-web-resources-cdn`。安卓配了上传密钥时还原 `android/key.properties`，否则 debug 签名。
 - 打 tag 的发版构建：安卓加混淆，上传符号表；Web 生成 source map，上传后从产物里删掉。配了 `SHOREBIRD_TOKEN` 且有 `shorebird.yaml` 时安卓改用 `shorebird release`（第 16.2 节）。iOS 签名前只做未签名构建，不混淆。补丁用手动触发的 `patch.yml`。凭据都缺省可跳过，清单见 AGENTS.md「CI」。
-- 带原生代码的新依赖：单独一个 PR，看 CI 的 `android`、`ios` 任务能否编过（本地只构建 Web）。
+- 带原生代码的新依赖：单独一个 PR。Android 可以在本地构建和测试，iOS 看 CI 的 `ios` 任务能否编过。
+- `packages/eat_baidu_map/` 的 Pigeon 生成文件：`check` 任务重新生成一遍，`git diff --exit-code` 检查是否最新（依赖选型 7.1）。
 
 ### 21.4 手动检查
 

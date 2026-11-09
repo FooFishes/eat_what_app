@@ -7,6 +7,8 @@
 > 2026-11-03：底部导航的标签胶囊改用 `liquid_glass_widgets` 的液态玻璃（总表）。
 >
 > 2026-11-04：底部导航的发布按钮也改用液态玻璃（总表）。
+>
+> 2026-11-09：地图从 `flutter_map` + 天地图改为百度地图，App 用自己写的原生桥直接调百度 SDK、Web 用 JS API GL，去掉 `flutter_map`、`latlong2`（总表、第 7.1、17、18 节、D1）。
 
 本文记录装哪个包、锁哪条版本线、为什么不选另一个。新增依赖前先查这里，表里没有的先提出来，确定后补进本文再改 `pubspec.yaml`。这些包在代码里怎么用，见 `EatWhat_技术架构.md`。
 
@@ -14,10 +16,10 @@
 
 - **一类问题一个方案**。下面每一类只选一个包；不选的写在「不选」里，以后想换先改本文。
 - **版本怎么查的**。表里每个版本都在 2026-10-22 从 pub.dev 接口查过发布日期和 SDK 约束；再在一个临时工程里用 Flutter 3.47.7 / Dart 3.13.5 把所有选中的包一起 `pub get` 解析通过，并 `flutter build web --release --no-web-resources-cdn` 编译通过。没查证的版本会标出来。
-- **Android、iOS 由 CI 验证**。本地只允许构建 Web，所以带原生代码的包能不能在 AGP 9.1 / iOS 15 上编过，要看 CI 的 `android`、`ios` 任务。每个带原生代码的包第一次加进来时单独一个 PR。
+- **Android 本地可测，iOS 由 CI 验证**。本地默认用 Web 验证，Android 也可以在本地构建和测试。带原生代码的包能不能在 iOS 15 上编过，看 CI 的 `ios` 任务。每个带原生代码的包第一次加进来时单独一个 PR。
 - **约束写法**：`^x.y.z`，锁主版本。`pubspec.lock` 入库。升级走 `build(deps): 升级 xxx 至 x.y.z` 的提交。
 - **加的时机**：按开发计划，在第一个用到它的阶段加入，「何时加」一列写的就是阶段；加入时把这一列改成「已引入」。不提前装。
-- **代码生成只用两处**：Provider 用 `riverpod_generator`，接口 DTO 用 `json_serializable`，都经 `build_runner`。不用 `freezed`、`retrofit`、`go_router_builder`。理由见第 3、5 节。
+- **代码生成只用三处**：Provider 用 `riverpod_generator`，接口 DTO 用 `json_serializable`，都经 `build_runner`；原生桥的消息用 `pigeon`（只在 `packages/eat_baidu_map/`，第 7.1 节）。不用 `freezed`、`retrofit`、`go_router_builder`。理由见第 3、5 节。
 - 标「待确认」的条目汇总在文末。
 
 ## 1. 总表
@@ -46,8 +48,8 @@
 | Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 已引入（阶段二：Web 上加载人机验证的 JS；阶段三还用于判断微信内置浏览器） |
 | 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 已引入（阶段三） |
 | 定位 | `geolocator` | `^14.1.2` | 2026-10-19 | ✅ | ✅ | ✅（仅 HTTPS） | 已引入（阶段三） |
-| 地图 | `flutter_map` | `^8.3.2` | 2026-08-27 | ✅ | ✅ | ✅ | 已引入（阶段三），底图待确认 D1 |
-| 地图坐标类型 | `latlong2` | `^0.10.1` | 2026-04-27 | ✅ | ✅ | ✅ | 已引入（阶段三） |
+| 地图（App） | 本地插件 `packages/eat_baidu_map/`（自己写的原生桥），内含百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map`（Maven Central）、iOS `BaiduMapKit` 的 Base 和 Map（自己转成 xcframework，见第 7.1 节） | `8.2.0`、`7.2.0`，原生依赖锁死版本 | 2026-08-17、2026-07-27 | ✅ | ✅ | — | 换掉 `flutter_map`（D1 确认后），见第 7.1 节 |
+| 地图（Web） | 百度地图 JS API GL | `v=1.0&type=webgl` | — | — | — | ✅ | 同上。运行时插入脚本，不进 `pubspec.yaml`，用 `web` 包调用 |
 | 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 已引入（阶段三） |
 | 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 已引入（阶段四） |
 | 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 已引入（阶段四） |
@@ -67,6 +69,7 @@
 | 静态检查 | `flutter_lints` | `^6.0.0` | 2025-05-27 | 已有 |
 | 代码生成 | `build_runner` | `^2.16.2` | 2026-10-07 | 已引入（阶段一） |
 | Provider 生成 | `riverpod_generator` | `^4.0.9` | 2026-09-03 | 已引入（阶段一） |
+| 原生桥消息生成 | `pigeon` | `^29.1.1` | 2026-11-06 | 地图换百度时加（第 7.1 节），只进 `packages/eat_baidu_map/` 的 `dev_dependencies` |
 | Provider 写法检查（分析器插件） | `riverpod_lint` | `^3.1.9` | 2026-09-03 | 已引入（阶段一）。写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml` |
 | SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 已引入（阶段一） |
 | 字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
@@ -92,6 +95,7 @@
 | `palette_generator` | pub.dev 已标为 discontinued，算法也和规范要求的不同 |
 | `image_cropper` | 原生裁切界面，做不出 `G-Crop` 的样子；我们只存裁切参数，不需要真的裁图 |
 | `map_launcher` | 用 `url_launcher` 自己拼外部地图 URL 就够，见第 7.3 节 |
+| `flutter_map`、`latlong2` | 阶段三用过（配天地图瓦片），2026-11-09 换成百度地图，见第 7.1 节 |
 | `geocoding` | 安卓端依赖 Google 地理编码，没 GMS 就失败；商圈判断走接口 `/hub/locate` |
 | `connectivity_plus`、`permission_handler` | 暂不需要：没网从请求失败判断；定位、推送、相册的权限由各自的包申请 |
 
@@ -218,27 +222,72 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 ## 7. 地图与定位，跳转外部地图 App
 
-### 7.1 地图：`flutter_map ^8.3.2` + 天地图瓦片（待确认 D1）
+### 7.1 地图：百度地图（App 自写原生桥，Web 用 JS API GL）
 
-产品要求 Web 和 App 功能一致，附近页还有一堆自定义表现：圆形菜图标记、选中放大加舞台色外圈、商圈虚线范围、宽屏左侧面板、地图出问题退回列表。
+2026-11-09 改。阶段三按 `flutter_map` + 天地图瓦片做完了附近页和新建店选点，实际效果不行：校园周边路网和 POI 稀，注记小，底图只能整体加色彩滤镜。改用百度地图。
 
-**推荐**：`flutter_map`（纯 Flutter 绘制）+ 天地图（自然资源部的国家地理信息公共服务平台）的 XYZ 瓦片：`vec_w` 矢量底图加 `cva_w` 注记，请求带 `tk` Key。
+产品要求 Web 和 App 功能一致，附近页还有一堆自定义表现：圆形菜图标记、选中放大加舞台色外圈、商圈虚线范围、宽屏左侧面板、地图出问题退回列表。这些在百度上怎么做见技术架构 14.4。
 
-| | flutter_map + 天地图 | 高德原生 SDK + 高德 JS API |
+| | App（Android、iOS） | Web |
 | --- | --- | --- |
-| 三端 | 一套代码 | App 用原生 SDK，Web 要另写一套 JS API 版本 |
-| 标记 | 直接用 Flutter 组件（`DishPlate` 缩小版），动画随便做 | 要把组件截成位图再交给原生 |
-| 和抽屉叠放、手势 | 普通组件，没有冲突 | 平台视图（PlatformView），滚动和手势冲突多，安卓上性能差 |
-| Flutter 插件 | `flutter_map` 2026-08 仍在发布，publisher 已验证 | 官方 `amap_flutter_map` 3.0.0 停在 2021-11，SDK 约束 `<3.0.0`，Dart 3 不能用；社区版 `amap_map` 1.0.15 停在 2025-03，只有 Android、iOS |
-| 坐标系 | 天地图是 CGCS2000（和 WGS-84 差厘米级）；后端存 GCJ-02，要在客户端转换 | GCJ-02，和后端一致 |
-| 审图号 | 天地图瓦片自带，按要求显示标识 | 自带 |
-| 费用和授权 | 注册开发者申请 Key；调用量上限和使用条款以控制台为准，未查证 | 商业 App 有授权和计费规则，按开发者主体去控制台确认 |
-| 视觉 | 底图样式不能自定义，只能整体加色彩滤镜靠近 `map-ground`，做不到严格按 `map-*` 令牌 | 可以在控制台做自定义样式 |
-| 底图质量 | 校园周边的路网、POI 可能不如高德细 | 好 |
+| 用什么 | 本地插件 `packages/eat_baidu_map/`，Kotlin、Swift 直接调百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map:8.2.0`（Maven Central，2026-08-17），iOS `BaiduMapKit` 7.2.0（百度 CDN 的压缩包，2026-07-27，转成 xcframework 用 SPM 引入） | 百度地图 JS API GL。打开地图时才插入 `<script>`，用 `dart:js_interop` 和 `web` 包调用，放进 `HtmlElementView` |
+| 坐标 | 全局坐标类型设成 GCJ-02（Android `CoordType.GCJ02`，iOS `BMK_COORDTYPE_COMMON`），和接口一致，不用转 | BD-09。进出 JS 时和 GCJ-02 互转（公开公式，`geo_rules`） |
+| 标记 | 原生覆盖物，图标是 Flutter 组件画成的 PNG | JS 覆盖物，用同一张 PNG |
+| 底图样式 | 先用百度默认样式 | 先用百度默认样式 |
 
-其他看过的：`flutter_baidu_mapapi_map` 4.0.2（百度官方，2026-09 仍在更新，但只有 Android、iOS，默认 BD-09 坐标）；`tencent_map_flutter` 0.1.0（2024-05 后没更新）。境外瓦片（OSM、Mapbox）在大陆慢，而且没有审图号。
+百度地图 SDK 没有 Web 版，Web 另写一套。两套藏在同一个组件后面（技术架构 14.4）。
 
-**坐标类型**：`latlong2 ^0.10.1`（`flutter_map` 要求 `<0.11.0`）。GCJ-02 和 WGS-84 的互转自己写（公开算法，几十行，带单元测试），不引包。
+**为什么不用百度官方的 Flutter 插件，自己写桥**
+
+官方插件是 `flutter_baidu_mapapi_map` + `flutter_baidu_mapapi_base` 4.0.2+1（2026-11-06 发布，只有 Android、iOS、鸿蒙）。2026-11-09 读了它的源码，有这些问题：
+
+- **Android 的初始化顺序不对**：要求 App 的 `Application` 继承它的 `BmfMapApplication`，后者在启动时就以「未同意隐私」调 `SDKInitializer.initialize`，SDK 抛异常、被插件吞掉；Dart 侧的 `setAgreePrivacy(true)` 只改同意标记，不会再 `initialize`；不继承时插件里的 `mContext` 是 null，`setAgreePrivacy` 直接被跳过。iOS 没这个问题（先设同意再 `start`）。
+- **Android 构建**：Groovy 老写法（`compileSdkVersion`、`lintOptions`，在 `rootProject.allprojects` 里加阿里云镜像），依赖 AndroidX 之前的 `android.arch.lifecycle:extensions:1.1.1`，在 AGP 9.1 上可能要 fork 才能过。
+- **调用粒度**：每个覆盖物、每次改动各走一次平台通道；附近页一次换几十个标记就是几十次往返。
+- 我们只用得到它很小一部分（底图、标记、多边形、相机、内边距、样式、几个回调），本来就要为初始化写原生代码，干脆整个自己写。
+
+自己写的代价：Kotlin、Swift 各几百行要自己维护，百度 SDK 升级自己跟；Android 可以在本地构建和测试；iOS 本地不构建，Swift 每改一次都要走 CI。
+
+**不选**
+
+| 方案 | 原因 |
+| --- | --- |
+| `flutter_map` 直接加载百度瓦片 URL | 服务条款 2.2、3.3 不允许绕过官方 SDK 和 JS API 直接取瓦片、缓存瓦片；百度瓦片是 BD-09 加自己的墨卡托投影，还要写自定义投影 |
+| App 也用 WebView 加载 JS API GL，三端一套 JS | 低端安卓上 WebView 地图卡，手势和事件都要过 JS 桥；浏览器端 AK 按 Referer 白名单校验，App 里的本地页面没有正常的 Referer；丢掉原生 SDK 的离线缓存和手势 |
+| 原生只画底图，标记全由 Flutter 按相机位置叠上去 | 相机状态从平台通道异步回来，Flutter 层至少晚一帧，拖动、捏合时标记会「漂」，见技术架构 14.4 |
+| 继续天地图 | 见上 |
+| 高德（原生 SDK + JS API 2.0） | 2026-11-09 比过：全程 GCJ-02、隐私接口干净，技术上更顺；但条款 3.1 写个人认证的免费配额只限「个人研究学习」，面向全校发布的 App 要提工单办付费许可，组织的非商业用途也要工单评估（3.2.5）；Web 的安全密钥要我们自己架代理。Flutter 插件都不能用（官方 `amap_flutter_map` 停在 2021-11，社区 `amap_map` 停在 2025-03）。选了百度 |
+| 百度官方插件 `flutter_baidu_mapapi_map` | 见上一段 |
+| `tencent_map_flutter` 0.1.0 | 2024-05 后没更新 |
+| `flutter_bmflocation` | 定位继续用 `geolocator`，见第 7.2 节 |
+
+**原生桥怎么写**（第一个 PR 单独做；Android 可在本地测，iOS 看 CI）
+
+- **放哪**：`packages/eat_baidu_map/`，仓库里的本地插件，`pubspec.yaml` 用 `path` 依赖。有自己的 Android 构建脚本（Kotlin DSL）和 `podspec`，不和 `android/app`、`ios/Runner` 混在一起。Dart 侧只暴露 `EatMap` 的 App 实现需要的接口（技术架构 14.4）。
+- **消息**：用 `pigeon` 生成。接口定义写在 `packages/eat_baidu_map/pigeons/map_api.dart`，生成 Dart、Kotlin、Swift 三端的类型和桩代码，生成的文件入库、不手改。手写 `MethodChannel` 的方法名和参数键都是字符串，三端对不上时能编译、到运行时才出错；用 Pigeon 对不上就编译失败。
+  - Dart 调原生（`@HostApi`）：建图后的设置、移动相机、更新标记和多边形、设内边距、屏幕点和坐标互转、初始化。
+  - 原生回调 Dart（`@FlutterApi`）：停下（带是否手势）、点了标记、加载完成、鉴权或渲染失败。
+  - 同时可能有两张地图（附近、新建店），每个平台视图用自己的 `messageChannelSuffix`。
+  - 标记列表的差异一次传过去，在原生侧逐个增删改；PNG 用 `Uint8List` 传。
+  - CI 的 `check` 任务重新生成一遍，`git diff --exit-code` 检查生成文件是否最新。
+- **Android 视图**：用百度的 `TextureMapView`（基于 TextureView），Flutter 能用纹理合成，叠组件、圆角裁切都正常；普通 `MapView` 基于 SurfaceView，会逼 Flutter 退回更慢的混合合成。
+- **Android 的 AK**：写在 `AndroidManifest.xml` 的 `meta-data`（`com.baidu.lbsapi.API_KEY`）。`build.gradle.kts` 从 Flutter 传给 Gradle 的 `dart-defines` 里解出 `BAIDU_MAP_AK_ANDROID`，经 `manifestPlaceholders` 写进去，配置仍然只有 `config/*.json` 一处。
+- **初始化**：同意隐私政策以后、第一次要显示地图时，Dart 调一次 `init`：Android `SDKInitializer.setAgreePrivacy(context, true)` → `setCoordType(GCJ02)` → `initialize(context)`；iOS `BMKMapManager setAgreePrivacy:YES` → 设坐标类型 → `start:AK`。鉴权结果回调给 Dart，失败时地图退回列表。
+- **iOS 的 SDK 来源：xcframework，工程继续只用 SPM**（2026-11-09 定）。
+  - 百度没有 Swift Package。CocoaPods 的 `BaiduMapKit` 7.2.0 用的是百度 CDN 上的压缩包 `https://lbsyun-baidu.cdn.bcebos.com/iossdk/map/7.2.0/BaiduMapKitV7.2.0.zip`（142 MB，SHA-256 `a81bec93feedf4e209b73bda44f23887f686e0c3bfebe897921fbd9dd1fcf4ed`）。包里是 fat 静态 `.framework`，不是 xcframework：`BaiduMapAPI_Map` 279 MB（模拟器 x86_64 198 MB + 真机 arm64 81 MB），`BaiduMapAPI_Base` 126 MB，另有 `thirdlibs/libzstd.a` 和 `mapapi.bundle` 资源。没有 arm64 模拟器切片。官网下载页是否直接给 xcframework 没查到。
+  - 不放仓库：单个文件超过 GitHub 的 100 MB 上限；放 Git LFS 的话 CI 每次拉取都吃 LFS 流量额度。
+  - 做法：`tool/baidu_ios_sdk.sh`（只能在 macOS 上跑）按固定地址下载、校验 SHA-256，取 `Base`、`Map`、`libzstd.a`，用 `lipo` 拆出真机和模拟器切片，再 `xcodebuild -create-xcframework` 生成 xcframework，放到 `packages/eat_baidu_map/ios/` 下不入库的目录。插件的 `Package.swift` 用 `binaryTarget(path:)` 引入。
+  - CI 的 `ios` 任务在构建前跑这个脚本，生成结果按 SHA-256 缓存。升级 SDK 时改脚本里的地址和校验值。
+  - 要验证：`mapapi.bundle` 放进 Swift Package 的资源后，SDK 能不能找到；找不到就在构建时复制进 `Runner`。
+
+**授权与费用**（2026-11-09 读的官网。已定按非商业使用，见 D1）
+
+- 服务条款 2.3（`lbsyun.baidu.com/index.php?title=open/law`）：商业目的「包括但不限于对第三方用户收费、项目投标、后台管理系统、任何其他直接或间接获取收益或利益等」，不享有免费配额；非商业目的注册开发者后有一定免费配额。
+- 商业用途要买「技术服务授权」（2026-07-03 起由「商用授权」改名，`lbsyun.baidu.com/cashier/auth`）：基础版 5 万元/年、尊享版 10 万元/年，只限公司申请，个人不行。认证的初创、小微企业可以免费用 180 天（扶摇计划，认定条件没查到）。
+- 条款 5.1：不得在地图展示结果中关联或展示广告。条款 6.6：不得删除、掩藏版权标识、审图号等，所以百度 logo 不能隐藏，也不能被我们的组件盖住。
+- 地图 SDK 加载、JS API GL 加载的免费日配额官网页面没写，以控制台为准。
+
+**坐标类型**：去掉 `latlong2`。地图组件只认 `GcjPoint`，BD-09 只出现在 Web 实现内部。GCJ-02 和 WGS-84、BD-09 的互转都自己写（公开算法，带单元测试），不引包。
 
 ### 7.2 定位：`geolocator ^14.1.2`
 
@@ -420,6 +469,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `riverpod_generator` | `^4.0.9` | 生成 Provider |
 | `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
 | `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
+| `pigeon` | `^29.1.1` | 生成原生桥的 Dart、Kotlin、Swift 三端接口；不走 `build_runner`，在 `packages/eat_baidu_map/` 里跑 `fvm dart run pigeon --input pigeons/map_api.dart` |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
 | `vector_graphics_compiler` | `^1.3.2` | SVG 资源转换器 |
@@ -441,7 +491,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | SDK | 提供方 | 用途 | 收集的信息（以对方隐私政策为准） | 初始化时机 | 数据去向 |
 | --- | --- | --- | --- | --- | --- |
 | Shorebird | Shorebird（境外服务） | 热更新 | 应用版本、补丁号、平台与 CPU 架构、随机客户端标识 | 同意隐私政策后 | 境外 |
-| 天地图 | 自然资源部天地图 | 地图底图 | 请求瓦片时的 IP 和地图范围 | 打开附近、新建店时 | 境内 |
+| 百度地图 SDK（App）、JS API GL（Web） | 百度 | 地图底图和覆盖物 | 以《百度地图开放平台产品和服务隐私政策》（`lbsyun.baidu.com/index.php?title=openprivacy`）为准，基础地图 SDK 写明会读 Android ID、应用名、网络信息等 | 同意隐私政策后，第一次打开附近、新建店时 | 境内 |
 | 腾讯云验证码（国际站） | 腾讯云 | 风控 | 设备环境、操作行为 | 每次发验证码前 | 国际站，存放地待确认 |
 | Sentry（自建） | 我们自己部署，不是第三方 | 崩溃上报 | 崩溃堆栈、设备型号、系统版本、App 版本、账号 ID | 同意隐私政策后 | 境外，和业务数据同处 |
 
@@ -450,7 +500,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 名称 | 用在哪 | 性质 | 放哪 |
 | --- | --- | --- | --- |
 | 环境配置（接口地址、Web 地址等） | 客户端 | 公开 | `config/<环境>.json`（未跟踪），CI 用 Secret 写出；仓库只放 `config/example.json` |
-| 天地图 Key | 客户端 | 公开，在控制台限制域名或应用 | 同上 |
+| 百度地图 AK（Android、iOS、Web 各一个） | 客户端 | 公开，在控制台绑定包名和 SHA1、Bundle ID、Referer 白名单 | 同上；Android 的 AK 由 `build.gradle.kts` 从 `dart-defines` 写进 `AndroidManifest.xml` |
 | Sentry DSN | 客户端 | 公开 | 环境配置 |
 | `SENTRY_AUTH_TOKEN` | CI 上传符号表 | 机密 | CI Secret，不写进 `pubspec.yaml` |
 | `SHOREBIRD_TOKEN` | CI 发版和补丁 | 机密 | CI Secret（`shorebird.yaml` 里的 `app_id` 不是机密，可以入库） |
@@ -464,7 +514,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 编号 | 事项 | 推荐 | 需要谁 |
 | --- | --- | --- | --- |
-| D1 | 地图底图用哪家 | `flutter_map` + 天地图：三端一套代码，标记和面板都是普通组件，Key 免费申请。代价是底图样式只能加滤镜靠近 `map-*` 令牌，路网和 POI 可能不如高德细；要申请 Key、确认调用量上限和使用条款、按要求显示天地图标识和审图号。若选高德，App 和 Web 要各写一套地图，并确认商业授权 | 产品负责人、设计 |
+| D1 | 地图用哪家 | 已定（2026-11-09）：百度地图，App 自写原生桥，Web 用 JS API GL（第 7.1 节），按非商业使用、用免费配额。还要做：确认免费配额够不够内测；隐私政策补百度的条目和链接 | — |
 | D2 | 远程推送什么时候接、接哪家 | 现在只用本地通知（第 11 节）。要接时先定开发者主体（个人还是企业，部分厂商通道要求企业）、服务商和费用，再按 `PushService` 加一个远程实现 | 产品负责人 |
 | D3 | 热更新是否用 Shorebird | 推荐用，但先做一次实测：在校园网和三大运营商网络下能否稳定下载补丁、回滚是否生效。不过就不做热更新，只保留建议更新和强制更新。用的话发版流程改用 `shorebird release`，需要付费档时再定 | 产品负责人 |
 | D4 | 崩溃上报的 Sentry 放哪、谁维护 | 沿用自建 Sentry（legacy 的 `sentry.orbithy.com` 或新部署），数据和业务一起在境外，写进隐私政策。要确认谁维护、大陆访问速度 | 产品负责人、后端 |
