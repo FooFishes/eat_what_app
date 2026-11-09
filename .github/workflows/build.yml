@@ -52,6 +52,13 @@ jobs:
       - run: flutter pub get
       # 生成文件入库. 源文件修改后未重新生成, 或生成后未提交, 此步失败.
       - run: dart run build_runner build --only-check
+      # 原生桥的 Pigeon 生成文件也入库. 接口定义改了没重新生成, 此步失败.
+      - name: Check Pigeon output
+        working-directory: packages/eat_baidu_map
+        run: |
+          dart run pigeon --input pigeons/messages.dart
+          dart format lib/src/messages.g.dart
+          git diff --exit-code .
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
       # riverpod_lint 等分析器插件的结果只由 dart analyze 报告.
@@ -180,6 +187,13 @@ jobs:
           cache: true
 
       - run: flutter pub get
+
+      # 百度地图 iOS SDK 不入库, 从百度 CDN 下载并转成 xcframework. 脚本里写着版本和校验值, 按脚本内容缓存.
+      - uses: actions/cache@v4
+        with:
+          path: packages/eat_baidu_map/ios/eat_baidu_map/Frameworks
+          key: baidu-ios-sdk-${{ hashFiles('tool/baidu_ios_sdk.sh') }}
+      - run: tool/baidu_ios_sdk.sh
 
       - name: Prepare build arguments
         run: |
