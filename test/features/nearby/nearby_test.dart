@@ -1,3 +1,4 @@
+import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,6 +36,40 @@ void main() {
     final near = tester.getTopLeft(find.text('近一点的店'));
     final far = tester.getTopLeft(find.text('远一点的店'));
     expect(near.dy, lessThan(far.dy));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('有地图时朗读店数；地图加载失败后提示并只显示列表', (tester) async {
+    final env = TestEnv();
+    final map = FakeMapEngine();
+    env.adapter
+      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+      ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/search', [
+        FakeAdapter.ok(
+          pageJson([
+            restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
+            restaurantJson(id: 2, name: '近一点的店', lat: 36.6680),
+          ]),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.nearby,
+      overrides: [mapEngineProvider.overrideWithValue(map)],
+    );
+
+    expect(find.bySemanticsLabel('地图，附近 2 家店'), findsOneWidget);
+    expect(map.last!.initialCenter, const MapLatLng(36.667382, 117.140109));
+
+    map.last!.onFailed!();
+    await tester.pump();
+    expect(find.text('地图加载失败，已切换为列表'), findsOneWidget);
+    expect(find.bySemanticsLabel('地图，附近 2 家店'), findsNothing);
+    expect(find.text('近一点的店'), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 

@@ -10,9 +10,11 @@ import 'package:eat/core/network/upload_client.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/location.dart';
+import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/storage/secure_store.dart';
+import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/router/deep_links.dart';
@@ -190,7 +192,9 @@ const testConfig = AppConfig(
   apiBaseUrl: 'https://api.test/api',
   webBaseUrl: 'https://eat.test',
   sentryDsn: '',
-  tiandituKey: '',
+  baiduMapAkAndroid: '',
+  baiduMapAkIos: '',
+  baiduMapAkWeb: '',
   privacyUrl: 'https://eat.test/privacy.html',
   termsUrl: 'https://eat.test/terms.html',
 );
@@ -339,6 +343,20 @@ class FakeLinkSource implements LinkSource {
 
   /// 模拟系统向 App 传入外部链接 [link].
   void open(Uri link) => _controller.add(link);
+}
+
+/// 不起平台视图的地图. 记下最近一次 build 的地图, 测试据此断言, 也能调它的回调模拟地图事件.
+class FakeMapEngine implements MapEngine {
+  EatMap? last;
+
+  @override
+  bool get available => true;
+
+  @override
+  Widget build(EatMap map) {
+    last = map;
+    return const ColoredBox(color: EatPalette.mapGround);
+  }
 }
 
 /// 测试用的模拟环境. 网络和存储都在内存中, 网络层回调连接到登录态.

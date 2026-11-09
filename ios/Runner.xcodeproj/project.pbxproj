@@ -156,6 +156,7 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
+				E5B1A0D02F00BAD100000001 /* Copy Baidu Map Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
@@ -265,6 +266,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
+		};
+		E5B1A0D02F00BAD100000001 /* Copy Baidu Map Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Baidu Map Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# 百度地图 SDK 从 main bundle 读取 mapapi.bundle. 由 tool/baidu_ios_sdk.sh 生成.
+set -e
+src=\"$SRCROOT/../packages/eat_baidu_map/ios/eat_baidu_map/Frameworks/mapapi.bundle\"
+if [ ! -d \"$src\" ]; then
+  echo \"error: 找不到 mapapi.bundle, 先运行 tool/baidu_ios_sdk.sh\"
+  exit 1
+fi
+rsync -a --delete \"$src\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/\"
+";
 		};
 /* End PBXShellScriptBuildPhase section */
 

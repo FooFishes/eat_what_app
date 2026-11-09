@@ -266,8 +266,8 @@ class PlaceRepository {
     );
   }
 
-  /// MultiPolygon 中每个多边形的外环. 结构不符时返回空列表, 地图上不绘制范围.
-  static List<List<WgsPoint>> _rings(GeoJsonDto? geometry) {
+  /// MultiPolygon 中每个多边形的外环, 转成 GCJ-02. 结构不符时返回空列表, 地图上不绘制范围.
+  static List<List<GcjPoint>> _rings(GeoJsonDto? geometry) {
     if (geometry?.type != 'MultiPolygon') return const [];
     try {
       return [
@@ -275,9 +275,11 @@ class PlaceRepository {
           [
             for (final point
                 in (polygon as List<dynamic>).first as List<dynamic>)
-              WgsPoint(
-                ((point as List<dynamic>)[1] as num).toDouble(),
-                (point[0] as num).toDouble(),
+              GeoRules.toGcj(
+                WgsPoint(
+                  ((point as List<dynamic>)[1] as num).toDouble(),
+                  (point[0] as num).toDouble(),
+                ),
               ),
           ],
       ];

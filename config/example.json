@@ -3,7 +3,9 @@
   "API_BASE_URL": "https://example.com/api",
   "WEB_BASE_URL": "https://example.com",
   "SENTRY_DSN": "",
-  "TIANDITU_KEY": "",
+  "BAIDU_MAP_AK_ANDROID": "",
+  "BAIDU_MAP_AK_IOS": "",
+  "BAIDU_MAP_AK_WEB": "",
   "PRIVACY_URL": "https://example.com/legal/privacy.html",
   "TERMS_URL": "https://example.com/legal/terms.html"
 }

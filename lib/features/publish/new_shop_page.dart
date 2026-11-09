@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/idempotency.dart';
+import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
@@ -36,7 +36,6 @@ import 'package:eat/state/place.dart';
 import 'package:eat/state/published.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -62,8 +61,9 @@ class NewShopPage extends ConsumerStatefulWidget {
 class _NewShopPageState extends ConsumerState<NewShopPage> {
   late final _name = TextEditingController(text: widget.initialName);
   final _address = TextEditingController();
-  final _map = MapController();
+  final _map = EatMapController();
   GcjPoint? _center;
+  var _mapFailed = false;
   PickedPhoto? _photo;
 
   /// 用户在同名店提示中选择了 "不是同一家, 继续建".
@@ -93,7 +93,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   void dispose() {
     _name.dispose();
     _address.dispose();
-    _map.dispose();
     super.dispose();
   }
 
@@ -210,7 +209,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         _address.text.trim().isNotEmpty &&
         point != null &&
         same == null;
-    final mapReady = ref.watch(appConfigProvider).tiandituKey.isNotEmpty;
+    final mapReady = !_mapFailed && ref.watch(mapEngineProvider).available;
 
     return Column(
       children: [
@@ -262,6 +261,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                         controller: _map,
                         initial: point,
                         onMoved: (center) => setState(() => _center = center),
+                        onFailed: () => setState(() => _mapFailed = true),
                       ),
                     )
                   else
@@ -404,11 +404,13 @@ class _PickMap extends StatelessWidget {
     required this.controller,
     required this.initial,
     required this.onMoved,
+    required this.onFailed,
   });
 
-  final MapController controller;
+  final EatMapController controller;
   final GcjPoint initial;
   final ValueChanged<GcjPoint> onMoved;
+  final VoidCallback onFailed;
 
   @override
   Widget build(BuildContext context) {
@@ -419,36 +421,14 @@ class _PickMap extends StatelessWidget {
         borderRadius: const BorderRadius.all(EatRadius.tile),
         child: Stack(
           children: [
-            FlutterMap(
-              mapController: controller,
-              options: MapOptions(
-                initialCenter: mapPoint(initial),
-                initialZoom: 17,
-                minZoom: 13,
-                maxZoom: 18,
-                backgroundColor: eat.colors.mapGround,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                ),
-                onMapEvent: (event) {
-                  if (event is MapEventMoveEnd ||
-                      event is MapEventFlingAnimationEnd ||
-                      event is MapEventDoubleTapZoomEnd ||
-                      event is MapEventScrollWheelZoom) {
-                    onMoved(gcjOf(event.camera.center));
-                  }
-                },
-              ),
-              children: const [
-                BaseMapLayers(),
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Padding(
-                    padding: EdgeInsets.all(6),
-                    child: MapAttribution(),
-                  ),
-                ),
-              ],
+            EatMap(
+              controller: controller,
+              initialCenter: mapPoint(initial),
+              initialZoom: 17,
+              minZoom: 13,
+              onCameraIdle: (camera, _) => onMoved(gcjOf(camera.center)),
+              onFailed: onFailed,
+              semanticLabel: '地图选点',
             ),
             // 针尖位于图标底部. 图标上移半个自身高度, 使针尖对准地图中心.
             IgnorePointer(

@@ -1,0 +1,28 @@
+name: eat_baidu_map
+description: 沙软今天吃什么的百度地图原生桥, 只给 App 的 core/platform/map 使用.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: ^1.17.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  pigeon: ^29.1.1
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: you.v50to.eat.baidu_map
+        pluginClass: EatBaiduMapPlugin
+      ios:
+        pluginClass: EatBaiduMapPlugin

@@ -11,7 +11,9 @@ class const AppConfig({
   required final String apiBaseUrl,
   required final String webBaseUrl,
   required final String sentryDsn,
-  required final String tiandituKey,
+  required final String baiduMapAkAndroid,
+  required final String baiduMapAkIos,
+  required final String baiduMapAkWeb,
   required final String privacyUrl,
   required final String termsUrl,
 }) {
@@ -21,7 +23,9 @@ class const AppConfig({
         apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
         webBaseUrl: const String.fromEnvironment('WEB_BASE_URL'),
         sentryDsn: const String.fromEnvironment('SENTRY_DSN'),
-        tiandituKey: const String.fromEnvironment('TIANDITU_KEY'),
+        baiduMapAkAndroid: const String.fromEnvironment('BAIDU_MAP_AK_ANDROID'),
+        baiduMapAkIos: const String.fromEnvironment('BAIDU_MAP_AK_IOS'),
+        baiduMapAkWeb: const String.fromEnvironment('BAIDU_MAP_AK_WEB'),
         privacyUrl: const String.fromEnvironment('PRIVACY_URL'),
         termsUrl: const String.fromEnvironment('TERMS_URL'),
       );

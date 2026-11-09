@@ -1,75 +1,111 @@
-import 'package:eat/core/config/app_config.dart';
-import 'package:eat/core/platform/map_tiles.dart';
-import 'package:eat/design/theme/eat_theme.dart';
+/// 附近页和新建店共用的地图部分: 坐标类型的互转, 店铺标记的位图.
+library;
+
+import 'dart:async';
+
+import 'package:eat/core/platform/map/eat_map.dart';
+import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/map_pin.dart';
+import 'package:eat/design/widgets/marker_bitmap.dart';
 import 'package:eat/domain/models/geo.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:latlong2/latlong.dart';
 
-/// 附近页和新建店页共用的底图: 天地图矢量底图和注记.
+MapLatLng mapPoint(GcjPoint point) => MapLatLng(point.lat, point.lng);
+
+GcjPoint gcjOf(MapLatLng point) => GcjPoint(point.lat, point.lng);
+
+/// 店铺标记和我的位置画成的位图. 第一次用到时在后台画, 画好后调用 [onChanged] 让页面重建.
 ///
-/// 放在 `FlutterMap.children` 的第一项, 商圈和标记叠加在其上.
-class BaseMapLayers extends ConsumerWidget {
-  const new({super.key, this.onTileError});
+/// 封面图还没下载好时, 先给不带封面的版本, 图到了再换.
+class PinImages {
+  PinImages(this.onChanged);
 
-  /// 瓦片加载失败时调用. 页面据此计数, 失败次数达到阈值后改为只显示列表.
-  final VoidCallback? onTileError;
+  final VoidCallback onChanged;
+  final _images = <_PinKey, MarkerImage>{};
+  final _drawing = <_PinKey>{};
+  var _disposed = false;
 
-  /// 底图的调色矩阵: 略微降低饱和度并提高暖色, 使底图接近 `map-ground` 的色调.
-  static const _warm = ColorFilter.matrix([
-    0.95, 0.05, 0.0, 0, 6, //
-    0.03, 0.92, 0.03, 0, 4, //
-    0.02, 0.06, 0.82, 0, 0, //
-    0, 0, 0, 1, 0,
-  ]);
+  /// 标记四周给阴影留的空白, 和 `shadow-pin` 的偏移, 模糊半径对应.
+  static const _shadow = EdgeInsets.fromLTRB(10, 6, 10, 14);
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final key = ref.watch(appConfigProvider).tiandituKey;
-    TileLayer tiles(String layer) => TileLayer(
-      urlTemplate:
-          'https://t{s}.tianditu.gov.cn/DataServer?T=$layer&x={x}&y={y}&l={z}&tk=$key',
-      subdomains: const ['0', '1', '2', '3', '4', '5', '6', '7'],
-      tileProvider: NetworkTileProvider(headers: mapTileHeaders()),
-      errorTileCallback: (_, _, _) => onTileError?.call(),
-    );
-    return Stack(
-      children: [
-        ColorFiltered(colorFilter: _warm, child: tiles('vec_w')),
-        tiles('cva_w'),
-      ],
-    );
+  /// [ring] 是选中时外圈的颜色. 没画好时返回 null.
+  MarkerImage? shop(
+    BuildContext context, {
+    required String name,
+    required String? cover,
+    required bool selected,
+    required Color ring,
+  }) {
+    final key = _PinKey(selected ? name : '', cover, selected, ring);
+    if (_images[key] case final image?) return image;
+    _draw(context, key);
+    if (cover == null) return null;
+    final bare = _PinKey(key.name, null, selected, ring);
+    _draw(context, bare);
+    return _images[bare];
+  }
+
+  MarkerImage? me(BuildContext context) {
+    const key = _PinKey('', null, false, Color(0x00000000), me: true);
+    if (_images[key] case final image?) return image;
+    _draw(context, key);
+    return null;
+  }
+
+  void dispose() => _disposed = true;
+
+  void _draw(BuildContext context, _PinKey key) {
+    if (!_drawing.add(key)) return;
+    scheduleMicrotask(() async {
+      if (!context.mounted || _disposed) return;
+      final image = key.me ? null : networkImage(key.cover, width: 64);
+      if (image != null) {
+        await precacheImage(image, context, onError: (_, _) {});
+        if (!context.mounted || _disposed) return;
+      }
+      final outer = key.selected ? 72.0 : 44.0;
+      final bitmap = await MarkerBitmap.render(
+        context,
+        Padding(
+          padding: _shadow,
+          child: key.me
+              ? const MyLocationDot()
+              : MapPin(
+                  name: key.name,
+                  image: image,
+                  selected: key.selected,
+                  ring: key.ring,
+                  onTap: () {},
+                ),
+        ),
+        anchor: (size) => Offset(
+          size.width / 2,
+          _shadow.top + (key.me ? MyLocationDot.size : outer) / 2,
+        ),
+      );
+      if (_disposed) return;
+      _images[key] = bitmap;
+      onChanged();
+    });
   }
 }
 
-/// 把 GCJ-02 坐标转换为天地图使用的 WGS-84 坐标.
-///
-/// 天地图瓦片使用 WGS-84, 直接放入 GCJ-02 坐标会偏移数百米.
-LatLng mapPoint(GcjPoint point) {
-  final w = GeoRules.toWgs(point);
-  return LatLng(w.lat, w.lng);
-}
-
-/// 把地图上的 WGS-84 坐标转换为接口使用的 GCJ-02 坐标.
-GcjPoint gcjOf(LatLng point) =>
-    GeoRules.toGcj(WgsPoint(point.latitude, point.longitude));
-
-// TODO: 天地图要求同时显示审图号, 目前只显示 "© 天地图". 取得正式 Key 后按控制台提供的审图号补上.
-/// 使用天地图瓦片时必须显示的标识.
-class MapAttribution extends StatelessWidget {
-  const new({super.key});
+class const _PinKey(
+  final String name,
+  final String? cover,
+  final bool selected,
+  final Color ring, {
+  final bool me = false,
+}) {
+  @override
+  bool operator ==(Object other) =>
+      other is _PinKey &&
+      other.name == name &&
+      other.cover == cover &&
+      other.selected == selected &&
+      other.ring == ring &&
+      other.me == me;
 
   @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    return Text(
-      '© 天地图',
-      style: eat.text.caption.copyWith(
-        fontSize: 10,
-        color: eat.colors.inkMuted,
-      ),
-    );
-  }
+  int get hashCode => Object.hash(name, cover, selected, ring, me);
 }

@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
+import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -19,15 +19,12 @@ import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
-import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
-import 'package:eat/design/widgets/map_pin.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/features/nearby/nearby_providers.dart';
 import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/shop_row.dart';
@@ -35,10 +32,8 @@ import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:latlong2/latlong.dart';
 
 /// 附近页. 以地图作为舞台, 下方可拖动的抽屉列出附近的店.
 ///
@@ -47,7 +42,7 @@ import 'package:latlong2/latlong.dart';
 /// - 拖动地图停止后, 按新的地图中心重新查找店铺.
 /// - 筛选和排序同时作用于地图标记和抽屉列表.
 ///
-/// 地图使用天地图瓦片. 未配置 Key 或瓦片连续加载失败时只显示列表.
+/// 地图是百度地图. 当前平台没有 AK, 或地图加载失败时只显示列表.
 class NearbyPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -56,7 +51,10 @@ class NearbyPage extends ConsumerStatefulWidget {
 }
 
 class _NearbyPageState extends ConsumerState<NearbyPage> {
-  final _map = MapController();
+  final _map = EatMapController();
+  late final _pins = PinImages(() {
+    if (mounted) setState(() {});
+  });
   final _sheet = DraggableScrollableController();
   final _keywordInput = TextEditingController();
   ScrollController? _list;
@@ -76,10 +74,15 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   var _filter = const NearbyFilter();
   var _sort = ShopSort.distance;
   var _mapFailed = false;
-  var _tileErrors = 0;
 
   /// 抽屉高度占屏幕高度的比例. "回到我的位置" 按钮随抽屉上沿移动.
   var _sheetExtent = _sheetInitial;
+
+  /// 抽屉停下后的高度比例, 用作地图的下内边距.
+  ///
+  /// 拖动抽屉时不实时改: 每次改都要经过平台通道, 停下一会儿后才更新.
+  var _sheetRest = _sheetInitial;
+  Timer? _sheetDebounce;
 
   static const _sheetInitial = 0.42;
   static const _zoom = 16.0;
@@ -87,30 +90,35 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   @override
   void dispose() {
     _moveDebounce?.cancel();
-    _map.dispose();
+    _sheetDebounce?.cancel();
+    _pins.dispose();
     _sheet.dispose();
     _keywordInput.dispose();
     super.dispose();
   }
 
-  bool get _hasMap =>
-      !_mapFailed && ref.read(appConfigProvider).tiandituKey.isNotEmpty;
+  bool get _hasMap => !_mapFailed && ref.read(mapEngineProvider).available;
 
-  void _onTileError() {
-    if (_mapFailed || ++_tileErrors < 8) return;
+  void _onMapFailed() {
+    if (_mapFailed) return;
     setState(() => _mapFailed = true);
     showToast(context, '地图加载失败，已切换为列表');
   }
 
-  void _onMoved(MapCamera camera, bool hasGesture) {
-    if (!hasGesture) return;
+  /// 只有手势移动才重新找店. 代码移动 (回到我的位置, 点商圈) 由调用方自己设中心.
+  void _onMoved(MapCamera camera, bool byGesture) {
+    if (!byGesture) return;
     _moveDebounce?.cancel();
     _moveDebounce = Timer(const Duration(milliseconds: 400), () {
-      if (!mounted) return;
-      final c = camera.center;
-      setState(
-        () => _center = GeoRules.toGcj(WgsPoint(c.latitude, c.longitude)),
-      );
+      if (mounted) setState(() => _center = gcjOf(camera.center));
+    });
+  }
+
+  void _onSheetMoved(double extent) {
+    setState(() => _sheetExtent = extent);
+    _sheetDebounce?.cancel();
+    _sheetDebounce = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) setState(() => _sheetRest = _sheetExtent);
     });
   }
 
@@ -119,8 +127,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       setState(() => _center = point);
       return;
     }
-    final w = GeoRules.toWgs(point);
-    _map.move(LatLng(w.lat, w.lng), zoom);
+    unawaited(_map.moveTo(mapPoint(point), zoom: zoom));
     setState(() => _center = point);
   }
 
@@ -153,15 +160,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     });
     if (selected) return;
     if (_hasMap && hub.boundary.isNotEmpty) {
-      final points = [
-        for (final ring in hub.boundary)
-          for (final p in ring) LatLng(p.lat, p.lng),
-      ];
-      _map.fitCamera(
-        CameraFit.coordinates(
-          coordinates: points,
-          padding: const EdgeInsets.fromLTRB(40, 160, 40, 320),
-        ),
+      unawaited(
+        _map.fit([
+          for (final ring in hub.boundary)
+            for (final p in ring) mapPoint(p),
+        ]),
       );
       setState(() => _center = hub.center);
     } else {
@@ -260,18 +263,30 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final list = shops.value ?? const <Shop>[];
     final selectedHub = hubs.where((h) => h.id == hubId).firstOrNull;
 
+    final media = MediaQuery.of(context);
+    // 地图被搜索框, 商圈胶囊和抽屉 (宽屏是左侧面板) 盖住的部分.
+    final insets = layout.isWide
+        ? EdgeInsets.only(
+            left: EatLayout.widePanelInset + EatLayout.widePanelWidth,
+            top: media.padding.top + EatSpace.s16 + EatSize.touch,
+          )
+        : EdgeInsets.only(
+            top: media.padding.top + 8 + 48 + EatSpace.s10 + EatSize.touch,
+            bottom: media.size.height * _sheetRest,
+          );
     final map = _hasMap
         ? _NearbyMap(
             controller: _map,
+            pins: _pins,
             initialCenter: center,
+            insets: insets,
             me: me,
             shops: list,
             selectedShopId: _selectedShopId,
             hub: selectedHub,
             onMoved: _onMoved,
-            onTileError: _onTileError,
+            onFailed: _onMapFailed,
             onShopTap: (shop) => _tapShop(shop, list),
-            attribution: layout.isWide,
           )
         : ColoredBox(color: context.eat.colors.mapGround);
 
@@ -375,7 +390,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       );
     }
 
-    final media = MediaQuery.of(context);
     final navInset = NavBarInset.of(context);
     final height = media.size.height;
     return ColoredBox(
@@ -400,15 +414,9 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
             bottom: height * _sheetExtent + EatSpace.s14,
             child: locate,
           ),
-          if (_hasMap)
-            Positioned(
-              left: EatSpace.s16,
-              bottom: height * _sheetExtent + 6,
-              child: const MapAttribution(),
-            ),
           NotificationListener<DraggableScrollableNotification>(
             onNotification: (n) {
-              setState(() => _sheetExtent = n.extent);
+              _onSheetMoved(n.extent);
               return false;
             },
             child: DraggableScrollableSheet(
@@ -716,105 +724,85 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
   }
 }
 
-/// 附近页地图. 天地图底图之上叠加商圈范围, 店铺标记和我的位置. 禁止旋转.
-class _NearbyMap extends ConsumerWidget {
+/// 附近页地图: 商圈范围, 店铺标记和我的位置. 标记由 [PinImages] 画成位图交给地图引擎.
+///
+/// 选中的店 `zIndex` 最高, 压在其他标记上面. 我的位置在最下面, 不接点击.
+class _NearbyMap extends StatelessWidget {
   const new({
     required this.controller,
+    required this.pins,
     required this.initialCenter,
+    required this.insets,
     required this.me,
     required this.shops,
     required this.selectedShopId,
     required this.hub,
     required this.onMoved,
-    required this.onTileError,
+    required this.onFailed,
     required this.onShopTap,
-    this.attribution = true,
   });
 
-  final MapController controller;
+  final EatMapController controller;
+  final PinImages pins;
   final GcjPoint initialCenter;
+  final EdgeInsets insets;
   final GcjPoint? me;
   final List<Shop> shops;
   final int? selectedShopId;
   final Hub? hub;
-  final PositionCallback onMoved;
-  final VoidCallback onTileError;
+  final void Function(MapCamera camera, bool byGesture) onMoved;
+  final VoidCallback onFailed;
   final ValueChanged<Shop> onShopTap;
 
-  /// 是否在地图内显示天地图要求的标识.
-  ///
-  /// 手机上抽屉遮住地图底部, 标识改由页面绘制在抽屉上沿.
-  final bool attribution;
+  static const _mePrefix = 'me';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final eat = context.eat;
     final ring = StageColor.broth.color;
-    final selected = shops.where((s) => s.id == selectedShopId);
-    final others = shops.where((s) => s.id != selectedShopId);
-    return FlutterMap(
-      mapController: controller,
-      options: MapOptions(
-        initialCenter: mapPoint(initialCenter),
-        initialZoom: 16,
-        minZoom: 11,
-        maxZoom: 18,
-        backgroundColor: eat.colors.mapGround,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-        onPositionChanged: onMoved,
-      ),
-      children: [
-        BaseMapLayers(onTileError: onTileError),
-        if (hub case final hub? when hub.boundary.isNotEmpty)
-          PolygonLayer(
-            polygons: [
-              for (final ring in hub.boundary)
-                Polygon(
-                  points: [for (final p in ring) LatLng(p.lat, p.lng)],
-                  color: StageColor.broth.color.withValues(alpha: 0.24),
-                  borderColor: eat.colors.ink,
-                  borderStrokeWidth: 1.5,
-                  pattern: StrokePattern.dashed(segments: const [6, 4]),
-                ),
-            ],
+    final byId = {for (final shop in shops) '${shop.id}': shop};
+    final markers = <MapMarker>[
+      if (me case final me?)
+        if (pins.me(context) case final image?)
+          MapMarker(id: _mePrefix, point: mapPoint(me), image: image),
+      for (final shop in shops)
+        if (pins.shop(
+              context,
+              name: shop.name,
+              cover: shop.cover ?? shop.photos.firstOrNull,
+              selected: shop.id == selectedShopId,
+              ring: ring,
+            )
+            case final image?)
+          MapMarker(
+            id: '${shop.id}',
+            point: mapPoint(shop.point),
+            image: image,
+            zIndex: shop.id == selectedShopId ? 3 : 2,
           ),
-        MarkerLayer(
-          markers: [
-            // 选中的店最后绘制, 位于其他标记上方.
-            for (final shop in [...others, ...selected])
-              Marker(
-                point: mapPoint(shop.point),
-                width: MapPin.size.width,
-                height: MapPin.size.height,
-                alignment: Alignment.center,
-                child: Align(
-                  alignment: const Alignment(0, -0.2),
-                  child: MapPin(
-                    name: shop.name,
-                    image: networkImage(shop.photos.firstOrNull, width: 64),
-                    selected: shop.id == selectedShopId,
-                    ring: ring,
-                    onTap: () => onShopTap(shop),
-                  ),
-                ),
-              ),
-            if (me case final me?)
-              Marker(
-                point: mapPoint(me),
-                width: MyLocationDot.size,
-                height: MyLocationDot.size,
-                child: const IgnorePointer(child: MyLocationDot()),
-              ),
-          ],
-        ),
-        if (attribution)
-          const Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(padding: EdgeInsets.all(6), child: MapAttribution()),
-          ),
+    ];
+    return EatMap(
+      controller: controller,
+      initialCenter: mapPoint(initialCenter),
+      insets: insets,
+      markers: markers,
+      polygons: [
+        if (hub case final hub?)
+          for (final (i, ring) in hub.boundary.indexed)
+            MapPolygon(
+              id: 'hub-${hub.id}-$i',
+              points: [for (final p in ring) mapPoint(p)],
+              fill: StageColor.broth.color.withValues(alpha: 0.24),
+              stroke: eat.colors.ink,
+              dashed: true,
+            ),
       ],
+      onCameraIdle: onMoved,
+      onMarkerTap: (id) {
+        if (byId[id] case final shop?) onShopTap(shop);
+      },
+      onFailed: onFailed,
+      semanticLabel: '地图，附近 ${shops.length} 家店',
     );
   }
 }

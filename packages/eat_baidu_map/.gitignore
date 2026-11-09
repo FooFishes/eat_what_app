@@ -1,0 +1,5 @@
+.dart_tool/
+build/
+
+# tool/baidu_ios_sdk.sh 生成, 体积太大不入库.
+/ios/eat_baidu_map/Frameworks/

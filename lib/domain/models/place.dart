@@ -13,13 +13,13 @@ class const Campus({
 
 /// 商圈: 校区周边有边界的店铺聚集区, 食堂也算作商圈.
 ///
-/// [boundary] 是接口中 GeoJSON MultiPolygon 每个多边形的外环.
+/// [boundary] 是接口中 GeoJSON MultiPolygon 每个多边形的外环, 已从 WGS-84 转成 GCJ-02.
 class const Hub({
   required final int id,
   required final String name,
   required final GcjPoint center,
   final int? campusId,
-  final List<List<WgsPoint>> boundary = const [],
+  final List<List<GcjPoint>> boundary = const [],
 });
 
 /// 店铺的营业状态.

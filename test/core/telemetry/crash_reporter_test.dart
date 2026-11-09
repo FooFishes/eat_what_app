@@ -14,7 +14,9 @@ void main() {
       apiBaseUrl: '',
       webBaseUrl: '',
       sentryDsn: '',
-      tiandituKey: '',
+      baiduMapAkAndroid: '',
+      baiduMapAkIos: '',
+      baiduMapAkWeb: '',
       privacyUrl: '',
       termsUrl: '',
     );
