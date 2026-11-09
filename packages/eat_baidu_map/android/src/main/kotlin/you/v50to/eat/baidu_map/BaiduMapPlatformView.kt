@@ -99,6 +99,9 @@ class BaiduMapPlatformView(
         }
         MapViewHostApi.setUp(messenger, this, suffix)
         lifecycle.add(this)
+        // 平台视图总是在 App 处于前台时创建, 这时宿主 Activity 早已 resume, 收不到那次回调.
+        // 不补这一次, 地图只画出启动时的那几帧, 后到的瓦片和路名要等手势触发重绘.
+        mapView.onResume()
     }
 
     override fun getView(): View = mapView
