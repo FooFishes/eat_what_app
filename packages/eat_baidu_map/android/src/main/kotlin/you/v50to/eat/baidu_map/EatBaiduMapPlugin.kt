@@ -20,7 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 /**
- * 百度地图原生桥的入口: 注册 SDK 接口和地图平台视图.
+ * 百度地图原生桥的入口: 注册 SDK 接口、地点检索和地图平台视图.
  *
  * SDK 只在 Dart 调用 [initialize] 之后才启动. 百度要求先 `setAgreePrivacy(true)` 再 `initialize`,
  * 而 App 只有在用户同意隐私政策之后才会打开地图.
@@ -39,6 +39,7 @@ class EatBaiduMapPlugin : FlutterPlugin, ActivityAware, SdkHostApi {
         messenger = binding.binaryMessenger
         sdkEvents = SdkFlutterApi(messenger)
         SdkHostApi.setUp(messenger, this)
+        PlaceSearchHostApi.setUp(messenger, PlaceSearch())
         binding.platformViewRegistry.registerViewFactory(
             VIEW_TYPE,
             BaiduMapViewFactory(messenger, scope, views),
@@ -47,6 +48,7 @@ class EatBaiduMapPlugin : FlutterPlugin, ActivityAware, SdkHostApi {
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         SdkHostApi.setUp(messenger, null)
+        PlaceSearchHostApi.setUp(messenger, null)
         authListener?.let { SDKInitializer.removeAuthResultListener(it) }
         scope.cancel()
     }

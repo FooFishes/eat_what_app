@@ -25,6 +25,32 @@ class _NativeMapEngine implements MapEngine {
 
   @override
   Widget build(EatMap map) => _NativeMap(apiKey: apiKey, map: map);
+
+  @override
+  Future<List<MapPoi>> searchNearby(
+    String keyword,
+    MapLatLng center, {
+    required int radius,
+  }) async {
+    await BaiduMapSdk.initialize(apiKey);
+    // 鉴权完成前发出的检索拿不到 token, 直接失败.
+    final (code, message) = await BaiduMapSdk.authResult;
+    if (code != 0) throw StateError('百度地图鉴权失败: $code $message');
+    final places = await BaiduPlaceSearch.searchNearby(
+      keyword,
+      _latLng(center),
+      radius: radius,
+    );
+    return [
+      for (final p in places)
+        MapPoi(
+          uid: p.uid,
+          name: p.name,
+          address: p.address,
+          point: MapLatLng(p.location.lat, p.location.lng),
+        ),
+    ];
+  }
 }
 
 class _NativeMap extends StatefulWidget {

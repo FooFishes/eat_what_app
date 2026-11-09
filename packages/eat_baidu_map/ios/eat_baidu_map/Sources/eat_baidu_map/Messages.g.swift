@@ -447,6 +447,61 @@ struct PolygonMessage: Hashable, CustomStringConvertible {
   }
 }
 
+/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
+/// 地点检索的一条结果.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlaceMessage: Hashable, CustomStringConvertible {
+  /// 百度地点的唯一标识.
+  var uid: String
+  var name: String
+  var address: String
+  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  var location: LatLngMessage
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlaceMessage? {
+    let uid = pigeonVar_list[0] as! String
+    let name = pigeonVar_list[1] as! String
+    let address = pigeonVar_list[2] as! String
+    let location = pigeonVar_list[3] as! LatLngMessage
+
+    return PlaceMessage(
+      uid: uid,
+      name: name,
+      address: address,
+      location: location
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      uid,
+      name,
+      address,
+      location,
+    ]
+  }
+  static func == (lhs: PlaceMessage, rhs: PlaceMessage) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return MessagesPigeonInternal.deepEquals(lhs.uid, rhs.uid) && MessagesPigeonInternal.deepEquals(lhs.name, rhs.name) && MessagesPigeonInternal.deepEquals(lhs.address, rhs.address) && MessagesPigeonInternal.deepEquals(lhs.location, rhs.location)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("PlaceMessage")
+    MessagesPigeonInternal.deepHash(value: uid, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: name, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: address, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: location, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "PlaceMessage(uid: \(String(describing: uid)), name: \(String(describing: name)), address: \(String(describing: address)), location: \(String(describing: location)))"
+  }
+}
+
 private class MessagesPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -460,6 +515,8 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
       return MarkerMessage.fromList(self.readValue() as! [Any?])
     case 133:
       return PolygonMessage.fromList(self.readValue() as! [Any?])
+    case 134:
+      return PlaceMessage.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -483,6 +540,9 @@ private class MessagesPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? PolygonMessage {
       super.writeByte(133)
       super.writeValue(value.toList())
+    } else if let value = value as? PlaceMessage {
+      super.writeByte(134)
+      super.writeValue(value.toList())
     } else {
       super.writeValue(value)
     }
@@ -503,8 +563,7 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
   static let shared = MessagesPigeonCodec(readerWriter: MessagesPigeonCodecReaderWriter())
 }
 
-/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
-///
+
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol SdkHostApi {
   /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
@@ -816,6 +875,45 @@ class MapViewFlutterApi: MapViewFlutterApiProtocol {
           continuation.resume()
         }
       }
+    }
+  }
+}
+/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+///
+/// Generated protocol from Pigeon that represents a handler of messages from Flutter.
+protocol PlaceSearchHostApi {
+  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
+  /// 没有结果时返回空列表, 检索失败时报错.
+  func searchNearby(keyword: String, center: LatLngMessage, radius: Int64, pageSize: Int64) async throws -> [PlaceMessage]
+}
+
+/// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
+class PlaceSearchHostApiSetup {
+  static var codec: FlutterStandardMessageCodec { MessagesPigeonCodec.shared }
+  /// Sets up an instance of `PlaceSearchHostApi` to handle messages through the `binaryMessenger`.
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: PlaceSearchHostApi?, messageChannelSuffix: String = "") {
+    let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+    /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
+    /// 没有结果时返回空列表, 检索失败时报错.
+    let searchNearbyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.PlaceSearchHostApi.searchNearby\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      searchNearbyChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let keywordArg = args[0] as! String
+        let centerArg = args[1] as! LatLngMessage
+        let radiusArg = args[2] as! Int64
+        let pageSizeArg = args[3] as! Int64
+        Task { @MainActor in
+          do {
+            let result = try await api.searchNearby(keyword: keywordArg, center: centerArg, radius: radiusArg, pageSize: pageSizeArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      searchNearbyChannel.setMessageHandler(nil)
     }
   }
 }

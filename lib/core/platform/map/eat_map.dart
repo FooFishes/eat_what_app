@@ -25,6 +25,14 @@ class const MapLatLng(final double lat, final double lng) {
   String toString() => 'MapLatLng($lat, $lng)';
 }
 
+/// 地图上的一个地点, 来自地点检索. [uid] 是百度地点的唯一标识.
+class const MapPoi({
+  required final String uid,
+  required final String name,
+  required final String address,
+  required final MapLatLng point,
+});
+
 class const MapCamera({
   required final MapLatLng center,
   required final double zoom,
@@ -199,6 +207,14 @@ abstract interface class MapEngine {
   bool get available;
 
   Widget build(EatMap map);
+
+  /// [center] 周围 [radius] 米内和 [keyword] 匹配的地点, 最多 20 个. 公交站和地铁站不算.
+  /// 没有结果时返回空列表, 检索失败时抛出异常. 只在 [available] 时调用.
+  Future<List<MapPoi>> searchNearby(
+    String keyword,
+    MapLatLng center, {
+    required int radius,
+  });
 }
 
 /// 当前平台的地图实现. 测试中用 `overrideWithValue` 替换.

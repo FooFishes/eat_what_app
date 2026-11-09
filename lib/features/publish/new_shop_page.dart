@@ -26,6 +26,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
 import 'package:eat/features/publish/publish_providers.dart';
 import 'package:eat/features/publish/widgets/bottom_bar.dart';
+import 'package:eat/features/publish/widgets/map_place_list.dart';
 import 'package:eat/features/publish/widgets/photo_source.dart';
 import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/guard.dart';
@@ -39,10 +40,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 新建店铺页面. 字段包括店名, 地图选点, 地址描述和选填的门头照片.
+/// 新建店铺页面. 先按关键词搜地图上的店, 从候选里选一家; 搜不到时手动添加.
 ///
+/// 选了候选后进入表单, 店名, 位置和地址描述按地图上的信息预填, 都可以改, 提交时带上地点的 uid.
+/// 地图不可用 (没配 AK) 时直接进入手动添加的表单.
+///
+/// 表单的字段包括店名, 地图选点, 地址描述和选填的门头照片.
 /// - 所属商圈按地图中心自动判断.
-/// - 附近已有同名店时显示提示. 用户可以选择已有的店, 也可以继续新建.
+/// - 选中的地点已经有人建过店, 或附近已有同名店时显示提示. 用户可以选择已有的店, 也可以继续新建.
 ///
 /// 创建成功后的去向:
 /// - 新店进入审核时, 提示 "已提交审核" 并返回上一页. 审核通过前店铺不公开, 不能挂菜.
@@ -59,8 +64,18 @@ class NewShopPage extends ConsumerStatefulWidget {
 }
 
 class _NewShopPageState extends ConsumerState<NewShopPage> {
+  late final _search = TextEditingController(text: widget.initialName);
   late final _name = TextEditingController(text: widget.initialName);
   final _address = TextEditingController();
+
+  /// 是否在填表单. 为 false 时显示地图候选.
+  late var _editing = !_canSearch;
+
+  /// 选中的地图候选. 手动添加时为 null.
+  MapPlace? _place;
+
+  /// 用户在 "这家店已经有了" 的提示中选择了继续新建.
+  var _keepPoi = false;
   final _map = EatMapController();
   GcjPoint? _center;
   var _mapFailed = false;
@@ -91,6 +106,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
 
   @override
   void dispose() {
+    _search.dispose();
     _name.dispose();
     _address.dispose();
     super.dispose();
@@ -101,6 +117,38 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
       _center ??
       ref.read(currentLocationProvider).point ??
       ref.read(currentPlaceProvider).campus?.center;
+
+  bool get _canSearch => ref.read(placeRepositoryProvider).canSearchPlaces;
+
+  /// 选了一个候选: 预填表单, 地图移到候选的位置.
+  ///
+  /// 先收起键盘: 候选页和表单共用页面骨架, 不收起时搜索框的焦点会落到店名输入框上.
+  void _choose(MapPlace place) => setState(() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _place = place;
+    _name.text = place.name;
+    _address.text = place.address;
+    _center = place.point;
+    _keepNew = false;
+    _keepPoi = false;
+    _mapFailed = false;
+    _editing = true;
+  });
+
+  /// 搜不到时手动添加. 店名先用搜索的关键词.
+  void _addManually() => setState(() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _place = null;
+    _name.text = _search.text.trim();
+    _address.clear();
+    _center = null;
+    _keepNew = false;
+    _mapFailed = false;
+    _editing = true;
+  });
+
+  /// 从表单回到候选列表.
+  void _backToCandidates() => setState(() => _editing = false);
 
   Future<void> _pickPhoto() async {
     final photos = await pickPhotos(context, ref, limit: 1, title: '门头照片');
@@ -114,6 +162,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     setState(() => _busy = true);
     final name = _name.text.trim();
     final address = _address.text.trim();
+    final poi = _place?.uid;
     try {
       final hub = ref.read(hubAtProvider(point)).value;
       String? photoKey;
@@ -131,6 +180,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         point.lat,
         point.lng,
         hub?.id,
+        poi,
         photoKey,
       ].join('|');
       if (_request?.content != content) {
@@ -143,6 +193,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
             address: address,
             point: point,
             hubId: hub?.id,
+            poi: poi,
             photoKey: photoKey,
             idempotencyKey: _request!.key,
           );
@@ -159,6 +210,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         address: address,
         point: point,
         hubId: hub?.id,
+        poi: poi,
         status: ShopStatus.open,
         dishCount: 0,
       );
@@ -192,6 +244,32 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_editing) {
+      return PlainScaffold(
+        title: '新建一家店',
+        subtitle: '先在地图上找找这家店',
+        slivers: [
+          MapPlaceList(
+            search: _search,
+            onChanged: (_) => setState(() {}),
+            onSelected: _choose,
+            onManual: _addManually,
+          ),
+        ],
+      );
+    }
+    // 从候选进来的表单, 返回时回到候选; 地图不可用时没有候选, 直接离开页面.
+    final canGoBack = _canSearch;
+    return PopScope(
+      canPop: !canGoBack,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _backToCandidates();
+      },
+      child: _form(context, onBack: canGoBack ? _backToCandidates : null),
+    );
+  }
+
+  Widget _form(BuildContext context, {VoidCallback? onBack}) {
     final eat = context.eat;
     final c = eat.colors;
     // 定位和校区数据到达后 [_point] 才有值. 监听这两项, 数据到达时重建页面.
@@ -200,14 +278,26 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
       ..watch(currentPlaceProvider.select((p) => p.campus));
     final point = _point;
     final name = _name.text.trim();
+    final address = _address.text.trim();
     final hub = point == null ? null : ref.watch(hubAtProvider(point));
-    final same = point == null || _keepNew
+    final place = _place;
+    final existing = place == null || _keepPoi
+        ? null
+        : ref.watch(poiShopProvider(place.uid, place.point)).value;
+    // 已经提示了同一个地点的店, 不再重复提示同名店.
+    final same = point == null || _keepNew || existing != null
         ? null
         : ref.watch(sameNameShopProvider(name, point)).value;
+    // 预填的店名和地址可能超出字数上限, 由用户删改.
+    final nameTooLong = codePointLength(name) > PublishRules.shopNameMax;
+    final addressTooLong = address.length > PublishRules.addressMax;
     final ready =
         name.isNotEmpty &&
-        _address.text.trim().isNotEmpty &&
+        address.isNotEmpty &&
+        !nameTooLong &&
+        !addressTooLong &&
         point != null &&
+        existing == null &&
         same == null;
     final mapReady = !_mapFailed && ref.watch(mapEngineProvider).available;
 
@@ -216,6 +306,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         Expanded(
           child: PlainScaffold(
             title: '新建一家店',
+            onBack: onBack,
             physics: _onMap ? const NeverScrollableScrollPhysics() : null,
             slivers: [
               SliverList.list(
@@ -224,7 +315,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     label: '店名',
                     controller: _name,
                     hintText: '比如 袁记云饺',
-                    autofocus: widget.initialName.isEmpty,
+                    autofocus: _place == null && _name.text.isEmpty,
                     textInputAction: TextInputAction.next,
                     inputFormatters: [
                       CodePointLengthLimitingFormatter(
@@ -237,12 +328,17 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     ),
                     onChanged: (_) => setState(() => _keepNew = false),
                   ),
-                  if (same != null && point != null)
-                    _SameNameNotice(
-                      shop: same,
-                      distance: GeoRules.formatDistance(
-                        GeoRules.distance(point, same.point),
-                      ),
+                  if (existing != null)
+                    _ExistingNotice(
+                      text: '这家店已经有了，叫「${existing.name}」',
+                      onUse: () => _useExisting(existing),
+                      onKeep: () => setState(() => _keepPoi = true),
+                    )
+                  else if (same != null && point != null)
+                    _ExistingNotice(
+                      text:
+                          '附近已有一家「${same.name}」，'
+                          '相距 ${GeoRules.formatDistance(GeoRules.distance(point, same.point))}',
                       onUse: () => _useExisting(same),
                       onKeep: () => setState(() => _keepNew = true),
                     ),
@@ -258,6 +354,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                       onPointerUp: (_) => setState(() => _onMap = false),
                       onPointerCancel: (_) => setState(() => _onMap = false),
                       child: _PickMap(
+                        key: ValueKey(place?.uid),
                         controller: _map,
                         initial: point,
                         onMoved: (center) => setState(() => _center = center),
@@ -319,8 +416,12 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
           ),
         ),
         PublishBottomBar(
-          note: name.isEmpty || _address.text.trim().isEmpty
+          note: name.isEmpty || address.isEmpty
               ? '请填写店名和地址描述'
+              : nameTooLong
+              ? '店名最多 ${PublishRules.shopNameMax} 个字'
+              : addressTooLong
+              ? '地址描述最多 ${PublishRules.addressMax} 个字'
               : null,
           child: EatButton.solid(
             widget.returnShop ? '完成' : '下一步：去加菜',
@@ -346,23 +447,20 @@ class _Counter extends StatelessWidget {
     return ExcludeSemantics(
       child: Text(
         '$count / $max',
-        style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+        style: eat.text.meta.copyWith(
+          // 预填的内容可能超出上限, 超出时变色, 底部同时提示.
+          color: count > max ? eat.colors.warn : eat.colors.inkMuted,
+        ),
       ),
     );
   }
 }
 
-/// 同名店提示. 显示附近同名店的距离, 提供 "就选它" 和 "不是同一家, 继续建".
-class _SameNameNotice extends StatelessWidget {
-  const new({
-    required this.shop,
-    required this.distance,
-    required this.onUse,
-    required this.onKeep,
-  });
+/// 已有店的提示: 选中的地点已经有人建过店, 或附近有同名店. 提供 "就选它" 和 "不是同一家, 继续建".
+class _ExistingNotice extends StatelessWidget {
+  const new({required this.text, required this.onUse, required this.onKeep});
 
-  final Shop shop;
-  final String distance;
+  final String text;
   final VoidCallback onUse;
   final VoidCallback onKeep;
 
@@ -378,10 +476,7 @@ class _SameNameNotice extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: EatSpace.s8,
           children: [
-            Text(
-              '附近已有一家「${shop.name}」，相距 $distance',
-              style: eat.text.body.copyWith(color: c.warn),
-            ),
+            Text(text, style: eat.text.body.copyWith(color: c.warn)),
             Row(
               spacing: EatSpace.s10,
               children: [
@@ -401,6 +496,7 @@ class _SameNameNotice extends StatelessWidget {
 /// 拖动停止后, 地图中心通过 [onMoved] 回传.
 class _PickMap extends StatelessWidget {
   const new({
+    super.key,
     required this.controller,
     required this.initial,
     required this.onMoved,

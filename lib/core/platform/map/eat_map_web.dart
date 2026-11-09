@@ -25,6 +25,56 @@ class _WebMapEngine implements MapEngine {
 
   @override
   Widget build(EatMap map) => _WebMap(apiKey: apiKey, map: map);
+
+  /// 用 `LocalSearch` 的周边检索. 进出时在 GCJ-02 和 BD-09 之间转换.
+  @override
+  Future<List<MapPoi>> searchNearby(
+    String keyword,
+    MapLatLng center, {
+    required int radius,
+  }) async {
+    await _loadScript(apiKey);
+    final done = Completer<List<MapPoi>>();
+    final bd = Bd09.fromGcj(center);
+    final point = _BPoint(bd.lng, bd.lat);
+    late final _BLocalSearch search;
+    search = _BLocalSearch(
+      point,
+      _options({
+        'pageCapacity': 20.toJS,
+        'onSearchComplete': ((_BLocalResult? result) {
+          if (done.isCompleted) return;
+          final status = search.getStatus();
+          // 0 是 BMAP_STATUS_SUCCESS; 搜不到时是 2 (BMAP_STATUS_UNKNOWN_LOCATION), 条数为 0. 其余是超时等失败.
+          if (status != 0 && status != 2) {
+            done.completeError(StateError('百度地点检索失败: $status'));
+            return;
+          }
+          done.complete([
+            if (result != null)
+              for (var i = 0; i < result.getCurrentNumPois(); i++)
+                if (result.getPoi(i) case final poi?
+                    when poi.uid.isNotEmpty &&
+                        poi.point != null &&
+                        _isPlace(poi))
+                  MapPoi(
+                    uid: poi.uid,
+                    name: poi.title,
+                    address: poi.address ?? '',
+                    point: Bd09.toGcj(
+                      MapLatLng(
+                        poi.point!.lat.toDouble(),
+                        poi.point!.lng.toDouble(),
+                      ),
+                    ),
+                  ),
+          ]);
+        }).toJS,
+      }),
+    );
+    search.searchNearby(keyword, point, radius);
+    return done.future;
+  }
 }
 
 Future<void>? _script;
@@ -426,6 +476,36 @@ extension type _BMarker._(JSObject _) implements JSObject {
   external void setIcon(_BIcon icon);
   external void setZIndex(num zIndex);
   external void addEventListener(String type, JSFunction handler);
+}
+
+/// 公交站和地铁站不会是店. `type` 只在它们上面不等于 `BMAP_POI_TYPE_NORMAL`.
+bool _isPlace(_BLocalPoi poi) {
+  final type = poi.type;
+  final normal = globalContext['BMAP_POI_TYPE_NORMAL'];
+  return type == null ||
+      normal == null ||
+      type == (normal as JSNumber).toDartInt;
+}
+
+@JS('BMapGL.LocalSearch')
+extension type _BLocalSearch._(JSObject _) implements JSObject {
+  external factory _BLocalSearch(_BPoint location, JSObject options);
+
+  external void searchNearby(String keyword, _BPoint center, num radius);
+  external int getStatus();
+}
+
+extension type _BLocalResult._(JSObject _) implements JSObject {
+  external int getCurrentNumPois();
+  external _BLocalPoi? getPoi(int index);
+}
+
+extension type _BLocalPoi._(JSObject _) implements JSObject {
+  external String get title;
+  external String get uid;
+  external String? get address;
+  external _BPoint? get point;
+  external int? get type;
 }
 
 @JS('BMapGL.Polygon')

@@ -27,7 +27,8 @@ android {
 }
 
 dependencies {
-    // 只要地图, 不带定位和检索. 升级时同时检查 iOS 的 tool/baidu_ios_sdk.sh.
+    // 地图和地点检索, 不带定位. 两个版本一起升级, 同时检查 iOS 的 tool/baidu_ios_sdk.sh.
     implementation("com.baidu.lbsyun:BaiduMapSDK_Map:8.2.0")
+    implementation("com.baidu.lbsyun:BaiduMapSDK_Search:8.2.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 }

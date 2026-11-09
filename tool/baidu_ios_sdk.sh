@@ -75,6 +75,7 @@ framework() {
 
 framework BaiduMapAPI_Base
 framework BaiduMapAPI_Map
+framework BaiduMapAPI_Search
 
 mkdir -p "$WORK/zstd/device" "$WORK/zstd/simulator"
 lipo "$KIT/thirdlibs/libzstd.a" -thin arm64 -output "$WORK/zstd/device/libzstd.a"

@@ -42,6 +42,7 @@ RestaurantDto _$RestaurantDtoFromJson(Map<String, dynamic> json) =>
       pictureUrl: (json['pictureUrl'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      poi: json['POI'] as String?,
       operatingStatus: json['operatingStatus'] as String,
       permanentlyClosed: json['permanentlyClosed'] as bool?,
       visibleFoodCount: (json['visibleFoodCount'] as num).toInt(),
@@ -101,5 +102,6 @@ Map<String, dynamic> _$CreateRestaurantDtoToJson(
   'gcjLng': instance.gcjLng,
   'gcjLat': instance.gcjLat,
   'hubId': ?instance.hubId,
+  'POI': ?instance.poi,
   'pictureUrl': ?instance.pictureUrl,
 };

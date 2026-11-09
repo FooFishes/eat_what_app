@@ -17,6 +17,7 @@ export 'src/messages.g.dart'
         InsetsMessage,
         LatLngMessage,
         MarkerMessage,
+        PlaceMessage,
         PolygonMessage;
 
 /// 百度地图 SDK. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
@@ -34,6 +35,19 @@ abstract final class BaiduMapSdk {
     SdkFlutterApi.setUp(_AuthListener());
     await SdkHostApi().initialize(apiKey);
   }
+}
+
+/// 百度地点检索. 要先 [BaiduMapSdk.initialize].
+abstract final class BaiduPlaceSearch {
+  static final _api = PlaceSearchHostApi();
+
+  /// [center] 周围 [radius] 米内和 [keyword] 匹配的地点, 最多 [pageSize] 条 (百度上限 20).
+  static Future<List<PlaceMessage>> searchNearby(
+    String keyword,
+    LatLngMessage center, {
+    required int radius,
+    int pageSize = 20,
+  }) => _api.searchNearby(keyword, center, radius, pageSize);
 }
 
 class _AuthListener implements SdkFlutterApi {

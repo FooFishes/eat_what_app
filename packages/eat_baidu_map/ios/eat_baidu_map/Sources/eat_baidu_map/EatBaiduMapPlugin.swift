@@ -2,7 +2,7 @@ import BaiduMapAPI_Base
 import Flutter
 import UIKit
 
-/// 百度地图原生桥的入口: 注册 SDK 接口和地图平台视图.
+/// 百度地图原生桥的入口: 注册 SDK 接口、地点检索和地图平台视图.
 ///
 /// SDK 只在 Dart 调用 `initialize` 之后才启动. 百度要求先 `setAgreePrivacy` 再 `start`,
 /// 而 App 只有在用户同意隐私政策之后才会打开地图.
@@ -18,6 +18,7 @@ public final class EatBaiduMapPlugin: NSObject, FlutterPlugin, SdkHostApi, BMKGe
     let messenger = registrar.messenger()
     let plugin = EatBaiduMapPlugin(messenger: messenger)
     SdkHostApiSetup.setUp(binaryMessenger: messenger, api: plugin)
+    PlaceSearchHostApiSetup.setUp(binaryMessenger: messenger, api: PlaceSearch())
     registrar.register(BaiduMapViewFactory(messenger: messenger), withId: "you.v50to.eat/baidu_map")
   }
 

@@ -93,6 +93,14 @@ class const ShopTaste({
   required final int count,
 });
 
+/// 地图上的一个地点, 来自百度地点检索, 是新建店的候选. [uid] 提交时作为店的 `POI`.
+class const MapPlace({
+  required final String uid,
+  required final String name,
+  required final String address,
+  required final GcjPoint point,
+});
+
 /// 店铺. [address] 是地址描述, 如 "万达金街 1 层".
 class const Shop({
   required final int id,
@@ -100,6 +108,9 @@ class const Shop({
   final String? address,
   required final GcjPoint point,
   final int? hubId,
+
+  /// 百度地点的 uid. 手动添加的店为 null.
+  final String? poi,
   final List<String> photos = const [],
   required final ShopStatus status,
 

@@ -453,6 +453,62 @@ data class PolygonMessage (
     return "PolygonMessage(id=$id, points=$points, fillColor=$fillColor, strokeColor=$strokeColor, strokeWidth=$strokeWidth, dashed=$dashed)"
   }
 }
+
+/**
+ * SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
+ * 地点检索的一条结果.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class PlaceMessage (
+  /** 百度地点的唯一标识. */
+  val uid: String,
+  val name: String,
+  val address: String,
+  /** 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定. */
+  val location: LatLngMessage
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): PlaceMessage {
+      val uid = pigeonVar_list[0] as String
+      val name = pigeonVar_list[1] as String
+      val address = pigeonVar_list[2] as String
+      val location = pigeonVar_list[3] as LatLngMessage
+      return PlaceMessage(uid, name, address, location)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      uid,
+      name,
+      address,
+      location,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as PlaceMessage
+    return MessagesPigeonUtils.deepEquals(this.uid, other.uid) && MessagesPigeonUtils.deepEquals(this.name, other.name) && MessagesPigeonUtils.deepEquals(this.address, other.address) && MessagesPigeonUtils.deepEquals(this.location, other.location)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.uid)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.name)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.address)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.location)
+    return result
+  }
+  override fun toString(): String {
+    return "PlaceMessage(uid=$uid, name=$name, address=$address, location=$location)"
+  }
+}
 private open class MessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -481,6 +537,11 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
           PolygonMessage.fromList(it)
         }
       }
+      134.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          PlaceMessage.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -506,16 +567,17 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
         stream.write(133)
         writeValue(stream, value.toList())
       }
+      is PlaceMessage -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
       else -> super.writeValue(stream, value)
     }
   }
 }
 
-/**
- * SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
- *
- * Generated interface from Pigeon that represents a handler of messages from Flutter.
- */
+
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface SdkHostApi {
   /**
    * 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
@@ -823,6 +885,52 @@ class MapViewFlutterApi(private val binaryMessenger: BinaryMessenger, private va
         } else {
           continuation.resumeWithException(MessagesPigeonUtils.createConnectionError(channelName))
         } 
+      }
+    }
+  }
+}
+/**
+ * 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+ *
+ * Generated interface from Pigeon that represents a handler of messages from Flutter.
+ */
+interface PlaceSearchHostApi {
+  /**
+   * [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
+   * 没有结果时返回空列表, 检索失败时报错.
+   */
+  suspend fun searchNearby(keyword: String, center: LatLngMessage, radius: Long, pageSize: Long): List<PlaceMessage>
+
+  companion object {
+    /** The codec used by PlaceSearchHostApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      MessagesPigeonCodec()
+    }
+    /** Sets up an instance of `PlaceSearchHostApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: PlaceSearchHostApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.eat_baidu_map.PlaceSearchHostApi.searchNearby$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val keywordArg = args[0] as String
+            val centerArg = args[1] as LatLngMessage
+            val radiusArg = args[2] as Long
+            val pageSizeArg = args[3] as Long
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.searchNearby(keywordArg, centerArg, radiusArg, pageSizeArg))
+              } catch (exception: Throwable) {
+                MessagesPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
       }
     }
   }

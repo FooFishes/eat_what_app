@@ -49,6 +49,9 @@ class const RestaurantDto({
   final int? hubId,
   final List<String>? pictureUrl,
 
+  /// 百度地点的 uid. 手动添加的店为 null.
+  @JsonKey(name: 'POI') final String? poi,
+
   /// `OPEN`, `CLOSED` 或 `SYNC_PENDING`.
   required final String operatingStatus,
 
@@ -141,6 +144,9 @@ class const CreateRestaurantDto({
   required final double gcjLng,
   required final double gcjLat,
   final int? hubId,
+
+  /// 从地图候选里选的店带百度地点的 uid, 手动添加的不带.
+  @JsonKey(name: 'POI') final String? poi,
   final List<String>? pictureUrl,
 }) {
   Map<String, dynamic> toJson() => _$CreateRestaurantDtoToJson(this);

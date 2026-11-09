@@ -404,6 +404,69 @@ class PolygonMessage {
   }
 }
 
+/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
+/// 地点检索的一条结果.
+class PlaceMessage {
+  PlaceMessage({
+    required this.uid,
+    required this.name,
+    required this.address,
+    required this.location,
+  });
+
+  /// 百度地点的唯一标识.
+  String uid;
+
+  String name;
+
+  String address;
+
+  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  LatLngMessage location;
+
+  List<Object?> _toList() {
+    return <Object?>[uid, name, address, location];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static PlaceMessage decode(Object result) {
+    result as List<Object?>;
+    return PlaceMessage(
+      uid: result[0]! as String,
+      name: result[1]! as String,
+      address: result[2]! as String,
+      location: result[3]! as LatLngMessage,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! PlaceMessage || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(uid, other.uid) &&
+        _deepEquals(name, other.name) &&
+        _deepEquals(address, other.address) &&
+        _deepEquals(location, other.location);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'PlaceMessage(uid: $uid, name: $name, address: $address, location: $location)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -426,6 +489,9 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is PolygonMessage) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
+    } else if (value is PlaceMessage) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -444,13 +510,14 @@ class _PigeonCodec extends StandardMessageCodec {
         return MarkerMessage.decode(readValue(buffer)!);
       case 133:
         return PolygonMessage.decode(readValue(buffer)!);
+      case 134:
+        return PlaceMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
   }
 }
 
-/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
 class SdkHostApi {
   /// Constructor for [SdkHostApi]. The [binaryMessenger] named argument is
   /// available for dependency injection. If it is left null, the default
@@ -830,5 +897,52 @@ abstract class MapViewFlutterApi {
         });
       }
     }
+  }
+}
+
+/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+class PlaceSearchHostApi {
+  /// Constructor for [PlaceSearchHostApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  PlaceSearchHostApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
+  /// 没有结果时返回空列表, 检索失败时报错.
+  Future<List<PlaceMessage>> searchNearby(
+    String keyword,
+    LatLngMessage center,
+    int radius,
+    int pageSize,
+  ) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.eat_baidu_map.PlaceSearchHostApi.searchNearby$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[keyword, center, radius, pageSize],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return (pigeonVar_replyValue! as List<Object?>).cast<PlaceMessage>();
   }
 }

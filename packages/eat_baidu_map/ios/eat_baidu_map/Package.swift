@@ -15,7 +15,7 @@ let package = Package(
   targets: [
     .target(
       name: "eat_baidu_map",
-      dependencies: ["BaiduMapAPI_Base", "BaiduMapAPI_Map", "zstd"],
+      dependencies: ["BaiduMapAPI_Base", "BaiduMapAPI_Map", "BaiduMapAPI_Search", "zstd"],
       linkerSettings: [
         // 百度 podspec 里列出的系统库. 静态库里有 Objective-C 分类, 需要 -ObjC.
         .linkedFramework("Accelerate"),
@@ -35,6 +35,7 @@ let package = Package(
     ),
     .binaryTarget(name: "BaiduMapAPI_Base", path: "Frameworks/BaiduMapAPI_Base.xcframework"),
     .binaryTarget(name: "BaiduMapAPI_Map", path: "Frameworks/BaiduMapAPI_Map.xcframework"),
+    .binaryTarget(name: "BaiduMapAPI_Search", path: "Frameworks/BaiduMapAPI_Search.xcframework"),
     .binaryTarget(name: "zstd", path: "Frameworks/zstd.xcframework"),
   ]
 )

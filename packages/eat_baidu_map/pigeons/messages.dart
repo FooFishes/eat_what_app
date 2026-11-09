@@ -90,6 +90,24 @@ class PolygonMessage {
 }
 
 /// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
+/// 地点检索的一条结果.
+class PlaceMessage {
+  PlaceMessage({
+    required this.uid,
+    required this.name,
+    required this.address,
+    required this.location,
+  });
+
+  /// 百度地点的唯一标识.
+  String uid;
+  String name;
+  String address;
+
+  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  LatLngMessage location;
+}
+
 @HostApi()
 abstract class SdkHostApi {
   /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
@@ -143,4 +161,18 @@ abstract class MapViewFlutterApi {
 
   /// 地图数据无效或渲染失败, 例如 AK 无效时.
   void onError(int code, String message);
+}
+
+/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+@HostApi()
+abstract class PlaceSearchHostApi {
+  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
+  /// 没有结果时返回空列表, 检索失败时报错.
+  @async
+  List<PlaceMessage> searchNearby(
+    String keyword,
+    LatLngMessage center,
+    int radius,
+    int pageSize,
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_dto.dart';
@@ -17,9 +18,53 @@ part 'place_repository.g.dart';
 ///
 /// 缺少坐标的条目直接丢弃, 因为它们无法显示在地图上, 也无法计算距离.
 class PlaceRepository {
-  PlaceRepository(this._api);
+  PlaceRepository(this._api, this._map);
 
   final PlaceApi _api;
+  final MapEngine _map;
+
+  /// 地图上能否检索地点. 不能时新建店直接手动添加.
+  bool get canSearchPlaces => _map.available;
+
+  /// [near] 周围 [radius] 米内和 [keyword] 匹配的地图地点, 最多 20 个. 检索失败时抛出异常.
+  Future<List<MapPlace>> mapPlaces(
+    String keyword,
+    GcjPoint near, {
+    int radius = 3000,
+  }) async {
+    final pois = await _map.searchNearby(
+      keyword,
+      MapLatLng(near.lat, near.lng),
+      radius: radius,
+    );
+    return [
+      for (final p in pois)
+        MapPlace(
+          uid: p.uid,
+          name: p.name.trim(),
+          address: p.address.trim(),
+          point: GcjPoint(p.point.lat, p.point.lng),
+        ),
+    ];
+  }
+
+  /// [point] 周围 [radius] 米内已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时返回 null.
+  ///
+  /// 店铺目录接口不能按 `POI` 筛选, 所以取这一带的店逐个比较. 只看第一页, 200 m 内的店不会超过一页.
+  Future<Shop?> shopAtPoi(
+    String poi,
+    GcjPoint point, {
+    int radius = 200,
+    CancelToken? cancelToken,
+  }) async {
+    final page = await browseShops(
+      near: point,
+      radius: radius,
+      pageSize: 100,
+      cancelToken: cancelToken,
+    );
+    return page.items.where((s) => s.poi == poi).firstOrNull;
+  }
 
   /// 已开放的校区, 按运营设定的顺序排列.
   Future<List<Campus>> campuses({CancelToken? cancelToken}) async {
@@ -60,6 +105,7 @@ class PlaceRepository {
     required GcjPoint point,
     required String idempotencyKey,
     int? hubId,
+    String? poi,
     String? photoKey,
   }) async {
     final created = await _api.createRestaurant(
@@ -69,6 +115,7 @@ class PlaceRepository {
         gcjLng: point.lng,
         gcjLat: point.lat,
         hubId: hubId,
+        poi: poi,
         pictureUrl: photoKey == null ? null : [photoKey],
       ),
       idempotencyKey: idempotencyKey,
@@ -214,6 +261,7 @@ class PlaceRepository {
       address: dto.address?.trim().isEmpty ?? true ? null : dto.address!.trim(),
       point: GcjPoint(dto.gcjLat!, dto.gcjLng!),
       hubId: dto.hubId,
+      poi: dto.poi?.isEmpty ?? true ? null : dto.poi,
       photos: [
         for (final url in dto.pictureUrl ?? const <String>[]) ?imageUrl(url),
       ],
@@ -291,4 +339,4 @@ class PlaceRepository {
 
 @Riverpod(keepAlive: true)
 PlaceRepository placeRepository(Ref ref) =>
-    PlaceRepository(ref.watch(placeApiProvider));
+    PlaceRepository(ref.watch(placeApiProvider), ref.watch(mapEngineProvider));

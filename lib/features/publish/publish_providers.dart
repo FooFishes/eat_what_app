@@ -88,6 +88,27 @@ Future<Shop?> sameNameShop(Ref ref, String name, GcjPoint point) async {
       );
 }
 
+/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+///
+/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+@riverpod
+Future<List<MapPlace>> mapPlaces(Ref ref, String keyword) async {
+  if (keyword.isEmpty) return const [];
+  ref.watch(currentLocationProvider.select((s) => s.point));
+  ref.watch(currentPlaceProvider.select((p) => p.campus));
+  await Future<void>.delayed(_debounce);
+  if (!ref.mounted) return const [];
+  final scope = await shopSearchScope(ref);
+  if (!ref.mounted || scope?.point == null) return const [];
+  return ref.watch(placeRepositoryProvider).mapPlaces(keyword, scope!.point!);
+}
+
+/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+@riverpod
+Future<Shop?> poiShop(Ref ref, String poi, GcjPoint point) => ref
+    .watch(placeRepositoryProvider)
+    .shopAtPoi(poi, point, cancelToken: ref.cancelToken());
+
 /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 @riverpod
 Future<Dish?> sameNameDish(Ref ref, int shopId, String name) async {

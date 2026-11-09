@@ -347,15 +347,34 @@ class FakeLinkSource implements LinkSource {
 
 /// 不起平台视图的地图. 记下最近一次 build 的地图, 测试据此断言, 也能调它的回调模拟地图事件.
 class FakeMapEngine implements MapEngine {
+  FakeMapEngine({this.available = true});
+
   EatMap? last;
 
+  /// 地点检索返回的结果. 设为 [Exception] 时检索失败.
+  Object places = const <MapPoi>[];
+
+  /// 收到的检索关键词, 按顺序.
+  final searched = <String>[];
+
   @override
-  bool get available => true;
+  final bool available;
 
   @override
   Widget build(EatMap map) {
     last = map;
     return const ColoredBox(color: EatPalette.mapGround);
+  }
+
+  @override
+  Future<List<MapPoi>> searchNearby(
+    String keyword,
+    MapLatLng center, {
+    required int radius,
+  }) async {
+    searched.add(keyword);
+    if (places case final Exception e) throw e;
+    return places as List<MapPoi>;
   }
 }
 
@@ -476,6 +495,7 @@ Map<String, Object?> restaurantJson({
   String name = '袁记云饺',
   double lat = 36.6681,
   double lng = 117.1412,
+  String? poi,
 }) => {
   'id': id,
   'accountId': 9,
@@ -489,7 +509,7 @@ Map<String, Object?> restaurantJson({
   'gcjLng': lng,
   'gcjLat': lat,
   'hubId': 3,
-  'POI': null,
+  'POI': poi,
   'pictureUrl': <String>[],
   'operatingStatus': 'OPEN',
   'permanentlyClosed': false,

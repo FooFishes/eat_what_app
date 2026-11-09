@@ -295,6 +295,178 @@ final class SameNameShopFamily extends $Family
   String toString() => r'sameNameShopProvider';
 }
 
+/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+///
+/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+
+@ProviderFor(mapPlaces)
+final mapPlacesProvider = MapPlacesFamily._();
+
+/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+///
+/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+
+final class MapPlacesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MapPlace>>,
+          List<MapPlace>,
+          FutureOr<List<MapPlace>>
+        >
+    with $FutureModifier<List<MapPlace>>, $FutureProvider<List<MapPlace>> {
+  /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+  ///
+  /// [keyword] 为空时为空列表. 检索失败时为错误状态.
+  MapPlacesProvider._({
+    required MapPlacesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'mapPlacesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$mapPlacesHash();
+
+  @override
+  String toString() {
+    return r'mapPlacesProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MapPlace>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MapPlace>> create(Ref ref) {
+    final argument = this.argument as String;
+    return mapPlaces(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is MapPlacesProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$mapPlacesHash() => r'bec9f99f32758ce81b16ebeabbe349dad56f4ba3';
+
+/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+///
+/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+
+final class MapPlacesFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<MapPlace>>, String> {
+  MapPlacesFamily._()
+    : super(
+        retry: null,
+        name: r'mapPlacesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+  ///
+  /// [keyword] 为空时为空列表. 检索失败时为错误状态.
+
+  MapPlacesProvider call(String keyword) =>
+      MapPlacesProvider._(argument: keyword, from: this);
+
+  @override
+  String toString() => r'mapPlacesProvider';
+}
+
+/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+
+@ProviderFor(poiShop)
+final poiShopProvider = PoiShopFamily._();
+
+/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+
+final class PoiShopProvider
+    extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
+    with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
+  /// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+  PoiShopProvider._({
+    required PoiShopFamily super.from,
+    required (String, GcjPoint) super.argument,
+  }) : super(
+         retry: null,
+         name: r'poiShopProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$poiShopHash();
+
+  @override
+  String toString() {
+    return r'poiShopProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Shop?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Shop?> create(Ref ref) {
+    final argument = this.argument as (String, GcjPoint);
+    return poiShop(ref, argument.$1, argument.$2);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is PoiShopProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$poiShopHash() => r'df368426e17b5e2073c5da1a96803fe01b98409e';
+
+/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+
+final class PoiShopFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
+  PoiShopFamily._()
+    : super(
+        retry: null,
+        name: r'poiShopProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
+
+  PoiShopProvider call(String poi, GcjPoint point) =>
+      PoiShopProvider._(argument: (poi, point), from: this);
+
+  @override
+  String toString() => r'poiShopProvider';
+}
+
 /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 
 @ProviderFor(sameNameDish)
