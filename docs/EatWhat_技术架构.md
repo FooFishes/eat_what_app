@@ -1005,11 +1005,25 @@ EatMap(
 
 - 去掉 `MapAttribution`（「© 天地图」）和 `map_tiles.dart`。百度 logo 和版权由引擎画，不隐藏、不遮挡。审图号在地图上是否显示要真机看，不显示就放进「关于」。
 
+**地点检索（新建店的候选）**
+
+新建店先从地图上的地点里选（产品 6.9），检索用百度地图 SDK 自带的，和地图同一个 SDK、同一个 AK，不经过后端。
+
+- 接口：`MapEngine.searchNearby(keyword, center, radius)`，返回 `MapPoi` 列表（`uid`、店名、地址、`MapLatLng`）。和地图一样藏在引擎后面：
+  - App：原生桥加一个 Pigeon `@HostApi` `PlaceSearchHostApi.searchNearby`（异步），Android 用 `PoiSearch` + `PoiNearbySearchOption`，iOS 用 `BMKPoiSearch` + `BMKPoiNearbySearchOption`。全局坐标类型已是 GCJ-02，结果直接用。
+  - Web：`BMapGL.LocalSearch` 的 `searchNearby`，中心点转 BD-09 传入，结果转回 GCJ-02。
+  - 检索也要先初始化 SDK，和地图共用 `BaiduMapSdk.initialize`；SDK 不可用（没配 AK、鉴权失败）时 `available` 为 false，新建店直接进手动添加。
+- 范围：中心是当前位置，没有定位时用校区中心；半径 3 km，和附近页搜店一致；一次取 20 条，不翻页。不按百度的行业分类过滤（食堂窗口在百度上的分类不一定是美食），只去掉公交站和地铁站（按详细信息里的分类「交通设施」判断，要请求详细信息）。
+- 输入防抖 300 ms（和选店页一样），新的检索开始时丢掉上一次的结果。检索失败显示「搜索失败」和重试，下面照常有「搜不到？手动添加」。
+- 领域模型：`domain/models/place.dart` 加 `MapPlace`（`GcjPoint`）；`Shop` 加 `poi`（接口的 `POI`）。`data/place/place_repository.dart` 加 `mapPlaces`（调引擎、转领域模型）和 `shopAtPoi(uid, point)`（用 `/restaurant/browse` 取该点 200 m 内的店，比较 `poi`，包括已关门的店）。
+- 选中候选后进新建店的表单，店名、地址描述、地图中心按候选预填，可以改；提交时带 `POI = uid`。手动添加的不带。用户改了位置也照样带 `POI`。
+- 地址描述超过 30 个字时预填原文，字数提示变红，提交按钮不可用，由用户删改。
+
 **不变的部分**
 
 - 拖动停下后防抖 400 ms，按可见区域的中心调 `/restaurant/search`；只有手势移动才重新找店，代码移动（回到我的位置、点商圈）由页面自己设中心。
 - 点标记选中并让列表滚到它，再点一次进餐厅详情；点商圈胶囊缩放到商圈范围，并带 `hubId` 过滤列表。
-- 新建店选点：地图中心固定一个图钉，拖动地图对准店门口；停下后用中心点调 `/hub/locate` 显示所属商圈。默认中心是当前位置。
+- 新建店选点：地图中心固定一个图钉，拖动地图对准店门口；停下后用中心点调 `/hub/locate` 显示所属商圈。手动添加时默认中心是当前位置，选了候选时是候选的位置。
 
 **合并前的真机验证**
 

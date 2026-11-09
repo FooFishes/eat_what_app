@@ -230,9 +230,10 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | | App（Android、iOS） | Web |
 | --- | --- | --- |
-| 用什么 | 本地插件 `packages/eat_baidu_map/`，Kotlin、Swift 直接调百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map:8.2.0`（Maven Central，2026-08-17），iOS `BaiduMapKit` 7.2.0（百度 CDN 的压缩包，2026-07-27，转成 xcframework 用 SPM 引入） | 百度地图 JS API GL。打开地图时才插入 `<script>`，用 `dart:js_interop` 和 `web` 包调用，放进 `HtmlElementView` |
+| 用什么 | 本地插件 `packages/eat_baidu_map/`，Kotlin、Swift 直接调百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map:8.2.0` 和检索 `BaiduMapSDK_Search:8.2.0`（Maven Central，2026-08-17），iOS `BaiduMapKit` 7.2.0 的 `Base`、`Map`、`Search`（百度 CDN 的压缩包，2026-07-27，转成 xcframework 用 SPM 引入） | 百度地图 JS API GL。打开地图时才插入 `<script>`，用 `dart:js_interop` 和 `web` 包调用，放进 `HtmlElementView` |
 | 坐标 | 全局坐标类型设成 GCJ-02（Android `CoordType.GCJ02`，iOS `BMK_COORDTYPE_COMMON`），和接口一致，不用转 | BD-09。进出 JS 时和 GCJ-02 互转（公开公式，`core/platform/map/bd09.dart`） |
 | 标记 | 原生覆盖物，图标是 Flutter 组件画成的 PNG | JS 覆盖物，用同一张 PNG |
+| 地点检索（新建店的候选） | 检索 SDK 的周边检索（Android `PoiSearch`，iOS `BMKPoiSearch`） | `BMapGL.LocalSearch` |
 | 底图样式 | 先用百度默认样式 | 先用百度默认样式 |
 
 百度地图 SDK 没有 Web 版，Web 另写一套。两套藏在同一个组件后面（技术架构 14.4）。
@@ -277,7 +278,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 - **iOS 的 SDK 来源：xcframework，工程继续只用 SPM**（2026-11-09 定）。
   - 百度没有 Swift Package。CocoaPods 的 `BaiduMapKit` 7.2.0 用的是百度 CDN 上的压缩包 `https://lbsyun-baidu.cdn.bcebos.com/iossdk/map/7.2.0/BaiduMapKitV7.2.0.zip`（142 MB，SHA-256 `a81bec93feedf4e209b73bda44f23887f686e0c3bfebe897921fbd9dd1fcf4ed`）。包里是 fat 静态 `.framework`，不是 xcframework：`BaiduMapAPI_Map` 279 MB（模拟器 x86_64 198 MB + 真机 arm64 81 MB），`BaiduMapAPI_Base` 126 MB，另有 `thirdlibs/libzstd.a` 和 `mapapi.bundle` 资源。没有 arm64 模拟器切片。官网下载页是否直接给 xcframework 没查到。
   - 不放仓库：单个文件超过 GitHub 的 100 MB 上限；放 Git LFS 的话 CI 每次拉取都吃 LFS 流量额度。
-  - 做法：`tool/baidu_ios_sdk.sh`（只能在 macOS 上跑）按固定地址下载、校验 SHA-256，取 `Base`、`Map`、`libzstd.a`，用 `lipo` 拆出真机和模拟器切片，再 `xcodebuild -create-xcframework` 生成 xcframework，放到 `packages/eat_baidu_map/ios/` 下不入库的目录。插件的 `Package.swift` 用 `binaryTarget(path:)` 引入。
+  - 做法：`tool/baidu_ios_sdk.sh`（只能在 macOS 上跑）按固定地址下载、校验 SHA-256，取 `Base`、`Map`、`Search`、`libzstd.a`，用 `lipo` 拆出真机和模拟器切片，再 `xcodebuild -create-xcframework` 生成 xcframework，放到 `packages/eat_baidu_map/ios/` 下不入库的目录。插件的 `Package.swift` 用 `binaryTarget(path:)` 引入。
   - CI 的 `ios` 任务在构建前跑这个脚本，生成结果按 SHA-256 缓存。升级 SDK 时改脚本里的地址和校验值。
   - 要验证：`mapapi.bundle` 放进 Swift Package 的资源后，SDK 能不能找到；找不到就在构建时复制进 `Runner`。
 
@@ -492,7 +493,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | SDK | 提供方 | 用途 | 收集的信息（以对方隐私政策为准） | 初始化时机 | 数据去向 |
 | --- | --- | --- | --- | --- | --- |
 | Shorebird | Shorebird（境外服务） | 热更新 | 应用版本、补丁号、平台与 CPU 架构、随机客户端标识 | 同意隐私政策后 | 境外 |
-| 百度地图 SDK（App）、JS API GL（Web） | 百度 | 地图底图和覆盖物 | 以《百度地图开放平台产品和服务隐私政策》（`lbsyun.baidu.com/index.php?title=openprivacy`）为准，基础地图 SDK 写明会读 Android ID、应用名、网络信息等 | 同意隐私政策后，第一次打开附近、新建店时 | 境内 |
+| 百度地图 SDK（App）、JS API GL（Web） | 百度 | 地图底图和覆盖物，新建店时的地点检索（发送关键词和检索中心） | 以《百度地图开放平台产品和服务隐私政策》（`lbsyun.baidu.com/index.php?title=openprivacy`）为准，基础地图 SDK 写明会读 Android ID、应用名、网络信息等 | 同意隐私政策后，第一次打开附近、新建店时 | 境内 |
 | 腾讯云验证码（国际站） | 腾讯云 | 风控 | 设备环境、操作行为 | 每次发验证码前 | 国际站，存放地待确认 |
 | Sentry（自建） | 我们自己部署，不是第三方 | 崩溃上报 | 崩溃堆栈、设备型号、系统版本、App 版本、账号 ID | 同意隐私政策后 | 境外，和业务数据同处 |
 
