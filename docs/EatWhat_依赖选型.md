@@ -231,7 +231,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | | App（Android、iOS） | Web |
 | --- | --- | --- |
 | 用什么 | 本地插件 `packages/eat_baidu_map/`，Kotlin、Swift 直接调百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map:8.2.0`（Maven Central，2026-08-17），iOS `BaiduMapKit` 7.2.0（百度 CDN 的压缩包，2026-07-27，转成 xcframework 用 SPM 引入） | 百度地图 JS API GL。打开地图时才插入 `<script>`，用 `dart:js_interop` 和 `web` 包调用，放进 `HtmlElementView` |
-| 坐标 | 全局坐标类型设成 GCJ-02（Android `CoordType.GCJ02`，iOS `BMK_COORDTYPE_COMMON`），和接口一致，不用转 | BD-09。进出 JS 时和 GCJ-02 互转（公开公式，`geo_rules`） |
+| 坐标 | 全局坐标类型设成 GCJ-02（Android `CoordType.GCJ02`，iOS `BMK_COORDTYPE_COMMON`），和接口一致，不用转 | BD-09。进出 JS 时和 GCJ-02 互转（公开公式，`core/platform/map/bd09.dart`） |
 | 标记 | 原生覆盖物，图标是 Flutter 组件画成的 PNG | JS 覆盖物，用同一张 PNG |
 | 底图样式 | 先用百度默认样式 | 先用百度默认样式 |
 
@@ -263,16 +263,17 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 **原生桥怎么写**（第一个 PR 单独做；Android 可在本地测，iOS 看 CI）
 
-- **放哪**：`packages/eat_baidu_map/`，仓库里的本地插件，`pubspec.yaml` 用 `path` 依赖。有自己的 Android 构建脚本（Kotlin DSL）和 `podspec`，不和 `android/app`、`ios/Runner` 混在一起。Dart 侧只暴露 `EatMap` 的 App 实现需要的接口（技术架构 14.4）。
-- **消息**：用 `pigeon` 生成。接口定义写在 `packages/eat_baidu_map/pigeons/map_api.dart`，生成 Dart、Kotlin、Swift 三端的类型和桩代码，生成的文件入库、不手改。手写 `MethodChannel` 的方法名和参数键都是字符串，三端对不上时能编译、到运行时才出错；用 Pigeon 对不上就编译失败。
-  - Dart 调原生（`@HostApi`）：建图后的设置、移动相机、更新标记和多边形、设内边距、屏幕点和坐标互转、初始化。
-  - 原生回调 Dart（`@FlutterApi`）：停下（带是否手势）、点了标记、加载完成、鉴权或渲染失败。
+- **放哪**：`packages/eat_baidu_map/`，仓库里的本地插件。根目录 `pubspec.yaml` 用 pub workspace 把它和 App 放在一起（一次 `pub get`、一份 `pubspec.lock`、一次 `analyze`），App 用 `path` 依赖它。有自己的 Android 构建脚本（Kotlin DSL）和 `Package.swift`，不和 `android/app`、`ios/Runner` 混在一起。Dart 侧只暴露 `EatMap` 的 App 实现需要的接口（技术架构 14.4）。
+- **消息**：用 `pigeon` 生成。接口定义写在 `packages/eat_baidu_map/pigeons/messages.dart`，生成 Dart、Kotlin、Swift 三端的类型和桩代码，生成的文件入库、不手改。手写 `MethodChannel` 的方法名和参数键都是字符串，三端对不上时能编译、到运行时才出错；用 Pigeon 对不上就编译失败。
+  - Dart 调原生（`@HostApi`）：初始化 SDK；更新标记、替换多边形、设内边距、移动相机、缩放到一组点、读相机、问底图是否已加载完。
+  - 原生回调 Dart（`@FlutterApi`）：鉴权结果；加载完成、停下（带是否手势）、点了标记、渲染失败。
+  - Dart 在平台视图建好后才开始收事件，可能错过「加载完成」，所以另有 `isLoaded` 补问一次。
   - 同时可能有两张地图（附近、新建店），每个平台视图用自己的 `messageChannelSuffix`。
   - 标记列表的差异一次传过去，在原生侧逐个增删改；PNG 用 `Uint8List` 传。
   - CI 的 `check` 任务重新生成一遍，`git diff --exit-code` 检查生成文件是否最新。
 - **Android 视图**：用百度的 `TextureMapView`（基于 TextureView），Flutter 能用纹理合成，叠组件、圆角裁切都正常；普通 `MapView` 基于 SurfaceView，会逼 Flutter 退回更慢的混合合成。
-- **Android 的 AK**：写在 `AndroidManifest.xml` 的 `meta-data`（`com.baidu.lbsapi.API_KEY`）。`build.gradle.kts` 从 Flutter 传给 Gradle 的 `dart-defines` 里解出 `BAIDU_MAP_AK_ANDROID`，经 `manifestPlaceholders` 写进去，配置仍然只有 `config/*.json` 一处。
-- **初始化**：同意隐私政策以后、第一次要显示地图时，Dart 调一次 `init`：Android `SDKInitializer.setAgreePrivacy(context, true)` → `setCoordType(GCJ02)` → `initialize(context)`；iOS `BMKMapManager setAgreePrivacy:YES` → 设坐标类型 → `start:AK`。鉴权结果回调给 Dart，失败时地图退回列表。
+- **AK**：两端都在运行时传入，Android 用 `SDKInitializer.setApiKey`（8.2.0 起有），iOS 用 `BMKMapManager start:`。不写进 `AndroidManifest.xml`，配置只有 `config/*.json` 一处。
+- **初始化**：同意隐私政策以后、第一次要显示地图时，Dart 调一次 `init`：Android `SDKInitializer.setAgreePrivacy(context, true)` → `setApiKey` → `setCoordType(GCJ02)` → `initialize(context)`；iOS `BMKMapManager setAgreePrivacy:YES` → 设坐标类型 → `start:AK`。鉴权结果回调给 Dart，失败时地图退回列表。
 - **iOS 的 SDK 来源：xcframework，工程继续只用 SPM**（2026-11-09 定）。
   - 百度没有 Swift Package。CocoaPods 的 `BaiduMapKit` 7.2.0 用的是百度 CDN 上的压缩包 `https://lbsyun-baidu.cdn.bcebos.com/iossdk/map/7.2.0/BaiduMapKitV7.2.0.zip`（142 MB，SHA-256 `a81bec93feedf4e209b73bda44f23887f686e0c3bfebe897921fbd9dd1fcf4ed`）。包里是 fat 静态 `.framework`，不是 xcframework：`BaiduMapAPI_Map` 279 MB（模拟器 x86_64 198 MB + 真机 arm64 81 MB），`BaiduMapAPI_Base` 126 MB，另有 `thirdlibs/libzstd.a` 和 `mapapi.bundle` 资源。没有 arm64 模拟器切片。官网下载页是否直接给 xcframework 没查到。
   - 不放仓库：单个文件超过 GitHub 的 100 MB 上限；放 Git LFS 的话 CI 每次拉取都吃 LFS 流量额度。
@@ -287,7 +288,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 - 条款 5.1：不得在地图展示结果中关联或展示广告。条款 6.6：不得删除、掩藏版权标识、审图号等，所以百度 logo 不能隐藏，也不能被我们的组件盖住。
 - 地图 SDK 加载、JS API GL 加载的免费日配额官网页面没写，以控制台为准。
 
-**坐标类型**：去掉 `latlong2`。地图组件只认 `GcjPoint`，BD-09 只出现在 Web 实现内部。GCJ-02 和 WGS-84、BD-09 的互转都自己写（公开算法，带单元测试），不引包。
+**坐标类型**：去掉 `latlong2`。地图组件用 `core/platform/map/` 自己的 `MapLatLng`（约定为 GCJ-02，`core` 不能依赖 `domain` 的 `GcjPoint`），BD-09 只出现在 Web 实现内部。GCJ-02 和 WGS-84、BD-09 的互转都自己写（公开算法，带单元测试），不引包。
 
 ### 7.2 定位：`geolocator ^14.1.2`
 
@@ -469,7 +470,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `riverpod_generator` | `^4.0.9` | 生成 Provider |
 | `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
 | `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
-| `pigeon` | `^29.1.1` | 生成原生桥的 Dart、Kotlin、Swift 三端接口；不走 `build_runner`，在 `packages/eat_baidu_map/` 里跑 `fvm dart run pigeon --input pigeons/map_api.dart` |
+| `pigeon` | `^29.1.1` | 生成原生桥的 Dart、Kotlin、Swift 三端接口；不走 `build_runner`，在 `packages/eat_baidu_map/` 里跑 `fvm dart run pigeon --input pigeons/messages.dart` |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
 | `vector_graphics_compiler` | `^1.3.2` | SVG 资源转换器 |

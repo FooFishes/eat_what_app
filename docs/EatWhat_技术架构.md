@@ -46,7 +46,7 @@ lib/
     failure/                AppFailure 分类；失败 → 用户能看懂的提示
     copy/                   通用文案：动作叫法、错误提示
     format/                 价格「¥18」、时间「12 分钟前」、计数
-    platform/               平台能力的接口和各端实现：定位、地图（map/，EatMap，14.4）、选图压缩、分享、
+    platform/               平台能力的接口和各端实现：定位、地图（map/：EatMap 和 App、Web 两套引擎、BD-09 换算，14.4）、选图压缩、分享、
                             外部地图、推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
     telemetry/              埋点 Analytics、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
@@ -122,7 +122,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图配置（`base_map.dart`：缩放范围、底图样式、加载失败的判断，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -365,7 +365,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `API_BASE_URL` | 业务接口前缀，对应接口文档 `servers` 第一项的反代 `/api` | `https://<域名>/api` |
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
-| `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个；Android 的由 `build.gradle.kts` 从 `dart-defines` 解出来写进 `AndroidManifest.xml`（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
+| `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
 | `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页和关于里打开 | `https://<域名>/legal/privacy.html` |
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
@@ -908,7 +908,7 @@ extension RefCache on Ref {
 | 高德、腾讯、百度的导航 URL | GCJ-02（百度用 `coord_type=gcj02` 指定） | 原样用 |
 | Apple 地图 URL | 大陆境内的处理方式没查到资料 | 真机验证后定 |
 
-- 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法；GCJ-02 ↔ BD-09 也是公开公式，反算误差在米级以下。换百度以后用不到 GCJ-02 → WGS-84。单元测试用几组已知点验证。
+- 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法。GCJ-02 ↔ BD-09 也是公开公式，反算误差在米级以下，只有 Web 的地图用，放在 `core/platform/map/bd09.dart`。换百度以后用不到 GCJ-02 → WGS-84。单元测试用几组已知点验证。
 - `WgsPoint` 只剩两处：设备定位的原始结果，`data` 层解析的 GeoJSON。出了这两处都是 `GcjPoint`。
 - 距离：两点都用 GCJ-02 算球面距离。显示「320 m」「1.2 km」。混用坐标系会差几百米，所以所有距离计算只接受 GCJ-02 的类型（用两个不同的类型 `GcjPoint`、`WgsPoint` 防止混用）。
 
@@ -938,39 +938,41 @@ extension RefCache on Ref {
 
 **标记还是 Flutter 组件，画成位图交给引擎**
 
-- `MapPin`（普通 44px；选中 72px，加舞台色外圈和店名胶囊）、`MyLocationDot` 仍是 `design/widgets/` 的组件，样子只有一份正本。`design/` 加一个离屏渲染工具 `MarkerBitmap`：组件在不上屏的渲染树里排版、绘制，按设备像素比导出 PNG。字体、令牌和屏幕上的一样。
-- 菜图先经 `cached_network_image` 的缓存解码好再画。没加载出来时先用空盘子，图到了换一次。
-- 位图按（店 id、封面 URL、是否选中、像素比）缓存。选中、取消只换这一家的图，再把它的 `zIndex` 提到最上面。引擎有缩放动画就用，系统减少动态效果时不放。
+- `MapPin`（普通 44px；选中 72px，加舞台色外圈和店名胶囊）、`MyLocationDot` 仍是 `design/widgets/` 的组件，样子只有一份正本。`design/widgets/marker_bitmap.dart` 的 `MarkerBitmap` 把组件放进一棵不上屏的渲染树里排版、绘制，按设备像素比导出 PNG，主题、字体、MediaQuery 和屏幕上的一样。四周留出 `shadow-pin` 的空白，锚点对准圆盘中心。
+- 封面用第一道招牌菜（`cover`，没有时用门头照），先放进图片缓存再画。没下载好时先给不带封面的版本，图到了换一次。
+- 位图由 `features/system/base_map.dart` 的 `PinImages` 管：按（封面 URL、是否选中、选中时的店名、外圈颜色）缓存，第一次用到时在后台画，画好后让页面重建。选中的店 `zIndex` 最高，压在其他标记上面。
 - 点击由引擎回调标记 id，页面再按 id 找店。
 
 **`EatMap`：声明式的地图组件**（`core/platform/map/`）
 
 ```dart
 EatMap(
-  controller: _map,              // 移到某点、缩放到一组点、屏幕点和坐标互转
-  initialCenter: center,         // GcjPoint
+  controller: _map,              // moveTo、fit、camera
+  initialCenter: mapPoint(center), // MapLatLng，GCJ-02
   initialZoom: 16,
-  zoomRange: (min: 11, max: 18),
-  padding: EdgeInsets.only(top: 132, bottom: sheetHeight), // 被浮层盖住的部分
-  markers: [MapMarker(id: 'shop-12', point: p, image: png, zIndex: 1)],
-  polygons: [MapPolygon(id: 'hub-3', rings: rings, fill: fill, stroke: ink, dashed: true)],
-  onCameraIdle: (center, byGesture) { ... }, // 停下后可见区域的中心
+  minZoom: 11,
+  maxZoom: 18,
+  insets: EdgeInsets.only(top: 158, bottom: sheetHeight), // 被浮层盖住的部分
+  markers: [MapMarker(id: '12', point: p, image: image, zIndex: 2)],
+  polygons: [MapPolygon(id: 'hub-3-0', points: ring, fill: fill, stroke: ink, dashed: true)],
+  onCameraIdle: (camera, byGesture) { ... }, // camera.center 是可见区域的中心
   onMarkerTap: (id) { ... },
   onFailed: () { ... },
+  semanticLabel: '地图，附近 8 家店',
 )
 ```
 
 - 页面每次 build 给出完整的标记和多边形列表，`EatMap` 按 id 比较新旧，只增、删、改变了的那几个。页面的写法和 `flutter_map` 时一样，不碰引擎的命令式接口。
-- 坐标只收 `GcjPoint`。App 实现把全局坐标类型设成 GCJ-02 直接传；Web 实现进出 JS 时转 BD-09。
-- 三个实现：`eat_map_io.dart`（调 `packages/eat_baidu_map/`）、`eat_map_web.dart`（JS API GL，`HtmlElementView`），按条件导入切换；测试用的假实现只画一块 `map-ground` 色块，记下收到的标记和多边形，Widget 测试直接断言（21.1）。
+- 坐标是 `core` 自己的 `MapLatLng`，约定为 GCJ-02：`core` 不能依赖 `domain`，不能直接用 `GcjPoint`。页面经 `features/system/base_map.dart` 的 `mapPoint`、`gcjOf` 互转。App 实现把全局坐标类型设成 GCJ-02 直接传；Web 实现进出 JS 时转 BD-09。
+- 三个实现：`eat_map_io.dart`（调 `packages/eat_baidu_map/`）、`eat_map_web.dart`（JS API GL，`HtmlElementView`），按条件导入切换，由 `mapEngineProvider` 给出；测试用 `test/support/fakes.dart` 的 `FakeMapEngine` 覆盖，它只画一块 `map-ground` 色块，记下最近一次的 `EatMap`，测试可以断言参数、调它的回调（21.1）。
 - `core/platform/map/` 只收 PNG 字节，不认识组件；画位图的工具在 `design/`，页面把两者接起来。依赖方向不变。
 
 **被浮层盖住的地图**
 
 - 手机上抽屉盖住地图下半部分，顶部有搜索框和商圈胶囊。这些高度作为地图的内边距传进去（原生 SDK 的视野内边距、JS API GL 的视野边距）：
-  - 百度 logo 和比例尺跟着挪进可见区域（原生 SDK 设了视野内边距后会自己挪），不被抽屉盖住（条款 6.6 不允许掩藏标识）；
+  - 百度 logo、版权和比例尺跟着挪进可见区域，不被抽屉盖住（条款 6.6 不允许掩藏标识）。App 上 SDK 设了内边距后自己挪；Web 上它们是容器四角的 DOM 元素，用 CSS 变量给四角的控件加外边距；
   - 缩放到商圈范围时，范围落在可见区域里。
-- 拖抽屉时不实时改内边距（每次都要过平台通道），抽屉停到吸附位置后再改。
+- 拖抽屉时不实时改内边距（每次都要过平台通道），停下 200 ms 后再改。内边距变了，可见区域中心的坐标不变，地图跟着平移。
 - 「按地图中心找店」用可见区域的中心：停下后用屏幕点转坐标，不用整张地图的中心，否则抽屉拉高时找的店会偏到抽屉后面。
 - 宽屏：左侧面板（12.3）盖住的宽度作为左边距。
 

@@ -37,7 +37,9 @@ lib/
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的字体和许可证）、emoji/（登录页用的 emoji 图片和许可证）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）
+packages/
+  eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
@@ -67,6 +69,8 @@ Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.7 stable，附�
 fvm install                              # 安装 .fvmrc 指定的 SDK
 fvm flutter pub get
 fvm dart run build_runner build          # 改了 @riverpod、@JsonSerializable 后重新生成；开发时可用 watch
+# 改了 packages/eat_baidu_map/pigeons/messages.dart 后, 在该目录重新生成并格式化三端接口
+fvm dart run pigeon --input pigeons/messages.dart && fvm dart format lib/src/messages.g.dart
 fvm dart format .
 fvm flutter analyze
 fvm dart analyze --fatal-infos           # riverpod_lint 等分析器插件的结果只在这里报告
@@ -75,7 +79,7 @@ fvm flutter build web --release
 fvm flutter run -d chrome                # 要调接口时加 --dart-define-from-file=config/dev.json；端口固定 5173，见 web_dev_config.yaml
 ```
 
-改完代码至少跑上面从 `build_runner` 到 `flutter test` 这几步。CI 用 `build_runner build --only-check` 检查生成文件是否最新，用 `--set-exit-if-changed` 检查格式，任何一步不过都会让构建失败；两种 `analyze` 都要求零问题。
+改完代码至少跑上面从 `build_runner` 到 `flutter test` 这几步。CI 用 `build_runner build --only-check` 检查生成文件是否最新，Pigeon 的生成文件也重新生成一遍比对，用 `--set-exit-if-changed` 检查格式，任何一步不过都会让构建失败；两种 `analyze` 都要求零问题。
 
 环境配置（接口地址等）编译期传入：复制 `config/example.json` 为 `config/dev.json` 再填值，`config/` 下除样例外的 JSON 不入库。不传时也能启动，只是调不了接口。
 
@@ -150,10 +154,10 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 `.github/workflows/build.yml` 在 `main` 的 push 与 PR、`v*` tag 和手动触发时运行：
 
-1. `check`（ubuntu）：读取 `.fvmrc` 版本，生成文件检查（`build_runner build --only-check`）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
+1. `check`（ubuntu）：读取 `.fvmrc` 版本，生成文件检查（`build_runner build --only-check` 和 Pigeon 重新生成比对）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
 2. 通过后并行构建，产物保留 14 天：
    - `android`（ubuntu，JDK 17）：release APK 与 AAB。配了上传密钥用它签名，否则 debug 签名。
-   - `ios`（macOS）：未签名的 `Runner.app`，打包为 zip。
+   - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存），再出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
 3. `v*` tag 的构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`。
 
