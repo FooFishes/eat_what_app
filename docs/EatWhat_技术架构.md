@@ -221,6 +221,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 登录 | `/login` | 根 | 是 | `G-Login` |
 | 手机号登录 | `/login/phone` | 根 | 是 | `G-PhoneLogin` |
 | 密码登录 | `/login/password` | 根 | 是 | `G-PasswordLogin` |
+| 撤销注销 | `/login/restore`（申请只在内存里，刷新或直接打开回登录页） | 根 | 是 | 无画板，按白底页规则 |
 | 认证 | `/verify` | 根 | 否 | `G-Verify` |
 | 统一认证回跳 | `/app/auth/callback?result=&code=`（不是页面，重定向到 `/verify?sso=&code=`，6.3） | 根 | 否 | — |
 | 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 游客 | `G-Dish` |
@@ -516,6 +517,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- | --- |
 | `tokenName`、`tokenValue` | 安全存储 | 账号 | 删 |
 | 安装 ID（首次启动随机生成，用于风控识别设备、埋点） | 安全存储 | 设备 | 留 |
+| 注销申请的恢复凭据（`lifecycle.recovery.<申请 id>`） | 安全存储 | 账号 | 留，撤销成功后删 |
 | 隐私政策同意版本和时间 | `prefs.*` | 设备 | 留 |
 | 当前校区 | `prefs.*` | 设备 | 留 |
 | 手动选的饭点和到期时间 | `prefs.*` | 设备 | 留 |
@@ -539,6 +541,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 登录一直保持，直到退出、长时间没用、改密码、换绑手机、设置用户名（产品 7.4），失效由服务端判断，客户端不做 token 续期。
 - 同一账号可以同时在手机和 Web 上登录，客户端不做互斥。
 - 会话换发：「让其他设备都下线」和换绑手机成功后，服务端把本机的会话也换成新的。客户端在提交前生成一次性的恢复凭据（32 字节随机值，不带填充的 Base64URL，`core/network/recovery_capability.dart`），只放在内存里，随请求提交；之后带着它调对应的 `resume` 接口取回新凭证（`data/sessions/session_rotation.dart`，最多 5 次，间隔 1 秒）。取回后 `sessionProvider.adoptRotation` 保存新凭证并刷新用户信息，用户不用重新登录；取不回（换发过期、被取代或次数用完）就清掉本机登录态回登录页。
+- 注销与撤销：申请注销时客户端同样生成恢复凭据和申请 id，先写进安全存储再提交（`data/cancellation/`），失败重试沿用同一份；申请成功后退出登录。冷静期内登录，验证完账号密码或验证码后登录接口返回 20006，`data` 带 `recoveryRequired`、`subjectId`、`requestId`；登录页把申请交给 `accountRestoreProvider`，打开撤销注销页。撤销页按申请 id 读出凭据，用密码或发到绑定手机的验证码验证身份，拿到的 `operationId` 作为 `credentialOperation` 调撤销接口，凭据放在 `X-Lifecycle-Recovery` 头里，不用会话。撤销后删掉凭据，回登录页重新登录。凭据只在提交申请的设备上，其他设备登录时只说明在哪里能撤销。
 
 ### 9.3 退出登录
 

@@ -157,6 +157,9 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
           _showLimited(failure);
         case AuthCodeConsumed():
           _code.clear();
+        case AuthRestoreRequired():
+          _code.clear();
+          context.push(Paths.loginRestore);
         default:
       }
     });

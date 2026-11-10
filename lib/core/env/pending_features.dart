@@ -6,7 +6,4 @@
 enum PendingFeature {
   /// "调整照片" 中的 "自动去掉背景". 后端尚未生成去背景的图片, 也不保存开关.
   removeBackground,
-
-  /// 注销账号.
-  deleteAccount,
 }

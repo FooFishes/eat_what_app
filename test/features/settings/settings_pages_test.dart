@@ -243,24 +243,6 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('注销账号照常显示，标着待接入，点了不发请求', (tester) async {
-    await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.settingsDelete,
-    );
-
-    expect(find.text('待接入'), findsOneWidget);
-    await expectAccessible(tester);
-    final before = env.adapter.requests.length;
-    await tester.tap(find.text('申请注销'));
-    await tester.pump();
-    expect(find.text('该功能正在接入中'), findsOneWidget);
-    expect(env.adapter.requests.length, before);
-    await tester.pump(const Duration(seconds: 2));
-  });
-
   testWidgets('反馈：截图先上传，再带着菜和幂等键提交，成功后返回', (tester) async {
     env.photos.next = [
       PickedPhoto(bytes: transparentImage, width: 1, height: 1),

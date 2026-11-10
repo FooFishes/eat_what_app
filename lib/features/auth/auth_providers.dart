@@ -4,6 +4,8 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/auth/auth_repository.dart';
+import 'package:eat/data/cancellation/cancellation_repository.dart';
+import 'package:eat/features/auth/restore_providers.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/cross_site_consent.dart';
@@ -47,6 +49,11 @@ final class AuthCodeLimited extends AuthFormEvent {
 /// 用户在同意面板中同意了跨站同步, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
 final class AuthCodeConsumed extends AuthFormEvent {
   const AuthCodeConsumed();
+}
+
+/// 账号正在注销冷静期内. 页面打开撤销注销页, 申请已交给 [AccountRestore].
+final class AuthRestoreRequired extends AuthFormEvent {
+  const AuthRestoreRequired();
 }
 
 /// 手机号登录页的状态: 验证码重发倒计时, 提交状态, 最近一次失败.
@@ -128,6 +135,17 @@ class PhoneLogin extends _$PhoneLogin {
       if (!ref.mounted) return;
       if (e.code == BizCodes.consentRequired) {
         await _consent(present, e);
+      } else if (pendingCancellationOf(e) case final pending?) {
+        unawaited(
+          ref
+              .read(accountRestoreProvider.notifier)
+              .begin(pending, account: mobile, method: RestoreMethod.code),
+        );
+        state = PhoneLoginState(
+          resendAt: state.resendAt,
+          consented: state.consented,
+          event: const AuthRestoreRequired(),
+        );
       } else {
         _fail(e);
       }
@@ -164,6 +182,9 @@ class PhoneLogin extends _$PhoneLogin {
 class const PasswordLoginState({
   final bool submitting = false,
   final AppFailure? failure,
+
+  /// 账号正在注销冷静期内. 页面打开撤销注销页, 申请已交给 [AccountRestore].
+  final bool restore = false,
 });
 
 @riverpod
@@ -197,6 +218,15 @@ class PasswordLogin extends _$PasswordLogin {
       if (ref.mounted) state = const PasswordLoginState();
     } on AppFailure catch (e) {
       if (!ref.mounted) return;
+      if (pendingCancellationOf(e) case final pending?) {
+        unawaited(
+          ref
+              .read(accountRestoreProvider.notifier)
+              .begin(pending, account: account, method: RestoreMethod.password),
+        );
+        state = const PasswordLoginState(restore: true);
+        return;
+      }
       state = PasswordLoginState(failure: e);
     }
   }

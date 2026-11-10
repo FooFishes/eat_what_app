@@ -12,7 +12,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 后端注销流程未完成, 注销账号一行带 "待接入" 标记. 后端完成后接入注销流程并移除标记.
 /// 账号与安全页面: 学生认证, 手机号, 用户名, 密码, 登录设备和注销账号.
 ///
 /// - 未设置用户名时可点击进入设置. 设置后只显示, 不可修改.
@@ -86,7 +85,6 @@ class AccountPage extends ConsumerWidget {
             SettingsRow(
               icon: EatIcons.delete,
               label: '注销账号',
-              pending: true,
               onTap: () => context.push(Paths.settingsDelete),
             ),
             const SizedBox(height: EatSpace.s24),

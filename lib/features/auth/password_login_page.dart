@@ -94,6 +94,11 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     final eat = context.eat;
     final c = eat.colors;
     final login = ref.watch(passwordLoginProvider);
+    ref.listen(passwordLoginProvider.select((s) => s.restore), (_, restore) {
+      if (!restore) return;
+      _password.clear();
+      context.push(Paths.loginRestore);
+    });
     final failure = switch (login.failure) {
       final failure? when failure.kind != FailureKind.cancelled => failure,
       _ => null,
