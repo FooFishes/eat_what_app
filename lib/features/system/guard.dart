@@ -4,8 +4,9 @@ import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/fact_list.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/router/paths.dart';
@@ -14,9 +15,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 受限操作的权限检查. 允许时返回 true, 不允许时弹出拦截面板并返回 false.
+/// 受限操作的权限检查. 允许时返回 true, 不允许时弹出拦截对话框并返回 false.
 ///
-/// 受限按钮正常显示, 不隐藏也不置灰. 点击后由拦截面板说明原因和下一步.
+/// 受限按钮正常显示, 不隐藏也不置灰. 点击后由拦截对话框说明原因和下一步.
 Future<bool> guardAction(
   BuildContext context,
   WidgetRef ref,
@@ -30,9 +31,9 @@ Future<bool> guardAction(
       await _showSignIn(context, capability);
       return false;
     case NeedsVerification():
-      await showPanel<void>(
+      await showEatDialog<void>(
         context,
-        builder: (panel) => EatPanel(
+        builder: (dialog) => EatDialog(
           icon: EatIcons.verify,
           title: '认证后才能${capability.verb}',
           subtitle: '用山大统一认证或山大邮箱认证，认证后可以发布和互动。',
@@ -42,14 +43,14 @@ Future<bool> guardAction(
               Expanded(
                 child: EatButton.mist(
                   '先逛逛',
-                  onPressed: () => Navigator.of(panel).pop(),
+                  onPressed: () => Navigator.of(dialog).pop(),
                 ),
               ),
               Expanded(
                 child: EatButton.solid(
                   '去认证',
                   onPressed: () {
-                    Navigator.of(panel).pop();
+                    Navigator.of(dialog).pop();
                     context.push(Paths.verify);
                   },
                 ),
@@ -65,12 +66,12 @@ Future<bool> guardAction(
   }
 }
 
-/// 游客的拦截面板. "去登录" 带上当前地址进登录页, 登录后回到这里, 不替用户完成刚才的动作.
+/// 游客的拦截对话框. "去登录" 带上当前地址进登录页, 登录后回到这里, 不替用户完成刚才的动作.
 Future<void> _showSignIn(BuildContext context, Capability capability) {
   final router = GoRouter.of(context);
-  return showPanel<void>(
+  return showEatDialog<void>(
     context,
-    builder: (panel) => EatPanel(
+    builder: (dialog) => EatDialog(
       icon: EatIcons.me,
       title: '登录后才能${capability.verb}',
       subtitle: '用手机号登录，没注册过的号码会自动注册。',
@@ -80,7 +81,7 @@ Future<void> _showSignIn(BuildContext context, Capability capability) {
           Expanded(
             child: EatButton.mist(
               '先逛逛',
-              onPressed: () => Navigator.of(panel).pop(),
+              onPressed: () => Navigator.of(dialog).pop(),
             ),
           ),
           Expanded(
@@ -88,7 +89,7 @@ Future<void> _showSignIn(BuildContext context, Capability capability) {
               '去登录',
               onPressed: () {
                 final from = router.state.uri.toString();
-                Navigator.of(panel).pop();
+                Navigator.of(dialog).pop();
                 router.go(Paths.loginFrom(from));
               },
             ),
@@ -103,13 +104,16 @@ Future<void> _showBanned(
   BuildContext context,
   Capability capability,
   BannedStatus status,
-) => showPanel<void>(
+) => showEatDialog<void>(
   context,
-  builder: (panel) => EatPanel(
+  builder: (dialog) => EatDialog(
     icon: EatIcons.block,
     title: '账号封禁中，暂时不能${capability.verb}',
-    actions: EatButton.solid('知道了', onPressed: () => Navigator.of(panel).pop()),
-    child: PanelFacts([
+    actions: EatButton.solid(
+      '知道了',
+      onPressed: () => Navigator.of(dialog).pop(),
+    ),
+    child: FactList([
       if (status.reason case final reason?)
         (label: '原因', value: reason, strong: false),
       (label: '期限', value: banTerm(status, DateTime.now()), strong: false),
@@ -125,8 +129,8 @@ String banTerm(BannedStatus status, DateTime now) => switch (status.until) {
 
 /// 操作失败后的反馈.
 ///
-/// - 服务端判定无权限时, 刷新账号状态后弹出拦截面板.
-/// - 游客收到要求登录的响应时弹出登录面板. 游客没有可过期的登录态, 不走登录过期流程.
+/// - 服务端判定无权限时, 刷新账号状态后弹出拦截对话框.
+/// - 游客收到要求登录的响应时弹出登录对话框. 游客没有可过期的登录态, 不走登录过期流程.
 /// - 其余失败显示轻提示.
 ///
 /// [fallback] 是该操作的失败提示, 如 "点赞失败, 请重试". 只在失败类型没有固定提示时使用.
@@ -147,7 +151,7 @@ Future<void> reportActionFailure(
       }
     case FailureKind.forbidden:
       await ref.read(sessionProvider.notifier).refreshUser();
-      // 刷新后仍判定为允许时, 拦截面板不会出现. 此时显示无权限的统一提示, 否则点击后界面没有任何反馈.
+      // 刷新后仍判定为允许时, 拦截对话框不会出现. 此时显示无权限的统一提示, 否则点击后界面没有任何反馈.
       if (context.mounted && await guardAction(context, ref, capability)) {
         if (context.mounted) showToast(context, failure.message);
       }

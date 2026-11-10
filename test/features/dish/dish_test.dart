@@ -89,7 +89,7 @@ void main() {
     expect(await tapUploader('同学'), isFalse);
   });
 
-  testWidgets('没认证时点赞弹拦截面板，不发请求；「去认证」进认证页', (tester) async {
+  testWidgets('没认证时点赞弹拦截对话框，不发请求；「去认证」进认证页', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,

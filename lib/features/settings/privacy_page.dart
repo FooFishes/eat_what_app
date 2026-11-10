@@ -27,7 +27,7 @@ class PrivacyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final privacy = ref.watch(privacyProvider);
-    // 受限会话不能读写推荐设置. 封禁中不请求推荐设置, 点击开关时弹出拦截面板.
+    // 受限会话不能读写推荐设置. 封禁中不请求推荐设置, 点击开关时弹出拦截对话框.
     final banned = ref.watch(accountStatusProvider) is BannedStatus;
     final personalized = banned ? null : ref.watch(personalizedProvider);
     Future<bool> allowed() =>

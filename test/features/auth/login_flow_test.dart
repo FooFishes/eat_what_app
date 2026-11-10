@@ -65,7 +65,7 @@ void main() {
       ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
   });
 
-  testWidgets('没登录时进登录页；没勾协议时按钮照常可点，点了弹协议面板', (tester) async {
+  testWidgets('没登录时进登录页；没勾协议时按钮照常可点，点了弹协议对话框', (tester) async {
     final (container, router) = await pumpApp(tester, env);
 
     expect(locationOf(router), Paths.login);
@@ -89,7 +89,7 @@ void main() {
     expect(container.read(loginAgreementProvider), isTrue);
   });
 
-  testWidgets('已经勾了协议就不弹面板，直接进手机号登录页', (tester) async {
+  testWidgets('已经勾了协议就不弹对话框，直接进手机号登录页', (tester) async {
     await pumpApp(tester, env);
 
     await _agreeAndOpenPhoneLogin(tester);
@@ -172,7 +172,7 @@ void main() {
     expect(headers['X-Captcha-Randstr'], 'r-1');
   });
 
-  testWidgets('验证码发得太频繁时弹面板，可以改用密码登录', (tester) async {
+  testWidgets('验证码发得太频繁时弹对话框，可以改用密码登录', (tester) async {
     env.adapter.on('POST /auth/phone/code', [FakeAdapter.fail(10003)]);
     await pumpApp(tester, env);
     await _agreeAndOpenPhoneLogin(tester);
@@ -187,7 +187,7 @@ void main() {
     expect(find.byType(PasswordLoginPage), findsOneWidget);
   });
 
-  testWidgets('限流带等待秒数时，面板按秒数提示', (tester) async {
+  testWidgets('限流带等待秒数时，对话框按秒数提示', (tester) async {
     env.adapter.on('POST /auth/phone/code', [
       {
         'code': 10003,
@@ -419,7 +419,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('密码登录：弹出同意面板，同意后提交同意并自动重新登录', (tester) async {
+    testWidgets('密码登录：弹出同意对话框，同意后提交同意并自动重新登录', (tester) async {
       env.adapter
         ..on('POST /auth/login', [consentRequired('proof-1'), _token()])
         ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
@@ -524,7 +524,7 @@ void main() {
       expect(find.text('验证码已失效，请重新获取'), findsOneWidget);
     });
 
-    testWidgets('已登录时要求同意：在当前页面弹出面板，同意后原请求完成', (tester) async {
+    testWidgets('已登录时要求同意：在当前页面弹出对话框，同意后原请求完成', (tester) async {
       env.adapter
         ..on('GET /anything', [FakeAdapter.fail(20005), FakeAdapter.ok('A')])
         ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);

@@ -60,7 +60,7 @@ class AuthRepository {
 
   /// 验证码登录. 新号码在此步自动注册.
   ///
-  /// [crossBorderConsent] 为 true 表示用户已在同意面板中同意, 请求携带同意和政策版本.
+  /// [crossBorderConsent] 为 true 表示用户已在同意对话框中同意, 请求携带同意和政策版本.
   /// 注册新号码时必须携带, 否则服务端返回不带临时凭证的 [BizCodes.consentRequired].
   Future<SignInResult> loginWithCode(
     String mobile,

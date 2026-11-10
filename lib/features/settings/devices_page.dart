@@ -6,8 +6,8 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
@@ -149,9 +149,9 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
   var _busy = false;
 
   Future<void> _revokeOthers() async {
-    final confirmed = await showPanel<bool>(
+    final confirmed = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         title: '让其他设备都下线？',
         actions: Row(
           spacing: EatSpace.s10,
@@ -159,21 +159,18 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
             Expanded(
               child: EatButton.mist(
                 '先不下线',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '都下线',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],
         ),
-        child: Text(
-          '其他设备要重新登录，这台设备不受影响。',
-          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
-        ),
+        subtitle: '其他设备要重新登录，这台设备不受影响。',
       ),
     );
     if (confirmed != true || !mounted) return;

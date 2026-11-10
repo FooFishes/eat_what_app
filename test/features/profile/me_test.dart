@@ -172,7 +172,7 @@ void main() {
       expect(env.adapter.sent('GET /foods/favorites'), isEmpty);
     });
 
-    testWidgets('没有截止时间时是永久封禁；点足迹弹拦截面板，不进页面', (tester) async {
+    testWidgets('没有截止时间时是永久封禁；点足迹弹拦截对话框，不进页面', (tester) async {
       final env = bannedEnv();
       final (_, router) = await pumpApp(
         tester,

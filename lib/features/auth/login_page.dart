@@ -4,8 +4,8 @@ import 'dart:math' as math;
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/design/icons/eat_icon.dart';
-import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_motion.dart';
@@ -14,9 +14,9 @@ import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/consented_services.dart';
@@ -33,7 +33,7 @@ import 'package:go_router/go_router.dart';
 /// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
 /// - 抽屉: "验证码登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
 ///
-/// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议面板. 同意后勾上并直接继续刚才那一步.
+/// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
 ///
 /// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页和密码登录页.
 /// 登录成功后, 守卫据此返回原页面.
@@ -54,10 +54,10 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  /// 已勾选协议时返回 true. 没勾时弹协议面板, 同意后勾上并返回 true.
+  /// 已勾选协议时返回 true. 没勾时弹协议对话框, 同意后勾上并返回 true.
   Future<bool> _ensureAgreed() async {
     if (ref.read(loginAgreementProvider)) return true;
-    final agreed = await showAgreementPanel(context);
+    final agreed = await showAgreementDialog(context);
     if (!agreed || !mounted) return false;
     ref.read(loginAgreementProvider.notifier).set(agreed: true);
     return true;
@@ -538,25 +538,25 @@ class _AgreementLinks {
   }
 }
 
-/// 协议面板. 没勾协议时点登录按钮或 "先逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
+/// 协议对话框. 没勾协议时点登录按钮或 "先逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
 ///
-/// "同意并继续" 是主按钮, "不同意" 是次按钮, 和其他面板一致.
-/// 点击 "不同意", 点击遮罩和下拉关闭都视为不同意, 停在登录页不再追问.
-Future<bool> showAgreementPanel(BuildContext context) async =>
-    await showPanel<bool>(
+/// "同意并继续" 是主按钮, "不同意" 是次按钮, 和其他对话框一致.
+/// 点击 "不同意", 点击遮罩和系统返回都视为不同意, 停在登录页不再追问.
+Future<bool> showAgreementDialog(BuildContext context) async =>
+    await showEatDialog<bool>(
       context,
-      builder: (panel) => const _AgreementPanel(),
+      builder: (dialog) => const _AgreementDialog(),
     ) ??
     false;
 
-class _AgreementPanel extends ConsumerStatefulWidget {
+class _AgreementDialog extends ConsumerStatefulWidget {
   const new();
 
   @override
-  ConsumerState<_AgreementPanel> createState() => _AgreementPanelState();
+  ConsumerState<_AgreementDialog> createState() => _AgreementDialogState();
 }
 
-class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
+class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
   late final _links = _AgreementLinks(ref);
 
   @override
@@ -569,7 +569,7 @@ class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    return EatPanel(
+    return EatDialog(
       title: '同意后继续',
       actions: Row(
         spacing: EatSpace.s10,

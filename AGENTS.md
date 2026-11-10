@@ -111,7 +111,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 - 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
-- 数据跨境同意由用户在一个最简的底部面板里点同意，客户端不代用户同意；不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
+- 数据跨境同意由用户在一个最简的对话框里点同意，客户端不代用户同意；不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地
@@ -119,7 +119,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 下面是产品的风格原则，写界面前读这里就够了；想知道为什么这样，看 `prototype/design-system/README.md`，构思页面时看相关画板。这些原则要守住，其余的具体数值和排布由 App 按实际效果定。
 
 - **令牌**：颜色、间距、圆角、阴影、动效都用 `lib/design/` 里的令牌（`ThemeExtension` 和常量），正本在 Dart 里，初值来自设计快照。业务代码不写裸色值和魔法数字。
-- **页面结构**：有主角菜的页面用「舞台 + 抽屉」（`Stage` + `Sheet`，抽屉上压舞台 32px）；消息、选店、搜索、评论、设置等列表页用白底；临时的选择和确认用底部面板（`Panel`，背后一层 `scrim`），不跳新页面。附近页以地图当舞台。页面左右边距 `space-20`。
+- **页面结构**：有主角菜的页面用「舞台 + 抽屉」（`Stage` + `Sheet`，抽屉上压舞台 32px）；消息、选店、搜索、评论、设置等列表页用白底；临时的选择和填写用底部面板（`Panel`），只回答一个问题的确认、拦截和同意用居中的对话框（`EatDialog`），背后都是一层 `scrim`，不跳新页面。附近页以地图当舞台。页面左右边距 `space-20`。
 - **舞台色**：只有 9 个 `stage-*`，做成枚举，每个值自带文字色和次按钮色，深浅写死。从照片取色只看圆形取景内的像素，按饱和度加权后吸附到最近的 `stage-*`，不可靠时用分类默认色。
 - **导航**：`NavBar` 只出现在发现、附近、我的三个主页面，悬浮在内容上方；滚动列表底部留出约 100px。
 - **颜色**：没有品牌主色，主操作用 `ink` 实心；`warn` 只用于提示用户该做什么，且必须配文字。

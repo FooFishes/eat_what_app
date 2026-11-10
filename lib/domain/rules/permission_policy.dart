@@ -95,7 +95,7 @@ enum Capability {
     _ => false,
   };
 
-  /// 拦截面板中的动作词, 如 "认证后才能点赞" 和 "登录后才能点赞" 中的 "点赞".
+  /// 拦截对话框中的动作词, 如 "认证后才能点赞" 和 "登录后才能点赞" 中的 "点赞".
   String get verb => switch (this) {
     like => '点赞',
     favorite => '收藏',
@@ -134,19 +134,19 @@ final class Allowed extends PermissionResult {
   const Allowed();
 }
 
-/// 未登录, 只出现在游客身上. 拦截面板显示 "登录后才能...", 主按钮为 "去登录".
+/// 未登录, 只出现在游客身上. 拦截对话框显示 "登录后才能...", 主按钮为 "去登录".
 ///
 /// 没点 "先逛逛" 的未登录状态会被守卫带去登录页, 正常流程不会得到该结果.
 final class NeedsSignIn extends PermissionResult {
   const NeedsSignIn();
 }
 
-/// 需要先认证. 拦截面板显示 "认证后才能...", 主按钮为 "去认证".
+/// 需要先认证. 拦截对话框显示 "认证后才能...", 主按钮为 "去认证".
 final class NeedsVerification extends PermissionResult {
   const NeedsVerification();
 }
 
-/// 账号封禁中. 拦截面板显示封禁原因, 不提供 "去认证".
+/// 账号封禁中. 拦截对话框显示封禁原因, 不提供 "去认证".
 final class BlockedByBan extends PermissionResult {
   const BlockedByBan(this.status);
 

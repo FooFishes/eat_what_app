@@ -1,15 +1,19 @@
 import 'dart:ui' show Tristate;
 
+import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/stage_theme.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_nav_bar.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
+import 'package:eat/design/widgets/fact_list.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -133,7 +137,7 @@ void main() {
           icon: EatIcons.block,
           title: '暂时不能发布',
           actions: EatButton.solid('知道了', onPressed: () {}),
-          child: const PanelFacts([
+          child: const FactList([
             (label: '原因', value: '多次发布和菜无关的图片', strong: false),
             (label: '恢复', value: '10 月 25 日 12:00', strong: true),
           ]),
@@ -170,6 +174,125 @@ void main() {
         lessThanOrEqualTo(screen * 0.85),
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('对话框', () {
+    Future<void> open(
+      WidgetTester tester,
+      WidgetBuilder builder, {
+      ValueSetter<Object?>? onResult,
+    }) async {
+      await pumpEat(
+        tester,
+        Builder(
+          builder: (context) => EatButton.solid(
+            '删除',
+            onPressed: () async {
+              final result = await showEatDialog<bool>(
+                context,
+                builder: builder,
+              );
+              onResult?.call(result);
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+    }
+
+    Widget confirm(BuildContext context) => EatDialog(
+      title: '删除这条评论？',
+      subtitle: '删除后不能恢复。',
+      actions: Row(
+        children: [
+          Expanded(
+            child: EatButton.mist(
+              '先不删',
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+          ),
+          Expanded(
+            child: EatButton.solid(
+              '删掉',
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    testWidgets('居中显示，不超过最大宽度，按钮小一号并返回结果', (tester) async {
+      final results = <Object?>[];
+      await open(tester, confirm, onResult: results.add);
+
+      final screen = tester.getSize(find.byType(Scaffold).first);
+      final rect = tester.getRect(find.byType(Material).last);
+      expect(rect.width, lessThanOrEqualTo(EatDialog.maxWidth));
+      expect(rect.center.dx, closeTo(screen.width / 2, 1));
+      expect(rect.center.dy, closeTo(screen.height / 2, 1));
+      expect(find.bySemanticsLabel('关闭'), findsNothing);
+      expect(
+        tester.getSize(find.widgetWithText(EatButton, '删掉')).height,
+        EatSize.dialogButton,
+      );
+      await expectAccessible(tester);
+
+      await tester.tap(find.text('删掉'));
+      await tester.pumpAndSettle();
+      expect(find.text('删除这条评论？'), findsNothing);
+      expect(results, [true]);
+    });
+
+    testWidgets('点遮罩关闭，结果为空', (tester) async {
+      final results = <Object?>[];
+      await open(tester, confirm, onResult: results.add);
+
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+      expect(find.text('删除这条评论？'), findsNothing);
+      expect(results, [null]);
+    });
+
+    testWidgets('减少动态效果时没有进场动画', (tester) async {
+      await pumpEat(
+        tester,
+        Builder(
+          builder: (context) => EatButton.solid(
+            '删除',
+            onPressed: () => showEatDialog<void>(context, builder: confirm),
+          ),
+        ),
+        disableAnimations: true,
+      );
+      await tester.tap(find.text('删除'));
+      await tester.pump();
+      await tester.pump();
+      expect(tester.hasRunningAnimations, isFalse);
+      expect(find.text('删除这条评论？'), findsOneWidget);
+    });
+
+    testWidgets('提示类对话框上方是圆底图标，信息行左右对齐', (tester) async {
+      await open(
+        tester,
+        (context) => EatDialog(
+          icon: EatIcons.block,
+          title: '账号封禁中，暂时不能评论',
+          actions: EatButton.solid('知道了', onPressed: () {}),
+          child: const FactList([
+            (label: '原因', value: '多次发布和菜无关的图片', strong: false),
+            (label: '期限', value: '永久封禁', strong: false),
+          ]),
+        ),
+      );
+
+      expect(
+        tester.getTopLeft(find.byType(EatIcon)).dy,
+        lessThan(tester.getTopLeft(find.text('账号封禁中，暂时不能评论')).dy),
+      );
+      expect(find.text('永久封禁'), findsOneWidget);
+      await expectAccessible(tester);
     });
   });
 

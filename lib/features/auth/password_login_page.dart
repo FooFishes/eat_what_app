@@ -9,7 +9,7 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
-import 'package:eat/features/system/consent_panel.dart';
+import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/services.dart';
@@ -54,10 +54,10 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     super.dispose();
   }
 
-  /// 在本页弹出同意面板. 页面已关闭时按用户不同意处理.
+  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
   Future<bool> _presentConsent(ConsentPolicy policy) async {
     if (!mounted) return false;
-    return showConsentPanel(context, policy);
+    return showConsentDialog(context, policy);
   }
 
   void _onChanged() => setState(() {});

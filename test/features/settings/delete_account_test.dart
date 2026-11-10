@@ -77,7 +77,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('选了删除评论时确认面板写明，请求带上选择', (tester) async {
+  testWidgets('选了删除评论时确认对话框写明，请求带上选择', (tester) async {
     env.adapter.on('POST /user/cancellation', [_preparing()]);
     await pumpApp(
       tester,

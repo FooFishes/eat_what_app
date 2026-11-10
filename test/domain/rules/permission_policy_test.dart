@@ -195,7 +195,7 @@ void main() {
     });
   });
 
-  test('登录面板的动作词', () {
+  test('登录对话框的动作词', () {
     expect(Capability.viewInbox.verb, '看消息');
     expect(Capability.viewProfile.verb, '看主页');
     expect(Capability.feedback.verb, '反馈');

@@ -129,7 +129,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('封禁中点等级弹拦截面板，不请求', (tester) async {
+  testWidgets('封禁中点等级弹拦截对话框，不请求', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [

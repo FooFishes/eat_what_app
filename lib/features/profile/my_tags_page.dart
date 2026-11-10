@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -132,9 +133,9 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
 
   Future<void> _delete(MyTag tag) async {
     final usage = tag.usage;
-    final confirmed = await showPanel<bool>(
+    final confirmed = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         title: '删除「${tag.name}」？',
         actions: Row(
           spacing: EatSpace.s10,
@@ -142,23 +143,20 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
             Expanded(
               child: EatButton.mist(
                 '先不删',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '删除',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],
         ),
-        child: Text(
-          usage == null || usage == 0
-              ? '只删掉标签，菜不受影响。'
-              : '只删掉标签，标过的 $usage 道菜不受影响。',
-          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
-        ),
+        subtitle: usage == null || usage == 0
+            ? '只删掉标签，菜不受影响。'
+            : '只删掉标签，标过的 $usage 道菜不受影响。',
       ),
     );
     if (confirmed != true) return;

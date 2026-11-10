@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
+import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -24,7 +24,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// 页面有两种入口:
 /// - 认证引导: 新号码注册后进入, [onboarding] 为 true, 右上角显示 "先逛逛".
-/// - 普通页面: 从设置或拦截面板进入, 左上角显示返回.
+/// - 普通页面: 从设置或拦截对话框进入, 左上角显示返回.
 ///
 /// 打开页面和回到前台时自动刷新认证状态. 由统一认证回跳链接打开时, 同时显示认证结果.
 class VerifyPage extends ConsumerStatefulWidget {

@@ -8,6 +8,7 @@ import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -19,6 +20,7 @@ import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
+import 'package:eat/design/widgets/fact_list.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:flutter/widgets.dart';
@@ -433,7 +435,7 @@ class _KitPageState extends State<KitPage> {
             ],
           ),
         ]),
-        section('抽屉和面板', [
+        section('抽屉、面板和对话框', [
           ClipRRect(
             borderRadius: const BorderRadius.all(EatRadius.tile),
             child: ColoredBox(
@@ -484,10 +486,10 @@ class _KitPageState extends State<KitPage> {
               ),
               Expanded(
                 child: EatButton.mist(
-                  '提示面板',
-                  onPressed: () => showPanel<void>(
+                  '提示对话框',
+                  onPressed: () => showEatDialog<void>(
                     context,
-                    builder: (context) => EatPanel(
+                    builder: (context) => EatDialog(
                       icon: EatIcons.block,
                       title: '暂时不能发布',
                       actions: Row(
@@ -504,7 +506,7 @@ class _KitPageState extends State<KitPage> {
                           ),
                         ],
                       ),
-                      child: const PanelFacts([
+                      child: const FactList([
                         (label: '原因', value: '多次发布和菜无关的图片', strong: false),
                         (label: '恢复', value: '10 月 25 日 12:00', strong: true),
                       ]),
@@ -513,6 +515,33 @@ class _KitPageState extends State<KitPage> {
                 ),
               ),
             ],
+          ),
+          EatButton.mist(
+            '确认对话框',
+            onPressed: () => showEatDialog<void>(
+              context,
+              builder: (context) => EatDialog(
+                title: '删除这条评论？',
+                subtitle: '下面的回复会一起删除，删除后不能恢复。',
+                actions: Row(
+                  spacing: EatSpace.s10,
+                  children: [
+                    Expanded(
+                      child: EatButton.mist(
+                        '先不删',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                    Expanded(
+                      child: EatButton.solid(
+                        '删除',
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ]),
         section('底部导航：三个标签加发布按钮，悬浮在内容上', [

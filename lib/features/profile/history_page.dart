@@ -5,8 +5,8 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -84,9 +84,9 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       FootprintKind.dish => '菜',
       FootprintKind.shop => '店',
     };
-    final confirmed = await showPanel<bool>(
+    final confirmed = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         title: '清空看过的$label？',
         actions: Row(
           spacing: EatSpace.s10,
@@ -94,13 +94,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
             Expanded(
               child: EatButton.mist(
                 '先不清空',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '清空',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],

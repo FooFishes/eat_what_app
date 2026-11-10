@@ -9,7 +9,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 ///
 /// - 登录过期: 清除登录态.
 /// - 无权限: 刷新账号状态.
-/// - 需要同意: 弹出同意面板请用户确认, 用户同意后提交同意.
+/// - 需要同意: 弹出同意对话框请用户确认, 用户同意后提交同意.
 ///   提交返回 [BizCodes.consentSignInCodes] 时清除登录态. 重新登录时服务端会返回临时凭证.
 ///
 /// `core` 不能导入 `state`, 因此由本文件覆盖 `apiHooksProvider`.

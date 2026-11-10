@@ -34,13 +34,28 @@ enum _Kind { solid, outline, mist, add, stageSolid, stageGhost }
 ///
 /// 宽度默认贴合内容, 放入 `Expanded` 或给定宽度时撑满.
 /// 成对出现时左次右主, 等宽, 间距 `space-10`.
+/// 为子树中没有指定高度的 [EatButton] 提供默认高度. 对话框用它把按钮整体调小.
+class EatButtonHeight extends InheritedWidget {
+  const new({super.key, required this.height, required super.child});
+
+  final double height;
+
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<EatButtonHeight>()?.height ??
+      EatSize.button;
+
+  @override
+  bool updateShouldNotify(EatButtonHeight oldWidget) =>
+      height != oldWidget.height;
+}
+
 class EatButton extends StatelessWidget {
   const new solid(
     this.label, {
     super.key,
     required this.onPressed,
     this.icon,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : _kind = _Kind.solid;
@@ -50,7 +65,7 @@ class EatButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     this.icon,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : _kind = _Kind.outline;
@@ -60,7 +75,7 @@ class EatButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     this.icon,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : _kind = _Kind.mist;
@@ -70,7 +85,7 @@ class EatButton extends StatelessWidget {
     this.label, {
     super.key,
     required this.onPressed,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : icon = null,
@@ -82,7 +97,7 @@ class EatButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     this.icon,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : _kind = _Kind.stageSolid;
@@ -93,7 +108,7 @@ class EatButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     this.icon,
-    this.height = EatSize.button,
+    this.height,
     this.loading = false,
     this.muted = false,
   }) : _kind = _Kind.stageGhost;
@@ -105,7 +120,9 @@ class EatButton extends StatelessWidget {
   final EatIcons? icon;
 
   /// 按钮高度. 列表行中的小按钮 (回关, 关注) 用 36, 点击区域仍会扩展到 44.
-  final double height;
+  ///
+  /// 不传时取最近的 [EatButtonHeight], 没有时为 [EatSize.button].
+  final double? height;
 
   /// 正在处理本次点击, 如等待登录接口返回.
   final bool loading;
@@ -122,6 +139,7 @@ class EatButton extends StatelessWidget {
       _Kind.stageSolid || _Kind.stageGhost => StageTheme.of(context),
       _ => null,
     };
+    final height = this.height ?? EatButtonHeight.of(context);
     final compact = height < EatSize.touch;
     return EatTappable(
       onTap: loading ? null : onPressed,

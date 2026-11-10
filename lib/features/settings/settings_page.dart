@@ -5,8 +5,8 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
@@ -97,9 +97,9 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showPanel<bool>(
+    final confirmed = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         title: '退出登录？',
         actions: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -107,18 +107,15 @@ class SettingsPage extends ConsumerWidget {
           children: [
             EatButton.solid(
               '退出',
-              onPressed: () => Navigator.of(panel).pop(true),
+              onPressed: () => Navigator.of(dialog).pop(true),
             ),
             EatButton.mist(
               '取消',
-              onPressed: () => Navigator.of(panel).pop(false),
+              onPressed: () => Navigator.of(dialog).pop(false),
             ),
           ],
         ),
-        child: Text(
-          '将清除本设备上的登录信息和个人数据，账号和内容不受影响，可用手机号重新登录。',
-          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
-        ),
+        subtitle: '将清除本设备上的登录信息和个人数据，账号和内容不受影响，可用手机号重新登录。',
       ),
     );
     // 登录态清除后, 路由守卫负责跳转到登录页.

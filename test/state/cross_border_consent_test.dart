@@ -38,7 +38,7 @@ void main() {
     };
   });
 
-  test('已登录时要求同意：弹面板，同意后用当前会话提交，再重发原请求', () async {
+  test('已登录时要求同意：弹对话框，同意后用当前会话提交，再重发原请求', () async {
     env.adapter
       ..on('POST /auth/consent/grant', [FakeAdapter.ok()])
       ..on('GET /a', [FakeAdapter.fail(20005), FakeAdapter.ok('A')]);
@@ -84,7 +84,7 @@ void main() {
     });
   }
 
-  test('没有注册面板时按不同意处理', () async {
+  test('没有注册对话框时按不同意处理', () async {
     container.read(crossBorderConsentProvider).sessionPresenter = null;
     env.adapter.on('GET /a', [FakeAdapter.fail(20005)]);
 

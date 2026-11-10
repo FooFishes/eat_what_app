@@ -95,7 +95,7 @@ class AccountPage extends ConsumerWidget {
   }
 }
 
-/// 按账号状态检查后打开 [path]. 封禁中时弹出拦截面板.
+/// 按账号状态检查后打开 [path]. 封禁中时弹出拦截对话框.
 Future<void> _open(
   BuildContext context,
   WidgetRef ref,

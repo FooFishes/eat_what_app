@@ -5,6 +5,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -190,9 +191,9 @@ class UserPage extends ConsumerWidget {
   }
 
   Future<bool> _confirmBlock(BuildContext context, String name) async =>
-      await showPanel<bool>(
+      await showEatDialog<bool>(
         context,
-        builder: (panel) => EatPanel(
+        builder: (dialog) => EatDialog(
           title: '屏蔽「$name」？',
           actions: Row(
             spacing: EatSpace.s10,
@@ -200,25 +201,21 @@ class UserPage extends ConsumerWidget {
               Expanded(
                 child: EatButton.mist(
                   '先不屏蔽',
-                  onPressed: () => Navigator.of(panel).pop(false),
+                  onPressed: () => Navigator.of(dialog).pop(false),
                 ),
               ),
               Expanded(
                 child: EatButton.solid(
                   '屏蔽',
-                  onPressed: () => Navigator.of(panel).pop(true),
+                  onPressed: () => Navigator.of(dialog).pop(true),
                 ),
               ),
             ],
           ),
-          child: Text(
-            '屏蔽后，对方的评论和回复对你隐藏，对方的赞、评论和关注不再通知你，'
-            '对方也不能关注你，已有的关注关系会解除。'
-            '对方上传的菜不会出现在你的转盘里。可以在设置 → 隐私里解除。',
-            style: panel.eat.text.body.copyWith(
-              color: panel.eat.colors.inkSoft,
-            ),
-          ),
+          subtitle:
+              '屏蔽后，对方的评论和回复对你隐藏，对方的赞、评论和关注不再通知你，'
+              '对方也不能关注你，已有的关注关系会解除。'
+              '对方上传的菜不会出现在你的转盘里。可以在设置 → 隐私里解除。',
         ),
       ) ==
       true;

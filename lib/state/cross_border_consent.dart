@@ -6,10 +6,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cross_border_consent.g.dart';
 
-/// 同意面板展示的政策. [url] 为说明页的完整地址, 服务端未提供时为 null.
+/// 同意对话框展示的政策. [url] 为说明页的完整地址, 服务端未提供时为 null.
 class const ConsentPolicy({required final String version, final Uri? url});
 
-/// 弹出同意面板并等待用户选择. 返回 true 表示用户同意.
+/// 弹出同意对话框并等待用户选择. 返回 true 表示用户同意.
 ///
 /// 由界面用自身的 `BuildContext` 包装后传入, Provider 不持有 `BuildContext`.
 typedef ConsentPresenter = Future<bool> Function(ConsentPolicy policy);
@@ -23,7 +23,7 @@ class CrossBorderConsent {
   final ConsentApi _api;
   final String _apiBaseUrl;
 
-  /// 已登录时使用的同意面板, 由应用根部的组件注册和注销.
+  /// 已登录时使用的同意对话框, 由应用根部的组件注册和注销.
   ///
   /// 未注册时没有界面可以询问用户, 按用户不同意处理.
   ConsentPresenter? sessionPresenter;

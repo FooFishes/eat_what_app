@@ -8,13 +8,13 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
-import 'package:eat/features/system/consent_panel.dart';
+import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/services.dart';
@@ -71,10 +71,10 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     return ref.read(humanVerifierProvider).verify(context, params);
   }
 
-  /// 在本页弹出同意面板. 页面已关闭时按用户不同意处理.
+  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
   Future<bool> _presentConsent(ConsentPolicy policy) async {
     if (!mounted) return false;
-    return showConsentPanel(context, policy);
+    return showConsentDialog(context, policy);
   }
 
   void _onChanged() => setState(() {});
@@ -117,9 +117,9 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         .submit(_presentConsent, _mobile.text, _code.text);
   }
 
-  void _showLimited(AppFailure failure) => showPanel<void>(
+  void _showLimited(AppFailure failure) => showEatDialog<void>(
     context,
-    builder: (panel) => EatPanel(
+    builder: (dialog) => EatDialog(
       icon: EatIcons.time,
       title: '发送太频繁，${failure.retryHint}',
       actions: Row(
@@ -129,7 +129,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
             child: EatButton.mist(
               '用密码登录',
               onPressed: () {
-                Navigator.of(panel).pop();
+                Navigator.of(dialog).pop();
                 context.push(_withQuery(Paths.loginPassword));
               },
             ),
@@ -137,12 +137,12 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
           Expanded(
             child: EatButton.solid(
               '知道了',
-              onPressed: () => Navigator.of(panel).pop(),
+              onPressed: () => Navigator.of(dialog).pop(),
             ),
           ),
         ],
       ),
-      child: Text('已设置密码的账号可使用密码登录。', style: panel.eat.text.body),
+      subtitle: '已设置密码的账号可使用密码登录。',
     ),
   );
 

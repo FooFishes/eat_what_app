@@ -13,7 +13,7 @@ abstract final class ConsentEndpoints {
 
 /// 接口分组 AccountConsent: 数据跨境同意.
 ///
-/// 同意由用户在同意面板中确认后提交. 客户端只对接读取政策和同意两个接口, 不对接状态查询和撤回.
+/// 同意由用户在同意对话框中确认后提交. 客户端只对接读取政策和同意两个接口, 不对接状态查询和撤回.
 class ConsentApi {
   ConsentApi(this._client);
 

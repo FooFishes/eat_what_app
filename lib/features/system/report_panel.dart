@@ -70,7 +70,7 @@ class ReasonPanel<T> extends ConsumerStatefulWidget {
   final List<T> options;
   final String Function(T option) label;
 
-  /// 服务端拒绝时按该操作弹拦截面板.
+  /// 服务端拒绝时按该操作弹拦截对话框.
   final Capability capability;
 
   /// 提交. [key] 是本次请求的 `Idempotency-Key`. 失败时抛出 [AppFailure].

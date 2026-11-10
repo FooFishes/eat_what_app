@@ -8,6 +8,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/code_point_limit.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -94,9 +95,9 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
   }
 
   Future<bool> _confirmLeave() async =>
-      await showPanel<bool>(
+      await showEatDialog<bool>(
         context,
-        builder: (panel) => EatPanel(
+        builder: (dialog) => EatDialog(
           icon: EatIcons.warning,
           title: _reply ? '这条回复还未发送，确定放弃吗？' : '这条评论还未发送，确定放弃吗？',
           actions: Row(
@@ -105,13 +106,13 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
               Expanded(
                 child: EatButton.mist(
                   '放弃',
-                  onPressed: () => Navigator.of(panel).pop(true),
+                  onPressed: () => Navigator.of(dialog).pop(true),
                 ),
               ),
               Expanded(
                 child: EatButton.solid(
                   '继续写',
-                  onPressed: () => Navigator.of(panel).pop(false),
+                  onPressed: () => Navigator.of(dialog).pop(false),
                 ),
               ),
             ],

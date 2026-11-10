@@ -14,6 +14,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
@@ -31,8 +32,8 @@ import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/topic_rules.dart';
-import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/discover/discover_providers.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
@@ -111,9 +112,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   /// 首次进入发现页时先说明定位用途. 用户点击 "允许定位" 后再弹出系统权限框.
   Future<void> _explainLocation() async {
     if (!mounted) return;
-    final allow = await showPanel<bool>(
+    final allow = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         icon: EatIcons.locate,
         title: '允许定位后，能看到离你多远',
         subtitle: '只在打开发现和附近时定位一次，不记录你去过哪里。',
@@ -123,13 +124,13 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
             Expanded(
               child: EatButton.mist(
                 '先不用',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '允许定位',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],

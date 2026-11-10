@@ -147,7 +147,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点赞和回复都弹拦截面板，不发请求', (tester) async {
+  testWidgets('没认证时点赞和回复都弹拦截对话框，不发请求', (tester) async {
     final (container, router) = await pumpApp(
       tester,
       env,

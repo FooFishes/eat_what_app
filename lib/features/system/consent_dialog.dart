@@ -3,26 +3,26 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 数据跨境同意面板. 返回 true 表示用户点了 "同意".
+/// 数据跨境同意对话框. 返回 true 表示用户点了 "同意".
 ///
-/// 点击 "不同意", 点击遮罩和下拉关闭都视为不同意.
-Future<bool> showConsentPanel(
+/// 点击 "不同意", 点击遮罩和系统返回都视为不同意.
+Future<bool> showConsentDialog(
   BuildContext context,
   ConsentPolicy policy,
 ) async =>
-    await showPanel<bool>(
+    await showEatDialog<bool>(
       context,
-      builder: (panel) => _ConsentPanel(policy: policy),
+      builder: (dialog) => _ConsentDialog(policy: policy),
     ) ??
     false;
 
-class _ConsentPanel extends ConsumerWidget {
+class _ConsentDialog extends ConsumerWidget {
   const new({required this.policy});
 
   final ConsentPolicy policy;
@@ -31,7 +31,7 @@ class _ConsentPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
-    return EatPanel(
+    return EatDialog(
       icon: EatIcons.earth,
       title: '同意数据跨境后继续',
       actions: Row(
@@ -80,9 +80,9 @@ class _ConsentPanel extends ConsumerWidget {
   }
 }
 
-/// 为已登录时的同意请求提供同意面板. 置于应用根部, 包裹路由的内容.
+/// 为已登录时的同意请求提供同意对话框. 置于应用根部, 包裹路由的内容.
 ///
-/// 网络层的请求不属于任何页面, 因此面板在 [navigatorKey] 对应的根导航器上弹出.
+/// 网络层的请求不属于任何页面, 因此对话框在 [navigatorKey] 对应的根导航器上弹出.
 class ConsentHost extends ConsumerStatefulWidget {
   const new({super.key, required this.navigatorKey, required this.child});
 
@@ -112,7 +112,7 @@ class _ConsentHostState extends ConsumerState<ConsentHost> {
   Future<bool> _present(ConsentPolicy policy) async {
     final context = widget.navigatorKey.currentState?.overlay?.context;
     if (context == null || !context.mounted) return false;
-    return showConsentPanel(context, policy);
+    return showConsentDialog(context, policy);
   }
 
   @override

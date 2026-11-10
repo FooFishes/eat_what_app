@@ -98,7 +98,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点「写一条」弹拦截面板；认证后进写评论', (tester) async {
+  testWidgets('没认证时点「写一条」弹拦截对话框；认证后进写评论', (tester) async {
     final (container, router) = await pumpApp(
       tester,
       env,

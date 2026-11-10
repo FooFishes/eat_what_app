@@ -33,6 +33,14 @@ abstract final class EatMotion {
 
   static const pressOffset = 1.0;
 
+  /// 对话框进出: 淡入的同时从 [dialogScale] 放大到原大小.
+  static const EatTransition dialog = (
+    duration: Duration(milliseconds: 200),
+    curve: Curves.easeOutCubic,
+  );
+
+  static const dialogScale = 0.96;
+
   /// 登录页转盘匀速旋转一周的时间. 这是应用中唯一自动播放的动画.
   static const loginSpinPeriod = Duration(seconds: 90);
 }

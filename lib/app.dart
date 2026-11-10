@@ -1,6 +1,6 @@
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/widgets/navigation.dart';
-import 'package:eat/features/system/consent_panel.dart';
+import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/app_router.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

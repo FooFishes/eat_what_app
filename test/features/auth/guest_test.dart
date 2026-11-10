@@ -79,7 +79,7 @@ void main() {
       expect(cornerSize(tester), rest);
     });
 
-    testWidgets('没勾协议先弹面板，同意后成为游客进发现页，并记下协议同意', (tester) async {
+    testWidgets('没勾协议先弹对话框，同意后成为游客进发现页，并记下协议同意', (tester) async {
       final (container, router) = await pumpApp(tester, env);
 
       await tester.tap(find.text('先逛逛？'));
@@ -145,7 +145,7 @@ void main() {
   });
 
   group('游客', () {
-    testWidgets('点消息弹登录面板：「先逛逛」关掉，「去登录」回登录页，还能再点「先逛逛」', (tester) async {
+    testWidgets('点消息弹登录对话框：「先逛逛」关掉，「去登录」回登录页，还能再点「先逛逛」', (tester) async {
       final (_, router) = await pumpApp(tester, env, session: const Guest());
 
       await tester.tap(find.bySemanticsLabel('消息'));
@@ -170,7 +170,7 @@ void main() {
       _expectNoSignedInRequests(env.adapter);
     });
 
-    testWidgets('点上传者弹登录面板，「去登录」带上菜品详情的地址', (tester) async {
+    testWidgets('点上传者弹登录对话框，「去登录」带上菜品详情的地址', (tester) async {
       final (container, router) = await pumpApp(
         tester,
         env,
@@ -216,7 +216,7 @@ void main() {
       expect(locationOf(router), Paths.loginFrom(Paths.me));
     });
 
-    testWidgets('设置里只有「关于」，关于里的「反馈」弹登录面板', (tester) async {
+    testWidgets('设置里只有「关于」，关于里的「反馈」弹登录对话框', (tester) async {
       await pumpApp(
         tester,
         env,

@@ -78,7 +78,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点「关注」弹拦截面板，不发请求', (tester) async {
+  testWidgets('没认证时点「关注」弹拦截对话框，不发请求', (tester) async {
     env.adapter.on('GET /user/userInfo', [FakeAdapter.ok(_profile())]);
     final (container, _) = await pumpApp(
       tester,

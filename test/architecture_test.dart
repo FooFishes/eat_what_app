@@ -74,7 +74,7 @@ const _allowedLayers = <String, Set<String>>{
 
 /// 所有功能都可以导入的共享功能目录.
 ///
-/// 拦截面板和轻提示被所有页面使用, 又需要读取账号状态, 因此放在功能层而不是 `design`.
+/// 拦截对话框和轻提示被所有页面使用, 又需要读取账号状态, 因此放在功能层而不是 `design`.
 const _sharedFeature = 'system';
 
 /// 功能目录唯一允许导入的 `router/` 文件, 提供跳转用的路径常量.

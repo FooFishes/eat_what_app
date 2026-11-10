@@ -6,6 +6,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -538,9 +539,9 @@ Future<void> _delete(
 }
 
 Future<bool> _confirmDelete(BuildContext context, Comment comment) async =>
-    await showPanel<bool>(
+    await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         icon: EatIcons.delete,
         title: comment.isReply ? '删除这条回复？' : '删除这条评论？',
         subtitle: comment.isReply ? null : '下面的回复会一起删除，删除后不能恢复。',
@@ -550,13 +551,13 @@ Future<bool> _confirmDelete(BuildContext context, Comment comment) async =>
             Expanded(
               child: EatButton.mist(
                 '先不删',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '删除',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],

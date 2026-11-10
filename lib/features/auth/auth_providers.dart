@@ -38,7 +38,7 @@ final class AuthFormFailed extends AuthFormEvent {
   final AppFailure failure;
 }
 
-/// 验证码发送过于频繁. 页面弹出面板提示何时可以重试, 并提供 "用密码登录".
+/// 验证码发送过于频繁. 页面弹出对话框提示何时可以重试, 并提供 "用密码登录".
 final class AuthCodeLimited extends AuthFormEvent {
   const AuthCodeLimited(this.failure);
 
@@ -46,7 +46,7 @@ final class AuthCodeLimited extends AuthFormEvent {
   final AppFailure failure;
 }
 
-/// 用户在同意面板中同意了数据跨境, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
+/// 用户在同意对话框中同意了数据跨境, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
 final class AuthCodeConsumed extends AuthFormEvent {
   const AuthCodeConsumed();
 }
@@ -63,7 +63,7 @@ class const PhoneLoginState({
   final bool submitting = false,
   final AuthFormEvent? event,
 
-  /// 用户是否已在同意面板中同意数据跨境. 为 true 时登录请求携带同意, 新号码据此注册.
+  /// 用户是否已在同意对话框中同意数据跨境. 为 true 时登录请求携带同意, 新号码据此注册.
   final bool consented = false,
 });
 
@@ -105,7 +105,7 @@ class PhoneLogin extends _$PhoneLogin {
     }
   }
 
-  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意面板.
+  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意对话框.
   ///
   /// 要求同意的响应已核销验证码, 因此用户同意后不自动重新登录, 而是要求重新获取验证码.
   /// 已有账号带临时凭证, 同意后立即提交. 新号码没有凭证, 下次登录请求携带同意完成注册.
@@ -192,7 +192,7 @@ class PasswordLogin extends _$PasswordLogin {
   @override
   PasswordLoginState build() => const PasswordLoginState();
 
-  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意面板.
+  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意对话框.
   ///
   /// 用户同意后用临时凭证提交同意, 随后用同一组账号密码重新登录.
   /// 账号密码只在本次调用中保留在内存里.

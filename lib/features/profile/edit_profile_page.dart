@@ -4,6 +4,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -189,9 +190,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   Future<bool> _confirmDiscard() async =>
-      await showPanel<bool>(
+      await showEatDialog<bool>(
         context,
-        builder: (panel) => EatPanel(
+        builder: (dialog) => EatDialog(
           title: '放弃修改？',
           actions: Row(
             spacing: EatSpace.s10,
@@ -199,23 +200,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               Expanded(
                 child: EatButton.mist(
                   '放弃',
-                  onPressed: () => Navigator.of(panel).pop(true),
+                  onPressed: () => Navigator.of(dialog).pop(true),
                 ),
               ),
               Expanded(
                 child: EatButton.solid(
                   '继续编辑',
-                  onPressed: () => Navigator.of(panel).pop(false),
+                  onPressed: () => Navigator.of(dialog).pop(false),
                 ),
               ),
             ],
           ),
-          child: Text(
-            '改过的头像、昵称和签名都不会保存。',
-            style: panel.eat.text.body.copyWith(
-              color: panel.eat.colors.inkSoft,
-            ),
-          ),
+          subtitle: '改过的头像、昵称和签名都不会保存。',
         ),
       ) ==
       true;

@@ -2,7 +2,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
+import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
@@ -87,9 +87,9 @@ class DeleteAccountPage extends ConsumerWidget {
 
   Future<void> _confirm(BuildContext context, WidgetRef ref) async {
     final deleteComments = ref.read(deleteAccountProvider).deleteComments;
-    final confirmed = await showPanel<bool>(
+    final confirmed = await showEatDialog<bool>(
       context,
-      builder: (panel) => EatPanel(
+      builder: (dialog) => EatDialog(
         title: '确认注销账号？',
         actions: Row(
           spacing: EatSpace.s10,
@@ -97,23 +97,20 @@ class DeleteAccountPage extends ConsumerWidget {
             Expanded(
               child: EatButton.mist(
                 '先不注销',
-                onPressed: () => Navigator.of(panel).pop(false),
+                onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
                 '注销',
-                onPressed: () => Navigator.of(panel).pop(true),
+                onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],
         ),
-        child: Text(
-          deleteComments
-              ? '7 天内在这台设备上重新登录可以撤销。评论和回复会一起删除。'
-              : '7 天内在这台设备上重新登录可以撤销。',
-          style: panel.eat.text.body.copyWith(color: panel.eat.colors.inkSoft),
-        ),
+        subtitle: deleteComments
+            ? '7 天内在这台设备上重新登录可以撤销。评论和回复会一起删除。'
+            : '7 天内在这台设备上重新登录可以撤销。',
       ),
     );
     if (confirmed != true || !context.mounted) return;

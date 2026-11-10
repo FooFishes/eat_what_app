@@ -53,6 +53,9 @@ abstract final class EatSize {
   /// 主按钮高度.
   static const button = 52.0;
 
+  /// 对话框里按钮的高度. 对话框窄, 按钮比页面和面板里的小一号, 仍不小于 [touch].
+  static const dialogButton = 44.0;
+
   /// 分类和标签的高度. 点击区域向外扩展到 [touch].
   static const chip = 36.0;
 
