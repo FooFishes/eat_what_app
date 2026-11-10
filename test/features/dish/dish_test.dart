@@ -1,3 +1,4 @@
+import 'package:eat/features/profile/user_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -56,6 +57,36 @@ void main() {
     );
     expect(find.text('吃过的人说'), findsOneWidget);
     await unmountApp(tester, container);
+  });
+
+  testWidgets('上传者可以展示时点了进主页；不能展示时写「同学」，点了没有反应', (tester) async {
+    Future<bool> tapUploader(String name) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.dish(1),
+      );
+      await tester.scrollUntilVisible(
+        find.text(name),
+        200,
+        scrollable: find.byWidgetPredicate(
+          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+        ),
+      );
+      await tester.tap(find.text(name));
+      await tester.pumpAndSettle();
+      final opened = find.byType(UserPage).evaluate().isNotEmpty;
+      await unmountApp(tester, container);
+      return opened;
+    }
+
+    expect(await tapUploader('小林'), isTrue);
+
+    env.adapter.on('GET /foods/detail/1', [
+      FakeAdapter.ok(foodJson(authorPublic: false)),
+    ]);
+    expect(await tapUploader('同学'), isFalse);
   });
 
   testWidgets('没认证时点赞弹拦截面板，不发请求；「去认证」进认证页', (tester) async {

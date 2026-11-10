@@ -120,8 +120,13 @@ class const Dish({
   final bool liked = false,
   final bool favorite = false,
   final int likes = 0,
+
+  /// 上传者的账号, 用于判断是不是自己的菜.
   final int? uploaderId,
   final String? uploaderName,
+
+  /// 上传者可以公开展示时为其 id, 点上传者进入他人主页. 已注销或资料不能展示时为 null, 点了没有反应.
+  final int? authorId,
   final String? description,
   final DateTime? createdAt,
 }) {

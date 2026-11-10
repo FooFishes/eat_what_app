@@ -10,6 +10,9 @@ class const FoodDto({
   final int? id,
   final int? accountId,
   final String? uploaderName,
+
+  /// 可以公开展示的作者. 作者资料未到达或不能展示时为 null, 此时 [uploaderName] 也为 null.
+  final FoodAuthorDto? user,
   final int? restaurantId,
   final String? restaurantName,
 
@@ -62,6 +65,15 @@ class const FoodTagDto({
       _$FoodTagDtoFromJson(json);
 
   Map<String, dynamic> toJson() => _$FoodTagDtoToJson(this);
+}
+
+/// 菜品作者的公开摘要 (`FoodVO.Author`).
+@JsonSerializable(includeIfNull: false)
+class const FoodAuthorDto({final int? id, final String? displayName}) {
+  factory FoodAuthorDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodAuthorDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$FoodAuthorDtoToJson(this);
 }
 
 @JsonSerializable(includeIfNull: false)

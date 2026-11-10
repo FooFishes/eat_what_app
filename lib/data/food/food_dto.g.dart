@@ -10,6 +10,9 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   id: (json['id'] as num?)?.toInt(),
   accountId: (json['accountId'] as num?)?.toInt(),
   uploaderName: json['uploaderName'] as String?,
+  user: json['user'] == null
+      ? null
+      : FoodAuthorDto.fromJson(json['user'] as Map<String, dynamic>),
   restaurantId: (json['restaurantId'] as num?)?.toInt(),
   restaurantName: json['restaurantName'] as String?,
   distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
@@ -54,6 +57,7 @@ Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'id': ?instance.id,
   'accountId': ?instance.accountId,
   'uploaderName': ?instance.uploaderName,
+  'user': ?instance.user,
   'restaurantId': ?instance.restaurantId,
   'restaurantName': ?instance.restaurantName,
   'distanceMeters': ?instance.distanceMeters,
@@ -96,6 +100,15 @@ Map<String, dynamic> _$FoodTagDtoToJson(FoodTagDto instance) =>
       'taggedByMe': ?instance.taggedByMe,
       'usageCount': ?instance.usageCount,
     };
+
+FoodAuthorDto _$FoodAuthorDtoFromJson(Map<String, dynamic> json) =>
+    FoodAuthorDto(
+      id: (json['id'] as num?)?.toInt(),
+      displayName: json['displayName'] as String?,
+    );
+
+Map<String, dynamic> _$FoodAuthorDtoToJson(FoodAuthorDto instance) =>
+    <String, dynamic>{'id': ?instance.id, 'displayName': ?instance.displayName};
 
 CoverCropDto _$CoverCropDtoFromJson(Map<String, dynamic> json) => CoverCropDto(
   centerX: (json['centerX'] as num?)?.toDouble(),

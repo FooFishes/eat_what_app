@@ -556,7 +556,7 @@ class _Uploader extends ConsumerWidget {
             if (created != null)
               Text('${TimeFormat.date(created, clock.now())}上传'),
           ],
-          onTap: switch (dish.uploaderId) {
+          onTap: switch (dish.authorId) {
             final id? => () async {
               if (await guardAction(context, ref, Capability.viewProfile) &&
                   context.mounted) {

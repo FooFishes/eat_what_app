@@ -353,7 +353,8 @@ class FoodRepository {
       favorite: dto.isFavorite ?? false,
       likes: dto.likesCount ?? 0,
       uploaderId: dto.accountId,
-      uploaderName: _text(dto.uploaderName),
+      uploaderName: _text(dto.user?.displayName) ?? _text(dto.uploaderName),
+      authorId: dto.user?.id,
       description: _text(dto.description),
       createdAt: dateFromMillis(dto.createdAt),
     );
