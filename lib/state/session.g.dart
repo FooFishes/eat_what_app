@@ -10,18 +10,18 @@ part of 'session.dart';
 // ignore_for_file: type=lint, type=warning
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 
 @ProviderFor(Session)
 final sessionProvider = SessionProvider._();
 
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 final class SessionProvider extends $NotifierProvider<Session, SessionState> {
   /// 登录态. 路由守卫根据它决定跳转.
   ///
-  /// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
+  /// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
   SessionProvider._()
     : super(
         from: null,
@@ -53,7 +53,7 @@ String _$sessionHash() => r'19ad1bd3af448faab5c8d70cb7e6c5fe040124cd';
 
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 
 abstract class _$Session extends $Notifier<SessionState> {
   SessionState build();

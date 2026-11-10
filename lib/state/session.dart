@@ -35,9 +35,9 @@ final class SignedOut extends SessionState {
   final SignOutReason reason;
 }
 
-/// 游客: 在登录页点了 "去逛逛", 没有登录也能浏览.
+/// 游客: 在登录页点了 "先逛逛", 没有登录也能浏览.
 ///
-/// 只保存在内存中. 关闭 App 后再打开, 退出登录和登录过期后都回到 [SignedOut], 要再点一次 "去逛逛".
+/// 只保存在内存中. 关闭 App 后再打开, 退出登录和登录过期后都回到 [SignedOut], 要再点一次 "先逛逛".
 /// 产品希望大家登录使用, 游客只是先看看的入口, 所以不记住上次是游客.
 final class Guest extends SessionState {
   const Guest();
@@ -66,7 +66,7 @@ final class SignedIn extends SessionState {
 
 /// 登录态. 路由守卫根据它决定跳转.
 ///
-/// 启动时恢复. 登录, "去逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 @Riverpod(keepAlive: true)
 class Session extends _$Session {
   /// 本机安装过 App 的标记.
@@ -139,7 +139,7 @@ class Session extends _$Session {
     }
   }
 
-  /// 在登录页点 "去逛逛" 后成为游客. 已登录时不变.
+  /// 在登录页点 "先逛逛" 后成为游客. 已登录时不变.
   ///
   /// 同意记录由登录页先写入, 本方法只更新登录态.
   void browse() {

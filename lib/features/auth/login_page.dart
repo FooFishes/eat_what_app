@@ -30,12 +30,12 @@ import 'package:go_router/go_router.dart';
 
 /// 登录页.
 ///
-/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "去逛逛", 点了不登录进去看看.
-/// - 抽屉: "手机号登录" 按钮和协议勾选.
+/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
+/// - 抽屉: "验证码登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
 ///
-/// 没勾协议时 "手机号登录" 和 "去逛逛" 照常可点, 点了先弹协议面板. 同意后勾上并直接继续刚才那一步.
+/// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议面板. 同意后勾上并直接继续刚才那一步.
 ///
-/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页.
+/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页和密码登录页.
 /// 登录成功后, 守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
   const new({
@@ -46,7 +46,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
   final Map<String, String> query;
 
-  /// 点 "去逛逛" 后去的地址. 由路由表按 `from` 算好传入, 游客进不去的地址已换成发现页.
+  /// 点 "先逛逛" 后去的地址. 由路由表按 `from` 算好传入, 游客进不去的地址已换成发现页.
   final String browseTarget;
 
   @override
@@ -63,14 +63,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return true;
   }
 
-  Future<void> _start() async {
+  Future<void> _start(String path) async {
     if (!await _ensureAgreed() || !mounted) return;
     final query = widget.query;
     context.go(
-      Uri(
-        path: Paths.loginPhone,
-        queryParameters: query.isEmpty ? null : query,
-      ).toString(),
+      Uri(path: path, queryParameters: query.isEmpty ? null : query).toString(),
     );
   }
 
@@ -115,7 +112,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             spacing: EatSpace.s10,
             children: [
               if (query['expired'] == '1') const _Notice('登录已过期，请重新登录'),
-              EatButton.solid('手机号登录', icon: EatIcons.phone, onPressed: _start),
+              EatButton.solid(
+                '验证码登录',
+                icon: EatIcons.phone,
+                onPressed: () => _start(Paths.loginPhone),
+              ),
+              EatButton.solid(
+                '账号密码登录',
+                icon: EatIcons.lock,
+                onPressed: () => _start(Paths.loginPassword),
+              ),
               const AgreementCheck(),
             ],
           ),
@@ -529,7 +535,7 @@ class _AgreementLinks {
   }
 }
 
-/// 协议面板. 没勾协议时点 "手机号登录" 或 "去逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
+/// 协议面板. 没勾协议时点登录按钮或 "先逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
 ///
 /// "同意并继续" 是主按钮, "不同意" 是次按钮, 和其他面板一致.
 /// 点击 "不同意", 点击遮罩和下拉关闭都视为不同意, 停在登录页不再追问.
@@ -593,13 +599,15 @@ class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
   }
 }
 
-/// 登录页右上角的 "去逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "去逛逛".
+/// 登录页右上角的 "先逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "先逛逛".
+/// 卷起的页角后面探出一双眼睛 ([Emoji.eyes]), 像有人掀着页角往外偷看.
 ///
-/// 进页面时页角卷起, 按下时再多卷一点. 系统开启减少动态效果时直接显示卷好的样子.
+/// 进页面时页角卷起, 按下时再多卷一点. 之后每隔 [_idlePeriod] 把页角多掀起一点再弹回去, 眼睛跟着多探出来一些.
+/// 系统开启减少动态效果时直接显示卷好的样子, 眼睛不动.
 /// 这是登录页特有的入口, 不用胶囊按钮.
 ///
-/// 卷起的部分是以折线为斜边的正方形: 折线右上方露出纸色, 左下方是翻过来的页角背面.
-/// 点击区域就是这个正方形.
+/// 点击区域是贴着右上角的矩形: 对角线右上方露出纸色, 左下方是卷起的页角, 画法见 [_CurlPainter].
+/// 卷起的页角会画到矩形外面一点.
 class _BrowseCorner extends StatefulWidget {
   const new({required this.onTap});
 
@@ -610,7 +618,7 @@ class _BrowseCorner extends StatefulWidget {
 }
 
 class _BrowseCornerState extends State<_BrowseCorner>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final _curl = AnimationController(
     vsync: this,
     duration: EatMotion.snap.duration,
@@ -620,28 +628,62 @@ class _BrowseCornerState extends State<_BrowseCorner>
     curve: EatMotion.snap.curve,
   );
 
-  /// 卷好时正方形的边长, 不含状态栏. 要让 "去逛逛" 整个落在纸色三角里.
-  static const _rest = 112.0;
+  /// 卷好之后循环掀页角, 值是一轮里的进度.
+  late final _idle = AnimationController(vsync: this, duration: _idlePeriod);
+
+  static const _idlePeriod = Duration(seconds: 6);
+
+  /// 掀页角时多卷的长度.
+  static const _liftExtra = 8.0;
+
+  /// 卷好时纸色三角右边的长度, 不含状态栏. 要让 "先逛逛" 整个落在纸色三角里.
+  static const _rest = 106.0;
 
   /// 按下时多卷的长度.
   static const _pressExtra = 16.0;
 
-  /// "去逛逛" 与页面右边和状态栏的距离.
+  /// "先逛逛" 与页面右边和状态栏的距离.
   static const _labelInset = 14.0;
   static const _labelTop = 10.0;
+
+  /// 眼睛图片的边长. 图里两只眼睛约占宽的八成, 高的六成.
+  static const _eyesSize = 44.0;
+
+  /// 眼睛中心越过卷起的边的距离, 和掀页角时多探出的距离. 平时下面小半截被页角挡住.
+  static const _eyesOut = 3.0;
+  static const _eyesPeek = 5.0;
+
+  /// 眼睛顺着卷起的边往左上挪的距离, 避开 "先逛逛".
+  static const _eyesAlong = 6.0;
+
+  /// "先逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
+  static const _maxTextScale = 1.2;
+
+  /// 掀页角: 先掀起, 再以回弹曲线落回. 1 为掀到最高.
+  static double _liftAt(double t) {
+    final x = (t - 0.55) / 0.15;
+    if (x <= 0 || x >= 1) return 0;
+    if (x < 0.3) return Curves.easeOut.transform(x / 0.3);
+    return 1 - EatMotion.snap.curve.transform((x - 0.3) / 0.7);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (MediaQuery.disableAnimationsOf(context)) {
       _curl.value = 1;
-    } else if (_curl.isDismissed) {
-      _curl.forward();
+      _idle
+        ..stop()
+        ..value = 0;
+      return;
     }
+    if (_curl.isDismissed) _curl.forward();
+    if (!_idle.isAnimating) _idle.repeat();
   }
 
   @override
   void dispose() {
+    _idle.dispose();
     _curve.dispose();
     _curl.dispose();
     super.dispose();
@@ -655,14 +697,14 @@ class _BrowseCornerState extends State<_BrowseCorner>
     final top = MediaQuery.paddingOf(context).top;
     final rest = top + _rest;
     final label = Text(
-      '去逛逛',
+      '先逛逛？',
       textScaler: MediaQuery.textScalerOf(context)
           .clamp(maxScaleFactor: _maxTextScale),
       style: eat.text.subhead.copyWith(color: c.ink),
     );
     return EatTappable(
       onTap: widget.onTap,
-      label: '去逛逛',
+      label: '先逛逛',
       tapHint: '不登录先看看',
       focusShape: const RoundedRectangleBorder(),
       builder: (context, pressed) => TweenAnimationBuilder<double>(
@@ -670,14 +712,21 @@ class _BrowseCornerState extends State<_BrowseCorner>
         duration: context.motion(EatMotion.press),
         curve: EatMotion.press.curve,
         builder: (context, press, _) => AnimatedBuilder(
-          animation: _curve,
+          animation: Listenable.merge([_curve, _idle]),
           builder: (context, _) {
+            final lift = _liftAt(_idle.value);
             final extent = math.max(
               0.0,
-              rest * _curve.value + _pressExtra * press,
+              rest * _curve.value + _pressExtra * press + _liftExtra * lift,
             );
-            return SizedBox.square(
-              dimension: extent,
+            final eyes =
+                _CurlPainter.edgePoint(extent) +
+                _CurlPainter.towardCorner * (_eyesOut + _eyesPeek * lift) +
+                _CurlPainter.alongEdge * _eyesAlong;
+            final eyesSize = _eyesSize * _curve.value.clamp(0.0, 1.0);
+            return SizedBox(
+              width: extent * _CurlPainter.aspect,
+              height: extent,
               child: CustomPaint(
                 painter: _CurlPainter(
                   paper: c.paper,
@@ -689,6 +738,14 @@ class _BrowseCornerState extends State<_BrowseCorner>
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
+                      Positioned(
+                        left: eyes.dx - eyesSize / 2,
+                        top: eyes.dy - eyesSize / 2,
+                        child: Transform.rotate(
+                          angle: _CurlPainter.edgeAngle,
+                          child: EmojiImage(Emoji.eyes, size: eyesSize),
+                        ),
+                      ),
                       Positioned(
                         top: top + _labelTop,
                         right: _labelInset,
@@ -704,12 +761,9 @@ class _BrowseCornerState extends State<_BrowseCorner>
       ),
     );
   }
-
-  /// "去逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
-  static const _maxTextScale = 1.2;
 }
 
-/// 折线右上方露出的纸色三角. 正方形的右上角是原来的页角.
+/// 对角线右上方露出的纸色三角. 矩形的右上角是原来的页角.
 class _RevealClipper extends CustomClipper<Path> {
   const new();
 
@@ -724,9 +778,22 @@ class _RevealClipper extends CustomClipper<Path> {
   bool shouldReclip(_RevealClipper oldClipper) => false;
 }
 
-/// 画卷起的页角: 右上方露出纸色, 左下方是翻过来的页角背面, 背面下压一层投影.
+/// 画卷起的页角: 页角绕一根圆柱卷过半圈, 再平着盖回页面上方, 画的是从正上方看到的样子.
 ///
-/// 背面取舞台色和纸色之间的颜色, 靠近折线处更亮, 看起来像卷起的弧面.
+/// 坐标以页角为原点, p 沿卷起的方向指向页面内, w 与之垂直. 卷起的方向比对角线偏 [_lean],
+/// 盖回去的页角因此是斜的. 圆柱半径 r, 页面在 p = a 处离开桌面,
+/// 页面上原来在 p = t 的一条线, 纸长 u = a - t, 卷起后落在:
+///
+/// - 圆柱上 (u <= πr): p = a - r·sin(u/r).
+/// - 盖回去的平面上 (u > πr): p = a + u - πr.
+///
+/// 这条线的宽度不变, 所以页面原来的两条直边在圆柱上投影成曲线.
+/// 以平涂的色块为主, 不画高光和模糊投影. 由下到上:
+///
+/// 1. 纸色: p < a 的三角, 即页角原来盖住的地方. 可见部分是画布对角线右上的一半.
+/// 2. 影子: 卷起部分向页面内错开一点的硬边色块, 只落在舞台上.
+/// 3. 圆柱下半圈: 页面正面向上弯起的部分, 比上半圈宽, 在两端露出来.
+/// 4. 圆柱上半圈和盖回去的页角: 朝上的是页面背面. 圆柱上的一段由外沿向内渐变到页角的颜色.
 class _CurlPainter extends CustomPainter {
   const new({required this.paper, required this.back, required this.shadow});
 
@@ -736,35 +803,92 @@ class _CurlPainter extends CustomPainter {
   final Color back;
   final Color shadow;
 
+  /// 卷起的方向与页面上边的夹角. 45° 时页角沿对角线卷, 盖回去的两条边横平竖直, 显得呆板.
+  static const _lean = 53 * math.pi / 180;
+
+  /// 画布的宽高比.
+  static final double aspect = math.tan(_lean);
+
+  /// 卷起的边在屏幕上的倾角. 这条边是画布的对角线, 从左上到右下.
+  static const edgeAngle = math.pi / 2 - _lean;
+
+  /// 从卷起的边指向页角的单位向量.
+  static final Offset towardCorner = Offset(math.cos(_lean), -math.sin(_lean));
+
+  /// 顺着卷起的边指向左上的单位向量.
+  static final Offset alongEdge = Offset(-math.sin(_lean), -math.cos(_lean));
+
+  /// 画布高为 [extent] 时, 页角到卷起的边的垂足.
+  static Offset edgePoint(double extent) {
+    final reach = extent * math.sin(_lean);
+    return Offset(extent * aspect, 0) - towardCorner * reach;
+  }
+
+  /// 圆柱半径与纸色三角高度之比.
+  static const _radiusRatio = 0.16;
+
+  /// 每四分之一圈的采样段数.
+  static const _steps = 12;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final e = size.width;
-    if (e <= 0) return;
+    if (size.isEmpty) return;
+    final visible = size.height * math.sin(_lean);
+    final r = visible * _radiusRatio;
+    final a = visible + r;
+    final half = math.pi * r / 2;
+    final tip = 2 * a - math.pi * r;
+    final topSlope = math.tan(_lean);
+    final rightSlope = -1 / topSlope;
+
+    Offset onRoll(double u, double slope) =>
+        Offset(a - r * math.sin(u / r), slope * (a - u));
+
+    final under = Path()..moveTo(a, a * topSlope);
+    final over = Path()..moveTo(a - r, (a - half) * topSlope);
+    for (var i = 1; i <= _steps; i++) {
+      final u = half * i / _steps;
+      final lower = onRoll(u, topSlope);
+      final upper = onRoll(half + u, topSlope);
+      under.lineTo(lower.dx, lower.dy);
+      over.lineTo(upper.dx, upper.dy);
+    }
+    over.lineTo(tip, 0);
+    for (var i = _steps; i >= 0; i--) {
+      final u = half * i / _steps;
+      final lower = onRoll(u, rightSlope);
+      final upper = onRoll(half + u, rightSlope);
+      under.lineTo(lower.dx, lower.dy);
+      over.lineTo(upper.dx, upper.dy);
+    }
+    under.close();
+    over.close();
+
     final reveal = Path()
       ..moveTo(0, 0)
-      ..lineTo(e, 0)
-      ..lineTo(e, e)
+      ..lineTo(a, a * topSlope)
+      ..lineTo(a, a * rightSlope)
       ..close();
-    canvas.drawPath(reveal, Paint()..color = paper);
-    final flap = Path()
-      ..moveTo(0, 0)
-      ..lineTo(e, e)
-      ..lineTo(0, e)
-      ..close();
+    final shade = Paint()..color = Color.lerp(back, shadow, 0.14)!;
+    final flap = Color.lerp(back, paper, 0.95)!;
+
     canvas
-      ..drawShadow(flap, shadow, 4, false)
+      ..save()
+      ..translate(size.width, 0)
+      ..rotate(math.pi - _lean)
+      ..drawPath(reveal, Paint()..color = paper)
+      ..drawPath(over.shift(Offset(r * 0.3, 0)), shade)
+      ..drawPath(under, shade)
+      ..drawPath(over, Paint()..color = flap)
+      ..clipRect(Rect.fromLTRB(a - r, a * rightSlope, a, a * topSlope))
       ..drawPath(
-        flap,
+        over,
         Paint()
           ..shader = LinearGradient(
-            begin: Alignment.center,
-            end: Alignment.bottomLeft,
-            colors: [
-              Color.lerp(back, paper, 0.7)!,
-              Color.lerp(back, paper, 0.25)!,
-            ],
-          ).createShader(Offset.zero & size),
-      );
+            colors: [Color.lerp(flap, back, 0.3)!, flap],
+          ).createShader(Rect.fromLTRB(a - r, 0, a, 1)),
+      )
+      ..restore();
   }
 
   @override

@@ -139,7 +139,7 @@ void main() {
   });
 
   group('游客', () {
-    test('点「去逛逛」后成为游客，账号状态按没登录处理', () async {
+    test('点「先逛逛」后成为游客，账号状态按没登录处理', () async {
       final container = await env.container();
 
       container.read(sessionProvider.notifier).browse();
@@ -147,7 +147,7 @@ void main() {
       expect(container.read(accountStatusProvider), isA<SignedOutStatus>());
     });
 
-    test('已登录时点「去逛逛」不变', () async {
+    test('已登录时点「先逛逛」不变', () async {
       final container = await env.container(
         session: const SignedIn(user: testUser),
       );

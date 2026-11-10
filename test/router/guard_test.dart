@@ -82,7 +82,7 @@ void main() {
       );
     });
 
-    test('没点「去逛逛」时，游客能进的页面也去登录页', () {
+    test('没点「先逛逛」时，游客能进的页面也去登录页', () {
       expect(
         _redirect('/nearby', const SignedOut(), access: RouteAccess.guest),
         '/login?from=%2Fnearby',
@@ -155,7 +155,7 @@ void main() {
     });
   });
 
-  group('「去逛逛」后去的地址', () {
+  group('「先逛逛」后去的地址', () {
     test('游客能进的原地址照去', () {
       expect(browseTarget('/me?tab=1', _accessOf), '/me?tab=1');
     });

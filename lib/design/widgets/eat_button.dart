@@ -21,7 +21,7 @@ enum _Kind { solid, outline, mist, add, stageSolid, stageGhost }
 /// 文字写明按下后的结果, 如 "就它了" "导航去店里", 不写 "确定".
 ///
 /// 变体:
-/// - 白底主操作用 [EatButton.solid], 每屏最多一个.
+/// - 白底主操作用 [EatButton.solid].
 /// - 白底上并排的次操作用 [EatButton.outline] 或 [EatButton.mist].
 /// - "新建一家店" "自己写" 这类补充入口用 [EatButton.add].
 /// - 舞台上用 [EatButton.stageSolid] 和 [EatButton.stageGhost], 颜色取自所在舞台.

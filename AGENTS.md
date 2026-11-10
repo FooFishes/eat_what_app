@@ -36,7 +36,7 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
-assets/              进 App 的资源：fonts/（子集化的字体和许可证）、emoji/（登录页用的 emoji 图片和许可证）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
+assets/              进 App 的资源：fonts/（子集化的字体和许可证）、emoji/（登录页用的动画表情，每个有一张动图和一张首帧静态图）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
 tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
@@ -126,7 +126,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 - **字体**：中文 Noto Sans SC，Inter 只用于数字（价格、距离、计数）。字号用 `EatTextStyles` 的预设，偏差不大的地方先用预设；字重只用 400、600、700、800，800 只给舞台上的主角。选中态靠字重，不靠颜色。
 - **形状**：能点的都是胶囊；盘子、地图标记和头像永远是正圆（`DishPlate` 带 8px 白色盘沿），列表缩略图是方圆角（`radius-thumb`），推荐流方块是圆角方图。阴影只用在规范列出的几处，不给卡片加投影。
 - **图标**：MingCute Line 一套，24 网格 2px 描边，按用途命名，SVG 在 `assets/icons/`，颜色用 `currentColor` 跟着文字。只有赞过 `heart-on`、收藏过 `bookmark-on` 用实心，不混用其他图标库，不用 emoji。
-- **文案**：短句。引导（标题、按钮、空状态）可以用同学之间说话的语气；提示和报错（轻提示、校验、拦截、确认、系统消息、失败）用规范短句，不用「一下」「吧」「开小差」这类口语，不显示错误码；距离「320 m」、价格「¥18」；专题、标签用「」引用；不用 emoji 和感叹号。唯一的例外是登录页介绍文案末尾的思考表情：用 `assets/emoji/` 里的 Fluent Emoji 图片（`lib/design/icons/emoji.dart`），不用系统 emoji 字体，其他位置不加。还没有接口的功能照样画出来，旁边放「待接入」虚线标签（`Chip`）。
+- **文案**：短句。引导（标题、按钮、空状态）可以用同学之间说话的语气；提示和报错（轻提示、校验、拦截、确认、系统消息、失败）用规范短句，不用「一下」「吧」「开小差」这类口语，不显示错误码；距离「320 m」、价格「¥18」；专题、标签用「」引用；不用 emoji 和感叹号。唯一的例外是登录页的两个动画表情，介绍文案末尾的思考表情和「先逛逛」卷角后面的眼睛：用 `assets/emoji/` 里的图片（`lib/design/icons/emoji.dart`），不用系统 emoji 字体，其他位置不加。还没有接口的功能照样画出来，旁边放「待接入」虚线标签（`Chip`）。
 - **动效与无障碍**：转盘吸附 680ms 回弹曲线、舞台换色 500ms、按钮按下下沉 1px；系统开启减少动态效果时停掉自动动画。点击区域不小于 44px，文字对比不低于 4.5:1，可滑动的操作都要有按钮替代。
 - `prototype/assets/` 里的插画、示例图和图标只用于对照设计；要进 App 的资源复制到项目自己的 `assets/` 并在 `pubspec.yaml` 声明。插画只用于空状态、引导和演示，不能冒充用户上传的照片。
 - `.dc.html` 依赖 Claude Design 运行时，本地打开只能看静态结构。读法见 `prototype/README.md`。

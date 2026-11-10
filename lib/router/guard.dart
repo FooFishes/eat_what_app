@@ -8,7 +8,7 @@ enum RouteAccess {
   /// 谁都能进, 如登录页.
   public,
 
-  /// 游客和登录用户能进. 游客指这次打开 App 后在登录页点过 "去逛逛" 的人.
+  /// 游客和登录用户能进. 游客指这次打开 App 后在登录页点过 "先逛逛" 的人.
   guest,
 
   /// 只有登录后能进. 不标记的页面都属于这一档.
@@ -35,7 +35,7 @@ const signedInRoute = <String, dynamic>{RouteAccess._key: RouteAccess.signedIn};
 ///
 /// [access] 是目标页面的开放程度. [canMatch] 判断站内地址能否匹配路由表.
 ///
-/// 游客停在登录页时不跳走, 这样游客随时能回登录页. 点 "去逛逛" 后由登录页自己跳转, 见 [browseTarget].
+/// 游客停在登录页时不跳走, 这样游客随时能回登录页. 点 "先逛逛" 后由登录页自己跳转, 见 [browseTarget].
 String? resolveRedirect({
   required Uri location,
   required RouteAccess access,
@@ -76,7 +76,7 @@ String _login(Uri location, SignOutReason reason) {
   ).toString();
 }
 
-/// 在登录页点 "去逛逛" 后去的地址.
+/// 在登录页点 "先逛逛" 后去的地址.
 ///
 /// [from] 能匹配路由表, 且游客能进时去 [from], 否则去发现页.
 /// [accessOf] 返回站内地址对应页面的开放程度, 不能匹配路由表时返回 null.

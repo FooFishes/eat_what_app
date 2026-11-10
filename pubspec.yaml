@@ -75,8 +75,10 @@ flutter:
     - path: assets/illustrations/
       transformers:
         - package: vector_graphics_compiler
-    - assets/emoji/thinking.png
-    - assets/emoji/LICENSE-FluentEmoji.txt
+    - assets/emoji/thinking.webp
+    - assets/emoji/thinking_still.webp
+    - assets/emoji/eyes.webp
+    - assets/emoji/eyes_still.webp
     - assets/fonts/OFL-NotoSansSC.txt
     - assets/fonts/OFL-Inter.txt
     - shorebird.yaml

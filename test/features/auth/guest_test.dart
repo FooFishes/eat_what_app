@@ -49,11 +49,40 @@ void main() {
       ..on('GET /restaurant/detail/7', [FakeAdapter.ok(restaurantJson())]);
   });
 
-  group('去逛逛', () {
+  group('先逛逛', () {
+    Size cornerSize(WidgetTester tester) => tester.getSize(
+      find
+          .ancestor(of: find.text('先逛逛？'), matching: find.byType(CustomPaint))
+          .first,
+    );
+
+    testWidgets('页角每隔几秒掀起一点再回到原样', (tester) async {
+      await pumpApp(tester, env);
+      final rest = cornerSize(tester);
+
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 3300));
+      await tester.pump(const Duration(milliseconds: 270));
+      expect(cornerSize(tester).height, greaterThan(rest.height));
+
+      await tester.pump(const Duration(seconds: 1));
+      expect(cornerSize(tester), rest);
+    });
+
+    testWidgets('系统开启减少动态效果时页角不动', (tester) async {
+      await pumpApp(tester, env);
+      final rest = cornerSize(tester);
+
+      await tester.pump(const Duration(milliseconds: 3300));
+      await tester.pump(const Duration(milliseconds: 270));
+      expect(cornerSize(tester), rest);
+    });
+
     testWidgets('没勾协议先弹面板，同意后成为游客进发现页，并记下协议同意', (tester) async {
       final (container, router) = await pumpApp(tester, env);
 
-      await tester.tap(find.text('去逛逛'));
+      await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
       expect(find.text('同意后继续'), findsOneWidget);
       await tester.tap(find.text('同意并继续'));
@@ -73,7 +102,7 @@ void main() {
     testWidgets('不同意时停在登录页，不成为游客，也不记同意', (tester) async {
       final (container, router) = await pumpApp(tester, env);
 
-      await tester.tap(find.text('去逛逛'));
+      await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('不同意'));
       await tester.pumpAndSettle();
@@ -83,7 +112,7 @@ void main() {
       expect(env.kv.values[PrivacyConsentStore.key], isNull);
     });
 
-    testWidgets('分享链接指向的菜：去逛逛后直接到那道菜', (tester) async {
+    testWidgets('分享链接指向的菜：点「先逛逛」后直接到那道菜', (tester) async {
       final (container, router) = await pumpApp(
         tester,
         env,
@@ -93,7 +122,7 @@ void main() {
 
       await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
       await tester.pump();
-      await tester.tap(find.text('去逛逛'));
+      await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
 
       expect(find.text('同意后继续'), findsNothing);
@@ -102,13 +131,13 @@ void main() {
       await unmountApp(tester, container);
     });
 
-    testWidgets('原来要去的页面游客看不了，去逛逛后进发现页', (tester) async {
+    testWidgets('原来要去的页面游客看不了，点「先逛逛」后进发现页', (tester) async {
       final (_, router) = await pumpApp(tester, env, location: Paths.inbox);
       expect(Uri.parse(locationOf(router)).queryParameters['from'], '/inbox');
 
       await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
       await tester.pump();
-      await tester.tap(find.text('去逛逛'));
+      await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
 
       expect(locationOf(router), Paths.discover);
@@ -116,7 +145,7 @@ void main() {
   });
 
   group('游客', () {
-    testWidgets('点消息弹登录面板：「先逛逛」关掉，「去登录」回登录页，还能再去逛逛', (tester) async {
+    testWidgets('点消息弹登录面板：「先逛逛」关掉，「去登录」回登录页，还能再点「先逛逛」', (tester) async {
       final (_, router) = await pumpApp(tester, env, session: const Guest());
 
       await tester.tap(find.bySemanticsLabel('消息'));
@@ -135,7 +164,7 @@ void main() {
 
       await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
       await tester.pump();
-      await tester.tap(find.text('去逛逛'));
+      await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
       expect(locationOf(router), Paths.discover);
       _expectNoSignedInRequests(env.adapter);

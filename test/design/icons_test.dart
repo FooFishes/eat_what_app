@@ -58,13 +58,15 @@ void main() {
       );
     });
 
-    test('Emoji 和 assets/emoji/ 里的图片一一对应', () {
-      final pngs = Directory('assets/emoji')
+    test('Emoji 和 assets/emoji/ 里的图片一一对应，每个都有动图和静态图', () {
+      final images = Directory('assets/emoji')
           .listSync()
-          .map((f) => f.uri.pathSegments.last)
-          .where((name) => name.endsWith('.png'))
+          .map((f) => f.path)
+          .where((path) => path.endsWith('.webp'))
           .toSet();
-      expect(Emoji.values.map((e) => '${e.name}.png').toSet(), pngs);
+      expect({
+        for (final emoji in Emoji.values) ...[emoji.asset, emoji.still],
+      }, images);
     });
   });
 

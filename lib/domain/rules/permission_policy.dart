@@ -131,7 +131,7 @@ final class Allowed extends PermissionResult {
 
 /// 未登录, 只出现在游客身上. 拦截面板显示 "登录后才能...", 主按钮为 "去登录".
 ///
-/// 没点 "去逛逛" 的未登录状态会被守卫带去登录页, 正常流程不会得到该结果.
+/// 没点 "先逛逛" 的未登录状态会被守卫带去登录页, 正常流程不会得到该结果.
 final class NeedsSignIn extends PermissionResult {
   const NeedsSignIn();
 }

@@ -76,9 +76,13 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
 
   /// 切换到验证码登录.
   ///
-  /// 从手机号登录页进入时返回上一页. 直接打开时没有上一页, 替换为手机号登录页.
+  /// 从手机号登录页 push 进入时返回上一页. 从登录页进入或直接打开时, 换成手机号登录页.
   void _useCode() {
-    if (context.canPop()) {
+    final matches = GoRouter.of(context)
+        .routerDelegate
+        .currentConfiguration
+        .matches;
+    if (matches.isNotEmpty && matches.last is ImperativeRouteMatch) {
       context.pop();
     } else {
       context.go(_withQuery(Paths.loginPhone));

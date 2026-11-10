@@ -48,7 +48,7 @@ Future<void> _enter(WidgetTester tester, String label, String text) async {
 Future<void> _agreeAndOpenPhoneLogin(WidgetTester tester) async {
   await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
   await tester.pump();
-  await tester.tap(find.text('手机号登录'));
+  await tester.tap(find.text('验证码登录'));
   await tester.pumpAndSettle();
 }
 
@@ -70,9 +70,9 @@ void main() {
 
     expect(locationOf(router), Paths.login);
     expect(find.byType(LoginPage), findsOneWidget);
-    expect(_button(tester, '手机号登录').muted, isFalse);
+    expect(_button(tester, '验证码登录').muted, isFalse);
 
-    await tester.tap(find.text('手机号登录'));
+    await tester.tap(find.text('验证码登录'));
     await tester.pumpAndSettle();
     expect(find.text('同意后继续'), findsOneWidget);
     await tester.tap(find.text('不同意'));
@@ -81,7 +81,7 @@ void main() {
     expect(locationOf(router), Paths.login);
     expect(container.read(loginAgreementProvider), isFalse);
 
-    await tester.tap(find.text('手机号登录'));
+    await tester.tap(find.text('验证码登录'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('同意并继续'));
     await tester.pumpAndSettle();
@@ -95,6 +95,21 @@ void main() {
     await _agreeAndOpenPhoneLogin(tester);
     expect(find.text('同意后继续'), findsNothing);
     expect(find.byType(PhoneLoginPage), findsOneWidget);
+  });
+
+  testWidgets('登录页点「账号密码登录」直接进密码登录页，「用验证码登录」换到手机号登录页', (tester) async {
+    await pumpApp(tester, env);
+    await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
+    await tester.pump();
+
+    await tester.tap(find.text('账号密码登录'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PasswordLoginPage), findsOneWidget);
+
+    await tester.tap(find.text('用验证码登录'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PhoneLoginPage), findsOneWidget);
+    expect(find.byType(PasswordLoginPage), findsNothing);
   });
 
   testWidgets('验证码登录：过人机验证发码，60 秒倒计时，登录后进发现页并记下协议同意', (tester) async {
@@ -605,7 +620,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     final intro = tester.getRect(find.textContaining('是啊'));
-    final button = find.widgetWithText(EatButton, '手机号登录');
+    final button = find.widgetWithText(EatButton, '验证码登录');
     expect(intro.bottom, lessThan(tester.getRect(button).top));
     await tester.ensureVisible(find.bySemanticsLabel('同意隐私政策和用户协议'));
     await tester.pump();
