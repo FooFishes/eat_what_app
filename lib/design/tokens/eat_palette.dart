@@ -9,15 +9,15 @@ abstract final class EatPalette {
   static const inkMuted = Color(0xFF6E625B);
   static const inkSoft = Color(0xFF4A3C31);
   static const paper = Color(0xFFFFFFFF);
-  static const mist = Color(0xFFF4EFEB);
+  static const mist = Color(0xFFF3F2F0);
   static const inkTop = Color(0xFF3B312B);
   static const tagSelected = Color(0xFFFBEFD9);
   static const hairline = Color(0xFFEFE9E4);
   static const handle = Color(0xFFE6DED8);
   static const scrim = Color.fromRGBO(35, 28, 24, 0.45);
   static const lineStrong = Color(0xFF9A8B80);
-  static const disabledBg = Color(0xFFE9E2DC);
-  static const disabledFg = Color(0xFF8A7E76);
+  static const disabledBg = Color(0xFFEFEEEC);
+  static const disabledFg = Color(0xFFB0ADA9);
   static const warn = Color(0xFFA8321C);
 
   static const mapMe = Color(0xFF2F6FEB);

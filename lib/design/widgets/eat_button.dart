@@ -235,8 +235,12 @@ class EatButton extends StatelessWidget {
           foreground: c.paper,
         );
       case _Kind.outline:
+        // 按下时保留描边, 去掉投影.
         return (
-          style: _raised(c.paper, pressed ? _outlinePressed : s.buttonOutline),
+          style: _raised(
+            c.paper,
+            pressed ? EatShadow(inset: s.buttonOutline.inset) : s.buttonOutline,
+          ),
           foreground: c.ink,
         );
       case _Kind.mist:
@@ -368,12 +372,7 @@ SurfaceStyle _raised(Color color, EatShadow shadow) => SurfaceStyle(
 SurfaceStyle _addStyle(Color fill, Color border) =>
     SurfaceStyle.flat(fill, inset: [BoxShadow(spreadRadius: 1, color: border)]);
 
-// 以下三种按下阴影不在阴影令牌中, 只供本组件使用.
-
-/// 描边按钮按下: 保留描边, 去掉投影.
-const _outlinePressed = EatShadow(
-  inset: [BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18))],
-);
+// 以下两种按下阴影不在阴影令牌中, 只供本组件使用.
 
 /// 深色舞台上白色实心按钮的按下阴影.
 const _onStagePressed = EatShadow(

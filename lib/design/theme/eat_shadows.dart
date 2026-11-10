@@ -1,3 +1,4 @@
+import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:flutter/painting.dart';
 
 /// 阴影令牌, 外阴影和内阴影分别存放.
@@ -30,7 +31,9 @@ class const EatShadows({
   required final EatShadow button,
   required final EatShadow buttonPressed,
 
-  /// 雾面按钮.
+  /// 雾面按钮: `handle` 细描边和浅色底边. 按下时只保留描边.
+  ///
+  /// 细描边让雾面按钮与不可用按钮的扁平灰底区分开.
   required final EatShadow buttonLight,
   required final EatShadow buttonLightPressed,
 
@@ -99,9 +102,12 @@ class const EatShadows({
           offset: Offset(0, -3),
           color: Color.fromRGBO(35, 28, 24, 0.06),
         ),
+        BoxShadow(spreadRadius: 1, color: EatPalette.handle),
       ],
     ),
-    buttonLightPressed: EatShadow(),
+    buttonLightPressed: EatShadow(
+      inset: [BoxShadow(spreadRadius: 1, color: EatPalette.handle)],
+    ),
     buttonOutline: EatShadow(
       outer: [
         BoxShadow(
@@ -111,7 +117,7 @@ class const EatShadows({
           color: Color.fromRGBO(35, 28, 24, 0.25),
         ),
       ],
-      inset: [BoxShadow(spreadRadius: 1.5, color: Color(0xFF231C18))],
+      inset: [BoxShadow(spreadRadius: 1.5, color: EatPalette.ink)],
     ),
     buttonOnStage: EatShadow(
       outer: [
