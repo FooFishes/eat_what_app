@@ -48,6 +48,11 @@ tags:
   - name: LifecycleCancellation
   - name: CredentialMobile
   - name: CredentialMobileRecovery
+  - name: EngagementAdmin
+  - name: Growth
+  - name: CommentHttp
+  - name: CommentRead
+  - name: CommentLike
 paths:
   /activity/list:
     get:
@@ -62,12 +67,12 @@ paths:
         游客可访问
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_list_get
       tags:
         - Activity
@@ -100,8 +105,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_deletePost_delete
       tags:
         - Activity
@@ -138,12 +143,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_postDetail_get
       tags:
         - Activity
@@ -184,8 +189,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_like_post
       tags:
         - Activity
@@ -225,8 +230,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_unlike_delete
       tags:
         - Activity
@@ -264,12 +269,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_detail_get
       tags:
         - Activity
@@ -306,12 +311,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_listPosts_get
       tags:
         - Activity
@@ -371,8 +376,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityController_publish_post
       tags:
         - Activity
@@ -411,10 +416,15 @@ paths:
     post:
       summary: 【需admin】菜品标签管理：创建系统菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodTagAdminController_createSystemTag_post
       tags:
         - FoodTagAdmin
@@ -445,10 +455,15 @@ paths:
     get:
       summary: 【需admin】菜品标签管理：获取系统菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodTagAdminController_listSystemTags_get
       tags:
         - FoodTagAdmin
@@ -488,10 +503,15 @@ paths:
     delete:
       summary: 【需admin】菜品标签管理：删除系统菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodTagAdminController_deleteSystemTag_delete
       tags:
         - FoodTagAdmin
@@ -524,10 +544,15 @@ paths:
     put:
       summary: 【需admin】菜品标签管理：修改系统菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodTagAdminController_updateSystemTag_put
       tags:
         - FoodTagAdmin
@@ -567,10 +592,15 @@ paths:
     get:
       summary: 【需admin】业务管理：获取业务统计
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AdminController_summary_get
       tags:
         - Admin
@@ -596,12 +626,18 @@ paths:
     get:
       summary: 【需admin】目录冲突管理：列出未解决的目录冲突
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_listOpenConflicts_get
       tags:
         - CatalogConflict
@@ -627,12 +663,18 @@ paths:
     get:
       summary: 【需admin】目录冲突管理：listDecisions
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_listDecisions_get
       tags:
         - CatalogConflict
@@ -658,12 +700,18 @@ paths:
     get:
       summary: 【需admin】目录冲突管理：decisionSnapshot
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_decisionSnapshot_get
       tags:
         - CatalogConflict
@@ -697,12 +745,18 @@ paths:
     post:
       summary: 【需admin】目录冲突管理：resolveDecision
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_resolveDecision_post
       tags:
         - CatalogConflict
@@ -719,7 +773,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResolveDecisionRequestRequest'
+              $ref: >-
+                #/components/schemas/CatalogConflictResolveDecisionRequestRequest
         required: true
       responses:
         '200':
@@ -742,12 +797,18 @@ paths:
     get:
       summary: 【需admin】目录冲突管理：列出未解决的对象版本冲突
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_listOpenObjectHeadConflicts_get
       tags:
         - CatalogConflict
@@ -774,12 +835,18 @@ paths:
     post:
       summary: 【需admin】目录冲突管理：解决对象版本冲突
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_resolveObjectHeads_post
       tags:
         - CatalogConflict
@@ -796,7 +863,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResolveHeadRequestRequest'
+              $ref: '#/components/schemas/CatalogConflictResolveHeadRequestRequest'
         required: true
       responses:
         '200':
@@ -819,12 +886,18 @@ paths:
     get:
       summary: 【需admin】目录冲突管理：listAuthorizationReviews
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_listAuthorizationReviews_get
       tags:
         - CatalogConflict
@@ -851,12 +924,18 @@ paths:
     post:
       summary: 【需admin】目录冲突管理：解决冲突
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogConflictController_resolve_post
       tags:
         - CatalogConflict
@@ -873,7 +952,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResolveRequestRequest'
+              $ref: '#/components/schemas/CatalogConflictResolveRequestRequest'
         required: true
       responses:
         '200':
@@ -896,12 +975,18 @@ paths:
     post:
       summary: 【需admin】目录导入管理：导入商场目录
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.catalog.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CatalogImportController_importHubs_post
       tags:
         - CatalogImport
@@ -933,12 +1018,18 @@ paths:
     get:
       summary: 【需admin】资料冲突管理：获取列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.profile.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ProfileConflictController_list_get
       tags:
         - ProfileConflict
@@ -964,12 +1055,18 @@ paths:
     get:
       summary: 【需admin】资料冲突管理：authorizationReviews
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.profile.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ProfileConflictController_authorizationReviews_get
       tags:
         - ProfileConflict
@@ -995,12 +1092,18 @@ paths:
     post:
       summary: 【需admin】资料冲突管理：resolveAuthorizationReview
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.profile.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ProfileConflictController_resolveAuthorizationReview_post
       tags:
         - ProfileConflict
@@ -1017,8 +1120,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: >-
-                #/components/schemas/ProfileConflictControllerResolveRequestRequest
+              $ref: '#/components/schemas/ResolveRequestRequest'
         required: true
       responses:
         '200':
@@ -1041,12 +1143,18 @@ paths:
     post:
       summary: 【需admin】资料冲突管理：解决冲突
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.sync.profile.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ProfileConflictController_resolve_post
       tags:
         - ProfileConflict
@@ -1063,8 +1171,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: >-
-                #/components/schemas/ProfileConflictControllerResolveRequestRequest
+              $ref: '#/components/schemas/ResolveRequestRequest'
         required: true
       responses:
         '200':
@@ -1094,16 +1201,16 @@ paths:
         获取所有省份
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         后端原始映射本身包含 /api。在当前会剥离一次 /api/ 的业务网关中，完整外部路径为
         /api/api/location/provinces；不要擅自去重。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LocationController_getAllProvinces_get
       tags:
         - Location
@@ -1133,16 +1240,16 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         后端原始映射本身包含 /api。在当前会剥离一次 /api/ 的业务网关中，完整外部路径为
         /api/api/location/provinces/{provinceId}/cities；不要擅自去重。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LocationController_getCitiesByProvinceId_get
       tags:
         - Location
@@ -1185,9 +1292,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -1201,6 +1305,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_callback_get
       tags:
         - Auth
@@ -1265,9 +1373,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -1281,6 +1386,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_callback_post
       tags:
         - Auth
@@ -1343,9 +1452,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -1359,6 +1465,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_callbackWithState_get
       tags:
         - Auth
@@ -1421,9 +1531,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -1437,6 +1544,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_callbackWithState_post
       tags:
         - Auth
@@ -1514,6 +1625,10 @@ paths:
         null。完成前端验证后，仍需通过发送接口提交 ticket 和
         randstr，只有后端核查通过才发送。本功能已部署到校内和新加坡，两站均启用人机验证。初始化参数查询与缺票据拦截已通过公网复测；真人挑战成功后的短信/邮件投递尚未完成端到端验收。完整示例见
         docs/architecture/tencent-captcha.md。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_captchaConfig_get
       tags:
         - Auth
@@ -1597,6 +1712,10 @@ paths:
 
         修改密码需要先有旧密码；若该账号还没设过密码，返回 30010 PASSWORD_NOT_SET，应改用 /auth/password/code
         + /auth/password/reset 设置初始密码。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_changePassword_post
       tags:
         - Auth
@@ -1637,6 +1756,10 @@ paths:
 
         公开的唯一登录用户名查重，不受 app.auth.username-registration-enabled
         影响。3–10位字母、数字或下划线，区分大小写；可用返回0，占用（含冲突中的别名）返回30003，格式错误返回10001。昵称无需查重。结果不预留用户名，最终以设置接口提交为准。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_checkUsername_post
       tags:
         - Auth
@@ -1694,6 +1817,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sendCode_post
       tags:
         - Auth
@@ -1787,6 +1914,10 @@ paths:
 
         用户名/邮箱/手机号 + 密码登录；若该账号还没设过密码（验证码注册），返回 30010
         PASSWORD_NOT_SET，提示改用手机验证码登录。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_login_post
       tags:
         - Auth
@@ -1817,7 +1948,12 @@ paths:
     post:
       summary: 【需登录】登录与认证：退出登录
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_logout_post
       tags:
         - Auth
@@ -1865,6 +2001,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sendPasswordCode_post
       tags:
         - Auth
@@ -1956,6 +2096,10 @@ paths:
         秒发送间隔跨站共享。错误次数跨站累计，最多 5
         次；成功消费后两站均不能再次使用。验证码绑定手机号及业务用途，需登录的验证码还绑定当前账号；不能跨用途或跨账号使用。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_resetPasswordByCode_post
       tags:
         - Auth
@@ -2009,6 +2153,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sendLoginCode_post
       tags:
         - Auth
@@ -2107,6 +2255,10 @@ paths:
         5 分钟；同一手机号的 60 秒发送间隔跨站共享。错误次数跨站累计，最多 5
         次；成功消费后两站均不能再次使用。验证码绑定手机号及业务用途，需登录的验证码还绑定当前账号；不能跨用途或跨账号使用。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_phoneLogin_post
       tags:
         - Auth
@@ -2157,6 +2309,10 @@ paths:
         已关闭：默认返回 30014 USERNAME_REGISTRATION_CLOSED（请使用手机号验证码注册），不建号。新用户用
         /auth/phone/code + /auth/phone/login 注册；已有用户名账号照常用 /auth/login 登录。服务端配置
         app.auth.username-registration-enabled=true 可临时打开，仅供测试和应急。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_register_post
       tags:
         - Auth
@@ -2201,15 +2357,15 @@ paths:
         省略 client 或 client=web 时使用预设网页地址。只接受 app/web，不接受客户端指定回跳地址。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state
-        为本轮源码变更，尚未发布新协议版本；既有结果回跳的历史发布不代表新协议已上线。
-
-
         此发起接口仍返回 JSON data.url/expiresIn=300；浏览器打开该 URL 后的学校回调才重定向。认证 state
         五分钟有效、单次使用；另有只存 app/web 来源的24小时回跳提示，不延长认证有效期。结果回跳的部署范围见各操作部署标记和独立发布记录。
 
 
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sdu_get
       tags:
         - Auth
@@ -2263,15 +2419,15 @@ paths:
         省略 client 或 client=web 时使用预设网页地址。只接受 app/web，不接受客户端指定回跳地址。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state
-        为本轮源码变更，尚未发布新协议版本；既有结果回跳的历史发布不代表新协议已上线。
-
-
         此发起接口仍返回 JSON data.url/expiresIn=300；浏览器打开该 URL 后的学校回调才重定向。认证 state
         五分钟有效、单次使用；另有只存 app/web 来源的24小时回跳提示，不延长认证有效期。结果回跳的部署范围见各操作部署标记和独立发布记录。
 
 
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sdu_post
       tags:
         - Auth
@@ -2331,6 +2487,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_sendEmail_get
       tags:
         - Auth
@@ -2440,6 +2600,10 @@ paths:
         5
         次；成功消费后两站均不能再次使用。验证码绑定手机号及业务用途，需登录的验证码还绑定当前账号；不能跨用途或跨账号使用。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_setLoginUsername_post
       tags:
         - Auth
@@ -2480,6 +2644,10 @@ paths:
 
         data 为当前账号已完成的认证方式：verify:sso（山东大学统一认证）或 verify:school_email（学校邮箱）；未认证时为
         []。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_verify_get
       tags:
         - Auth
@@ -2578,6 +2746,10 @@ paths:
         使用邮箱验证/绑定用途令牌，任一站均可受理；服务端仍检查对应账号状态。邮箱令牌有效期为 30
         分钟，发送间隔与一次性消费状态跨站共享。令牌绑定账号、邮箱和用途；邮箱验证/绑定令牌不能用作密码冲突恢复令牌，反向也不允许。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AuthController_verifyEmail_get
       tags:
         - Auth
@@ -2631,9 +2803,8 @@ paths:
         deploy/USER_BLOCKS_CONSENT_RELEASE_20261026.md；源码与线上规范分别从对应 JAR 生成。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：GET /auth/consent 的成功 data
-        仅 status、identityReady、policyVersion，三者均必返且非
-        null；校内和新加坡共用。授权/撤回及登录进度保留六字段。精确运行包序列化/接口测试、两站字节摘要和匿名登录门槛均通过，生产未创建测试账号或改真实用户授权。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_status_get
       tags:
         - AccountConsent
@@ -2652,7 +2823,7 @@ paths:
                   identityReady: false
                   policyVersion: cross-border-preferences-v3
                 msg: ok
-                timestamp: 1793877992191
+                timestamp: 1794215078897
           headers: {}
         default:
           description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
@@ -2678,9 +2849,8 @@ paths:
         时须使用有效登录会话；启用双站写入后两站均可提交，旧模式保留校内限制。必须先读取当前政策版本。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：同意进度仅保留六个业务字段，凭证分支保留
-        consentProof，内部 epoch/revision/validUntil 不向客户端返回；用户资料查询真实
-        role/banned，仅封禁时读取详情。实际候选包隔离测试、运行包摘要及匿名公网门槛已验证，生产未创建账号或执行真实用户登录。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_grant_post
       tags:
         - AccountConsent
@@ -2689,7 +2859,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GrantRequestRequest'
+              $ref: '#/components/schemas/AccountConsentGrantRequestRequest'
         required: true
       responses:
         '200':
@@ -2706,7 +2876,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /auth/consent/offer-with-password:
     post:
       summary: 【公开】跨站同步同意：使用密码重新验证并获取同意进度
@@ -2718,8 +2889,8 @@ paths:
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_offerWithPassword_post
       tags:
         - AccountConsent
@@ -2728,7 +2899,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WithdrawalRequestRequest'
+              $ref: '#/components/schemas/AccountConsentWithdrawalRequestRequest'
         required: true
       responses:
         '200':
@@ -2745,20 +2916,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /auth/consent/policy:
     get:
-      summary: 【公开】跨站同步同意：读取跨站同意政策
+      summary: 【可选登录】跨站同步同意：读取跨站同意政策
       deprecated: false
       description: >-
-        **权限：公开（无需登录）**
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站公开政策仍只返回 version、url；V76
-        管理编辑模块同时已上线，当前政策值未因发布而改变。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_policy_get
       tags:
         - AccountConsent
@@ -2785,7 +2961,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /auth/consent/withdraw:
     post:
       summary: 【需登录】跨站同步同意：撤回当前用户跨站同意
@@ -2797,9 +2974,8 @@ paths:
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：同意进度仅保留六个业务字段，凭证分支保留
-        consentProof，内部 epoch/revision/validUntil 不向客户端返回；用户资料查询真实
-        role/banned，仅封禁时读取详情。实际候选包隔离测试、运行包摘要及匿名公网门槛已验证，生产未创建账号或执行真实用户登录。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_withdraw_post
       tags:
         - AccountConsent
@@ -2823,18 +2999,21 @@ paths:
         - SaToken: []
   /auth/consent/withdraw-with-password:
     post:
-      summary: 【公开】跨站同步同意：使用密码撤回跨站同意
+      summary: 【可选登录】跨站同步同意：使用密码撤回跨站同意
       deprecated: false
       description: >-
-        **权限：公开（无需登录）**
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：同意进度仅保留六个业务字段，凭证分支保留
-        consentProof，内部 epoch/revision/validUntil 不向客户端返回；用户资料查询真实
-        role/banned，仅封禁时读取详情。实际候选包隔离测试、运行包摘要及匿名公网门槛已验证，生产未创建账号或执行真实用户登录。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountConsentController_withdrawWithPassword_post
       tags:
         - AccountConsent
@@ -2843,7 +3022,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WithdrawalRequestRequest'
+              $ref: '#/components/schemas/AccountConsentWithdrawalRequestRequest'
         required: true
       responses:
         '200':
@@ -2860,7 +3039,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /callback:
     get:
       summary: 【公开】Callback：SDU Pass 回调（网关 /api/callback?state=...&code=...），不要求浏览器登录态。
@@ -2873,9 +3053,6 @@ paths:
 
 
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
-
-
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
 
 
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
@@ -2891,6 +3068,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CallbackController_callback_get
       tags:
         - Callback
@@ -2956,9 +3137,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -2972,6 +3150,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CallbackController_callback_post
       tags:
         - Callback
@@ -3035,9 +3217,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -3053,8 +3232,8 @@ paths:
         /user/info 或 /auth/verify。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CallbackController_callbackWithState_get
       tags:
         - Callback
@@ -3118,9 +3297,6 @@ paths:
         原 Spring 方法未限制 HTTP 方法；此文档展开 GET/POST 两种调用，其他方法并未由文档新增。
 
 
-        2026-11-05 SDU Pass code 兑换与查询参数 state 为本轮源码变更，尚未发布新协议版本。
-
-
         学校仅回传一次性 code（60秒有效），由后端 POST https://i.sdu.edu.cn/pass-api/auth/token
         换取 data.token；校验 PBKDF2 派生密钥的 HS256 签名及 exp，不接受浏览器 token 参数。新发起使用固定
         /api/callback?state=...，控制台须使用 IGNORE_QUERY 模式；路径 state 回调仅保留兼容。
@@ -3134,6 +3310,10 @@ paths:
         30012=认证链接无效/过期/重复，30013=学号已用于其他账号，50003=学校 code 换取失败或 JWT
         无效；20005/20006及其他业务异常保留既有码，数据库/Redis/系统故障分别为90002/90003/90001。事务回滚或提交失败不能发送success或刷新成功权限缓存。客户端只用结果参数展示提示，认证状态须带原会话查询
         /user/info 或 /auth/verify。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CallbackController_callbackWithState_post
       tags:
         - Callback
@@ -3198,6 +3378,10 @@ paths:
         需登录；他人主页的公开上传列表。路径 userId 固定作者，可分页及按现有 FoodQueryDTO
         条件筛选；未知用户返回空列表。只返回可见菜品及可见餐厅，排序默认 NEWEST。isLiked/isFavorite/myCustomTags
         按访问者计算，不返回作者的私人状态。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_getUserFoods_get
       tags:
         - Food
@@ -3365,10 +3549,15 @@ paths:
     delete:
       summary: 【需admin】菜品与收藏：删除菜品或美食动态
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_deleteFood_delete
       tags:
         - Food
@@ -3406,17 +3595,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
-
-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_getFoodDetail_get
       tags:
         - Food
@@ -3464,9 +3648,8 @@ paths:
         data 为 null。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_editFood_put
       tags:
         - Food
@@ -3525,9 +3708,8 @@ paths:
         NEWEST/PRICE_ASC/PRICE_DESC/POPULAR。分页前执行全部筛选。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_getMyFavoriteFoods_get
       tags:
         - Food
@@ -3705,8 +3887,8 @@ paths:
         游客可访问；登录后返回个人点赞、收藏和自定义标签状态。
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         restaurantId 可省略以跨餐厅查询；uploaderId 可按上传者筛选（指定时需登录）。keyword
@@ -3716,13 +3898,8 @@ paths:
         仅收藏列表可用。未知价格不满足预算筛选，价格排序时置后。page>=1，pageSize=1..100，默认1/20。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
-
-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_listByRestaurant_get
       tags:
         - Food
@@ -3892,10 +4069,15 @@ paths:
     get:
       summary: 【需登录】菜品与收藏：获取我的菜品
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         获取自己上传的菜品
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_getMyFood_get
       tags:
         - Food
@@ -3946,9 +4128,8 @@ paths:
         /foods/delete/{id}。启用双站写入后两站均可独立删除并同步墓碑；保留审计及并发复核所需事实，物理文件回收等待全参与者安全证明。未启用时保留校内限制。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_deleteMyFood_delete
       tags:
         - Food
@@ -3996,9 +4177,8 @@ paths:
         data 为 null。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_editMyFood_put
       tags:
         - Food
@@ -4055,22 +4235,16 @@ paths:
 
         推荐一批菜（产品文档第 8 节）：按校区、饭点、分类出菜，一批默认 8 道；同一天推荐过的不再出现，
 
-        都推荐过一遍后从头再来。已认证用户参考打标、点赞、收藏和浏览记录，每批至少一半是大家公认的好菜；
-
-        游客和未认证账号不带个人因素。游客传 deviceId 才能去重。
-
-
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        都推荐过一遍后从头再来。已认证用户参考打标、点赞、收藏和浏览记录，每批至少一半是大家公认的好菜； 游客和未认证账号不带个人因素。游客传
+        deviceId 才能去重。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_recommendFoods_get
       tags:
         - Food
@@ -4154,10 +4328,15 @@ paths:
     get:
       summary: 【需verified】菜品与收藏：获取个人菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_listMyCustomTags_get
       tags:
         - Food
@@ -4197,10 +4376,15 @@ paths:
     delete:
       summary: 【需verified】菜品与收藏：删除个人标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_deleteMyCustomTag_delete
       tags:
         - Food
@@ -4233,10 +4417,15 @@ paths:
     put:
       summary: 【需verified】菜品与收藏：重命名个人标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_renameMyCustomTag_put
       tags:
         - Food
@@ -4283,8 +4472,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_listFoodsByMyCustomTag_get
       tags:
         - Food
@@ -4461,12 +4650,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_listSystemTags_get
       tags:
         - Food
@@ -4506,9 +4695,8 @@ paths:
         systemTagIds、myCustomTagNames（各最多20项）；菜品、初始标签和文件引用同事务提交，任一失败均回滚。ID保持数值形式。
 
 
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_upload_post
       tags:
         - Food
@@ -4551,10 +4739,15 @@ paths:
     post:
       summary: 【需verified】菜品与收藏：收藏菜品
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_favoriteFood_post
       tags:
         - Food
@@ -4588,10 +4781,15 @@ paths:
     post:
       summary: 【需verified】菜品与收藏：点赞菜品
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_likeFood_post
       tags:
         - Food
@@ -4629,12 +4827,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_getFoodTags_get
       tags:
         - Food
@@ -4668,10 +4866,15 @@ paths:
     post:
       summary: 【需verified】菜品与收藏：添加自定义菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_addCustomTags_post
       tags:
         - Food
@@ -4711,10 +4914,15 @@ paths:
     post:
       summary: 【需verified】菜品与收藏：添加系统菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_addSystemTags_post
       tags:
         - Food
@@ -4754,10 +4962,15 @@ paths:
     delete:
       summary: 【需verified】菜品与收藏：移除菜品标签
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_deleteTag_delete
       tags:
         - Food
@@ -4799,7 +5012,12 @@ paths:
     post:
       summary: 【需登录】菜品与收藏：取消收藏菜品
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_unfavoriteFood_post
       tags:
         - Food
@@ -4833,10 +5051,15 @@ paths:
     post:
       summary: 【需verified】菜品与收藏：取消菜品点赞
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FoodController_unlikeFood_post
       tags:
         - Food
@@ -4880,6 +5103,10 @@ paths:
         只清空当前登录账号的足迹，不接受替其他账号清空。可选 targetType=food|restaurant；省略时清空两栏。不要求
         verified。双站采用因果清空标记：旧事件及未观察到清空的并发浏览不会恢复已清空足迹；观察到清空后的新浏览保留。清空与 Outbox
         同事务；跨站传输仍受授权约束，两站均需支持 browse.observation schema 2。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HistoryController_clearBrowseHistory_delete
       tags:
         - History
@@ -4911,7 +5138,12 @@ paths:
     get:
       summary: 【需登录】浏览历史：获取浏览历史
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HistoryController_getBrowseHistory_get
       tags:
         - History
@@ -4958,10 +5190,15 @@ paths:
     post:
       summary: 【需admin】商场：新增商场
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_addHub_post
       tags:
         - Hub
@@ -4993,10 +5230,15 @@ paths:
     delete:
       summary: 【需admin】商场：删除商场
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_deleteHub_delete
       tags:
         - Hub
@@ -5034,12 +5276,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_getHubDetail_get
       tags:
         - Hub
@@ -5073,10 +5315,15 @@ paths:
     put:
       summary: 【需admin】商场：修改商场
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_editHub_put
       tags:
         - Hub
@@ -5120,12 +5367,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_listHubs_get
       tags:
         - Hub
@@ -5178,12 +5425,12 @@ paths:
         判断餐厅所在的hub
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_locateHub_get
       tags:
         - Hub
@@ -5221,10 +5468,15 @@ paths:
     post:
       summary: 【需admin】商场：重新绑定商场内餐厅
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: HubController_rebindRestaurants_post
       tags:
         - Hub
@@ -5258,7 +5510,12 @@ paths:
     get:
       summary: 【需登录】通知：获取列表
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationController_list_get
       tags:
         - Notification
@@ -5298,7 +5555,12 @@ paths:
     post:
       summary: 【需登录】通知：标记全部通知已读
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationController_readAll_post
       tags:
         - Notification
@@ -5324,7 +5586,12 @@ paths:
     post:
       summary: 【需登录】通知：标记单条通知已读
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationController_readOne_post
       tags:
         - Notification
@@ -5358,7 +5625,12 @@ paths:
     get:
       summary: 【需登录】通知：获取未读通知数
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationController_unreadCount_get
       tags:
         - Notification
@@ -5384,12 +5656,18 @@ paths:
     post:
       summary: 【需verified】餐厅：新增餐厅
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
+
 
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
+
         成功返回 data.id，可直接用于创建菜品。ID保持数值形式。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_addRestaurant_post
       tags:
         - Restaurant
@@ -5428,16 +5706,16 @@ paths:
         无需设备定位的餐厅目录，读取权限与餐厅详情一致（游客可访问）。
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         无需经纬度的普通用户目录；游客可访问，与详情一致。支持 keyword/hubId/page/pageSize，按 createdAt、id
         倒序。与管理员 /restaurant/list 分开。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_browseRestaurants_get
       tags:
         - Restaurant
@@ -5577,10 +5855,15 @@ paths:
     delete:
       summary: 【需admin】餐厅：删除餐厅
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_deleteRestaurant_delete
       tags:
         - Restaurant
@@ -5618,12 +5901,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_getRestaurantDetail_get
       tags:
         - Restaurant
@@ -5666,6 +5949,10 @@ paths:
 
         启用原生审核且修改了名称、地址、城市、POI、图片或坐标时，成功（code=0）的 data 为
         id、moderationStatus、revisionId 的修订受理结果；仅修改营业状态等其他字段时 data 为 null。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_editRestaurant_put
       tags:
         - Restaurant
@@ -5709,8 +5996,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_getMyFavoriteRestaurants_get
       tags:
         - Restaurant
@@ -5850,10 +6137,15 @@ paths:
     get:
       summary: 【需admin】餐厅：获取管理用餐厅列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_listRestaurants_get
       tags:
         - Restaurant
@@ -5910,12 +6202,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_searchRestaurants_get
       tags:
         - Restaurant
@@ -6062,8 +6354,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_favoriteRestaurant_put
       tags:
         - Restaurant
@@ -6100,8 +6392,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_unfavoriteRestaurant_delete
       tags:
         - Restaurant
@@ -6142,8 +6434,8 @@ paths:
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_rateRestaurant_put
       tags:
         - Restaurant
@@ -6186,8 +6478,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RestaurantController_removeRestaurantRating_delete
       tags:
         - Restaurant
@@ -6228,6 +6520,10 @@ paths:
         avatar、feedback 仅需登录；activity/foods/restaurants/comments 还需 verified
         角色（comments、feedback 仅当前源码支持，feedback 用于反馈截图）。预签名后向 putUrl PUT 原始字节，再调用
         /upload/complete，最后将 key 写入业务资料。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UploadController_complete_post
       tags:
         - Upload
@@ -6270,6 +6566,10 @@ paths:
         avatar、feedback 仅需登录；activity/foods/restaurants/comments 还需 verified
         角色（comments、feedback 仅当前源码支持，feedback 用于反馈截图）。预签名后向 putUrl PUT 原始字节，再调用
         /upload/complete，最后将 key 写入业务资料。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UploadController_presign_post
       tags:
         - Upload
@@ -6309,6 +6609,10 @@ paths:
         avatar、feedback 仅需登录；activity/foods/restaurants/comments 还需 verified
         角色（comments、feedback 仅当前源码支持，feedback 用于反馈截图）。预签名后向 putUrl PUT 原始字节，再调用
         /upload/complete，最后将 key 写入业务资料。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UploadController_presignBatch_post
       tags:
         - Upload
@@ -6340,10 +6644,15 @@ paths:
     post:
       summary: 【需admin】用户与关注：封禁用户
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_banUser_post
       tags:
         - User
@@ -6391,6 +6700,10 @@ paths:
         秒发送间隔跨站共享。错误次数跨站累计，最多 5
         次；成功消费后两站均不能再次使用。验证码绑定手机号及业务用途，需登录的验证码还绑定当前账号；不能跨用途或跨账号使用。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_bindMobile_post
       tags:
         - User
@@ -6422,10 +6735,15 @@ paths:
     post:
       summary: 【需登录】用户与关注：修改隐私设置
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         更改隐私设置
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_changePrivacy_post
       tags:
         - User
@@ -6457,14 +6775,21 @@ paths:
     post:
       summary: 【需verified】用户与关注：关注用户
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：已认证用户 verified**
+
 
         关注他人
 
+
         需要角色：verified。角色以服务端返回为准，不由客户端声明。
 
+
         需 verified 角色；关注关系继续使用现有关系同步。取消关注仍只需登录。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_follow_post
       tags:
         - User
@@ -6497,10 +6822,15 @@ paths:
     get:
       summary: 【需登录】用户与关注：获取粉丝列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         获取粉丝列表
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_getFollowers_get
       tags:
         - User
@@ -6547,10 +6877,15 @@ paths:
     get:
       summary: 【需登录】用户与关注：获取关注列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         获取关注列表
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_getFollowings_get
       tags:
         - User
@@ -6615,6 +6950,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_getCode_post
       tags:
         - User
@@ -6704,9 +7043,8 @@ paths:
         获取用户个人信息
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：同意进度仅保留六个业务字段，凭证分支保留
-        consentProof，内部 epoch/revision/validUntil 不向客户端返回；用户资料查询真实
-        role/banned，仅封禁时读取详情。实际候选包隔离测试、运行包摘要及匿名公网门槛已验证，生产未创建账号或执行真实用户登录。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_info_get
       tags:
         - User
@@ -6732,12 +7070,18 @@ paths:
     get:
       summary: 【需admin】用户与关注：获取用户管理列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         获取用户列表
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_listUsers_get
       tags:
         - User
@@ -6777,10 +7121,15 @@ paths:
     post:
       summary: 【需admin】用户与关注：解除用户封禁
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
 
+
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_unbanUser_post
       tags:
         - User
@@ -6814,10 +7163,15 @@ paths:
     post:
       summary: 【需登录】用户与关注：取消关注用户
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         取消关注
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_unfollow_post
       tags:
         - User
@@ -6850,10 +7204,15 @@ paths:
     put:
       summary: 【需登录】用户与关注：更新当前用户资料
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         更新用户个人信息
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_updateInfo_put
       tags:
         - User
@@ -6885,10 +7244,15 @@ paths:
     get:
       summary: 【需登录】用户与关注：获取其他用户资料
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录**
 
+
         获取其他用户信息
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserController_getUserInfo_get
       tags:
         - User
@@ -6919,10 +7283,14 @@ paths:
         - SaToken: []
   /auth/password-conflict/challenge:
     post:
-      summary: 【公开】密码冲突恢复：challenge
+      summary: 【可选登录】密码冲突恢复：challenge
       deprecated: false
       description: >-
-        **权限：公开（无需登录）**
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         此路由仅在配置 app.account.multiwriter.enabled=true 时注册。
@@ -6938,6 +7306,10 @@ paths:
         请求头提交同一次回调的票据。后端使用请求来源 IP 和服务端配置向 captcha.intl.tencentcloudapi.com 核查，仅
         CaptchaCode=1 且未标记恶意时进入原发送逻辑；前端 ret=0 或 HTTP 200
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountPasswordRecoveryController_challenge_post
       tags:
         - AccountPasswordRecovery
@@ -6968,7 +7340,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestRequest'
+              $ref: '#/components/schemas/AccountPasswordRecoveryRequestRequest'
         required: true
       responses:
         '200':
@@ -7014,13 +7386,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /auth/password-conflict/reset:
     post:
-      summary: 【公开】密码冲突恢复：reset
+      summary: 【可选登录】密码冲突恢复：reset
       deprecated: false
       description: >-
-        **权限：公开（无需登录）**
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
         此路由仅在配置 app.account.multiwriter.enabled=true 时注册。
@@ -7029,6 +7406,10 @@ paths:
         使用 RECOVERY 用途令牌；允许另一站校验，仍需匹配原账号、已认证邮箱和待恢复冲突状态。邮箱令牌有效期为 30
         分钟，发送间隔与一次性消费状态跨站共享。令牌绑定账号、邮箱和用途；邮箱验证/绑定令牌不能用作密码冲突恢复令牌，反向也不允许。校内与新加坡支持双向跨站校验，客户端无需返回签发站；后端自动选择验证码归属站点并通过认证通道转发。归属站点或站间通道不可用时返回
         50001（服务暂不可用），不在本站另建状态或绕过校验。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountPasswordRecoveryController_reset_post
       tags:
         - AccountPasswordRecovery
@@ -7037,7 +7418,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetRequest'
+              $ref: '#/components/schemas/AccountPasswordRecoveryResetRequest'
         required: true
       responses:
         '200':
@@ -7054,17 +7435,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - SaToken: []
   /auth/security/account-reviews:
     get:
       summary: 【需admin】账号安全复核：获取列表
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountSecurityReviewController_list_get
       tags:
         - AccountSecurityReview
@@ -7090,12 +7478,18 @@ paths:
     post:
       summary: 【需admin】账号安全复核：reset
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountSecurityReviewController_reset_post
       tags:
         - AccountSecurityReview
@@ -7112,7 +7506,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PasswordResetRequest'
+              $ref: '#/components/schemas/AccountSecurityReviewPasswordResetRequest'
         required: true
       responses:
         '200':
@@ -7135,12 +7529,18 @@ paths:
     post:
       summary: 【需admin】账号安全复核：decide
       deprecated: false
-      description: |-
+      description: >-
         **权限：需登录 + 角色：管理员 admin**
+
 
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
+
         此路由仅在配置 app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: AccountSecurityReviewController_decide_post
       tags:
         - AccountSecurityReview
@@ -7157,7 +7557,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DecisionRequest'
+              $ref: '#/components/schemas/AccountSecurityReviewDecisionRequest'
         required: true
       responses:
         '200':
@@ -7187,12 +7587,12 @@ paths:
         已开放的校区，游客可访问。客户端按定位选最近的，没有定位选 isDefault 的那个。
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 菜品、餐厅、商圈等现有浏览接口已在两站开放游客访问；收藏等个人接口仍需登录。通用活动另见
-        V75 状态。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CampusController_list_get
       tags:
         - Campus
@@ -7218,7 +7618,12 @@ paths:
     delete:
       summary: 【需登录】RecommendationProfile：clear
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RecommendationProfileController_clear_delete
       tags:
         - RecommendationProfile
@@ -7243,7 +7648,12 @@ paths:
     put:
       summary: 【需登录】RecommendationProfile：preferences
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RecommendationProfileController_preferences_put
       tags:
         - RecommendationProfile
@@ -7274,7 +7684,12 @@ paths:
     get:
       summary: 【需登录】RecommendationProfile：preferences
       deprecated: false
-      description: '**权限：需登录**'
+      description: >-
+        **权限：需登录**
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RecommendationProfileController_preferences_get
       tags:
         - RecommendationProfile
@@ -7310,8 +7725,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_create_post
       tags:
         - ActivityAdmin
@@ -7352,8 +7767,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_list_get
       tags:
         - ActivityAdmin
@@ -7400,8 +7815,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_delete_delete
       tags:
         - ActivityAdmin
@@ -7441,8 +7856,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_detail_get
       tags:
         - ActivityAdmin
@@ -7482,8 +7897,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_update_put
       tags:
         - ActivityAdmin
@@ -7530,8 +7945,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署通用活动读取、发布及管理路由，V75
-        已成功补执行，activities/activity_posts 表存在；旧地域美食、年夜饭及点赞专用处理器已替换，历史表及数据保留。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ActivityAdminController_changeStatus_post
       tags:
         - ActivityAdmin
@@ -7584,8 +7999,8 @@ paths:
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署管理员政策读取及编辑路由，V76
-        已成功补执行，政策配置及历史表存在。管理员编辑权限、并发修订和跨站同步已通过隔离集成测试；生产仅检查匿名权限门槛，未修改现行政策。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ConsentPolicyAdminController_get_get
       tags:
         - ConsentPolicyAdmin
@@ -7623,8 +8038,8 @@ paths:
         此路由仅在配置 app.account.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 两站已部署管理员政策读取及编辑路由，V76
-        已成功补执行，政策配置及历史表存在。管理员编辑权限、并发修订和跨站同步已通过隔离集成测试；生产仅检查匿名权限门槛，未修改现行政策。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ConsentPolicyAdminController_save_put
       tags:
         - ConsentPolicyAdmin
@@ -7665,8 +8080,8 @@ paths:
         null，仍可解除。屏蔽者获准后跨站可靠同步，不复制或通知目标账号；并发屏蔽优先，观察到屏蔽后显式解除可恢复。推荐候选在截断前排除该上传者，关闭个性化或未认证时仍生效，游客不受他人屏蔽影响。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布并启用 V80、user.block schema
-        1。私人屏蔽/解除/本人列表与状态查询；推荐在候选截断前过滤被屏蔽者上传的菜，关闭个性化时仍生效。可靠补送、并发屏蔽优先、显式解除及授权/撤回门控由精确发布包隔离双站测试验证；生产检查字节、V80、数据库权限、同步能力及匿名门槛，没有改真实用户屏蔽选择。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserBlockController_list_get
       tags:
         - UserBlock
@@ -7718,8 +8133,8 @@ paths:
         null，仍可解除。屏蔽者获准后跨站可靠同步，不复制或通知目标账号；并发屏蔽优先，观察到屏蔽后显式解除可恢复。推荐候选在截断前排除该上传者，关闭个性化或未认证时仍生效，游客不受他人屏蔽影响。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布并启用 V80、user.block schema
-        1。私人屏蔽/解除/本人列表与状态查询；推荐在候选截断前过滤被屏蔽者上传的菜，关闭个性化时仍生效。可靠补送、并发屏蔽优先、显式解除及授权/撤回门控由精确发布包隔离双站测试验证；生产检查字节、V80、数据库权限、同步能力及匿名门槛，没有改真实用户屏蔽选择。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserBlockController_block_put
       tags:
         - UserBlock
@@ -7763,8 +8178,8 @@ paths:
         null，仍可解除。屏蔽者获准后跨站可靠同步，不复制或通知目标账号；并发屏蔽优先，观察到屏蔽后显式解除可恢复。推荐候选在截断前排除该上传者，关闭个性化或未认证时仍生效，游客不受他人屏蔽影响。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布并启用 V80、user.block schema
-        1。私人屏蔽/解除/本人列表与状态查询；推荐在候选截断前过滤被屏蔽者上传的菜，关闭个性化时仍生效。可靠补送、并发屏蔽优先、显式解除及授权/撤回门控由精确发布包隔离双站测试验证；生产检查字节、V80、数据库权限、同步能力及匿名门槛，没有改真实用户屏蔽选择。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserBlockController_get_get
       tags:
         - UserBlock
@@ -7808,8 +8223,8 @@ paths:
         null，仍可解除。屏蔽者获准后跨站可靠同步，不复制或通知目标账号；并发屏蔽优先，观察到屏蔽后显式解除可恢复。推荐候选在截断前排除该上传者，关闭个性化或未认证时仍生效，游客不受他人屏蔽影响。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布并启用 V80、user.block schema
-        1。私人屏蔽/解除/本人列表与状态查询；推荐在候选截断前过滤被屏蔽者上传的菜，关闭个性化时仍生效。可靠补送、并发屏蔽优先、显式解除及授权/撤回门控由精确发布包隔离双站测试验证；生产检查字节、V80、数据库权限、同步能力及匿名门槛，没有改真实用户屏蔽选择。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: UserBlockController_unblock_delete
       tags:
         - UserBlock
@@ -7853,9 +8268,8 @@ paths:
         后不使用个人口味和历史信号参与推荐过滤或排序。主动筛选、互动展示和当日批次去重保持。已保存口味及历史不删除；同意跨站同步后按因果版本同步，并发关闭优先，收到关闭后显式重新开启可恢复。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 两站已发布 V79 及
-        recommendation.setting schema
-        1，并启用同步。默认开启，关闭后使用通用推荐；保留历史和手动口味，显式重新开启可恢复，断网后可靠补送、并发关闭优先。精确候选包隔离两站写入/收敛测试通过；生产检查运行字节、同步能力和匿名权限门槛，未修改真实用户设置。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RecommendationSettingsController_get_get
       tags:
         - RecommendationSettings
@@ -7888,9 +8302,8 @@ paths:
         后不使用个人口味和历史信号参与推荐过滤或排序。主动筛选、互动展示和当日批次去重保持。已保存口味及历史不删除；同意跨站同步后按因果版本同步，并发关闭优先，收到关闭后显式重新开启可恢复。
 
 
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 两站已发布 V79 及
-        recommendation.setting schema
-        1，并启用同步。默认开启，关闭后使用通用推荐；保留历史和手动口味，显式重新开启可恢复，断网后可靠补送、并发关闭优先。精确候选包隔离两站写入/收敛测试通过；生产检查运行字节、同步能力和匿名权限门槛，未修改真实用户设置。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RecommendationSettingsController_put_put
       tags:
         - RecommendationSettings
@@ -7936,8 +8349,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackAdminController_queue_get
       tags:
         - FeedbackAdmin
@@ -8010,8 +8423,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackAdminController_detail_get
       tags:
         - FeedbackAdmin
@@ -8060,8 +8473,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackAdminController_resolve_post
       tags:
         - FeedbackAdmin
@@ -8086,7 +8499,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResolveInputRequest'
+              $ref: '#/components/schemas/FeedbackResolveInputRequest'
         required: true
       responses:
         '200':
@@ -8120,8 +8533,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationAdminController_queue_get
       tags:
         - ModerationAdmin
@@ -8172,8 +8585,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationAdminController_review_post
       tags:
         - ModerationAdmin
@@ -8217,8 +8630,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationAdminController_detail_get
       tags:
         - ModerationAdmin
@@ -8263,8 +8676,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationAdminController_image_get
       tags:
         - ModerationAdmin
@@ -8315,8 +8728,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_get_get
       tags:
         - RemoteConfigAdmin
@@ -8353,8 +8766,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_announcements_get
       tags:
         - RemoteConfigAdmin
@@ -8405,8 +8818,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_createAnnouncement_post
       tags:
         - RemoteConfigAdmin
@@ -8415,7 +8828,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveAnnouncementRequest'
+              $ref: '#/components/schemas/RemoteConfigSaveAnnouncementRequest'
         required: true
       responses:
         '200':
@@ -8445,8 +8858,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_deleteAnnouncement_delete
       tags:
         - RemoteConfigAdmin
@@ -8493,8 +8906,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_updateAnnouncement_put
       tags:
         - RemoteConfigAdmin
@@ -8511,7 +8924,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveAnnouncementRequest'
+              $ref: '#/components/schemas/RemoteConfigSaveAnnouncementRequest'
         required: true
       responses:
         '200':
@@ -8544,8 +8957,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_audit_get
       tags:
         - RemoteConfigAdmin
@@ -8595,8 +9008,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_saveSettings_put
       tags:
         - RemoteConfigAdmin
@@ -8605,7 +9018,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveSettingsRequest'
+              $ref: '#/components/schemas/RemoteConfigSaveSettingsRequest'
         required: true
       responses:
         '200':
@@ -8635,8 +9048,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigAdminController_saveVersionLine_put
       tags:
         - RemoteConfigAdmin
@@ -8652,7 +9065,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SaveVersionLineRequest'
+              $ref: '#/components/schemas/RemoteConfigSaveVersionLineRequest'
         required: true
       responses:
         '200':
@@ -8682,8 +9095,8 @@ paths:
         需要角色：admin。角色以服务端返回为准，不由客户端声明。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TopicAdminController_command_post
       tags:
         - TopicAdmin
@@ -8692,7 +9105,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CommandRequest'
+              $ref: '#/components/schemas/TopicCommandRequest'
         required: true
       responses:
         '200':
@@ -8722,8 +9135,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: DeviceSessionsController_list_get
       tags:
         - DeviceSessions
@@ -8772,8 +9185,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: DeviceSessionsController_revokeOthers_post
       tags:
         - DeviceSessions
@@ -8812,8 +9225,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: DeviceSessionsController_resume_post
       tags:
         - DeviceSessions
@@ -8864,8 +9277,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: DeviceSessionsController_status_post
       tags:
         - DeviceSessions
@@ -8917,8 +9330,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: DeviceSessionsController_revokeOne_delete
       tags:
         - DeviceSessions
@@ -8964,8 +9377,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackController_catalogError_post
       tags:
         - Feedback
@@ -8982,7 +9395,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CatalogErrorInputRequest'
+              $ref: '#/components/schemas/FeedbackCatalogErrorInputRequest'
         required: true
       responses:
         '200':
@@ -9017,8 +9430,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackController_submit_post
       tags:
         - Feedback
@@ -9068,8 +9481,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackController_mine_get_feedback_mine
       tags:
         - Feedback
@@ -9129,8 +9542,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackController_mine_get_feedback_mine_id
       tags:
         - Feedback
@@ -9176,8 +9589,8 @@ paths:
         此路由仅在配置 app.account.enabled, app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: FeedbackController_report_post
       tags:
         - Feedback
@@ -9194,7 +9607,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReportInputRequest'
+              $ref: '#/components/schemas/FeedbackReportInputRequest'
         required: true
       responses:
         '200':
@@ -9225,8 +9638,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationSubmissionsController_mine_get
       tags:
         - ModerationSubmissions
@@ -9274,8 +9687,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationSubmissionsController_detail_get
       tags:
         - ModerationSubmissions
@@ -9317,8 +9730,8 @@ paths:
         app.account.multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: ModerationSubmissionsController_image_get
       tags:
         - ModerationSubmissions
@@ -9363,8 +9776,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationCardsController_listCards_get
       tags:
         - NotificationCards
@@ -9425,8 +9838,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationCardsController_unreadCards_get
       tags:
         - NotificationCards
@@ -9470,8 +9883,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: NotificationCardsController_readCard_post
       tags:
         - NotificationCards
@@ -9519,8 +9932,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_create_post
       tags:
         - Push
@@ -9560,8 +9973,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_refresh_post
       tags:
         - Push
@@ -9609,8 +10022,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_transfer_post
       tags:
         - Push
@@ -9658,8 +10071,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_unbind_post
       tags:
         - Push
@@ -9707,8 +10120,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_status_post
       tags:
         - Push
@@ -9738,8 +10151,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_settings_get
       tags:
         - Push
@@ -9779,8 +10192,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_disable_post
       tags:
         - Push
@@ -9820,8 +10233,8 @@ paths:
         必填）、observedCloseFrontier（UUID，开启时回传最近一次关闭前沿）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: PushController_enable_post
       tags:
         - Push
@@ -9858,12 +10271,12 @@ paths:
         If-None-Match，未变化时返回 304。
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: RemoteConfigController_get_get
       tags:
         - RemoteConfig
@@ -9924,8 +10337,8 @@ paths:
         GET 返回的 revision）。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TelemetryController_change_put
       tags:
         - Telemetry
@@ -9959,8 +10372,8 @@ paths:
         enabled=false。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TelemetryController_disable_delete
       tags:
         - Telemetry
@@ -9989,8 +10402,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TelemetryController_status_get
       tags:
         - Telemetry
@@ -10027,8 +10440,8 @@ paths:
         之一，其余字段随事件固定，不含自由文本、网址或用户标识）。每分钟至多 120 条。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TelemetryController_events_post
       tags:
         - Telemetry
@@ -10058,12 +10471,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TopicController_forFood_get
       tags:
         - Topic
@@ -10103,12 +10516,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TopicController_current_get
       tags:
         - Topic
@@ -10147,12 +10560,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TopicController_history_get
       tags:
         - Topic
@@ -10208,12 +10621,12 @@ paths:
         **权限：公开（可选登录：带 token 时返回个人状态）**
 
 
-        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态；模型含
-        accountId 时该键始终返回，游客时值为 null。
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: TopicController_detail_get
       tags:
         - Topic
@@ -10256,8 +10669,13 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        deletePostsAndComments 可省略：省略/null/false
+        匿名保留已发布帖子和评论的正文、图片，正常用户可继续点赞回复；仅 true
+        明确删除本人内容。选择绑定本次签名注销请求，重试不能改变；冷静期和恢复凭据规则继续生效。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_request_post
       tags:
         - LifecycleCancellation
@@ -10266,8 +10684,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: >-
-                #/components/schemas/LifecycleCancellationControllerRequestRequest
+              $ref: '#/components/schemas/RequestRequest'
         required: true
       responses:
         '200':
@@ -10298,8 +10715,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_recoverPassword_post
       tags:
         - LifecycleCancellation
@@ -10339,8 +10756,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_phoneChallenge_post
       tags:
         - LifecycleCancellation
@@ -10380,8 +10797,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_recoverPhone_post
       tags:
         - LifecycleCancellation
@@ -10420,8 +10837,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_cancel_post
       tags:
         - LifecycleCancellation
@@ -10486,8 +10903,8 @@ paths:
         此路由仅在配置 enabled, multiwriter.enabled=true 时注册。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: LifecycleCancellationController_status_post
       tags:
         - LifecycleCancellation
@@ -10543,8 +10960,8 @@ paths:
         **权限：需登录；首次绑定手机号还需已有验证记录（已认证），否则 NO_PERMISSION（服务层校验）**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileController_prepare_post
       tags:
         - CredentialMobile
@@ -10580,8 +10997,8 @@ paths:
         **权限：需登录**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileController_status_get
       tags:
         - CredentialMobile
@@ -10600,7 +11017,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Result_StatusResponse'
+                $ref: >-
+                  #/components/schemas/Result_CredentialMobileCommandsStatusResponse
           headers: {}
         default:
           description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
@@ -10627,8 +11045,8 @@ paths:
         不能代替后端校验。缺少票据/随机串返回30015，无效/过期/重放/风险拒绝返回30016，配置或上游故障返回50004，均不发送。请求结束后即丢弃本次票据及初始化参数，重试时重新验证；原有登录、角色、用途和发送限流继续执行。
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileController_send_post
       tags:
         - CredentialMobile
@@ -10726,8 +11144,8 @@ paths:
         **权限：需登录；首次绑定手机号还需已有验证记录（已认证），否则 NO_PERMISSION（服务层校验）**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileController_commit_post
       tags:
         - CredentialMobile
@@ -10771,8 +11189,8 @@ paths:
         **权限：需匹配精确命令或生命周期请求的专用恢复凭据；不授予普通登录权限**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileRecoveryController_status_post
       tags:
         - CredentialMobileRecovery
@@ -10820,8 +11238,8 @@ paths:
         **权限：需匹配精确命令或生命周期请求的专用恢复凭据；不授予普通登录权限**
 
 
-        **部署状态（2026-10-30）：两站均未上线。**
-        此接口来自当前源码，不在该日核对的两站运行包注册路由内；部署前不可调用，上线时间以后续发布记录为准。
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
       operationId: CredentialMobileRecoveryController_resume_post
       tags:
         - CredentialMobileRecovery
@@ -10861,6 +11279,825 @@ paths:
           headers: {}
       security:
         - RecoveryCapability1: []
+  /admin/engagement/stats:
+    get:
+      summary: 【需admin】活跃统计管理：查询日活月活统计
+      deprecated: false
+      description: >-
+        **权限：需登录 + 角色：管理员 admin**
+
+
+        精确统计指定日 DAU、该自然月 MAU 和截至当日最近 30 天去重用户；默认服务端业务日期。
+
+
+        管理员读取精确 DAU、自然月 MAU 和最近 30 天去重活跃。date 可选，格式 YYYY-MM-DD，默认 Asia/Shanghai
+        当前日期，不能为未来日期。MAU 为 date 所在完整自然月，最近 30 天截至
+        date。仅覆盖实际保留的注册用户活动，注销后清除关联明细；管理查询不计活跃。
+
+
+        需要角色：admin。角色以服务端返回为准，不由客户端声明。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: EngagementAdminController_stats_get
+      tags:
+        - EngagementAdmin
+      parameters:
+        - name: date
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_EngagementStatsResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /user/activity:
+    post:
+      summary: 【需登录】等级与经验：记录每日活动并自动获得经验
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        前台打开或回到前台时调用；按服务端业务日期记录活跃并自动发放每日经验，重试不会重复奖励。
+
+
+        可选的显式业务活动调用，无需请求体，不接收用户
+        ID、日期或经验。返回服务端业务日期、是否首次记录、本次实际新增经验和最新成长进度。自动活动统计不依赖客户端调用此接口。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: GrowthController_use_post
+      tags:
+        - Growth
+      parameters: []
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_DailyUseResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /user/growth:
+    get:
+      summary: 【需登录】等级与经验：获取我的等级经验
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        获取本人累计经验、等级和升级进度；正常业务请求会自动记录当天活跃并发放每日经验。
+
+
+        读取本人累计经验与等级进度。有效身份调用业务接口会计入当天活跃，业务失败也计入；排除通知未读数、命令及恢复状态等专用轮询、后台推送和管理端操作，正常业务查询计入。每天首次使用自动获得
+        5 经验，多设备及重试不重复。首版等级门槛为
+        0、30、100、250、500、1000、2000、4000、8000、16000；升级不消费经验。匿名、封禁、受限、失效及注销身份不参与。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: GrowthController_get_get
+      tags:
+        - Growth
+      parameters: []
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_GrowthProgressResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /user/growth/ledger:
+    get:
+      summary: 【需登录】等级与经验：获取我的经验流水
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        分页获取本人的经验流水，按入账时间倒序；与其他业务请求共用每日首次使用规则。
+
+
+        分页读取本人经验流水，page 为 1～10000，pageSize 为 1～100，默认 20。按实际入账时间倒序；businessDate
+        保留奖励所属日期，补发不改成当前日期。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: GrowthController_ledger_get
+      tags:
+        - Growth
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_PageResult_ExperienceEntryResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /admin/comments/moderation/queue:
+    get:
+      summary: 【需登录】CommentHttp：queue
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_queue_get
+      tags:
+        - CommentHttp
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_PageResult_CommentQueriesSubmissionResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /admin/comments/moderation/review:
+    post:
+      summary: 【需登录】CommentHttp：review
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_review_post
+      tags:
+        - CommentHttp
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCommentDTORequest'
+        required: true
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_CommentReviewResultResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /comments/submissions/my:
+    get:
+      summary: 【需登录】CommentHttp：mine
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_mine_get
+      tags:
+        - CommentHttp
+      parameters:
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_PageResult_CommentQueriesSubmissionResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /comments/{commentId}:
+    delete:
+      summary: 【需登录】CommentHttp：删除
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_delete_delete
+      tags:
+        - CommentHttp
+      parameters:
+        - name: commentId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_NativeCommentDeletesDeletedResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /foods/{foodId}/comments:
+    post:
+      summary: 【需登录】CommentHttp：comment
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_comment_post
+      tags:
+        - CommentHttp
+      parameters:
+        - name: foodId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentDTORequest'
+        required: true
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_NativeCommentSubmissionsAcceptedResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+    get:
+      summary: 【可选登录】CommentRead：comments
+      deprecated: false
+      description: >-
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentReadController_comments_get
+      tags:
+        - CommentRead
+      parameters:
+        - name: foodId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: string
+            enum:
+              - MOST_USEFUL
+              - NEWEST
+            default: MOST_USEFUL
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_PageResult_CommentViewResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /foods/{foodId}/comments/{commentId}/replies:
+    post:
+      summary: 【需登录】CommentHttp：reply
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentHttpController_reply_post
+      tags:
+        - CommentHttp
+      parameters:
+        - name: foodId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: commentId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentReplyDTORequest'
+        required: true
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_NativeCommentSubmissionsAcceptedResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /comments/{commentId}/replies:
+    get:
+      summary: 【可选登录】CommentRead：replies
+      deprecated: false
+      description: >-
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentReadController_replies_get
+      tags:
+        - CommentRead
+      parameters:
+        - name: commentId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_PageResult_CommentViewResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /foods/{foodId}/gallery:
+    get:
+      summary: 【可选登录】CommentRead：gallery
+      deprecated: false
+      description: >-
+        **权限：公开（可选登录：带 token 时返回个人状态）**
+
+
+        游客可访问；携带有效 token 时会返回 isLiked、isFavorite、myCustomTags 等个人状态。公开菜品保留作者
+        accountId，user 在占位或资料不可展示时为 null；其他模型沿用各自的游客作者披露规则。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentReadController_gallery_get
+      tags:
+        - CommentRead
+      parameters:
+        - name: foodId
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          description: ''
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/Result_PageResult_CommentGalleryImageViewResponse
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+  /comments/{id}/like:
+    put:
+      summary: 【需登录】CommentLike：add
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentLikeController_add_put
+      tags:
+        - CommentLike
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_NativeCommentLikesResultResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+    get:
+      summary: 【需登录】CommentLike：mine
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentLikeController_mine_get
+      tags:
+        - CommentLike
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_NativeCommentLikesResultResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
+    delete:
+      summary: 【需登录】CommentLike：remove
+      deprecated: false
+      description: >-
+        **权限：需登录**
+
+
+        此路由仅在配置 app.sync.catalog.enabled, app.account.enabled,
+        app.account.multiwriter.enabled=true 时注册。
+
+
+        **部署状态（2026-11-09）：海外单站候选制品待发布。**
+        接口来自本次精确制品；路由注册及权限仍受配置和账号状态约束，不代表所有真人业务流程已验收。
+      operationId: CommentLikeController_remove_delete
+      tags:
+        - CommentLike
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: integer
+            format: int64
+        - name: Idempotency-Key
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 业务响应；code=0 为成功，非零为业务错误。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result_NativeCommentLikesResultResponse'
+          headers: {}
+        default:
+          description: 错误响应；HTTP 状态码及 code/msg 需要共同判断。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - SaToken: []
 webhooks: {}
 components:
   schemas:
@@ -11086,19 +12323,6 @@ components:
         - name
         - pictureUrl
       additionalProperties: false
-    CandidateVersionRequest:
-      type: object
-      properties:
-        gid:
-          type: string
-          format: uuid
-        revision:
-          type: integer
-          format: int64
-        contentHash:
-          type: string
-      required:
-        - revision
     CandidateViewResponse:
       type: object
       properties:
@@ -11153,7 +12377,7 @@ components:
         hubs:
           type: array
           items:
-            $ref: '#/components/schemas/HubItemRequest'
+            $ref: '#/components/schemas/CatalogHubImportRequestHubItemRequest'
     CatalogImportResultResponse:
       type: object
       properties:
@@ -11388,16 +12612,6 @@ components:
         授权进度，不是登录会话。identityReady/registrationAccepted/GRANTED均不代表已取得token。参见
         frontend-contract.md 状态表。
       additionalProperties: false
-    CoordinateRequest:
-      type: object
-      properties:
-        lng:
-          type: number
-        lat:
-          type: number
-      required:
-        - lng
-        - lat
     CreateFoodDTORequest:
       type: object
       properties:
@@ -11506,11 +12720,6 @@ components:
       description: >-
         新发布使用当前产品限制：价格/分类、至少一个饭点、舞台色/两个备色/裁切必填；舞台色与两个备色互不相同。文字长度按各字段描述的 Unicode
         code point 和空白规范规则计算。
-
-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
     CreateSystemFoodTagDTORequest: &ref_0
       type: object
       properties:
@@ -11599,11 +12808,6 @@ components:
       description: >-
         局部更新：省略/null 保持原值；变化字段按以下产品约束验证，相同历史值回显不强制清洗。不能把这些条件规则当无条件
         maxLength/maximum。
-
-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
     EditRestaurantDTORequest:
       type: object
       properties:
@@ -11741,12 +12945,21 @@ components:
             - integer
             - 'null'
           format: int64
-          description: 发布者的数值账号 ID；游客访问时不披露，可能为 null。 字段必返，值可为 null。
+          description: >-
+            发布者的数值账号 ID；公开菜品保留原作者 ID，包括占位作者。其他内容按各接口的游客规则处理；匿名保留内容可能为 null。
+            字段必返，值可为 null。
         uploaderName:
           type:
             - string
             - 'null'
-          description: 发布者的展示昵称。 字段必返，值可为 null。
+          description: 发布者的展示昵称；注销后匿名保留的活动内容显示“匿名用户”。 字段必返，值可为 null。
+        user:
+          anyOf:
+            - $ref: '#/components/schemas/AuthorResponse'
+            - type: 'null'
+          description: >-
+            公开菜品作者摘要（id、displayName）；仅有占位记录、资料未到达或当前不可展示时明确返回 null。 字段必返，值可为
+            null。
         restaurantId:
           type: integer
           format: int64
@@ -11908,6 +13121,7 @@ components:
         - id
         - accountId
         - uploaderName
+        - user
         - restaurantId
         - restaurantName
         - distanceMeters
@@ -11935,36 +13149,6 @@ components:
         - createdAt
         - updatedAt
       additionalProperties: false
-      description: >-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
-    GrantRequestRequest:
-      type: object
-      properties:
-        proof:
-          type: string
-          maxLength: 512
-          writeOnly: true
-        policyVersion:
-          type: string
-          maxLength: 128
-          minLength: 1
-      required:
-        - policyVersion
-    HeadVersionRequestRequest:
-      type: object
-      properties:
-        operationId:
-          type: string
-          format: uuid
-        revision:
-          type: integer
-          format: int64
-        contentHash:
-          type: string
-      required:
-        - revision
     HubDTORequest:
       type: object
       properties:
@@ -11989,23 +13173,6 @@ components:
         - name
         - gcjLng
         - gcjLat
-    HubItemRequest:
-      type: object
-      properties:
-        sourceId:
-          type: string
-        name:
-          type: string
-        centerWgs:
-          $ref: '#/components/schemas/CoordinateRequest'
-        centerGcj:
-          $ref: '#/components/schemas/CoordinateRequest'
-        boundaryGeoJson:
-          type: string
-        rebindCoveredRestaurants:
-          type: boolean
-      required:
-        - rebindCoveredRestaurants
     HubResponse:
       type: object
       properties:
@@ -12251,6 +13418,9 @@ components:
     OtherUserInfoDTOResponse:
       type: object
       properties:
+        level:
+          type: integer
+          description: 目标用户当前等级，范围 1～10。仅查询已累计经验，不会为目标用户记录活跃或发放奖励；不公开其累计经验。 字段必返，值非 null。
         displayName:
           type: string
           description: 用户的显示名称，可以中文、可以重复；不影响登录。 字段必返，值非 null。
@@ -12289,6 +13459,7 @@ components:
           format: int64
           description: 该用户发布的菜品数量。 字段必返，值非 null。
       required:
+        - level
         - displayName
         - avatar
         - earnedLikes
@@ -12751,61 +13922,15 @@ components:
         - status
         - revision
       additionalProperties: false
-    ResolveHeadRequestRequest:
-      type: object
-      properties:
-        expectedRevision:
-          type: integer
-          format: int64
-        heads:
-          type: array
-          items:
-            $ref: '#/components/schemas/HeadVersionRequestRequest'
-        decision:
-          type: string
-          enum:
-            - KEEP
-            - REJECT
-        winnerOperationId:
-          type: string
-          format: uuid
-        reason:
-          type: string
-        decisionHeads:
-          type: array
-          items:
-            type: string
-            format: uuid
-      required:
-        - expectedRevision
     ResolveRequestRequest:
       type: object
       properties:
-        conflictId:
-          type: string
-          format: uuid
         expectedRevision:
           type: integer
           format: int64
-        candidates:
-          type: array
-          items:
-            $ref: '#/components/schemas/CandidateVersionRequest'
-        decision:
-          type: string
-          enum:
-            - KEEP
-            - REJECT
-        winnerGid:
+        selectedHeadId:
           type: string
           format: uuid
-        reason:
-          type: string
-        decisionHeads:
-          type: array
-          items:
-            type: string
-            format: uuid
       required:
         - expectedRevision
     RestaurantDTORequest:
@@ -12862,7 +13987,9 @@ components:
             - integer
             - 'null'
           format: int64
-          description: 发布者的数值账号 ID；游客访问时不披露，可能为 null。 字段必返，值可为 null。
+          description: >-
+            发布者的数值账号 ID；公开菜品保留原作者 ID，包括占位作者。其他内容按各接口的游客规则处理；匿名保留内容可能为 null。
+            字段必返，值可为 null。
         name:
           type: string
           description: 名称。 字段必返，值非 null。
@@ -14825,6 +15952,15 @@ components:
           type: integer
           format: int64
           description: 数值业务 ID，用于对应资源的详情、修改等接口。 字段必返，值非 null。
+        level:
+          type: integer
+          description: 本人当前等级，范围 1～10，按现行等级门槛计算。 字段必返，值非 null。
+        totalExperience:
+          type: integer
+          format: int64
+          description: >-
+            本人累计经验，非负整数；没有经验记录时为 0。正常身份当天首次请求会先尝试发放每日 5 经验，成功后本响应包含已入账的经验。
+            字段必返，值非 null。
         displayName:
           type: string
           description: 用户的显示名称，可以中文、可以重复；不影响登录。 字段必返，值非 null。
@@ -14944,6 +16080,8 @@ components:
           description: 最后更新时间，Unix 毫秒时间戳。 字段必返，值非 null。
       required:
         - id
+        - level
+        - totalExperience
         - displayName
         - userName
         - hasUsername
@@ -15073,20 +16211,6 @@ components:
         - updatedAt
         - accountStatus
       additionalProperties: false
-    WithdrawalRequestRequest:
-      type: object
-      properties:
-        userName:
-          type: string
-          minLength: 3
-          maxLength: 64
-        password:
-          type: string
-          minLength: 1
-          writeOnly: true
-      required:
-        - userName
-        - password
     AuthReply:
       type: object
       properties:
@@ -15369,13 +16493,6 @@ components:
         - moderationStatus
         - revisionId
       additionalProperties: false
-    DecisionRequest:
-      type: object
-      properties:
-        approved:
-          type: boolean
-      required:
-        - approved
     DecisionViewResponse:
       type: object
       properties:
@@ -15561,16 +16678,6 @@ components:
         - dislikedTags
         - updatedAt
       additionalProperties: false
-    PasswordResetRequest:
-      type: object
-      properties:
-        newPassword:
-          type: string
-          minLength: 8
-          maxLength: 128
-          writeOnly: true
-      required:
-        - newPassword
     PhoneCodeReqRequest:
       type: object
       properties:
@@ -15644,12 +16751,18 @@ components:
     RequestRequest:
       type: object
       properties:
-        identifier:
+        requestId:
           type: string
-          maxLength: 64
-          minLength: 1
-      required:
-        - identifier
+          format: uuid
+        recoveryCapability:
+          type: string
+        deletePostsAndComments:
+          type:
+            - boolean
+            - 'null'
+          description: >-
+            可选。省略/null/false 匿名保留已发布帖子、评论正文及图片，允许正常互动；仅 JSON true
+            明确删除本人内容。与原注销签名绑定，重试不可变更。
     ResetPasswordByCodeDTORequest:
       type: object
       properties:
@@ -15665,44 +16778,6 @@ components:
       required:
         - code
         - newPassword
-    ResetRequest:
-      type: object
-      properties:
-        token:
-          type: string
-          maxLength: 256
-          minLength: 1
-        newPassword:
-          type: string
-          minLength: 8
-          maxLength: 128
-          writeOnly: true
-      required:
-        - token
-        - newPassword
-    ResolveDecisionRequestRequest:
-      type: object
-      properties:
-        candidateOperations:
-          type: array
-          items:
-            type: string
-            format: uuid
-        decisionHeads:
-          type: array
-          items:
-            type: string
-            format: uuid
-        decision:
-          type: string
-          enum:
-            - KEEP
-            - REJECT
-        winnerOperationId:
-          type: string
-          format: uuid
-        reason:
-          type: string
     Result_CreatedResourceVOResponse:
       type: object
       properties:
@@ -16185,10 +17260,12 @@ components:
             - integer
             - 'null'
           format: int64
-          description: 发布者的数值账号 ID；游客访问时不披露，可能为 null。 字段必返，值可为 null。
+          description: >-
+            发布者的数值账号 ID；公开菜品保留原作者 ID，包括占位作者。其他内容按各接口的游客规则处理；匿名保留内容可能为 null。
+            字段必返，值可为 null。
         uploaderName:
           type: string
-          description: 发布者的展示昵称。 字段必返，值非 null。
+          description: 发布者的展示昵称；注销后匿名保留的活动内容显示“匿名用户”。 字段必返，值非 null。
         title:
           type:
             - string
@@ -17468,12 +18545,21 @@ components:
             - integer
             - 'null'
           format: int64
-          description: 发布者的数值账号 ID；游客访问时不披露，可能为 null。 字段必返，值可为 null。
+          description: >-
+            发布者的数值账号 ID；公开菜品保留原作者 ID，包括占位作者。其他内容按各接口的游客规则处理；匿名保留内容可能为 null。
+            字段必返，值可为 null。
         uploaderName:
           type:
             - string
             - 'null'
-          description: 发布者的展示昵称。 字段必返，值可为 null。
+          description: 发布者的展示昵称；注销后匿名保留的活动内容显示“匿名用户”。 字段必返，值可为 null。
+        user:
+          anyOf:
+            - $ref: '#/components/schemas/AuthorResponse'
+            - type: 'null'
+          description: >-
+            公开菜品作者摘要（id、displayName）；仅有占位记录、资料未到达或当前不可展示时明确返回 null。 字段必返，值可为
+            null。
         restaurantId:
           type: integer
           format: int64
@@ -17646,6 +18732,7 @@ components:
         - id
         - accountId
         - uploaderName
+        - user
         - restaurantId
         - restaurantName
         - distanceMeters
@@ -17673,10 +18760,6 @@ components:
         - createdAt
         - updatedAt
       additionalProperties: false
-      description: >-
-        **部署状态（2026-10-30）：两站已部署。**
-        mealTimes、stageColor、stageAlternates、coverCrop、removeBackground 已随 V72
-        在两站部署；removeBackground 只保存开关，自动图像去背景尚未实现。本次列表为空，字段部署依据为运行包模型及数据库结构。
     PageResult_FoodRecommendationVOResponse:
       type: object
       properties:
@@ -17977,11 +19060,6 @@ components:
       description: >-
         GET /auth/consent 的三字段状态查询，校内与新加坡共用；identityReady/GRANTED 不代表已取得
         token。2026-10-26 已双站发布。
-
-
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：GET /auth/consent 的成功 data
-        仅 status、identityReady、policyVersion，三者均必返且非
-        null；校内和新加坡共用。授权/撤回及登录进度保留六字段。精确运行包序列化/接口测试、两站字节摘要和匿名登录门槛均通过，生产未创建测试账号或改真实用户授权。
       additionalProperties: false
     Result_ConsentStatusViewResponse:
       type: object
@@ -18028,10 +19106,6 @@ components:
               data:
                 $ref: '#/components/schemas/ConsentStatusViewResponse'
                 description: 业务数据；code 非 0 时通常为 null
-      description: >-
-        **部署状态（2026-10-30）：两站已部署。** 2026-10-26 已双站发布：GET /auth/consent 的成功 data
-        仅 status、identityReady、policyVersion，三者均必返且非
-        null；校内和新加坡共用。授权/撤回及登录进度保留六字段。精确运行包序列化/接口测试、两站字节摘要和匿名登录门槛均通过，生产未创建测试账号或改真实用户授权。
     AcceptedResponse:
       type: object
       properties:
@@ -18598,22 +19672,6 @@ components:
         - createdAt
         - closedAt
       additionalProperties: false
-    CatalogErrorInputRequest:
-      type: object
-      properties:
-        restaurantId:
-          type: integer
-          format: int64
-        errorType:
-          type: string
-          enum:
-            - WRONG_NAME
-            - WRONG_LOCATION
-            - CLOSED
-            - DUPLICATE
-            - OTHER
-        note:
-          type: string
     ChallengeResponse:
       type: object
       properties:
@@ -18732,24 +19790,6 @@ components:
         - versions
         - update
       additionalProperties: false
-    CommandRequest:
-      type: object
-      properties:
-        commandId:
-          type: string
-          format: uuid
-        operation:
-          type: string
-          enum:
-            - SAVE
-            - PUBLISH
-            - WITHDRAW
-        edit:
-          $ref: '#/components/schemas/EditRequest'
-      required:
-        - commandId
-        - operation
-        - edit
     CommentDetailResponse:
       type: object
       properties:
@@ -18992,55 +20032,6 @@ components:
         - expiresAt
         - current
       additionalProperties: false
-    EditRequest:
-      type: object
-      properties:
-        topicId:
-          type: string
-          format: uuid
-        expectedRevision:
-          type: integer
-          format: int64
-          minimum: 0
-        campusId:
-          type: integer
-          format: int64
-          exclusiveMinimum: 0
-          minimum: 0
-        name:
-          type: string
-          maxLength: 80
-          minLength: 1
-        introduction:
-          type: string
-          maxLength: 1000
-          minLength: 1
-        startsAt:
-          type: string
-          format: date-time
-        endsAt:
-          type: string
-          format: date-time
-        foodIds:
-          type: array
-          items:
-            type: integer
-            format: int64
-            exclusiveMinimum: 0
-            minimum: 0
-          maxItems: 20
-        coverFoodId:
-          type: integer
-          format: int64
-      required:
-        - topicId
-        - expectedRevision
-        - campusId
-        - name
-        - introduction
-        - startsAt
-        - endsAt
-        - foodIds
     EvidenceUrlResponse:
       type: object
       properties:
@@ -19124,16 +20115,6 @@ components:
         id:
           type: integer
           format: int64
-    FlagInputRequest:
-      type: object
-      properties:
-        'on':
-          type: boolean
-        reason:
-          type: string
-          maxLength: 200
-      required:
-        - 'on'
     FlagResponse:
       type: object
       properties:
@@ -19255,14 +20236,6 @@ components:
         - coverDiameter
         - position
       additionalProperties: false
-    LifecycleCancellationControllerRequestRequest:
-      type: object
-      properties:
-        requestId:
-          type: string
-          format: uuid
-        recoveryCapability:
-          type: string
     LifecycleRequestStatusResponse:
       type: object
       properties:
@@ -19294,23 +20267,6 @@ components:
         - deadline
         - complete
       additionalProperties: false
-    MaintenanceInputRequest:
-      type: object
-      properties:
-        mode:
-          type: string
-          enum:
-            - NONE
-            - READ_ONLY
-            - DOWN
-        message:
-          type: string
-          maxLength: 500
-        until:
-          type: string
-          format: date-time
-      required:
-        - mode
     MaintenanceResponse:
       type: object
       properties:
@@ -19729,17 +20685,6 @@ components:
         - expiresAt
         - oldProofRequired
       additionalProperties: false
-    ProfileConflictControllerResolveRequestRequest:
-      type: object
-      properties:
-        expectedRevision:
-          type: integer
-          format: int64
-        selectedHeadId:
-          type: string
-          format: uuid
-      required:
-        - expectedRevision
     ReceiptResponse:
       type: object
       properties:
@@ -19836,41 +20781,6 @@ components:
         - proofDigest
         - expiresAt
       additionalProperties: false
-    ReportInputRequest:
-      type: object
-      properties:
-        targetType:
-          type: string
-          enum:
-            - FOOD
-            - RESTAURANT
-            - COMMENT
-            - USER
-        targetId:
-          type: integer
-          format: int64
-        reason:
-          type: string
-          enum:
-            - NOT_REAL_PHOTO
-            - ADVERTISING
-            - ILLEGAL_OR_UNFRIENDLY
-            - OTHER
-        note:
-          type: string
-    ResolveInputRequest:
-      type: object
-      properties:
-        outcome:
-          type: string
-          enum:
-            - ACCEPTED
-            - REJECTED
-            - RESOLVED
-        reply:
-          type: string
-        internalNote:
-          type: string
     ResolvedResponse:
       type: object
       properties:
@@ -21588,51 +22498,6 @@ components:
               data:
                 $ref: '#/components/schemas/SettingsResponse'
                 description: 业务数据；code 非 0 时通常为 null
-    Result_StatusResponse:
-      type: object
-      properties:
-        code:
-          type: integer
-          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
-        data:
-          anyOf:
-            - $ref: '#/components/schemas/StatusResponse'
-            - type: 'null'
-          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
-        msg:
-          type: string
-          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
-        timestamp:
-          type: integer
-          format: int64
-          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
-      required:
-        - code
-        - data
-        - msg
-        - timestamp
-      additionalProperties: false
-      allOf:
-        - if:
-            properties:
-              code:
-                not:
-                  const: 0
-          then:
-            properties:
-              data:
-                type: 'null'
-        - if:
-            properties:
-              code:
-                const: 0
-            required:
-              - code
-          then:
-            properties:
-              data:
-                $ref: '#/components/schemas/StatusResponse'
-                description: 业务数据；code 非 0 时通常为 null
     Result_SubmissionResponse:
       type: object
       properties:
@@ -21814,108 +22679,6 @@ components:
       required:
         - commandId
         - recoveryCapability
-    SaveAnnouncementRequest:
-      type: object
-      properties:
-        level:
-          type: string
-          enum:
-            - NORMAL
-            - IMPORTANT
-        title:
-          type: string
-          maxLength: 100
-        content:
-          type: string
-          maxLength: 2000
-          minLength: 1
-        linkUrl:
-          type: string
-          maxLength: 2048
-        platforms:
-          type: array
-          items:
-            type: string
-          maxItems: 3
-        campusIds:
-          type: array
-          items:
-            type: integer
-            format: int64
-            exclusiveMinimum: 0
-            minimum: 0
-          maxItems: 50
-        minBuild:
-          type: integer
-          minimum: 0
-          maximum: 2000000000
-        maxBuild:
-          type: integer
-          minimum: 0
-          maximum: 2000000000
-        startsAt:
-          type: string
-          format: date-time
-        endsAt:
-          type: string
-          format: date-time
-        enabled:
-          type: boolean
-        expectedRevision:
-          type: integer
-          format: int64
-          minimum: 1
-      required:
-        - level
-        - content
-    SaveSettingsRequest:
-      type: object
-      properties:
-        flags:
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/FlagInputRequest'
-          properties: {}
-        params: {}
-        maintenance:
-          $ref: '#/components/schemas/MaintenanceInputRequest'
-        expectedRevision:
-          type: integer
-          format: int64
-          minimum: 0
-      required:
-        - flags
-        - params
-        - maintenance
-        - expectedRevision
-    SaveVersionLineRequest:
-      type: object
-      properties:
-        minBuild:
-          type: integer
-          minimum: 0
-          maximum: 2000000000
-        latestBuild:
-          type: integer
-          minimum: 0
-          maximum: 2000000000
-        latestVersionName:
-          type: string
-          maxLength: 32
-        storeUrl:
-          type: string
-          maxLength: 2048
-        releaseNotes:
-          type: string
-          maxLength: 2000
-        expectedRevision:
-          type: integer
-          format: int64
-          minimum: 0
-      required:
-        - minBuild
-        - latestBuild
-        - expectedRevision
     ScreenshotResponse:
       type: object
       properties:
@@ -22028,20 +22791,6 @@ components:
         - maintenance
         - updatedAt
         - updatedBy
-      additionalProperties: false
-    StatusResponse:
-      type: object
-      properties:
-        commandId:
-          type: string
-          format: uuid
-          description: 换绑手机号命令 UUID。 字段必返，值非 null。
-        status:
-          type: string
-          description: 命令状态：APPLIED 已生效、PENDING 等待跨站同步。 字段必返，值非 null。
-      required:
-        - commandId
-        - status
       additionalProperties: false
     SubmissionResponse:
       type: object
@@ -22447,6 +23196,1601 @@ components:
             properties:
               data:
                 type: 'null'
+    AuthorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 数值业务 ID，用于对应资源的详情、修改等接口。 字段必返，值非 null。
+        displayName:
+          type: string
+          description: 用户的显示名称，可以中文、可以重复；不影响登录。 字段必返，值非 null。
+      required:
+        - id
+        - displayName
+      additionalProperties: false
+    DailyUseResponse:
+      type: object
+      properties:
+        businessDate:
+          type: string
+          format: date
+          description: 服务端 Asia/Shanghai 业务日期，ISO 日期字符串。 字段必返，值非 null。
+        firstUseToday:
+          type: boolean
+          description: 本次是否首次创建当天活跃事实；并发时可能由另一请求完成奖励。 字段必返，值非 null。
+        experienceAdded:
+          type: integer
+          format: int64
+          description: 本次实际入账经验，可含此前失败后的补发；重复调用为 0。 字段必返，值非 null。
+        growth:
+          $ref: '#/components/schemas/GrowthProgressResponse'
+          description: 奖励事务提交后的本人累计经验和等级进度。 字段必返，值非 null。
+      required:
+        - businessDate
+        - firstUseToday
+        - experienceAdded
+        - growth
+      additionalProperties: false
+    EngagementStatsResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: 统计的业务日期，ISO 日期字符串。 字段必返，值非 null。
+        dailyActiveUsers:
+          type: integer
+          format: int64
+          description: 指定日实际保留的注册活跃用户数。 字段必返，值非 null。
+        month:
+          type: string
+          description: 指定日期所在的自然月，YYYY-MM。 字段必返，值非 null。
+        monthlyActiveUsers:
+          type: integer
+          format: int64
+          description: 该完整自然月内去重用户数；不等于每日活跃之和。 字段必返，值非 null。
+        rolling30Start:
+          type: string
+          format: date
+          description: 最近 30 天窗口的第一天，含该日。 字段必返，值非 null。
+        rolling30ActiveUsers:
+          type: integer
+          format: int64
+          description: 指定日及之前 29 天的去重活跃用户数。 字段必返，值非 null。
+        timezone:
+          type: string
+          description: 计算业务日期所用时区，固定为 Asia/Shanghai。 字段必返，值非 null。
+      required:
+        - date
+        - dailyActiveUsers
+        - month
+        - monthlyActiveUsers
+        - rolling30Start
+        - rolling30ActiveUsers
+        - timezone
+      additionalProperties: false
+    ExperienceEntryResponse:
+      type: object
+      properties:
+        entryId:
+          type: string
+          format: uuid
+          description: 这笔经验流水的 UUID。 字段必返，值非 null。
+        businessDate:
+          type: string
+          format: date
+          description: 奖励所属业务日期，ISO 日期字符串，补发时仍为原日期。 字段必返，值非 null。
+        sourceType:
+          type: string
+          description: 经验来源，首版 DAILY_USE 为每日首次有效身份业务调用。 字段必返，值非 null。
+        experience:
+          type: integer
+          description: 本笔新增经验。 字段必返，值非 null。
+        ruleVersion:
+          type: string
+          description: 首次活跃时确定的经验奖励规则版本。 字段必返，值非 null。
+        createdAt:
+          type: string
+          format: date-time
+          description: 实际入账时间，ISO-8601 instant。 字段必返，值非 null。
+      required:
+        - entryId
+        - businessDate
+        - sourceType
+        - experience
+        - ruleVersion
+        - createdAt
+      additionalProperties: false
+    GrowthProgressResponse:
+      type: object
+      properties:
+        totalExperience:
+          type: integer
+          format: int64
+          description: 累计经验，不因升级消耗。 字段必返，值非 null。
+        level:
+          type: integer
+          description: 当前等级，首版 Lv.1～Lv.10。 字段必返，值非 null。
+        levelStartExperience:
+          type: integer
+          format: int64
+          description: 当前等级对应的累计经验门槛。 字段必返，值非 null。
+        nextLevelExperience:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: 下一等级的累计经验门槛；满级时为 null。 字段必返，值可为 null。
+        experienceInLevel:
+          type: integer
+          format: int64
+          description: 累计经验减去当前等级门槛。 字段必返，值非 null。
+        experienceToNextLevel:
+          type: integer
+          format: int64
+          description: 距离下一等级所需经验；满级时为 0。 字段必返，值非 null。
+        maxLevel:
+          type: boolean
+          description: 是否已达到最高等级。 字段必返，值非 null。
+        levelRuleVersion:
+          type: string
+          description: 等级门槛规则版本，首版 growth-levels-v1。 字段必返，值非 null。
+        dailyExperience:
+          type: integer
+          description: 每天首次有效身份业务调用获得的经验，首版为 5。 字段必返，值非 null。
+      required:
+        - totalExperience
+        - level
+        - levelStartExperience
+        - nextLevelExperience
+        - experienceInLevel
+        - experienceToNextLevel
+        - maxLevel
+        - levelRuleVersion
+        - dailyExperience
+      additionalProperties: false
+    PageResult_ExperienceEntryResponse:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+          description: 当前页码，从 1 开始。 字段必返，值非 null。
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperienceEntryResponse'
+          description: 当前页的数据项列表；没有匹配数据时为空列表。 字段必返，值非 null。
+        totalPages:
+          type: integer
+          description: 满足筛选条件的总页数；无匹配数据时为 0。 字段必返，值非 null。
+        totalItems:
+          type: integer
+          format: int64
+          description: 满足筛选条件的总记录数，不是当前页条数。 字段必返，值非 null。
+        hasNext:
+          type: boolean
+          description: 是否还有下一页；为 true 时可请求 currentPage + 1。 字段必返，值非 null。
+      required:
+        - currentPage
+        - items
+        - totalPages
+        - totalItems
+        - hasNext
+      additionalProperties: false
+    Result_DailyUseResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/DailyUseResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/DailyUseResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_EngagementStatsResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/EngagementStatsResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/EngagementStatsResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_GrowthProgressResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/GrowthProgressResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/GrowthProgressResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_PageResult_ExperienceEntryResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/PageResult_ExperienceEntryResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/PageResult_ExperienceEntryResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    AccountConsentGrantRequestRequest:
+      type: object
+      properties:
+        proof:
+          type: string
+          maxLength: 512
+          writeOnly: true
+        policyVersion:
+          type: string
+          maxLength: 128
+          minLength: 1
+      required:
+        - policyVersion
+    AccountConsentWithdrawalRequestRequest:
+      type: object
+      properties:
+        userName:
+          type: string
+          minLength: 3
+          maxLength: 64
+        password:
+          type: string
+          minLength: 1
+          writeOnly: true
+      required:
+        - userName
+        - password
+    AccountPasswordRecoveryRequestRequest:
+      type: object
+      properties:
+        identifier:
+          type: string
+          maxLength: 64
+          minLength: 1
+      required:
+        - identifier
+    AccountPasswordRecoveryResetRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          maxLength: 256
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+      required:
+        - token
+        - newPassword
+    AccountSecurityReviewDecisionRequest:
+      type: object
+      properties:
+        approved:
+          type: boolean
+      required:
+        - approved
+    AccountSecurityReviewPasswordResetRequest:
+      type: object
+      properties:
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+      required:
+        - newPassword
+    CatalogConflictCandidateVersionRequest:
+      type: object
+      properties:
+        gid:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          format: int64
+        contentHash:
+          type: string
+      required:
+        - revision
+    CatalogConflictHeadVersionRequestRequest:
+      type: object
+      properties:
+        operationId:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          format: int64
+        contentHash:
+          type: string
+      required:
+        - revision
+    CatalogConflictResolveDecisionRequestRequest:
+      type: object
+      properties:
+        candidateOperations:
+          type: array
+          items:
+            type: string
+            format: uuid
+        decisionHeads:
+          type: array
+          items:
+            type: string
+            format: uuid
+        decision:
+          type: string
+          enum:
+            - KEEP
+            - REJECT
+        winnerOperationId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+    CatalogConflictResolveHeadRequestRequest:
+      type: object
+      properties:
+        expectedRevision:
+          type: integer
+          format: int64
+        heads:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogConflictHeadVersionRequestRequest'
+        decision:
+          type: string
+          enum:
+            - KEEP
+            - REJECT
+        winnerOperationId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        decisionHeads:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - expectedRevision
+    CatalogConflictResolveRequestRequest:
+      type: object
+      properties:
+        conflictId:
+          type: string
+          format: uuid
+        expectedRevision:
+          type: integer
+          format: int64
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogConflictCandidateVersionRequest'
+        decision:
+          type: string
+          enum:
+            - KEEP
+            - REJECT
+        winnerGid:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        decisionHeads:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - expectedRevision
+    CatalogHubImportRequestCoordinateRequest:
+      type: object
+      properties:
+        lng:
+          type: number
+        lat:
+          type: number
+      required:
+        - lng
+        - lat
+    CatalogHubImportRequestHubItemRequest:
+      type: object
+      properties:
+        sourceId:
+          type: string
+        name:
+          type: string
+        centerWgs:
+          $ref: '#/components/schemas/CatalogHubImportRequestCoordinateRequest'
+        centerGcj:
+          $ref: '#/components/schemas/CatalogHubImportRequestCoordinateRequest'
+        boundaryGeoJson:
+          type: string
+        rebindCoveredRestaurants:
+          type: boolean
+      required:
+        - rebindCoveredRestaurants
+    CommentGalleryImageViewResponse:
+      type: object
+      properties:
+        commentId:
+          type: integer
+          format: int64
+          description: 图片所属评论的数值 ID。 字段必返，值非 null。
+        commentGid:
+          type: string
+          format: uuid
+          description: 图片所属评论的全局 UUID。 字段必返，值非 null。
+        createdAt:
+          type: string
+          format: date-time
+          description: 所属评论的提交时间（ISO 8601）。 字段必返，值非 null。
+        image:
+          $ref: '#/components/schemas/CommentImageViewResponse'
+          description: 图片序号与签名地址。 字段必返，值非 null。
+      required:
+        - commentId
+        - commentGid
+        - createdAt
+        - image
+      additionalProperties: false
+    CommentImageViewResponse:
+      type: object
+      properties:
+        slot:
+          type: integer
+          description: 评论图片序号，从 0 起，一条评论至多 3 张。 字段必返，值非 null。
+        url:
+          type: string
+          description: 图片的短期签名访问地址；到期后需重新读取评论。 字段必返，值非 null。
+        expiresInSeconds:
+          type: integer
+          format: int64
+          description: 签名地址的有效秒数。 字段必返，值非 null。
+      required:
+        - slot
+        - url
+        - expiresInSeconds
+      additionalProperties: false
+    CommentQueriesSubmissionResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 评论的数值 ID。 字段必返，值非 null。
+        gid:
+          type: string
+          format: uuid
+          description: 评论的全局 UUID。 字段必返，值非 null。
+        revisionId:
+          type: string
+          format: uuid
+          description: 本次提交的修订 UUID。 字段必返，值非 null。
+        kind:
+          type: string
+          description: 评论类型：COMMENT 一级评论、REPLY 回复。 字段必返，值非 null。
+        foodId:
+          type: integer
+          format: int64
+          description: 所属菜品的数值 ID。 字段必返，值非 null。
+        moderationStatus:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - REJECTED
+            - SUPERSEDED
+            - DELETED
+          description: >-
+            审核状态：PENDING 待审核、APPROVED 已通过、REJECTED 已驳回、SUPERSEDED
+            已被后续修订替代、DELETED 已删除。 字段必返，值非 null。
+        reasonCode:
+          type:
+            - string
+            - 'null'
+          description: 驳回原因码；仅 REJECTED 时返回，其他状态为 null。 字段必返，值可为 null。
+        reasonMessage:
+          type:
+            - string
+            - 'null'
+          description: 驳回原因说明；仅 REJECTED 时返回，其他状态为 null。 字段必返，值可为 null。
+        text:
+          type:
+            - string
+            - 'null'
+          description: 提交的正文；已删除时不返回，为 null。 字段必返，值可为 null。
+        imageCount:
+          type: integer
+          description: 提交的图片数量；已删除时为 0。 字段必返，值非 null。
+        createdAt:
+          type: string
+          format: date-time
+          description: 提交时间（ISO 8601）。 字段必返，值非 null。
+      required:
+        - id
+        - gid
+        - revisionId
+        - kind
+        - foodId
+        - moderationStatus
+        - reasonCode
+        - reasonMessage
+        - text
+        - imageCount
+        - createdAt
+      additionalProperties: false
+    CommentReviewResultResponse:
+      type: object
+      properties:
+        decisionId:
+          type: string
+          format: uuid
+          description: 本次审核决定的命令 UUID，同一命令重试返回同一值。 字段必返，值非 null。
+        revisionId:
+          type: string
+          format: uuid
+          description: 被审核的评论修订 UUID。 字段必返，值非 null。
+        moderationStatus:
+          type: string
+          description: >-
+            审核后的状态：APPROVED 已通过、REJECTED 已驳回、PENDING 等待发布；重放已生效的决定时返回其已记录的状态。
+            字段必返，值非 null。
+      required:
+        - decisionId
+        - revisionId
+        - moderationStatus
+      additionalProperties: false
+    CommentViewResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 评论的数值 ID，用于点赞、删除和读取回复。 字段必返，值非 null。
+        gid:
+          type: string
+          format: uuid
+          description: 评论的全局 UUID。 字段必返，值非 null。
+        revisionId:
+          type: string
+          format: uuid
+          description: 当前已发布修订的 UUID。 字段必返，值非 null。
+        kind:
+          type: string
+          description: 评论类型：COMMENT 一级评论、REPLY 回复。 字段必返，值非 null。
+        foodId:
+          type: integer
+          format: int64
+          description: 所属菜品的数值 ID。 字段必返，值非 null。
+        rootCommentGid:
+          type: string
+          format: uuid
+          description: 所属一级评论的全局 UUID；一级评论指向自身。 字段必返，值非 null。
+        replyToGid:
+          type:
+            - string
+            - 'null'
+          format: uuid
+          description: 被回复评论的全局 UUID；一级评论为 null。 字段必返，值可为 null。
+        authorName:
+          type: string
+          description: 作者显示名；作者无显示名时为“匿名用户”。 字段必返，值非 null。
+        text:
+          type: string
+          description: 评论正文，至多 200 字。 字段必返，值非 null。
+        likesCount:
+          type: integer
+          format: int64
+          description: 点赞数。 字段必返，值非 null。
+        createdAt:
+          type: string
+          format: date-time
+          description: 评论首次提交时间（ISO 8601）。 字段必返，值非 null。
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentImageViewResponse'
+          description: 评论图片，按序号排列；无图片时为空数组。 字段必返，值非 null。
+      required:
+        - id
+        - gid
+        - revisionId
+        - kind
+        - foodId
+        - rootCommentGid
+        - replyToGid
+        - authorName
+        - text
+        - likesCount
+        - createdAt
+        - images
+      additionalProperties: false
+    CreateCommentDTORequest:
+      type: object
+      properties:
+        text:
+          type: string
+        pictureKeys:
+          type: array
+          items:
+            type: string
+        campusId:
+          type: integer
+          format: int64
+    CreateCommentReplyDTORequest:
+      type: object
+      properties:
+        text:
+          type: string
+        pictureKeys:
+          type: array
+          items:
+            type: string
+        replyToId:
+          type: integer
+          format: int64
+        campusId:
+          type: integer
+          format: int64
+    CredentialMobileCommandsStatusResponse:
+      type: object
+      properties:
+        commandId:
+          type: string
+          format: uuid
+          description: 换绑手机号命令 UUID。 字段必返，值非 null。
+        status:
+          type: string
+          description: 命令状态：APPLIED 已生效、PENDING 等待跨站同步。 字段必返，值非 null。
+      required:
+        - commandId
+        - status
+      additionalProperties: false
+    FeedbackCatalogErrorInputRequest:
+      type: object
+      properties:
+        restaurantId:
+          type: integer
+          format: int64
+        errorType:
+          type: string
+          enum:
+            - WRONG_NAME
+            - WRONG_LOCATION
+            - CLOSED
+            - DUPLICATE
+            - OTHER
+        note:
+          type: string
+    FeedbackReportInputRequest:
+      type: object
+      properties:
+        targetType:
+          type: string
+          enum:
+            - FOOD
+            - RESTAURANT
+            - COMMENT
+            - USER
+        targetId:
+          type: integer
+          format: int64
+        reason:
+          type: string
+          enum:
+            - NOT_REAL_PHOTO
+            - ADVERTISING
+            - ILLEGAL_OR_UNFRIENDLY
+            - OTHER
+        note:
+          type: string
+    FeedbackResolveInputRequest:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum:
+            - ACCEPTED
+            - REJECTED
+            - RESOLVED
+        reply:
+          type: string
+        internalNote:
+          type: string
+    NativeCommentDeletesDeletedResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 被删除评论的数值 ID。 字段必返，值非 null。
+        gid:
+          type: string
+          format: uuid
+          description: 被删除评论的全局 UUID。 字段必返，值非 null。
+        deletionId:
+          type: string
+          format: uuid
+          description: 删除命令 UUID，即请求头 Idempotency-Key 的值。 字段必返，值非 null。
+        state:
+          type: string
+          description: 删除协议的当前状态；同一命令重试返回同一结果。 字段必返，值非 null。
+      required:
+        - id
+        - gid
+        - deletionId
+        - state
+      additionalProperties: false
+    NativeCommentLikesResultResponse:
+      type: object
+      properties:
+        commentId:
+          type: integer
+          format: int64
+          description: 评论的数值 ID。 字段必返，值非 null。
+        liked:
+          type: boolean
+          description: 当前用户现在是否已点赞。 字段必返，值非 null。
+        likesCount:
+          type: integer
+          format: int64
+          description: 该评论当前点赞数。 字段必返，值非 null。
+        authorLikesCount:
+          type: integer
+          format: int64
+          description: 评论作者累计获得的点赞数。 字段必返，值非 null。
+      required:
+        - commentId
+        - liked
+        - likesCount
+        - authorLikesCount
+      additionalProperties: false
+    NativeCommentSubmissionsAcceptedResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 新评论的数值 ID。 字段必返，值非 null。
+        commentGid:
+          type: string
+          format: uuid
+          description: 新评论的全局 UUID。 字段必返，值非 null。
+        revisionId:
+          type: string
+          format: uuid
+          description: 本次提交的修订 UUID。 字段必返，值非 null。
+        moderationStatus:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - REJECTED
+            - SUPERSEDED
+            - DELETED
+          description: 提交后的审核状态，通常为 PENDING 待审核；通过审核后才对其他用户可见。 字段必返，值非 null。
+      required:
+        - id
+        - commentGid
+        - revisionId
+        - moderationStatus
+      additionalProperties: false
+    PageResult_CommentGalleryImageViewResponse:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+          description: 当前页码，从 1 开始。 字段必返，值非 null。
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentGalleryImageViewResponse'
+          description: 当前页的数据项列表；没有匹配数据时为空列表。 字段必返，值非 null。
+        totalPages:
+          type: integer
+          description: 满足筛选条件的总页数；无匹配数据时为 0。 字段必返，值非 null。
+        totalItems:
+          type: integer
+          format: int64
+          description: 满足筛选条件的总记录数，不是当前页条数。 字段必返，值非 null。
+        hasNext:
+          type: boolean
+          description: 是否还有下一页；为 true 时可请求 currentPage + 1。 字段必返，值非 null。
+      required:
+        - currentPage
+        - items
+        - totalPages
+        - totalItems
+        - hasNext
+      additionalProperties: false
+    PageResult_CommentQueriesSubmissionResponse:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+          description: 当前页码，从 1 开始。 字段必返，值非 null。
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentQueriesSubmissionResponse'
+          description: 当前页的数据项列表；没有匹配数据时为空列表。 字段必返，值非 null。
+        totalPages:
+          type: integer
+          description: 满足筛选条件的总页数；无匹配数据时为 0。 字段必返，值非 null。
+        totalItems:
+          type: integer
+          format: int64
+          description: 满足筛选条件的总记录数，不是当前页条数。 字段必返，值非 null。
+        hasNext:
+          type: boolean
+          description: 是否还有下一页；为 true 时可请求 currentPage + 1。 字段必返，值非 null。
+      required:
+        - currentPage
+        - items
+        - totalPages
+        - totalItems
+        - hasNext
+      additionalProperties: false
+    PageResult_CommentViewResponse:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+          description: 当前页码，从 1 开始。 字段必返，值非 null。
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentViewResponse'
+          description: 当前页的数据项列表；没有匹配数据时为空列表。 字段必返，值非 null。
+        totalPages:
+          type: integer
+          description: 满足筛选条件的总页数；无匹配数据时为 0。 字段必返，值非 null。
+        totalItems:
+          type: integer
+          format: int64
+          description: 满足筛选条件的总记录数，不是当前页条数。 字段必返，值非 null。
+        hasNext:
+          type: boolean
+          description: 是否还有下一页；为 true 时可请求 currentPage + 1。 字段必返，值非 null。
+      required:
+        - currentPage
+        - items
+        - totalPages
+        - totalItems
+        - hasNext
+      additionalProperties: false
+    RemoteConfigFlagInputRequest:
+      type: object
+      properties:
+        'on':
+          type: boolean
+        reason:
+          type: string
+          maxLength: 200
+      required:
+        - 'on'
+    RemoteConfigMaintenanceInputRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - NONE
+            - READ_ONLY
+            - DOWN
+        message:
+          type: string
+          maxLength: 500
+        until:
+          type: string
+          format: date-time
+      required:
+        - mode
+    RemoteConfigSaveAnnouncementRequest:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - NORMAL
+            - IMPORTANT
+        title:
+          type: string
+          maxLength: 100
+        content:
+          type: string
+          maxLength: 2000
+          minLength: 1
+        linkUrl:
+          type: string
+          maxLength: 2048
+        platforms:
+          type: array
+          items:
+            type: string
+          maxItems: 3
+        campusIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+            exclusiveMinimum: 0
+            minimum: 0
+          maxItems: 50
+        minBuild:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        maxBuild:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        enabled:
+          type: boolean
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 1
+      required:
+        - level
+        - content
+    RemoteConfigSaveSettingsRequest:
+      type: object
+      properties:
+        flags:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/RemoteConfigFlagInputRequest'
+          properties: {}
+        params: {}
+        maintenance:
+          $ref: '#/components/schemas/RemoteConfigMaintenanceInputRequest'
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - flags
+        - params
+        - maintenance
+        - expectedRevision
+    RemoteConfigSaveVersionLineRequest:
+      type: object
+      properties:
+        minBuild:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        latestBuild:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        latestVersionName:
+          type: string
+          maxLength: 32
+        storeUrl:
+          type: string
+          maxLength: 2048
+        releaseNotes:
+          type: string
+          maxLength: 2000
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - minBuild
+        - latestBuild
+        - expectedRevision
+    Result_CommentReviewResultResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/CommentReviewResultResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/CommentReviewResultResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_CredentialMobileCommandsStatusResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/CredentialMobileCommandsStatusResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/CredentialMobileCommandsStatusResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_NativeCommentDeletesDeletedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/NativeCommentDeletesDeletedResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/NativeCommentDeletesDeletedResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_NativeCommentLikesResultResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/NativeCommentLikesResultResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/NativeCommentLikesResultResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_NativeCommentSubmissionsAcceptedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/NativeCommentSubmissionsAcceptedResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/NativeCommentSubmissionsAcceptedResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    Result_PageResult_CommentGalleryImageViewResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/PageResult_CommentGalleryImageViewResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: >-
+                  #/components/schemas/PageResult_CommentGalleryImageViewResponse
+                description: 业务数据；code 非 0 时通常为 null
+    Result_PageResult_CommentQueriesSubmissionResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/PageResult_CommentQueriesSubmissionResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: >-
+                  #/components/schemas/PageResult_CommentQueriesSubmissionResponse
+                description: 业务数据；code 非 0 时通常为 null
+    Result_PageResult_CommentViewResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 业务状态码：0 为成功，非零为业务错误；需与 HTTP 状态码共同判断。 字段必返，值非 null。
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/PageResult_CommentViewResponse'
+            - type: 'null'
+          description: 业务数据，具体结构见本接口响应模型；无返回数据或失败时可能为 null。 字段必返，值可为 null。
+        msg:
+          type: string
+          description: 业务结果提示信息；成功时通常为 ok，失败时说明原因，程序判断应使用 code。 字段必返，值非 null。
+        timestamp:
+          type: integer
+          format: int64
+          description: 响应生成时间，Unix 毫秒时间戳。 字段必返，值非 null。
+      required:
+        - code
+        - data
+        - msg
+        - timestamp
+      additionalProperties: false
+      allOf:
+        - if:
+            properties:
+              code:
+                not:
+                  const: 0
+          then:
+            properties:
+              data:
+                type: 'null'
+        - if:
+            properties:
+              code:
+                const: 0
+            required:
+              - code
+          then:
+            properties:
+              data:
+                $ref: '#/components/schemas/PageResult_CommentViewResponse'
+                description: 业务数据；code 非 0 时通常为 null
+    ReviewCommentDTORequest:
+      type: object
+      properties:
+        decisionId:
+          type: string
+          format: uuid
+        revisionId:
+          type: string
+          format: uuid
+        verdict:
+          type: string
+          enum:
+            - APPROVE
+            - REJECT
+            - HIDE
+            - RESTORE
+            - DELETE
+        reasonCode:
+          type: string
+    TopicCommandRequest:
+      type: object
+      properties:
+        commandId:
+          type: string
+          format: uuid
+        operation:
+          type: string
+          enum:
+            - SAVE
+            - PUBLISH
+            - WITHDRAW
+        edit:
+          $ref: '#/components/schemas/TopicEditRequest'
+      required:
+        - commandId
+        - operation
+        - edit
+    TopicEditRequest:
+      type: object
+      properties:
+        topicId:
+          type: string
+          format: uuid
+        expectedRevision:
+          type: integer
+          format: int64
+          minimum: 0
+        campusId:
+          type: integer
+          format: int64
+          exclusiveMinimum: 0
+          minimum: 0
+        name:
+          type: string
+          maxLength: 80
+          minLength: 1
+        introduction:
+          type: string
+          maxLength: 1000
+          minLength: 1
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        foodIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+            exclusiveMinimum: 0
+            minimum: 0
+          maxItems: 20
+        coverFoodId:
+          type: integer
+          format: int64
+      required:
+        - topicId
+        - expectedRevision
+        - campusId
+        - name
+        - introduction
+        - startsAt
+        - endsAt
+        - foodIds
   responses: {}
   securitySchemes:
     SaToken:
