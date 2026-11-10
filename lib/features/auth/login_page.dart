@@ -206,7 +206,10 @@ class _Brand extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
-    final intro = eat.text.body.copyWith(color: palette.secondaryForeground);
+    final intro = eat.text.subhead.copyWith(
+      fontWeight: FontWeight.w400,
+      color: palette.secondaryForeground,
+    );
     return Semantics(
       header: true,
       label: '沙软今天吃什么',
@@ -216,7 +219,7 @@ class _Brand extends StatelessWidget {
           children: [
             Text(
               '沙软',
-              style: eat.text.heading.copyWith(color: palette.foreground),
+              style: eat.text.title.copyWith(color: palette.foreground),
             ),
             const SizedBox(height: 2),
             Text(
