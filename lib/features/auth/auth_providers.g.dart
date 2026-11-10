@@ -106,7 +106,7 @@ final class PhoneLoginProvider
   }
 }
 
-String _$phoneLoginHash() => r'f6c9abe156f22e2bf7932cb46a0c130621b3eac2';
+String _$phoneLoginHash() => r'80fb264f6407c587e5fe7516e6cdcd4b38df82fc';
 
 abstract class _$PhoneLogin extends $Notifier<PhoneLoginState> {
   PhoneLoginState build();
@@ -158,7 +158,7 @@ final class PasswordLoginProvider
   }
 }
 
-String _$passwordLoginHash() => r'255ded81971f7f70f06b8f50f521e8dea45de5eb';
+String _$passwordLoginHash() => r'7601f4a287842935b3da2e1ac7565f95bb148bbc';
 
 abstract class _$PasswordLogin extends $Notifier<PasswordLoginState> {
   PasswordLoginState build();

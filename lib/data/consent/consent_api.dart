@@ -11,7 +11,7 @@ abstract final class ConsentEndpoints {
   static const grant = '/auth/consent/grant';
 }
 
-/// 接口分组 AccountConsent: 跨站同步同意.
+/// 接口分组 AccountConsent: 数据跨境同意.
 ///
 /// 同意由用户在同意面板中确认后提交. 客户端只对接读取政策和同意两个接口, 不对接状态查询和撤回.
 class ConsentApi {

@@ -194,7 +194,7 @@ void main() {
 
       await startSso(tester, _returned('result=success&code=0'));
 
-      expect(find.text('认证结果尚未同步，请稍后刷新状态'), findsOneWidget);
+      expect(find.text('认证结果尚未生效，请稍后刷新状态'), findsOneWidget);
       expect(find.text('我已完成，刷新状态'), findsOneWidget);
     });
 

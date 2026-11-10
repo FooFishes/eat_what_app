@@ -402,7 +402,7 @@ void main() {
     });
   });
 
-  group('跨站同步同意', () {
+  group('数据跨境同意', () {
     Map<String, Object?> consentRequired([String? proof]) => {
       'code': 20005,
       'msg': '需要跨境同步同意',
@@ -426,7 +426,7 @@ void main() {
       final (_, router) = await pumpApp(tester, env, location: Paths.settings);
       await openPasswordLogin(tester);
 
-      expect(find.text('同意数据同步后继续'), findsOneWidget);
+      expect(find.text('同意数据跨境后继续'), findsOneWidget);
       expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
       await tester.tap(find.text('同意'));
       await tester.pumpAndSettle();
@@ -449,7 +449,7 @@ void main() {
       await tester.tap(find.text('不同意'));
       await tester.pumpAndSettle();
       expect(find.byType(PasswordLoginPage), findsOneWidget);
-      expect(find.text('需要同意数据同步后才能继续'), findsOneWidget);
+      expect(find.text('需要同意数据跨境后才能继续'), findsOneWidget);
       expect(find.text('zhang@mail.sdu.edu.cn'), findsOneWidget);
       expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
       expect(env.adapter.sent('POST /auth/login'), hasLength(1));
@@ -541,11 +541,11 @@ void main() {
           .get('/anything')
           .then<Object?>((value) => value, onError: (Object e) => e);
       await tester.pumpAndSettle();
-      expect(find.text('同意数据同步后继续'), findsOneWidget);
+      expect(find.text('同意数据跨境后继续'), findsOneWidget);
       await tester.tap(find.text('同意'));
       await tester.pumpAndSettle();
       expect(await request, 'A');
-      expect(find.text('同意数据同步后继续'), findsNothing);
+      expect(find.text('同意数据跨境后继续'), findsNothing);
     });
   });
 

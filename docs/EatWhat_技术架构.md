@@ -91,7 +91,7 @@ lib/
     inbox/                  消息
     settings/               设置、账号与安全、登录设备、注销、隐私、屏蔽的人、通知、关于、反馈
     system/                 强制更新、维护、公告、建议更新、拦截面板、人机验证、轻提示、没找到页面；
-                            各功能共用的评论卡片、举报和信息有误的原因面板、跨站同步同意面板（见 2.2）
+                            各功能共用的评论卡片、举报和信息有误的原因面板、数据跨境同意面板（见 2.2）
     kit/                    组件页，只在 debug 构建里有
   router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、
                             深链处理（deep_links.dart：DeepLinks、DeepLinkHandler、linkSourceProvider，6.3）、
@@ -122,7 +122,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、跨站同步同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截面板（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、数据跨境同意面板（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -171,8 +171,8 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | --- | --- | --- |
 | `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期时带上原因和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
 | `accountStatusProvider` | 未登录（含游客）、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
-| `consentProvider` | 隐私政策同意版本和时间（跨站同步同意不进这里，见 9.5） | 登录页（登录成功或「先逛逛」时） |
-| `crossSiteConsentProvider` | 读跨站同步政策、弹同意面板、提交同意（9.5） | `ApiHooks.requestConsent`、登录流程 |
+| `consentProvider` | 隐私政策同意版本和时间（数据跨境同意不进这里，见 9.5） | 登录页（登录成功或「先逛逛」时） |
+| `crossBorderConsentProvider` | 读数据跨境政策、弹同意面板、提交同意（9.5） | `ApiHooks.requestConsent`、登录流程 |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
 | `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
 | `locationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
@@ -398,8 +398,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 10003 | 请求频率过高，`data.retryAfterSeconds` 给出等待秒数（密码锁定最多 900 秒，验证码 24 小时上限） | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
 | 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4）；游客收到时不走过期流程，按 `NeedsSignIn` 弹登录面板（8.1） |
 | 20004 | 权限不足，受限会话访问未登记的接口也是这个码 | 重新拉用户信息，按新的账号状态弹拦截面板（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」 |
-| 20005、20009 | 需要跨站同步同意、同意政策已更新 | 弹同意面板，用户同意后重发原请求（9.5） |
-| 20006 | 数据同步中 | 提示「数据正在同步，请稍后再试」，不重发写请求 |
+| 20005、20009 | 需要数据跨境同意、同意政策已更新 | 弹同意面板，用户同意后重发原请求（9.5） |
+| 20006 | 数据处理中 | 提示「数据正在处理，请稍后再试」，不重发写请求 |
 | 20007、20008 | 同意失败、proof 无效 | 清会话回登录页（9.5） |
 | 20010 | 账号授权已过期 | 同登录过期 |
 | 30xxx | 用户模块（密码错、验证码错、邮箱不对……） | 每个码一句话，表在 `core/failure/messages.dart` |
@@ -558,33 +558,33 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 ### 9.4 同意记录与 SDK 初始化
 
 - 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）；点「先逛逛」并同意时当场写入（产品 6.2）。游客和登录用户共用这一份记录，退出登录不删。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
-- 跨站同步同意由用户在面板里确认、记在服务端，不进本地同意记录，见 9.5。
+- 数据跨境同意由用户在面板里确认、记在服务端，不进本地同意记录，见 9.5。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 - 百度地图 SDK 更晚：同意之后、第一次打开附近或新建店时才初始化（14.4）。
 
-### 9.5 跨站同步同意
+### 9.5 数据跨境同意
 
-由用户在面板里点同意，客户端不代用户同意（2026-11-02 定，后端契约 `frontend-contract.md` 和 biz-codes 20010 都要求不得代为同意）。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
+后端已改为海外单站（2026-11-06），不再有站点之间的同步，但数据存放在境外，仍要用户同意数据跨境；接口和业务码沿用原来的 `/auth/consent`。由用户在面板里点同意，客户端不代用户同意（2026-11-02 定，后端契约 `frontend-contract.md` 和 biz-codes 20010 都要求不得代为同意）。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
 
 - 接口：`/auth/consent/policy` 读当前政策的版本和地址，`/auth/consent/grant` 提交同意（带政策版本，登录时还带 `proof`）。查询状态、撤回不接。代码在 `data/consent/` 的 `ConsentApi`。
-- 面板：`features/system/consent_panel.dart`。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹。读政策、弹面板、提交同意由 `state/cross_site_consent.dart` 的 `crossSiteConsentProvider` 负责；没有挂上 `ConsentHost` 时按不同意处理。
+- 面板：`features/system/consent_panel.dart`。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹。读政策、弹面板、提交同意由 `state/cross_border_consent.dart` 的 `crossBorderConsentProvider` 负责；没有挂上 `ConsentHost` 时按不同意处理。
 - 业务码：
 
   | 码 | 含义 | 处理 |
   | --- | --- | --- |
-  | 20005 | 需要跨站同步同意，登录时 `data` 里可能带 `consentProof` | 弹面板 |
+  | 20005 | 需要数据跨境同意，登录时 `data` 里可能带 `consentProof` | 弹面板 |
   | 20009 | 同意政策已更新 | 弹面板，用新版本同意 |
-  | 20007、20008 | 同意失败、proof 无效（境外站的会话不带 proof 不能同意） | 清会话、回登录页，重新登录时会拿到 proof |
+  | 20007、20008 | 同意失败、proof 无效（当前会话不能同意时） | 清会话、回登录页，重新登录时会拿到 proof |
   | 20010 | 账号授权已过期 | 按登录过期处理 |
-  | 20006 | 数据同步中，不是同意问题 | 只提示「数据正在同步，请稍后再试」，不同意、不重发写请求 |
+  | 20006 | 数据处理中，不是同意问题 | 只提示「数据正在处理，请稍后再试」，不同意、不重发写请求 |
 
 - 登录：返回 20005 时不算登录成功，弹面板。
   - 密码登录：同意后带 proof 提交，再用同一组账号密码自动登录一次；账号密码只为这一次留在内存里。
   - 验证码登录：验证码已经被核销，同意后清空验证码，提示「验证码已失效，请重新获取」。
   - 不同意：停在登录页。
-- 注册：手机号登录遇到新号码时直接注册。后端对不带同意的新号码先核销验证码，再返回不带 proof 的 20005，所以默认不带同意；收到它时弹面板，用户同意后重新获取验证码，下一次登录带上 `crossBorderConsent: true` 和 `consentPolicyVersion`。代价是境外站的新用户要收两次验证码。
+- 注册：手机号登录遇到新号码时直接注册。后端对不带同意的新号码先核销验证码，再返回不带 proof 的 20005，所以默认不带同意；收到它时弹面板，用户同意后重新获取验证码，下一次登录带上 `crossBorderConsent: true` 和 `consentPolicyVersion`。代价是新用户要收两次验证码。
 - 已登录时接口返回 20005 / 20009：`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请求用户同意。同意成功后把原请求重发一次；不同意或同意失败时，原请求按失败处理。几个请求同时遇到时只弹一次面板。未登录时不弹，交给登录流程。
-- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → `crossSiteConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
+- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
 - 已知不足：会话中用户不同意以后，后面每个返回 20005 的请求还会再弹一次。
 
 ## 10. 离线与缓存

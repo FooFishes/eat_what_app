@@ -1,7 +1,7 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/api_client.dart';
-import 'package:eat/state/cross_site_consent.dart';
+import 'package:eat/state/cross_border_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -26,7 +26,7 @@ final stateOverrides = <Override>[
       onForbidden: () => container.read(sessionProvider.notifier).refreshUser(),
       requestConsent: () async {
         try {
-          await container.read(crossSiteConsentProvider).grantForSession();
+          await container.read(crossBorderConsentProvider).grantForSession();
         } on AppFailure catch (e) {
           if (!BizCodes.consentSignInCodes.contains(e.code)) rethrow;
           container.read(sessionProvider.notifier).expire();

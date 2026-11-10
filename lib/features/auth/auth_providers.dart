@@ -8,7 +8,7 @@ import 'package:eat/data/cancellation/cancellation_repository.dart';
 import 'package:eat/features/auth/restore_providers.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/consented_services.dart';
-import 'package:eat/state/cross_site_consent.dart';
+import 'package:eat/state/cross_border_consent.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -46,7 +46,7 @@ final class AuthCodeLimited extends AuthFormEvent {
   final AppFailure failure;
 }
 
-/// 用户在同意面板中同意了跨站同步, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
+/// 用户在同意面板中同意了数据跨境, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
 final class AuthCodeConsumed extends AuthFormEvent {
   const AuthCodeConsumed();
 }
@@ -63,7 +63,7 @@ class const PhoneLoginState({
   final bool submitting = false,
   final AuthFormEvent? event,
 
-  /// 用户是否已在同意面板中同意跨站同步. 为 true 时登录请求携带同意, 海外站的新号码据此注册.
+  /// 用户是否已在同意面板中同意数据跨境. 为 true 时登录请求携带同意, 新号码据此注册.
   final bool consented = false,
 });
 
@@ -105,10 +105,10 @@ class PhoneLogin extends _$PhoneLogin {
     }
   }
 
-  /// 服务端要求同意跨站同步时, 用 [present] 弹出同意面板.
+  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意面板.
   ///
   /// 要求同意的响应已核销验证码, 因此用户同意后不自动重新登录, 而是要求重新获取验证码.
-  /// 已有账号带临时凭证, 同意后立即提交. 海外站的新号码没有凭证, 下次登录请求携带同意完成注册.
+  /// 已有账号带临时凭证, 同意后立即提交. 新号码没有凭证, 下次登录请求携带同意完成注册.
   Future<void> submit(
     ConsentPresenter present,
     String mobile,
@@ -153,7 +153,7 @@ class PhoneLogin extends _$PhoneLogin {
   }
 
   Future<void> _consent(ConsentPresenter present, AppFailure required) async {
-    final consent = ref.read(crossSiteConsentProvider);
+    final consent = ref.read(crossBorderConsentProvider);
     try {
       if (consentProofOf(required) case final proof?) {
         await consent.grant(present, proof: proof);
@@ -192,7 +192,7 @@ class PasswordLogin extends _$PasswordLogin {
   @override
   PasswordLoginState build() => const PasswordLoginState();
 
-  /// 服务端要求同意跨站同步时, 用 [present] 弹出同意面板.
+  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意面板.
   ///
   /// 用户同意后用临时凭证提交同意, 随后用同一组账号密码重新登录.
   /// 账号密码只在本次调用中保留在内存里.
@@ -211,7 +211,7 @@ class PasswordLogin extends _$PasswordLogin {
       } on AppFailure catch (e) {
         final proof = consentProofOf(e);
         if (proof == null) rethrow;
-        await ref.read(crossSiteConsentProvider).grant(present, proof: proof);
+        await ref.read(crossBorderConsentProvider).grant(present, proof: proof);
         result = await auth.loginWithPassword(account, password);
       }
       await _signIn(ref, result);

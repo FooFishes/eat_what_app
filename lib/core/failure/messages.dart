@@ -19,13 +19,13 @@ abstract final class BizCodes {
   /// 无权限. 未认证访问需认证的接口, 或受限会话访问后端未登记的接口时返回.
   static const permissionDenied = 20004;
 
-  /// 海外站未同意跨站同步.
+  /// 用户未同意数据跨境.
   ///
   /// 登录时 `data.consentProof` 带有临时凭证, 用户同意后用它提交同意.
   /// 已登录时网络层请用户同意, 同意后重发一次原请求. 该码表示原请求未被执行, 因此可以重发.
   static const consentRequired = 20005;
 
-  /// 账号或数据正在跨站同步. 赞, 收藏, 标签, 菜品详情, 发布等接口都可能返回.
+  /// 账号或数据正在等待服务端处理, 如注册等待协调, 目录冲突. 多个接口都可能返回.
   ///
   /// 不触发自动同意, 不重发请求.
   /// 该码不保证写入未被受理, 自动重发写请求可能重复提交.
@@ -112,11 +112,11 @@ const failureMessages = <Object, String>{
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
-  BizCodes.consentRequired: '需要同意数据同步后才能继续',
-  BizCodes.dataSyncPending: '数据正在同步，请稍后再试',
+  BizCodes.consentRequired: '需要同意数据跨境后才能继续',
+  BizCodes.dataSyncPending: '数据正在处理，请稍后再试',
   BizCodes.authUnavailable: '身份验证暂不可用，请稍后再试',
   BizCodes.consentProofInvalid: '验证信息已过期，请重新登录',
-  BizCodes.consentPolicyChanged: '数据同步说明已更新，请重新确认',
+  BizCodes.consentPolicyChanged: '数据跨境说明已更新，请重新确认',
   BizCodes.stateNotAllowed: '当前无法执行此操作，请刷新后重试',
   BizCodes.foodNotFound: '这道菜已删除',
   BizCodes.duplicateDish: '这家店已有这道菜',

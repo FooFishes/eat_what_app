@@ -5,11 +5,11 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
-import 'package:eat/state/cross_site_consent.dart';
+import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 跨站同步同意面板. 返回 true 表示用户点了 "同意".
+/// 数据跨境同意面板. 返回 true 表示用户点了 "同意".
 ///
 /// 点击 "不同意", 点击遮罩和下拉关闭都视为不同意.
 Future<bool> showConsentPanel(
@@ -33,7 +33,7 @@ class _ConsentPanel extends ConsumerWidget {
     final c = eat.colors;
     return EatPanel(
       icon: EatIcons.earth,
-      title: '同意数据同步后继续',
+      title: '同意数据跨境后继续',
       actions: Row(
         spacing: EatSpace.s10,
         children: [
@@ -54,17 +54,17 @@ class _ConsentPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('账号信息和使用记录会在境内外站点之间同步，同意后才能继续使用。', style: eat.text.body),
+          Text('服务器位于境外，账号信息和使用记录会传到境外存储和处理，同意后才能继续使用。', style: eat.text.body),
           if (policy.url case final url?)
             EatTappable(
               onTap: () => ref.read(browserProvider).open(url),
-              label: '查看数据同步说明',
+              label: '查看数据跨境说明',
               builder: (context, _) => SizedBox(
                 height: EatSize.touch,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '查看数据同步说明',
+                    '查看数据跨境说明',
                     style: eat.text.body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: c.ink,
@@ -94,12 +94,13 @@ class ConsentHost extends ConsumerStatefulWidget {
 }
 
 class _ConsentHostState extends ConsumerState<ConsentHost> {
-  late final CrossSiteConsent _consent;
+  late final CrossBorderConsent _consent;
 
   @override
   void initState() {
     super.initState();
-    _consent = ref.read(crossSiteConsentProvider)..sessionPresenter = _present;
+    _consent = ref.read(crossBorderConsentProvider)
+      ..sessionPresenter = _present;
   }
 
   @override

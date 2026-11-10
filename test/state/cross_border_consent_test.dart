@@ -1,7 +1,7 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
-import 'package:eat/state/cross_site_consent.dart';
+import 'package:eat/state/cross_border_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,7 +30,9 @@ void main() {
       session: const SignedIn(user: testUser),
       token: _token,
     );
-    container.read(crossSiteConsentProvider).sessionPresenter = (policy) async {
+    container
+        .read(crossBorderConsentProvider)
+        .sessionPresenter = (policy) async {
       shown.add(policy);
       return answer;
     };
@@ -59,7 +61,7 @@ void main() {
 
     final failure = await _result(container.read(apiClientProvider).get('/a'));
     expect(failure, isA<AppFailure>());
-    expect((failure! as AppFailure).message, '需要同意数据同步后才能继续');
+    expect((failure! as AppFailure).message, '需要同意数据跨境后才能继续');
     expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
     expect(env.adapter.sent('GET /a'), hasLength(1));
     expect(container.read(sessionProvider), isA<SignedIn>());
@@ -83,7 +85,7 @@ void main() {
   }
 
   test('没有注册面板时按不同意处理', () async {
-    container.read(crossSiteConsentProvider).sessionPresenter = null;
+    container.read(crossBorderConsentProvider).sessionPresenter = null;
     env.adapter.on('GET /a', [FakeAdapter.fail(20005)]);
 
     final failure = await _result(container.read(apiClientProvider).get('/a'));

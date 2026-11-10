@@ -4,7 +4,7 @@ import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/consent/consent_api.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'cross_site_consent.g.dart';
+part 'cross_border_consent.g.dart';
 
 /// 同意面板展示的政策. [url] 为说明页的完整地址, 服务端未提供时为 null.
 class const ConsentPolicy({required final String version, final Uri? url});
@@ -14,11 +14,11 @@ class const ConsentPolicy({required final String version, final Uri? url});
 /// 由界面用自身的 `BuildContext` 包装后传入, Provider 不持有 `BuildContext`.
 typedef ConsentPresenter = Future<bool> Function(ConsentPolicy policy);
 
-/// 跨站同步同意: 读取当前政策, 请用户确认, 用户同意后提交同意.
+/// 数据跨境同意: 读取当前政策, 请用户确认, 用户同意后提交同意.
 ///
 /// 不代替用户同意. 用户不同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
-class CrossSiteConsent {
-  CrossSiteConsent(this._api, this._apiBaseUrl);
+class CrossBorderConsent {
+  CrossBorderConsent(this._api, this._apiBaseUrl);
 
   final ConsentApi _api;
   final String _apiBaseUrl;
@@ -62,7 +62,7 @@ class CrossSiteConsent {
 }
 
 @Riverpod(keepAlive: true)
-CrossSiteConsent crossSiteConsent(Ref ref) => CrossSiteConsent(
+CrossBorderConsent crossBorderConsent(Ref ref) => CrossBorderConsent(
   ref.watch(consentApiProvider),
   ref.watch(appConfigProvider).apiBaseUrl,
 );

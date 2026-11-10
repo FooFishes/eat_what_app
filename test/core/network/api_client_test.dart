@@ -271,7 +271,7 @@ void main() {
     expect(forbidden, 1);
   });
 
-  group('跨站同步同意', () {
+  group('数据跨境同意', () {
     test('要求同意时请用户确认，同意后把原请求重发一次', () async {
       var asks = 0;
       final (client, adapter, _) = await _client(
@@ -319,7 +319,7 @@ void main() {
 
       final failure = await _failure(client.post('/a'));
       expect(failure.kind, FailureKind.business);
-      expect(failure.message, '需要同意数据同步后才能继续');
+      expect(failure.message, '需要同意数据跨境后才能继续');
       expect(adapter.sent('POST /a'), hasLength(1));
     });
 
@@ -356,7 +356,7 @@ void main() {
       expect(asks, 0);
     });
 
-    test('数据同步中 (20006) 不请用户同意，也不重发写请求', () async {
+    test('数据处理中 (20006) 不请用户同意，也不重发写请求', () async {
       var asks = 0;
       final (client, adapter, _) = await _client(
         hooks: ApiHooks(requestConsent: () async => asks++),
@@ -368,7 +368,7 @@ void main() {
 
       final failure = await _failure(client.post('/foods/1/like'));
       expect(failure.kind, FailureKind.business);
-      expect(failure.message, '数据正在同步，请稍后再试');
+      expect(failure.message, '数据正在处理，请稍后再试');
       expect(asks, 0);
       expect(adapter.sent('POST /foods/1/like'), hasLength(1));
     });

@@ -59,7 +59,8 @@ String ssoFailureMessage(int? code) => switch (code) {
   SsoCodes.linkExpired => '认证链接已失效，请重新发起认证',
   SsoCodes.studentIdTaken => '该学号已认证其他账号',
   SsoCodes.badSchoolResponse => '学校返回的认证结果无效，请重新认证',
-  BizCodes.consentRequired || BizCodes.dataSyncPending => '账号正在同步，请稍后重新认证',
+  BizCodes.consentRequired => '需要同意数据跨境后才能认证',
+  BizCodes.dataSyncPending => '账号正在处理，请稍后重新认证',
   BizCodes.userDisabled => '账号已被封禁',
   final int code when code ~/ 10000 == 9 => '暂时无法认证，请稍后再试',
   _ => '认证未完成，请重新认证',
@@ -145,14 +146,14 @@ class Verify extends _$Verify {
   /// 显示统一认证回跳的结果, 并重新请求认证状态.
   ///
   /// 是否已认证以服务端返回的当前账号为准: 期间切换过账号时, 结果不套用到新账号.
-  /// 成功但账号仍未认证时, 可能是跨站同步尚未完成, 提示稍后刷新而不是重新认证.
+  /// 成功但账号仍未认证时, 可能是认证结果尚未生效, 提示稍后刷新而不是重新认证.
   Future<void> showSsoResult(SsoResult result) async {
     await ref.read(sessionProvider.notifier).refreshUser();
     if (!ref.mounted) return;
     if (_verified) {
       state = _copy(notice: null);
     } else if (result.success) {
-      state = _copy(ssoStarted: true, notice: '认证结果尚未同步，请稍后刷新状态');
+      state = _copy(ssoStarted: true, notice: '认证结果尚未生效，请稍后刷新状态');
     } else {
       state = _copy(notice: ssoFailureMessage(result.code));
     }

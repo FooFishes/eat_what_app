@@ -25,7 +25,7 @@ void main() {
   });
 
   group('验证码登录', () {
-    test('默认不带跨站同步同意，不替用户同意', () async {
+    test('默认不带数据跨境同意，不替用户同意', () async {
       env.adapter.on('POST /auth/phone/login', [_token(newUser: true)]);
 
       final result = await auth.loginWithCode('13812345678', '246810');

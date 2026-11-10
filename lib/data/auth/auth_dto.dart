@@ -5,7 +5,7 @@ part 'auth_dto.g.dart';
 /// 登录接口的 `data` (`AuthReply`, `PhoneLoginReply`).
 ///
 /// `tokenName` 和 `tokenValue` 都有值才算登录成功.
-/// 只带 [consentProof] 时, 需要先用它同意跨站同步, 再重新登录.
+/// 只带 [consentProof] 时, 需要先用它同意数据跨境, 再重新登录.
 @JsonSerializable(createToJson: false)
 class const LoginReplyDto({
   final String? tokenName,

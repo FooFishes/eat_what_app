@@ -431,7 +431,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 **崩溃上报（服务端待确认 D4）**：`sentry_flutter ^10.1.0`，服务端自建（legacy 用过 `sentry.orbithy.com`）。
 
 - 三端都支持；Web 能上传 source map，安卓、iOS 能上传混淆符号表（`sentry_dart_plugin ^3.4.0`，只在 CI 用）。
-- 自建意味着数据和业务数据一样存在境外，要先有用户的跨站同步同意（技术架构 9.5），隐私政策里要写上崩溃信息。
+- 自建意味着数据和业务数据一样存在境外，要先有用户的数据跨境同意（技术架构 9.5），隐私政策里要写上崩溃信息。
 - **版本要显式写 `^10.1.0`**：临时工程里不写版本时，解析器因为 `jni` 的版本选到了 8.14.2；写明 `^10.1.0` 后正常解析到 10.1.0。
 - 吸取 legacy 的教训：
   - `SENTRY_AUTH_TOKEN` 只放 CI Secrets，不写进 `pubspec.yaml` 的 `sentry:` 段（legacy 提交过）。

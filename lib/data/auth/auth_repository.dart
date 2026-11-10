@@ -21,7 +21,7 @@ class const SignInResult({
 
 /// 登录, 发送验证码, 学生认证, 设置用户名和密码.
 ///
-/// 跨站同步同意由用户确认, 本类不代替用户同意.
+/// 数据跨境同意由用户确认, 本类不代替用户同意.
 /// 登录需要同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure], 临时凭证用 [consentProofOf] 读取.
 class AuthRepository {
   AuthRepository(this._auth, this._consent);
@@ -61,7 +61,7 @@ class AuthRepository {
   /// 验证码登录. 新号码在此步自动注册.
   ///
   /// [crossBorderConsent] 为 true 表示用户已在同意面板中同意, 请求携带同意和政策版本.
-  /// 海外站注册新号码时必须携带, 否则服务端返回不带临时凭证的 [BizCodes.consentRequired].
+  /// 注册新号码时必须携带, 否则服务端返回不带临时凭证的 [BizCodes.consentRequired].
   Future<SignInResult> loginWithCode(
     String mobile,
     String code, {
@@ -176,7 +176,7 @@ class AuthRepository {
 /// 登录要求同意时服务端给出的临时凭证. 只用于提交同意, 不是登录凭证.
 ///
 /// 不是要求同意的失败, 或没有凭证时返回 null.
-/// 海外站注册新号码时服务端不发凭证, 用户同意后需在注册请求中携带同意.
+/// 注册新号码时服务端不发凭证, 用户同意后需在注册请求中携带同意.
 String? consentProofOf(AppFailure failure) => switch (failure) {
   AppFailure(
     code: BizCodes.consentRequired,

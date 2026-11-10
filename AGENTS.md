@@ -111,7 +111,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 - 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
-- 跨站同步同意由用户在一个最简的底部面板里点同意，客户端不代用户同意；不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
+- 数据跨境同意由用户在一个最简的底部面板里点同意，客户端不代用户同意；不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地

@@ -16,7 +16,7 @@ import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
 import 'package:eat/features/system/consent_panel.dart';
 import 'package:eat/router/paths.dart';
-import 'package:eat/state/cross_site_consent.dart';
+import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
