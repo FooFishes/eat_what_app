@@ -47,6 +47,10 @@ DateTime? dateFromMillis(int? millis) => millis == null || millis <= 0
     ? null
     : DateTime.fromMillisecondsSinceEpoch(millis);
 
+/// 把接口中的 ISO 8601 时间转换为本地时间. 缺失或无法解析时返回 null.
+DateTime? dateFromIso(String? value) =>
+    value == null ? null : DateTime.tryParse(value)?.toLocal();
+
 /// 图片字段. 空串视为没有图片, 返回 null.
 ///
 /// `avatar`, `pictureUrl` 和 `coverUrl` 都是可直接展示的完整地址, 为有时效的预签名 URL.

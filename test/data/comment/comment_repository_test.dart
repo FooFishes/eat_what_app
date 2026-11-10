@@ -16,7 +16,7 @@ void main() {
     repo = container.read(commentRepositoryProvider);
   });
 
-  test('评论列表带排序和分页参数，带回总条数，照片按位置排好', () async {
+  test('评论列表带排序和分页参数，带回总条数，照片按位置排好，时间读 ISO 字符串', () async {
     env.adapter.on('GET /foods/1/comments', [
       FakeAdapter.ok(
         commentPageJson(
@@ -48,6 +48,11 @@ void main() {
     expect(comment.authorName, '安安');
     expect(comment.isReply, isFalse);
     expect(comment.rootGid, 'g-11');
+    expect(comment.createdAt.isUtc, isFalse);
+    expect(
+      comment.createdAt.toUtc(),
+      commentEpoch.subtract(const Duration(hours: 1)),
+    );
     expect(comment.images, [
       'https://img.test/a.jpg',
       'https://img.test/b.jpg',
@@ -188,13 +193,13 @@ void main() {
           {
             'commentId': 11,
             'commentGid': 'g-11',
-            'createdAt': commentEpoch,
+            'createdAt': commentTime(),
             'image': {'slot': 0, 'url': 'https://img.test/a.jpg'},
           },
           {
             'commentId': 12,
             'commentGid': 'g-12',
-            'createdAt': commentEpoch,
+            'createdAt': commentTime(),
             'image': {'slot': 0, 'url': ''},
           },
         ]),

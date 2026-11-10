@@ -5,7 +5,7 @@ part 'comment_dto.g.dart';
 // TODO: 公开评论缺少作者 id, 头像, 当前用户是否赞过和回复条数. 后端提供这些字段后改为读取字段, 删除逐条查询赞和用 "我的评论" 判断作者的逻辑.
 /// 公开的评论或回复 (`CommentPublicReads.Comment`).
 ///
-/// 时间是 Unix 毫秒. `gid` 一类的全局 id 是 UUID 字符串, 界面和路径用数字 [id].
+/// 时间是带时区的 ISO 8601 字符串. `gid` 一类的全局 id 是 UUID 字符串, 界面和路径用数字 [id].
 @JsonSerializable(createToJson: false)
 class const CommentDto({
   final int? id,
@@ -24,7 +24,7 @@ class const CommentDto({
   final String? authorName,
   final String? text,
   final int? likesCount,
-  final int? createdAt,
+  final String? createdAt,
   final List<CommentImageDto>? images,
 }) {
   factory CommentDto.fromJson(Map<String, dynamic> json) =>
@@ -47,7 +47,7 @@ class const CommentImageDto({
 class const GalleryImageDto({
   final int? commentId,
   final String? commentGid,
-  final int? createdAt,
+  final String? createdAt,
   final CommentImageDto? image,
 }) {
   factory GalleryImageDto.fromJson(Map<String, dynamic> json) =>
@@ -81,7 +81,7 @@ class const CommentSubmissionDto({
   final String? reasonMessage,
   final String? text,
   final int? imageCount,
-  final int? createdAt,
+  final String? createdAt,
 }) {
   factory CommentSubmissionDto.fromJson(Map<String, dynamic> json) =>
       _$CommentSubmissionDtoFromJson(json);

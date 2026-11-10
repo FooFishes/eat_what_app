@@ -139,7 +139,7 @@ void main() {
           {
             'commentId': 12,
             'commentGid': 'g-12',
-            'createdAt': commentEpoch,
+            'createdAt': commentTime(),
             'image': {'slot': 0, 'url': 'https://img.test/c/12.jpg'},
           },
         ]),

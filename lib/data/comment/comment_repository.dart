@@ -182,8 +182,8 @@ class CommentRepository {
   static CommentLike _like(CommentLikeDto dto) =>
       CommentLike(liked: dto.liked ?? false, likes: dto.likesCount ?? 0);
 
-  static DateTime _time(int? millis) =>
-      dateFromMillis(millis) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  static DateTime _time(String? iso) =>
+      dateFromIso(iso) ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 @Riverpod(keepAlive: true)

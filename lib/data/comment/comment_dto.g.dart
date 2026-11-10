@@ -17,7 +17,7 @@ CommentDto _$CommentDtoFromJson(Map<String, dynamic> json) => CommentDto(
   authorName: json['authorName'] as String?,
   text: json['text'] as String?,
   likesCount: (json['likesCount'] as num?)?.toInt(),
-  createdAt: (json['createdAt'] as num?)?.toInt(),
+  createdAt: json['createdAt'] as String?,
   images: (json['images'] as List<dynamic>?)
       ?.map((e) => CommentImageDto.fromJson(e as Map<String, dynamic>))
       .toList(),
@@ -34,7 +34,7 @@ GalleryImageDto _$GalleryImageDtoFromJson(Map<String, dynamic> json) =>
     GalleryImageDto(
       commentId: (json['commentId'] as num?)?.toInt(),
       commentGid: json['commentGid'] as String?,
-      createdAt: (json['createdAt'] as num?)?.toInt(),
+      createdAt: json['createdAt'] as String?,
       image: json['image'] == null
           ? null
           : CommentImageDto.fromJson(json['image'] as Map<String, dynamic>),
@@ -61,7 +61,7 @@ CommentSubmissionDto _$CommentSubmissionDtoFromJson(
   reasonMessage: json['reasonMessage'] as String?,
   text: json['text'] as String?,
   imageCount: (json['imageCount'] as num?)?.toInt(),
-  createdAt: (json['createdAt'] as num?)?.toInt(),
+  createdAt: json['createdAt'] as String?,
 );
 
 CommentLikeDto _$CommentLikeDtoFromJson(Map<String, dynamic> json) =>

@@ -1,8 +1,12 @@
 /// 评论接口的响应样例.
 library;
 
-/// 2026-11-01 12:00 (UTC+8) 的 Unix 毫秒. 测试中的评论时间由该时刻减去 ageMinutes 得出.
-const commentEpoch = 1793505600000;
+/// 2026-11-01 12:00 (UTC+8). 测试中的评论时间由该时刻减去 ageMinutes 得出.
+final commentEpoch = DateTime.utc(2026, 11, 1, 4);
+
+/// 比 [commentEpoch] 早 [minutes] 分钟的接口时间, 格式同服务端 (ISO 8601).
+String commentTime([int minutes = 0]) =>
+    commentEpoch.subtract(Duration(minutes: minutes)).toIso8601String();
 
 /// 一条公开评论或回复 (`CommentPublicReads.Comment`).
 Map<String, Object?> commentJson({
@@ -30,7 +34,7 @@ Map<String, Object?> commentJson({
     'authorName': author,
     'text': text,
     'likesCount': likes,
-    'createdAt': commentEpoch - ageMinutes * 60000,
+    'createdAt': commentTime(ageMinutes),
     'images': [
       for (final (i, url) in images.indexed)
         {'slot': i, 'url': url, 'expiresInSeconds': 30},
@@ -101,5 +105,5 @@ Map<String, Object?> submissionJson({
   'reasonMessage': reason,
   'text': text,
   'imageCount': imageCount,
-  'createdAt': commentEpoch - 3600000,
+  'createdAt': commentTime(60),
 };
