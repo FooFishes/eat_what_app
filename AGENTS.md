@@ -36,7 +36,7 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
-assets/              进 App 的资源：fonts/（子集化的字体和许可证）、emoji/（登录页用的动画表情，每个有一张动图和一张首帧静态图）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
+assets/              进 App 的资源：fonts/（子集化的字体和许可证）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图，署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 prototype 复制并生成加粗变体）
 tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4

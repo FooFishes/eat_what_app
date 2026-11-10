@@ -4,7 +4,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// 不用系统 emoji 字体: 各平台样式不同, Web 上可能缺字.
 ///
-/// TODO: 素材是 Telegram 的动画表情, 许可没有确认. 上架前要确认可以使用, 否则换成有开放许可的素材.
+/// 图形改编自 Twemoji (CC BY 4.0), 动画为自制. 署名和许可证全文在
+/// `assets/emoji/LICENSE-Twemoji.txt`, 启动时登记到许可证页. 换素材时一起更新.
 enum Emoji {
   thinking,
   eyes;

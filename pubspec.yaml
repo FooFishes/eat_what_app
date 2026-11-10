@@ -79,6 +79,7 @@ flutter:
     - assets/emoji/thinking_still.webp
     - assets/emoji/eyes.webp
     - assets/emoji/eyes_still.webp
+    - assets/emoji/LICENSE-Twemoji.txt
     - assets/fonts/OFL-NotoSansSC.txt
     - assets/fonts/OFL-Inter.txt
     - shorebird.yaml
