@@ -69,7 +69,7 @@ void main() {
         expect(style?.decoration, isNot(TextDecoration.underline));
         expect(
           style?.fontFamily,
-          isNotNull,
+          isNot('monospace'),
           reason: paragraph.text.toPlainText(),
         );
       }

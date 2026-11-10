@@ -27,7 +27,7 @@
 把工程、设计系统和页面骨架搭好，后面的阶段只往里填功能。这一阶段不接接口。
 
 - **工程**：加入状态管理、路由、SVG 和代码生成这一批依赖（`material_ui`、`flutter_riverpod`、`riverpod_annotation`、`go_router`、`flutter_svg`、`build_runner`、`riverpod_generator`、`riverpod_lint`），现有代码从 `package:flutter/material.dart` 换到 `material_ui`；按技术架构建目录；CI 加上 `dart analyze` 和代码生成检查；加 `config/example.json` 和 `AppConfig`。
-- **设计系统**：令牌和 `ThemeExtension`、`StageColor`、文字样式、动效常量；两种字体子集化后打包，子集脚本入库；78 个图标复制进 `assets/icons/`，做图标组件；基础组件 Button、Chip、Tabs、ListRow、RadioRow、Switch、SearchField、FormField、Sheet、Stage、Panel、NavBar、DishPlate、DishTile；加载占位、失败重试、空状态、「待接入」标记。Turntable、TasteCloud、MapPin、StageColorPicker 和具体页面绑得紧，放到第一个用到它们的阶段做。
+- **设计系统**：令牌和 `ThemeExtension`、`StageColor`、文字样式、动效常量；数字字体 Inter 子集化后打包，子集脚本入库，中文用系统字体；78 个图标复制进 `assets/icons/`，做图标组件；基础组件 Button、Chip、Tabs、ListRow、RadioRow、Switch、SearchField、FormField、Sheet、Stage、Panel、NavBar、DishPlate、DishTile；加载占位、失败重试、空状态、「待接入」标记。Turntable、TasteCloud、MapPin、StageColorPicker 和具体页面绑得紧，放到第一个用到它们的阶段做。
 - **页面骨架**：`StageScaffold`、`PlainScaffold`、`showPanel`；路由表和路径常量；三个主页面的外壳和悬浮 `NavBar`；Web 路径式 URL；返回的兜底；只在 debug 构建里出现的组件页。
 
 参考画板：`G-Kit`、`G-Nav`、`G-Icons`、`G-Icon`，组件参考 `prototype/design-system/components/` 的说明，接口和行为以 Dart 为准。

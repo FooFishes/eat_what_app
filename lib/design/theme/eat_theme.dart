@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:eat/design/theme/eat_colors.dart';
 import 'package:eat/design/theme/eat_shadows.dart';
 import 'package:eat/design/theme/eat_text_styles.dart';
@@ -47,11 +48,9 @@ extension EatThemeContext on BuildContext {
 ThemeData eatThemeData() {
   final theme = EatTheme.light;
   final colors = theme.colors;
-  final textTheme = Typography.blackMountainView.apply(
-    fontFamily: EatFonts.sans,
-    bodyColor: colors.ink,
-    displayColor: colors.ink,
-  );
+  final textTheme = Typography.material2021(platform: defaultTargetPlatform)
+      .black
+      .apply(bodyColor: colors.ink, displayColor: colors.ink);
   return ThemeData(
     brightness: Brightness.light,
     colorScheme: ColorScheme.light(
@@ -65,7 +64,6 @@ ThemeData eatThemeData() {
       onSurface: colors.ink,
     ),
     scaffoldBackgroundColor: colors.paper,
-    fontFamily: EatFonts.sans,
     textTheme: textTheme,
     splashFactory: NoSplash.splashFactory,
     highlightColor: const Color(0x00000000),

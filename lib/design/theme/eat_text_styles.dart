@@ -1,11 +1,11 @@
 import 'package:flutter/painting.dart';
 
-/// 内置字体族. 字体文件和许可证位于 `assets/fonts/`.
+/// 字体族.
+///
+/// 文字默认使用系统字体: 安卓为 Roboto 加系统中文字体, iOS 为 SF 加苹方, 因此中文样式不指定字体族.
+/// 只有数字使用内置的 Inter, 字体文件和许可证位于 `assets/fonts/`.
 abstract final class EatFonts {
-  /// 中文字体, 用于全部中文文字.
-  static const sans = 'NotoSansSC';
-
-  /// 数字字体, 只用于价格, 距离, 统计和计数.
+  /// 数字字体, 只用于价格, 距离, 统计和计数. 缺字时回落到系统字体.
   static const numeral = 'Inter';
 }
 
@@ -77,7 +77,6 @@ TextStyle _sans(
   int weight, {
   double? letterSpacing,
 }) => TextStyle(
-  fontFamily: EatFonts.sans,
   fontSize: size,
   height: lineHeight / size,
   leadingDistribution: TextLeadingDistribution.even,
@@ -96,7 +95,6 @@ TextStyle _numeral(
   bool tabular = false,
 }) => TextStyle(
   fontFamily: EatFonts.numeral,
-  fontFamilyFallback: const [EatFonts.sans],
   fontSize: size,
   height: lineHeight / size,
   leadingDistribution: TextLeadingDistribution.even,

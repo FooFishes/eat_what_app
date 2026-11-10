@@ -44,7 +44,6 @@ Future<void> bootstrap() async {
 /// 内置字体和 emoji 图片的许可证. OFL 和 CC BY 都要求随资源分发许可证和署名, 注册后显示在系统的许可证页中.
 Stream<LicenseEntry> _assetLicenses() async* {
   const assets = {
-    'Noto Sans SC': 'assets/fonts/OFL-NotoSansSC.txt',
     'Inter': 'assets/fonts/OFL-Inter.txt',
     'Twemoji': 'assets/emoji/LICENSE-Twemoji.txt',
   };

@@ -72,7 +72,7 @@
 | 原生桥消息生成 | `pigeon` | `^29.1.1` | 2026-11-06 | 地图换百度时加（第 7.1 节），只进 `packages/eat_baidu_map/` 的 `dev_dependencies` |
 | Provider 写法检查（分析器插件） | `riverpod_lint` | `^3.1.9` | 2026-09-03 | 已引入（阶段一）。写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml` |
 | SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 已引入（阶段一） |
-| 字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
+| 数字字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
 | JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 已引入（阶段二） |
 | 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 第一次需要 mock 时。阶段二的测试用 `test/support/fakes.dart` 里的内存实现和假网络适配器就够了，没有加 |
 | 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 已引入（阶段五），只在 CI 的发版构建运行 |
@@ -331,20 +331,18 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 ## 9. 字体与图标
 
-### 9.1 字体（待确认 D7）
+### 9.1 字体
 
 | 字体 | 用途 | 来源与许可 | 原始大小 | 做法 |
 | --- | --- | --- | --- | --- |
-| Noto Sans SC | 全部中文，主角文字 900 | Google Fonts，OFL | 可变字体 `NotoSansSC[wght].ttf` 17,772,300 字节 | 子集化后内置 |
+| 系统字体 | 全部中文 | 系统自带 | — | 不内置；安卓 Roboto 加系统中文字体，iOS SF 加苹方 |
 | Inter | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `Inter[opsz,wght].ttf` 876,576 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
 
-- 两个都用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；Inter 另按字号设 `opsz`（技术架构 11.5）。
+- 中文原先内置 Noto Sans SC 的 GB 2312 子集（3.9 MB）。2026-11-11 改用系统字体：贴近各平台原生观感，安装包小约 3.9 MB，也不再有子集外生僻字字形不一致的问题。代价是苹方最粗只有 Semibold，安卓不少机型只有常规和粗体两档，舞台主角的 800 在这些系统上会细一些。
+- Inter 用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；另按字号设 `opsz`（技术架构 11.5）。
 - 数字原先用设计稿里的 Bricolage Grotesque，字形个性强，小字号下 `6 8 9`、`3 5` 不好认，换成为屏幕小字号设计的 Inter。Inter 字形开口大，带等宽数字 `tnum`。
-- Noto Sans SC 全量 17.8 MB 太大。`tool/subset_fonts.py` 裁到 GB 2312 的全部字符（6763 个汉字加符号）、ASCII 和几段常用标点，实测 3,939,760 字节、7801 个字符；Inter 只留 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。子集外的生僻字在安卓、iOS 上由系统字体补上，样子略有不同但不会缺字。
-- 设计规范说 iOS 可以回落到苹方，但苹方最粗只有 Semibold，做不出 900 的主角字，所以三端都内置。
-- **Web 的问题**：
-  - 内置字体会在引擎初始化时全部下载，几 MB 的中文字体会拖慢首屏，在微信里更明显。推荐 Web 不在 `pubspec.yaml` 的 `fonts` 里声明 Noto，而是作为普通资源，启动后用 `FontLoader` 在后台加载，加载完自动重排；加载前用回落字体显示。具体效果要做一次 Web 实验确认。
-  - Flutter Web 缺字时默认去 `fonts.gstatic.com` 取回落字体（包括 emoji），大陆访问不到。构建时用 `--no-web-resources-cdn`，并把 `fontFallbackBaseUrl` 指向我们自己托管的回落字体副本，否则用户评论里的 emoji 和生僻字在 Web 上显示成方块。
+- `tool/subset_fonts.py` 把 Inter 裁到 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。
+- **Web 的问题**：Flutter Web（CanvasKit、skwasm）用不了浏览器的系统字体，缺字时默认去 `fonts.gstatic.com` 按需下载 Noto 系列回落字体的分片（中文、emoji 都是），大陆访问不到。构建时用 `--no-web-resources-cdn`，并把 `fontFallbackBaseUrl` 指向我们自己托管的回落字体副本，否则 Web 上的中文会显示成方块。
 - 不用 `google_fonts`（运行时从境外下载）。
 - 字体文件放项目 `assets/fonts/`，在 `pubspec.yaml` 声明；`prototype/` 里的资源不直接引用。子集化脚本放 `tool/`，输出入库，CI 不跑。
 
@@ -522,5 +520,5 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | D4 | 崩溃上报的 Sentry 放哪、谁维护 | 沿用自建 Sentry（legacy 的 `sentry.orbithy.com` 或新部署），数据和业务一起在境外，写进隐私政策。要确认谁维护、大陆访问速度 | 产品负责人、后端 |
 | D5 | 统计埋点自建还是用第三方 | 已定（2026-11-02）：自建，上报到后端 `/telemetry`；崩溃仍用 Sentry | — |
 | D6 | 人机验证服务商 | 已定：腾讯云验证码国际站，后端已接（第 15 节）。还要实测国际站 JS 在大陆网络下的表现，确认验证数据的存放地写进隐私政策 | 产品负责人、后端 |
-| D7 | 中文字体怎么内置 | 三端内置 Noto Sans SC 可变字体的 GB 2312 子集（预计 4–5 MB，待实测），子集外的字由系统字体补；Web 上字体后台加载、先用回落字体显示，并自托管回落字体。要接受安装包变大、Web 首屏前几百毫秒字形不同 | 产品负责人、设计 |
+| D7 | 中文字体怎么内置 | 已定（2026-11-11）：不内置，安卓、iOS 用系统字体，Web 用自托管的回落字体；数字仍内置 Inter（第 9.1 节） | — |
 | D8 | 自动去背景放哪做 | 放后端：上传完成后生成去背景版本，客户端只管开关和显示。客户端三端没有统一的抠图能力 | 产品负责人、后端 |

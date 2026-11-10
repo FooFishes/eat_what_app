@@ -100,7 +100,7 @@ assets/
   fonts/  icons/  illustrations/（从 prototype/assets/dishes 复制）  config/remote_defaults.json
 config/
   example.json              环境配置样例（真实的 dev.json、staging.json、prod.json 不入库）
-tool/                       一次性脚本：字体子集化、图标描边变体
+tool/                       一次性脚本：数字字体子集化、图标描边变体
 packages/
   eat_baidu_map/            本地插件：Kotlin、Swift 包百度地图 SDK，只给 core/platform/map/ 用（14.4）；
                             pigeons/ 里是 Pigeon 接口定义，生成的三端文件入库
@@ -720,12 +720,14 @@ extension RefCache on Ref {
 
 ### 11.5 字体与字号
 
-- 字体文件、子集化见依赖选型第 9 节。两个都是可变字体，文字样式只设 `fontWeight`：Flutter 3.47 起 `FontWeight` 会直接设置可变字体的 `wght` 轴，任意值（如 650）都行，不用再写 `FontVariation.weight`。
-- 中文样式用 `NotoSansSC`；数字样式（`priceHero`、`priceInline`、`stat`、`count`）用 `Inter`，回落到 `NotoSansSC`。
+- 字体文件、子集化见依赖选型第 9 节。文字样式只设 `fontWeight`：Inter 是可变字体，Flutter 3.47 起 `FontWeight` 会直接设置它的 `wght` 轴，不用再写 `FontVariation.weight`。
+- 中文样式不指定字体族，用系统字体：安卓是 Roboto 加系统中文字体（各厂商不同），iOS 是 SF 加苹方。`ThemeData` 的 `textTheme` 按平台取 `Typography`，`locale` 固定 `zh_CN`，汉字按简体字形回落。苹方最粗只到 Semibold，安卓不少机型只有常规和粗体两档，700、800 在这些系统上会接近或模拟加粗，接受这个差异。
+- 数字样式（`priceHero`、`priceInline`、`stat`、`count`）用内置的 `Inter`，缺字时回落到系统字体。
 - 字号分 8 级：`display` 56、`stage` 44、`title` 26、`heading` 20、`subhead` 16、`body` 15、`meta` 13、`caption` 12；数字样式沿用这几级（56、26、16、13）。字重只用 400、600、700、800：800 只给舞台上的主角，标题 700，强调 600，正文 400。先用预设，偏差不大的地方改用预设，不另写字号。
 - Inter 还有光学尺寸轴 `opsz`，范围 14 到 32：数字样式把 `opsz` 设成字号，超出范围的取两端，大字号的价格用的是显示用的紧凑字形。
 - `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
-- 字体文件由 `tool/subset_fonts.py` 生成，三端都在 `pubspec.yaml` 的 `fonts` 里声明。Web 上后台加载中文字体的做法（待确认 D7）等做 Web 实验时再改。许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。
+- Inter 由 `tool/subset_fonts.py` 生成，三端都在 `pubspec.yaml` 的 `fonts` 里声明。许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。
+- Web 上 Flutter 用不了浏览器的系统字体，中文由引擎的回落字体（Noto Sans SC 的分片）按需下载显示，回落地址要指向自托管副本（依赖选型 9.1）。
 - 选中态靠字重，不靠颜色：分类标签选中 600，未选中 400。
 
 ### 11.6 图标
@@ -1372,7 +1374,7 @@ class PushNotice({
 | 本地存储 | `shared_preferences`（DataStore） | `shared_preferences`（NSUserDefaults） | localStorage，同一浏览器的标签页共用一份 |
 | 图片缓存 | 磁盘 | 磁盘 | 浏览器 HTTP 缓存 |
 | 人机验证 | WebView 加载 H5 | WebView 加载 H5 | 页面里直接加载 JS |
-| 字体 | 内置 | 内置 | 后台加载 + 自托管回落字体 |
+| 字体 | 中文系统字体，数字 Inter 内置 | 中文系统字体，数字 Inter 内置 | 数字 Inter 内置，中文用自托管的回落字体 |
 | 方向 | 手机竖屏 | 手机竖屏，iPad 横竖 | 不锁 |
 | 返回 | 返回键：主页面先回发现再退出 | 侧滑返回 | 浏览器后退 |
 | 资源加载 | 安装包内 | 安装包内 | `--no-web-resources-cdn`，CanvasKit 和字体从自己的域名加载 |

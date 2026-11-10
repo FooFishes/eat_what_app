@@ -80,15 +80,11 @@ flutter:
     - assets/emoji/eyes.webp
     - assets/emoji/eyes_still.webp
     - assets/emoji/LICENSE-Twemoji.txt
-    - assets/fonts/OFL-NotoSansSC.txt
     - assets/fonts/OFL-Inter.txt
     - shorebird.yaml
 
   # 可变字体, 单个文件覆盖全部字重. 由 tool/subset_fonts.py 子集化生成.
   fonts:
-    - family: NotoSansSC
-      fonts:
-        - asset: assets/fonts/NotoSansSC-VF.ttf
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter-VF.ttf
