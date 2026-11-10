@@ -15,6 +15,7 @@ class EatApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
       title: '沙软今天吃什么',
+      debugShowCheckedModeBanner: false,
       theme: eatThemeData(),
       themeMode: ThemeMode.light,
       routerConfig: router,
