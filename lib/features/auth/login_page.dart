@@ -605,7 +605,8 @@ class _AgreementPanelState extends ConsumerState<_AgreementPanel> {
 /// 登录页右上角的 "先逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "先逛逛".
 /// 卷起的页角后面探出一双眼睛 ([Emoji.eyes]), 像有人掀着页角往外偷看.
 ///
-/// 进页面时页角卷起, 按下时再多卷一点. 之后每隔 [_idlePeriod] 把页角多掀起一点再弹回去, 眼睛跟着多探出来一些.
+/// 进页面时页角减速卷起, 不回弹, 快卷好时眼睛从页角后面探出来. 按下时再多卷一点.
+/// 之后每隔 [_idlePeriod] 把页角缓缓多掀起一点再放回去, 眼睛跟着多探出来一些.
 /// 系统开启减少动态效果时直接显示卷好的样子, 眼睛不动.
 /// 这是登录页特有的入口, 不用胶囊按钮.
 ///
@@ -622,14 +623,21 @@ class _BrowseCorner extends StatefulWidget {
 
 class _BrowseCornerState extends State<_BrowseCorner>
     with TickerProviderStateMixin {
-  late final _curl = AnimationController(
-    vsync: this,
-    duration: EatMotion.snap.duration,
-  );
+  late final _curl = AnimationController(vsync: this, duration: _curlDuration);
+
+  /// 纸不会越过终点再弹回来, 所以不用转盘的回弹曲线.
   late final _curve = CurvedAnimation(
     parent: _curl,
-    curve: EatMotion.snap.curve,
+    curve: Curves.easeOutCubic,
   );
+
+  /// 眼睛探出来的进度. 页角卷到大半才开始, 从页角后面升起.
+  late final _peek = CurvedAnimation(
+    parent: _curl,
+    curve: const Interval(0.55, 1, curve: Curves.easeOutCubic),
+  );
+
+  static const _curlDuration = Duration(milliseconds: 900);
 
   /// 卷好之后循环掀页角, 值是一轮里的进度.
   late final _idle = AnimationController(vsync: this, duration: _idlePeriod);
@@ -656,19 +664,24 @@ class _BrowseCornerState extends State<_BrowseCorner>
   static const _eyesOut = 3.0;
   static const _eyesPeek = 5.0;
 
+  /// 眼睛探出来之前藏在页角后面的深度.
+  static const _eyesHidden = _eyesSize * 0.6;
+
   /// 眼睛顺着卷起的边往左上挪的距离, 避开 "先逛逛".
   static const _eyesAlong = 6.0;
 
   /// "先逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
   static const _maxTextScale = 1.2;
 
-  /// 掀页角: 先掀起, 再以回弹曲线落回. 1 为掀到最高.
+  /// 掀页角: 一轮里占 [_liftSpan], 缓起缓落, 不落到卷好的位置以下. 1 为掀到最高.
   static double _liftAt(double t) {
-    final x = (t - 0.55) / 0.15;
+    final x = (t - _liftStart) / _liftSpan;
     if (x <= 0 || x >= 1) return 0;
-    if (x < 0.3) return Curves.easeOut.transform(x / 0.3);
-    return 1 - EatMotion.snap.curve.transform((x - 0.3) / 0.7);
+    return math.pow(math.sin(math.pi * x), 2).toDouble();
   }
+
+  static const _liftStart = 0.55;
+  static const _liftSpan = 0.2;
 
   @override
   void didChangeDependencies() {
@@ -687,6 +700,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
   @override
   void dispose() {
     _idle.dispose();
+    _peek.dispose();
     _curve.dispose();
     _curl.dispose();
     super.dispose();
@@ -703,7 +717,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
       '先逛逛？',
       textScaler: MediaQuery.textScalerOf(context)
           .clamp(maxScaleFactor: _maxTextScale),
-      style: eat.text.subhead.copyWith(color: c.ink),
+      style: eat.text.subhead.copyWith(color: c.inkMuted),
     );
     return EatTappable(
       onTap: widget.onTap,
@@ -722,11 +736,13 @@ class _BrowseCornerState extends State<_BrowseCorner>
               0.0,
               rest * _curve.value + _pressExtra * press + _liftExtra * lift,
             );
+            final out =
+                _eyesOut + _eyesPeek * lift - _eyesHidden * (1 - _peek.value);
             final eyes =
                 _CurlPainter.edgePoint(extent) +
-                _CurlPainter.towardCorner * (_eyesOut + _eyesPeek * lift) +
+                _CurlPainter.towardCorner * out +
                 _CurlPainter.alongEdge * _eyesAlong;
-            final eyesSize = _eyesSize * _curve.value.clamp(0.0, 1.0);
+            const eyesSize = _eyesSize;
             return SizedBox(
               width: extent * _CurlPainter.aspect,
               height: extent,
@@ -746,7 +762,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
                         top: eyes.dy - eyesSize / 2,
                         child: Transform.rotate(
                           angle: _CurlPainter.edgeAngle,
-                          child: EmojiImage(Emoji.eyes, size: eyesSize),
+                          child: const EmojiImage(Emoji.eyes, size: eyesSize),
                         ),
                       ),
                       Positioned(
