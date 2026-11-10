@@ -30,7 +30,8 @@ StageColor avatarColorOf(int userId) =>
 /// "我的" 和他人主页的舞台内容.
 ///
 /// - 右侧: 获赞最多的菜. 没有上传过菜时显示插画空盘, 上传列表加载中时留空.
-/// - 左下: 头像, 昵称, 用户名, 签名和四项统计. 点击粉丝和关注进入对应列表.
+/// - 左下: 头像, 昵称和等级, 用户名, 签名和四项统计. 点击粉丝和关注进入对应列表.
+/// - 等级来自 [profile], 加载中或接口没有返回时不显示. [onLevelTap] 为 null 时等级不可点.
 class ProfileStage extends ConsumerWidget {
   const new({
     super.key,
@@ -42,6 +43,7 @@ class ProfileStage extends ConsumerWidget {
     required this.profile,
     required this.top,
     required this.loading,
+    this.onLevelTap,
   });
 
   final int userId;
@@ -54,6 +56,7 @@ class ProfileStage extends ConsumerWidget {
   final UserProfile? profile;
   final Dish? top;
   final bool loading;
+  final VoidCallback? onLevelTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,15 +115,26 @@ class ProfileStage extends ConsumerWidget {
                 size: 72,
               ),
               const SizedBox(height: EatSpace.s14),
-              Semantics(
-                header: true,
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textScaler: TextScaler.noScaling,
-                  style: eat.text.title.copyWith(color: palette.foreground),
-                ),
+              Row(
+                spacing: EatSpace.s8,
+                children: [
+                  Flexible(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textScaler: TextScaler.noScaling,
+                        style: eat.text.title.copyWith(
+                          color: palette.foreground,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (profile?.level case final level?)
+                    LevelBadge(level: level, onTap: onLevelTap),
+                ],
               ),
               if (username case final username?)
                 Text(
@@ -154,6 +168,53 @@ class ProfileStage extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 舞台上昵称旁的等级胶囊 "Lv.3". 可点时点击区域不小于 44px, 胶囊本身保持小号.
+class LevelBadge extends StatelessWidget {
+  const new({super.key, required this.level, this.onTap});
+
+  final int level;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final palette = StageTheme.of(context);
+    final pill = DecoratedBox(
+      decoration: ShapeDecoration(
+        color: palette.ghost,
+        shape: const StadiumBorder(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        child: Text(
+          'Lv.$level',
+          textScaler: TextScaler.noScaling,
+          style: eat.text.count.copyWith(color: palette.foreground),
+        ),
+      ),
+    );
+    final label = '等级 $level';
+    if (onTap == null) {
+      return Semantics(
+        label: label,
+        child: ExcludeSemantics(child: pill),
+      );
+    }
+    return EatTappable(
+      onTap: onTap,
+      label: label,
+      focusShape: const StadiumBorder(),
+      builder: (context, _) => ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: EatSize.touch,
+          minHeight: EatSize.touch,
+        ),
+        child: Center(widthFactor: 1, child: ExcludeSemantics(child: pill)),
+      ),
     );
   }
 }

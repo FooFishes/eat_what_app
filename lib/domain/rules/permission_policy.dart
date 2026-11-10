@@ -32,6 +32,9 @@ enum Capability {
   /// 查看粉丝和关注列表. 后端未登记 `/user/followers`, `/user/followings`.
   viewFollows,
 
+  /// 查看等级和经验明细. 后端未登记 `/user/growth`, `/user/growth/ledger`.
+  viewGrowth,
+
   /// 取消关注. 后端未登记 `/user/unfollow`.
   unfollow,
 
@@ -72,6 +75,7 @@ enum Capability {
     deleteComment ||
     viewHistory ||
     viewFollows ||
+    viewGrowth ||
     unfollow ||
     changePrivacy ||
     changePassword ||
@@ -107,6 +111,7 @@ enum Capability {
     editProfile => '编辑资料',
     viewHistory => '查看足迹',
     viewFollows => '查看粉丝和关注',
+    viewGrowth => '查看等级',
     unfollow => '取消关注',
     changePrivacy => '修改隐私设置',
     changePassword => '修改密码',

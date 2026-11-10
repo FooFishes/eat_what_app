@@ -2,6 +2,7 @@
 ///
 /// - [fansVisible] 和 [followingsVisible] 是对方的隐私设置. 查看自己时即为自己的设置.
 /// - [followsMe] 和 [followedByMe] 是对方与当前用户之间的关注关系.
+/// - [level] 是等级, 接口没有返回时为 null, 不显示.
 class const UserProfile({
   required final int id,
   required final String nickname,
@@ -14,6 +15,7 @@ class const UserProfile({
   final bool followingsVisible = true,
   final bool followsMe = false,
   final bool followedByMe = false,
+  final int? level,
 });
 
 /// 列表中的一个用户: 粉丝和关注列表, 屏蔽的人.

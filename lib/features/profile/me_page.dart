@@ -96,6 +96,12 @@ class _MePageState extends ConsumerState<MePage> {
         profile: profile,
         top: top,
         loading: uploads.isLoading,
+        onLevelTap: () async {
+          if (await guardAction(context, ref, Capability.viewGrowth) &&
+              context.mounted) {
+            await context.push(Paths.growth);
+          }
+        },
       ),
       sheetSlivers: [
         const SliverToBoxAdapter(child: _StatusNotice()),

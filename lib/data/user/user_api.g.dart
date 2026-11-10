@@ -47,6 +47,7 @@ UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
       isFollowingMe: json['isFollowingMe'] as bool?,
       isFollowingHim: json['isFollowingHim'] as bool?,
       uploadedFoodsCount: (json['uploadedFoodsCount'] as num?)?.toInt(),
+      level: (json['level'] as num?)?.toInt(),
     );
 
 UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(

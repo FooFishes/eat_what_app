@@ -741,6 +741,116 @@ abstract class _$Footprints extends $AsyncNotifier<ListPages<Footprint>> {
   }
 }
 
+/// 本人的等级进度. 每次打开等级页重新请求.
+///
+/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
+
+@ProviderFor(growthProgress)
+final growthProgressProvider = GrowthProgressProvider._();
+
+/// 本人的等级进度. 每次打开等级页重新请求.
+///
+/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
+
+final class GrowthProgressProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<GrowthProgress>,
+          GrowthProgress,
+          FutureOr<GrowthProgress>
+        >
+    with $FutureModifier<GrowthProgress>, $FutureProvider<GrowthProgress> {
+  /// 本人的等级进度. 每次打开等级页重新请求.
+  ///
+  /// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
+  GrowthProgressProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'growthProgressProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$growthProgressHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<GrowthProgress> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<GrowthProgress> create(Ref ref) {
+    return growthProgress(ref);
+  }
+}
+
+String _$growthProgressHash() => r'b773ed2deb0f47ca409fe8da9b66a4c028c51ee5';
+
+/// 本人的经验明细, 按入账时间倒序.
+
+@ProviderFor(ExperienceLedger)
+final experienceLedgerProvider = ExperienceLedgerProvider._();
+
+/// 本人的经验明细, 按入账时间倒序.
+final class ExperienceLedgerProvider
+    extends
+        $AsyncNotifierProvider<ExperienceLedger, ListPages<ExperienceEntry>> {
+  /// 本人的经验明细, 按入账时间倒序.
+  ExperienceLedgerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'experienceLedgerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$experienceLedgerHash();
+
+  @$internal
+  @override
+  ExperienceLedger create() => ExperienceLedger();
+}
+
+String _$experienceLedgerHash() => r'aceb0598009563ec59fd3ae3f6202138007c52eb';
+
+/// 本人的经验明细, 按入账时间倒序.
+
+abstract class _$ExperienceLedger
+    extends $AsyncNotifier<ListPages<ExperienceEntry>> {
+  FutureOr<ListPages<ExperienceEntry>> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<ListPages<ExperienceEntry>>,
+              ListPages<ExperienceEntry>
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<ListPages<ExperienceEntry>>,
+                ListPages<ExperienceEntry>
+              >,
+              AsyncValue<ListPages<ExperienceEntry>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
 ///
 /// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].

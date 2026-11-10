@@ -43,6 +43,9 @@ abstract final class Paths {
   /// 足迹.
   static const history = '/me/history';
 
+  /// 本人的等级和经验明细.
+  static const growth = '/me/growth';
+
   /// 他人主页. 从菜品详情的上传者, 消息, 粉丝和关注列表进入.
   static const userPattern = '/users/:userId';
   static String user(int id) => '/users/$id';

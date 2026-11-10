@@ -5,6 +5,7 @@ import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/food/food_repository.dart';
+import 'package:eat/data/growth/growth_repository.dart';
 import 'package:eat/data/history/history_repository.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
@@ -12,6 +13,7 @@ import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/growth.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/domain/models/place.dart';
@@ -311,6 +313,44 @@ class Footprints extends _$Footprints {
     await ref.read(historyRepositoryProvider).clear(kind);
     if (ref.mounted) state = const AsyncData(ListPages(pages: Paged.empty()));
   }
+}
+
+/// 本人的等级进度. 每次打开等级页重新请求.
+///
+/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
+@riverpod
+Future<GrowthProgress> growthProgress(Ref ref) async {
+  final progress = await ref
+      .watch(growthRepositoryProvider)
+      .progress(cancelToken: ref.cancelToken());
+  final me = ref.read(sessionProvider);
+  if (ref.mounted && me is SignedIn && me.user != null) {
+    final shown = ref.read(userProfileProvider(me.user!.id)).value?.level;
+    if (shown != null && shown != progress.level) {
+      ref.invalidate(userProfileProvider(me.user!.id));
+    }
+  }
+  return progress;
+}
+
+/// 本人的经验明细, 按入账时间倒序.
+@riverpod
+class ExperienceLedger extends _$ExperienceLedger {
+  @override
+  Future<ListPages<ExperienceEntry>> build() async => ListPages(
+    pages: await ref
+        .watch(growthRepositoryProvider)
+        .ledger(cancelToken: ref.cancelToken()),
+  );
+
+  final _more = _MoreLoader<ExperienceEntry>();
+
+  Future<void> loadMore() => _more.load(
+    ref,
+    state.value,
+    (page) => ref.read(growthRepositoryProvider).ledger(page: page),
+    (next) => state = AsyncData(next),
+  );
 }
 
 /// 换头像时选好的照片和取景. [jpeg] 是按取景裁好的 512×512 头像.

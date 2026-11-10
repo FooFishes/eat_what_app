@@ -13,6 +13,7 @@ import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
 import 'package:eat/features/profile/edit_profile_page.dart';
 import 'package:eat/features/profile/follows_page.dart';
+import 'package:eat/features/profile/growth_page.dart';
 import 'package:eat/features/profile/history_page.dart';
 import 'package:eat/features/profile/me_page.dart';
 import 'package:eat/features/profile/my_tags_page.dart';
@@ -236,6 +237,7 @@ GoRouter appRouter(Ref ref) {
         ],
       ),
       GoRoute(path: Paths.history, builder: (_, _) => const HistoryPage()),
+      GoRoute(path: Paths.growth, builder: (_, _) => const GrowthPage()),
       GoRoute(
         path: Paths.userPattern,
         builder: (_, state) => switch (_idOf(state, 'userId')) {

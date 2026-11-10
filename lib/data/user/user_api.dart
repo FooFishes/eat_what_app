@@ -263,6 +263,9 @@ class const UserProfileDto({
   final bool? isFollowingMe,
   final bool? isFollowingHim,
   final int? uploadedFoodsCount,
+
+  /// 等级, 1 到 10. 不公开对方的经验.
+  final int? level,
 }) {
   factory UserProfileDto.fromJson(Map<String, dynamic> json) =>
       _$UserProfileDtoFromJson(json);

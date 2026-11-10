@@ -65,6 +65,7 @@ class UserRepository {
       followingsVisible: dto.followingsVisible ?? false,
       followsMe: dto.isFollowingMe ?? false,
       followedByMe: dto.isFollowingHim ?? false,
+      level: dto.level,
     );
   }
 

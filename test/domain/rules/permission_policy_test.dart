@@ -144,6 +144,7 @@ void main() {
         Capability.deleteComment,
         Capability.viewHistory,
         Capability.viewFollows,
+        Capability.viewGrowth,
         Capability.unfollow,
         Capability.changePrivacy,
         Capability.changePassword,
