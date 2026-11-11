@@ -19,7 +19,7 @@ final class PlaceSearch: PlaceSearchHostApi {
     // 默认把结构化地址当门址检索, 这里只要地点.
     option.addressResult = false
     // 详细信息里才有分类, 用来去掉公交站和地铁站.
-    option.scope = BMK_POI_SCOPE_DETAIL_INFORMATION
+    option.scope = .BMK_POI_SCOPE_DETAIL_INFORMATION
     option.pageIndex = 0
     option.pageSize = Int(pageSize)
     let request = PlaceSearchRequest()
@@ -49,7 +49,7 @@ private final class PlaceSearchRequest: NSObject, BMKPoiSearchDelegate {
   ) {
     if errorCode == BMK_SEARCH_NO_ERROR {
       let places = (poiResult?.poiInfoList ?? []).compactMap { poi -> PlaceMessage? in
-        guard let uid = poi.UID, !uid.isEmpty else { return nil }
+        guard let uid = poi.uid, !uid.isEmpty else { return nil }
         if poi.detailInfo?.tag?.hasPrefix("交通设施") == true { return nil }
         return PlaceMessage(
           uid: uid,

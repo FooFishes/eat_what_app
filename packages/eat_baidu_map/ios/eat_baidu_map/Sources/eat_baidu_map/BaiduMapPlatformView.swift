@@ -96,8 +96,8 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
     mapView = BMKMapView(frame: frame)
     super.init()
     mapView.delegate = self
-    mapView.rotateEnabled = false
-    mapView.overlookEnabled = false
+    mapView.isRotateEnabled = false
+    mapView.isOverlookEnabled = false
     mapView.showMapScaleBar = true
     mapView.updateTargetScreenPtWhenMapPaddingChanged = true
     mapView.minZoomLevel = Float(params.double("minZoom"))
@@ -191,7 +191,7 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
       bottom: insets.bottom + m.bottom,
       right: insets.right + m.right
     )
-    let status = mapView.getMapStatusFromCoordinateRegion(region, edgePadding: padding)
+    let status = mapView.getMapStatus(from: region, edgePadding: padding)
     mapView.setMapStatus(status, withAnimation: animated)
   }
 

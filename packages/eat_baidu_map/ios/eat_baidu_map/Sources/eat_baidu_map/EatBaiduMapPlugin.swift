@@ -25,7 +25,7 @@ public final class EatBaiduMapPlugin: NSObject, FlutterPlugin, SdkHostApi, BMKGe
   func initialize(apiKey: String) throws {
     if manager != nil { return }
     BMKMapManager.setAgreePrivacy(true)
-    BMKMapManager.setCoordinateTypeUsedInBaiduMapSDK(BMK_COORDTYPE_COMMON)
+    BMKMapManager.setCoordinateTypeUsedInBaiduMapSDK(.COORDTYPE_COMMON)
     let manager = BMKMapManager()
     self.manager = manager
     if !manager.start(apiKey, generalDelegate: self) {
