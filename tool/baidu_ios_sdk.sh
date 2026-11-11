@@ -45,7 +45,7 @@ info_plist() {
 <plist version="1.0">
 <dict>
   <key>CFBundleExecutable</key><string>$2</string>
-  <key>CFBundleIdentifier</key><string>com.baidu.$2</string>
+  <key>CFBundleIdentifier</key><string>com.baidu.${2//_/-}</string>
   <key>CFBundleName</key><string>$2</string>
   <key>CFBundlePackageType</key><string>FMWK</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
