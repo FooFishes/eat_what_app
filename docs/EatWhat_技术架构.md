@@ -17,6 +17,8 @@
 > 2026-10-30：令牌正本改为 Dart，`prototype/` 冻结为快照，去掉令牌比对测试，golden 的基准改为 App 自己（11.1、21.1、21.2），依据 `EatWhat_设计与实现.md`。
 
 > 2026-11-09：地图改为百度地图（依赖选型 7.1）：`core/platform/map/` 的 `EatMap` 和自写原生桥 `packages/eat_baidu_map/`（2.1、2.2），百度 AK 的配置（7.1），SDK 的初始化时机（9.4），坐标系（14.1），地图的显示和交互（14.4），多平台差异（20），地图的假实现（21.1）。
+>
+> 2026-11-13：按后端 v2（分支 `feat/eatwhat-v2`）的迁移更新：目录（2.1、2.2），共享状态加场景、去掉口味投票和评论的过渡状态（4.2），路由加修改记录、编辑店铺和邮箱认证（5.1），登录不再有新用户标记和设置用户名下线（5.4），删除幂等键（7.7、13.1），业务码（7.4），封禁不能登录、删除受限会话（8.1），待接入的项（8.5），删除会话换发和注销的恢复凭据（9.1、9.2），同意改为登录时带版本（9.4、9.5），推荐的数据层和缓存（10.1、10.6），舞台色的来源和店铺品类的默认色（11.3、13.6），商圈边界改为 GCJ-02（14.1），消息和推送的新结构（15），统一认证确认和邮箱落地页（18.1、18.2），统计不再有同意管理（19.1）。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
 
@@ -40,8 +42,7 @@ lib/
   app.dart                  EatApp：MaterialApp.router、主题、本地化、字号上限
   core/                     基础设施，不含产品规则
     config/                 AppConfig：编译期传入的环境配置
-    network/                ApiClient、拦截器、响应外壳解析、ApiException、分页、
-                            写操作的 Idempotency-Key（idempotency.dart，7.7）
+    network/                ApiClient、拦截器、响应外壳解析、ApiException、分页、App 端的 User-Agent（7.3）
     storage/                SecureStore、KvStore（shared_preferences）、CacheStore
     failure/                AppFailure 分类；失败 → 用户能看懂的提示
     copy/                   通用文案：动作叫法、错误提示
@@ -64,34 +65,36 @@ lib/
                             CropViewport、CropZoomSlider 是圆形取景的拖动、缩放和滑条，「调整照片」和换头像共用；
                             PhotoViewer（photo_viewer.dart）是看大图，菜品详情和评论卡片共用
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
-    models/                 Dish、Shop、Campus、Hub、MealTime、DishCategory、TasteTag、Comment、
-                            Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T>、GcjPoint、WgsPoint …
-    rules/                  权限表、饭点、价格与名称校验、推荐率、消息 → 跳转、菜名断行、
-                            坐标转换和距离（geo_rules.dart）
+    models/                 Dish、DishCategory、DishRevision、Shop、ShopKind、ShopCategory、RatingScene、
+                            ShopRevision、Taste（菜、店、推荐共用的五个口味）、MealTime、Campus、Hub、
+                            Comment、Notice、CurrentUser、AccountStatus、CoverCrop、Paged<T>、GcjPoint、WgsPoint …
+    rules/                  权限表、饭点、价格与名称校验、店铺的推荐率和舞台色（shop_rules.dart）、
+                            消息 → 跳转、菜名断行、坐标转换和距离（geo_rules.dart）
   data/                     数据层：按后端资源分组，做 IO
-    auth/ consent/ user/ sessions/ food/ place/ comment/ topic/ feedback/ notification/ upload/ history/ push/ …
+    auth/ consent/ user/ sessions/ food/ place/ recommend/ comment/ feedback/ notification/ upload/ history/ push/ …
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）。
-                            place/ 是校区、商圈和餐厅；comment/ 是评论、回复、评论的赞和照片；topic/ 是当期专题、
-                            往期专题和收录了某道菜的专题；feedback/ 是信息有误、举报和意见反馈
+                            place/ 是校区、商圈和餐厅（含编辑、修改记录、评价）；recommend/ 是推荐店铺和不想去这家（10.6）；
+                            comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
+                            topic/、growth/、cancellation/ 的后端接口已删除，代码保留、没有调用方（8.5）
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点和饭点、菜的赞和收藏、未读数、网络状态；
+                            当前位置、地点饭点和堂食外卖、菜的赞和收藏、未读数、网络状态；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
-    verify/                 认证
-    discover/               发现、转盘、地点和饭点面板
+    verify/                 认证、邮箱认证的落地页
+    discover/               发现、转盘、在哪吃面板（校区、饭点、堂食外卖）
     search/                 搜索
-    topic/                  专题、往期专题
-    dish/                   菜品详情、专题提示、加标签面板
+    topic/                  专题、往期专题（待接入，页面保留，入口不进入）
+    dish/                   菜品详情、修改记录、加标签面板（待接入）
     comments/               全部评论、写评论和回复
-    shop/                   餐厅详情、信息有误面板
+    shop/                   餐厅详情、店铺评价面板、编辑店铺、修改记录、信息有误面板
     nearby/                 附近、地图、筛选面板
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
-    profile/                我的、他人主页、编辑资料、我的标签、标签下的菜、足迹、粉丝和关注
+    profile/                我的、他人主页、编辑资料、足迹、粉丝和关注；我的标签、标签下的菜、等级（待接入，页面保留）
     inbox/                  消息
-    settings/               设置、账号与安全、登录设备、注销、隐私、屏蔽的人、通知、关于、反馈
+    settings/               设置、账号与安全、登录设备、隐私、屏蔽的人、通知、关于、反馈；注销（待接入，页面保留）
     system/                 强制更新、维护、公告、建议更新、拦截对话框、人机验证、轻提示、没找到页面；
-                            各功能共用的评论卡片、举报和信息有误的原因面板、数据跨境同意对话框（见 2.2）
+                            各功能共用的评论卡片、举报和信息有误的原因面板、隐私政策的同意对话框（见 2.2）
     kit/                    组件页，只在 debug 构建里有
   router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、
                             深链处理（deep_links.dart：DeepLinks、DeepLinkHandler、linkSourceProvider，6.3）、
@@ -122,7 +125,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、数据跨境同意对话框（`consent_panel.dart`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、隐私政策的同意对话框（`consent_dialog.dart` 的 `showConsentDialog` 和 `ConsentHost`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -169,28 +172,26 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 | Provider | 内容 | 谁改 |
 | --- | --- | --- |
-| `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期时带上原因和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
-| `accountStatusProvider` | 未登录（含游客）、未认证、已认证、封禁中（原因、解封时间） | 由 `sessionProvider` 派生 |
-| `consentProvider` | 隐私政策同意版本和时间（数据跨境同意不进这里，见 9.5） | 登录页（登录成功或「先逛逛」时） |
-| `crossBorderConsentProvider` | 读数据跨境政策、弹同意对话框、提交同意（9.5） | `ApiHooks.requestConsent`、登录流程 |
+| `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期或被封禁时带上原因（`SignOutReason.expired`、`banned`）和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
+| `accountStatusProvider` | 未登录（含游客）、未认证、已认证。封禁的账号不能登录，没有封禁状态（8.1） | 由 `sessionProvider` 派生 |
+| `consentProvider` | 本机同意隐私政策、用户协议和数据存放在境外的记录（版本和时间），只决定能不能启动 SDK（9.4） | 登录页（登录成功或「先逛逛」时） |
+| `crossBorderConsentProvider` | 读服务端当前的政策版本（登录时带上）；已登录时弹同意对话框、提交同意（9.5） | 登录流程、`ApiHooks.requestConsent` |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
 | `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
 | `locationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
-| `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束 | 地点和饭点面板 |
+| `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束；堂食还是外卖（`scene`，`RatingScene`，存 `prefs.scene`，没选过按堂食，退出登录不清）。`currentPlaceProvider` 由它和校区列表派生，本机的选择读出来之前标为未就绪 | 在哪吃面板 |
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
 | `unreadCountProvider` | 有未读的消息行数（`/notification/cards/unread/count` 的 `cards`，不是未读条数），发现页铃铛和消息页「N 条未读」共用 | 回到前台、回到发现页时重新拉；点一行减 1；全部已读后重新拉（15.5） |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
-| `tasteVocabularyProvider` | 口味词表，加标签面板和发布共用 | 只读 |
+| `tasteVocabularyProvider` | 口味词表。后端 v2 没有词表接口，本地返回五个口味；只有待接入的加标签面板在用，发布直接用 `Taste` | 只读 |
 | `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次写入同意记录时 |
-| `publishedCountProvider` | 这次打开以来发布了几道菜、建了几家店；「我的」的统计和上传、餐厅详情的菜单监听它，发布后重新拉 | 加菜页、新建店页 |
+| `publishedCountProvider` | 这次打开以来发布、编辑、恢复了几次；「我的」的统计和上传、餐厅详情的菜单、还开着的菜品详情监听它，变了就重新拉 | 加菜页、编辑菜品、新建店页、修改记录页 |
 | `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
 | `dishCommentsProvider(dishId, sort)` | 一道菜的评论，分页；菜品详情只显示「最有用」的前几条，全部评论两种排序都用。离开后保留 5 分钟 | 滚到底 `loadMore`；删除后 `removeLocal`，发表后重新拉 |
-| `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，按时间倒序拉、正序显示 | 同上 |
-| `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表、`myCommentIdsProvider` 和 `myCommentsProvider`。进入审核的评论不刷新公开列表 | 写评论页、评论的「更多」 |
-| `commentLikeOfProvider(commentId)` | 我有没有赞过这条评论；未登录、封禁中不请求（受限会话不能调这个接口） | 只读 |
-| `commentLikesProvider` | 评论赞的本地覆盖值，按评论 id；详情和全部评论同一条一起变，失败退回 | 评论的赞按钮 |
-| `myCommentIdsProvider` | 我写过的评论和回复的 id（「我的评论」最近 100 条加本次发表的），决定「更多」里是「删除」还是「举报」 | 发表、删除 |
+| `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，接口按时间正序给。`replyCount` 为 0 时不请求 | 同上 |
+| `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表和 `myCommentsProvider`。发布即公开，发表后总是刷新 | 写评论页、评论的「更多」 |
+| `commentLikesProvider` | 评论赞的本地覆盖值，按评论 id，初值是评论自带的 `isLiked`；详情和全部评论同一条一起变，失败退回。接口成功只返回 null，成功后保留本地值 | 评论的赞按钮 |
 | `myCommentsProvider` | 「我的」里的评论分栏，分页 | 发表、删除后重新拉 |
 | `commentedDishProvider(dishId)` | 「我的评论」一行要显示的菜：先用本地缓存的详情，没有再请求 | 只读 |
 
@@ -221,29 +222,34 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 登录 | `/login` | 根 | 是 | `G-Login` |
 | 手机号登录 | `/login/phone` | 根 | 是 | `G-PhoneLogin` |
 | 密码登录 | `/login/password` | 根 | 是 | `G-PasswordLogin` |
-| 撤销注销 | `/login/restore`（申请只在内存里，刷新或直接打开回登录页） | 根 | 是 | 无画板，按白底页规则 |
+| 撤销注销 | `/login/restore`（待接入：后端没有注销接口，登录流程不再进入，页面保留） | 根 | 是 | 无画板，按白底页规则 |
 | 认证 | `/verify` | 根 | 否 | `G-Verify` |
-| 统一认证回跳 | `/app/auth/callback?result=&code=`（不是页面，重定向到 `/verify?sso=&code=`，6.3） | 根 | 否 | — |
+| 统一认证回跳 | `/app/auth/callback?result=&code=&ticket=`（不是页面，重定向到 `/verify?sso=&code=&ticket=`，6.3、18.1） | 根 | 否 | — |
+| 邮箱认证 | `/verify/email?token=`（认证邮件里的链接；不挂在 `/verify` 下面，否则返回时先回到认证页，18.2） | 根 | 否 | 无画板，按白底页规则 |
 | 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 游客 | `G-Dish` |
 | 全部评论 | `/dishes/:dishId/comments` | 根 | 游客 | `G-Comments` |
 | 写评论、回复 | `/dishes/:dishId/comments/new`；回复时带 `reply=<所属评论 id>`，回复某条回复时再带 `to=<那条回复的 id>`，`name` 是被回复人的昵称（刷新后「回复 小林」还在）；`photo=1` 打开后先选照片 | 根 | 否 | `G-WriteComment` |
-| 编辑菜品 | `/dishes/:dishId/edit` | 根 | 否 | `G-AddDish` |
+| 编辑菜品 | `/dishes/:dishId/edit`（复用加菜页；从详情进入时 `extra` 带菜品，刷新后按 id 读取） | 根 | 否 | `G-AddDish` |
+| 菜品修改记录 | `/dishes/:dishId/history` | 根 | 游客 | 无画板，按白底页规则 |
 | 餐厅详情 | `/shops/:shopId` | 根 | 游客 | `G-Detail` |
-| 往期专题 | `/topics` | 根 | 游客 | `G-TopicArchive` |
-| 专题 | `/topics/:topicId` | 根 | 游客 | `G-Topic` |
+| 编辑店铺 | `/shops/:shopId/edit` | 根 | 否 | 无画板，按白底页规则 |
+| 店铺修改记录 | `/shops/:shopId/history` | 根 | 游客 | 无画板，按白底页规则 |
+| 往期专题（待接入） | `/topics` | 根 | 游客 | `G-TopicArchive` |
+| 专题（待接入） | `/topics/:topicId` | 根 | 游客 | `G-Topic` |
 | 搜索 | `/search` | 根 | 游客 | `G-Search` |
 | 消息 | `/inbox` | 根 | 否 | `G-Inbox` |
 | 他人主页 | `/users/:userId` | 根 | 否 | `G-UserProfile` |
 | 粉丝、关注 | `/users/:userId/follows?tab=fans\|followings` | 根 | 否 | `G-Follows` |
 | 编辑资料 | `/me/edit` | 根 | 否 | `G-EditProfile` |
-| 我的标签 | `/me/tags` | 根 | 否 | `G-MyTags` |
-| 标签下的菜 | `/me/tags/:tagId?name=`（标签名放在地址里，刷新后标题还在） | 根 | 否 | `G-TagDishes` |
+| 我的标签（待接入） | `/me/tags` | 根 | 否 | `G-MyTags` |
+| 标签下的菜（待接入） | `/me/tags/:tagId?name=`（标签名放在地址里，刷新后标题还在） | 根 | 否 | `G-TagDishes` |
 | 足迹 | `/me/history` | 根 | 否 | `G-History` |
+| 等级（待接入） | `/me/growth` | 根 | 否 | 无画板，按白底页规则 |
 | 设置 | `/settings` | 根 | 游客 | `G-Settings` |
 | 账号与安全 | `/settings/account` | 根 | 否 | `G-SettingsAccount` |
 | 设置用户名、换绑手机、设置或修改密码 | `/settings/account/username`、`/settings/account/phone`、`/settings/account/password` | 根 | 否 | 无画板，按白底页规则 |
 | 登录设备 | `/settings/account/devices` | 根 | 否 | `G-Devices` |
-| 注销账号 | `/settings/account/delete` | 根 | 否 | `G-DeleteAccount` |
+| 注销账号（待接入） | `/settings/account/delete` | 根 | 否 | `G-DeleteAccount` |
 | 隐私 | `/settings/privacy` | 根 | 否 | `G-SettingsPrivacy` |
 | 屏蔽的人 | `/settings/privacy/blocked` | 根 | 否 | `G-Blocked` |
 | 通知 | `/settings/notify` | 根 | 否 | `G-SettingsNotify` |
@@ -255,6 +261,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 强制更新 | `/update` | 根 | 是 | `G-ForceUpdate` |
 | 停服维护 | `/maintenance` | 根 | 是 | `G-Maintenance` |
 
+- 标「待接入」的页面（8.5）路由和页面保留，入口点了只提示「待接入」，不进入。直接输入地址还能打开，页面会请求已经删除的接口、显示加载失败；接口补上前不另做拦截。
 - 地址看着有层级，路由不一定嵌套：嵌套的子路由打开时，下面会先叠一层父页面。全部评论、写评论是和菜品详情并列的顶层路由；专题 `/topics/:topicId` 也不挂在往期专题下面，否则从菜品详情或消息打开专题，返回时会先回到往期专题。
 
 **不进路由表的**：
@@ -285,8 +292,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | 1 | 当前版本低于强制更新线 | `/update` |
 | 2 | 停服维护中 | `/maintenance` |
-| 3 | 未登录，且目标是「否」，或目标是「游客」而这次打开没点过「先逛逛」 | `/login?from=<原地址>`；过期时再带 `expired=1` |
-| 4 | 已登录还去 `/login*` | `from` 指的原地址（校验见 5.4），没有就 `/discover`；新号码刚注册先去 `/verify?onboarding=1` |
+| 3 | 未登录，且目标是「否」，或目标是「游客」而这次打开没点过「先逛逛」 | `/login?from=<原地址>`；过期时再带 `expired=1`；被封禁时带 `banned=1`，不记原地址 |
+| 4 | 已登录还去 `/login*` | `from` 指的原地址（校验见 5.4），没有就 `/discover`；新号码刚注册先去 `/verify?onboarding=1`（登录响应要有 `newUser`，见 5.4） |
 
 `resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」（`router/guard.dart` 的 `RouteAccess`：`public`、`guest`、`signedIn`，不标的是 `signedIn`），不在守卫里写死路径列表。go_router 的 `metadata` 会被子路由继承，所以「设置」标了 `guest` 后，账号与安全、隐私、通知要标回 `signedIn`。
 
@@ -297,8 +304,9 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 守卫把原地址放进 `from` 参数（URL 编码）。
 - 登录成功后：`from` 是站内路径、能匹配路由表、不是 `/login` 开头，就去 `from`；否则去 `/discover`。校验是为了防止拼出来的链接把人带到外站。跳转由守卫第 4 条做：登录页只更新登录态，`refreshListenable` 让守卫重新判断还停在 `/login*` 的地址；页面自己再 `go` 会和守卫抢，页面先被守卫换掉就跳不到 `from` 了。
 - 自己退出登录时守卫不记原地址，登录后回发现页；要去的本来就是 `/discover` 时也不带 `from`。
-- 新号码注册后（`/auth/phone/login` 返回 `newUser: true`）进认证引导（`/verify?onboarding=1`），「先逛逛」再去 `from`。
-- 设置用户名成功后接口要求所有设备重新登录：清登录态回 `/login`，不带 `expired=1`，提示「用户名已设置，请重新登录」。
+- 新号码注册后（`/auth/phone/login` 返回 `newUser: true`）进认证引导（`/verify?onboarding=1`），「先逛逛」再去 `from`。v2 的登录响应只有令牌，没有 `newUser`，已请后端补上（`docs/EatWhat_后端反馈.md`）；补上之前新号码不进认证引导。
+- 设置用户名后本机会话不变，刷新用户信息后返回；同时设了密码时其他设备要重新登录。
+- 封禁：带登录态的请求返回 30002 时，`ApiHooks.onBanned` 让 `sessionProvider.expire(banned: true)` 清登录态，守卫带 `banned=1` 回登录页，页面显示「账号已被封禁」；不记原地址，登录页照常能「先逛逛」。
 - 登录过期：网络层发现过期 → `sessionProvider.expire()` 清登录态并记下当前地址 → 守卫跳到 `/login?from=...&expired=1` → 登录页显示「登录已过期，请重新登录」。同时有多个请求过期时只处理一次。
 
 ### 5.5 发布流程的导航
@@ -306,6 +314,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 入口：`NavBar` 的「＋」、发现页空状态、「我的」空状态进 `/publish`；餐厅详情的「加一道菜」直接 `/publish/dish?shopId=`；搜索没结果的「新建一家店」进 `/publish/shop?name=<搜的词>`，建好后替换成 `/publish/dish`。
 - 三页都是顶层路由，写完整路径（不嵌套），发布成功后按路径前缀 `/publish` 退出整个流程。
 - 加菜页的草稿（照片、上传队列、裁切和颜色、表单）在随页面释放的 `draftProvider` 里（`features/publish/publish_providers.dart`）。店只在地址里：Web 上刷新 `/publish/dish?shopId=` 时店还在、草稿没了；地址里没有店时回到 `/publish`。
+- 编辑菜品复用加菜页（`AddDishPage.edit`，路由 `/dishes/:dishId/edit`）：草稿按原来的菜建（`draftProvider(original: dish)`），刷新后没有 `extra` 时由 `dishToEditProvider` 按 id 读取。不能换店，没有改动时不能保存；保存后提示「已保存」，回到菜品详情。
 - 「换一家」：加菜页 `push` 带 `change=1` 的选店页，选好后带着 `Shop` 返回，草稿留着。选店页里再新建店时，新建店页带 `return=1`，建好后一路返回。
 - 中途关闭：页面用 `PopScope` 拦住返回，填过内容时弹「这道菜还未发布，确定放弃吗？」。
 - 发布成功：退出发布流程的所有页面，再压入 `/dishes/:id`，提示「发布成功」。这样从详情返回就回到发起发布的页面（产品 6.9）。流程是直接打开的、下面没有页面时，换成 `go` 到菜品详情。
@@ -344,11 +353,11 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 处理：
   1. 只接受 `https://<Web 域名>/...`，取出路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
-     - 白名单目前是空的，随分享链接一起接（安卓清单的 intent-filter、iOS 的 Associated Domains 和 `Runner.entitlements` 也那时再加）。统一认证回跳原先走这里（`https://eat.v50to.you/app/auth/callback`），2026-11-05 改成认证会话加自定义 Scheme（18.1），因为国内机型上 App Links 的域名校验靠不住。Web 上 `/app/auth/callback` 仍是一条路由，转成 `/verify?sso=..&code=..`。
+     - 白名单目前是空的，随分享链接一起接（安卓清单的 intent-filter、iOS 的 Associated Domains 和 `Runner.entitlements` 也那时再加）。统一认证回跳原先走这里（`https://eat.v50to.you/app/auth/callback`），2026-11-05 改成认证会话加自定义 Scheme（18.1），因为国内机型上 App Links 的域名校验靠不住。Web 上 `/app/auth/callback` 仍是一条路由，转成 `/verify?sso=..&code=..&ticket=..`。以后做 App Links 时把邮箱认证的 `/verify/email` 也加进白名单（18.2）。
      - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）放在链接所在的主机名上（根域名上的文件不起作用），接分享链接时再请后端放。国内的安卓机上 App Links 校验经常过不了：装了 GMS 的手机由 GMS 访问 `digitalassetlinks.googleapis.com` 校验，大陆访问不到；没有 GMS 的手机各家厂商自己处理。分享链接校验失败只是退回浏览器打开 Web 版，可以接受；需要必达的跳转不能依赖它。
   3. App 在运行：`push` 到目标，返回回到原来的页面；当前页和目标都是认证页时换掉当前页，保留 `onboarding` 和 `from`。冷启动：等首帧后再 `push`，返回去 `/discover`。
   4. 没登录：守卫先去登录页，登录后回到目标（5.4）。
-- 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`TopicTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
+- 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`CaseTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表；`CaseTarget` 是反馈结果，消息页先取案件再决定去哪，15.5），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
 
 ### 6.4 微信内置浏览器
 
@@ -370,7 +379,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
-| `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页和关于里打开 | `https://<域名>/legal/privacy.html` |
+| `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页、同意对话框和关于里打开。服务端 `/auth/consent/policy` 返回的 `privacyText`、`crossBorderText` 不用（9.5） | `https://<域名>/legal/privacy.html` |
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
 - 这些值会编进安装包，只放公开的值。
@@ -385,41 +394,45 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 7.3 拦截器（按顺序）
 
-1. **鉴权**：有登录态就加头。头名用登录返回的 `tokenName`（当前部署是 `satoken`），值是 `Bearer <tokenValue>`，两者都存在安全存储里，不写死头名。
-2. **响应外壳**：所有业务响应都是 `{code, msg, data, timestamp}`。`code == 0` 取 `data` 往下传；否则抛 `ApiException(code, msg)`。HTTP 200 也要判断 `code`。`ErrorResponse` 的 `code` 可能是字符串（集群或授权拦截），按字符串保留。
+1. **鉴权**：有登录态就加头。头名用登录返回的 `tokenName`（当前部署是 `satoken`），值是 `Bearer <tokenValue>`，两者都存在安全存储里，不写死头名。App 端同时加 `User-Agent: EatWhat/<版本> (Android)` 或 `(iOS)`：后端按 UA 里有没有 `android`、`ios` 判断登录设备的平台，Dart 默认的 UA 会让登录设备全部显示成其他设备。Web 不能设置 UA，由浏览器决定。
+2. **响应外壳**：所有业务响应都是 `{code, msg, data, timestamp}`。`code == 0` 取 `data` 往下传；否则抛 `ApiException(code, msg)`。HTTP 200 也要判断 `code`。带登录态的请求收到 30002 时调 `ApiHooks.onBanned`（5.4）。
 3. **错误转换**：把 `DioException`、`ApiException` 转成 `AppFailure`（7.5），顺带更新 `networkStatusProvider`、记 Sentry 面包屑（方法、路径模板、业务码，不记参数和响应体）。
 4. **日志**：只在调试构建打开（`_DebugBodyLogger`），打印方法、完整地址、请求体和响应体；不打印请求头，地址和正文里的手机号打码。
 
 ### 7.4 业务码
 
-接口文档只写了「0 为成功」，没有列错误码。下面是 legacy 分支 `biz_code.dart` 里的定义加上接口文档提到的码，**都要向后端确认是否仍然有效**（待确认 A2）。
+后端 v2 沿用旧的码值和默认文案（后端 `common/BizCode.java`），新增或改变语义时以后端源码为准。客户端的码表和提示在 `core/failure/messages.dart`。
 
-| 码 | legacy 含义 | 客户端怎么处理 |
+| 码 | 含义 | 客户端怎么处理 |
 | --- | --- | --- |
 | 0 | 成功 | — |
-| 10001、10002 | 参数非法、缺失 | 表单就地提示；上报 |
-| 10003 | 请求频率过高，`data.retryAfterSeconds` 给出等待秒数（密码锁定最多 900 秒，验证码 24 小时上限） | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
-| 20001、20002、20003 | 未登录、token 无效、token 过期 | 登录过期流程（5.4）；游客收到时不走过期流程，按 `NeedsSignIn` 弹登录面板（8.1） |
-| 20004 | 权限不足，受限会话访问未登记的接口也是这个码 | 重新拉用户信息，按新的账号状态弹拦截对话框（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」 |
-| 20005、20009 | 需要数据跨境同意、同意政策已更新 | 弹同意对话框，用户同意后重发原请求（9.5） |
-| 20006 | 数据处理中 | 提示「数据正在处理，请稍后再试」，不重发写请求 |
-| 20007、20008 | 同意失败、proof 无效 | 清会话回登录页（9.5） |
-| 20010 | 账号授权已过期 | 同登录过期 |
-| 30xxx | 用户模块（密码错、验证码错、邮箱不对……） | 每个码一句话，表在 `core/failure/messages.dart` |
-| 30003 | 接口文档：用户名已被占用 | 设置用户名页就地提示 |
-| 30005 | 接口文档：验证码不对 | 验证码输入框就地提示 |
-| 30010 | 接口文档：这个账号还没设过密码 | 密码登录页「该号码未设置密码，请使用验证码登录」；修改密码改走验证码设置 |
-| 30011 | 接口文档：账号没绑手机 | 设置密码、设置用户名时出现；只有以前用用户名注册、没绑手机的老账号会遇到，提示先绑手机 |
-| 30012、30013 | 后端说明：统一认证链接失效（过期、已用过、不存在）、学号已认证过其他账号 | 只出现在统一认证回调的浏览器页面里，客户端读不到；见 18.1 |
-| 30014 | 接口文档：用户名注册已关闭 | 客户端不调 `/auth/register`，不会遇到 |
-| 30015、30016 | 接口文档：缺少人机验证票据；票据无效、过期或被判有风险 | 重新走一遍人机验证（18.3） |
-| 50004 | 接口文档：人机验证服务暂不可用 | 「人机验证暂不可用，请稍后再试」，不发验证码 |
-| 40002 | 当前状态不允许该操作（如没认证时发换绑验证码、重复设置用户名） | 「当前状态无法进行该操作」；调用方先按账号状态拦住 |
-| 30002 | 用户被禁用：不支持受限会话的路径上封禁账号登录；解封后受限 token 的请求 | 登录时「账号已被封禁」；带登录态时按登录过期处理 |
-| 40016 | 接口文档：发布的菜和这家店已有的菜重名（忽略空格），`data.id` 是已有的那道 | 加菜页在菜名下提示「这家店已有……」和「去看看」，不能发布。`ApiClient` 失败时把外壳里的 `data` 带在 `AppFailure.data` 上 |
+| 10001、10002 | 参数非法、缺失。v2 也用 10001 表示评论或被回复的评论不存在、通知不存在 | 表单就地提示；评论的赞、回复、删除、举报收到 10001 时提示「这条评论已删除」（回复写「这条回复已删除」）并从列表移除 |
+| 10003 | 请求频率过高，`data.retryAfterSeconds` 和 `Retry-After` 给出等待秒数 | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
+| 10004 | 路径不存在（HTTP 404）或方法不对（HTTP 405） | 按未知错误处理 |
+| 20001 | 未登录，包括被下线和过期 | 登录过期流程（5.4）；游客收到时不走过期流程，按 `NeedsSignIn` 弹登录面板（8.1） |
+| 20004 | 权限不足：没有认证、删别人的评论、对方未公开粉丝或关注列表 | 重新拉用户信息，按新的账号状态弹拦截对话框（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」。粉丝和关注列表在页面上认成「对方未公开」 |
+| 20005、20009 | 没带同意、同意的政策版本不是当前版本 | 9.5 |
+| 30001 | 用户不存在 | 他人主页、粉丝列表「该用户不存在」 |
+| 30002 | 账号被封禁：登录时；带登录态的请求（服务端同时让会话下线）；统一认证确认、邮箱确认 | 登录时「账号已被封禁」；带登录态时走封禁流程（5.4） |
+| 30003 | 用户名已被占用 | 设置用户名页就地提示 |
+| 30004 | 密码登录的所有失败（账号不存在、没设过密码、密码错）；改密码时旧密码错 | 「账号或密码错误」；密码登录页常驻「没设过密码的用验证码登录」 |
+| 30005 | 验证码错；换绑第二步时表示旧手机的验证码错 | 输入框就地提示，换绑按步骤显示在对应的输入框下 |
+| 30006、30008、30009 | 已经认证过、邮箱链接无效或不属于当前账号、不是山大邮箱 | 码表里各一句（18.2） |
+| 30010 | 改密码时这个账号还没设过密码 | 改密码页改走验证码设置 |
+| 30011 | 账号没绑手机 | 设置密码、设置用户名、换绑时出现，提示先绑手机；账号与安全里走补绑 |
+| 30012、30013 | 统一认证的 ticket 无效、学号已认证过其他账号。回跳地址和 `/auth/sdu/confirm` 都会返回 | 18.1 |
+| 30014 | 用户名注册已关闭 | 客户端不调 `/auth/register`，不会遇到 |
+| 30015、30016 | 缺少人机验证票据；票据无效、过期或被判有风险。同一登录名密码失败过多后，密码登录也返回 30015 | 重新走一遍人机验证（18.3）；密码登录过验证后用同一组账号密码重发 |
+| 50004 | 人机验证服务暂不可用 | 「人机验证暂不可用，请稍后再试」，不发验证码 |
+| 40001 | 操作失败：上传完成时文件不存在、AI 建议不可用或识别失败、换绑或补绑的号码已被占用、统一认证不是当前账号发起的、登录设备不存在 | 页面就地处理（AI 建议静默回到手动选择，设备不存在就刷新列表），其余「操作失败，请重试」 |
+| 40002 | 当前状态不允许：招牌菜已满 3 道、恢复的版本和当前一样、无法关注、无法回复、换绑时旧手机的验证已过期、已设过用户名等 | 页面按场景给专门的提示（「这家店已有 3 道招牌菜，先取消一道」「已经是这个版本」「无法关注对方」「无法回复对方」）；其余「当前无法执行此操作，请刷新后重试」 |
+| 40004 | 100 m 内已有同名的店，或地图地点已被别的店用了，`data` 为空；推送也用这个码 | 不进全局码表。新建店提示「附近已有这家店」并重新查同名店和地点，编辑店铺在店名下提示 |
+| 40008 | 菜不存在 | 「这道菜已删除」 |
+| 40009 | 店不存在 | 「这家店已删除」 |
+| 40016 | 发布的菜和这家店已有的菜重名（忽略空白和大小写），`data.id` 是已有的那道；编辑时改名撞名也返回 | 加菜页在菜名下提示「这家店已有……」和「去看看」，不能发布；编辑页提示换个菜名。`ApiClient` 失败时把外壳里的 `data` 带在 `AppFailure.data` 上 |
 | 9xxxx、HTTP 5xx | 系统错误 | 「服务器出错，请稍后再试」；上报 |
 
-还缺的码：账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限（24 小时不能评论）、内容违规。要后端定义（A2）。
+v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的字符串码，客户端已经从码表里删掉。还没有的码：功能已关闭、只读维护、操作受限、内容违规，后端还没做这些功能。
 
 ### 7.5 错误转成用户能看懂的提示
 
@@ -435,7 +448,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 已知业务错误 | 在表里的码 | 表里那句 | — |
 | 未知 | 其他 | 操作失败，请重试 | 上报，带码和 `msg` |
 
-- 不把服务端的 `msg` 和错误码直接给用户看（产品 6.13、9.11）。例外是封禁原因、操作受限原因这类本来就写给用户的内容。
+- 不把服务端的 `msg` 和错误码直接给用户看（产品 6.13、9.11）。例外是操作受限原因这类本来就写给用户的内容（后端还没有）。
 - 展示位置：页面加载失败就地显示「加载失败」和「重试」；动作失败用轻提示（样式待确认 A6）；面板里提交失败，结果留在面板里。
 - 首次加载用占位色块，不用全屏转圈（产品 6.13）。
 
@@ -447,35 +460,29 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
+- v2 的 openapi 由 springdoc 按类名给结构取名，不同模块里同名的结构互相覆盖：`Food`、`EditRequest`、`Options`、`Settings`、`Card`、`Accepted`、`Target`、`Restaurant`、`ConsentPolicy` 在文档里都是别的模块的结构。这些 DTO 照后端 Java 源码（`src/main/java/you/v50to/eatwhat/<模块>/dto/`）写，不照文档抄（已反馈后端）。
 - 同步新版 `docs/api.openapi.yml` 后看 `git diff`，按变化改 `XxxEndpoints` 和受影响的 DTO。不做契约测试：手写的路径清单和实际调用是两份，测试只能证明清单在文档里，证明不了实际调用的路径在文档里。
 
 ### 7.7 分页、防重复
 
-- 分页统一成 `Paged<T>`（`items`、`page`、`hasNext`），对应接口的 `PageResult_*`。列表滚到底自动加载下一页，加载中不重复发。
-- 图片字段（`avatar`、`pictureUrl`、`coverUrl`）都是后端签好的完整地址，直接展示，不拼前缀；空串当作没有图。地址带有效期，图片缓存按去掉查询串的地址做 key（10.4）。
-- `/foods/recommend` 返回数组，不是 `PageResult`，接口文档写错了，按后端源码解析。
+- 分页统一成 `Paged<T>`（`items`、`page`、`hasNext`、`total`），对应接口的 `PageResult_*`；`total` 取 `totalItems`，接口没给时为 null。仓库层把 DTO 页转成模型页时带上 `total`，「我的」和他人主页的「上传的菜」用它。列表滚到底自动加载下一页，加载中不重复发。
+- 图片字段（`avatar`、`pictureUrl`、`pictureUrls`）都是后端拼好的公开地址，直接展示，不拼前缀；空串当作没有图。v2 起地址是稳定的，不再带有效期；图片缓存仍按去掉查询串的地址做 key（10.4）。菜品响应只给地址、不给对象 key，编辑菜品时保留不了原图，只能整组换照片（13.1）。
 - 客户端直接按后端最新源码的契约写，不为已部署的旧版本做兼容分支。
 - 提交类按钮在请求期间不可再点。
-- 写操作在服务端防重：发布、新建店、评论、回复、删除评论、赞评论、举报、信息有误、意见反馈都带 `Idempotency-Key` 请求头，值是 UUID v4（`core/network/idempotency.dart` 的 `newIdempotencyKey`）。服务端对同一个键只受理一次，重放时返回第一次的结果；同一个键配不同的正文会被拒绝。
-  - 同一份内容重试时沿用上一次的键，内容变了或上次已成功就换新的。键由知道「两次是不是同一份内容」的一方保存：发布在 `FoodRepository` 里比对正文；新建店、意见反馈在页面状态里；评论和回复在写评论页的 Provider 里；举报和信息有误在 `ReasonPanel` 里。
-  - 删除评论、赞和取消赞每次点击都是新的一次操作，每次生成新键。
-  - 下线其他设备、换绑手机、推送开关的 `commandId` 也用同一个函数生成。
+- v2 不再收 `Idempotency-Key`，服务端也不再防重放，客户端的写请求都已去掉这个头（`core/network/idempotency.dart` 已没有调用方，待删除）。网络失败后用户再点一次，可能重复提交：菜被同名查重挡下（40016），店被同名查重挡下（40004），反馈、举报、信息有误有「同一对象未处理的只留一条」兜底；评论、回复和意见反馈可能重复（已反馈后端）。
 
 ## 8. 账号状态、权限与拦截
 
 ### 8.1 建模
 
-- `AccountStatus`：`signedOut`（含游客）、`unverified`、`verified`、`banned(原因, 解封时间)`。游客能不能进某页由路由的 `guest` 标记决定（5.3），这里不区分。由 `GET /user/info` 的 `verified`、`banned`、`banReason`、`bannedAt`、`banUntil`（null 表示永久或没有期限证明）算出。登录响应带 `restricted: true` 时，在拿到用户信息之前就按封禁处理。
-- 受限会话：封禁账号登录拿到的是受限 token（有效 1 小时），后端只放行登记过的接口（浏览、本人信息、通知、屏蔽、登录设备、反馈和举报、退出、注销申请），其余返回 20004。解封后受限 token 的请求返回 30002，按登录过期处理，重新登录拿普通 token。封禁中「我的」的上传列表改用公开的 `/foods/by-user`，收藏和我的标签不请求。
-- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签、写我的标签、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑删除自己的菜、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出、注销对所有已登录状态都开放，不进这张表。
-- 游客能点到、要登录才能进的入口也进这张表，好让游客看到「登录后才能看消息」的面板，而不是被守卫直接带去登录页（产品 7.3）：看消息（`viewInbox`）、看他人主页（`viewProfile`）、意见反馈（`feedback`）。这三项对所有已登录状态开放，只拦未登录。守卫第 3 条兜住地址栏和深链直接进的情况。
+- `AccountStatus`：`signedOut`（含游客）、`unverified`、`verified`。游客能不能进某页由路由的 `guest` 标记决定（5.3），这里不区分。由 `GET /user/info` 的 `verified` 算出。
+- 封禁：v2 封禁账号不能登录，登录返回 30002；已登录的请求返回 30002 时服务端已经让会话下线，客户端按封禁处理，回登录页提示「账号已被封禁」（5.4）。没有受限会话，也没有封禁原因和期限，客户端不再有「封禁中」的状态。
+- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签（`tasteTag`，待接入）、写我的标签（`myTag`，待接入）、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑菜品（`editDish`）、编辑店铺（`editShop`，含恢复修改记录）、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、看等级（`viewGrowth`，待接入）、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出对所有已登录状态都开放，不进这张表。
+- 游客能点到、要登录才能做的也进这张表，好让游客看到「登录后才能看消息」的面板，而不是被守卫直接带去登录页（产品 7.3）：看消息（`viewInbox`）、看他人主页（`viewProfile`）、意见反馈（`feedback`）、只看我收藏的店（`viewFavorites`）、不想去这家（`dismissShop`）。这几项对所有已登录状态开放，只拦未登录。守卫第 3 条兜住地址栏和深链直接进的情况。
 - 未登录时 `checkPermission` 对所有能力都返回 `NeedsSignIn`，面板主按钮「去登录」，带 `from=<当前地址>` 进 `/login`。
-- 每个能力带两个开关：
-  - `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误。其余要求已认证。
-  - `openToBanned`：封禁中也能做。只有举报和信息有误（受限会话放行反馈、举报和信息有误）。其余封禁中都拦。
+- 每个能力带一个开关 `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、看等级、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误，以及上一条只拦未登录的几项。其余要求已认证。
 - 举报和信息有误对所有已登录状态都开放，仍然进这张表：为了复用拦截入口和失败反馈，服务端拒绝时按刷新后的账号状态弹对话框。
-- 受限会话放行的接口比产品 7.2「封禁中」一列窄，两者不一致时以后端为准，所以看足迹起的几项（产品允许封禁中做、后端没登记）也在表里，只拦封禁中。
-- `domain/rules/permission_policy.dart` 一个纯函数：`checkPermission(账号状态, 能力) → Allowed | NeedsSignIn | NeedsVerification | BlockedByBan(封禁状态)`，拦截对话框的动作词取 `Capability.verb`。产品 7.2 的表一格一格写成单元测试。
+- `domain/rules/permission_policy.dart` 一个纯函数：`checkPermission(账号状态, 能力) → Allowed | NeedsSignIn | NeedsVerification`，拦截对话框的动作词取 `Capability.verb`。产品 7.2 的表一格一格写成单元测试。
 
 ### 8.2 功能状态
 
@@ -497,20 +504,33 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 - 所有受限的按钮都先调同一个函数 `guardAction(context, ref, Capability.like)`（`features/system/guard.dart`）：按账号状态调 `checkPermission`，被拦就弹拦截对话框并返回 false，否则返回 true，按钮再执行动作。8.2 里远程配置的几种状态，等远程配置接上后也在这里判断。动作失败时调 `reportActionFailure`：服务端判定没权限就刷新账号状态再弹对话框，其余给轻提示。
 - 按钮永远照常显示，不隐藏、不置灰（产品 7.3）。
-- 拦截对话框文案按动作换词：未认证「认证后才能点赞」，主按钮「去认证」（到 `/verify`），次按钮「先逛逛」；封禁中「账号封禁中，暂时不能点赞」，加原因和解封时间，没有「去认证」。动作词表放在 `core/copy/`。
+- 拦截对话框文案按动作换词：未认证「认证后才能点赞」，主按钮「去认证」（到 `/verify`），次按钮「先逛逛」。动作词取 `Capability.verb`。
 - 服务端和客户端判断不一致时（客户端以为能做，服务端返回没权限）：重新拉用户信息，按新状态弹对话框。回到前台时也刷新一次用户信息（产品 7.3「账号状态在别处变了，下一次操作时按新状态处理」）。
 - 认证成功后 `sessionProvider` 更新，之前被拦的操作立即可用，不用重新登录（产品 6.3）。
 
 ### 8.4 过渡期
 
 - 浏览接口（推荐、菜品、餐厅、商圈）已经对游客和未认证账号开放，关注也改成了要求认证，和产品规则一致，客户端不再需要「浏览需要认证」的开关。
-- 收藏接口只要求登录，产品要求已认证：客户端按产品规则拦（`Capability.favorite`）。
+- 收藏、取消赞、取消收藏、不想去这家的接口只要求登录。收藏产品要求已认证，客户端按产品规则拦（`Capability.favorite`）；其余按后端只拦未登录。
 
 ### 8.5 待接入的功能
 
 - 设计要求没有接口的功能照样画出来，旁边放「待接入」（8.2 第 1 行）。页面照常写，数据也走 Provider，只是 Provider 先返回放在功能目录里的示例数据（插画和示例文字），不发请求；写操作的按钮点了也不发请求。
 - 示例数据只用于演示，插画不能冒充用户上传的照片。
 - 接口上线后只换 Provider 的实现、补 `data/` 里的接口类，页面不用改；同时改 `pending_features.dart`、去掉「待接入」，删掉现状差距里对应的一行。
+- 后端 v2 删掉的功能（2026-11-13）：已经写好的页面、Provider、数据层和它们自己的测试原样保留，只做让它们继续编译的最小改动；入口照常显示并标「待接入」（`PendingTag`、`EatTabItem` 和 `EatSwitch` 的 `pending`、`SettingsRow(pending: true)`），点了调 `showPending`，不发请求、不进入背后的页面。任何用户能点到的路径都不能请求已删除的接口。`PendingFeature` 现有这几项：
+
+  | 项 | 入口 | 保留的代码 |
+  | --- | --- | --- |
+  | `removeBackground` | 「调整照片」的「自动去掉背景」 | — |
+  | `topics` | 发现页分类栏的「专题」 | `data/topic/`、`features/topic/`、`/topics*` 路由 |
+  | `myTags` | 「我的」的快捷入口「我的标签」、加菜页的「自己写」 | `my_tags_page.dart`、`tag_dishes_page.dart`、`/me/tags*` 路由 |
+  | `tasteVote` | 菜品详情「大家怎么说」的点词和「＋ 加标签」 | `tag_panel.dart`、`tasteVocabularyProvider` |
+  | `growth` | 「我的」和他人主页的等级胶囊 | `data/growth/`、`growth_page.dart`、`/me/growth` 路由 |
+  | `deleteAccount` | 账号与安全的「注销账号」 | `data/cancellation/`、注销页和撤销注销页、两条路由 |
+  | `personalizedRecommend` | 隐私的「个性化推荐」开关（显示为打开） | `UserRepository` 的开关读写 |
+
+- 审核没有入口要保留：`moderationStatus`、「已提交审核」和待审核的分支都已删除（产品 9.10）。
 
 ## 9. 本地存储与登录态
 
@@ -519,10 +539,9 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 数据 | 存储（没写安全存储的都在 `shared_preferences`，用键的前缀分组） | 作用域 | 退出登录时 |
 | --- | --- | --- | --- |
 | `tokenName`、`tokenValue` | 安全存储 | 账号 | 删 |
-| 安装 ID（首次启动随机生成，用于风控识别设备、埋点） | 安全存储 | 设备 | 留 |
-| 注销申请的恢复凭据（`lifecycle.recovery.<申请 id>`） | 安全存储 | 账号 | 留，撤销成功后删 |
+| 安装 ID（首次启动随机生成，用于风控识别设备、埋点）。原来只有游客推荐去重在用，v2 推荐不收设备标识，`core/storage/device_id.dart` 已删除，以后接埋点时再加 | 安全存储 | 设备 | 留 |
 | 隐私政策同意版本和时间 | `prefs.*` | 设备 | 留 |
-| 当前校区 | `prefs.*` | 设备 | 留 |
+| 当前校区；堂食还是外卖（`prefs.scene`，`dine_in` 或 `delivery`） | `prefs.*` | 设备 | 留 |
 | 手动选的饭点和到期时间 | `prefs.*` | 设备 | 留 |
 | 上一次的舞台色 | `prefs.*` | 设备 | 留 |
 | 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
@@ -541,10 +560,10 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 - 登录、注册成功：存 token 和头名 → `GET /user/info` → `sessionProvider` 变成已登录 → 初始化依赖登录的服务（推送绑定、Sentry 用户 id、埋点用户 id）。
 - 启动：有 token 就先按已登录进发现页（用缓存的用户信息），后台再校验；校验返回过期就走过期流程。
-- 登录一直保持，直到退出、长时间没用、改密码、换绑手机、设置用户名（产品 7.4），失效由服务端判断，客户端不做 token 续期。
+- 登录一直保持，直到退出、长时间没用、被封禁，或者在别的设备上改密码、换绑手机（产品 7.4），失效由服务端判断，客户端不做 token 续期。
 - 同一账号可以同时在手机和 Web 上登录，客户端不做互斥。
-- 会话换发：「让其他设备都下线」和换绑手机成功后，服务端把本机的会话也换成新的。客户端在提交前生成一次性的恢复凭据（32 字节随机值，不带填充的 Base64URL，`core/network/recovery_capability.dart`），只放在内存里，随请求提交；之后带着它调对应的 `resume` 接口取回新凭证（`data/sessions/session_rotation.dart`，最多 5 次，间隔 1 秒）。取回后 `sessionProvider.adoptRotation` 保存新凭证并刷新用户信息，用户不用重新登录；取不回（换发过期、被取代或次数用完）就清掉本机登录态回登录页。
-- 注销与撤销：申请注销时客户端同样生成恢复凭据和申请 id，先写进安全存储再提交（`data/cancellation/`），失败重试沿用同一份；申请成功后退出登录。冷静期内登录，验证完账号密码或验证码后登录接口返回 20006，`data` 带 `recoveryRequired`、`subjectId`、`requestId`；登录页把申请交给 `accountRestoreProvider`，打开撤销注销页。撤销页按申请 id 读出凭据，用密码或发到绑定手机的验证码验证身份，拿到的 `operationId` 作为 `credentialOperation` 调撤销接口，凭据放在 `X-Lifecycle-Recovery` 头里，不用会话。撤销后删掉凭据，回登录页重新登录。凭据只在提交申请的设备上，其他设备登录时只说明在哪里能撤销。
+- v2 不再换发本机会话：「让其他设备都下线」、换绑手机、改密码、设置用户名之后，本机的凭证不变，客户端只刷新用户信息或设备列表。原来的恢复凭据、`resume` 接口和 `adoptRotation` 都已删除。
+- 注销后端 v2 不做，注销申请、冷静期内登录时的撤销流程都不会出现（`data/cancellation/` 保留、没有调用方，8.5）。
 
 ### 9.3 退出登录
 
@@ -556,39 +575,27 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 4. 清内存：`ProviderContainer` 里依赖账号的 Provider 全部 `invalidate`，`dishInteractionsProvider` 等清空。
 5. `go('/login')`。
 
-注销账号走同一套清理。
+注销账号接上以后走同一套清理。
 
 ### 9.4 同意记录与 SDK 初始化
 
-- 登录页的勾选在登录成功后写进本地同意记录（版本 + 时间）；点「先逛逛」并同意时当场写入（产品 6.2）。游客和登录用户共用这一份记录，退出登录不删。远程配置里有当前隐私政策版本，本地版本更旧时的处理见待确认 A7。
-- 数据跨境同意由用户在对话框里确认、记在服务端，不进本地同意记录，见 9.5。
+- 登录页的勾选（隐私政策、用户协议、数据存放在境外）在登录成功后写进本地同意记录（`state/privacy_consent.dart`，版本 + 时间）；点「先逛逛」并同意时当场写入（产品 6.2）。游客和登录用户共用这一份记录，退出登录不删。
+- 本地记录只决定这台设备能不能初始化 SDK。服务端的同意由登录请求带的政策版本记下，政策更新后由服务端返回 20009 要求重新同意（9.5）。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 - 百度地图 SDK 更晚：同意之后、第一次打开附近或新建店时才初始化（14.4）。
 
-### 9.5 数据跨境同意
+### 9.5 隐私政策和数据跨境同意
 
-后端已改为海外单站（2026-11-06），不再有站点之间的同步，但数据存放在境外，仍要用户同意数据跨境；接口和业务码沿用原来的 `/auth/consent`。由用户在对话框里点同意，客户端不代用户同意（2026-11-02 定，后端契约 `frontend-contract.md` 和 biz-codes 20010 都要求不得代为同意）。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
+数据存放在境外，要用户同意数据跨境。由用户自己勾选或点同意，客户端不代用户同意。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
 
-- 接口：`/auth/consent/policy` 读当前政策的版本和地址，`/auth/consent/grant` 提交同意（带政策版本，登录时还带 `proof`）。查询状态、撤回不接。代码在 `data/consent/` 的 `ConsentApi`。
-- 对话框：`features/system/consent_panel.dart`。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹。读政策、弹对话框、提交同意由 `state/cross_border_consent.dart` 的 `crossBorderConsentProvider` 负责；没有挂上 `ConsentHost` 时按不同意处理。
-- 业务码：
-
-  | 码 | 含义 | 处理 |
-  | --- | --- | --- |
-  | 20005 | 需要数据跨境同意，登录时 `data` 里可能带 `consentProof` | 弹对话框 |
-  | 20009 | 同意政策已更新 | 弹对话框，用新版本同意 |
-  | 20007、20008 | 同意失败、proof 无效（当前会话不能同意时） | 清会话、回登录页，重新登录时会拿到 proof |
-  | 20010 | 账号授权已过期 | 按登录过期处理 |
-  | 20006 | 数据处理中，不是同意问题 | 只提示「数据正在处理，请稍后再试」，不同意、不重发写请求 |
-
-- 登录：返回 20005 时不算登录成功，弹对话框。
-  - 密码登录：同意后带 proof 提交，再用同一组账号密码自动登录一次；账号密码只为这一次留在内存里。
-  - 验证码登录：验证码已经被核销，同意后清空验证码，提示「验证码已失效，请重新获取」。
-  - 不同意：停在登录页。
-- 注册：手机号登录遇到新号码时直接注册。后端对不带同意的新号码先核销验证码，再返回不带 proof 的 20005，所以默认不带同意；收到它时弹对话框，用户同意后重新获取验证码，下一次登录带上 `crossBorderConsent: true` 和 `consentPolicyVersion`。代价是新用户要收两次验证码。
-- 已登录时接口返回 20005 / 20009：`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请求用户同意。同意成功后把原请求重发一次；不同意或同意失败时，原请求按失败处理。几个请求同时遇到时只弹一次对话框。未登录时不弹，交给登录流程。
-- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限 → 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
-- 已知不足：会话中用户不同意以后，后面每个返回 20005 的请求还会再弹一次。
+- 接口：`GET /auth/consent/policy` 读当前政策（未登录也能调），只用 `version`。服务端还没发布过政策时 `version` 为 null，这时登录不带版本，也不弹对话框。返回的 `privacyText`、`crossBorderText` 不用，政策正文看托管的网页（`PRIVACY_URL`、`TERMS_URL`），后端发新版本时要和网页一起更新。`POST /auth/consent/grant {policyVersion}` 提交同意，必须登录。`GET /auth/consent` 不接。代码在 `data/consent/` 的 `ConsentApi`；读版本、请用户确认、提交同意在 `state/cross_border_consent.dart` 的 `CrossBorderConsent`（`currentVersion`、`confirm`、`grantForSession`）。
+- 隐私政策和数据跨境说明共用一个版本号，登录页的勾选框一次同意两者和用户协议。
+- **登录**：勾选后（或提交登录前）读当前版本，验证码登录和密码登录都带 `policyVersion`。政策发布后验证码登录必须带（新号码注册时服务端一并记下同意），密码登录可以带，登录成功才记录。
+- **登录时收到 20005 或 20009**（没带版本，或勾选后政策刚好更新）：重新读版本，弹同意对话框，同意后用同一个验证码或同一组账号密码直接重试一次。服务端在核销验证码之前校验同意，不用重新获取验证码；账号密码只为这一次留在内存里。不同意就停在登录页，提示「需要同意隐私政策后才能继续」。
+- **已登录时**：服务端对没同意当前版本的账号，每个请求都返回 20009，只放行查看政策、查看状态、同意和退出登录。`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请用户确认：`grantForSession` 弹对话框，同意后提交 `grant`，再把原请求重发一次；不同意、对话框弹不出来或提交失败时，原请求按失败处理。几个请求同时遇到时只弹一次对话框。未登录时不弹，交给登录流程。
+- **对话框**：`features/system/consent_dialog.dart` 的 `showConsentDialog`。标题「隐私政策已更新」，一句话说明服务器在境外、账号信息和使用记录会传到境外，附「查看隐私政策」（打开 `PRIVACY_URL`），按钮「不同意」「同意」。登录页和已登录时用同一个对话框。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹；没有挂上时按不同意处理。
+- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，封禁 → `expire(banned: true)`，没权限 → 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
+- 已知不足：会话中用户不同意以后，后面每个请求还会再弹一次（产品 7.5「下一次操作再问」）。
 
 ## 10. 离线与缓存
 
@@ -596,19 +603,18 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 | 内容 | 键 | 上限 | 过期 | 用途 |
 | --- | --- | --- | --- | --- |
-| 上一批推荐 | 校区 + 饭点 | 每个组合 1 批 | 不过期，拿到新的就覆盖 | 推荐拿不到时先看上一批 |
-| 「今日推荐」第一页 | 校区 + 饭点 | 1 页 | 1 天 | 发现页离线可看 |
+| 上一批推荐店 | 校区 + 场景 + 饭点 + 类型 | 每个组合 1 批 | 不过期，拿到新的就覆盖 | 推荐拿不到时先看上一批（10.6） |
+| 抽屉推荐列表第一页 | 校区 + 场景 + 饭点 + 类型 | 1 页 | 1 天 | 发现页离线可看 |
 | 菜品详情 | 菜 id | 最近 50 道 | 7 天 | 离线可看 |
 | 我的：资料、统计、上传第一页 | 用户 id | 1 份 | 不过期 | 离线可看 |
 | 当前用户信息 | — | 1 份 | 不过期 | 启动时先用 |
-| 取色结果（过渡期，见 13.6） | 图片地址 + 裁切参数 | 500 条 | 不过期 | 避免重复计算 |
 
 `CacheStore` 包在 `KvStore` 外面，每条记录是 `cache.*` 下的一个 JSON 字符串，带写入时间和最近访问时间，超上限按最近访问淘汰。`shared_preferences` 在安卓、iOS 上会把整份数据读进内存，所以缓存总量控制在 1 MB 左右，超了也按最近访问淘汰。
 
 ### 10.2 读的流程
 
 - 先显示缓存，同时请求新数据，回来后替换（先旧后新）。缓存标为「旧数据」时不显示特殊样式，只在请求失败时给提示。
-- 推荐请求失败、有上一批：转盘用上一批，提示「网络连接失败，显示的是上次的推荐」（产品 12.6）。
+- 推荐请求失败、有上一批：转盘用上一批店，提示「网络连接失败，显示的是上次的推荐」（产品 12.6）。
 - 请求失败、没有缓存：就地「加载失败」+「重试」。
 - 没网：顶部「网络连接失败」，已经加载的内容继续能看（产品 6.13）。
 
@@ -679,6 +685,20 @@ extension RefCache on Ref {
 }
 ```
 
+### 10.6 推荐
+
+推荐的单位是店（产品第 8 节）。数据层在 `data/recommend/`（`RecommendApi`、`RecommendRepository`），发现页的转盘队列和抽屉列表在 `features/discover/discover_providers.dart`。
+
+- **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`campusId`、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。`mealTime` 总是显式传，按产品 4.5 的时间段算（后端不传时的默认边界是 10、14、21 点，和产品不同，已反馈）。离校区中心超过 5 km 时不带位置。
+- **卡片**：店铺详情的子集加 `signatureFoods`（最多 3 道）和 `distanceMeters`，用店铺的转换（`PlaceRepository.shopFromJson`）变成 `Shop`，招牌菜在 `signatures`，距离在 `distance`。缺 id 或坐标的卡片丢弃。舞台色用 `ShopRules.stageOf`（11.3）。
+- **分批**：转盘每批 8 家，少于 5 家不用转盘。下一批一律请求 `page + 1`。游客按页码翻页，同一天的顺序不变；登录用户由后端按「用户 + 日期」去重，每次给当天还没推过的店，页码只回显，转盘、抽屉列表和不同场景、校区共用这一份记录，当天推完了从头再来。客户端按 id 去重，一批全是已经拿到过的店就当没有下一批。
+- **上一批**：每次拿到的非空结果按「校区 + 场景 + 饭点 + 类型」存一份（10.1），请求失败时先用它。
+- **地点就绪再拉**：本机的校区和场景读出来之前不请求（14.3），避免按默认值发出去的请求在后端被记成推荐过。
+- **不想去这家**：`POST /recommend/dismiss/{id}`，要登录（`Capability.dismissShop`，游客弹登录面板），成功后从转盘去掉这家，提示「30 天内不再推荐这家店」。后端没有撤销和查询接口。
+- **撞色**：相邻两家的舞台色相同时，后一家换用它其余品类映射的颜色，都撞色就保持原色（`turntableColors`）。后端以后给店铺备选色时改用备选色。
+- **不接**：`GET /recommend/pick`（摇一摇，转盘已经一次给一家）；`GET /recommend/tags`（品类和口味写成客户端枚举 `ShopCategory`、`Taste`，和后端约定只在末尾追加，不认识的值忽略）；推荐偏好和隐式口味（`/user/recommendation-profile/*`，产品还没有设置页）。
+- 游客的推荐不再按设备去重，安装 ID（`core/storage/device_id.dart`）随旧推荐接口删除。
+
 ## 11. 设计令牌落地
 
 ### 11.1 转写与校验
@@ -703,19 +723,20 @@ extension RefCache on Ref {
 
 `StageColor` 是 9 个值的枚举，每个值带着自己的配色，深浅写死，不在运行时去猜：
 
-| 值 | 颜色 | 深浅 | 文字 | 次级文字 | 次按钮底 | 转盘桌面 / 细边 | 实心按钮 | 分类默认 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 |
-| `mango` | `#ffcb45` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品；「我的」默认 |
-| `bamboo` | `#d8b27a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤、其他 |
-| `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 |
-| `porcelain` | `#9db8d9` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 甜品 |
-| `matcha` | `#9dbf7a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 凉菜、配菜 |
-| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 底，舞台色字 | — |
-| `redoil` | `#a8321c` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 火锅 |
-| `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 烧烤 |
+| 值 | 颜色 | 深浅 | 文字 | 次级文字 | 次按钮底 | 转盘桌面 / 细边 | 实心按钮 | 菜品分类默认 | 店铺默认 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 | 汤粥；没有品类 |
+| `mango` | `#ffcb45` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品甜品；「我的」默认 | 粉面 |
+| `bamboo` | `#d8b27a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤 | 面点快餐 |
+| `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 | 烧烤炸串 |
+| `porcelain` | `#9db8d9` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | — | 甜点饮品店 |
+| `matcha` | `#9dbf7a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 特色 | — |
+| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 底，舞台色字 | — | — |
+| `redoil` | `#a8321c` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | — | 火锅麻辣烫 |
+| `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 菜 | 米饭炒菜 |
 
-- 分类到默认色的对应（产品 4.4）写在 `domain/models/dish_category.dart`，分类和后端枚举（`staple`、`drink`……）一一对应。
+- 菜品分类的默认色（产品 4.4）写在 `domain/rules/dish_rules.dart` 的 `DishRules.defaultStage`；`DishCategory` 的 `api` 是后端的中文原值（主食、菜、小吃、汤、饮品甜品、特色）。
+- 店铺的舞台色（产品 4.7）写在 `domain/rules/shop_rules.dart` 的 `ShopRules.stageOf`：甜点饮品店用 `porcelain`，美食店按第一个品类映射，没有品类用 `broth`。纯函数，餐厅详情、推荐卡片和各端一致。
 - `test/design/stage_color_test.dart` 检查每个舞台色上的主文字和次级文字都不低于 4.5:1。
 - 状态栏图标跟着舞台深浅切换（`AnnotatedRegion<SystemUiOverlayStyle>`）。
 
@@ -826,7 +847,7 @@ extension RefCache on Ref {
   - `StageBarTitle` 是顶栏里的标题（菜名、店名、昵称），放在返回和右侧按钮之间。舞台还在时不显示，换成白底样式时淡入。
   - `pinnedBottom` 是抽屉第一行内容的副本（发现页的分类栏）。这一行滚到顶栏下面时，副本接在顶栏下方，看起来像停在那里；往下翻推荐流时随时能换分类。传了它，`sheetSlivers` 的第一项必须是同一行内容。
   - 宽屏不变：顶栏在左侧面板顶部，舞台不滚走。
-- 下拉刷新：`StageScaffold`、`PlainScaffold` 传 `onRefresh` 就能下拉（`EatRefresh`，`paper` 底 `ink` 线的圆圈，从顶栏下方出来）。页面用 `features/system/refresh.dart` 的 `pullToRefresh` 把相关 Provider 标记为过期并等主请求回来；刷新期间保留旧内容，不换回占位，失败时轻提示原因。发现页下拉只刷新抽屉里当前这一栏、当期专题和未读数，转盘上有菜时不动（换菜用「换一个」）。
+- 下拉刷新：`StageScaffold`、`PlainScaffold` 传 `onRefresh` 就能下拉（`EatRefresh`，`paper` 底 `ink` 线的圆圈，从顶栏下方出来）。页面用 `features/system/refresh.dart` 的 `pullToRefresh` 把相关 Provider 标记为过期并等主请求回来；刷新期间保留旧内容，不换回占位，失败时轻提示原因。发现页下拉只刷新抽屉里当前这一栏和未读数，转盘上有店时不动（换店用「换一个」）。
 - 白底页面用 `PlainScaffold`：52×52 返回与 `heading` 标题同一行（标题不跟系统字号）、`space-20` 边距。标题行固定在顶部不随内容滚走，内容滚到它下面时底边出现一条 `hairline`；`subtitle` 随内容滚动。`header` 可以代替标题放别的内容，搜索页把搜索框放在这里，和返回按钮同一行。
 - 实现：`CustomScrollView(paintOrder: SliverPaintOrder.lastIsTop)`，后面的 sliver 画在上面、先接点击，抽屉才能盖住舞台底部。抽屉的白底用 `DecoratedSliver` 的子类画，白底本身也接住点击，压住舞台的那 32px 和抽屉里的空白都不会点穿到舞台上。舞台后面另垫一块舞台色，只在 iOS 顶部回弹时露出来。
 - `StageScaffold.map` 给附近页这类用地图当舞台的页面：抽屉在手机上加 `shadow-sheet`，宽屏面板加 `shadow-float`。附近页可拖动的抽屉在阶段三再换。
@@ -861,13 +882,17 @@ extension RefCache on Ref {
   → 发布：等所有照片传完，提交 key 列表、裁切参数、舞台色和备选色
 ```
 
-- 发布和新建店带 `Idempotency-Key`，做法见 7.7。
-- 启用原生审核时，返回 `moderationStatus: PENDING`：提示「已提交审核，通过后公开」，不打开详情、不去加菜；没有这个字段表示没启用审核，已直接公开。待审核的菜不在 `/foods/my` 里。
+- 发布即公开，不审核：`POST /foods/upload` 只返回菜的 id，直接打开详情。v2 不再带 `Idempotency-Key`（7.7）。
+- 请求体按后端 `FoodDtos`：`pictures`（key 数组，最多 6 张）、`category`（中文原值）、`tags`（口味，最多 3 个）、`signature`、`price`、`description`（最多 200 字）。舞台色、备选色和 `coverCrop` 照常带上，后端暂时忽略（13.6）。
+- 招牌菜：每家店最多 3 道，满了返回 40002，加菜页在开关下就地提示。
+- 按照片预选：菜名或封面变了 1 秒后，满足「菜名填好、第一张照片传完、还没选分类」时调一次 `POST /foods/suggest-tags`（菜名、店 id、说明、最多 3 张已上传的 key），把返回的分类和口味预选上。未启用和识别失败都返回 40001，静默回到手动选择；每人每天 50 次；编辑时不调。
+- 编辑菜品：`PUT /foods/edit/{id}` 只提交改动的字段，返回 `{id, revisionId}`，没改动时 `revisionId` 为 null。菜品响应只有图片地址、没有 key，保留的旧图传不回去，所以照片只能整组替换：换了照片就提交新的一组 key 和新的舞台色、取景；不换照片就不提交这三项。成功后 `publishedCountProvider` 加一，相关列表和详情重新拉。
+- 修改记录：`GET /foods/{id}/history`、`GET /restaurant/{id}/history` 分页，最新的在前；恢复是 `POST …/history/{revisionId}/restore`，和当前版本相同时返回 40002。
 - 给已关门的店加菜由客户端拦住（服务端不拦）。
 
 ### 13.2 选图与压缩
 
-- `image_picker`：拍照或相册多选（最多补到 9 张）；Web 上是文件选择框。
+- `image_picker`：拍照或相册多选（最多补到 6 张）；Web 上是文件选择框。
 - `flutter_image_compress` 的 `compressWithList`：长边不超过 2048，JPEG 质量 85；头像长边 640。默认去掉 EXIF，照片里的 GPS 位置不会传上去，方向统一校正。
 - 一张一张顺序压缩，避免同时解码多张大图占内存。
 - HEIC：iOS 上原生能解；Web 上取决于浏览器（iOS Safari 选图时通常会转成 JPEG），解不了就提示「不支持该照片格式，请更换」。
@@ -875,7 +900,7 @@ extension RefCache on Ref {
 ### 13.3 上传队列
 
 - 每张照片一个条目，状态：等待 → 上传中（进度）→ 完成（得到 key）/ 失败。
-- 单张上传三步（接口 Upload 分组）：`POST /upload/presign`（`biz` 为 `foods`、`avatar` 或 `restaurants`，带 `contentType`、`fileSize`）→ 用 `UploadClient` 向 `putUrl` `PUT` 原始字节 → `POST /upload/complete`。拿到的 `key` 发布时写进 `pictureUrl`。
+- 单张上传三步（接口 Upload 分组）：`POST /upload/presign`（`biz` 为 `foods`、`avatar`、`restaurants`、`comments` 或 `feedback`，带 `contentType`、`fileSize`；`foods`、`restaurants`、`comments` 要认证）→ 用 `UploadClient` 向 `putUrl` `PUT` 原始字节 → `POST /upload/complete`。拿到的 `key` 发布菜时写进 `pictures`，新建店时写进 `picture`。
 - 同时最多传 2 张。失败的单张显示「重试」，重试从申请签名开始（签名可能已过 `expireAt`）。
 - 「后台上传」指在发布页填表时并行上传。App 切到后台时 iOS 可能挂起请求，回到前台后失败的条目自动重试一次。范围待确认 A13。
 - 发布按钮在照片没传完时显示进度（产品 6.9），全部完成才真正提交。
@@ -887,8 +912,7 @@ extension RefCache on Ref {
 - 「调整照片」只产出参数，不生成裁好的图：`CoverCrop(centerX, centerY, diameter)`。`centerX`、`centerY` 是圆心在原图里的位置（0–1，按原图宽高归一），`diameter` 是圆的直径占原图短边的比例（默认 1，即短边内切圆，居中）。
 - 和分辨率无关：缩略图、原图、不同尺寸的盘子都按同一组参数裁。`DishPlate` 收图片地址和这组参数。
 - 手势：拖动、双指缩放，缩放滑条是替代操作（规范「无障碍」）。参数限制在圆不超出原图的范围内。
-- 接口的 `coverCrop` 就是这三个字段，发布时提交，每个最多 4 位小数（后端 `@Digits`）。取整由 data 层做：直径向下取、圆心朝 0.5 取，保证取整后圆仍在图内。
-- 显示时，`pictureKeys` 和 `pictureUrl` 张数不同说明有图被审核滤掉，封面无法确认，不用裁切，按居中内切圆显示。原封面被滤掉、两者张数却相同的情况客户端识别不了，已反馈后端。
+- 发布和换了照片的编辑照常提交 `coverCrop` 的这三个字段，每个最多 4 位小数，取整由 data 层做：直径向下取、圆心朝 0.5 取，保证取整后圆仍在图内。v2 后端暂时不保存（13.6），响应里没有时按居中内切圆显示。
 - 头像需要真的裁：把圆形区域画到 `PictureRecorder`，导出 PNG，再压成 JPEG 上传。
 
 ### 13.5 舞台取色算法
@@ -905,13 +929,15 @@ extension RefCache on Ref {
 
 **验收**：`prototype/assets/photos/` 的 5 张样图在 `test/fixtures/photos/`，`test/design/stage/stage_palette_test.dart` 按设计资源说明的结果检查：螺蛳粉、铁锅炖、红烧肉 → `soy`；粘豆包 → `broth`；玉米排骨汤 → `bamboo`。铁锅炖排第二的是 `redoil`，和设计稿里撞色顺延的结果一致。
 
-**撞色**：`resolveTurntableColors(菜列表)`：相邻两道的舞台色相同，后一道临时用第一个备选色，不改保存的值（产品 4.7）。纯函数，单元测试。
+**撞色**：`DishRules.turntableColors(菜列表)`：相邻两道的舞台色相同，后一道临时用第一个备选色，不改保存的值（产品 4.7）。纯函数，单元测试。发现页改成转店以后用店铺的撞色规则（10.6）。
 
-**在哪算**：照片加进来先按居中裁切算一次（「调整照片」点了取消也有颜色）；在「调整照片」页拖动、缩放后防抖 100 ms 用同一张小图重算。256 像素的图在三端主线程上都够快，不开 isolate。结果随菜品保存，所有人看到同一个颜色（产品 4.7）。
+**在哪算**：照片加进来先按居中裁切算一次（「调整照片」点了取消也有颜色）；在「调整照片」页拖动、缩放后防抖 100 ms 用同一张小图重算。256 像素的图在三端主线程上都够快，不开 isolate。结果随菜品提交，后端恢复保存后所有人看到同一个颜色（产品 4.7、13.6）。
 
 ### 13.6 舞台色和裁切的来源
 
-接口已经有 `stageColor`、`stageAlternates`、`coverCrop`，显示时直接用保存的值；`stageColor` 为 null（老数据）时用分类默认色，分类也没有时用 `broth`。原来设想的「从封面现算」不再需要，取色只在发布时的「调整照片」里做。
+- **菜**：发布、编辑照常让用户选色和取景，请求里带 `stageColor`、`stageAlternates`、`coverCrop`。v2 后端暂时不保存这三个字段（已请后端恢复，见 `docs/EatWhat_后端反馈.md`）。显示时响应里有就用；没有时舞台色用分类默认色（`DishRules.defaultStage`，没有分类用 `broth`），封面按居中内切圆。
+- **店铺和推荐卡片**：没有舞台色字段，用 `ShopRules.stageOf` 按类型和第一个品类映射（11.3）。推荐卡片里的招牌菜只有一张图的地址，盘子按居中裁切。
+- 不在显示时按封面现算颜色：那要新增按图片地址取色、缓存的基础设施，Web 上还要对象存储允许跨域读。2026-11-13 定为请后端恢复字段，客户端先用默认色过渡。
 
 ### 13.7 显示
 
@@ -931,14 +957,14 @@ extension RefCache on Ref {
 | --- | --- | --- |
 | 设备定位（安卓、iOS、浏览器） | WGS-84 | 拿到后立刻转 GCJ-02 |
 | 接口参数和返回（`gcjLng`、`gcjLat`） | GCJ-02 | 原样用 |
-| 接口里的 GeoJSON（餐厅 `location`、商圈 `boundary`、`center`） | WGS-84，`[经度, 纬度]`（已部署契约写明，后端 `JacksonConfig` 按此输出，2026-11-02 确认） | `data` 层解析时转成 GCJ-02，领域模型里只有 `GcjPoint` |
+| 接口里的 GeoJSON（商圈 `boundary`，MultiPolygon） | GCJ-02，`[经度, 纬度]`（v2 起后端只存 GCJ-02，去掉了 WGS-84 的 `location`、`center`）。每个多边形第一个环是外边界，其余是洞 | 原样解析成 `GcjPoint`，只取外环，不再转换 |
 | 百度地图 SDK（App） | 全局坐标类型设成 GCJ-02 | 原样用 |
 | 百度地图 JS API GL（Web） | BD-09 | 只在 Web 实现内部和 GCJ-02 互转 |
 | 高德、腾讯、百度的导航 URL | GCJ-02（百度用 `coord_type=gcj02` 指定） | 原样用 |
 | Apple 地图 URL | 大陆境内的处理方式没查到资料 | 真机验证后定 |
 
 - 转换在 `domain/rules/geo_rules.dart`，`GcjPoint`、`WgsPoint` 在 `domain/models/geo.dart`：领域模型（菜、店、校区）要带坐标，`domain` 又不能依赖 `core`。`core/platform/location.dart` 只给 WGS-84 的经纬度，由 `state` 转成 GCJ-02。WGS-84 → GCJ-02 是公开算法。GCJ-02 ↔ BD-09 也是公开公式，反算误差在米级以下，只有 Web 的地图用，放在 `core/platform/map/bd09.dart`。换百度以后用不到 GCJ-02 → WGS-84。单元测试用几组已知点验证。
-- `WgsPoint` 只剩两处：设备定位的原始结果，`data` 层解析的 GeoJSON。出了这两处都是 `GcjPoint`。
+- `WgsPoint` 只剩设备定位的原始结果，出了 `state/location.dart` 都是 `GcjPoint`。接口里已经没有 WGS-84 的字段。
 - 距离：两点都用 GCJ-02 算球面距离。显示「320 m」「1.2 km」。混用坐标系会差几百米，所以所有距离计算只接受 GCJ-02 的类型（用两个不同的类型 `GcjPoint`、`WgsPoint` 防止混用）。
 
 ### 14.2 定位
@@ -951,9 +977,9 @@ extension RefCache on Ref {
 
 ### 14.3 校区和商圈
 
-- 已开放的校区用 `/campus/list`（名称、中心点、`isDefault`、排序）；商圈的 `campusId` 说明它属于哪个校区，为空的归入默认校区。
+- 已开放的校区用 `/campus/list`（名称、中心点、`isDefault`、排序，只返回已开放的）；商圈的 `campusId` 说明它属于哪个校区，为空的归入默认校区。附近页的商圈胶囊里，`campusId` 为空的商圈只在默认校区显示，和后端的校区范围一致。
 - 商圈的范围和名称用接口 `/hub/list`、`/hub/detail`；按位置判断商圈用 `/hub/locate`。
-- 第一次打开：有定位就选最近的已开放校区，没有就选 `isDefault` 的；之后记住（产品 4.1）。当前校区和饭点由 `state/place.dart` 的 `currentPlaceProvider` 给出，本机的选择读出来、校区列表拿到之前标为未就绪，推荐等它就绪再拉：推荐按天去重，拿错地点发出去又取消的请求也可能被算作「推荐过」。
+- 第一次打开：有定位就选最近的已开放校区，没有就选 `isDefault` 的；之后记住（产品 4.1）。当前校区、饭点和场景由 `state/place.dart` 的 `currentPlaceProvider` 给出，本机的选择读出来、校区列表拿到之前标为未就绪，推荐等它就绪再拉：推荐按天去重，拿错地点发出去又取消的请求也可能被算作「推荐过」。
 
 ### 14.4 地图（附近页、新建店）
 
@@ -968,7 +994,7 @@ extension RefCache on Ref {
 **标记还是 Flutter 组件，画成位图交给引擎**
 
 - `MapPin`（普通 44px；选中 72px，加舞台色外圈和店名胶囊）、`MyLocationDot` 仍是 `design/widgets/` 的组件，样子只有一份正本。`design/widgets/marker_bitmap.dart` 的 `MarkerBitmap` 把组件放进一棵不上屏的渲染树里排版、绘制，按设备像素比导出 PNG，主题、字体、MediaQuery 和屏幕上的一样。四周留出 `shadow-pin` 的空白，锚点对准圆盘中心。
-- 封面用第一道招牌菜（`cover`，没有时用门头照），先放进图片缓存再画。没下载好时先给不带封面的版本，图到了换一次。
+- 封面用门头照（`shop.photo`），先放进图片缓存再画。产品要的是第一道招牌菜的封面，v2 店铺接口不带招牌菜（已反馈），后端补上后改用它，门头照兜底。选中时外圈用 `ShopRules.stageOf`。没下载好时先给不带封面的版本，图到了换一次。
 - 位图由 `features/system/base_map.dart` 的 `PinImages` 管：按（封面 URL、是否选中、选中时的店名、外圈颜色）缓存，第一次用到时在后台画，画好后让页面重建。选中的店 `zIndex` 最高，压在其他标记上面。
 - 点击由引擎回调标记 id，页面再按 id 找店。
 
@@ -1045,13 +1071,14 @@ EatMap(
   - 检索也要先初始化 SDK，和地图共用 `BaiduMapSdk.initialize`；SDK 不可用（没配 AK、鉴权失败）时 `available` 为 false，新建店直接进手动添加。
 - 范围：中心是当前位置，没有定位时用校区中心；半径 3 km，和附近页搜店一致；一次取 20 条，不翻页。不按百度的行业分类过滤（食堂窗口在百度上的分类不一定是美食），只去掉公交站和地铁站（按详细信息里的分类「交通设施」判断，要请求详细信息）。
 - 输入防抖 300 ms（和选店页一样），新的检索开始时丢掉上一次的结果。检索失败显示「搜索失败」和重试，下面照常有「搜不到？手动添加」。
-- 领域模型：`domain/models/place.dart` 加 `MapPlace`（`GcjPoint`）；`Shop` 加 `poi`（接口的 `POI`）。`data/place/place_repository.dart` 加 `mapPlaces`（调引擎、转领域模型）和 `shopAtPoi(uid, point)`（用 `/restaurant/browse` 取该点 200 m 内的店，比较 `poi`，包括已关门的店）。
-- 选中候选后进新建店的表单，店名、地址描述、地图中心按候选预填，可以改；提交时带 `POI = uid`。手动添加的不带。用户改了位置也照样带 `POI`。
+- 领域模型：`domain/models/place.dart` 加 `MapPlace`（`GcjPoint`）；`Shop` 加 `poi`（v2 的接口字段名是小写的 `poi`）。`data/place/place_repository.dart` 加 `mapPlaces`（调引擎、转领域模型）和 `shopAtPoi(uid, point)`（用 `/restaurant/search` 取该点 200 m 内的店，比较 `poi`，包括已关门的店；v2 里 `/restaurant/browse` 和它是同一个接口）。
+- 选中候选后进新建店的表单，店名、地址描述、地图中心按候选预填，可以改；提交时带 `poi = uid`。手动添加的不带；地点已有店、用户选「继续新建」时也不带（一个 POI 只能对应一家店，带了会返回 40004）。用户改了位置也照样带 `poi`。
+- 同名查重：`sameNameNearby` 查 200 m 内的同名店，`ShopRules.blocksNewShop` 判断挡不挡：100 m 内店名去掉首尾空白后相同的挡住（和后端一样，提交会返回 40004），更远或只差中间空白的只提示（产品 9.2）。
 - 地址描述超过 30 个字时预填原文，字数提示变红，提交按钮不可用，由用户删改。
 
 **不变的部分**
 
-- 拖动停下后防抖 400 ms，按可见区域的中心调 `/restaurant/search`；只有手势移动才重新找店，代码移动（回到我的位置、点商圈）由页面自己设中心。
+- 拖动停下后防抖 400 ms，按可见区域的中心调 `/restaurant/search`（按距离排；v2 不排除已关门的店，附近和选店在客户端过滤，搜索页把它们排到最后）；只有手势移动才重新找店，代码移动（回到我的位置、点商圈）由页面自己设中心。
 - 点标记选中并让列表滚到它，再点一次进餐厅详情；点商圈胶囊缩放到商圈范围，并带 `hubId` 过滤列表。
 - 新建店选点：地图中心固定一个图钉，拖动地图对准店门口；停下后用中心点调 `/hub/locate` 显示所属商圈。手动添加时默认中心是当前位置，选了候选时是候选的位置。
 
@@ -1147,7 +1174,7 @@ class PushNotice({
 
 产品 10.4 原本由服务端做的规则，本地通知期间都在客户端做；接远程推送后改回服务端，客户端只读写开关。
 
-- **按类型开关**：设置 → 通知里的四个开关（评论和回复、赞和收藏、关注、系统消息），默认都开。接口上线前存在本地 `prefs.*`，按账号区分。
+- **按类型开关**：设置 → 通知里的四个开关（评论和回复、赞和收藏、关注、系统消息），默认都开。读写 `/push/settings`：`GET` 返回 `{categories: {COMMENTS, LIKES_AND_FAVORITES, FOLLOWS, SYSTEM}}`，`POST /push/settings/enable` 或 `/disable` 只带 `{category}`，返回修改后的全部开关。接口没返回的栏目按开启处理。
 - **合并**：赞和收藏，同一道菜 1 小时内合成一条「Momo 等 5 人赞了你上传的番茄牛腩饭」；评论、回复、关注、系统消息一条一弹。
 - **免打扰**：23:00–08:00 不弹，这段时间的消息只进消息页。
 - **权限时机**：不在第一次打开时要（产品 10.4）。第一次发布成功后，先弹对话框「有人赞你的菜、评论你的菜时告诉你？」，用户同意再调 `requestPermission`（安卓 13 起 `POST_NOTIFICATIONS`，iOS 通知授权）。拒绝后在设置 → 通知里显示状态和「去系统设置打开」（用 `geolocator` 的 `openAppSettings`，Web 不显示）。
@@ -1158,13 +1185,21 @@ class PushNotice({
 - **初始化时机**：同意隐私政策并且已登录之后（第 3 节第 8 步）。
 - **推送出问题不影响消息页**（产品 12.6）：消息页只依赖接口。
 - **Web**：没有推送。设置 → 通知里写「网页版不支持推送，请在消息页查看」。
+- **设备登记**（接远程推送时再接）：`POST /push/bindings {platform, deviceToken}` 返回 `bindingId`，令牌变了调 `/push/bindings/{id}/token`，退出登录调 `/push/bindings/{id}/unbind`；同一个令牌换账号登记就转移过去。v2 服务端只登记、不投递，合并和免打扰也还没做。
 
 ### 15.5 消息页
 
-- 接口用消息卡片（`data/notification/` 的 `NotificationApi`）：`GET /notification/cards` 按分栏分页拉，服务端已把同一对象、同一类互动合并成一行；`GET /notification/cards/unread/count` 给有未读的行数（`cards`）和未读条数（`members`），未读数只用行数（4.2）；`POST /notification/cards/{id}/read` 把一行标为已读。
+- 接口用消息卡片（`data/notification/` 的 `NotificationApi`）：`GET /notification/cards` 按分栏分页拉，服务端已把同一接收人、同一类事件、同一对象、同一天的消息合成一行；`GET /notification/cards/unread/count` 给有未读的行数（`cards`）和未读条数（`members`），未读数只用行数（4.2）；`POST /notification/cards/{id}/read` 把一行标为已读，卡片 id 是数字。
+- 卡片结构按后端 `NotificationDtos.Card`（openapi 里的 `Card` 被推荐卡片覆盖了，7.6）：`target{domain, id}`、最近 3 个互动者 `actors[{id, displayName, avatar}]`、`data`（只有系统类有：反馈和举报结果 `{type, caseId, kind, outcome, reasonCode, reply}`、公告 `{type, level, title, content}`）。
 - 分栏：全部、评论、赞和收藏、关注、系统（`NoticeColumn`，对应接口的 `ALL`、`COMMENTS`、`LIKES_AND_FAVORITES`、`FOLLOWS`、`SYSTEM`）。每个分栏是一个 `inboxProvider(column)`，切换分栏重新请求；行按「今天」「本周」「更早」分组。
+- 类型（`NoticeKind`）只做 v2 产生的：`like`、`favorite`、`comment`、`reply`、`comment_like`、`follow`、`case_result`、`announcement`，不认识的显示成普通消息、不跳转。产品 10.2 里「以后」的几类不做。
 - 点一行：先在本地标为已读、未读数减 1，再请求标为已读（失败不退回，下次进来以服务端为准）；有跳转目标的行同时跳过去（6.3）。没有目标的行读屏朗读为「标为已读」（`tapHint`，11.8），已读后不能再点。
-- 「全部已读」的过渡做法：后端还没有卡片的全部已读接口，先调旧接口 `POST /notification/read/all`（只标关注和旧版活动的赞），再逐条标记已加载的未读卡片；成功后重新拉未读数。没加载到的页里，旧接口管不到的消息仍是未读。后端补上卡片的全部已读后改调新接口，删掉逐条标记（`NotificationRepository.readAll` 的 TODO）。
+  - `like`、`favorite`、`comment`：菜品详情。`comment` 不带评论 id，滚不到这条。
+  - `reply`、`comment_like`：卡片的目标是评论 id，没有菜 id，后端也没有按 id 读评论的接口，暂时不跳（TODO，已反馈后端）。
+  - `follow`：只有一人时进他人主页，多人时进我的粉丝。
+  - `case_result`：先用 `caseId` 调 `GET /feedback/mine/{id}` 取 `target{type, id}`，是菜或店才跳，取不到就不跳。
+  - `announcement`：显示标题和正文，不跳。
+- 「全部已读」：`POST /notification/cards/read-all?column=<当前分栏>`，一次请求标完这一栏，成功后重新拉未读数。
 - 关注消息右侧的「回关」按对方的资料决定文字，每个可回关的行单独拉一次 `userProfileProvider`；卡片带上关注关系后改用卡片数据。
 
 ## 16. 版本与更新
@@ -1207,7 +1242,7 @@ class PushNotice({
 
 ### 17.1 接口
 
-由业务后端提供一个接口（现状差距 P1），客户端启动和回到前台时拉取。建议的形状（待确认 A5）：
+后端 v2 已有 `GET /remote-config?platform=&build=&campusId=`，客户端还没接（现状差距 P1）。接的时候按后端的实际契约（`configVersion`；`flags` 里 `publish`、`newShop`、`comment`、`push`、`topic` 各 `{on, reason}`；`params`；`announcements[{id, level: NORMAL|IMPORTANT, title, content, linkUrl, startsAt, endsAt}]`；`maintenance{mode: NONE|READ_ONLY|DOWN, message, until}`；`versions{<平台>: {minBuild, latestBuild, latestVersionName, storeUrl, releaseNotes}}`；`update`），时间是毫秒。它带 `ETag` 和 60 秒公共缓存，`If-None-Match` 命中时返回 HTTP 304、没有响应体，Dio 默认把 304 当错误，接入时要处理。补丁放量、实验分组、校区、隐私政策版本 v2 里没有。下面是最初建议的形状，留作对照：
 
 ```json
 {
@@ -1223,8 +1258,7 @@ class PushNotice({
   "params": {
     "mealWindows": { "breakfast": "05:00-10:30", "lunch": "10:30-14:30", "dinner": "14:30-20:30", "night": "20:30-05:00" },
     "batchSize": 8,
-    "categoryOrder": ["staple", "snack", "drink", "dessert", "soup", "hot_pot", "grill", "cold_dish"],
-    "shopRateMinVotes": 5,
+    "shopRateMinVotes": 3,
     "distanceHideKm": 5
   },
   "campuses": [
@@ -1263,8 +1297,7 @@ class PushNotice({
 | 功能开关 | `featureStateProvider`，入口照常显示，点了提示「该功能暂时关闭」（第 8 节） |
 | 饭点时间段 | `domain/rules/meal_time.dart` 按当前时间算饭点；手动选择保持到当前时间段结束（产品 4.5） |
 | 推荐每批几道 | 转盘圆点数量 |
-| 分类栏顺序 | 发现页分类栏 |
-| 推荐率显示门槛 | 不满门槛只写「3 人评过」（产品 9.7） |
+| 推荐率显示门槛 | 默认 3 条，和搜店的「口碑好」门槛一致；不满门槛写「N 条评价」（产品 9.7） |
 | 普通公告 | 发现页抽屉顶部一条，可以关掉，关掉的 id 记在 `prefs` |
 | 重要公告 | 打开 App 时弹窗，看过一次不再弹 |
 | 维护 | 只读：写操作被拦（第 8 节）；停服：进 `/maintenance`，写预计恢复时间 |
@@ -1289,38 +1322,47 @@ class PushNotice({
 
 ### 18.1 山大统一认证
 
-- 只用于认证，不是登录方式（产品 6.3、7.1）。结果记到发起认证的账号上，不签发新的登录，认证后现有的登录态马上有已认证的权限，不用重新登录。
+- 只用于认证，不是登录方式（产品 6.3、7.1）。结果由发起认证的账号确认后才生效，不签发新的登录，认证后现有的登录态马上有已认证的权限，不用重新登录。
 - 流程：
   1. 认证页带着登录态调 `/auth/sdu`，拿到 `url`（带一次性 state，5 分钟内有效，只能用一次）。App 带 `client=app`，Web 带 `client=web`，后端按它选跳回的预设链接；客户端不能自己指定跳回地址。
   2. 打开 `url`：App 用 `flutter_web_auth_2` 的系统认证会话（`core/platform/browser.dart` 的 `openSso`）：iOS 是 `ASWebAuthenticationSession`，安卓是 Chrome 的 Auth Tab，浏览器不支持 Auth Tab 时退回 Custom Tabs。Web 在当前标签页跳转。
-  3. 学校页面完成后跳回后端的 `/callback/{state}`（接口里还有一个 `/auth/callback/{state}`，不用）。后端把结果记到对应账号，成功和失败都 302 到 App 的回跳地址 `you.v50to.eat://auth/callback?result=success|failure&code=<业务码>`（`app.oauth-app-success-redirect`，后端还没改，见 `docs/EatWhat_后端反馈.md`）。认证会话看到这个 Scheme 就关掉页面，把地址交回 `openSso` 的调用方，认证页按 `result`、`code` 显示结果。安卓上由插件的 `CallbackActivity` 收下这个 Scheme（`AndroidManifest.xml`），iOS 不用注册 Scheme。
+  3. 学校页面完成后跳回后端的 `/callback/{state}`。后端不直接写入认证，成功和失败都 302 到 App 的回跳地址：成功带一次性的 `ticket`（5 分钟内有效，只能用一次），失败带业务码 `code`，如 `you.v50to.eat://auth/callback?result=success&ticket=<票据>`。部署时 `APP_OAUTH_APP_SUCCESS_REDIRECT` 必须配成 `you.v50to.eat://auth/callback`（后端的 `deploy/.env.example` 现在写的是 https 地址，见 `docs/EatWhat_后端反馈.md`）。认证会话看到这个 Scheme 就关掉页面，把地址交回 `openSso` 的调用方。安卓上由插件的 `CallbackActivity` 收下这个 Scheme（`AndroidManifest.xml`），iOS 不用注册 Scheme。
      - 为什么不用 App Links / Universal Links：国内安卓机上域名校验经常过不了（6.3）；Custom Tabs、SFSafariViewController 里服务端 302 到 App Links 时，没有用户点击也常常不唤起 App。认证会话在会话里直接拦截回跳地址，不依赖域名校验，也不管有没有点击，结束后页面自己关掉。
-     - 自定义 Scheme 可能被别的 App 抢注，但回跳只带 `result` 和 `code`，不带 token，认证状态仍以 `/auth/verify`、`/user/info` 为准，抢走也拿不到东西。
+     - 自定义 Scheme 可能被别的 App 抢注。回跳不带登录 token；带的 `ticket` 只能由发起认证的账号确认（别的账号确认返回 40001），抢走也用不了。
      - https 回跳（iOS 17.4 起的 `Callback.https`）要 `webcredentials` 校验，最低 iOS 15 也用不上，不选。
-  4. 认证会话返回回跳地址、用户关掉认证页、回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为安卓退回 Custom Tabs 时，少数浏览器不把 Scheme 交给 App，用户只能自己切回来（插件把这种情况当成取消）。
+  4. 回跳成功时，认证页先带着登录态调 `POST /auth/sdu/confirm {ticket}`，确认后认证才生效，然后刷新 `/user/info`；确认失败按下表提示，不自动重试。`ticket` 用过就从地址里去掉。
+  5. 认证会话返回回跳地址、用户关掉认证页、回到 App（`AppLifecycleListener` 的恢复事件）、回到 `/verify` 时，自动调 `/auth/verify` 和 `/user/info` 刷新状态；也可以点「我已完成，刷新状态」（产品 6.3）。回到前台刷新保留着，因为安卓退回 Custom Tabs 时，少数浏览器不把 Scheme 交给 App，用户只能自己切回来（插件把这种情况当成取消）。
 - 结果提示（`features/verify/verify_providers.dart` 的 `ssoFailureMessage`，不显示错误码）：
 
   | 码 | 提示 |
   | --- | --- |
   | 30012 | 认证链接已失效，请重新发起认证 |
   | 30013 | 该学号已认证其他账号 |
-  | 其他 | 认证没有完成，请重新认证 |
+  | 40001 | 这次认证不是当前账号发起的，请重新认证 |
+  | 30002 | 账号已被封禁 |
+  | 9xxxx | 暂时无法认证，请稍后再试 |
+  | 其他 | 认证未完成，请重新认证 |
   | 成功但账号还没显示已认证 | 认证结果尚未同步，请稍后刷新状态 |
 
-- Web：`client=web` 时后端跳回 `app.oauth-success-redirect`，线上没配，默认是 `/home?result=..&code=..`，Flutter 里没有这个路径。已请后端把它设成 `https://<Web 域名>/app/auth/callback`（`docs/EatWhat_后端反馈.md`）。这条路由把参数转成 `/verify?sso=..&code=..`，认证页读到结果后马上从地址里去掉 `sso`、`code`，避免路由重建时重复处理。
+- Web：`client=web` 时后端跳回 `APP_OAUTH_SUCCESS_REDIRECT`，默认是 `/home`，Flutter 里没有这个路径。部署时要设成 `/app/auth/callback`（Web 和 API 不同域时写完整地址 `https://<Web 域名>/app/auth/callback`，见 `docs/EatWhat_后端反馈.md`）。这条路由把参数转成 `/verify?sso=..&code=..&ticket=..`，认证页读到结果后马上从地址里去掉 `sso`、`code`、`ticket`，避免路由重建时重复处理。
 - 未登录时收到回跳：守卫先去登录页，登录后回到认证页。
 - 不用 WebView 打开学校页面：认证页写着「我们看不到你的统一认证密码」，用系统浏览器页更站得住；也不需要像 legacy 那样把 `satoken` 放进 WebView 请求头。
 - 不把登录 token 放进 URL。
 
 ### 18.2 邮箱认证
 
-`GET /auth/sendEmail` 发链接，发之前要过人机验证（18.3）。客户端先校验邮箱后缀（`@mail.sdu.edu.cn`、`@sdu.edu.cn`），服务端也会限制。用户在邮箱里点开链接，后端 302 到预设的链接（还没配置）；回到 App 时同样自动刷新状态。
+- 发链接：`POST /auth/sendEmail {email}`（请求体，不是 query），要登录，发之前要过人机验证（18.3）。客户端先校验邮箱后缀（`@mail.sdu.edu.cn`、`@sdu.edu.cn`），服务端也会限制。同一邮箱 60 秒一封，每个账号每小时 5 封。
+- 邮件里的链接是 `APP_EMAIL_VERIFY_URL?token=`，部署时配成 `https://<Web 域名>/verify/email`。链接在网页上打开，落到 Web 的邮箱认证页（`features/verify/verify_email_page.dart`，路由 `/verify/email`，只给登录用户）：没登录时守卫先去登录页，登录后回到这里；页面带着登录态调 `POST /auth/verifyEmail {token}`，显示结果后进认证页。
+- 令牌属于别的账号或已失效返回 30008，不消耗令牌，提示「链接无效或已过期，请在发起认证的账号上打开」；已认证返回 30006。
+- App 不接管这个链接：要配 App Links 和 Universal Links，和分享链接一起做（6.3）。手机上点链接会打开网页版，要在网页上登录同一个账号。
+- 回到 App 时同样自动刷新认证状态。
 
 ### 18.3 人机验证
 
 用腾讯云验证码国际站（依赖选型第 15 节）。产品 12.4：每次发验证码前都过一遍，判断没有风险时自动通过，用户看不到；有风险时才要用户动手验证。弹不弹由腾讯决定，客户端每次都走同一个流程。
 
-- 用到的接口：`/auth/phone/code`（登录）、`/auth/password/code`（设置密码、设置用户名）、`/auth/sendEmail`（邮箱认证）、`/user/getCode`（换绑手机）。
+- 用到的接口：`/auth/phone/code`（登录）、`/auth/password/code`（设置密码、设置用户名）、`/auth/sendEmail`（邮箱认证）、`/user/mobile/change/old-code` 和 `/user/mobile/change/new-code`（换绑手机）、`/user/getCode`（补绑手机）。密码登录先不带验证发，收到 30015 后过一遍验证，带票据用同一组账号密码重发。
+- 换绑手机三步：`old-code` 给旧号发码 → `new-code {oldCode, mobile}` 校验旧码（错了 30005）并给新号发码，旧号的验证 10 分钟内有效，期间重发或换号可以不带 `oldCode` → `commit {mobile, code}`。旧号的验证过期时第二步返回 10002、第三步返回 40002，页面回到第一步。不能再用密码代替旧手机。没有手机号的账号走补绑：`/user/getCode {mobile}` → `/user/bindMobile {mobile, code}`。
 - 流程：
   1. 调 `GET /auth/captcha/config` 拿这一次的初始化参数（`appId`、`scriptUrl`、`aidEncrypted`、`aidEncryptedType`、`expiresAt`）。每次验证都重新拿，不缓存，也不复用上一次的验证实例；`enabled` 为 false（只在隔离测试里）时跳过验证。
   2. 用这组参数新建腾讯的验证实例，拿到 `ticket` 和 `randstr`。
@@ -1336,7 +1378,7 @@ class PushNotice({
 
 ### 19.1 埋点
 
-自建，批量上报到业务后端的 `/telemetry`（依赖选型第 14 节 D5）。接口带上报同意的管理，后端源码已有、还没部署，部署后按它的契约接；没部署之前只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
+自建，批量上报到业务后端的 `POST /telemetry/events`（依赖选型第 14 节 D5）。v2 删掉了上报同意的接口（`/telemetry/consent*`），同意隐私政策即开启，请求不再带 `consentRevision`。接口要登录，`{events: [{eventId: UUID, properties: {event, …}}]}`，每批最多 50 条，每人每分钟 120 条；只收下表除 `experiment_exposure` 以外的 10 种事件和各自固定的属性，一条不合法整批返回 10001。客户端还没接，先只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
 
 - 接口：`Analytics.track(事件)`。事件是一组固定的类型（`sealed class`），属性只有枚举、id、数字、时长，**没有自由文本**，从类型上保证不采集输入框内容（产品 12.5）。
 
@@ -1357,7 +1399,7 @@ class PushNotice({
 - 公共属性：安装 ID、用户 id、平台、系统版本、设备型号、App 版本 + 构建号 + 补丁号、当前校区、会话 id。
 - 产品 12.5 的指标怎么算：定下来的人数看 `dish_decide` 或 `navigate_shop` 的去重用户；换菜次数、定下来用时看 `dish_decide` 的属性；加载失败率看 `load_failed` / `page_view`；认证率、留存、内容供给用服务端数据。
 - 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
-- 接口没上线前：只在调试日志里打印，不上报（现状差距 2.1）。
+- 客户端接上之前：只在调试日志里打印，不上报（现状差距 2.1）。
 - 只在同意隐私政策后采集。
 - 游客不采集：`/telemetry` 要求登录，游客期间的事件不记、不进队列。游客转化（点「先逛逛」后登录的比例）以后需要时再和后端定一个不要求登录的上报口。
 
@@ -1442,12 +1484,12 @@ class PushNotice({
 | 编号 | 事项 | 推荐 | 需要谁 |
 | --- | --- | --- | --- |
 | A1 | Web 和分享链接的域名、托管位置 | 一个 HTTPS 域名同时放 Web、反代 `/api`、放 `/.well-known/` 的 App Links / Universal Links 文件。要确认：域名；有没有 ICP 备案（境内 CDN 需要备案，境外托管在大陆首屏慢）；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
-| A2 | 后端的业务码和约定 | 后端给出完整的错误码表，包括：登录过期、权限不足、需要同意、账号或密码错误、邮箱已认证过别的账号、功能已关闭、只读维护、操作受限、内容违规；确认 legacy 的 2xxxx、3xxxx 码是否仍然有效；`ErrorResponse` 字符串 `code` 的取值；推送附带数据里的 `link` 字段格式 | 后端 |
-| A3 | 后端数据格式和存储 | 确认：GeoJSON（`location`、`boundary`、`center`）的坐标系；图片字段是完整 URL 还是 key；图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT` 和读取（直传和取色都要），图片返回长缓存头；舞台色、两个备选色、封面裁切参数的字段格式（推荐 `stage-broth` 这样的字符串和 13.4 的三个数） | 后端 |
-| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，结果记到当前账号，成功时 302 回预设链接（18.1）。还差：失败时也跳回并在参数里带 code；成功、失败跳回的链接（App、Web 各一个）在后端配置 | 后端 |
-| A5 | 远程配置接口的形状 | 按 17.1 做一个接口，包含开关、参数、校区、公告、维护、版本线、补丁放量、实验分组、隐私政策版本 | 后端、产品负责人 |
+| A2 | 后端的业务码和约定 | v2 已对齐：沿用旧码值，客户端码表见 7.4。还差：功能已关闭、只读维护、操作受限、内容违规（后端还没做这些功能）；推送附带数据里的 `link` 字段格式（推送还不投递） | 后端 |
+| A3 | 后端数据格式和存储 | 已定：GeoJSON 是 GCJ-02（14.1）；图片字段是公开的稳定地址（7.7）。还差：图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT`，图片返回长缓存头；舞台色、备选色、封面裁切 v2 不保存，已请后端恢复（13.6） | 后端 |
+| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，成功、失败都跳回预设链接，成功带 `ticket`，由发起账号 `POST /auth/sdu/confirm`（18.1）。还差：部署时把 App、Web 的回跳地址配对（后端反馈「部署配置」） | 后端 |
+| A5 | 远程配置接口的形状 | v2 已有 `/remote-config`（17.1），没有补丁放量和实验分组。要不要补，等接远程配置时再定 | 后端、产品负责人 |
 | A6 | 轻提示的样式 | 产品里有「发布成功」「该功能暂时关闭」「点赞失败，请重试」这类短提示，设计规范没有对应组件。推荐在页面底部、`NavBar` 上方出现的 `ink` 底胶囊，2 秒消失，不挡操作 | 设计 |
-| A7 | 隐私政策、用户协议更新后的重新同意 | 不做「重新同意」页（9.5）。推荐用远程配置里的版本号判断，本地版本更旧时回登录页重新勾选协议，不清登录态 | 产品负责人 |
+| A7 | 隐私政策、用户协议更新后的重新同意 | 已登录用户由服务端返回 20009，弹对话框重新同意（9.5）。本地同意记录只管 SDK 初始化，用户协议单独更新时怎么让已登录用户重新确认还没定 | 产品负责人 |
 | A8 | 宽屏时 `NavBar` 放哪 | 已定：放在左侧面板底部，发现、附近、我的一致（12.2，画板 `G-WideHome`、`G-WideNearby`） | — |
 | A9 | 微信里的分享卡片 | 自定义标题和缩略图要用微信 JS-SDK，需要认证的公众号和备案域名。推荐先不做，微信里分享出去就是链接；其他 App 的链接预览可以由服务端给 `/dishes/:id` 这类地址输出带标题和图片的 meta | 产品负责人 |
 | A10 | Web 登录态存在哪 | Web 上 token 只能存在浏览器里（加密的密钥也在浏览器），页面被注入脚本时能被读走。推荐先这样做并给 Web 配内容安全策略（CSP）；更安全的是后端改用 httpOnly Cookie，需要同源部署（A1） | 后端、产品负责人 |

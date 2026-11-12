@@ -107,11 +107,11 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 ## 接口
 
 - 依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它对应后端当前源码的完整契约，包含尚未部署的接口，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh`，从 Apifox 业务模块导出 OpenAPI 3.1 YAML 覆盖该文件；令牌只放环境变量，不入库。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
-- 客户端按后端最新源码开发，不为已部署的旧版本写兼容分支。字段、校验、业务码有疑问时直接读后端源码和 `docs/api/frontend-contract.md`。
-- 主要分组：Auth、User、Food、Restaurant、Notification、Upload、Location、AccountConsent 等；`Activity`（年夜饭、地域美食）产品上不做，客户端不调用；`Admin`、`FoodTagAdmin`、`CatalogImport`、`*Conflict` 等是管理与运维接口，客户端一般用不到。
+- 客户端按后端最新源码开发，不为已部署的旧版本写兼容分支。字段、校验、业务码有疑问时直接读后端源码（分支 `feat/eatwhat-v2`，DTO 以 Java 源码为准）和后端的 `AGENTS.md`、`docs/legacy-api/README.md`。
+- 主要分组（后端 v2）：账号（Auth、Consent、DeviceSession、Verification、Contact）、User、Restaurant、Campus、Hub、Food、Recommend、Preference、Taste、Comment、Notification、Push、Feedback、History、Upload、RemoteConfig、Telemetry；`AdminUser`、`AdminConsent`、`AdminAi`、`AdminRemoteConfig` 是管理接口，客户端不调用。openapi 里不同模块的同名结构会互相覆盖，这些 DTO 照后端 Java 源码写，见技术架构 7.6。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
-- 数据跨境同意由用户在一个最简的对话框里点同意，客户端不代用户同意；不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
+- 隐私政策、用户协议和数据存放在境外由用户在登录页的勾选框里一起同意，验证码登录和密码登录都带服务端当前的 `policyVersion`；政策更新后服务端返回 20005 或 20009，弹一个最简的同意对话框，用户点同意后重试。客户端不代用户同意，不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
 - `servers` 里第一项 `/api` 是业务入口的反代前缀；接口地址做成按环境配置，不要把 IP、端口写进代码。
 
 ## 界面落地

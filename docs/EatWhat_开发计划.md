@@ -158,16 +158,18 @@
 
 ## 接口补齐
 
-设计里标「待接入」的功能，接口上线一个就接一个，不等阶段：补接口类，把 provider 从示例数据换成接口，去掉「待接入」，补测试。待接入的入口在代码里都标着 `PendingFeature`（`lib/core/env/pending_features.dart`）。屏蔽、他人的上传、标签下的菜、清空足迹、个性化推荐开关的接口已经有了，随阶段六直接做。目前待接入的有：
+设计里标「待接入」的功能，接口上线一个就接一个，不等阶段：补接口类，把 provider 从示例数据换成接口，去掉「待接入」，补测试。待接入的入口在代码里都标着 `PendingFeature`（`lib/core/env/pending_features.dart`）。评论、举报、信息有误、反馈、附近筛选、店铺评价和收藏都已接上。
+
+2026-11-13 迁到后端 v2 后，下面几项后端删掉或暂缓了接口。已经写好的页面和数据层保留，入口标「待接入」、不进入（技术架构 8.5），后端恢复后再接回：
 
 | 功能 | 画板 |
 | --- | --- |
-| 评论、回复、我的评论 | `G-Comments`、`G-WriteComment`、`G-Me` |
-| 专题 | `G-Topic`、`G-TopicArchive` |
-| 举报、信息有误、反馈 | `G-PanelReport`、`G-WrongInfo`、`G-Feedback` |
-| 附近筛选 | `G-PanelFilter` |
-| 餐厅评分、收藏店铺 | `G-Detail` |
-| 注销账号（后端流程还没做完） | `G-DeleteAccount` |
+| 专题、往期专题（后端暂缓） | `G-Topic`、`G-TopicArchive`、`G-HomeTopic` |
+| 我的标签、标签下的菜 | `G-MyTags`、`G-TagDishes` |
+| 口味标签投票、加标签面板（口味改成了菜自身的属性） | `G-Dish`、`G-PanelTag` |
+| 等级与经验 | 无画板 |
+| 个性化推荐开关 | `G-SettingsPrivacy` |
+| 注销账号（后端不做，上架前要定方案，见现状差距） | `G-DeleteAccount` |
 | 推送的设备登记（通知页的栏目开关已接上） | `G-SettingsNotify`，还要先选推送 SDK（见依赖选型「推送」） |
 | 自动去掉背景（后端不存开关，也不生成去背景的图） | `G-Crop` |
 

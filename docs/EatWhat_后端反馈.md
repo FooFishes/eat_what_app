@@ -1,61 +1,98 @@
-# EatWhat 客户端对后端的反馈（2026-11-02）
+# EatWhat 客户端对后端的反馈（2026-11-13）
 
-客户端把阶段一到五的实现和后端对照了一遍。客户端直接按后端最新源码（分支 `fix/legacy-it-repairs-y7h311`，含未部署的部分）的契约实现，不为已部署版本做兼容。下面是需要后端处理或确认的事项，行号按该分支。
+客户端已按后端 v2（分支 `feat/eatwhat-v2`）迁移完：账号与同意、资料与社交、评论、消息和推送开关、菜品（含编辑和修改记录）、店铺（含编辑、修改记录和按场景评价）、推荐店铺、附近、搜索和新建店。客户端直接按后端最新源码的契约实现，不为已部署版本做兼容。下面是迁移中发现、需要后端处理或确认的事项，类名和文件以该分支为准。
+
+2026-11-02 版的条目怎么处理见第 5 节。以后发现的问题按分组接在各表末尾，编号顺延。
 
 ## 1. 要修的问题
 
 | # | 问题 | 位置 | 影响 | 建议 |
 | --- | --- | --- | --- | --- |
-| 1 | `/user/userInfo` 的 `earnedLikes` 只累加 `activity_foods`、`activity_dinners`、`activity_posts` 三张表的 `likes_count`，没有算 `foods.likes_count` | `mapper/UserMapper.java:88-94`（已部署版本相同） | 「我的」和他人主页的「获赞」对新用户一直是 0 | 加上 `foods` 表里自己上传、未删除的菜的赞数 |
+| 1 | 搜店不排除已关门的店，也不把它们排在最后（`/restaurant/search` 和 `/restaurant/browse` 是同一个方法，SQL 里没有 `permanently_closed` 条件） | `RestaurantMapper` 的搜索 SQL | 附近和选店只能在客户端过滤，一页可能不满，「附近 N 家」偏少；搜索页要自己把已关门的排到后面 | 加一个排除已关门的参数，或者恢复旧版「已关门排最后」 |
+| 2 | 40004 同时表示「100 m 内有同名店」和「POI 已被别的店用了」，`data` 为空，不带已有店的 id；push 模块也用这个码 | `RestaurantService`（`DUPLICATE_RADIUS_METERS` 附近） | 新建店没法直接带用户去已有的店；超时后重试其实已经建成时，客户端重新查同名店也可能查不到（POI 冲突不一定同名） | 像菜品的 40016 一样在 `data` 里带已有店的 `id`，并区分是同名还是 POI（不同的码，或 `data.reason`） |
+| 3 | 「评论不存在」「被回复的评论不存在」「通知不存在」都用 10001 `PARAM_INVALID` | comment、notification 模块 | 客户端分不清是填错了还是评论已删，只能把评论操作里的 10001 都当成「这条评论已删除」 | 给一个单独的码，如 `COMMENT_NOT_FOUND` |
+| 4 | 推荐不传 `mealTime` 时按 05–10、10–14、14–21 点判断饭点，产品文档 4.5 是 10:30、14:30、20:30 | `RecommendService`（按小时判断饭点处） | 客户端总是显式传，暂时不受影响；其他调用方会和 App 不一致 | 统一一个口径，最好由远程配置下发 |
 
-## 2. 接口设计上希望调整的地方
+## 2. 希望调整的接口
 
 | # | 现状 | 对客户端的影响 | 建议 |
 | --- | --- | --- | --- |
-| 2 | 菜品图 `pictureUrl` 和头像 `avatar` 是有效期 600 秒的预签名地址（按 `application.example.yml` 的 `sign-get-ttl-seconds`），`foods/` 不是公开读前缀 | 每次请求签名都不同，客户端缓存的数据 10 分钟后图片就打不开。客户端已改为用去掉查询串的地址做图片缓存的 key，没下载过的旧地址仍然会失效 | 已审核公开的图走公开读前缀或 CDN 的稳定地址；做不到的话，把有效期延长到小时级 |
-| 3 | 新源码里，未通过审核的图会从 `pictureKeys` 和 `pictureUrl` 中一起滤掉；联调约定还写明两者不保证逐项对应 | 原封面（第一张图）被滤掉后，两个列表都从原来的第二张开始，客户端看不出封面没了，`coverCrop` 和舞台色会套到别的图上。客户端现在只能在两个列表张数不同时放弃裁切 | 封面被滤掉时把 `coverCrop` 置空，或者返回封面是否可见的标记；最好再返回 `[{key, url}]` 这样逐项对应的结构 |
-| 4 | 20006 `DATA_SYNC_PENDING` 一码多用：注册或登录等待协调、目录冲突，赞、收藏、标签、菜品详情、发布都会返回 | 客户端分不清哪些可以退避重试、哪些已经受理、哪些要重新读取，现在只能统一提示「数据正在同步，请稍后再试」 | 在 `data` 里带上 `retryable`、`retryAfterSeconds`，或者按场景拆成几个码 |
-| 5 | 同名店查重靠 `/restaurant/search` 的 `LIKE '%name%'`，不忽略空白 | 「麻辣 烫」和「麻辣烫」互相查不到。客户端现在用原名和去掉空白的名字各搜一次 | 在服务端做名称规范化比较，或者提供专门的查重接口 |
-| 6 | `/foods/recommend` 实际返回数组，接口文档写的是分页对象 | 后端已确认不改返回格式 | 请修正 OpenAPI，客户端同步后删掉兼容分支 |
-| 7 | 联调约定写 `/user/info` 的 `banUntil` 是 ISO-8601 Instant，但 `JacksonConfig` 把 `Instant` 序列化成毫秒 | 客户端按源码的实际输出解析毫秒 | 把联调约定改成 Unix 毫秒 |
-| 8 | 受限会话没有放行足迹、粉丝和关注列表、取消赞、取消收藏、取消关注、`/foods/my`、`/foods/favorites`、`/foods/tags/my`（反馈、信息有误、举报已在 `81e4cad` 放行） | 客户端已按后端范围拦截，产品文档 7.2 也跟着改了 | 这几项如果是有意不放行，请确认；尤其是取消赞和取消收藏，封禁后自己的记录撤不掉 |
-| 9 | 完整源码契约 `business-openapi.yaml` 里没有评论接口（`/foods/{foodId}/comments`、`/comments/*`、`/foods/{foodId}/gallery`），因为评论控制器带 `@ConditionalOnProperty`，生成时没有注册 | 客户端已经把这个文件当作接口依据，评论接口在里面查不到 | 生成契约时打开评论相关的配置开关，或者在描述里标明注册条件 |
-| 10 | `POST /feedback/messages` 只收 `text`、`screenshotKeys`、`context`，没有版本、补丁号和设备型号；服务端也不从请求头记录这些 | 产品要求反馈自动带上版本、补丁号和设备型号，便于排查。客户端现在只在反馈页写出版本和补丁号，请用户自己写进内容 | 加上 `appVersion`、`patchNumber`、`deviceModel`、`platform` 这几个选填字段，或者从约定的请求头里记录 |
-| 11 | `/foods/list` 返回的菜没有 `hubName`、`hubId`，`FoodService.toVO` 没有设置这两个字段；进度说明里写的是菜品列表已带 `hubName` | 搜菜结果显示不了商圈名 | 在 `toVO` 里补上 |
-| 12 | 店铺的招牌菜摘要 `RestaurantFoodSummary` 没有封面取景 `coverCrop` | 店铺舞台上的招牌菜盘子只能居中裁切，和菜品详情不一致 | 在摘要里补上 `coverCrop` |
-| 13 | `/notification/cards` 没有「全部已读」接口，`/notification/read/all` 只标记旧通知表 | 客户端只能先调旧接口，再对已加载的未读卡片逐条调 `/cards/{id}/read`；没加载到的卡片点了「全部已读」后仍是未读 | 提供 `POST /notification/cards/read-all`，可按分栏 |
-| 14 | 通知卡片没有目标的名称和缩略图（菜名、菜的封面） | 消息里写不出菜名，只能写「你上传的菜」，右边不放缩略图 | 卡片里带上目标的名称和封面地址 |
-| 15 | 反馈结果卡片（`CaseDetail`）里没有相关的店或菜 | 产品要求反馈结果点了跳到相关的店或菜，现在做不到 | 带上目标类型和 id |
-| 16 | 专题详情里的菜不返回 `pictureKeys` | 封面被审核滤掉时，客户端识别不出来，裁切会套到第二张图上 | 和菜品详情一样返回 `pictureKeys` |
-| 17 | 往期专题列表只有摘要，不带菜图 | 客户端要逐个请求专题详情才能显示每期的菜图 | 摘要里带前几道菜的封面 |
-| 18 | 公开评论没有作者 id、头像、「我赞过没有」、回复条数 | 判断是不是自己的评论只能对照「我的评论」最近 100 条，更早的评论不显示「删除」；赞的状态要每条评论单独查一次，回复不查，赞过的回复显示成没赞 | 公开评论返回作者 id、头像、`likedByMe`、回复条数 |
-| 19 | `GET /comments/{commentId}/replies` 只能按时间倒序 | 产品要求评论下露出最早的 2 条回复，客户端只能在第一页里自己排，回复超过 20 条时露出的不一定是最早的 | 支持按时间正序 |
-| 20 | 评论图片的签名地址只有 30 秒有效 | 在列表里停留稍久后再滑到的图会加载失败 | 和菜品图一致，或者走公开读的稳定地址 |
-| 21 | `GET /foods/{foodId}/gallery` 不带拍摄者 | 大图里标不出评论照片是谁拍的，只能从已加载的评论里找 | 每张图带上作者的昵称和 id |
-| 22 | 通知卡片定义了 `CommentDetail`（`foodId`、`commentId`、`replyId`），但没有任何地方生成评论和回复的消息，`COMMENTS` 分栏也没有数据来源 | 评论、回复的消息收不到；客户端按 `kind` 为 `comment`、`reply` 实现了跳转，取值未经确认 | 补上评论、回复、评论被赞的消息来源，并在契约里写明 `kind` 的取值 |
-| 23 | Apifox 业务模块的接口文档还是 `user-blocks-consent-20261026`，客户端在用的 37 个接口不在里面（评论、专题、消息卡片、反馈、店铺评价和收藏、登录设备、推送开关、换绑手机等） | 客户端从 Apifox 同步接口文档，现在同步会丢掉这些接口，只能先保留手里的完整源码契约 | 把按当前源码生成的完整契约（`business-openapi.yaml`）更新到 Apifox |
+| 5 | 菜品不再保存 `stageColor`、`stageAlternates`、`coverCrop`；推荐卡片的 `signatureFoods` 和店铺也没有舞台色、备选色 | 舞台全部退回分类默认色，盘子一律居中裁切，转盘撞色只能换用第二个品类的颜色。客户端发布、编辑时照常提交这三个字段（Jackson 忽略了） | 菜品恢复这三个字段（进 `FoodContent`，编辑记修改记录）；推荐卡片的招牌菜带上 `stageColor`、`coverCrop`。店铺的舞台色客户端按品类映射，后端以后给店铺备选色时再改 |
+| 6 | 菜品响应只有 `pictureUrls`，编辑时 `pictures` 要传 key，保留的旧图也要传原 key | 客户端拿不到 key，编辑时只能整组换照片 | 响应带 `pictureKeys`（或 `[{key, url}]`），或者编辑接口接受已有图片的地址 |
+| 7 | 菜品响应去掉了上传者的昵称和头像，查资料的 `/user/userInfo` 要登录 | 游客看不到上传者，只能写「同学」；登录用户每看一道菜多一次请求 | 像修改记录的 `editor` 一样带上 `creator{id, displayName, avatar}` |
+| 8 | `/auth/phone/login` 的响应只剩令牌，没有 `newUser` | 新号码注册后进不了认证引导 | 响应加 `newUser`（`PhoneAuthService.login` 里已经知道是不是新建的） |
+| 9 | `/user/userInfo` 删了 `earnedLikes` | 「我的」和他人主页的统计少了「获赞」，现在只显示三项 | 恢复 `earnedLikes`：上传的菜收到的赞，加上评论和回复收到的赞（顺带修掉旧版漏算菜的赞） |
+| 10 | 店铺接口（详情、搜索、收藏）不带招牌菜和封面，只有推荐卡片带 | 地图标记、店铺行、选店行只能用门头照，多数店没有门头照；店铺行写不出「招牌：…」 | 店铺响应也带 `signatureFoods`（推荐模块已有批量查询） |
+| 11 | `reply`、`comment_like` 卡片的目标是评论 id，没有菜 id，也没有 `GET /comments/{id}`；`comment` 卡片没有评论 id | 回复和评论被赞的消息点了跳不过去；评论消息进了菜品详情也滚不到这条 | 卡片 `data` 带上 `{foodId, commentId}`，或者提供按 id 读一条评论的接口 |
+| 12 | 消息卡片不带目标的名称和缩略图 | 消息只能写「你上传的菜」，右边没有缩略图 | `like`、`favorite`、`comment` 卡片带上菜名和封面地址 |
+| 13 | 粉丝、关注列表的每一项只有 id、昵称、头像、时间 | 每一行都要多请求一次 `/user/userInfo` 才知道按钮是「关注」「回关」还是「已互关」，也显示不了签名 | `Person` 加上我是否关注了对方、对方是否关注了我、签名 |
+| 14 | 推荐的去重只按「用户 + 日期」（`rec:seen:{userId}:{yyyyMMdd}`），不分校区、场景和类型 | 转盘和抽屉列表互相占用当天的候选；用户切到点外卖、换校区、看甜点饮品栏，都会消耗堂食美食的候选 | 按「用户 + 日期 + 校区 + 场景 + 类型」分开记 |
+| 15 | 登录用户的分页里 `page` 只回显，`currentPage`、`totalPages`、`hasNext` 的含义和游客不同 | 客户端只能一律请求 `page + 1`，再按 id 去重判断推完没有 | 在接口文档里写明；`hasNext` 最好表示当天还有没推过的店 |
+| 16 | 「不想去这家」没有撤销，也查不到标过哪些店 | 误点了撤不回，30 天内都看不到这家 | 提供撤销（`DELETE /recommend/dismiss/{id}`）和列表 |
+| 17 | 带坐标时堂食只推离人 3000 m 内的店；客户端在人离校区超过 5 km 时不带坐标，这时不限距离 | 人在校外时可能推很远的店 | 没有坐标时按所选校区的中心算距离 |
+| 18 | 招牌菜已满（每店 3 道）用通用的 40002，恢复到相同版本等也是 40002 | 客户端只能按调用处猜是哪种情况 | 招牌已满给一个专用码 |
+| 19 | `/foods/suggest-tags` 未配置、未启用和识别失败都返回 40001 | 客户端不知道这次会话里要不要再调 | 未启用时给一个单独的码，或者在 `/foods/options` 里带上是否可用 |
+| 20 | `/foods/list` 不按校区过滤，不收坐标，不返回店的位置和商圈 | 搜菜会搜出别的校区的菜，看不到距离和商圈 | 至少支持 `campusId`；带坐标时返回距离和商圈名 |
+| 21 | 同名查重规则不一致：菜名忽略空白和大小写；店名只去首尾空白，区分大小写 | 「麻辣 烫」和「麻辣烫」能建成两家店（旧第 5 条只解决了一半） | 店名查重也做同样的规范化 |
+| 22 | v2 去掉了 `Idempotency-Key`，不再防重放 | 网络失败后重试，评论、回复和意见反馈可能出现两条（反馈、举报、信息有误有「同一对象只留一条」兜底，新建店和菜有同名查重） | 评论和意见反馈按「人 + 内容」短时间去重，或者恢复幂等键 |
+| 23 | `POST /feedback/messages` 没有版本、补丁号和设备字段 | 产品要求反馈自动带上这些，客户端现在只在页面上写出来，请用户自己写进内容 | 加上 `appVersion`、`patchNumber`、`deviceModel`、`platform` 这几个选填字段 |
+| 24 | 个性化推荐开关（`/user/recommendation-settings`）删除，推荐总会参考点赞、收藏和评价 | 客户端把开关标「待接入」，显示为打开 | 隐私政策里如果要写「可以关闭个性化推荐」，需要恢复开关；否则隐私政策不能这样写 |
+| 25 | 不做注销账号 | App Store 审核指南 5.1.1(v) 要求能在 App 里注册的 App 也能在 App 里发起删除账号，国内安卓商店也有类似要求。客户端入口标「待接入」 | 上架前要定方案，至少提供一个「申请注销、由管理员处理」的接口 |
+| 26 | 专题、我的标签、口味标签投票、等级经验的接口删除或暂缓 | 客户端保留页面和入口，标「待接入」，不发请求 | 以后恢复时请先通知客户端，接口形状尽量沿用旧版 |
 
-## 3. 统一认证回跳
+## 3. 部署配置
 
-客户端改用系统认证会话（iOS `ASWebAuthenticationSession`、安卓 Chrome Auth Tab）接收回跳，回跳地址改成自定义 Scheme，不再用 App Links / Universal Links。原因是国内安卓机上 App Links 的域名校验经常过不了，回跳会停在浏览器里。
+| # | 配置 | 要求 | 不配的后果 |
+| --- | --- | --- | --- |
+| 27 | `APP_OAUTH_APP_SUCCESS_REDIRECT` | 必须是 `you.v50to.eat://auth/callback`。`deploy/.env.example` 现在写的是 `https://eat.v50to.you/app/auth/callback`。如果对这个配置做了 http(s) 校验，要放开自定义 Scheme | App 用系统认证会话（iOS `ASWebAuthenticationSession`、安卓 Auth Tab）等回跳，收不到自定义 Scheme 就永远完成不了统一认证 |
+| 28 | `APP_OAUTH_SUCCESS_REDIRECT` | 改成 `/app/auth/callback`；Web 和 API 不在同一个域名时写完整地址 `https://<Web 域名>/app/auth/callback`（相对路径按 API 的域名解析） | 默认值 `/home` 在 Flutter Web 里不存在，Web 认证完显示「页面不存在」，`ticket` 也确认不了 |
+| 29 | `APP_EMAIL_VERIFY_URL` | `https://<Web 域名>/verify/email`。客户端只做了 Web 落地页，登录后提交 `token` | 邮件里的链接打不开落地页，邮箱认证完成不了 |
+| 30 | 隐私政策版本 | 上线前先发布第一个版本。客户端的政策正文用托管网页（`PRIVACY_URL`、`TERMS_URL`），不读 `privacyText`、`crossBorderText`；发布新版本时同步更新托管网页 | 没发布时登录不要求同意；版本和网页对不上时，用户同意的不是他看到的文本 |
+| 31 | 对象存储 | 允许 Web 域名跨域 `PUT`（照片直传），图片返回长缓存头 | Web 上传不了照片；图片每次重新下载 |
 
-**改 App 的回跳地址。** 把 `app.oauth-app-success-redirect`（环境变量 `APP_OAUTH_APP_SUCCESS_REDIRECT`）设成 `you.v50to.eat://auth/callback`。成功和失败都照现在的样子带上 `result=success|failure&code=<业务码>`。现在的默认值是 `https://v50to.you/app/auth/callback`（`AuthService.java:112`、`application.example.yml:120`）。如果后端对这个配置做了 http/https 的校验，需要放开自定义 Scheme。
+## 4. 文档问题
 
-不再需要在 `eat.v50to.you` 上放 `assetlinks.json` 和 `apple-app-site-association`，以后接分享链接时再提。
+| # | 问题 | 影响 | 建议 |
+| --- | --- | --- | --- |
+| 32 | `docs/openapi.json` 里同名的结构互相覆盖（springdoc 按简单类名取名）：`Food`（被 `HistoryDtos.Food` 占了，菜品接口都引用它）、`EditRequest`（店铺的占了菜品的）、`Options`（推荐的占了菜品的）、`Settings`（远程配置管理端占了推送开关）、`Card`（推荐卡片占了消息卡片，`Actor` 整个缺失）、`Accepted`（使用统计占了反馈提交结果）、`Target`（通知占了反馈的）、`Restaurant`（店铺详情占了足迹的）、`ConsentPolicy`（管理端的 `id`、`publishedBy` 合进了公开接口） | 照着文档写 DTO 会写错，客户端只能读 Java 源码 | 给这些 record 加 `@Schema(name = …)`，或者让 springdoc 用全限定类名；在 `OpenApiDocIT` 里加一条重名检查 |
+| 33 | `/auth/phone/login` 的 `policyVersion` 没有标 required | 政策发布后不带会返回 20005 | 标 required，或者在描述里写明 |
+| 34 | `MyInfo.method` 没写取值 | 客户端旧代码按 `school_email` 解析，邮箱认证的方式显示为空 | 写明只有 `sso`、`email` |
+| 35 | 统一认证结果地址带 `result`、`code`、`ticket`，文档里只写了 callback 端点 | 要看源码才知道要调 `/auth/sdu/confirm` | 写明结果地址的参数和确认流程 |
+| 36 | `scene`、`kind`、`mealTime`、`sort`、`category` 这些参数没写枚举值 | 要看源码 | 写上取值 |
+| 37 | 修改店铺时 `mealTimes` 传空数组返回 10001，而 `categories`、`tags` 传空数组表示清除 | 语义不一致，文档里也没写 | 写明饭点不能清空 |
+| 38 | `docs/legacy-api/README.md` 说上传的 `biz` 只开放 `avatar`、`restaurants`、`feedback` | 实际还开放了 `foods`、`comments` | 改成五种 |
 
-**Web 的回跳地址。** `client=web` 时，后端跳回 `app.oauth-success-redirect`。线上看起来没有配置这一项，默认值是 `/home?result=..&code=..`（`AuthService.java:109`），而 Flutter Web 没有 `/home` 这个路径，会显示「页面不存在」。请把 `APP_OAUTH_SUCCESS_REDIRECT` 设成 `https://<Web 域名>/app/auth/callback`，客户端已经有这条路由，不用再改。
+## 5. 2026-11-02 版条目的处理
 
-## 4. 客户端已按未部署源码编码的部分
+| 旧 # | 旧条目 | v2 的情况 |
+| --- | --- | --- |
+| 1 | `earnedLikes` 漏算菜的赞 | 字段删了，见第 9 条 |
+| 2 | 图片是 600 秒的预签名地址 | 已解决：改成公开的稳定地址 |
+| 3 | 审核滤图后 `pictureKeys` 和封面对不上 | 不再适用：不审核了。缺图片 key 见第 6 条 |
+| 4 | 20006 一码多用 | 不再适用：v2 的业务接口不再返回 20006 |
+| 5 | 同名店查重不忽略空白 | 部分解决：服务端查重了，但只去首尾空白，见第 21 条 |
+| 6 | `/foods/recommend` 返回数组 | 不再适用：接口删了，改为 `/recommend` |
+| 7 | `banUntil` 的格式 | 不再适用：封禁账号不能登录，字段删了 |
+| 8 | 受限会话的放行范围 | 不再适用：没有受限会话了 |
+| 9 | 评论接口不在契约里 | 已解决 |
+| 10 | 反馈没有版本和设备字段 | 未解决，见第 23 条 |
+| 11 | `/foods/list` 没有 `hubName` | 不再适用：菜品不再带商圈。搜菜的范围和距离见第 20 条 |
+| 12 | 招牌菜摘要没有 `coverCrop` | 并入第 5 条 |
+| 13 | 消息卡片没有全部已读 | 已解决：`POST /notification/cards/read-all` |
+| 14 | 卡片没有目标名称和缩略图 | 未解决，见第 12 条 |
+| 15 | 反馈结果不带相关的店或菜 | 部分解决：卡片带 `caseId`，客户端再调 `GET /feedback/mine/{id}` 取对象 |
+| 16、17 | 专题的图片 key、往期专题的菜图 | 不再适用：专题暂缓 |
+| 18 | 评论没有作者 id、头像、赞过没有、回复数 | 已解决 |
+| 19 | 回复只能倒序 | 已解决 |
+| 20 | 评论图片 30 秒签名 | 已解决 |
+| 21 | 图墙不带拍摄者 | 已解决 |
+| 22 | 评论消息没有来源，`kind` 未确认 | 已解决；跳转缺的字段见第 11 条 |
+| 23 | Apifox 文档过时 | 已解决：客户端从 v2 模块同步。新出的结构重名见第 32 条 |
+| 旧第 3 节 | App、Web 的统一认证回跳地址 | 仍要配置，见第 27、28 条；v2 多了 `ticket` 和确认接口 |
+| 旧第 4 节 | 客户端按未部署源码编码的部分（跨站同意、审核、幂等键等） | 不再适用：v2 都删了 |
+| 旧第 5 节 | 统计埋点、推荐的去重范围 | `/telemetry/events` 已有，同意即开启，客户端还没接；推荐的去重见第 14 条 |
 
-客户端已经按新源码改了下面这些，不兼容已部署版本。联调前需要先部署；部署后请更新 `business-deployment-status.json` 和线上 OpenAPI：
+## 6. 其他
 
-- 跨站同步同意：客户端不再自动代用户同意，改成由用户在面板里点同意；会话中遇到 20005、20009 时弹出同一个面板，grant 返回 20007、20008 时让用户重新登录。新号码不带同意注册时，后端先核销验证码再返回不带 proof 的 20005，用户同意后要重新收一次验证码。能否改成先检查同意、再核销验证码，或者在这种情况下也返回 proof？`/auth/consent/offer-with-password` 客户端暂时没接。
-- 发布菜品和新建店返回 `moderationStatus`，带 `Idempotency-Key` 请求头（UUID，同一份草稿重试时沿用）。待审核的菜不在 `/foods/my` 里，只在 `/moderation/submissions/my` 里，客户端暂时没做这个列表。
-- `/restaurant/search`、`/restaurant/browse` 带 `campusId`。搜索页改用 `/restaurant/browse`。
-- 店铺的 `signatureFoods`、`visibleFoodCount`、`publicTastes`、`priceBand`、`recommendationRate`、`ratingCount`，以及营业状态。
-- 菜名、标签、店名的长度按 code point 计，标签上限 10。
-
-## 5. 其他
-
-- 统计埋点：客户端决定用后端自建的 `/telemetry`（带同意管理），崩溃仍用 Sentry。请确认 `/telemetry` 的部署时间和事件格式是否稳定。
-- 推荐的已推荐集合按「用户、校区、分类、日期」记录。客户端的转盘和「今日推荐」共用同一个集合，这个行为我们接受，不需要改。
+- 登录设备的平台由 `User-Agent` 推断。新版 App 发 `EatWhat/<版本> (Android)` 或 `(iOS)`；旧版 App 用的是 Dart 默认 UA，会显示成「其他设备」。
+- `/remote-config` 命中 `If-None-Match` 时返回 304、没有响应体，客户端接入时会处理，不用改。
