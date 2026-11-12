@@ -15,6 +15,7 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/search/search_providers.dart';
@@ -30,7 +31,8 @@ import 'package:go_router/go_router.dart';
 
 /// 搜索页. 白底页面, 打开时自动弹出键盘.
 ///
-/// - 未输入时显示最近搜索的词.
+/// - 搜索框代替标题, 与返回按钮在同一行, 不随结果滚动.
+/// - 未输入时显示最近搜索的词. 没有搜索记录时说明可以搜索的内容.
 /// - 结果分为 "菜" 和 "店" 两个分栏. 默认显示 "菜", 只有店有结果时显示 "店".
 /// - 没有结果时显示 "没找到". 认证用户额外显示 "新建一家店".
 class SearchPage extends ConsumerStatefulWidget {
@@ -76,17 +78,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final keyword = _keyword;
     return PlainScaffold(
       title: '搜索',
+      // 搜索框与返回按钮在同一行并固定在顶部. 结果滚动到任意位置时都可以修改关键词.
+      header: EatSearchField(
+        hintText: '搜菜名或店名',
+        controller: _input,
+        autofocus: true,
+        onChanged: _search,
+        onSubmitted: _submit,
+      ),
       slivers: [
-        SliverToBoxAdapter(
-          child: EatSearchField(
-            hintText: '搜菜名或店名',
-            controller: _input,
-            autofocus: true,
-            onChanged: _search,
-            onSubmitted: _submit,
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s16)),
         if (keyword.isEmpty)
           _History(onPick: _useHistory)
         else
@@ -139,6 +139,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   width: MediaQuery.sizeOf(context).width / 2,
                 ),
                 name: dish.name,
+                price: DishRules.priceText(dish.price),
                 shop: shop.isEmpty ? null : shop,
                 distance: GeoRules.meterLabel(
                   dish.distance,
@@ -208,7 +209,14 @@ class _History extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final words = ref.watch(searchHistoryProvider).value ?? const <String>[];
-    if (words.isEmpty) return const SliverToBoxAdapter(child: SizedBox());
+    if (words.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Text(
+          '菜名、店名都能搜。搜过的词会留在这里。',
+          style: eat.text.body.copyWith(color: eat.colors.inkMuted),
+        ),
+      );
+    }
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

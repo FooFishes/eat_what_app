@@ -9,6 +9,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/topic.dart';
 import 'package:eat/domain/rules/topic_rules.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/topic/topic_providers.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/place.dart';
@@ -30,6 +31,12 @@ class TopicArchivePage extends ConsumerWidget {
     return PlainScaffold(
       title: '往期专题',
       subtitle: campus?.name,
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [topicArchiveProvider],
+        wait: () => ref.read(topicArchiveProvider.future),
+      ),
       slivers: [
         if (data == null)
           SliverToBoxAdapter(

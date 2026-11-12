@@ -14,6 +14,7 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
+import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
@@ -27,6 +28,7 @@ import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/features/nearby/nearby_providers.dart';
 import 'package:eat/features/system/base_map.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
@@ -42,7 +44,7 @@ import 'package:go_router/go_router.dart';
 /// - 拖动地图停止后, 按新的地图中心重新查找店铺.
 /// - 筛选和排序同时作用于地图标记和抽屉列表.
 ///
-/// 地图是百度地图. 当前平台没有 AK, 或地图加载失败时只显示列表.
+/// 地图是百度地图. 当前平台没有 AK, 或地图加载失败时整页改为列表, 不留空白的地图区域.
 class NearbyPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -85,6 +87,9 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   Timer? _sheetDebounce;
 
   static const _sheetInitial = 0.42;
+
+  /// 店铺行的估算高度: 店名一行, 距离, 地址, 招牌各一行.
+  static const _rowExtent = 90.0;
   static const _zoom = 16.0;
 
   @override
@@ -218,8 +223,9 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final index = shops.indexOf(shop);
     final list = _list;
     if (index >= 0 && list != null && list.hasClients) {
+      // 行高随文字行数变化, 无法精确计算目标位置. 按四行文字的行高估算, 误差不超过一行.
       list.animateTo(
-        (64.0 + 18) * index,
+        (_rowExtent + 18) * index,
         duration: const Duration(milliseconds: 360),
         curve: Curves.easeOutCubic,
       );
@@ -293,7 +299,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final search = EatSearchField(
       hintText: '搜店名或菜名',
       controller: _keywordInput,
-      floating: true,
+      floating: _hasMap,
       onSubmitted: (value) => setState(() {
         _keyword = value.trim();
         _selectedShopId = null;
@@ -320,7 +326,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           for (final hub in hubs)
             Padding(
               padding: const EdgeInsets.only(right: EatSpace.s8),
-              child: EatChip.district(
+              child: (_hasMap ? EatChip.district : EatChip.choice)(
                 hub.name,
                 selected: hub.id == hubId,
                 onTap: () => _selectHub(hub),
@@ -391,6 +397,58 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     }
 
     final navInset = NavBarInset.of(context);
+    if (!_hasMap) {
+      // 没有地图时整页显示列表, 不保留空白的地图区域. 搜索, 商圈和筛选的行为不变.
+      return ColoredBox(
+        color: context.eat.colors.paper,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                EatSpace.s16,
+                media.padding.top + 8,
+                EatSpace.s16,
+                EatSpace.s10,
+              ),
+              child: search,
+            ),
+            chips,
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: EatRefresh(
+                  onRefresh: () => pullToRefresh(
+                    context,
+                    ref,
+                    invalidate: [nearbyShopsProvider(query)],
+                    wait: () => ref.read(nearbyShopsProvider(query).future),
+                  ),
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: EatSpace.s10),
+                      ),
+                      SliverToBoxAdapter(child: header),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: EatSpace.s20,
+                        ),
+                        sliver: rows,
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: navInset > 0 ? navInset : 24),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final height = media.size.height;
     return ColoredBox(
       color: context.eat.colors.paper,

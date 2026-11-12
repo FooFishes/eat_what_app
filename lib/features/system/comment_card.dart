@@ -7,6 +7,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -189,10 +190,10 @@ class CommentLikeButton extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 6,
               children: [
-                EatIcon(
+                EatIconSwap(
                   like.liked ? EatIcons.heartOn : EatIcons.heart,
                   size: compact ? 16 : 18,
-                  color: eat.colors.ink,
+                  color: like.liked ? null : eat.colors.ink,
                 ),
                 Text(
                   '${like.likes}',
@@ -212,6 +213,7 @@ class CommentLikeButton extends ConsumerWidget {
     CommentLike current,
   ) async {
     if (!await guardAction(context, ref, Capability.like)) return;
+    EatHaptics.light();
     final failure = await ref
         .read(commentLikesProvider.notifier)
         .toggle(comment.id, current);
@@ -406,7 +408,10 @@ class _ExpandButton extends StatelessWidget {
   }
 }
 
-/// 一条回复: 昵称, "回复 小林", 文字, 右侧是赞和 "更多". 点击文字回复这条回复.
+/// 一条回复. 第一行为昵称和 "回复 小林", 右端为赞和 "更多". 回复的文字另起一行, 宽度与回复区相同.
+///
+/// 文字与右侧按钮在同一行时, 每行只能显示七八个字, 短句也会折成多行.
+/// 点击昵称或文字回复这条回复.
 class _ReplyLine extends ConsumerWidget {
   const new({required this.root, required this.reply, required this.toName});
 
@@ -414,53 +419,75 @@ class _ReplyLine extends ConsumerWidget {
   final Comment reply;
   final String? toName;
 
+  /// 昵称所在的行右端为赞和 "更多" 预留的宽度.
+  static const _actionsWidth = 116.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
     final style = eat.text.body.copyWith(color: c.ink);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        Expanded(
-          child: EatTappable(
-            onTap: () => _reply(context, ref, root, to: reply),
-            label: '回复${reply.authorName}',
-            focusShape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(EatRadius.thumb),
-            ),
-            builder: (context, _) => ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: EatSize.touch),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text.rich(
-                  TextSpan(
-                    children: [
+        EatTappable(
+          onTap: () => _reply(context, ref, root, to: reply),
+          label: '回复${reply.authorName}',
+          focusShape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(EatRadius.thumb),
+          ),
+          builder: (context, _) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: _actionsWidth),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: EatSize.touch),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text.rich(
                       TextSpan(
-                        text: reply.authorName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        children: [
+                          TextSpan(
+                            text: reply.authorName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          if (toName != null)
+                            TextSpan(
+                              text: ' 回复 $toName',
+                              style: TextStyle(color: c.inkMuted),
+                            ),
+                        ],
                       ),
-                      if (toName != null)
-                        TextSpan(
-                          text: ' 回复 $toName',
-                          style: TextStyle(color: c.inkMuted),
-                        ),
-                      TextSpan(text: '　${reply.text}'),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: style,
+                    ),
                   ),
-                  style: style,
                 ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(reply.text, style: style),
+              ),
+            ],
           ),
         ),
-        CommentLikeButton(comment: reply, compact: true),
-        EatIconButton(
-          EatIcons.more,
-          label: '更多',
-          color: c.inkMuted,
-          onPressed: () =>
-              showCommentMenu(context, ref, reply, rootId: root.id),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CommentLikeButton(comment: reply, compact: true),
+              EatIconButton(
+                EatIcons.more,
+                label: '更多',
+                color: c.inkMuted,
+                onPressed: () =>
+                    showCommentMenu(context, ref, reply, rootId: root.id),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -488,14 +515,14 @@ Future<void> showCommentMenu(
     builder: (panel) => EatPanel(
       title: comment.isReply ? '这条回复' : '这条评论',
       child: mine
-          ? EatListRow(
-              leading: const _MenuIcon(EatIcons.delete),
-              title: const Text('删除'),
+          ? EatPanelAction(
+              icon: EatIcons.delete,
+              label: '删除',
               onTap: () => Navigator.of(panel).pop(_MenuAction.delete),
             )
-          : EatListRow(
-              leading: const _MenuIcon(EatIcons.report),
-              title: const Text('举报'),
+          : EatPanelAction(
+              icon: EatIcons.report,
+              label: '举报',
               onTap: () => Navigator.of(panel).pop(_MenuAction.report),
             ),
     ),
@@ -565,20 +592,3 @@ Future<bool> _confirmDelete(BuildContext context, Comment comment) async =>
       ),
     ) ??
     false;
-
-class _MenuIcon extends StatelessWidget {
-  const new(this.icon);
-
-  final EatIcons icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.eat.colors;
-    return Container(
-      width: EatSize.touch,
-      height: EatSize.touch,
-      decoration: BoxDecoration(color: c.mist, shape: BoxShape.circle),
-      child: Center(child: EatIcon(icon, size: 20, color: c.ink)),
-    );
-  }
-}

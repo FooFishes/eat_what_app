@@ -10,6 +10,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +27,12 @@ class BlockedPage extends ConsumerWidget {
     final data = value.value;
     return PlainScaffold(
       title: '屏蔽的人',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [blockedUsersProvider],
+        wait: () => ref.read(blockedUsersProvider.future),
+      ),
       slivers: [
         SliverToBoxAdapter(
           child: Padding(

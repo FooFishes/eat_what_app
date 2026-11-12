@@ -38,7 +38,8 @@ void main() {
     );
 
     expect(find.text('铁锅炖'), findsNWidgets(2));
-    expect(find.text('¥18'), findsOneWidget);
+    // 舞台上的大号价格一处, 抽屉里已经排出来的方块菜名右边各一处.
+    expect(find.text('¥18'), findsAtLeast(2));
     expect(
       env.adapter.sent('GET /foods/recommend').map((r) => r.query['campusId']),
       everyElement(1),
@@ -62,6 +63,51 @@ void main() {
     final page = tester.widget<DishPage>(find.byType(DishPage));
     expect(page.dishId, 2);
     expect(page.initial?.name, '粘豆包', reason: '舞台先用手上的那道菜画出来');
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('往下翻时顶栏和分类栏停在顶部；下拉刷新重新拉这一栏', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+    expect(find.text('今日推荐'), findsOneWidget);
+    expect(find.text('袁记云饺'), findsWidgets, reason: '方块第二行写店名');
+
+    await tester.dragFrom(const Offset(195, 700), const Offset(0, -560));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('搜索'), findsOneWidget);
+    expect(tester.getTopLeft(find.bySemanticsLabel('搜索')).dy, lessThan(60));
+    // 抽屉里的分类栏滚到顶栏下方后, 顶栏下面显示它的副本.
+    double topMost() => find
+        .text('今日推荐')
+        .evaluate()
+        .map((e) => tester.getTopLeft(find.byWidget(e.widget)).dy)
+        .reduce((a, b) => a < b ? a : b);
+    expect(topMost(), inInclusiveRange(40, 80));
+
+    await tester.dragFrom(const Offset(195, 300), const Offset(0, 800));
+    await tester.pumpAndSettle();
+    expect(find.text('今日推荐'), findsOneWidget);
+    expect(topMost(), greaterThan(400));
+    final before = env.adapter.sent('GET /foods/recommend').length;
+    await tester.fling(
+      find.byType(CustomScrollView),
+      const Offset(0, 300),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    // 重新请求第一批后, 列表末尾的分页触发器会接着请求下一批, 因此不止多一次.
+    expect(
+      env.adapter.sent('GET /foods/recommend').length,
+      greaterThan(before),
+    );
+    expect(
+      env.adapter.sent('GET /notification/cards/unread/count'),
+      hasLength(greaterThan(1)),
+      reason: '刷新时顺带更新铃铛上的未读数',
+    );
     await unmountApp(tester, container);
   });
 

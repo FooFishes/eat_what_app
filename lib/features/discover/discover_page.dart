@@ -7,6 +7,7 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/layout/eat_layout.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -177,34 +178,33 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     final topic = ref.watch(currentTopicProvider).value;
     final topicShown = _topicSelected && topic != null;
     final shelfStart = topic == null ? 1 : 2;
+    final tabs = EatTabs(
+      tabs: [
+        const EatTabItem('今日推荐'),
+        if (topic != null) EatTabItem(topic.name, icon: EatIcons.topic),
+        for (final category in DishCategory.shelf) EatTabItem(category.label),
+      ],
+      selected: topicShown
+          ? 1
+          : _category == null
+          ? 0
+          : DishCategory.shelf.indexOf(_category!) + shelfStart,
+      onSelected: (i) => setState(() {
+        _topicSelected = topic != null && i == 1;
+        _category = i < shelfStart ? null : DishCategory.shelf[i - shelfStart];
+      }),
+      padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    );
 
     return StageScaffold(
       stage: stage,
       topBar: const _TopBar(),
       stageContent: stageContent,
+      // 分类栏滚动到顶栏下方后固定显示. 浏览推荐流的任意位置都可以切换分类.
+      pinnedBottom: tabs,
+      onRefresh: () => _refresh(topicShown ? topic : null),
       sheetSlivers: [
-        SliverToBoxAdapter(
-          child: EatTabs(
-            tabs: [
-              const EatTabItem('今日推荐'),
-              if (topic != null) EatTabItem(topic.name, icon: EatIcons.topic),
-              for (final category in DishCategory.shelf)
-                EatTabItem(category.label),
-            ],
-            selected: topicShown
-                ? 1
-                : _category == null
-                ? 0
-                : DishCategory.shelf.indexOf(_category!) + shelfStart,
-            onSelected: (i) => setState(() {
-              _topicSelected = topic != null && i == 1;
-              _category = i < shelfStart
-                  ? null
-                  : DishCategory.shelf[i - shelfStart];
-            }),
-            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-          ),
-        ),
+        SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
@@ -214,6 +214,33 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
         ),
       ],
     );
+  }
+
+  /// 下拉刷新: 重新请求抽屉里当前这一栏, 当期专题和未读数.
+  ///
+  /// 转盘上有菜时不重新请求转盘, 换菜由 "换一个" 完成.
+  /// 转盘为空, 加载失败或显示上一次的批次时, 同时重新请求转盘.
+  Future<void> _refresh(Topic? shownTopic) async {
+    ref.read(unreadCountProvider.notifier).refresh();
+    ref.invalidate(currentTopicProvider);
+    final queue = ref.read(turntableQueueProvider).value;
+    if (queue?.current == null || queue!.stale) {
+      _staleNoticed = false;
+      ref.invalidate(turntableQueueProvider);
+    }
+    try {
+      if (shownTopic != null) {
+        final provider = discoverTopicProvider(shownTopic.id);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      } else {
+        final provider = discoverListProvider(_category);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      }
+    } on AppFailure catch (e) {
+      if (mounted) showToast(context, e.message);
+    }
   }
 }
 
@@ -438,7 +465,7 @@ class _TurntableStage extends ConsumerWidget {
     final queue = ref.read(turntableQueueProvider.notifier);
     final price = DishRules.priceText(dish.price);
     final lines = DishRules.stageLines(dish.name);
-    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
+    final nameSize = layout.stageNameSize(lines);
     final where = [?dish.shopName, distance ?? dish.hubName].join('  ');
 
     return LayoutBuilder(
@@ -450,8 +477,13 @@ class _TurntableStage extends ConsumerWidget {
             : 296 * scale;
         final plateCenter = layout.isWide
             ? Offset(width - plate * 0.3, height / 2)
-            : Offset(width - 72 * scale, 300 * scale);
+            : Offset(width - 58 * scale, 300 * scale);
         final textWidth = layout.isWide ? 260.0 : 200.0 * textScale;
+        // 店名和距离所在的高度接近盘子的圆心, 此处盘子最宽.
+        // 宽度限制在盘子左边缘以内, 店名过长时换行, 不与照片重叠.
+        final whereWidth = layout.isWide
+            ? textWidth
+            : plateCenter.dx - plate / 2 - EatSpace.s20 - EatSpace.s8;
         return Stack(
           children: [
             Positioned.fill(
@@ -488,44 +520,61 @@ class _TurntableStage extends ConsumerWidget {
                       width: textWidth,
                       child: Semantics(
                         liveRegion: true,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              lines.join('\n'),
-                              semanticsLabel: dish.name,
-                              textScaler: TextScaler.noScaling,
-                              style: eat.text.stage.copyWith(
-                                fontSize: nameSize,
-                                height: (nameSize + 4) / nameSize,
-                                color: palette.foreground,
-                              ),
-                            ),
-                            if (where.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 6),
-                                child: Text(
-                                  where,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: eat.text.meta.copyWith(
-                                    color: palette.secondaryForeground,
-                                  ),
+                        // 换菜时文字交叉淡入淡出, 与盘子转动和舞台换色同时过渡.
+                        // 两道菜的行数可能不同. 按左下角对齐时, 价格的位置保持不变.
+                        child: AnimatedSwitcher(
+                          duration: context.motion(EatMotion.select),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          layoutBuilder: (current, previous) => Stack(
+                            alignment: AlignmentDirectional.bottomStart,
+                            children: [...previous, ?current],
+                          ),
+                          child: Column(
+                            key: ValueKey(dish.id),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                lines.join('\n'),
+                                semanticsLabel: dish.name,
+                                textScaler: TextScaler.noScaling,
+                                style: eat.text.stage.copyWith(
+                                  fontSize: nameSize,
+                                  height: (nameSize + 4) / nameSize,
+                                  color: palette.foreground,
                                 ),
                               ),
-                            if (price != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  price,
-                                  textScaler: TextScaler.noScaling,
-                                  style: eat.text.priceHero.copyWith(
-                                    fontSize: 56 * textScale,
-                                    color: palette.foreground,
+                              if (where.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: whereWidth,
+                                    ),
+                                    child: Text(
+                                      where,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: eat.text.meta.copyWith(
+                                        color: palette.secondaryForeground,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                          ],
+                              if (price != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    price,
+                                    textScaler: TextScaler.noScaling,
+                                    style: eat.text.priceHero.copyWith(
+                                      fontSize: 56 * textScale,
+                                      color: palette.foreground,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -584,12 +633,13 @@ class _EmptyStage extends ConsumerWidget {
     final scale = EatLayout.of(context).stageScale;
     return Stack(
       children: [
+        // 盘子直径小于有菜时的 296. 直径为 280 时, 盘子与左下角的两行说明重叠.
         Positioned(
           right: -40 * scale,
-          top: 110 * scale,
+          top: 104 * scale,
           child: DishPlate.illustration(
-            IllustrationImage(Illustration.jiaozi, size: 280 * scale),
-            size: 280 * scale,
+            IllustrationImage(Illustration.jiaozi, size: 240 * scale),
+            size: 240 * scale,
           ),
         ),
         Positioned(
@@ -699,6 +749,10 @@ class _DishList extends ConsumerWidget {
       );
     }
     final tileWidth = (MediaQuery.sizeOf(context).width - 54) / 2;
+    final me = ref.watch(currentLocationProvider.select((s) => s.point));
+    final campusCenter = ref.watch(
+      currentPlaceProvider.select((p) => p.campus?.center),
+    );
     return SliverMainAxisGroup(
       slivers: [
         SliverTileGrid(
@@ -708,7 +762,13 @@ class _DishList extends ConsumerWidget {
             return DishTile(
               image: networkImage(dish.cover, width: tileWidth),
               name: dish.name,
+              price: DishRules.priceText(dish.price),
               shop: dish.shopName,
+              distance: GeoRules.distanceLabel(
+                me: me,
+                target: dish.shopPoint,
+                campusCenter: campusCenter,
+              ),
               onTap: () => context.push(Paths.dish(dish.id), extra: dish),
             );
           },
@@ -778,6 +838,7 @@ class _TopicList extends ConsumerWidget {
         builder: (context, i) => DishTile(
           image: networkImage(dishes[i].cover, width: tileWidth),
           name: dishes[i].name,
+          price: DishRules.priceText(dishes[i].price),
           shop: dishes[i].shopName,
           onTap: () => context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
         ),

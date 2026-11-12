@@ -12,6 +12,7 @@ import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/comment_card.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/comments.dart';
 import 'package:flutter/widgets.dart';
@@ -49,6 +50,12 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
             removeBottom: true,
             child: PlainScaffold(
               title: '吃过的人说',
+              onRefresh: () => pullToRefresh(
+                context,
+                ref,
+                invalidate: [provider],
+                wait: () => ref.read(provider.future),
+              ),
               subtitle: dish == null
                   ? null
                   : [dish.name, ?dish.shopName].join('  '),

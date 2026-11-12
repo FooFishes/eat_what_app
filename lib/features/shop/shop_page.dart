@@ -17,8 +17,10 @@ import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
@@ -174,6 +176,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     return StageScaffold(
       stage: hero?.stage ?? StageColor.bamboo,
       topBar: _TopBar(shop: shop.value),
+      onRefresh: _refresh,
       stageContent: switch (shop.value) {
         final shop? => _StageContent(shop: shop),
         null when failure != null => const SizedBox(),
@@ -219,6 +222,17 @@ class _ShopPageState extends ConsumerState<ShopPage> {
     );
   }
 
+  /// 下拉刷新: 重新请求店铺和当前筛选下的菜品. 失败时保留页面上的旧内容并提示原因.
+  Future<void> _refresh() async {
+    ref.invalidate(shopMenuProvider(widget.shopId, _tagFilter));
+    ref.invalidate(shopProvider(widget.shopId));
+    try {
+      await ref.read(shopProvider(widget.shopId).future);
+    } on AppFailure catch (e) {
+      if (mounted) showToast(context, e.message);
+    }
+  }
+
   Widget _title(String text, {Widget? trailing}) => Padding(
     padding: const EdgeInsets.only(top: 28, bottom: EatSpace.s10),
     child: Row(
@@ -257,7 +271,11 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                                 width: tileWidth,
                               ),
                               name: shop.signatures[i].name,
+                              price: DishRules.priceText(
+                                shop.signatures[i].price,
+                              ),
                               likes: shop.signatures[i].likes,
+                              compact: true,
                               onTap: () => context.push(
                                 Paths.dish(shop.signatures[i].id),
                               ),
@@ -269,6 +287,15 @@ class _ShopPageState extends ConsumerState<ShopPage> {
             ],
             if (tastes.isNotEmpty) ...[
               _title('大家怎么说'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: EatSpace.s4),
+                child: Text(
+                  _tagFilter == null ? '点一个词，只看带这个词的菜' : '再点一次，看回全部菜品',
+                  style: context.eat.text.meta.copyWith(
+                    color: context.eat.colors.inkMuted,
+                  ),
+                ),
+              ),
               TasteCloud(
                 words: [
                   for (final t in tastes)
@@ -343,6 +370,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
                 builder: (context, i) => DishTile(
                   image: networkImage(dishes[i].cover, width: tileWidth),
                   name: dishes[i].name,
+                  price: DishRules.priceText(dishes[i].price),
                   likes: dishes[i].likes,
                   onTap: () =>
                       context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
@@ -430,7 +458,9 @@ class _TopBar extends ConsumerWidget {
     return Row(
       children: [
         const EatBackButton(),
-        const Spacer(),
+        Expanded(
+          child: shop == null ? const SizedBox() : StageBarTitle(shop.name),
+        ),
         if (shop != null) ...[
           _FavoriteButton(shopId: shop.id),
           EatIconButton(
@@ -465,10 +495,15 @@ class _FavoriteButton extends ConsumerWidget {
       label: favorite ? '取消收藏店铺' : '收藏店铺',
       onPressed: () async {
         if (!await guardAction(context, ref, Capability.favorite)) return;
+        EatHaptics.light();
         final failure = await ref
             .read(shopMineStateProvider(shopId).notifier)
             .toggleFavorite();
-        if (failure != null && context.mounted) {
+        if (!context.mounted) return;
+        if (failure == null) {
+          showToast(context, favorite ? '已取消收藏' : '已收藏，在「我的」里能找到');
+        }
+        if (failure != null) {
           await reportActionFailure(
             context,
             ref,
@@ -503,7 +538,7 @@ class _StageContent extends ConsumerWidget {
     final distance = ref.watch(distanceToProvider(shop.point));
     final hub = ref.watch(hubNameProvider(shop.hubId));
     final lines = DishRules.stageLines(shop.name);
-    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
+    final nameSize = layout.stageNameSize(lines);
     final hero = shop.signatures.firstOrNull;
     final numberStyle = eat.text.count.copyWith(
       fontSize: 16,

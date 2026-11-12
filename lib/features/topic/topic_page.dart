@@ -11,6 +11,8 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/topic.dart';
 import 'package:eat/domain/rules/topic_rules.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/features/topic/topic_providers.dart';
 import 'package:eat/router/paths.dart';
@@ -63,6 +65,12 @@ class TopicPage extends ConsumerWidget {
     return PlainScaffold(
       title: topic.name,
       subtitle: topic.introduction.isEmpty ? null : topic.introduction,
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [topicDetailProvider(topicId)],
+        wait: () => ref.read(topicDetailProvider(topicId).future),
+      ),
       actions: [
         EatIconButton(
           EatIcons.share,
@@ -153,6 +161,7 @@ class _TopicDishes extends StatelessWidget {
       builder: (context, i) => DishTile(
         image: networkImage(dishes[i].cover, width: width),
         name: dishes[i].name,
+        price: DishRules.priceText(dishes[i].price),
         shop: dishes[i].shopName,
         onTap: () => context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
       ),

@@ -24,6 +24,7 @@ import 'package:eat/domain/models/people.dart';
 import 'package:eat/domain/rules/notice_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/social.dart';
@@ -148,6 +149,15 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     return PlainScaffold(
       title: '消息',
       subtitle: unread > 0 ? '$unread 条未读' : null,
+      onRefresh: () {
+        ref.read(unreadCountProvider.notifier).refresh();
+        return pullToRefresh(
+          context,
+          ref,
+          invalidate: [provider],
+          wait: () => ref.read(provider.future),
+        );
+      },
       actions: [
         EatTappable(
           onTap: unread == 0

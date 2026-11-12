@@ -3,6 +3,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/features/profile/profile_providers.dart';
 import 'package:eat/features/profile/widgets/profile_stage.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,12 @@ class TagDishesPage extends ConsumerWidget {
     return PlainScaffold(
       title: name.isEmpty ? '我的标签' : name,
       subtitle: '只有你自己看得见',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [provider],
+        wait: () => ref.read(provider.future),
+      ),
       slivers: [
         DishGridSliver(
           value: ref.watch(provider),

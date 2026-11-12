@@ -69,6 +69,11 @@ void main() {
     expect(find.textContaining('炸蛋要早点说'), findsNothing);
     expect(find.text('展开 1 条回复'), findsOneWidget);
     await expectAccessible(tester);
+    // 回复的文字另起一行, 占满回复区的宽度, 不和右边的赞, "更多" 挤在一起.
+    final replyText = tester.getRect(find.text('同意，加个炸蛋更香'));
+    final more = tester.getRect(find.bySemanticsLabel('更多').at(1));
+    expect(replyText.top, greaterThanOrEqualTo(more.bottom - 1));
+    expect(replyText.left, lessThan(more.left));
 
     await tester.tap(find.text('展开 1 条回复'));
     await tester.pumpAndSettle();

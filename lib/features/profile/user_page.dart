@@ -1,13 +1,10 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
-import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
-import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -78,10 +75,19 @@ class UserPage extends ConsumerWidget {
     }
     return StageScaffold(
       stage: top?.stage ?? StageColor.mango,
+      onRefresh: () async {
+        ref.invalidate(userUploadsProvider(userId));
+        ref.invalidate(userProfileProvider(userId));
+        try {
+          await ref.read(userProfileProvider(userId).future);
+        } on AppFailure catch (e) {
+          if (context.mounted) showToast(context, e.message);
+        }
+      },
       topBar: Row(
         children: [
           const EatBackButton(),
-          const Spacer(),
+          Expanded(child: StageBarTitle(profile?.nickname ?? '')),
           if (!isMe && profile != null) ...[
             FollowButton(profile: profile, onStage: true),
             EatIconButton(
@@ -154,22 +160,14 @@ class UserPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: EatSpace.s8,
           children: [
-            EatListRow(
-              leading: EatIcon(
-                EatIcons.block,
-                size: 22,
-                color: panel.eat.colors.ink,
-              ),
-              title: Text(blocked ? '解除屏蔽' : '屏蔽'),
+            EatPanelAction(
+              icon: EatIcons.block,
+              label: blocked ? '解除屏蔽' : '屏蔽',
               onTap: () => Navigator.of(panel).pop(_MoreAction.block),
             ),
-            EatListRow(
-              leading: EatIcon(
-                EatIcons.report,
-                size: 22,
-                color: panel.eat.colors.ink,
-              ),
-              title: const Text('举报'),
+            EatPanelAction(
+              icon: EatIcons.report,
+              label: '举报',
               onTap: () => Navigator.of(panel).pop(_MoreAction.report),
             ),
           ],

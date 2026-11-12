@@ -10,6 +10,7 @@ import 'package:eat/domain/models/people.dart';
 import 'package:eat/features/profile/profile_providers.dart';
 import 'package:eat/features/profile/widgets/follow_button.dart';
 import 'package:eat/features/profile/widgets/profile_stage.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/social.dart';
@@ -54,6 +55,15 @@ class _FollowsPageState extends ConsumerState<FollowsPage> {
     final name = isMe ? '我' : profile?.nickname ?? '';
     return PlainScaffold(
       title: isMe ? '粉丝和关注' : '$name的粉丝和关注',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [
+          userProfileProvider(widget.userId),
+          followListProvider(widget.userId, _kind),
+        ],
+        wait: () => ref.read(followListProvider(widget.userId, _kind).future),
+      ),
       slivers: [
         SliverToBoxAdapter(
           child: EatTabs(

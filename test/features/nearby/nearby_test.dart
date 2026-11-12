@@ -36,6 +36,41 @@ void main() {
     final near = tester.getTopLeft(find.text('近一点的店'));
     final far = tester.getTopLeft(find.text('远一点的店'));
     expect(near.dy, lessThan(far.dy));
+    expect(near.dy, lessThan(300), reason: '没有地图时不留空白的地图区域, 列表从搜索和商圈下面开始');
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('店铺行写出招牌菜，评价够了的店右边是推荐率', (tester) async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+      ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/search', [
+        FakeAdapter.ok(
+          pageJson([
+            {
+              ...restaurantJson(id: 1, name: '袁记云饺'),
+              'ratingSummaryState': 'READY',
+              'ratingCount': 32,
+              'recommendationRate': 86,
+              'signatureFoods': [
+                {'id': 5, 'name': '鲜虾蟹籽云吞', 'price': 18, 'likesCount': 40},
+              ],
+            },
+            restaurantJson(id: 2, name: '新开的店', lat: 36.6760),
+          ]),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.nearby,
+    );
+
+    expect(find.text('招牌：鲜虾蟹籽云吞'), findsOneWidget);
+    expect(find.text('86%'), findsOneWidget);
+    expect(find.text('推荐'), findsOneWidget, reason: '没人评价的店不写推荐率');
     await unmountApp(tester, container);
   });
 

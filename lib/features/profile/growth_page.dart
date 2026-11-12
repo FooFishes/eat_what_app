@@ -8,6 +8,7 @@ import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,12 @@ class GrowthPage extends ConsumerWidget {
     return PlainScaffold(
       title: '等级',
       subtitle: '经验只有你自己看得见',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [experienceLedgerProvider, growthProgressProvider],
+        wait: () => ref.read(growthProgressProvider.future),
+      ),
       slivers: [
         const SliverToBoxAdapter(child: _Progress()),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s24)),

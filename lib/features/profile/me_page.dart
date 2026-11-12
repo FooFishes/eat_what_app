@@ -12,6 +12,7 @@ import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
@@ -24,6 +25,7 @@ import 'package:eat/features/profile/widgets/profile_stage.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/comments.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/social.dart';
 import 'package:flutter/widgets.dart';
@@ -50,6 +52,25 @@ class _MePageState extends ConsumerState<MePage> {
   /// 收藏分栏是否显示店. 为 false 时显示菜. 由分栏顶部的 "菜" 和 "店" 切换.
   bool _favoriteShops = false;
 
+  /// 下拉刷新: 重新请求资料, 统计和三个分栏. 失败时保留页面上的旧内容并提示原因.
+  ///
+  /// 未显示的分栏只标记为过期, 切换到该分栏时才重新请求.
+  Future<void> _refresh(int? userId) async {
+    ref.invalidate(myFavoritesProvider);
+    ref.invalidate(myFavoriteShopsProvider);
+    ref.invalidate(myCommentsProvider);
+    ref.invalidate(myUploadsProvider);
+    if (userId != null) ref.invalidate(userProfileProvider(userId));
+    try {
+      await Future.wait([
+        ref.read(sessionProvider.notifier).refreshUser(),
+        ref.read(myUploadsProvider.future),
+      ]);
+    } on AppFailure catch (e) {
+      if (mounted) showToast(context, e.message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider);
@@ -67,9 +88,11 @@ class _MePageState extends ConsumerState<MePage> {
     ).firstOrNull;
     return StageScaffold(
       stage: top?.stage ?? StageColor.mango,
+      onRefresh: () => _refresh(user?.id),
       topBar: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          const SizedBox(width: 12),
+          Expanded(child: StageBarTitle(user?.nickname ?? '我的')),
           EatIconButton(
             EatIcons.edit,
             label: '编辑资料',

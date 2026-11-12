@@ -15,6 +15,7 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/people.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/profile/profile_providers.dart';
 import 'package:eat/features/system/guard.dart';
@@ -320,6 +321,7 @@ class DishGridSliver extends StatelessWidget {
           builder: (context, i) => DishTile(
             image: networkImage(dishes[i].cover, width: width),
             name: dishes[i].name,
+            price: DishRules.priceText(dishes[i].price),
             shop: showShop ? dishes[i].shopName : null,
             likes: showShop ? null : dishes[i].likes,
             onTap: () =>

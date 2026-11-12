@@ -14,9 +14,11 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
@@ -96,6 +98,7 @@ class DishPage extends ConsumerWidget {
     return StageScaffold(
       stage: dish.stage,
       topBar: _TopBar(dish: dish),
+      onRefresh: () => _refresh(context, ref, dish),
       stageContent: _StageContent(dish: dish),
       sheetSlivers: [
         SliverPadding(
@@ -125,6 +128,18 @@ class DishPage extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+/// 下拉刷新: 重新请求详情, 评论和店铺. 详情失败时保留页面上的旧内容并提示原因.
+Future<void> _refresh(BuildContext context, WidgetRef ref, Dish dish) async {
+  ref.invalidate(dishCommentsProvider(dish.id, CommentSort.mostUseful));
+  ref.invalidate(shopProvider(dish.shopId));
+  ref.invalidate(dishDetailProvider(dish.id));
+  try {
+    await ref.read(dishDetailProvider(dish.id).future);
+  } on AppFailure catch (e) {
+    if (context.mounted) showToast(context, e.message);
   }
 }
 
@@ -180,7 +195,9 @@ class _TopBar extends ConsumerWidget {
     return Row(
       children: [
         const EatBackButton(),
-        const Spacer(),
+        Expanded(
+          child: dish == null ? const SizedBox() : StageBarTitle(dish.name),
+        ),
         if (dish != null && interaction != null) ...[
           EatIconButton(
             interaction.favorite ? EatIcons.bookmarkOn : EatIcons.bookmark,
@@ -212,10 +229,18 @@ Future<void> _toggleFavorite(
   Dish dish,
 ) async {
   if (!await guardAction(context, ref, Capability.favorite)) return;
-  final failure = await ref
-      .read(dishInteractionsProvider.notifier)
-      .toggleFavorite(dish);
-  if (failure != null && context.mounted) {
+  final notifier = ref.read(dishInteractionsProvider.notifier);
+  final was =
+      (ref.read(dishInteractionsProvider)[dish.id] ?? DishInteraction.of(dish))
+          .favorite;
+  EatHaptics.light();
+  final failure = await notifier.toggleFavorite(dish);
+  if (!context.mounted) return;
+  if (failure == null) {
+    // 收藏成功后页面上只有右上角的图标变化, 因此用轻提示说明收藏的菜在哪里查看.
+    showToast(context, was ? '已取消收藏' : '已收藏，在「我的」里能找到');
+  }
+  if (failure != null) {
     await reportActionFailure(
       context,
       ref,
@@ -243,7 +268,7 @@ class _StageContent extends ConsumerWidget {
     final scale = layout.stageScale;
     final textScale = layout.stageTextScale;
     final lines = DishRules.stageLines(dish.name);
-    final nameSize = (lines.length >= 3 ? 36.0 : 44.0) * textScale;
+    final nameSize = layout.stageNameSize(lines);
     final price = DishRules.priceText(dish.price);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -445,6 +470,7 @@ class _Actions extends ConsumerWidget {
 
   Future<void> _toggleLike(BuildContext context, WidgetRef ref) async {
     if (!await guardAction(context, ref, Capability.like)) return;
+    EatHaptics.light();
     final failure = await ref
         .read(dishInteractionsProvider.notifier)
         .toggleLike(dish);
@@ -490,6 +516,12 @@ class _TasteSection extends ConsumerWidget {
       spacing: EatSpace.s8,
       children: [
         Semantics(header: true, child: Text('大家怎么说', style: eat.text.heading)),
+        // 口味词的外观是文字, 没有可点击的提示. 这行说明点击的结果.
+        if (taste.isNotEmpty)
+          Text(
+            '同感就点一下，点过的再点一次撤回',
+            style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+          ),
         if (taste.isEmpty) ...[
           Text(
             '还没人说过，来第一个',

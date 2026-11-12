@@ -1,4 +1,5 @@
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -16,6 +17,7 @@ import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/rules/profile_rules.dart';
 import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/services.dart';
@@ -45,6 +47,12 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
     return PlainScaffold(
       title: '我的标签',
       subtitle: '只有你自己看得见，删掉标签不影响菜',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [myTagsProvider],
+        wait: () => ref.read(myTagsProvider.future),
+      ),
       actions: [
         if (tags != null && tags.isNotEmpty)
           EatTappable(
@@ -195,18 +203,29 @@ class _TagRow extends StatelessWidget {
       height: 56,
       child: EatListRow(
         title: Text(tag.name),
+        // 行尾的箭头表示点击后进入该标签下的菜. 只显示数量时, 这一行没有可点击的提示.
         trailing: editing
             ? null
-            : usage == null
-            ? null
-            : Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: '$usage', style: eat.text.count),
-                    const TextSpan(text: ' 道菜'),
-                  ],
-                ),
-                style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: EatSpace.s4,
+                children: [
+                  if (usage != null)
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: '$usage', style: eat.text.count),
+                          const TextSpan(text: ' 道菜'),
+                        ],
+                      ),
+                      style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+                    ),
+                  EatIcon(
+                    EatIcons.chevronRight,
+                    size: 20,
+                    color: eat.colors.inkMuted,
+                  ),
+                ],
               ),
         onTap: editing
             ? null

@@ -3,11 +3,8 @@ import 'dart:async';
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
-import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
-import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
-import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/domain/models/geo.dart';
@@ -47,7 +44,7 @@ Future<void> navigateToShop(
         spacing: EatSpace.s8,
         children: [
           for (final app in apps)
-            _PanelRow(
+            EatPanelAction(
               icon: EatIcons.navigate,
               label: app.name,
               onTap: () => Navigator.of(panel).pop(app),
@@ -104,7 +101,7 @@ Future<void> showSharePanel(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: EatSpace.s8,
         children: [
-          _PanelRow(
+          EatPanelAction(
             icon: EatIcons.share,
             label: '分享给朋友',
             onTap: () {
@@ -112,7 +109,7 @@ Future<void> showSharePanel(
               unawaited(sharer.share(link, title: title).then(report));
             },
           ),
-          _PanelRow(
+          EatPanelAction(
             icon: EatIcons.link,
             label: '复制链接',
             onTap: () {
@@ -121,7 +118,7 @@ Future<void> showSharePanel(
             },
           ),
           if (reportTarget != null)
-            _PanelRow(
+            EatPanelAction(
               icon: EatIcons.report,
               label: '举报',
               onTap: () => Navigator.of(panel).pop(true),
@@ -132,28 +129,5 @@ Future<void> showSharePanel(
   );
   if (reporting == true && reportTarget != null && context.mounted) {
     await showReportPanel(context, ref, reportTarget);
-  }
-}
-
-class _PanelRow extends StatelessWidget {
-  const new({required this.icon, required this.label, required this.onTap});
-
-  final EatIcons icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.eat.colors;
-    return EatListRow(
-      leading: Container(
-        width: EatSize.touch,
-        height: EatSize.touch,
-        decoration: BoxDecoration(color: c.mist, shape: BoxShape.circle),
-        child: Center(child: EatIcon(icon, size: 20, color: c.ink)),
-      ),
-      title: Text(label),
-      onTap: onTap,
-    );
   }
 }

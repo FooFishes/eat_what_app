@@ -15,6 +15,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/features/profile/profile_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,12 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     return PlainScaffold(
       title: '足迹',
       subtitle: '只有你自己看得见',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [provider],
+        wait: () => ref.read(provider.future),
+      ),
       actions: [
         EatTappable(
           onTap: empty ? null : _clear,

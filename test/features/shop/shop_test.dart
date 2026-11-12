@@ -194,11 +194,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /restaurant/7/favorite'), hasLength(1));
     expect(find.bySemanticsLabel('取消收藏店铺'), findsOneWidget);
+    expect(find.text('已收藏，在「我的」里能找到'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('取消收藏店铺'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /restaurant/7/favorite'), hasLength(1));
     expect(find.bySemanticsLabel('收藏店铺'), findsOneWidget);
+    expect(find.text('已取消收藏'), findsOneWidget);
+    // 等轻提示消失, 它的定时器不留到测试结束.
+    await tester.pump(const Duration(seconds: 2));
     await unmountApp(tester, container);
   });
 

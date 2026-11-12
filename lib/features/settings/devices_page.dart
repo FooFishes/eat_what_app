@@ -13,6 +13,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/device_session.dart';
 import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,6 +32,12 @@ class DevicesPage extends ConsumerWidget {
     return PlainScaffold(
       title: '登录设备',
       subtitle: '看到不认识的设备，先让它下线，再修改密码。',
+      onRefresh: () => pullToRefresh(
+        context,
+        ref,
+        invalidate: [deviceSessionsProvider],
+        wait: () => ref.read(deviceSessionsProvider.future),
+      ),
       slivers: [
         if (devices == null)
           SliverToBoxAdapter(
