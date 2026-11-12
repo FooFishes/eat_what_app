@@ -9,14 +9,14 @@
 #
 # 使用开放 API 的 /v1/projects/{id}/export-openapi.
 # CLI 使用的 /api/v1 接口会忽略 oasVersion 和 exportFormat, 只返回 3.0.1 JSON.
-# 环境必须选测试环境, 导出结果的 servers 才包含 https://v50to.you/api.
+# 环境必须选测试环境, 导出结果的 servers 才包含 https://eat.v50to.you/api.
 #
 # 下载结果不是 3.1 YAML 时不覆盖原文件. 同步后用 git diff 检查改动, 再一并提交.
 
 set -euo pipefail
 
 PROJECT_ID=7737416
-MODULE_ID=8746030
+MODULE_ID=8878533
 ENVIRONMENT_ID=41960666
 
 : "${APIFOX_TOKEN:?需要设置环境变量 APIFOX_TOKEN}"
