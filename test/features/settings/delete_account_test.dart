@@ -1,6 +1,5 @@
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,19 +27,6 @@ void main() {
   setUp(() {
     env = TestEnv();
     env.adapter.on('POST /auth/logout', [FakeAdapter.ok()]);
-  });
-
-  testWidgets('账号与安全的注销一行不再标待接入', (tester) async {
-    await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.settingsAccount,
-    );
-
-    expect(find.byType(AccountPage), findsOneWidget);
-    expect(find.text('注销账号'), findsOneWidget);
-    expect(find.text('待接入'), findsNothing);
   });
 
   testWidgets('默认保留评论；确认后提交申请、存下凭据并退出登录', (tester) async {

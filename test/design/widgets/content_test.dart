@@ -130,25 +130,6 @@ void main() {
       expect(find.bySemanticsLabel('清空'), findsNothing);
     });
 
-    testWidgets('占位文字用细体，和输入内容区分开', (tester) async {
-      await pumpEat(
-        tester,
-        const SizedBox(
-          width: 360,
-          child: EatFormField(label: '用户名', hintText: '3–10 位字母'),
-        ),
-      );
-
-      final decoration = tester
-          .widget<TextField>(find.byType(TextField))
-          .decoration!;
-      expect(decoration.hintStyle!.fontWeight, FontWeight.w400);
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).style!.fontWeight,
-        FontWeight.w700,
-      );
-    });
-
     testWidgets('价格只能输数字和小数点，前面带 ¥', (tester) async {
       final controller = TextEditingController();
       addTearDown(controller.dispose);

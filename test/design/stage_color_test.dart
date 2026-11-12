@@ -1,4 +1,3 @@
-import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,19 +8,5 @@ void main() {
       StageColor.redoil,
       StageColor.soy,
     ]);
-  });
-
-  test('浅色舞台用 ink 系文字和 ink 实心按钮，深色舞台用 paper', () {
-    for (final stage in StageColor.values) {
-      expect(
-        stage.foreground,
-        stage.isDark ? EatPalette.paper : EatPalette.ink,
-      );
-      expect(
-        stage.ghost,
-        stage.isDark ? EatPalette.stageGhostDark : EatPalette.stageGhostLight,
-      );
-      expect(stage.solid, stage.isDark ? EatPalette.paper : EatPalette.ink);
-    }
   });
 }

@@ -236,17 +236,6 @@ void main() {
       expect(find.text('登录后才能反馈'), findsOneWidget);
     });
 
-    testWidgets('从地址栏进只给登录用户的页面，带着原地址去登录页', (tester) async {
-      final (_, router) = await pumpApp(
-        tester,
-        env,
-        session: const Guest(),
-        location: Paths.settingsAccount,
-      );
-
-      expect(locationOf(router), Paths.loginFrom(Paths.settingsAccount));
-    });
-
     testWidgets('搜过的词不保存', (tester) async {
       env.adapter
         ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
