@@ -326,5 +326,28 @@ void main() {
       expect(selected, Tristate.isTrue);
       await expectAccessible(tester);
     });
+
+    testWidgets('从导航上开始的上下滑动不切换标签，点一下照常切换', (tester) async {
+      final picked = <int>[];
+      await pumpEat(
+        tester,
+        SizedBox(
+          width: 358,
+          child: EatNavBar(
+            currentIndex: 0,
+            onSelected: picked.add,
+            onPublish: () {},
+          ),
+        ),
+      );
+
+      await tester.drag(find.bySemanticsLabel('附近'), const Offset(0, -200));
+      await tester.pumpAndSettle();
+      expect(picked, isEmpty, reason: '往上滑是想滚动页面, 不是点「附近」');
+
+      await tester.tap(find.bySemanticsLabel('我的'));
+      await tester.pumpAndSettle();
+      expect(picked, [2]);
+    });
   });
 }

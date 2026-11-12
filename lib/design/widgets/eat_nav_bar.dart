@@ -46,35 +46,41 @@ class EatNavBar extends StatelessWidget {
           spacing: EatSpace.s10,
           children: [
             Expanded(
-              // 与屏幕边缘的距离由外壳负责, 因此去掉组件自带的外边距.
-              // 组件把每个标签读作带选中状态的按钮, 不是 tab 角色, 因此外层不能声明 tabBar.
-              child: GlassTabBar.bottom(
-                tabs: [
-                  for (final tab in _tabs)
-                    GlassTab(
-                      icon: EatIcon(tab.icon, size: 22, color: c.inkMuted),
-                      activeIcon: EatIcon(tab.icon, size: 22, color: c.ink),
-                      label: tab.label,
-                    ),
-                ],
-                selectedIndex: currentIndex,
-                onTabSelected: onSelected,
-                settings: _barGlass(c.paper),
-                indicatorSettings: _indicatorGlass(c.ink),
-                indicatorColor: c.ink.withValues(alpha: 0.07),
-                glowDuration: const Duration(milliseconds: 150),
-                horizontalPadding: 0,
-                verticalPadding: 0,
-                barHeight: EatSize.nav,
-                iconLabelSpacing: 1,
-                textStyle: eat.text.caption,
-                selectedLabelColor: c.ink,
-                unselectedLabelColor: c.inkMuted,
-                selectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
+              // 纵向滑动由外层的手势接收并忽略. 组件只注册了横向拖动手势,
+              // 没有其他手势竞争时, 从胶囊上开始的上下滑动会在松手时切换到手指下方的标签.
+              child: GestureDetector(
+                onVerticalDragStart: (_) {},
+                excludeFromSemantics: true,
+                // 与屏幕边缘的距离由外壳负责, 因此去掉组件自带的外边距.
+                // 组件把每个标签读作带选中状态的按钮, 不是 tab 角色, 因此外层不能声明 tabBar.
+                child: GlassTabBar.bottom(
+                  tabs: [
+                    for (final tab in _tabs)
+                      GlassTab(
+                        icon: EatIcon(tab.icon, size: 22, color: c.inkMuted),
+                        activeIcon: EatIcon(tab.icon, size: 22, color: c.ink),
+                        label: tab.label,
+                      ),
+                  ],
+                  selectedIndex: currentIndex,
+                  onTabSelected: onSelected,
+                  settings: _barGlass(c.paper),
+                  indicatorSettings: _indicatorGlass(c.ink),
+                  indicatorColor: c.ink.withValues(alpha: 0.07),
+                  glowDuration: const Duration(milliseconds: 150),
+                  horizontalPadding: 0,
+                  verticalPadding: 0,
+                  barHeight: EatSize.nav,
+                  iconLabelSpacing: 1,
+                  textStyle: eat.text.caption,
+                  selectedLabelColor: c.ink,
+                  unselectedLabelColor: c.inkMuted,
+                  selectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
             ),
