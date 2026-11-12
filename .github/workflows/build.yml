@@ -1,10 +1,12 @@
 name: Build
 
-# 触发条件: main 的 push 与 PR, 以 v 开头的 tag, 手动触发.
+# 发版 tag 写作 v<版本名>+<构建号>, 可以带一个后缀, 如 v1.2.3+62, v1.2.3+62-beta. 推送这样的 tag,
+# 或在这样的 tag 上手动运行, 构建 Release, 版本名和构建号取自 tag. 补丁 tag (以 -p<N> 结尾) 交给 patch.yml.
+# 其余分支的 push 和手动运行构建 Nightly. PR 只构建, 不上传.
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches: ["**"]
+    tags: ["v*", "!v*-p[0-9]*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -22,8 +24,8 @@ permissions:
 #   上传密钥. 缺省时 release 回落到 debug 签名.
 # - SENTRY_AUTH_TOKEN 和 Variables 中的 SENTRY_URL, SENTRY_ORG, SENTRY_PROJECT: 发版时上传符号表和 source map.
 # - SHOREBIRD_TOKEN: 发版时 Android 改用 shorebird release. 还需要仓库里有 shorebird.yaml.
+# - 环境 Cloudflare R2 的 R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET: 产物上传到 R2. 缺省时不上传.
 env:
-  IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/v') }}
   APP_CONFIG: ${{ secrets.APP_CONFIG }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   SENTRY_URL: ${{ vars.SENTRY_URL }}
@@ -36,12 +38,47 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       flutter-version: ${{ steps.fvm.outputs.flutter }}
+      release: ${{ steps.version.outputs.release }}
+      build-name: ${{ steps.version.outputs.build-name }}
+      build-number: ${{ steps.version.outputs.build-number }}
+      r2-prefix: ${{ steps.version.outputs.r2-prefix }}
     steps:
       - uses: actions/checkout@v7
 
       # Flutter 版本只在 .fvmrc 中维护, 后续 job 复用此处的输出.
       - id: fvm
         run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      # 发版 tag 决定版本名和构建号, Shorebird 补丁按它们找到对应的版本. 其余构建用 pubspec.yaml 的版本名和运行号.
+      # 以 v 开头但格式不对的 tag 直接失败, 免得当成 Nightly 构建出去.
+      - id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          pattern='^v([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)(-([A-Za-z0-9.]+))?$'
+          if [ "$REF_TYPE" = tag ] && [[ "$REF_NAME" == v* ]]; then
+            if [[ "$REF_NAME" =~ -p[0-9]+$ ]] || ! [[ "$REF_NAME" =~ $pattern ]]; then
+              echo "::error::发版 tag 应写作 v<版本名>+<构建号>[-后缀], 如 v1.2.3+62-beta. 当前为 $REF_NAME"
+              exit 1
+            fi
+            name="${BASH_REMATCH[1]}"
+            number="${BASH_REMATCH[2]}"
+            {
+              echo "release=true"
+              echo "build-name=$name"
+              echo "build-number=$number"
+              echo "r2-prefix=release/${REF_NAME#v}" | tr '+' '-'
+            } >> "$GITHUB_OUTPUT"
+          else
+            name=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+            {
+              echo "release=false"
+              echo "build-name=$name"
+              echo "build-number=${{ github.run_number }}"
+              echo "r2-prefix=nightly/$name-${{ github.run_number }}-${GITHUB_SHA::7}"
+            } >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: subosito/flutter-action@v2
         with:
@@ -70,6 +107,9 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     env:
+      IS_RELEASE: ${{ needs.check.outputs.release }}
+      BUILD_NAME: ${{ needs.check.outputs.build-name }}
+      BUILD_NUMBER: ${{ needs.check.outputs.build-number }}
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     steps:
@@ -98,7 +138,7 @@ jobs:
             printf '%s' "$APP_CONFIG" > config/ci.json
             defines="--dart-define-from-file=config/ci.json"
           fi
-          flags="--build-number=${{ github.run_number }}"
+          flags="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER"
           # 发版构建混淆 Dart 代码, 符号表留给 Sentry 还原堆栈.
           if [ "$IS_RELEASE" = true ]; then
             flags="$flags --obfuscate --split-debug-info=build/symbols"
@@ -152,12 +192,11 @@ jobs:
       - name: Upload symbols to Sentry
         if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
         run: |
-          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
           dart run sentry_dart_plugin \
             --sentry-define=url="$SENTRY_URL" \
             --sentry-define=org="$SENTRY_ORG" \
             --sentry-define=project="$SENTRY_PROJECT" \
-            --sentry-define=release="eat@$version+${{ github.run_number }}" \
+            --sentry-define=release="eat@$BUILD_NAME+$BUILD_NUMBER" \
             --sentry-define=upload_debug_symbols=true \
             --sentry-define=upload_source_maps=false \
             --sentry-define=symbols_path=build/symbols \
@@ -171,12 +210,16 @@ jobs:
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
   ios:
     name: iOS
     needs: check
     runs-on: macos-latest
+    env:
+      IS_RELEASE: ${{ needs.check.outputs.release }}
+      BUILD_NAME: ${{ needs.check.outputs.build-name }}
+      BUILD_NUMBER: ${{ needs.check.outputs.build-number }}
     steps:
       - uses: actions/checkout@v7
 
@@ -197,7 +240,7 @@ jobs:
 
       - name: Prepare build arguments
         run: |
-          args="--build-number=${{ github.run_number }}"
+          args="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER"
           if [ -n "$APP_CONFIG" ]; then
             printf '%s' "$APP_CONFIG" > config/ci.json
             args="$args --dart-define-from-file=config/ci.json"
@@ -215,12 +258,16 @@ jobs:
           name: ios-unsigned
           path: build/ios/Runner.app.zip
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
   web:
     name: Web
     needs: check
     runs-on: ubuntu-latest
+    env:
+      IS_RELEASE: ${{ needs.check.outputs.release }}
+      BUILD_NAME: ${{ needs.check.outputs.build-name }}
+      BUILD_NUMBER: ${{ needs.check.outputs.build-number }}
     steps:
       - uses: actions/checkout@v7
 
@@ -236,7 +283,7 @@ jobs:
       # 构建号写进 version.json, 启动时读出, 作为崩溃上报的 release.
       - name: Build
         run: |
-          args="--build-number=${{ github.run_number }} --no-web-resources-cdn"
+          args="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER --no-web-resources-cdn"
           if [ -n "$APP_CONFIG" ]; then
             printf '%s' "$APP_CONFIG" > config/ci.json
             args="$args --dart-define-from-file=config/ci.json"
@@ -249,12 +296,11 @@ jobs:
       - name: Upload source maps to Sentry
         if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
         run: |
-          version=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
           dart run sentry_dart_plugin \
             --sentry-define=url="$SENTRY_URL" \
             --sentry-define=org="$SENTRY_ORG" \
             --sentry-define=project="$SENTRY_PROJECT" \
-            --sentry-define=release="eat@$version+${{ github.run_number }}" \
+            --sentry-define=release="eat@$BUILD_NAME+$BUILD_NUMBER" \
             --sentry-define=upload_debug_symbols=false \
             --sentry-define=upload_source_maps=true \
             --sentry-define=web_build_path=build/web
@@ -267,4 +313,58 @@ jobs:
           name: web
           path: build/web
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
+
+  # GitHub 上的产物只保留 1 天, 用来在 job 之间传递. 要分发和留存的产物上传到 R2,
+  # 按目录区分保留期: release/ 和 patch/ 32 天, nightly/ 2 天, 由 R2 的生命周期规则删除.
+  # PR 构建不上传.
+  publish:
+    name: Upload to R2
+    needs: [check, android, ios, web]
+    if: >-
+      ${{ !cancelled() && github.event_name != 'pull_request' && (needs.android.result == 'success'
+      || needs.ios.result == 'success' || needs.web.result == 'success') }}
+    runs-on: ubuntu-latest
+    environment: Cloudflare R2
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # R2 不支持新版 AWS CLI 默认附带的校验和.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      PUBLIC_URL: https://release.foofish.work
+      BUILD_NAME: ${{ needs.check.outputs.build-name }}
+      R2_PREFIX: ${{ needs.check.outputs.r2-prefix }}
+    steps:
+      # 只下载构建成功的产物, 每个产物放在以名字命名的目录里.
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+
+      - name: Upload
+        if: env.R2_BUCKET != ''
+        run: |
+          set -euo pipefail
+          out=upload
+          mkdir -p "$out"
+          if [ -d dist/android ]; then
+            cp dist/android/flutter-apk/app-release.apk "$out/eat-$BUILD_NAME.apk"
+            cp dist/android/bundle/release/app-release.aab "$out/eat-$BUILD_NAME.aab"
+          fi
+          if [ -d dist/ios-unsigned ]; then
+            cp dist/ios-unsigned/Runner.app.zip "$out/eat-$BUILD_NAME-ios-unsigned.zip"
+          fi
+          if [ -d dist/web ]; then
+            (cd dist/web && zip -qr "../../$out/eat-$BUILD_NAME-web.zip" .)
+          fi
+          aws s3 cp "$out" "s3://$R2_BUCKET/$R2_PREFIX/" --recursive \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+          {
+            echo "### R2"
+            for f in "$out"/*; do
+              echo "- $PUBLIC_URL/$R2_PREFIX/$(basename "$f")"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

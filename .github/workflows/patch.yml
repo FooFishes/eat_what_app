@@ -1,8 +1,15 @@
 name: Patch
 
-# 给已发布的 Android 版本推 Shorebird 补丁. 手动触发, 选择与该版本对应的 tag 运行.
-# 补丁只修 Dart 代码的问题. 新功能, 新权限, 新的数据收集, 原生代码和插件的改动都发新版本.
+# 给已发布的 Android 版本推 Shorebird 补丁. 补丁只修 Dart 代码的问题.
+# 新功能, 新权限, 新的数据收集, 原生代码和插件的改动都发新版本.
+#
+# 两种触发方式:
+# - 推送补丁 tag, 写作 发版 tag 加 -p<N>, 如 v1.2.3+62-p1, v1.2.3+62-beta-p1. 直接推送, 不试跑.
+#   目标版本取 tag 里的 1.2.3+62. 后缀为 beta 时推到 beta 轨道, 否则推到 stable.
+# - 手动触发, 选择与该版本对应的 tag 运行, 默认只试跑.
 on:
+  push:
+    tags: ["v*-p[0-9]*"]
   workflow_dispatch:
     inputs:
       release-version:
@@ -25,9 +32,18 @@ jobs:
   android:
     name: Android patch
     runs-on: ubuntu-latest
+    environment: Cloudflare R2
     env:
       APP_CONFIG: ${{ secrets.APP_CONFIG }}
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # R2 不支持新版 AWS CLI 默认附带的校验和.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
     steps:
       - uses: actions/checkout@v7
 
@@ -41,6 +57,38 @@ jobs:
         with:
           cache: true
 
+      - name: Resolve target
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.release-version }}
+          INPUT_TRACK: ${{ inputs.track }}
+          INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [ "${{ github.event_name }}" = push ]; then
+            pattern='^v([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)(-([A-Za-z0-9.]+))?-p([0-9]+)$'
+            if ! [[ "$REF_NAME" =~ $pattern ]]; then
+              echo "::error::补丁 tag 应写作 v<版本名>+<构建号>[-后缀]-p<N>, 如 v1.2.3+62-beta-p1. 当前为 $REF_NAME"
+              exit 1
+            fi
+            version="${BASH_REMATCH[1]}"
+            track=stable
+            if [ "${BASH_REMATCH[3]}" = beta ]; then track=beta; fi
+            dry=false
+            label="${BASH_REMATCH[3]:+${BASH_REMATCH[3]}-}p${BASH_REMATCH[4]}"
+          else
+            version="$INPUT_VERSION"
+            track="$INPUT_TRACK"
+            dry="$INPUT_DRY_RUN"
+            label="run${{ github.run_number }}"
+          fi
+          {
+            echo "RELEASE_VERSION=$version"
+            echo "TRACK=$track"
+            echo "DRY_RUN=$dry"
+            echo "R2_PREFIX=patch/${version/+/-}/$label"
+          } >> "$GITHUB_ENV"
+          echo "目标 $version, 轨道 $track, 试跑 $dry" >> "$GITHUB_STEP_SUMMARY"
+
       # 补丁沿用发版时的 Flutter 版本. 环境配置和混淆选项与发版构建保持一致.
       - name: Patch
         run: |
@@ -50,9 +98,23 @@ jobs:
             defines="--dart-define-from-file=config/ci.json"
           fi
           dry=""
-          if [ "${{ inputs.dry-run }}" = true ]; then dry="--dry-run"; fi
+          if [ "$DRY_RUN" = true ]; then dry="--dry-run"; fi
           shorebird patch android $dry \
-            --release-version="${{ inputs.release-version }}" \
-            --track="${{ inputs.track }}" \
+            --release-version="$RELEASE_VERSION" \
+            --track="$TRACK" \
             --obfuscate --split-debug-info=build/symbols \
             -- $defines
+
+      # 补丁本身由 Shorebird 分发. R2 上留一份构建出的 AAB 和符号表, 用于对照和还原堆栈,
+      # 放在 patch/ 下, 由 R2 的生命周期规则保留 32 天. 试跑不上传.
+      - name: Upload to R2
+        if: env.DRY_RUN != 'true' && env.R2_BUCKET != ''
+        run: |
+          set -euo pipefail
+          out=upload
+          mkdir -p "$out"
+          cp build/app/outputs/bundle/release/app-release.aab "$out/eat-patch.aab"
+          tar -czf "$out/symbols.tar.gz" -C build symbols
+          aws s3 cp "$out" "s3://$R2_BUCKET/$R2_PREFIX/" --recursive \
+            --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
+          echo "R2: $R2_PREFIX/" >> "$GITHUB_STEP_SUMMARY"
