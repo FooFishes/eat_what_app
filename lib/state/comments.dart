@@ -5,11 +5,10 @@
 library;
 
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/data/comment/comment_repository.dart';
 import 'package:eat/data/food/food_repository.dart';
-import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/paged.dart';
@@ -74,9 +73,23 @@ class DishComments extends _$DishComments {
     if (current == null) return;
     state = AsyncData(CommentList(data: current.data.without(commentId)));
   }
+
+  /// 把评论 [rootId] 的回复条数加上 [delta], 不发起请求. 回复发表或删除后由 [CommentWriter] 调用.
+  ///
+  /// 回复条数为 0 的评论不请求回复列表, 因此发表第一条回复后需要更新条数, 回复才会显示.
+  void adjustReplies(int rootId, int delta) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData(
+      CommentList(
+        data: current.data.withReplies(rootId, delta),
+        moreError: current.moreError,
+      ),
+    );
+  }
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+/// 一条评论下的回复, 每页 20 条, 按时间正序.
 @riverpod
 class CommentReplies extends _$CommentReplies {
   @override
@@ -120,7 +133,7 @@ class CommentReplies extends _$CommentReplies {
   }
 }
 
-/// 删除评论和回复. 删除成功后从已加载的各个列表中移除该条目, 并刷新 "我的评论".
+/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
 @Riverpod(keepAlive: true)
 class CommentWriter extends _$CommentWriter {
   @override
@@ -128,60 +141,60 @@ class CommentWriter extends _$CommentWriter {
 
   /// 发表评论, 或在 [rootId] 不为 null 时回复该评论. [replyToId] 是被回复的那条回复.
   ///
-  /// 失败时抛出 [AppFailure]. 进入审核的评论不出现在公开列表中, 因此只在评论立即公开时刷新列表.
+  /// 失败时抛出 [AppFailure].
   Future<CommentPosted> post(
     int dishId, {
     required String text,
     List<String> pictureKeys = const [],
     int? rootId,
     int? replyToId,
-    required String idempotencyKey,
   }) async {
     final comments = ref.read(commentRepositoryProvider);
     final posted = rootId == null
-        ? await comments.create(
-            dishId,
-            text: text,
-            pictureKeys: pictureKeys,
-            idempotencyKey: idempotencyKey,
-          )
+        ? await comments.create(dishId, text: text, pictureKeys: pictureKeys)
         : await comments.reply(
             dishId,
             rootId,
             text: text,
             replyToId: replyToId,
-            idempotencyKey: idempotencyKey,
           );
-    ref.read(myCommentIdsProvider.notifier).remember(posted.id);
     ref.invalidate(myCommentsProvider);
-    if (!posted.pending) {
-      if (rootId != null) {
-        ref.invalidate(commentRepliesProvider(rootId));
-      } else {
-        for (final sort in CommentSort.values) {
-          ref.invalidate(dishCommentsProvider(dishId, sort));
-        }
+    if (rootId != null) {
+      ref.invalidate(commentRepliesProvider(rootId));
+      _adjustReplies(dishId, rootId, 1);
+    } else {
+      for (final sort in CommentSort.values) {
+        ref.invalidate(dishCommentsProvider(dishId, sort));
       }
     }
     return posted;
   }
 
-  /// 删除自己的评论或回复. [rootId] 是回复所属评论的 id, 删除评论时为 null.
+  /// 删除自己的评论或回复.
   ///
-  /// 成功返回 null, 失败返回原因.
-  Future<AppFailure?> delete(Comment comment, {int? rootId}) async {
+  /// 成功返回 null, 失败返回原因. 服务端答复评论不存在时同样从列表中移除.
+  Future<AppFailure?> delete(Comment comment) async {
     try {
-      await ref
-          .read(commentRepositoryProvider)
-          .delete(comment.id, idempotencyKey: newIdempotencyKey());
+      await ref.read(commentRepositoryProvider).delete(comment.id);
     } on AppFailure catch (e) {
+      if (isCommentGone(e)) removeLocal(comment);
       return e;
     }
+    removeLocal(comment);
+    return null;
+  }
+
+  /// 从已加载的列表中移除 [comment], 不发起请求, 并刷新 "我的评论".
+  ///
+  /// 删除成功后调用. 赞, 回复或删除时服务端答复评论不存在, 也调用本方法.
+  void removeLocal(Comment comment) {
+    final rootId = comment.rootId;
     if (rootId != null) {
       final replies = commentRepliesProvider(rootId);
       if (ref.exists(replies)) {
         ref.read(replies.notifier).removeLocal(comment.id);
       }
+      _adjustReplies(comment.dishId, rootId, -1);
     } else {
       for (final sort in CommentSort.values) {
         final list = dishCommentsProvider(comment.dishId, sort);
@@ -190,29 +203,30 @@ class CommentWriter extends _$CommentWriter {
         }
       }
     }
-    ref.read(myCommentIdsProvider.notifier).forget(comment.id);
     ref.invalidate(myCommentsProvider);
-    return null;
+  }
+
+  /// 回复评论时服务端答复评论不存在. 被删除的可能是评论 [rootId], 也可能是被回复的回复, 因此重新请求这两组列表.
+  void refreshThread(int dishId, int rootId) {
+    ref.invalidate(commentRepliesProvider(rootId));
+    for (final sort in CommentSort.values) {
+      ref.invalidate(dishCommentsProvider(dishId, sort));
+    }
+  }
+
+  void _adjustReplies(int dishId, int rootId, int delta) {
+    for (final sort in CommentSort.values) {
+      final list = dishCommentsProvider(dishId, sort);
+      if (ref.exists(list)) {
+        ref.read(list.notifier).adjustReplies(rootId, delta);
+      }
+    }
   }
 }
 
-// TODO: 评论列表不包含当前用户是否赞过, 每条评论单独请求一次. 列表接口提供该字段后删除本 Provider.
-/// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-///
-/// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-@riverpod
-Future<CommentLike?> commentLikeOf(Ref ref, int commentId) async {
-  final status = ref.watch(accountStatusProvider);
-  if (status is! VerifiedStatus && status is! UnverifiedStatus) return null;
-  ref.cacheFor(const Duration(minutes: 5));
-  try {
-    return await ref
-        .watch(commentRepositoryProvider)
-        .likeOf(commentId, cancelToken: ref.cancelToken());
-  } on AppFailure {
-    return null;
-  }
-}
+// TODO: 评论不存在时服务端返回参数错误 10001, 与填写错误共用一个码. 后端提供单独的业务码后改为判断该码.
+/// 对一条已有评论的操作 (赞, 回复, 删除, 举报) 失败, 原因是评论已被删除.
+bool isCommentGone(AppFailure failure) => failure.code == BizCodes.paramInvalid;
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
 ///
@@ -225,7 +239,9 @@ class CommentLikes extends _$CommentLikes {
     return const {};
   }
 
-  /// 切换赞的状态. 先修改覆盖值, 请求成功后改为服务端返回的计数, 失败时恢复原值并返回原因.
+  /// 切换赞的状态. 先修改覆盖值, 失败时恢复原值并返回原因.
+  ///
+  /// 接口不返回赞数, 请求成功后保留本地计算的计数.
   Future<AppFailure?> toggle(int commentId, CommentLike before) async {
     final liked = !before.liked;
     _set(
@@ -236,14 +252,9 @@ class CommentLikes extends _$CommentLikes {
       ),
     );
     try {
-      final result = await ref
+      await ref
           .read(commentRepositoryProvider)
-          .setLiked(
-            commentId,
-            liked: liked,
-            idempotencyKey: newIdempotencyKey(),
-          );
-      if (ref.mounted) _set(commentId, result);
+          .setLiked(commentId, liked: liked);
       return null;
     } on AppFailure catch (e) {
       if (ref.mounted) _set(commentId, before);
@@ -254,34 +265,7 @@ class CommentLikes extends _$CommentLikes {
   void _set(int id, CommentLike value) => state = {...state, id: value};
 }
 
-// TODO: 公开评论不包含作者 id, 客户端用 "我的评论" 第一页的 id 判断自己的评论, 更早的评论不显示 "删除". 列表接口提供作者 id 后改为比较作者 id.
-/// 当前用户写过的评论和回复的 id, 用于在 "更多" 中显示 "删除" 还是 "举报".
-///
-/// 取 "我的评论" 最近 100 条. 本次启动后发表的评论在发表成功时加入.
-@Riverpod(keepAlive: true)
-class MyCommentIds extends _$MyCommentIds {
-  @override
-  Future<Set<int>> build() async {
-    if (_myId(ref) == null) return const {};
-    final page = await ref.watch(commentRepositoryProvider).mine(pageSize: 100);
-    return {
-      for (final c in page.items)
-        if (c.status != CommentStatus.deleted) c.id,
-    };
-  }
-
-  void remember(int id) {
-    final current = state.value;
-    if (current != null) state = AsyncData({...current, id});
-  }
-
-  void forget(int id) {
-    final current = state.value;
-    if (current != null) state = AsyncData({...current}..remove(id));
-  }
-}
-
-/// "我的" 中的评论分栏: 我写过的评论和回复, 不含已删除和被新版本取代的.
+/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
 ///
 /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
 @Riverpod(keepAlive: true)
@@ -290,11 +274,9 @@ class MyComments extends _$MyComments {
   Future<CommentFeed> build() async {
     _myId(ref);
     return CommentFeed(
-      pages: _visible(
-        await ref
-            .watch(commentRepositoryProvider)
-            .mine(cancelToken: ref.cancelToken()),
-      ),
+      pages: await ref
+          .watch(commentRepositoryProvider)
+          .mine(cancelToken: ref.cancelToken()),
     );
   }
 
@@ -309,9 +291,7 @@ class MyComments extends _$MyComments {
           .read(commentRepositoryProvider)
           .mine(page: current.pages.page + 1);
       if (ref.mounted) {
-        state = AsyncData(
-          CommentFeed(pages: current.pages.append(_visible(next))),
-        );
+        state = AsyncData(CommentFeed(pages: current.pages.append(next)));
       }
     } on AppFailure catch (e) {
       if (ref.mounted) {
@@ -321,17 +301,6 @@ class MyComments extends _$MyComments {
       _loading = false;
     }
   }
-
-  static Paged<MyComment> _visible(Paged<MyComment> page) => Paged(
-    items: [
-      for (final c in page.items)
-        if (c.status != CommentStatus.deleted &&
-            c.status != CommentStatus.superseded)
-          c,
-    ],
-    page: page.page,
-    hasNext: page.hasNext,
-  );
 }
 
 /// "我的评论" 的分页数据.

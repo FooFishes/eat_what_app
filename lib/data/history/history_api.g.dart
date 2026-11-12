@@ -13,22 +13,28 @@ BrowseItemDto _$BrowseItemDtoFromJson(Map<String, dynamic> json) =>
       viewedAt: (json['viewedAt'] as num?)?.toInt(),
       food: json['food'] == null
           ? null
-          : BrowseTargetDto.fromJson(json['food'] as Map<String, dynamic>),
+          : BrowseFoodDto.fromJson(json['food'] as Map<String, dynamic>),
       restaurant: json['restaurant'] == null
           ? null
-          : BrowseTargetDto.fromJson(
-              json['restaurant'] as Map<String, dynamic>,
-            ),
+          : BrowseShopDto.fromJson(json['restaurant'] as Map<String, dynamic>),
     );
 
-BrowseTargetDto _$BrowseTargetDtoFromJson(Map<String, dynamic> json) =>
-    BrowseTargetDto(
+BrowseFoodDto _$BrowseFoodDtoFromJson(Map<String, dynamic> json) =>
+    BrowseFoodDto(
       id: (json['id'] as num?)?.toInt(),
+      restaurantId: (json['restaurantId'] as num?)?.toInt(),
       name: json['name'] as String?,
-      pictureUrl: (json['pictureUrl'] as List<dynamic>?)
+      pictureUrls: (json['pictureUrls'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      likesCount: (json['likesCount'] as num?)?.toInt(),
+      likeCount: (json['likeCount'] as num?)?.toInt(),
+    );
+
+BrowseShopDto _$BrowseShopDtoFromJson(Map<String, dynamic> json) =>
+    BrowseShopDto(
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      pictureUrl: json['pictureUrl'] as String?,
     );
 
 // **************************************************************************

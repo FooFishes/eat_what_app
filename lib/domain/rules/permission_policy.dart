@@ -4,9 +4,7 @@ import 'package:eat/domain/models/account_status.dart';
 ///
 /// 未登录 (含游客) 时所有操作都要先登录. 浏览, 屏蔽和退出对所有已登录账号开放, 不在本枚举中.
 ///
-/// 封禁账号的会话只能调用后端登记过的接口, 登记范围比产品允许封禁中账号执行的操作窄.
-/// 两者不一致时以后端为准, 否则入口放行后请求仍会被拒绝.
-/// 因此 [viewHistory] 起的几项也在本枚举中, 只拦截封禁中的账号.
+/// [Capability.openToUnverified] 中的操作对所有已登录账号开放. 列入本枚举是为了让游客点入口时弹出登录拦截.
 enum Capability {
   like,
   favorite,
@@ -18,36 +16,33 @@ enum Capability {
   follow,
   publishDish,
   createShop,
-  editOwnDish,
 
-  /// 删除自己的评论和回复. 后端只要求普通会话和本人, 不要求认证, 因此只拦截封禁中的账号.
+  /// 编辑菜品和恢复到某个修改记录. 认证用户都能编辑任何一道菜, 不限上传者.
+  editDish,
+
+  /// 编辑店铺和恢复到某个修改记录. 认证用户都能编辑任何一家店, 包括标记已关门.
+  editShop,
+
+  /// 删除自己的评论和回复. 后端只要求本人, 不要求认证.
   deleteComment,
-
-  /// 编辑资料. 未认证账号可以执行, 封禁中的账号不能.
   editProfile,
-
-  /// 查看足迹. 产品允许封禁中查看, 后端未登记 `/history/browse`.
   viewHistory,
 
-  /// 查看粉丝和关注列表. 后端未登记 `/user/followers`, `/user/followings`.
+  /// 查看粉丝和关注列表.
   viewFollows,
 
-  /// 查看等级和经验明细. 后端未登记 `/user/growth`, `/user/growth/ledger`.
+  /// 查看等级和经验明细.
   viewGrowth,
-
-  /// 取消关注. 后端未登记 `/user/unfollow`.
   unfollow,
 
-  /// 修改隐私和推荐设置. 后端未登记 `/user/changePrivacy`, `/user/recommendation-settings`.
+  /// 修改隐私和推荐设置.
   changePrivacy,
 
-  /// 设置或修改密码. 后端未登记改密和发送改密验证码的接口.
+  /// 设置或修改密码.
   changePassword,
-
-  /// 设置用户名. 后端未登记 `/auth/username/set`.
   setUsername,
 
-  /// 学生认证. 后端未登记 `/auth/sdu`, `/auth/sendEmail`.
+  /// 学生认证.
   verify,
 
   /// 举报菜, 评论和用户. 所有已登录账号都能执行.
@@ -65,6 +60,12 @@ enum Capability {
 
   /// 看他人主页 (含他上传的菜). 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
   viewProfile,
+
+  /// 附近页 "只看我收藏的店". 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
+  viewFavorites,
+
+  /// 发现页 "不想去这家": 30 天内不再推荐. 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
+  dismissShop,
 
   /// 意见反馈. 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
   feedback;
@@ -85,13 +86,9 @@ enum Capability {
     reportShopError ||
     viewInbox ||
     viewProfile ||
+    viewFavorites ||
+    dismissShop ||
     feedback => true,
-    _ => false,
-  };
-
-  /// 封禁中的账号也能执行的操作. 后端的受限会话放行消息, 他人主页, 反馈, 信息有误和举报.
-  bool get openToBanned => switch (this) {
-    report || reportShopError || viewInbox || viewProfile || feedback => true,
     _ => false,
   };
 
@@ -106,7 +103,8 @@ enum Capability {
     follow => '关注',
     publishDish => '发布',
     createShop => '新建店',
-    editOwnDish => '编辑',
+    editDish => '编辑',
+    editShop => '编辑店铺',
     deleteComment => '删除评论',
     editProfile => '编辑资料',
     viewHistory => '查看足迹',
@@ -121,6 +119,8 @@ enum Capability {
     reportShopError => '反馈信息有误',
     viewInbox => '看消息',
     viewProfile => '看主页',
+    viewFavorites => '看收藏',
+    dismissShop => '标记不想去',
     feedback => '反馈',
   };
 }
@@ -146,13 +146,6 @@ final class NeedsVerification extends PermissionResult {
   const NeedsVerification();
 }
 
-/// 账号封禁中. 拦截对话框显示封禁原因, 不提供 "去认证".
-final class BlockedByBan extends PermissionResult {
-  const BlockedByBan(this.status);
-
-  final BannedStatus status;
-}
-
 /// [status] 的账号能否执行 [capability].
 PermissionResult checkPermission(AccountStatus status, Capability capability) =>
     switch (status) {
@@ -160,6 +153,4 @@ PermissionResult checkPermission(AccountStatus status, Capability capability) =>
       VerifiedStatus() => const Allowed(),
       UnverifiedStatus() when capability.openToUnverified => const Allowed(),
       UnverifiedStatus() => const NeedsVerification(),
-      BannedStatus() when capability.openToBanned => const Allowed(),
-      final BannedStatus banned => BlockedByBan(banned),
     };

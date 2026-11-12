@@ -1,3 +1,6 @@
+import 'package:eat/features/dish/dish_history_page.dart';
+import 'package:eat/features/dish/dish_page.dart';
+import 'package:eat/features/dish/tag_panel.dart';
 import 'package:eat/features/profile/user_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/paths.dart';
@@ -17,20 +20,19 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /foods/detail/1', [
-        FakeAdapter.ok(
-          foodJson(
-            likes: 12,
-            systemTags: [
-              {'id': 3, 'name': '皮薄', 'count': 8, 'taggedByMe': false},
-              {'id': 4, 'name': '量大', 'count': 2, 'taggedByMe': true},
-            ],
-          ),
-        ),
+        FakeAdapter.ok(foodJson(likes: 12, tags: ['辣', '麻'], signature: true)),
+      ])
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({'id': 9, 'displayName': '小林'}),
       ])
       ..on('GET /restaurant/detail/7', [FakeAdapter.ok(restaurantJson())]);
   });
 
-  testWidgets('舞台上是分类、菜名和价格，抽屉里是店卡、赞、大家怎么说和上传者', (tester) async {
+  Finder scrollable() => find.byWidgetPredicate(
+    (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+  );
+
+  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是店卡、赞、口味和上传者', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -38,28 +40,33 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('主食'), findsOneWidget);
+    expect(find.text('招牌 · 主食'), findsOneWidget);
     expect(find.text('鲜虾蟹\n籽云吞'), findsOneWidget);
     expect(find.text('¥18'), findsOneWidget);
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.textContaining('万达金街 1 层'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
-    expect(find.text('皮薄'), findsOneWidget);
+    expect(find.text('辣'), findsOneWidget);
+    expect(find.text('麻'), findsOneWidget);
     expect(find.text('小林'), findsOneWidget);
     expect(find.text('汤很鲜，虾仁很多'), findsOneWidget);
+    expect(
+      env.adapter.sent('GET /user/userInfo').single.query['userId'],
+      9,
+      reason: '菜品响应只有上传者的 id，昵称要按 id 查',
+    );
+    expect(env.adapter.sent('GET /foods/1/tags'), isEmpty);
+    expect(env.adapter.sent('GET /topics/by-food/1'), isEmpty);
     await expectAccessible(tester);
     await tester.scrollUntilVisible(
       find.text('吃过的人说'),
       200,
-      scrollable: find.byWidgetPredicate(
-        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
-      ),
+      scrollable: scrollable(),
     );
     expect(find.text('吃过的人说'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
-  testWidgets('上传者可以展示时点了进主页；不能展示时写「同学」，点了没有反应', (tester) async {
+  testWidgets('上传者点了进主页；账号删了写「已注销用户」，点了没有反应', (tester) async {
     Future<bool> tapUploader(String name) async {
       final (container, _) = await pumpApp(
         tester,
@@ -70,9 +77,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.text(name),
         200,
-        scrollable: find.byWidgetPredicate(
-          (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
-        ),
+        scrollable: scrollable(),
       );
       await tester.tap(find.text(name));
       await tester.pumpAndSettle();
@@ -84,9 +89,27 @@ void main() {
     expect(await tapUploader('小林'), isTrue);
 
     env.adapter.on('GET /foods/detail/1', [
-      FakeAdapter.ok(foodJson(authorPublic: false)),
+      FakeAdapter.ok(foodJson(uploaderId: null)),
     ]);
-    expect(await tapUploader('同学'), isFalse);
+    expect(await tapUploader('已注销用户'), isFalse);
+  });
+
+  testWidgets('游客看菜不查上传者资料，上传者写「同学」', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const Guest(),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('同学'),
+      200,
+      scrollable: scrollable(),
+    );
+    expect(find.text('同学'), findsOneWidget);
+    expect(env.adapter.sent('GET /user/userInfo'), isEmpty);
+    await unmountApp(tester, container);
   });
 
   testWidgets('没认证时点赞弹拦截对话框，不发请求；「去认证」进认证页', (tester) async {
@@ -136,10 +159,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('点「大家怎么说」里没打过的词就打上，打过的再点撤回', (tester) async {
-    env.adapter
-      ..on('POST /foods/1/tags/system', [FakeAdapter.ok()])
-      ..on('DELETE /foods/1/tags/4', [FakeAdapter.ok()]);
+  testWidgets('「大家怎么说」只读：点口味词和「加标签」都提示待接入，不发请求', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -147,18 +167,63 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.tap(find.text('皮薄'));
+    expect(find.text('待接入'), findsOneWidget);
+    await tester.tap(find.text('辣'));
     await tester.pumpAndSettle();
-    final added = env.adapter.sent('POST /foods/1/tags/system').single;
-    expect(added.body, {
-      'tagIds': [3],
-    });
-    expect(find.text('9'), findsOneWidget);
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.text('量大'));
+    await tester.tap(find.text('加标签'));
     await tester.pumpAndSettle();
-    expect(env.adapter.sent('DELETE /foods/1/tags/4'), hasLength(1));
-    expect(find.text('量大'), findsOneWidget, reason: '撤回后还有 1 个人打过');
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    expect(find.text('自己写'), findsNothing, reason: '不打开加标签面板');
+    expect(
+      env.adapter.requests.where((r) => r.path.contains('/tags')),
+      isEmpty,
+    );
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('没有口味时写「还没有标注口味」', (tester) async {
+    env.adapter.on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+
+    expect(find.textContaining('还没有标注口味'), findsOneWidget);
+    expect(find.text('主食'), findsOneWidget, reason: '不是招牌菜时只写分类');
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('没认证时点「编辑」弹拦截；「修改记录」谁都能看', (tester) async {
+    env.adapter.on('GET /foods/1/history', [FakeAdapter.ok(pageJson([]))]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: testUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('修改记录'),
+      200,
+      scrollable: scrollable(),
+    );
+    await tester.tap(find.text('编辑'));
+    await tester.pumpAndSettle();
+    expect(find.text('认证后才能编辑'), findsOneWidget);
+    expect(locationOf(router), Paths.dish(1));
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('修改记录'));
+    await tester.pumpAndSettle();
+    expect(find.byType(DishHistoryPage), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -197,9 +262,7 @@ void main() {
   });
 
   testWidgets('加标签面板一次最多写 20 个我的标签，超出时提示且不提交', (tester) async {
-    env.adapter
-      ..on('GET /foods/tags/system', [FakeAdapter.ok(<Object>[])])
-      ..on('POST /foods/1/tags/custom', [FakeAdapter.ok()]);
+    env.adapter.on('POST /foods/1/tags/custom', [FakeAdapter.ok()]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -207,7 +270,8 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.tap(find.text('加标签'));
+    // 详情页的入口已标待接入, 面板本身保留, 直接打开.
+    showTagPanel(tester.element(find.byType(DishPage)), dishId: 1).ignore();
     await tester.pumpAndSettle();
     await tester.tap(find.text('自己写'));
     await tester.pumpAndSettle();
@@ -222,6 +286,7 @@ void main() {
     await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('POST /foods/1/tags/custom'), isEmpty);
+    expect(env.adapter.sent('GET /foods/tags/system'), isEmpty);
     await unmountApp(tester, container);
   });
 }

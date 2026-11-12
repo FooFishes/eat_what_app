@@ -2,7 +2,10 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/dish_revision.dart';
+import 'package:eat/domain/models/paged.dart';
 import 'package:eat/state/dish_interactions.dart';
+import 'package:eat/state/published.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dish_providers.g.dart';
@@ -11,9 +14,12 @@ part 'dish_providers.g.dart';
 ///
 /// 获取到最新数据时清除赞和收藏的本地覆盖值.
 /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+///
+/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
 @riverpod
 Future<Dish> dishDetail(Ref ref, int dishId) async {
   ref.cacheFor(const Duration(minutes: 5));
+  ref.watch(publishedCountProvider);
   final repo = ref.watch(foodRepositoryProvider);
   try {
     final dish = await repo.detail(dishId, cancelToken: ref.cancelToken());
@@ -27,7 +33,63 @@ Future<Dish> dishDetail(Ref ref, int dishId) async {
   }
 }
 
-/// 一道菜的口味标签和我的标签.
+/// 菜品的修改记录分页. [moreError] 是加载下一页失败的原因.
+class const DishRevisionPages({
+  required final Paged<DishRevision> pages,
+  final AppFailure? moreError,
+});
+
+/// 一道菜的修改记录, 最新的在前.
+///
+/// 恢复成功后重新请求修改记录和菜品详情.
+@riverpod
+class DishHistory extends _$DishHistory {
+  var _loadingMore = false;
+
+  @override
+  Future<DishRevisionPages> build(int dishId) async => DishRevisionPages(
+    pages: await ref
+        .watch(foodRepositoryProvider)
+        .history(dishId, cancelToken: ref.cancelToken()),
+  );
+
+  /// 加载下一页. 同一时刻只加载一页.
+  Future<void> loadMore() async {
+    final current = state.value;
+    if (current == null || !current.pages.hasNext || _loadingMore) return;
+    _loadingMore = true;
+    try {
+      final next = await ref
+          .read(foodRepositoryProvider)
+          .history(dishId, page: current.pages.page + 1);
+      if (ref.mounted) {
+        state = AsyncData(DishRevisionPages(pages: current.pages.append(next)));
+      }
+    } on AppFailure catch (e) {
+      if (ref.mounted) {
+        state = AsyncData(
+          DishRevisionPages(pages: current.pages, moreError: e),
+        );
+      }
+    } finally {
+      _loadingMore = false;
+    }
+  }
+
+  /// 把菜品恢复到 [revision] 之后的内容. 失败时抛出 [AppFailure].
+  ///
+  /// 成功后通知发布次数变化, 店铺菜单和 "我的" 上传列表随之重新请求.
+  Future<void> restore(DishRevision revision) async {
+    await ref.read(foodRepositoryProvider).restore(dishId, revision.id);
+    ref.read(publishedCountProvider.notifier).published();
+    ref.invalidate(dishDetailProvider(dishId));
+    ref.invalidateSelf();
+  }
+}
+
+/// 一道菜的投票口味标签和我的标签.
+///
+/// 后端 v2 没有口味投票和我的标签接口, 只有保留的加标签面板使用. 菜品详情加载后为空列表.
 ///
 /// 打标签和撤回采用乐观更新: 先修改本地状态, 请求失败时恢复.
 class const DishTags({
@@ -41,7 +103,7 @@ class DishTagsOf extends _$DishTagsOf {
   DishTags? build(int dishId) {
     final dish = ref.watch(dishDetailProvider(dishId)).value;
     if (dish == null) return null;
-    return DishTags(taste: dish.tasteTags, mine: dish.myTags);
+    return const DishTags(taste: [], mine: []);
   }
 
   /// 切换 "大家怎么说" 中一个口味词的状态: 未打过则打上, 已打过则撤回.

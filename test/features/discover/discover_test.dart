@@ -1,5 +1,4 @@
-import 'package:eat/features/dish/dish_page.dart';
-import 'package:eat/features/topic/topic_archive_page.dart';
+import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,9 +6,24 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
-import '../../support/topic_json.dart';
+import '../../support/recommend_json.dart';
 
-const _names = ['铁锅炖', '粘豆包', '红烧肉', '酸辣粉', '烤冷面'];
+const _names = ['袁记云饺', '一碗面', '老王烧烤', '粥铺', '饺子馆'];
+
+/// 推荐接口的一批: [_names] 五家店, 第一家带招牌菜和推荐率, 其余没有.
+Map<String, Object?> _feed({bool hasNext = false}) => FakeAdapter.ok(
+  feedJson([
+    for (final (i, name) in _names.indexed)
+      i == 0
+          ? cardJson(id: i + 1, name: name)
+          : cardJson(
+              id: i + 1,
+              name: name,
+              signature: null,
+              dineIn: (rate: 0.5, count: 1),
+            ),
+  ], hasNext: hasNext),
+);
 
 void main() {
   late TestEnv env;
@@ -21,67 +35,146 @@ void main() {
       ..on('GET /notification/cards/unread/count', [
         FakeAdapter.ok({'cards': 3, 'members': 5}),
       ])
-      ..on('GET /topics/current', [FakeAdapter.ok()])
-      ..on('GET /foods/recommend', [
-        FakeAdapter.ok([
-          for (final (i, name) in _names.indexed)
-            foodJson(id: i + 1, name: name, recommend: true),
-        ]),
-      ]);
+      ..on('GET /recommend', [_feed()]);
   });
 
-  testWidgets('舞台上是推荐的第一道菜；「换一个」转到下一道，「就它了」进菜品详情', (tester) async {
+  testWidgets('舞台上是推荐的第一家店；「换一个」转到下一家，「就它了」进餐厅详情', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
     );
 
-    expect(find.text('铁锅炖'), findsNWidgets(2));
-    // 舞台上的大号价格一处, 抽屉里已经排出来的方块菜名右边各一处.
-    expect(find.text('¥18'), findsAtLeast(2));
+    // 店名同时出现在舞台和抽屉的店铺行中.
+    expect(find.text('袁记云饺'), findsNWidgets(2));
+    expect(find.text('招牌 鲜虾蟹籽云吞  ¥18'), findsOneWidget);
+    expect(find.text('86% 推荐'), findsOneWidget, reason: '舞台上的推荐率');
+    expect(find.text('招牌：鲜虾蟹籽云吞'), findsOneWidget, reason: '店铺行的第三行');
+    expect(find.text('万达金街'), findsWidgets, reason: '没有定位时写商圈名');
+    final sent = env.adapter.sent('GET /recommend');
     expect(
-      env.adapter.sent('GET /foods/recommend').map((r) => r.query['campusId']),
+      sent.map((r) => r.query['campusId']),
       everyElement(1),
-      reason: '校区定下来之前不拉推荐：推荐按天去重，发错的请求也会占掉菜',
+      reason: '校区定下来之前不拉推荐：推荐按天去重，发错的请求也会占掉店',
     );
-    expect(find.textContaining('袁记云饺  万达金街'), findsOneWidget);
+    expect(sent.map((r) => r.query['scene']), everyElement('dine_in'));
+    expect(sent.map((r) => r.query['kind']), everyElement('food'));
+    expect(sent.map((r) => r.query['pageSize']), containsAll([8, 10]));
     expect(find.bySemanticsLabel('消息，3 条未读'), findsOneWidget);
     expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
     await expectAccessible(tester);
 
-    // 菜名同时出现在舞台和推荐流方块中.
-    // 换菜后, 新菜 "粘豆包" 出现两处, 原先的 "铁锅炖" 只剩方块中的一处.
-    expect(find.text('粘豆包'), findsOneWidget);
     await tester.tap(find.text('换一个'));
     await tester.pumpAndSettle();
-    expect(find.text('粘豆包'), findsNWidgets(2));
-    expect(find.text('铁锅炖'), findsOneWidget);
+    expect(find.text('一碗面'), findsNWidgets(2));
+    expect(find.text('袁记云饺'), findsOneWidget);
+    expect(find.text('招牌 鲜虾蟹籽云吞  ¥18'), findsNothing, reason: '没有招牌菜的店不写招牌');
+    expect(find.text('50% 推荐'), findsNothing, reason: '评价不满 3 条不显示推荐率');
 
     await tester.tap(find.text('就它了'));
     await tester.pumpAndSettle();
-    final page = tester.widget<DishPage>(find.byType(DishPage));
-    expect(page.dishId, 2);
-    expect(page.initial?.name, '粘豆包', reason: '舞台先用手上的那道菜画出来');
+    expect(tester.widget<ShopPage>(find.byType(ShopPage)).shopId, 2);
     await unmountApp(tester, container);
   });
 
-  testWidgets('往下翻时顶栏和分类栏停在顶部；下拉刷新重新拉这一栏', (tester) async {
+  testWidgets('「不想去这家」：标记后这家从转盘和列表里去掉', (tester) async {
+    env.adapter.on('POST /recommend/dismiss/1', [FakeAdapter.ok()]);
     final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
     );
-    expect(find.text('今日推荐'), findsOneWidget);
-    expect(find.text('袁记云饺'), findsWidgets, reason: '方块第二行写店名');
+
+    await tester.tap(find.bySemanticsLabel('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不想去这家'));
+    await tester.pumpAndSettle();
+
+    expect(env.adapter.sent('POST /recommend/dismiss/1'), hasLength(1));
+    expect(find.text('30 天内不再推荐这家店'), findsOneWidget);
+    expect(find.text('袁记云饺'), findsNothing);
+    expect(find.text('一碗面'), findsNWidgets(2), reason: '舞台停在下一家');
+    await _waitToast(tester);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('游客点「不想去这家」弹出登录拦截，不发请求', (tester) async {
+    final (container, _) = await pumpApp(tester, env, session: const Guest());
+
+    await tester.tap(find.bySemanticsLabel('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不想去这家'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('登录后才能标记不想去'), findsOneWidget);
+    expect(env.adapter.sent('POST /recommend/dismiss/1'), isEmpty);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('分类栏：「甜点饮品」只换抽屉列表；专题待接入，不请求专题', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+    expect(find.text('美食'), findsOneWidget);
+    final turntable = env.adapter
+        .sent('GET /recommend')
+        .where((r) => r.query['pageSize'] == 8)
+        .length;
+
+    env.adapter.on('GET /recommend', [
+      FakeAdapter.ok(feedJson([cardJson(id: 9, name: '一点点', kind: 'drink')])),
+    ]);
+    await tester.tap(find.text('甜点饮品'));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('GET /recommend').map((r) => r.query['kind']),
+      contains('drink'),
+    );
+    expect(find.text('一点点'), findsOneWidget);
+    expect(find.text('袁记云饺'), findsOneWidget, reason: '转盘不受分类栏影响');
+    expect(
+      env.adapter.sent('GET /recommend').where((r) => r.query['pageSize'] == 8),
+      hasLength(turntable),
+    );
+
+    await tester.tap(find.text('专题'));
+    await tester.pumpAndSettle();
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    expect(find.text('一点点'), findsOneWidget, reason: '专题没有接入，列表不变');
+    expect(
+      env.adapter.requests.where((r) => r.path.startsWith('/topics')),
+      isEmpty,
+    );
+    await _waitToast(tester);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('往下翻时顶栏和分类栏停在顶部；下拉刷新重新拉这一栏', (tester) async {
+    env.adapter.on('GET /recommend', [
+      FakeAdapter.ok(
+        feedJson([
+          for (var i = 1; i <= 10; i++) cardJson(id: i, name: '店$i'),
+        ], hasNext: true),
+      ),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+    expect(find.text('美食'), findsOneWidget);
 
     await tester.dragFrom(const Offset(195, 700), const Offset(0, -560));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('搜索'), findsOneWidget);
     expect(tester.getTopLeft(find.bySemanticsLabel('搜索')).dy, lessThan(60));
     // 抽屉里的分类栏滚到顶栏下方后, 顶栏下面显示它的副本.
+    // 列表比屏幕长, 抽屉里的分类栏会滚出屏幕, 因此只看能点到的那一个.
     double topMost() => find
-        .text('今日推荐')
+        .text('美食')
+        .hitTestable()
         .evaluate()
         .map((e) => tester.getTopLeft(find.byWidget(e.widget)).dy)
         .reduce((a, b) => a < b ? a : b);
@@ -89,20 +182,18 @@ void main() {
 
     await tester.dragFrom(const Offset(195, 300), const Offset(0, 800));
     await tester.pumpAndSettle();
-    expect(find.text('今日推荐'), findsOneWidget);
+    expect(find.text('美食'), findsOneWidget);
     expect(topMost(), greaterThan(400));
-    final before = env.adapter.sent('GET /foods/recommend').length;
+    final before = env.adapter.sent('GET /recommend').length;
     await tester.fling(
       find.byType(CustomScrollView),
       const Offset(0, 300),
       1000,
     );
     await tester.pumpAndSettle();
-    // 重新请求第一批后, 列表末尾的分页触发器会接着请求下一批, 因此不止多一次.
-    expect(
-      env.adapter.sent('GET /foods/recommend').length,
-      greaterThan(before),
-    );
+    final after = env.adapter.sent('GET /recommend').skip(before);
+    expect(after.map((r) => r.query['page']), contains(1));
+    expect(after.map((r) => r.query['pageSize']), everyElement(10));
     expect(
       env.adapter.sent('GET /notification/cards/unread/count'),
       hasLength(greaterThan(1)),
@@ -111,81 +202,37 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('点分类，抽屉里换成这个分类的推荐', (tester) async {
-    await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
-
-    await tester.tap(find.text('小吃'));
-    await tester.pumpAndSettle();
-
-    final categories = env.adapter
-        .sent('GET /foods/recommend')
-        .map((r) => r.query['category']);
-    expect(categories, contains('snack'));
-  });
-
-  testWidgets('没有当期专题时分类栏不显示专题', (tester) async {
-    await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
-
-    expect(find.text('今日推荐'), findsOneWidget);
-    expect(find.text('期末续命餐'), findsNothing);
-    expect(
-      env.adapter.sent('GET /topics/current').map((r) => r.query['campusId']),
-      everyElement(1),
-    );
-  });
-
-  testWidgets('有当期专题时紧跟「今日推荐」；选中后列出介绍、专题里的菜和「往期专题」', (tester) async {
-    env.adapter
-      ..on('GET /topics/current', [FakeAdapter.ok(topicJson())])
-      ..on('GET /topics/7', [FakeAdapter.ok(topicDetailJson())])
-      ..on('GET /topics/history', [
-        FakeAdapter.ok(pageJson([topicJson(id: 3, name: '降温了喝碗汤')])),
-      ])
-      ..on('GET /topics/3', [FakeAdapter.ok(topicDetailJson())]);
+  testWidgets('转到这一批的末尾前请求下一页', (tester) async {
+    env.adapter.on('GET /recommend', [_feed(hasNext: true)]);
     final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
     );
 
-    final tabs = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((t) => t.data)
-        .where((d) => d == '今日推荐' || d == '期末续命餐' || d == '主食')
-        .toList();
-    expect(tabs, ['今日推荐', '期末续命餐', '主食']);
+    await tester.tap(find.text('换一个'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('换一个'));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.text('期末续命餐'));
-    await tester.pumpAndSettle();
-    expect(find.text('复习到半夜，来点热的。'), findsOneWidget);
-    expect(find.textContaining('本周专题，'), findsOneWidget);
-    await tester.ensureVisible(find.text('往期专题'));
-    await tester.pumpAndSettle();
-    expect(find.text('柳州螺蛳粉'), findsWidgets);
-    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-
-    // 往期专题页的请求分两轮: 首轮请求列表, 列表返回后逐行请求专题详情.
-    // 两轮请求都在当前帧之后发出, 单独调用 pumpAndSettle 等不到这些请求.
-    await tester.tap(find.text('往期专题'));
-    for (var i = 0; i < 3; i++) {
-      await tester.pump(const Duration(milliseconds: 10));
-    }
-    await tester.pumpAndSettle();
-    expect(find.byType(TopicArchivePage), findsOneWidget);
-    expect(find.text('「降温了喝碗汤」'), findsOneWidget);
+    final turntable = env.adapter
+        .sent('GET /recommend')
+        .where((r) => r.query['pageSize'] == 8)
+        .map((r) => r.query['page']);
+    expect(turntable, [1, 2]);
     await unmountApp(tester, container);
   });
 
-  testWidgets('一道菜都没有时，舞台写「这附近还没人发过菜」并给「发布一道菜」', (tester) async {
-    env.adapter.on('GET /foods/recommend', [FakeAdapter.ok(<Object>[])]);
+  testWidgets('一家店都没有时，舞台写「这附近还没人加过店」并给「发布一道菜」', (tester) async {
+    env.adapter.on('GET /recommend', [FakeAdapter.ok(feedJson([]))]);
     await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
 
-    expect(find.text('这附近还没人发过菜，来发第一道'), findsOneWidget);
-    expect(find.text('加一道菜'), findsWidgets);
+    expect(find.text('这附近还没人加过店，来发第一道菜'), findsOneWidget);
+    expect(find.text('发布一道菜'), findsOneWidget);
+    expect(find.text('还没有推荐的店'), findsOneWidget);
   });
 
-  testWidgets('地点和饭点面板：点「确定」后才生效，再点「按现在的时间」恢复', (tester) async {
+  testWidgets('在哪吃面板：点「确定」后才生效，再点「按现在的时间」恢复', (tester) async {
     await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
 
     expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
@@ -203,7 +250,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('在 软件园 吃 $other'), findsOneWidget);
     final meals = env.adapter
-        .sent('GET /foods/recommend')
+        .sent('GET /recommend')
         .map((r) => r.query['mealTime']);
     expect(meals, contains(api));
     expect(env.kv.values['prefs.meal'], startsWith('$api|'));
@@ -216,6 +263,32 @@ void main() {
     expect(env.kv.values['prefs.meal'], isNull);
     expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
   });
+
+  testWidgets('在哪吃面板：选「点外卖」后顶栏带上外卖，按外卖重新推荐并记住', (tester) async {
+    await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+    await tester.tap(find.textContaining('软件园'));
+    await tester.pumpAndSettle();
+    expect(find.text('怎么吃？'), findsOneWidget);
+    await tester.ensureVisible(find.text('点外卖'));
+    await tester.tap(find.text('点外卖'));
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('在 软件园 吃 ${_mealLabel()} · 外卖'), findsOneWidget);
+    final scenes = env.adapter
+        .sent('GET /recommend')
+        .map((r) => r.query['scene']);
+    expect(scenes, contains('delivery'));
+    expect(scenes.last, 'delivery');
+    expect(env.kv.values['prefs.scene'], 'delivery');
+  });
+}
+
+/// 等轻提示消失. 提示的计时器未结束时卸载页面, 测试框架会报告未完成的定时器.
+Future<void> _waitToast(WidgetTester tester) async {
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pumpAndSettle();
 }
 
 String _mealLabel() {

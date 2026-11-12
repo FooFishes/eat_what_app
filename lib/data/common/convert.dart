@@ -1,7 +1,7 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/domain/models/paged.dart';
 
-/// 把接口的 `PageResult` (`items`, `currentPage`, `hasNext`) 转换为 [Paged].
+/// 把接口的 `PageResult` (`items`, `currentPage`, `hasNext`, `totalItems`) 转换为 [Paged].
 Paged<T> decodePage<T>(
   Object? data,
   T Function(Map<String, dynamic> json) item,
@@ -13,6 +13,7 @@ Paged<T> decodePage<T>(
         items: _items(page['items'] as List<dynamic>? ?? const [], item),
         page: (page['currentPage'] as num?)?.toInt() ?? 1,
         hasNext: page['hasNext'] as bool? ?? false,
+        total: (page['totalItems'] as num?)?.toInt(),
       ),
       _ => throw const FormatException('not a page'),
     };

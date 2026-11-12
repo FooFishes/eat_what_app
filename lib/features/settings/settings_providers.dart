@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/data/feedback/feedback_repository.dart';
@@ -203,7 +204,12 @@ class DeviceSessions extends _$DeviceSessions {
 
   /// 使一台设备下线. 成功后从列表中移除. 失败时抛出 [AppFailure].
   Future<void> revoke(DeviceSession device) async {
-    await ref.read(sessionsRepositoryProvider).revoke(device.id);
+    try {
+      await ref.read(sessionsRepositoryProvider).revoke(device.id);
+    } on AppFailure catch (e) {
+      // 服务端找不到该设备, 说明它已经下线, 例如在其他设备上被下线. 结果与下线成功相同.
+      if (e.code != BizCodes.opFailed) rethrow;
+    }
     final devices = state.value;
     if (!ref.mounted || devices == null) return;
     state = AsyncData([
@@ -212,15 +218,10 @@ class DeviceSessions extends _$DeviceSessions {
     ]);
   }
 
-  /// 使其他所有设备下线. 本机的会话随之换发.
-  ///
-  /// 返回 false 表示未能获取本机的新会话, 已回到登录页. 失败时抛出 [AppFailure].
-  Future<bool> revokeOthers() async {
-    final session = ref.read(sessionProvider.notifier);
-    final rotation = await ref.read(sessionsRepositoryProvider).revokeOthers();
-    final kept = await session.adoptRotation(rotation);
-    if (kept && ref.mounted) ref.invalidateSelf();
-    return kept;
+  /// 使本机以外的所有设备下线, 成功后重新读取列表. 本机的会话不变. 失败时抛出 [AppFailure].
+  Future<void> revokeOthers() async {
+    await ref.read(sessionsRepositoryProvider).revokeOthers();
+    if (ref.mounted) ref.invalidateSelf();
   }
 }
 
@@ -232,30 +233,24 @@ class PushSettings extends _$PushSettings {
       .watch(pushRepositoryProvider)
       .settings(cancelToken: ref.cancelToken());
 
-  /// 成功返回 null, 失败时退回原值并返回失败原因.
-  ///
-  /// 成功后重新读取, 以获取下一次修改开关时需回传的版本信息.
+  /// 成功返回 null, 并采用服务端返回的全部开关. 失败时退回原值并返回失败原因.
   Future<AppFailure?> set(
     PushCategory category, {
     required bool enabled,
   }) async {
     final before = state.value;
-    final current = before?.where((s) => s.category == category).firstOrNull;
-    if (before == null || current == null) return null;
+    if (before == null) return null;
     state = AsyncData([
       for (final s in before)
         s.category == category
-            ? PushSetting(
-                category: s.category,
-                enabled: enabled,
-                revision: s.revision,
-                closeFrontier: s.closeFrontier,
-              )
+            ? PushSetting(category: s.category, enabled: enabled)
             : s,
     ]);
     try {
-      await ref.read(pushRepositoryProvider).set(current, enabled: enabled);
-      if (ref.mounted) ref.invalidateSelf();
+      final saved = await ref
+          .read(pushRepositoryProvider)
+          .set(category, enabled: enabled);
+      if (ref.mounted) state = AsyncData(saved);
       return null;
     } on AppFailure catch (e) {
       if (ref.mounted) state = AsyncData(before);
@@ -264,71 +259,91 @@ class PushSettings extends _$PushSettings {
   }
 }
 
-/// 换绑手机的进度. 给新号码发送验证码时开始一次换绑, 新号码变化时重新开始.
+/// 换绑手机的进度.
+///
+/// 换绑分三步: 验证当前号码, 验证新号码, 提交. 服务端在给新号码发码时校验当前号码的验证码,
+/// 通过后 10 分钟内给新号码发码和提交都不再需要它.
+class const PhoneChangeState({
+  /// 用户填的当前号码验证码, 等待服务端校验.
+  final String? oldCode,
+
+  /// 当前号码已通过服务端校验.
+  final bool oldVerified = false,
+}) {
+  /// 已离开第一步, 正在验证新号码.
+  bool get verifyingNew => oldCode != null || oldVerified;
+}
+
+/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
 @riverpod
 class PhoneChange extends _$PhoneChange {
   @override
-  MobileChange? build() => null;
+  PhoneChangeState build() => const PhoneChangeState();
 
-  /// 给新号码发送验证码. 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
-  Future<bool> sendNewCode(CaptchaPresenter present, String mobile) async {
-    final users = ref.read(userRepositoryProvider);
-    var change = state;
-    if (change == null || change.mobile != mobile) {
-      change = await users.startMobileChange(mobile);
-      if (!ref.mounted) return false;
-      state = change;
-    }
-    final started = change;
-    return ref
-        .read(captchaGateProvider)
-        .run(
-          present,
-          (ticket) => users.sendMobileChangeCode(
-            started,
-            oldPhone: false,
-            ticket: ticket,
-          ),
-        );
-  }
+  UserRepository get _users => ref.read(userRepositoryProvider);
 
-  /// 给旧号码发送验证码. 调用前须已给新号码发送验证码. 失败时抛出 [AppFailure].
-  Future<bool> sendOldCode(CaptchaPresenter present) async {
-    final change = state;
-    if (change == null) return false;
-    final users = ref.read(userRepositoryProvider);
-    return ref
-        .read(captchaGateProvider)
-        .run(
-          present,
-          (ticket) => users.sendMobileChangeCode(
-            change,
-            oldPhone: true,
-            ticket: ticket,
-          ),
-        );
-  }
+  /// 第一步: 给当前绑定的号码发验证码. 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  Future<bool> sendOldCode(CaptchaPresenter present) =>
+      ref.read(captchaGateProvider).run(present, _users.sendOldMobileCode);
 
-  /// 提交换绑, 采用换发的会话. 返回 false 表示未能获取本机的新会话, 已回到登录页.
+  /// 填好当前号码的验证码, 进入第二步. 验证码由服务端在给新号码发码时校验.
+  void enterOldCode(String code) => state = PhoneChangeState(oldCode: code);
+
+  /// 回到第一步, 重新验证当前号码.
+  void restart() => state = const PhoneChangeState();
+
+  /// 第二步: 给新号码发验证码. 当前号码还没通过校验时一并提交它的验证码.
   ///
-  /// 失败时抛出 [AppFailure].
-  Future<bool> commit({
-    required String newCode,
-    String? oldCode,
-    String? password,
-  }) async {
-    final change = state;
-    if (change == null) return false;
-    final session = ref.read(sessionProvider.notifier);
-    final rotation = await ref
-        .read(userRepositoryProvider)
-        .commitMobileChange(
-          change,
-          newCode: newCode,
-          oldCode: oldCode,
-          password: password,
-        );
-    return session.adoptRotation(rotation);
+  /// 当前号码的验证码错误 ([BizCodes.wrongCode]) 或校验已过期 ([BizCodes.paramMissing]) 时回到第一步.
+  /// 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  Future<bool> sendNewCode(CaptchaPresenter present, String mobile) async {
+    final oldCode = state.oldVerified ? null : state.oldCode;
+    try {
+      final sent = await ref
+          .read(captchaGateProvider)
+          .run(
+            present,
+            (ticket) => _users.sendNewMobileCode(
+              mobile,
+              oldCode: oldCode,
+              ticket: ticket,
+            ),
+          );
+      if (sent && ref.mounted) {
+        state = const PhoneChangeState(oldVerified: true);
+      }
+      return sent;
+    } on AppFailure catch (e) {
+      if (ref.mounted &&
+          (e.code == BizCodes.wrongCode || e.code == BizCodes.paramMissing)) {
+        restart();
+      }
+      rethrow;
+    }
+  }
+
+  /// 第三步: 提交新号码和它的验证码, 成功后刷新账号信息. 其他设备要重新登录, 本机不受影响.
+  ///
+  /// 当前号码的校验已过期 ([BizCodes.stateNotAllowed]) 时回到第一步. 失败时抛出 [AppFailure].
+  Future<void> commit(String mobile, String code) async {
+    try {
+      await _users.commitMobileChange(mobile, code);
+    } on AppFailure catch (e) {
+      if (ref.mounted && e.code == BizCodes.stateNotAllowed) restart();
+      rethrow;
+    }
+    await ref.read(sessionProvider.notifier).refreshUser();
+  }
+
+  /// 补绑: 给 [mobile] 发验证码. 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  Future<bool> sendBindCode(CaptchaPresenter present, String mobile) => ref
+      .read(captchaGateProvider)
+      .run(present, (ticket) => _users.sendBindCode(mobile, ticket));
+
+  /// 补绑: 提交 [mobile] 和它的验证码, 成功后刷新账号信息. 失败时抛出 [AppFailure].
+  Future<void> bind(String mobile, String code) async {
+    await _users.bindMobile(mobile, code);
+    await ref.read(sessionProvider.notifier).refreshUser();
   }
 }
 
@@ -338,7 +353,7 @@ class FeedbackSender extends _$FeedbackSender {
   @override
   bool build() => false;
 
-  /// [uploaded] 记录每张截图上传后的 key, 以截图的字节为键. 重试时复用这些 key, 提交内容不变, 因此幂等键仍然有效.
+  /// [uploaded] 记录每张截图上传后的 key, 以截图的字节为键. 重试时复用这些 key, 不重复上传.
   ///
   /// 失败时抛出 [AppFailure].
   Future<void> send({
@@ -347,7 +362,6 @@ class FeedbackSender extends _$FeedbackSender {
     required Map<Uint8List, String> uploaded,
     int? dishId,
     int? shopId,
-    required String idempotencyKey,
   }) async {
     if (state) return;
     state = true;
@@ -369,7 +383,6 @@ class FeedbackSender extends _$FeedbackSender {
             screenshotKeys: keys,
             dishId: dishId,
             shopId: shopId,
-            idempotencyKey: idempotencyKey,
           );
     } finally {
       if (ref.mounted) state = false;

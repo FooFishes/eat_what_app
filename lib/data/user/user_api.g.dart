@@ -6,22 +6,6 @@ part of 'user_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-MobileCommandDto _$MobileCommandDtoFromJson(Map<String, dynamic> json) =>
-    MobileCommandDto(
-      commandId: json['commandId'] as String?,
-      oldProofRequired: json['oldProofRequired'] as bool?,
-    );
-
-MobileCommitDto _$MobileCommitDtoFromJson(Map<String, dynamic> json) =>
-    MobileCommitDto(
-      currentDevice: json['currentDevice'] as String?,
-      replacement: json['replacement'] == null
-          ? null
-          : SessionOutcomeDto.fromJson(
-              json['replacement'] as Map<String, dynamic>,
-            ),
-    );
-
 FansDto _$FansDtoFromJson(Map<String, dynamic> json) => FansDto(
   id: (json['id'] as num?)?.toInt(),
   displayName: json['displayName'] as String?,
@@ -37,17 +21,17 @@ BlockedUserDto _$BlockedUserDtoFromJson(Map<String, dynamic> json) =>
 
 UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
     UserProfileDto(
+      id: (json['id'] as num?)?.toInt(),
       displayName: json['displayName'] as String?,
       avatar: json['avatar'] as String?,
-      earnedLikes: (json['earnedLikes'] as num?)?.toInt(),
+      signature: json['signature'] as String?,
       fansCount: (json['fansCount'] as num?)?.toInt(),
       followingsCount: (json['followingsCount'] as num?)?.toInt(),
       fansVisible: json['fansVisible'] as bool?,
       followingsVisible: json['followingsVisible'] as bool?,
       isFollowingMe: json['isFollowingMe'] as bool?,
       isFollowingHim: json['isFollowingHim'] as bool?,
-      uploadedFoodsCount: (json['uploadedFoodsCount'] as num?)?.toInt(),
-      level: (json['level'] as num?)?.toInt(),
+      blocked: json['blocked'] as bool?,
     );
 
 UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
@@ -56,10 +40,6 @@ UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   userName: json['userName'] as String?,
   hasUsername: json['hasUsername'] as bool?,
   avatar: json['avatar'] as String?,
-  banned: json['banned'] as bool?,
-  banReason: json['banReason'] as String?,
-  bannedAt: (json['bannedAt'] as num?)?.toInt(),
-  banUntil: (json['banUntil'] as num?)?.toInt(),
   phone: json['phone'] as String?,
   verified: json['verified'] as bool?,
   method: json['method'] as String?,
@@ -75,10 +55,6 @@ Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
       'userName': ?instance.userName,
       'hasUsername': ?instance.hasUsername,
       'avatar': ?instance.avatar,
-      'banned': ?instance.banned,
-      'banReason': ?instance.banReason,
-      'bannedAt': ?instance.bannedAt,
-      'banUntil': ?instance.banUntil,
       'phone': ?instance.phone,
       'verified': ?instance.verified,
       'method': ?instance.method,

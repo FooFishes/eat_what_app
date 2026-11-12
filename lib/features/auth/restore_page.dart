@@ -102,6 +102,9 @@ class _RestorePageState extends ConsumerState<RestorePage> {
     }
   }
 
+  /// 旧版撤销注销接口表示验证未通过的业务码.
+  static const _authorizationExpired = 20010;
+
   /// 失败提示. 返回的第一项显示在输入框下, 第二项显示在表单下方.
   static (String?, String?) _messages(AppFailure? failure) {
     if (failure == null || failure.kind == FailureKind.cancelled) {
@@ -111,7 +114,7 @@ class _RestorePageState extends ConsumerState<RestorePage> {
       BizCodes.wrongCode => (failure.message, null),
       BizCodes.wrongPassword || BizCodes.userNotFound => ('账号或密码错误', null),
       // 恢复凭据不匹配, 账号没有设置密码, 或冷静期已结束.
-      BizCodes.authorizationExpired => (null, '验证未通过，请重新登录后再试'),
+      _authorizationExpired => (null, '验证未通过，请重新登录后再试'),
       _ => (null, failure.message),
     };
   }

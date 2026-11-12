@@ -330,7 +330,7 @@ final class DeviceSessionsProvider
   DeviceSessions create() => DeviceSessions();
 }
 
-String _$deviceSessionsHash() => r'3315e821dafaa075396c5d27844737c0e3506235';
+String _$deviceSessionsHash() => r'1dc3c596a5775e24d689ee3fbfae6a9f6caa59ec';
 
 /// 已登录的设备. 本机排在最前.
 
@@ -381,7 +381,7 @@ final class PushSettingsProvider
   PushSettings create() => PushSettings();
 }
 
-String _$pushSettingsHash() => r'dfab0da9260c1f82ff8af0d1ad7a139675f9d136';
+String _$pushSettingsHash() => r'666de3623ecf3cd3438a1db3e9131efbc64c4d31';
 
 /// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
 
@@ -404,15 +404,15 @@ abstract class _$PushSettings extends $AsyncNotifier<List<PushSetting>> {
   }
 }
 
-/// 换绑手机的进度. 给新号码发送验证码时开始一次换绑, 新号码变化时重新开始.
+/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
 
 @ProviderFor(PhoneChange)
 final phoneChangeProvider = PhoneChangeProvider._();
 
-/// 换绑手机的进度. 给新号码发送验证码时开始一次换绑, 新号码变化时重新开始.
+/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
 final class PhoneChangeProvider
-    extends $NotifierProvider<PhoneChange, MobileChange?> {
-  /// 换绑手机的进度. 给新号码发送验证码时开始一次换绑, 新号码变化时重新开始.
+    extends $NotifierProvider<PhoneChange, PhoneChangeState> {
+  /// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
   PhoneChangeProvider._()
     : super(
         from: null,
@@ -432,29 +432,29 @@ final class PhoneChangeProvider
   PhoneChange create() => PhoneChange();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(MobileChange? value) {
+  Override overrideWithValue(PhoneChangeState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<MobileChange?>(value),
+      providerOverride: $SyncValueProvider<PhoneChangeState>(value),
     );
   }
 }
 
-String _$phoneChangeHash() => r'd9136d801ca617484904ef4e11fc2754e5c6de72';
+String _$phoneChangeHash() => r'7e2b2c3a46c2377b9c0a18b4fa4d936ff6ea386e';
 
-/// 换绑手机的进度. 给新号码发送验证码时开始一次换绑, 新号码变化时重新开始.
+/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
 
-abstract class _$PhoneChange extends $Notifier<MobileChange?> {
-  MobileChange? build();
+abstract class _$PhoneChange extends $Notifier<PhoneChangeState> {
+  PhoneChangeState build();
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
-    final ref = this.ref as $Ref<MobileChange?, MobileChange?>;
+    final ref = this.ref as $Ref<PhoneChangeState, PhoneChangeState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<MobileChange?, MobileChange?>,
-              MobileChange?,
+              AnyNotifier<PhoneChangeState, PhoneChangeState>,
+              PhoneChangeState,
               Object?,
               Object?
             >;
@@ -498,7 +498,7 @@ final class FeedbackSenderProvider
   }
 }
 
-String _$feedbackSenderHash() => r'8a5405e7cfe86dd65ab711f9d0526ad8c2b1c9ea';
+String _$feedbackSenderHash() => r'77b7a869fcd8973521b613a67fcf670f1165b433';
 
 /// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
 

@@ -58,7 +58,7 @@ final class InboxProvider extends $AsyncNotifierProvider<Inbox, InboxPages> {
   }
 }
 
-String _$inboxHash() => r'fa0555ba21da8a8d8c0f7eaf785962df66dadca5';
+String _$inboxHash() => r'60de9ba519381867dd539c0f3ff72888da578b5e';
 
 /// 一个分栏的消息列表, 滚动到底部时加载下一页. 切换分栏时重新请求.
 ///

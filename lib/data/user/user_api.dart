@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/data/common/convert.dart';
-import 'package:eat/data/sessions/sessions_api.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -21,13 +20,11 @@ abstract final class UserEndpoints {
   static String block(int userId) => '/user/blocks/$userId';
   static const blocks = '/user/blocks';
   static const recommendationSettings = '/user/recommendation-settings';
-  static String mobileCommandCodes(String commandId) =>
-      '/user/mobile/commands/$commandId/codes';
-  static String mobileCommandCommit(String commandId) =>
-      '/user/mobile/commands/$commandId/commit';
-  static String mobileCommandResume(String commandId) =>
-      '/user/mobile/commands/$commandId/resume';
-  static const mobileCommands = '/user/mobile/commands';
+  static const mobileOldCode = '/user/mobile/change/old-code';
+  static const mobileNewCode = '/user/mobile/change/new-code';
+  static const mobileCommit = '/user/mobile/change/commit';
+  static const bindCode = '/user/getCode';
+  static const bindMobile = '/user/bindMobile';
 }
 
 /// 接口分组 User: 当前用户, 资料, 关注, 隐私, 屏蔽, 个性化推荐和换绑手机.
@@ -71,7 +68,7 @@ class UserApi {
   Future<void> unfollow(int userId) =>
       _client.post(UserEndpoints.unfollow, query: {'userId': userId});
 
-  /// [userId] 的粉丝. 对方不公开粉丝列表时失败, 业务码为 `BizCodes.notSupported`.
+  /// [userId] 的粉丝. 对方不公开粉丝列表时失败, 业务码为 `BizCodes.permissionDenied`.
   Future<Paged<FansDto>> followers(
     int userId, {
     int page = 1,
@@ -86,7 +83,7 @@ class UserApi {
     FansDto.fromJson,
   );
 
-  /// [userId] 关注的人. 对方不公开关注列表时失败, 业务码为 `BizCodes.notSupported`.
+  /// [userId] 关注的人. 对方不公开关注列表时失败, 业务码为 `BizCodes.permissionDenied`.
   Future<Paged<FansDto>> followings(
     int userId, {
     int page = 1,
@@ -137,6 +134,7 @@ class UserApi {
   Future<void> unblock(int userId) =>
       _client.delete(UserEndpoints.block(userId));
 
+  // TODO: 后端 v2 删除了 `/user/recommendation-settings`, 隐私页的开关标为待接入, 不调用本方法. 后端恢复开关接口后由隐私页重新调用.
   /// 个性化推荐开关. 默认开启.
   Future<bool> personalized({CancelToken? cancelToken}) async => _personalized(
     await _client.get(
@@ -155,80 +153,49 @@ class UserApi {
   static bool _personalized(Object? data) =>
       !(data is Map && data['personalized'] == false);
 
-  /// 开始换绑到 [mobile]. 返回的 `oldProofRequired` 表示提交时是否要验证旧手机或密码.
-  Future<MobileCommandDto> prepareMobileChange({
-    required String commandId,
-    required String mobile,
-  }) async => decodeJson(
-    await _client.post(
-      UserEndpoints.mobileCommands,
-      body: {'commandId': commandId, 'mobile': mobile},
-    ),
-    MobileCommandDto.fromJson,
-  );
+  /// 换绑第一步: 给当前绑定的号码发验证码. 发送前需完成人机验证.
+  Future<void> sendOldMobileCode({
+    Map<String, String> captchaHeaders = const {},
+  }) => _client.post(UserEndpoints.mobileOldCode, headers: captchaHeaders);
 
-  /// 给新手机 (`NEW_PHONE`) 或旧手机 (`OLD_PHONE`) 发验证码. 发送前需完成人机验证.
-  Future<void> sendMobileChangeCode(
-    String commandId, {
-    required String type,
+  /// 换绑第二步: 给新号码 [mobile] 发验证码. 发送前需完成人机验证.
+  ///
+  /// 第一次调用要带旧号码的验证码 [oldCode], 服务端校验通过后 10 分钟内可以不带, 用于重发或更换新号码.
+  Future<void> sendNewMobileCode({
+    String? oldCode,
+    required String mobile,
     Map<String, String> captchaHeaders = const {},
   }) => _client.post(
-    UserEndpoints.mobileCommandCodes(commandId),
-    body: {'type': type},
+    UserEndpoints.mobileNewCode,
+    body: {'oldCode': ?oldCode, 'mobile': mobile},
     headers: captchaHeaders,
   );
 
-  /// 提交换绑. 旧手机用 [oldCode] 或 [password] 证明, 不需要时都为 null.
-  Future<MobileCommitDto> commitMobileChange(
-    String commandId, {
-    required String newCode,
-    String? oldCode,
-    String? password,
-    required String recoveryCapability,
-  }) async => decodeJson(
-    await _client.post(
-      UserEndpoints.mobileCommandCommit(commandId),
-      body: {
-        'newCode': newCode,
-        'oldCode': ?oldCode,
-        'password': ?password,
-        'recoveryCapability': recoveryCapability,
-      },
-    ),
-    MobileCommitDto.fromJson,
+  /// 换绑第三步: 提交新号码和它的验证码. 成功后其他设备要重新登录, 本机不受影响.
+  Future<void> commitMobileChange({
+    required String mobile,
+    required String code,
+  }) => _client.post(
+    UserEndpoints.mobileCommit,
+    body: {'mobile': mobile, 'code': code},
   );
 
-  Future<SessionOutcomeDto> resumeMobileChange(
-    String commandId, {
-    required String recoveryCapability,
-  }) async => decodeJson(
-    await _client.post(
-      UserEndpoints.mobileCommandResume(commandId),
-      headers: {'X-Recovery-Capability': recoveryCapability},
-    ),
-    SessionOutcomeDto.fromJson,
+  /// 补绑手机: 给 [mobile] 发验证码. 只用于还没有手机号的账号. 发送前需完成人机验证.
+  Future<void> sendBindCode(
+    String mobile, {
+    Map<String, String> captchaHeaders = const {},
+  }) => _client.post(
+    UserEndpoints.bindCode,
+    body: {'mobile': mobile},
+    headers: captchaHeaders,
   );
-}
 
-/// 换绑手机的准备结果.
-@JsonSerializable(createToJson: false)
-class const MobileCommandDto({
-  final String? commandId,
-  final bool? oldProofRequired,
-}) {
-  factory MobileCommandDto.fromJson(Map<String, dynamic> json) =>
-      _$MobileCommandDtoFromJson(json);
-}
-
-/// 换绑手机的提交结果. [currentDevice] 为 `READY` 时 [replacement] 是本机的新会话,
-/// `PENDING` 时需通过恢复接口获取, `REAUTHENTICATION_REQUIRED` 时需要重新登录.
-@JsonSerializable(createToJson: false)
-class const MobileCommitDto({
-  final String? currentDevice,
-  final SessionOutcomeDto? replacement,
-}) {
-  factory MobileCommitDto.fromJson(Map<String, dynamic> json) =>
-      _$MobileCommitDtoFromJson(json);
+  /// 补绑手机: 提交 [mobile] 和它的验证码.
+  Future<void> bindMobile({required String mobile, required String code}) =>
+      _client.post(
+        UserEndpoints.bindMobile,
+        body: {'mobile': mobile, 'code': code},
+      );
 }
 
 /// `/user/followers` 和 `/user/followings` 的一项. [createdAt] 是关注的时间.
@@ -250,22 +217,28 @@ class const BlockedUserDto({final int? userId, final String? displayName}) {
       _$BlockedUserDtoFromJson(json);
 }
 
-/// `/user/userInfo` 的 `data`: 指定用户的公开资料, 统计, 以及与当前用户的关注关系.
+/// `/user/userInfo` 的 `data` (`UserDtos.OtherInfo`): 指定用户的公开资料, 统计, 以及与当前用户的关系.
+///
+/// 产品不收集性别, 因此不读取 `gender`.
 @JsonSerializable(createToJson: false)
 class const UserProfileDto({
+  final int? id,
   final String? displayName,
   final String? avatar,
-  final int? earnedLikes,
+  final String? signature,
+
+  /// 对方未公开粉丝列表时为 null. 查看自己时总有值.
   final int? fansCount,
+
+  /// 对方未公开关注列表时为 null. 查看自己时总有值.
   final int? followingsCount,
   final bool? fansVisible,
   final bool? followingsVisible,
   final bool? isFollowingMe,
   final bool? isFollowingHim,
-  final int? uploadedFoodsCount,
 
-  /// 等级, 1 到 10. 不公开对方的经验.
-  final int? level,
+  /// 当前用户是否屏蔽了对方.
+  final bool? blocked,
 }) {
   factory UserProfileDto.fromJson(Map<String, dynamic> json) =>
       _$UserProfileDtoFromJson(json);
@@ -282,15 +255,10 @@ class const UserInfoDto({
   final String? userName,
   final bool? hasUsername,
   final String? avatar,
-  final bool? banned,
-  final String? banReason,
-  final int? bannedAt,
-
-  // TODO: 契约声明 banUntil 为 ISO-8601 字符串, 后端的 Jackson 配置实际把 `Instant` 写成 Unix 毫秒, 本字段按实际返回解析. 契约与后端统一格式后按统一的格式解析.
-  /// 封禁截止时间, Unix 毫秒. null 表示永久封禁或没有期限证明.
-  final int? banUntil,
   final String? phone,
   final bool? verified,
+
+  /// 认证方式: `sso` 或 `email`.
   final String? method,
   final String? verifiedEmail,
   final bool? hasPassword,

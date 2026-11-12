@@ -16,7 +16,6 @@ import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
 import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/paths.dart';
-import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +28,7 @@ import 'package:go_router/go_router.dart';
 class PhoneLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
-  /// 登录页传入的 `from` 和 `expired`, 原样向下传递.
+  /// 登录页传入的 `from`, `expired` 和 `banned`, 原样向下传递.
   final Map<String, String> query;
 
   @override
@@ -72,9 +71,9 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
   }
 
   /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
-  Future<bool> _presentConsent(ConsentPolicy policy) async {
+  Future<bool> _presentConsent() async {
     if (!mounted) return false;
-    return showConsentDialog(context, policy);
+    return showConsentDialog(context);
   }
 
   void _onChanged() => setState(() {});
@@ -152,16 +151,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     final c = eat.colors;
     final login = ref.watch(phoneLoginProvider);
     ref.listen(phoneLoginProvider.select((s) => s.event), (_, event) {
-      switch (event) {
-        case AuthCodeLimited(:final failure):
-          _showLimited(failure);
-        case AuthCodeConsumed():
-          _code.clear();
-        case AuthRestoreRequired():
-          _code.clear();
-          context.push(Paths.loginRestore);
-        default:
-      }
+      if (event case AuthCodeLimited(:final failure)) _showLimited(failure);
     });
     final resendAt = login.resendAt;
     final secondsLeft = resendAt == null
@@ -173,12 +163,10 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         failure,
       _ => null,
     };
-    // 20010 在验证码登录中表示发码后账号绑定已变化, 旧验证码不能再用.
-    // 未登录时网络层不清除会话, 因此页面就地提示重新获取, 不显示 "登录已过期".
-    final codeError = switch (failure?.code) {
-      BizCodes.wrongCode => failure!.message,
-      BizCodes.authorizationExpired => '验证码已失效，请重新获取',
-      _ when login.event is AuthCodeConsumed => '验证码已失效，请重新获取',
+    // 验证码输错次数过多时服务端按 IP 限流, 提示何时可以重试, 显示在验证码下方.
+    final codeError = switch (failure) {
+      AppFailure(code: BizCodes.wrongCode, :final message) => message,
+      AppFailure(kind: FailureKind.tooFrequent, :final message) => message,
       _ => null,
     };
     final ready =

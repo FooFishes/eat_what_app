@@ -8,22 +8,22 @@ part of 'nearby_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 当前校区内附近营业中的店, 按 [NearbyQuery.sort] 排列.
+/// 当前校区内附近营业中的店, 按与用户的距离升序排列.
 ///
-/// 关键词同时匹配店名和菜名. 不传校区时后端只查默认校区.
-///
-/// 按距离排序时, 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
-/// 列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
+/// - 关键词匹配店名和地址.
+/// - 搜店接口也返回已关门的店, 这里去掉. 因此结果可能少于一页的条数.
+/// - 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
+///   列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
 
 @ProviderFor(nearbyShops)
 final nearbyShopsProvider = NearbyShopsFamily._();
 
-/// 当前校区内附近营业中的店, 按 [NearbyQuery.sort] 排列.
+/// 当前校区内附近营业中的店, 按与用户的距离升序排列.
 ///
-/// 关键词同时匹配店名和菜名. 不传校区时后端只查默认校区.
-///
-/// 按距离排序时, 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
-/// 列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
+/// - 关键词匹配店名和地址.
+/// - 搜店接口也返回已关门的店, 这里去掉. 因此结果可能少于一页的条数.
+/// - 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
+///   列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
 
 final class NearbyShopsProvider
     extends
@@ -33,12 +33,12 @@ final class NearbyShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 当前校区内附近营业中的店, 按 [NearbyQuery.sort] 排列.
+  /// 当前校区内附近营业中的店, 按与用户的距离升序排列.
   ///
-  /// 关键词同时匹配店名和菜名. 不传校区时后端只查默认校区.
-  ///
-  /// 按距离排序时, 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
-  /// 列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
+  /// - 关键词匹配店名和地址.
+  /// - 搜店接口也返回已关门的店, 这里去掉. 因此结果可能少于一页的条数.
+  /// - 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
+  ///   列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
   NearbyShopsProvider._({
     required NearbyShopsFamily super.from,
     required NearbyQuery super.argument,
@@ -82,14 +82,14 @@ final class NearbyShopsProvider
   }
 }
 
-String _$nearbyShopsHash() => r'8c2b9a80d5d3a7741a2d901d03047f075bcd7443';
+String _$nearbyShopsHash() => r'c5e1ae3c387f9e831cf0a24baa14885f9ae413b8';
 
-/// 当前校区内附近营业中的店, 按 [NearbyQuery.sort] 排列.
+/// 当前校区内附近营业中的店, 按与用户的距离升序排列.
 ///
-/// 关键词同时匹配店名和菜名. 不传校区时后端只查默认校区.
-///
-/// 按距离排序时, 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
-/// 列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
+/// - 关键词匹配店名和地址.
+/// - 搜店接口也返回已关门的店, 这里去掉. 因此结果可能少于一页的条数.
+/// - 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
+///   列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
 
 final class NearbyShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, NearbyQuery> {
@@ -102,12 +102,12 @@ final class NearbyShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 当前校区内附近营业中的店, 按 [NearbyQuery.sort] 排列.
+  /// 当前校区内附近营业中的店, 按与用户的距离升序排列.
   ///
-  /// 关键词同时匹配店名和菜名. 不传校区时后端只查默认校区.
-  ///
-  /// 按距离排序时, 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
-  /// 列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
+  /// - 关键词匹配店名和地址.
+  /// - 搜店接口也返回已关门的店, 这里去掉. 因此结果可能少于一页的条数.
+  /// - 后端按与地图中心的距离排列, 客户端改按与用户的距离重排.
+  ///   列表显示的是与用户的距离, 拖动地图后两者不一致. 没有定位时保持按与地图中心的距离排列.
 
   NearbyShopsProvider call(NearbyQuery query) =>
       NearbyShopsProvider._(argument: query, from: this);

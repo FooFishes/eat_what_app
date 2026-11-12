@@ -8,18 +8,12 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 按菜名跨店搜索菜品.
-///
-/// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-/// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+/// 按菜名跨店搜索菜品, 最新的在前.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 按菜名跨店搜索菜品.
-///
-/// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-/// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+/// 按菜名跨店搜索菜品, 最新的在前.
 
 final class DishSearchProvider
     extends
@@ -29,10 +23,7 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 按菜名跨店搜索菜品.
-  ///
-  /// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-  /// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+  /// 按菜名跨店搜索菜品, 最新的在前.
   DishSearchProvider._({
     required DishSearchFamily super.from,
     required String super.argument,
@@ -76,12 +67,9 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'516d51a19bff56c189120307f57ede99c71a7266';
+String _$dishSearchHash() => r'045f33a57a41ccb825ba3d3923458c2f84abb21c';
 
-/// 按菜名跨店搜索菜品.
-///
-/// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-/// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+/// 按菜名跨店搜索菜品, 最新的在前.
 
 final class DishSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
@@ -94,10 +82,7 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按菜名跨店搜索菜品.
-  ///
-  /// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-  /// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+  /// 按菜名跨店搜索菜品, 最新的在前.
 
   DishSearchProvider call(String keyword) =>
       DishSearchProvider._(argument: keyword, from: this);
@@ -106,16 +91,16 @@ final class DishSearchFamily extends $Family
   String toString() => r'dishSearchProvider';
 }
 
-/// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
 
 @ProviderFor(shopSearch)
 final shopSearchProvider = ShopSearchFamily._();
 
-/// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
 
 final class ShopSearchProvider
     extends
@@ -125,9 +110,9 @@ final class ShopSearchProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+  /// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
   ///
-  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
   ShopSearchProvider._({
     required ShopSearchFamily super.from,
     required String super.argument,
@@ -171,11 +156,11 @@ final class ShopSearchProvider
   }
 }
 
-String _$shopSearchHash() => r'fcfff2f7801dfe72011d71e13c2c2edab7c65789';
+String _$shopSearchHash() => r'6ab0cb04d84fe7981012f04ab9fb602d94b030de';
 
-/// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
 
 final class ShopSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -188,9 +173,9 @@ final class ShopSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+  /// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
   ///
-  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
 
   ShopSearchProvider call(String keyword) =>
       ShopSearchProvider._(argument: keyword, from: this);

@@ -1,4 +1,5 @@
 import 'package:eat/domain/models/notice.dart';
+import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/notice_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,16 +10,14 @@ Notice _notice(
   NoticeKind kind, {
   String domain = 'foods',
   int targetId = 42,
-  bool unavailable = false,
   int members = 1,
   List<NoticeActor> actors = const [_xiaolin],
   NoticeDetail? detail,
 }) => Notice(
-  id: 'card-1',
+  id: 1,
   kind: kind,
   targetDomain: domain,
   targetId: targetId,
-  targetUnavailable: unavailable,
   memberCount: members,
   latestAt: DateTime(2026, 11, 1),
   actors: actors,
@@ -57,7 +56,7 @@ void main() {
     expect(NoticeRules.actorsOf(follow), 'Momo 等 3 人');
   });
 
-  test('赞、收藏、标签去菜品详情，写「你上传的菜」', () {
+  test('赞、收藏、评论去菜品详情，写「你上传的菜」', () {
     final like = _notice(NoticeKind.like, members: 12, actors: [_momo]);
     expect(
       NoticeRules.targetOf(like),
@@ -66,76 +65,31 @@ void main() {
     expect(NoticeRules.actorsOf(like), 'Momo 等 12 人');
     expect(NoticeRules.sentenceOf(like), '赞了你上传的菜');
     expect(NoticeRules.sentenceOf(_notice(NoticeKind.favorite)), '收藏了你上传的菜');
-    expect(NoticeRules.sentenceOf(_notice(NoticeKind.tag)), '给你上传的菜加了标签');
+    final comment = _notice(NoticeKind.comment);
+    expect(NoticeRules.sentenceOf(comment), '评论了你上传的菜');
+    expect(NoticeRules.targetOf(comment), isA<DishTarget>());
   });
 
-  test('菜已删除，或赞的是旧版活动内容时不跳转', () {
-    expect(
-      NoticeRules.targetOf(_notice(NoticeKind.like, unavailable: true)),
-      isA<NoTarget>(),
+  test('回复和评论赞没有菜 id，不跳转', () {
+    final reply = _notice(NoticeKind.reply, domain: 'comments', targetId: 300);
+    expect(NoticeRules.sentenceOf(reply), '回复了你');
+    expect(NoticeRules.targetOf(reply), isA<NoTarget>());
+    final like = _notice(
+      NoticeKind.commentLike,
+      domain: 'comments',
+      targetId: 300,
     );
-    final old = _notice(NoticeKind.like, domain: 'activity_posts');
-    expect(NoticeRules.targetOf(old), isA<NoTarget>());
-    expect(NoticeRules.sentenceOf(old), '赞了你的内容');
+    expect(NoticeRules.sentenceOf(like), '赞了你的评论');
+    expect(NoticeRules.targetOf(like), isA<NoTarget>());
   });
 
-  test('专题收录写菜名和专题名，去专题页；专题撤下后不跳转', () {
-    const included = TopicIncludedDetail(
-      dishId: 42,
-      dishName: '玉米鲜肉饺子',
-      topicId: 7,
-      topicName: '期末续命餐',
-    );
-    final notice = _notice(
-      NoticeKind.topicIncluded,
-      domain: 'topics',
-      actors: const [],
-      detail: included,
-    );
-    expect(NoticeRules.actorsOf(notice), isNull);
-    expect(NoticeRules.sentenceOf(notice), '你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」');
-    expect(
-      NoticeRules.targetOf(notice),
-      isA<TopicTarget>().having((t) => t.topicId, 'topicId', 7),
-    );
-
-    final withdrawn = _notice(
-      NoticeKind.topicIncluded,
-      domain: 'topics',
-      actors: const [],
-      detail: const TopicIncludedDetail(
-        dishName: '菜品已不可用',
-        topicName: '专题已不可用',
-      ),
-    );
-    expect(NoticeRules.targetOf(withdrawn), isA<NoTarget>());
-    expect(NoticeRules.sentenceOf(withdrawn), '你上传的菜已被收录到专题，该专题已下线');
-  });
-
-  test('审核通过去菜或店，未通过不跳转', () {
-    final dish = _notice(
-      NoticeKind.moderationResult,
-      actors: const [],
-      detail: const ModerationDetail(shop: false, approved: true),
-    );
-    expect(NoticeRules.targetOf(dish), isA<DishTarget>());
-    expect(NoticeRules.sentenceOf(dish), '你上传的菜已通过审核');
-    final shop = _notice(
-      NoticeKind.moderationResult,
-      domain: 'restaurant',
-      actors: const [],
-      detail: const ModerationDetail(shop: true, approved: false),
-    );
-    expect(NoticeRules.targetOf(shop), isA<NoTarget>());
-    expect(NoticeRules.sentenceOf(shop), '你新建的店未通过审核');
-  });
-
-  test('处理结果按类型和结论写，带上运营的回复，不跳转', () {
+  test('处理结果按类型和结论写，带上运营的回复，点击先取提交记录', () {
     final catalog = _notice(
       NoticeKind.caseResult,
       domain: 'catalog_error',
       actors: const [],
       detail: const CaseResultDetail(
+        caseId: 5,
         kind: CaseKind.catalogError,
         outcome: 'ACCEPTED',
         reasonCode: 'WRONG_LOCATION',
@@ -144,7 +98,10 @@ void main() {
     );
     expect(NoticeRules.sentenceOf(catalog), '你反馈的店铺位置问题已修正');
     expect(NoticeRules.replyOf(catalog), '已修正');
-    expect(NoticeRules.targetOf(catalog), isA<NoTarget>());
+    expect(
+      NoticeRules.targetOf(catalog),
+      isA<CaseTarget>().having((t) => t.caseId, 'caseId', 5),
+    );
 
     final report = _notice(
       NoticeKind.caseResult,
@@ -157,28 +114,42 @@ void main() {
     );
     expect(NoticeRules.sentenceOf(report), '你举报的内容已处理');
     expect(NoticeRules.replyOf(report), isNull);
+    expect(NoticeRules.targetOf(report), isA<NoTarget>());
   });
 
-  test('评论和回复去菜品详情并带上评论 id；评论已删除时不跳转', () {
-    final reply = _notice(
-      NoticeKind.reply,
-      detail: const CommentDetail(dishId: 42, commentId: 300),
+  test('提交记录关于菜或店时跳过去，其余不跳转', () {
+    expect(
+      NoticeRules.targetOfCase(
+        const CaseSubject(kind: CaseSubjectKind.dish, id: 3),
+      ),
+      isA<DishTarget>().having((t) => t.dishId, 'dishId', 3),
     );
     expect(
-      NoticeRules.targetOf(reply),
-      isA<DishTarget>()
-          .having((t) => t.dishId, 'dishId', 42)
-          .having((t) => t.commentId, 'commentId', 300),
-    );
-    final deleted = _notice(
-      NoticeKind.comment,
-      detail: const CommentDetail(
-        dishId: 42,
-        commentId: 300,
-        unavailable: true,
+      NoticeRules.targetOfCase(
+        const CaseSubject(kind: CaseSubjectKind.shop, id: 7),
       ),
+      isA<ShopTarget>().having((t) => t.shopId, 'shopId', 7),
     );
-    expect(NoticeRules.targetOf(deleted), isA<NoTarget>());
+    expect(
+      NoticeRules.targetOfCase(
+        const CaseSubject(kind: CaseSubjectKind.comment, id: 9),
+      ),
+      isA<NoTarget>(),
+    );
+    expect(NoticeRules.targetOfCase(null), isA<NoTarget>());
+  });
+
+  test('公告用标题做正文，内容另起一行，不跳转', () {
+    final notice = _notice(
+      NoticeKind.announcement,
+      domain: 'announcements',
+      actors: const [],
+      detail: const AnnouncementDetail(title: '食堂二楼周末停业', content: '周六周日暂停营业。'),
+    );
+    expect(NoticeRules.actorsOf(notice), isNull);
+    expect(NoticeRules.sentenceOf(notice), '食堂二楼周末停业');
+    expect(NoticeRules.contentOf(notice), '周六周日暂停营业。');
+    expect(NoticeRules.targetOf(notice), isA<NoTarget>());
   });
 
   test('认不出的类型不跳转', () {

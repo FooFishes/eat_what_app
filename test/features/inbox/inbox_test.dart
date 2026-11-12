@@ -1,6 +1,5 @@
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/features/dish/dish_page.dart';
-import 'package:eat/features/topic/topic_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,25 +9,43 @@ import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 import '../../support/topic_json.dart';
 
-const _likeId = '6f1c1c9e-0000-4000-8000-000000000001';
-const _followId = '6f1c1c9e-0000-4000-8000-000000000002';
-const _topicId = '6f1c1c9e-0000-4000-8000-000000000003';
-const _caseId = '6f1c1c9e-0000-4000-8000-000000000004';
+const _likeId = 101;
+const _followId = 102;
+const _announceId = 103;
+const _caseId = 104;
 
 /// 他人资料 `/user/userInfo` 的响应数据: 对方关注了我.
 Map<String, Object?> _profile({bool followedByMe = false}) => {
+  'id': 9,
   'displayName': '阿哲',
   'avatar': null,
-  'earnedLikes': 0,
+  'signature': '',
   'fansCount': 1,
   'followingsCount': 1,
   'fansVisible': true,
   'followingsVisible': true,
   'isFollowingMe': true,
   'isFollowingHim': followedByMe,
-  'uploadedRestaurantsCount': 0,
-  'uploadedFoodsCount': 0,
+  'blocked': false,
 };
+
+Map<String, Object?> _caseCard({int id = _caseId, int caseId = 5}) =>
+    noticeCardJson(
+      id: id,
+      column: 'SYSTEM',
+      kind: 'case_result',
+      domain: 'report',
+      targetId: caseId,
+      actors: const [],
+      data: {
+        'type': 'case_result',
+        'caseId': caseId,
+        'kind': 'REPORT',
+        'outcome': 'ACCEPTED',
+        'reasonCode': 'ADVERTISING',
+        'reply': '',
+      },
+    );
 
 void main() {
   late TestEnv env;
@@ -135,50 +152,78 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「系统」分栏：不跳转的处理结果点了只标已读；专题收录点进专题页', (tester) async {
+  testWidgets('回关时被对方屏蔽：提示无法关注，按钮恢复', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(
           pageJson([
             noticeCardJson(
-              id: _topicId,
-              column: 'SYSTEM',
-              kind: 'topic_included',
-              domain: 'topics',
-              targetId: 7,
-              actors: const [],
-              detail: {
-                'type': 'topic_included',
-                'foodId': 1,
-                'foodName': '玉米鲜肉饺子',
-                'topicId': 7,
-                'topicName': '期末续命餐',
-                'foodUnavailable': false,
-                'topicUnavailable': false,
-              },
-            ),
-            noticeCardJson(
-              id: _caseId,
-              column: 'SYSTEM',
-              kind: 'case_result',
-              domain: 'report',
-              targetId: 5,
-              actors: const [],
-              detail: {
-                'type': 'case_result',
-                'caseId': 5,
-                'outcome': 'ACCEPTED',
-                'reasonCode': 'ADVERTISING',
-                'kind': 'REPORT',
-                'reply': '',
-              },
+              id: _followId,
+              column: 'FOLLOWS',
+              kind: 'follow',
+              domain: 'users',
+              actors: [actorJson(9, '阿哲')],
             ),
           ]),
         ),
       ])
-      ..on('POST /notification/cards/$_topicId/read', [FakeAdapter.ok()])
+      ..on('GET /user/userInfo', [FakeAdapter.ok(_profile())])
+      ..on('POST /user/follow', [FakeAdapter.fail(40002)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.inbox,
+    );
+
+    await tester.tap(find.text('回关'));
+    await tester.pumpAndSettle();
+    expect(find.text('无法关注对方'), findsOneWidget);
+    expect(find.text('回关'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('「系统」分栏：公告显示标题和内容，点了只标已读；处理结果先取记录再进对应的菜', (tester) async {
+    env.adapter
+      ..on('GET /notification/cards', [
+        FakeAdapter.ok(
+          pageJson([
+            noticeCardJson(
+              id: _announceId,
+              column: 'SYSTEM',
+              kind: 'announcement',
+              domain: 'announcements',
+              targetId: 9,
+              actors: const [],
+              data: {
+                'type': 'announcement',
+                'level': 'NORMAL',
+                'title': '食堂二楼周末停业',
+                'content': '周六周日暂停营业。',
+              },
+            ),
+            _caseCard(),
+          ]),
+        ),
+      ])
+      ..on('POST /notification/cards/$_announceId/read', [FakeAdapter.ok()])
       ..on('POST /notification/cards/$_caseId/read', [FakeAdapter.ok()])
-      ..on('GET /topics/7', [FakeAdapter.ok(topicDetailJson())]);
+      ..on('GET /feedback/mine/5', [
+        FakeAdapter.ok({
+          'id': 5,
+          'kind': 'REPORT',
+          'status': 'CLOSED',
+          'target': {'type': 'FOOD', 'id': 1},
+          'reason': 'ADVERTISING',
+          'text': '',
+          'screenshots': const [],
+          'outcome': 'ACCEPTED',
+          'reply': '',
+          'createdAt': 0,
+          'closedAt': 0,
+        }),
+      ]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -194,17 +239,27 @@ void main() {
       env.adapter.sent('GET /notification/cards').map((r) => r.query['column']),
       ['ALL', 'SYSTEM'],
     );
+    expect(find.text('食堂二楼周末停业'), findsOneWidget);
+    expect(find.text('周六周日暂停营业。'), findsOneWidget);
     expect(find.text('你举报的内容已处理'), findsOneWidget);
     await expectAccessible(tester);
 
     final handle = tester.ensureSemantics();
-    final caseRow = tester.getSemantics(find.text('你举报的内容已处理'));
-    expect(caseRow.hintOverrides?.onTapHint, '标为已读', reason: '不跳转的行读作「标为已读」');
-    expect(caseRow.getSemanticsData().flagsCollection.isButton, isFalse);
-    final topicRow = tester.getSemantics(
-      find.text('你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」'),
+    final announceRow = tester.getSemantics(find.text('食堂二楼周末停业'));
+    expect(
+      announceRow.hintOverrides?.onTapHint,
+      '标为已读',
+      reason: '不跳转的行读作「标为已读」',
     );
-    expect(topicRow.hintOverrides, isNull, reason: '会跳转的行使用平台默认的说法');
+    handle.dispose();
+
+    await tester.tap(find.text('食堂二楼周末停业'));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('POST /notification/cards/$_announceId/read'),
+      hasLength(1),
+    );
+    expect(find.text('食堂二楼周末停业'), findsOneWidget, reason: '不跳转，留在消息页');
 
     await tester.tap(find.text('你举报的内容已处理'));
     await tester.pumpAndSettle();
@@ -212,67 +267,86 @@ void main() {
       env.adapter.sent('POST /notification/cards/$_caseId/read'),
       hasLength(1),
     );
-    expect(find.text('你举报的内容已处理'), findsOneWidget, reason: '不跳转，留在消息页');
-    expect(find.byType(UnreadDot), findsOneWidget, reason: '只剩专题收录那一行未读');
-    handle.dispose();
-
-    await tester.tap(find.text('你上传的「玉米鲜肉饺子」已被收录到专题「期末续命餐」'));
-    await tester.pumpAndSettle();
-    expect(
-      env.adapter.sent('POST /notification/cards/$_topicId/read'),
-      hasLength(1),
-    );
-    expect(tester.widget<TopicPage>(find.byType(TopicPage)).topicId, 7);
+    expect(env.adapter.sent('GET /feedback/mine/5'), hasLength(1));
+    expect(tester.widget<DishPage>(find.byType(DishPage)).dishId, 1);
     await unmountApp(tester, container);
   });
 
-  testWidgets('评论消息点进菜品详情并滚到那一条评论', (tester) async {
+  testWidgets('处理结果关于评论时，取到记录后不跳转', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
-        FakeAdapter.ok(
-          pageJson([
-            noticeCardJson(
-              id: _likeId,
-              column: 'COMMENTS',
-              kind: 'comment',
-              detail: {
-                'type': 'comment',
-                'foodId': 1,
-                'commentId': 300,
-                'replyId': null,
-                'unavailable': false,
-              },
-            ),
-          ]),
-        ),
+        FakeAdapter.ok(pageJson([_caseCard()])),
       ])
-      ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()]);
-    final (container, _) = await pumpApp(
+      ..on('POST /notification/cards/$_caseId/read', [FakeAdapter.ok()])
+      ..on('GET /feedback/mine/5', [
+        FakeAdapter.ok({
+          'id': 5,
+          'kind': 'REPORT',
+          'target': {'type': 'COMMENT', 'id': 300},
+        }),
+      ]);
+    final (container, router) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.inbox,
     );
 
-    await tester.tap(find.textContaining('评论了你上传的菜', findRichText: true));
+    await tester.tap(find.text('你举报的内容已处理'));
     await tester.pumpAndSettle();
-    expect(
-      env.adapter.sent('POST /notification/cards/$_likeId/read'),
-      hasLength(1),
-    );
-    final page = tester.widget<DishPage>(find.byType(DishPage));
-    expect(page.dishId, 1);
-    expect(page.focusComment, 300);
+    expect(env.adapter.sent('GET /feedback/mine/5'), hasLength(1));
+    expect(locationOf(router), Paths.inbox);
     await unmountApp(tester, container);
   });
 
-  testWidgets('「全部已读」标记旧版通知和已加载的未读行', (tester) async {
+  testWidgets('评论消息点进菜品详情；回复消息没有菜 id，只标已读', (tester) async {
+    env.adapter
+      ..on('GET /notification/cards', [
+        FakeAdapter.ok(
+          pageJson([
+            noticeCardJson(id: _likeId, column: 'COMMENTS', kind: 'comment'),
+            noticeCardJson(
+              id: _followId,
+              column: 'COMMENTS',
+              kind: 'reply',
+              domain: 'comments',
+              targetId: 300,
+              actors: [actorJson(9, '阿哲')],
+            ),
+          ]),
+        ),
+      ])
+      ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()])
+      ..on('POST /notification/cards/$_followId/read', [FakeAdapter.ok()]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.inbox,
+    );
+
+    await tester.tap(find.textContaining('回复了你', findRichText: true));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('POST /notification/cards/$_followId/read'),
+      hasLength(1),
+    );
+    expect(locationOf(router), Paths.inbox);
+
+    await tester.tap(find.textContaining('评论了你上传的菜', findRichText: true));
+    await tester.pumpAndSettle();
+    final page = tester.widget<DishPage>(find.byType(DishPage));
+    expect(page.dishId, 1);
+    expect(page.focusComment, isNull);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('「全部已读」只请求一次，带当前分栏', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(pageJson([noticeCardJson(id: _likeId)])),
       ])
-      ..on('POST /notification/read/all', [FakeAdapter.ok()])
-      ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()]);
+      ..on('POST /notification/cards/read-all', [FakeAdapter.ok()]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -285,11 +359,9 @@ void main() {
     ]);
     await tester.tap(find.text('全部已读'));
     await tester.pumpAndSettle();
-    expect(env.adapter.sent('POST /notification/read/all'), hasLength(1));
-    expect(
-      env.adapter.sent('POST /notification/cards/$_likeId/read'),
-      hasLength(1),
-    );
+    final sent = env.adapter.sent('POST /notification/cards/read-all');
+    expect(sent.single.query, {'column': 'ALL'});
+    expect(env.adapter.sent('POST /notification/cards/$_likeId/read'), isEmpty);
     expect(find.byType(UnreadDot), findsNothing);
     expect(find.text('2 条未读'), findsNothing);
     await unmountApp(tester, container);

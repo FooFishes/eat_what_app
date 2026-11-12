@@ -1,3 +1,4 @@
+import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
@@ -9,31 +10,27 @@ import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 数据跨境同意对话框. 返回 true 表示用户点了 "同意".
+/// 隐私政策的同意对话框. 服务端要求同意新版政策时弹出, 返回 true 表示用户点了 "同意".
 ///
 /// 点击 "不同意", 点击遮罩和系统返回都视为不同意.
-Future<bool> showConsentDialog(
-  BuildContext context,
-  ConsentPolicy policy,
-) async =>
+Future<bool> showConsentDialog(BuildContext context) async =>
     await showEatDialog<bool>(
       context,
-      builder: (dialog) => _ConsentDialog(policy: policy),
+      builder: (dialog) => const _ConsentDialog(),
     ) ??
     false;
 
 class _ConsentDialog extends ConsumerWidget {
-  const new({required this.policy});
-
-  final ConsentPolicy policy;
+  const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
+    final privacyUrl = ref.watch(appConfigProvider).privacyUrl;
     return EatDialog(
       icon: EatIcons.earth,
-      title: '同意数据跨境后继续',
+      title: '隐私政策已更新',
       actions: Row(
         spacing: EatSpace.s10,
         children: [
@@ -54,17 +51,21 @@ class _ConsentDialog extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('服务器位于境外，账号信息和使用记录会传到境外存储和处理，同意后才能继续使用。', style: eat.text.body),
-          if (policy.url case final url?)
+          Text(
+            '服务器位于境外，账号信息和使用记录会传到境外存储和处理。同意新版隐私政策后才能继续使用。',
+            style: eat.text.body,
+          ),
+          if (privacyUrl.isNotEmpty)
             EatTappable(
-              onTap: () => ref.read(browserProvider).open(url),
-              label: '查看数据跨境说明',
+              onTap: () =>
+                  ref.read(browserProvider).open(Uri.parse(privacyUrl)),
+              label: '查看隐私政策',
               builder: (context, _) => SizedBox(
                 height: EatSize.touch,
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '查看数据跨境说明',
+                    '查看隐私政策',
                     style: eat.text.body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: c.ink,
@@ -109,10 +110,10 @@ class _ConsentHostState extends ConsumerState<ConsentHost> {
     super.dispose();
   }
 
-  Future<bool> _present(ConsentPolicy policy) async {
+  Future<bool> _present() async {
     final context = widget.navigatorKey.currentState?.overlay?.context;
     if (context == null || !context.mounted) return false;
-    return showConsentDialog(context, policy);
+    return showConsentDialog(context);
   }
 
   @override

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/place/place_repository.dart';
@@ -13,17 +13,22 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/code_point_limit.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
+import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
-import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:eat/domain/models/geo.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
+import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/publish/publish_providers.dart';
 import 'package:eat/features/publish/widgets/bottom_bar.dart';
 import 'package:eat/features/publish/widgets/map_place_list.dart';
@@ -45,12 +50,17 @@ import 'package:go_router/go_router.dart';
 /// 选了候选后进入表单, 店名, 位置和地址描述按地图上的信息预填, 都可以改, 提交时带上地点的 uid.
 /// 地图不可用 (没配 AK) 时直接进入手动添加的表单.
 ///
-/// 表单的字段包括店名, 地图选点, 地址描述和选填的门头照片.
-/// - 所属商圈按地图中心自动判断.
-/// - 选中的地点已经有人建过店, 或附近已有同名店时显示提示. 用户可以选择已有的店, 也可以继续新建.
+/// 表单的字段:
+/// - 必填: 店名, 类型 (美食或甜点饮品), 地图选点, 地址描述. 所属商圈按地图中心自动判断.
+/// - 选填, 不改也能提交: 门头照片, 品类, 口味, 适合哪顿 (默认午饭和晚饭), 价位, 能点外卖.
+///
+/// 已有店的提示:
+/// - 选中的地点已经有人建过店: 可以选那家, 也可以继续新建. 继续新建时不带地点提交, 同一地点可以有多家店, 如食堂的窗口.
+/// - 100 m 内有店名相同的店: 只能选那家或改名, 与后端查重一致.
+/// - 200 m 内有同名的店, 但更远或店名只差中间的空白: 只提示, 可以继续新建.
+/// - 提交时后端仍返回 "附近已有这家店" (40004): 重新查地点和同名, 显示已有店的入口. 店名不变时不能再继续新建.
 ///
 /// 创建成功后的去向:
-/// - 新店进入审核时, 提示 "已提交审核" 并返回上一页. 审核通过前店铺不公开, 不能挂菜.
 /// - [returnShop] 为 true 时, 带着新店返回上一页. 用于加菜页的 "换一家".
 /// - 否则替换为新店的加菜页.
 class NewShopPage extends ConsumerStatefulWidget {
@@ -74,15 +84,27 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   /// 选中的地图候选. 手动添加时为 null.
   MapPlace? _place;
 
-  /// 用户在 "这家店已经有了" 的提示中选择了继续新建.
+  /// 用户在 "这家店已经有了" 的提示中选择了继续新建. 此时提交不带地点.
   var _keepPoi = false;
   final _map = EatMapController();
   GcjPoint? _center;
   var _mapFailed = false;
   PickedPhoto? _photo;
+  final _nameKey = GlobalKey();
+
+  /// 店铺类型, 必选. 用户选择前为 null.
+  ShopKind? _kind;
+  var _categories = <ShopCategory>{};
+  var _tastes = <Taste>{};
+  var _meals = {MealTime.lunch, MealTime.dinner};
+  PriceBand? _priceBand;
+  var _delivery = false;
 
   /// 用户在同名店提示中选择了 "不是同一家, 继续建".
   var _keepNew = false;
+
+  /// 提交时后端以 "附近已有这家店" 拒绝的店名. 店名不变时, 同名提示不能再继续新建.
+  String? _rejectedName;
 
   /// 手指是否按在地图上.
   ///
@@ -92,11 +114,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
 
   /// 已上传的门头照片及其存储 key. 重试提交时不重复上传.
   ({PickedPhoto photo, String key})? _uploaded;
-
-  /// 本次新建的 `Idempotency-Key` 及对应的提交内容.
-  ///
-  /// 超时后重试同一份内容时复用 key, 服务端据此去重. 内容变化后换新 key, 服务端拒绝同一 key 提交不同内容.
-  ({String content, String key})? _request;
 
   @override
   void initState() {
@@ -131,6 +148,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _center = place.point;
     _keepNew = false;
     _keepPoi = false;
+    _rejectedName = null;
     _mapFailed = false;
     _editing = true;
   });
@@ -143,6 +161,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _address.clear();
     _center = null;
     _keepNew = false;
+    _rejectedName = null;
     _mapFailed = false;
     _editing = true;
   });
@@ -155,14 +174,31 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     if (photos.isNotEmpty && mounted) setState(() => _photo = photos.first);
   }
 
+  /// 多选项的切换. 已满 [max] 项时不再选中新项, 提示上限.
+  Set<T> _toggle<T>(Set<T> current, T value, int max, String name) {
+    if (current.contains(value)) return {...current}..remove(value);
+    if (current.length >= max) {
+      showToast(context, '$name最多选 $max 个');
+      return current;
+    }
+    return {...current, value};
+  }
+
   Future<void> _submit() async {
     final point = _point;
-    if (point == null) return;
+    final kind = _kind;
+    if (point == null || kind == null) return;
     if (!await guardAction(context, ref, Capability.createShop)) return;
     setState(() => _busy = true);
     final name = _name.text.trim();
     final address = _address.text.trim();
-    final poi = _place?.uid;
+    final place = _keepPoi ? null : _place;
+    final poi = place?.uid;
+    final meals = [...MealTime.values.where(_meals.contains)];
+    final categories = [...ShopCategory.values.where(_categories.contains)];
+    final tastes = [...Taste.values.where(_tastes.contains)];
+    final priceBand = _priceBand;
+    final delivery = _delivery;
     try {
       final hub = ref.read(hubAtProvider(point)).value;
       String? photoKey;
@@ -174,35 +210,22 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                   .upload(photo.bytes, biz: UploadBiz.restaurants);
         _uploaded = (photo: photo, key: photoKey);
       }
-      final content = [
-        name,
-        address,
-        point.lat,
-        point.lng,
-        hub?.id,
-        poi,
-        photoKey,
-      ].join('|');
-      if (_request?.content != content) {
-        _request = (content: content, key: newIdempotencyKey());
-      }
-      final (:id, :pending) = await ref
+      final id = await ref
           .read(placeRepositoryProvider)
           .createShop(
             name: name,
             address: address,
             point: point,
-            hubId: hub?.id,
+            kind: kind,
             poi: poi,
             photoKey: photoKey,
-            idempotencyKey: _request!.key,
+            mealTimes: meals,
+            priceBand: priceBand,
+            categories: categories.isEmpty ? null : categories,
+            tastes: tastes.isEmpty ? null : tastes,
+            deliveryEnabled: delivery,
           );
       if (!mounted) return;
-      if (pending) {
-        showToast(context, '已提交审核，通过后公开');
-        context.pop();
-        return;
-      }
       ref.read(publishedCountProvider.notifier).published();
       final shop = Shop(
         id: id,
@@ -210,9 +233,14 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         address: address,
         point: point,
         hubId: hub?.id,
+        hubName: hub?.name,
         poi: poi,
-        status: ShopStatus.open,
-        dishCount: 0,
+        kind: kind,
+        mealTimes: meals,
+        priceBand: priceBand,
+        categories: categories,
+        tastes: tastes,
+        deliveryEnabled: delivery,
       );
       if (widget.returnShop) {
         context.pop(shop);
@@ -222,6 +250,10 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
+      if (e.code == BizCodes.duplicateSubmit) {
+        await _onDuplicate(name, point, place);
+        return;
+      }
       await reportActionFailure(
         context,
         ref,
@@ -232,7 +264,28 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     }
   }
 
-  /// 在同名店提示中选择已有的店. 已关门的店不能选.
+  // TODO: 40004 不区分地点重复和店名重复, 也不带已有店的 id. 重新查询可能找不到那家店, 此时只有轻提示. 后端在响应中带上已有店后直接给出入口.
+  /// 后端以 "附近已有这家店" 拒绝新建: 重新查这个地点和附近的同名店, 表单据此显示已有店的入口.
+  ///
+  /// - [place] 是这次提交带上的地点, 不带地点提交时为 null, 此时只可能是店名重复.
+  /// - 记下被拒绝的店名. 店名不变时, 同名提示不再提供 "继续建".
+  Future<void> _onDuplicate(
+    String name,
+    GcjPoint point,
+    MapPlace? place,
+  ) async {
+    showToast(context, '附近已有这家店');
+    setState(() {
+      _keepNew = false;
+      _rejectedName = name;
+    });
+    if (place != null) ref.invalidate(poiShopProvider(place.uid, place.point));
+    ref.invalidate(sameNameShopProvider(name, point));
+    final field = _nameKey.currentContext;
+    if (field != null && field.mounted) await Scrollable.ensureVisible(field);
+  }
+
+  /// 在已有店的提示中选择已有的店. 已关门的店不能选.
   void _useExisting(Shop shop) {
     if (!ensureShopOpen(context, shop)) return;
     if (widget.returnShop) {
@@ -285,9 +338,15 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         ? null
         : ref.watch(poiShopProvider(place.uid, place.point)).value;
     // 已经提示了同一个地点的店, 不再重复提示同名店.
-    final same = point == null || _keepNew || existing != null
+    final same = point == null || existing != null
         ? null
         : ref.watch(sameNameShopProvider(name, point)).value;
+    final sameBlocks =
+        same != null &&
+        point != null &&
+        (_rejectedName == name ||
+            ShopRules.blocksNewShop(same, name: name, point: point));
+    final showSame = same != null && (sameBlocks || !_keepNew);
     // 预填的店名和地址可能超出字数上限, 由用户删改.
     final nameTooLong = codePointLength(name) > PublishRules.shopNameMax;
     final addressTooLong = address.length > PublishRules.addressMax;
@@ -297,9 +356,23 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         !nameTooLong &&
         !addressTooLong &&
         point != null &&
+        _kind != null &&
+        _meals.isNotEmpty &&
         existing == null &&
-        same == null;
+        !showSame;
     final mapReady = !_mapFailed && ref.watch(mapEngineProvider).available;
+    final label = eat.text.meta.copyWith(color: c.inkMuted);
+    Widget section(String title, Widget child) => Padding(
+      padding: const EdgeInsets.only(top: EatSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: EatSpace.s8,
+        children: [
+          Text(title, style: label),
+          child,
+        ],
+      ),
+    );
 
     return Column(
       children: [
@@ -312,6 +385,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
               SliverList.list(
                 children: [
                   EatFormField(
+                    key: _nameKey,
                     label: '店名',
                     controller: _name,
                     hintText: '比如 袁记云饺',
@@ -332,21 +406,34 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     _ExistingNotice(
                       text: '这家店已经有了，叫「${existing.name}」',
                       onUse: () => _useExisting(existing),
+                      keepLabel: '继续新建',
                       onKeep: () => setState(() => _keepPoi = true),
                     )
-                  else if (same != null && point != null)
+                  else if (same != null && showSame && point != null)
                     _ExistingNotice(
                       text:
                           '附近已有一家「${same.name}」，'
                           '相距 ${GeoRules.formatDistance(GeoRules.distance(point, same.point))}',
                       onUse: () => _useExisting(same),
+                      keepLabel: sameBlocks ? null : '不是同一家，继续新建',
                       onKeep: () => setState(() => _keepNew = true),
                     ),
-                  const SizedBox(height: EatSpace.s24),
-                  Text(
-                    mapReady ? '位置，拖动地图将标记对准店门口' : '位置',
-                    style: eat.text.meta.copyWith(color: c.inkMuted),
+                  section(
+                    '类型',
+                    Wrap(
+                      spacing: EatSpace.s8,
+                      children: [
+                        for (final kind in ShopKind.values)
+                          EatChip.choice(
+                            kind.label,
+                            selected: kind == _kind,
+                            onTap: () => setState(() => _kind = kind),
+                          ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: EatSpace.s24),
+                  Text(mapReady ? '位置，拖动地图将标记对准店门口' : '位置', style: label),
                   const SizedBox(height: EatSpace.s8),
                   if (mapReady && point != null)
                     Listener(
@@ -399,17 +486,100 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: EatSpace.s24),
-                  Text(
+                  section(
                     '门头照片',
-                    style: eat.text.meta.copyWith(color: c.inkMuted),
+                    _StorefrontPhoto(
+                      photo: _photo,
+                      onPick: _pickPhoto,
+                      onRemove: () => setState(() => _photo = null),
+                    ),
                   ),
-                  const SizedBox(height: EatSpace.s8),
-                  _StorefrontPhoto(
-                    photo: _photo,
-                    onPick: _pickPhoto,
-                    onRemove: () => setState(() => _photo = null),
+                  section(
+                    '品类，选填，最多 ${ShopRules.categoriesMax} 个',
+                    Wrap(
+                      spacing: EatSpace.s8,
+                      children: [
+                        for (final category in ShopCategory.values)
+                          EatChip.tag(
+                            category.label,
+                            selected: _categories.contains(category),
+                            onTap: () => setState(
+                              () => _categories = _toggle(
+                                _categories,
+                                category,
+                                ShopRules.categoriesMax,
+                                '品类',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
+                  section(
+                    '口味，选填，最多 ${ShopRules.tastesMax} 个',
+                    Wrap(
+                      spacing: EatSpace.s8,
+                      children: [
+                        for (final taste in Taste.values)
+                          EatChip.tag(
+                            taste.label,
+                            selected: _tastes.contains(taste),
+                            onTap: () => setState(
+                              () => _tastes = _toggle(
+                                _tastes,
+                                taste,
+                                ShopRules.tastesMax,
+                                '口味',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  section(
+                    '适合哪顿',
+                    Wrap(
+                      spacing: EatSpace.s8,
+                      children: [
+                        for (final meal in MealTime.values)
+                          EatChip.tag(
+                            meal.label,
+                            selected: _meals.contains(meal),
+                            onTap: () => setState(
+                              () => _meals = _meals.contains(meal)
+                                  ? ({..._meals}..remove(meal))
+                                  : {..._meals, meal},
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  section(
+                    '价位',
+                    Wrap(
+                      spacing: EatSpace.s8,
+                      children: [
+                        EatChip.choice(
+                          '不填',
+                          selected: _priceBand == null,
+                          onTap: () => setState(() => _priceBand = null),
+                        ),
+                        for (final band in PriceBand.values)
+                          EatChip.choice(
+                            band.label,
+                            selected: _priceBand == band,
+                            onTap: () => setState(() => _priceBand = band),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: EatSpace.s16),
+                  EatSwitch(
+                    label: '能点外卖',
+                    value: _delivery,
+                    onChanged: (value) => setState(() => _delivery = value),
+                  ),
+                  const SizedBox(height: EatSpace.s16),
                 ],
               ),
             ],
@@ -422,6 +592,12 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
               ? '店名最多 ${PublishRules.shopNameMax} 个字'
               : addressTooLong
               ? '地址描述最多 ${PublishRules.addressMax} 个字'
+              : _kind == null
+              ? '请选择店铺类型'
+              : _meals.isEmpty
+              ? '至少选一个饭点'
+              : sameBlocks
+              ? '附近已有同名的店，请换一个店名'
               : null,
           child: EatButton.solid(
             widget.returnShop ? '完成' : '下一步：去加菜',
@@ -456,12 +632,20 @@ class _Counter extends StatelessWidget {
   }
 }
 
-/// 已有店的提示: 选中的地点已经有人建过店, 或附近有同名店. 提供 "就选它" 和 "不是同一家, 继续建".
+/// 已有店的提示: 选中的地点已经有人建过店, 或附近有同名店. 提供 "就选它" 和继续新建的按钮.
+///
+/// [keepLabel] 是继续新建的按钮文字. 为 null 时不能继续新建, 只有 "就选它".
 class _ExistingNotice extends StatelessWidget {
-  const new({required this.text, required this.onUse, required this.onKeep});
+  const new({
+    required this.text,
+    required this.onUse,
+    required this.keepLabel,
+    required this.onKeep,
+  });
 
   final String text;
   final VoidCallback onUse;
+  final String? keepLabel;
   final VoidCallback onKeep;
 
   @override
@@ -481,7 +665,8 @@ class _ExistingNotice extends StatelessWidget {
               spacing: EatSpace.s10,
               children: [
                 EatButton.outline('就选它', height: 36, onPressed: onUse),
-                EatButton.mist('不是同一家，继续新建', height: 36, onPressed: onKeep),
+                if (keepLabel case final keepLabel?)
+                  EatButton.mist(keepLabel, height: 36, onPressed: onKeep),
               ],
             ),
           ],

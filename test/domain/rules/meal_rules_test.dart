@@ -1,4 +1,4 @@
-import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 

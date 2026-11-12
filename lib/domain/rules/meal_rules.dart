@@ -1,4 +1,4 @@
-import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/meal_time.dart';
 
 /// 按时刻划分饭点. 每个饭点从 [_starts] 中的时刻开始, 到下一个饭点开始时结束.
 abstract final class MealRules {

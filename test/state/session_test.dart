@@ -37,7 +37,7 @@ void main() {
       env.kv.values[Session.installedKey] = '1';
       env.kv.values[UserRepository.cacheKey] = jsonEncode(userInfoJson());
       env.adapter.on('GET /user/info', [
-        FakeAdapter.ok(userInfoJson(verified: true, method: 'school_email')),
+        FakeAdapter.ok(userInfoJson(verified: true, method: 'email')),
       ]);
       final container = await env.container(token: _token);
 
@@ -55,7 +55,7 @@ void main() {
 
     test('后台核对时发现过期，回到没登录，并记下是过期', () async {
       env.kv.values[Session.installedKey] = '1';
-      env.adapter.on('GET /user/info', [FakeAdapter.fail(20003)]);
+      env.adapter.on('GET /user/info', [FakeAdapter.fail(20001)]);
       final container = await env.container(token: _token);
 
       await container.read(sessionProvider.notifier).restore();
@@ -104,7 +104,7 @@ void main() {
   test('任何接口返回登录过期，都清掉登录态和缓存', () async {
     env.kv.values[UserRepository.cacheKey] = '{}';
     env.kv.values['prefs.installed'] = '1';
-    env.adapter.on('GET /anything', [FakeAdapter.fail(20002)]);
+    env.adapter.on('GET /anything', [FakeAdapter.fail(20001)]);
     final container = await env.container(
       session: const SignedIn(user: testUser),
       token: _token,
@@ -124,7 +124,7 @@ void main() {
   test('没权限时重新拉用户信息，按新状态处理', () async {
     env.adapter
       ..on('POST /foods/like', [FakeAdapter.fail(20004)])
-      ..on('GET /user/info', [FakeAdapter.ok(userInfoJson(banned: true))]);
+      ..on('GET /user/info', [FakeAdapter.ok(userInfoJson(verified: true))]);
     final container = await env.container(
       session: const SignedIn(user: testUser),
       token: _token,
@@ -135,7 +135,33 @@ void main() {
       throwsA(isA<AppFailure>()),
     );
     await pumpEventQueue();
-    expect(container.read(accountStatusProvider), isA<BannedStatus>());
+    expect(container.read(accountStatusProvider), isA<VerifiedStatus>());
+  });
+
+  test('带凭证的请求收到封禁码：清掉登录态和缓存，原因记为封禁', () async {
+    env.kv.values[UserRepository.cacheKey] = '{}';
+    env.kv.values['prefs.installed'] = '1';
+    env.adapter.on('GET /anything', [FakeAdapter.fail(30002)]);
+    final container = await env.container(
+      session: const SignedIn(user: testUser),
+      token: _token,
+    );
+
+    await expectLater(
+      container.read(apiClientProvider).get('/anything'),
+      throwsA(
+        isA<AppFailure>().having(
+          (f) => f.kind,
+          'kind',
+          FailureKind.sessionExpired,
+        ),
+      ),
+    );
+    await pumpEventQueue();
+    final state = container.read(sessionProvider) as SignedOut;
+    expect(state.reason, SignOutReason.banned);
+    expect(env.secure.values, isEmpty);
+    expect(env.kv.values.keys, ['prefs.installed']);
   });
 
   group('游客', () {
@@ -215,24 +241,5 @@ void main() {
     expect(user.avatarUrl, 'https://img.test/avatars/7.jpg');
     expect(user.verified, isFalse);
     expect(user.hasPassword, isFalse);
-  });
-
-  test('封禁截止时间按 Unix 毫秒解析，null 表示永久封禁', () async {
-    final until = DateTime.utc(2026, 11, 30, 4);
-    for (final (raw, expected) in [
-      (until.millisecondsSinceEpoch, until.toLocal()),
-      (null, null),
-    ]) {
-      env.adapter.on('GET /user/info', [
-        FakeAdapter.ok({...userInfoJson(banned: true), 'banUntil': raw}),
-      ]);
-      final container = await env.container();
-
-      final user = await container.read(userRepositoryProvider).fetchCurrent();
-      expect(user.banned, isTrue);
-      expect(user.banUntil, expected, reason: '$raw');
-      final status = AccountStatus.of(signedIn: true, user: user);
-      expect((status as BannedStatus).until, expected, reason: '$raw');
-    }
   });
 }

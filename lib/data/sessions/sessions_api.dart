@@ -8,12 +8,11 @@ part 'sessions_api.g.dart';
 /// SessionsApi 调用的接口路径, 相对于业务接口地址.
 abstract final class SessionsEndpoints {
   static const revokeOthers = '/auth/sessions/revoke-others';
-  static String resume(String commandId) => '/auth/sessions/$commandId/resume';
   static String session(String sessionId) => '/auth/sessions/$sessionId';
   static const sessions = '/auth/sessions';
 }
 
-/// 接口分组 DeviceSessions: 登录设备的列表, 下线单个设备和其他设备, 以及换发后的会话恢复.
+/// 接口分组 DeviceSessions: 登录设备的列表, 下线单个设备和其他设备.
 class SessionsApi {
   SessionsApi(this._client);
 
@@ -36,25 +35,8 @@ class SessionsApi {
   Future<void> revoke(String sessionId) =>
       _client.delete(SessionsEndpoints.session(sessionId));
 
-  /// 下线其他设备. 本机的会话随之换发, 之后用 [resume] 获取新凭证.
-  Future<void> revokeOthers({
-    required String commandId,
-    required String recoveryCapability,
-  }) => _client.post(
-    SessionsEndpoints.revokeOthers,
-    body: {'commandId': commandId, 'recoveryCapability': recoveryCapability},
-  );
-
-  Future<SessionOutcomeDto> resume({
-    required String commandId,
-    required String recoveryCapability,
-  }) async => decodeJson(
-    await _client.post(
-      SessionsEndpoints.resume(commandId),
-      headers: {'X-Recovery-Capability': recoveryCapability},
-    ),
-    SessionOutcomeDto.fromJson,
-  );
+  /// 下线本机以外的所有设备. 本机的会话不变.
+  Future<void> revokeOthers() => _client.post(SessionsEndpoints.revokeOthers);
 }
 
 @JsonSerializable(createToJson: false)
@@ -66,32 +48,16 @@ class const DeviceSessionPageDto({
       _$DeviceSessionPageDtoFromJson(json);
 }
 
-/// 一台已登录的设备. [device] 为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`, 时间为 ISO 8601.
+/// 一台已登录的设备. [device] 为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`. [issuedAt] 是登录时间, ISO 8601.
 @JsonSerializable(createToJson: false)
 class const DeviceSessionDto({
   final String? sessionId,
   final String? device,
   final String? issuedAt,
-  final String? lastSeenAt,
   final bool? current,
 }) {
   factory DeviceSessionDto.fromJson(Map<String, dynamic> json) =>
       _$DeviceSessionDtoFromJson(json);
-}
-
-/// 换发会话的结果. 下线其他设备和换绑手机共用.
-///
-/// [status] 为 `READY` 时 [tokenName] 和 [tokenValue] 是新凭证.
-/// `COMMITTED` 和 `FACT_READY` 表示换发尚未完成. `SUPERSEDED` 和 `EXPIRED` 表示需要重新登录.
-@JsonSerializable(createToJson: false)
-class const SessionOutcomeDto({
-  final String? status,
-  final String? tokenName,
-  final String? tokenValue,
-  final bool? restricted,
-}) {
-  factory SessionOutcomeDto.fromJson(Map<String, dynamic> json) =>
-      _$SessionOutcomeDtoFromJson(json);
 }
 
 @Riverpod(keepAlive: true)

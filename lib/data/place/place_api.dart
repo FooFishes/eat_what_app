@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/place/place_dto.dart';
@@ -8,16 +7,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_api.g.dart';
 
-/// 店铺列表的排序. [api] 是接口中的取值. 同值时后端按店铺 id 倒序.
+/// 店铺列表的排序. [api] 是接口中的取值.
 enum ShopSort {
   /// 距离升序, 需要坐标.
   distance('DISTANCE'),
 
-  /// 推荐率降序. 没有推荐率的店排在最后.
-  recommendation('RECOMMENDATION_RATE'),
-
-  /// 可见菜数降序.
-  dishCount('FOOD_COUNT');
+  /// 新建时间倒序.
+  newest('NEWEST');
 
   const new(this.api);
 
@@ -30,15 +26,18 @@ abstract final class PlaceEndpoints {
   static const hubs = '/hub/list';
   static const locateHub = '/hub/locate';
   static const addRestaurant = '/restaurant/add';
+  static String editRestaurant(int id) => '/restaurant/edit/$id';
   static String restaurant(int id) => '/restaurant/detail/$id';
   static const searchRestaurants = '/restaurant/search';
-  static const browseRestaurants = '/restaurant/browse';
   static String restaurantRating(int id) => '/restaurant/$id/rating';
   static String restaurantFavorite(int id) => '/restaurant/$id/favorite';
   static const favoriteRestaurants = '/restaurant/favorites';
+  static String restaurantHistory(int id) => '/restaurant/$id/history';
+  static String restoreRestaurant(int id, int revisionId) =>
+      '/restaurant/$id/history/$revisionId/restore';
 }
 
-/// 地点相关的三个接口分组: Campus (校区), Hub (商圈), Restaurant (餐厅的浏览, 搜索和新建).
+/// 地点相关的三个接口分组: Campus (校区), Hub (商圈), Restaurant (店铺的浏览, 搜索, 新建和修改).
 class PlaceApi {
   PlaceApi(this._client);
 
@@ -72,26 +71,20 @@ class PlaceApi {
     return data == null ? null : decodeJson(data, HubDto.fromJson);
   }
 
-  /// 新建店铺.
-  ///
-  /// [idempotencyKey] 是本次新建的 UUID. 超时重试同一份草稿时复用, 服务端据此去重.
-  Future<CreatedRestaurantDto> createRestaurant(
-    CreateRestaurantDto body, {
-    required String idempotencyKey,
-  }) async {
-    final data = await _client.post(
-      PlaceEndpoints.addRestaurant,
-      body: body.toJson(),
-      headers: {'Idempotency-Key': idempotencyKey},
-    );
-    final created = data is Map<String, dynamic>
-        ? CreatedRestaurantDto.fromJson(data)
-        : null;
-    if (created == null || created.id == null) {
-      throw const AppFailure(FailureKind.unknown, serverMessage: 'no id');
-    }
-    return created;
-  }
+  /// 新建店铺, 返回店铺 id. 店铺发布即公开.
+  Future<int> createRestaurant(CreateRestaurantDto body) async =>
+      decodeCreatedId(
+        await _client.post(PlaceEndpoints.addRestaurant, body: body.toJson()),
+      );
+
+  /// 修改店铺. 认证用户都能修改任何店铺.
+  Future<EditedRestaurantDto> editRestaurant(
+    int id,
+    EditRestaurantDto body,
+  ) async => decodeJson(
+    await _client.put(PlaceEndpoints.editRestaurant(id), body: body.toJson()),
+    EditedRestaurantDto.fromJson,
+  );
 
   Future<RestaurantDto> restaurant(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
@@ -102,13 +95,15 @@ class PlaceApi {
         RestaurantDto.fromJson,
       );
 
-  /// 搜索附近营业中的店. [keyword] 同时匹配店名和菜名, 不传 [campusId] 时只查默认校区.
+  /// 搜店, 包含已关门的店. [keyword] 匹配店名和地址.
   ///
   /// - 坐标可选, 必须成对传入. 不传 [sort] 时, 带坐标按距离升序排列, 不带按新建时间倒序.
   /// - [radius] 和 [ShopSort.distance] 都需要坐标.
-  /// - [categories] 是菜品分类的接口取值, 店里有其中任一类菜即命中.
-  /// - [recommendedOnly] 只保留推荐率不低于 80% 的店.
-  /// - [favoritesOnly] 只保留当前账号收藏的店.
+  /// - 传入 [campusId] 时只查该校区. 默认校区还包括不属于任何商圈的店.
+  /// - [categories] 和 [tags] 各自命中任一即可.
+  /// - [delivery] 只保留开了外卖或有人评过外卖的店.
+  /// - [recommendedOnly] 只保留任一场景至少 3 条评价且推荐率不低于 70% 的店.
+  /// - [favoritesOnly] 只保留当前账号收藏的店, 游客传入时返回未登录.
   /// - 不同筛选条件之间为 "与" 关系.
   Future<Paged<RestaurantDto>> searchRestaurants({
     double? gcjLat,
@@ -117,8 +112,11 @@ class PlaceApi {
     String? keyword,
     int? hubId,
     int? radius,
+    String? kind,
     List<String>? categories,
+    List<String>? tags,
     String? priceBand,
+    bool? delivery,
     bool? recommendedOnly,
     bool? favoritesOnly,
     ShopSort? sort,
@@ -135,8 +133,11 @@ class PlaceApi {
         'gcjLat': ?gcjLat,
         'gcjLng': ?gcjLng,
         'radius': ?radius,
+        'kind': ?kind,
         'categories': ?categories,
+        'tags': ?tags,
         'priceBand': ?priceBand,
+        'delivery': ?delivery,
         'recommendedOnly': ?recommendedOnly,
         'favoritesOnly': ?favoritesOnly,
         'sort': ?sort?.api,
@@ -148,51 +149,25 @@ class PlaceApi {
     RestaurantDto.fromJson,
   );
 
-  /// 店铺目录, 包含已关门的店, 已关门的店排在最后.
-  ///
-  /// 传入坐标时按距离升序排列, 不传时按新建时间倒序. [keyword] 同时匹配店名和菜名.
-  Future<Paged<RestaurantDto>> browseRestaurants({
-    int? campusId,
-    String? keyword,
-    int? hubId,
-    double? gcjLat,
-    double? gcjLng,
-    int? radius,
-    int page = 1,
-    int pageSize = 30,
-    CancelToken? cancelToken,
-  }) async => decodePage(
-    await _client.get(
-      PlaceEndpoints.browseRestaurants,
-      query: {
-        'campusId': ?campusId,
-        'keyword': ?keyword,
-        'hubId': ?hubId,
-        'gcjLat': ?gcjLat,
-        'gcjLng': ?gcjLng,
-        'radius': ?radius,
-        'page': page,
-        'pageSize': pageSize,
-      },
-      cancelToken: cancelToken,
-    ),
-    RestaurantDto.fromJson,
-  );
-
-  /// 评价店铺, [rating] 为 null 时撤回. 返回服务端合并后的当前评价, 撤回后为 null.
+  /// 评价店铺在 [scene] 场景下的体验, [rating] 为 null 时撤回. 返回本人在两个场景的评价.
   ///
   /// 评价要求已认证, 撤回只要求登录.
-  Future<String?> rateRestaurant(int id, String? rating) async {
-    final data = rating == null
-        ? await _client.delete(PlaceEndpoints.restaurantRating(id))
+  Future<MyRatingsDto> rateRestaurant(
+    int id, {
+    required String scene,
+    String? rating,
+  }) async => decodeJson(
+    rating == null
+        ? await _client.delete(
+            PlaceEndpoints.restaurantRating(id),
+            query: {'scene': scene},
+          )
         : await _client.put(
             PlaceEndpoints.restaurantRating(id),
-            body: RestaurantRatingDto(rating: rating).toJson(),
-          );
-    return data is Map<String, dynamic>
-        ? RestaurantRatingDto.fromJson(data).rating
-        : null;
-  }
+            body: RatingRequestDto(scene: scene, rating: rating).toJson(),
+          ),
+    MyRatingsDto.fromJson,
+  );
 
   /// 收藏或取消收藏店铺. 收藏要求已认证, 取消只要求登录.
   Future<void> setRestaurantFavorite(int id, {required bool favorite}) =>
@@ -200,7 +175,7 @@ class PlaceApi {
       ? _client.put(PlaceEndpoints.restaurantFavorite(id))
       : _client.delete(PlaceEndpoints.restaurantFavorite(id));
 
-  /// 我收藏的店, 包含已关门的店. 按营业中, 同步中, 已关门分组, 组内按新建时间倒序.
+  /// 我收藏的店, 包含已关门的店, 按收藏时间倒序.
   Future<Paged<RestaurantDto>> favoriteRestaurants({
     int page = 1,
     int pageSize = 20,
@@ -213,6 +188,30 @@ class PlaceApi {
     ),
     RestaurantDto.fromJson,
   );
+
+  /// 店铺的修改记录, 最新的在前. 不需要登录.
+  Future<Paged<RevisionDto>> restaurantHistory(
+    int id, {
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      PlaceEndpoints.restaurantHistory(id),
+      query: {'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    RevisionDto.fromJson,
+  );
+
+  /// 把店铺恢复到某条修改记录之后的内容, 记为一次新的修改.
+  ///
+  /// 当前内容已经是该版本时返回 `BizCodes.stateNotAllowed`.
+  Future<EditedRestaurantDto> restoreRestaurant(int id, int revisionId) async =>
+      decodeJson(
+        await _client.post(PlaceEndpoints.restoreRestaurant(id, revisionId)),
+        EditedRestaurantDto.fromJson,
+      );
 }
 
 @Riverpod(keepAlive: true)

@@ -1,5 +1,4 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/upload/upload_api.dart';
 import 'package:eat/data/upload/uploader.dart';
@@ -24,17 +23,12 @@ class const Composer({
 });
 
 /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-///
-/// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-/// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 @riverpod
 class CommentComposer extends _$CommentComposer {
   @override
   Composer build(int dishId) => const Composer();
 
   var _nextId = 0;
-  String? _content;
-  String? _idempotencyKey;
 
   /// 加入照片, 超出上限的部分丢弃.
   void addPhotos(List<PickedPhoto> picked) {
@@ -76,11 +70,6 @@ class CommentComposer extends _$CommentComposer {
           if (ref.mounted && photo.key == null) _keep(photo.id, key);
         }
       }
-      final content = [text.trim(), rootId, replyToId, ...keys].join('\n');
-      if (content != _content) {
-        _content = content;
-        _idempotencyKey = newIdempotencyKey();
-      }
       return await ref
           .read(commentWriterProvider.notifier)
           .post(
@@ -89,7 +78,6 @@ class CommentComposer extends _$CommentComposer {
             pictureKeys: keys,
             rootId: rootId,
             replyToId: replyToId,
-            idempotencyKey: _idempotencyKey!,
           );
     } finally {
       if (ref.mounted) state = Composer(photos: state.photos);

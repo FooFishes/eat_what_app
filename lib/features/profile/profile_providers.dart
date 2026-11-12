@@ -68,33 +68,14 @@ int? _myId(Ref ref) =>
 /// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
 @Riverpod(keepAlive: true)
 class MyUploads extends _$MyUploads {
-  /// 封禁中时为自己的 id, 翻页沿用同一个接口.
-  int? _publicOf;
-
   @override
   Future<DishPages> build() async {
-    final me = _myId(ref);
+    _myId(ref);
     ref.watch(publishedCountProvider);
-    // 本 Provider 常驻, 不能监听会自动销毁的 accountStatusProvider, 因此从登录态计算封禁状态.
-    final banned = ref.watch(
-      sessionProvider.select(
-        (s) => switch (s) {
-          SignedIn(:final user, :final restricted) => AccountStatus.of(
-            signedIn: true,
-            user: user,
-            restricted: restricted,
-          ) is BannedStatus,
-          SignedOut() || Guest() => false,
-        },
-      ),
-    );
-    _publicOf = banned ? me : null;
-    final foods = ref.watch(foodRepositoryProvider);
     return DishPages(
-      pages: await switch (_publicOf) {
-        final id? => foods.byUser(id, cancelToken: ref.cancelToken()),
-        null => foods.mine(cancelToken: ref.cancelToken()),
-      },
+      pages: await ref
+          .watch(foodRepositoryProvider)
+          .mine(cancelToken: ref.cancelToken()),
     );
   }
 
@@ -103,10 +84,7 @@ class MyUploads extends _$MyUploads {
   Future<void> loadMore() => _more.load(
     ref,
     state.value,
-    (page) => switch (_publicOf) {
-      final id? => ref.read(foodRepositoryProvider).byUser(id, page: page),
-      null => ref.read(foodRepositoryProvider).mine(page: page),
-    },
+    (page) => ref.read(foodRepositoryProvider).mine(page: page),
     (next) => state = AsyncData(next),
   );
 }
@@ -185,7 +163,7 @@ enum FollowListKind { fans, followings }
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 @riverpod
 class FollowList extends _$FollowList {
   @override
@@ -215,17 +193,22 @@ class FollowList extends _$FollowList {
       _more.load(ref, state.value, _fetch, (next) => state = AsyncData(next));
 }
 
-/// 失败是否因为对方未公开列表.
+/// 失败是否因为对方未公开列表. 粉丝和关注列表接口只在这种情况下返回无权限.
 bool isHiddenList(Object? error) =>
-    error is AppFailure && error.code == BizCodes.notSupported;
+    error is AppFailure && error.code == BizCodes.permissionDenied;
+
+/// 失败是否因为用户不存在. 页面显示 "该用户不存在", 不使用码表中为登录准备的提示.
+bool isMissingUser(Object? error) =>
+    error is AppFailure && error.code == BizCodes.userNotFound;
 
 /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+///
+/// 取自对方的资料, 不单独请求.
 @riverpod
 class BlockState extends _$BlockState {
   @override
-  Future<bool> build(int userId) => ref
-      .watch(userRepositoryProvider)
-      .isBlocked(userId, cancelToken: ref.cancelToken());
+  Future<bool> build(int userId) async =>
+      (await ref.watch(userProfileProvider(userId).future)).blocked;
 
   /// 屏蔽或解除屏蔽. 屏蔽会解除双方的关注关系, 成功后重新请求双方的资料.
   Future<void> set({required bool blocked}) async {
@@ -316,22 +299,10 @@ class Footprints extends _$Footprints {
 }
 
 /// 本人的等级进度. 每次打开等级页重新请求.
-///
-/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
 @riverpod
-Future<GrowthProgress> growthProgress(Ref ref) async {
-  final progress = await ref
-      .watch(growthRepositoryProvider)
-      .progress(cancelToken: ref.cancelToken());
-  final me = ref.read(sessionProvider);
-  if (ref.mounted && me is SignedIn && me.user != null) {
-    final shown = ref.read(userProfileProvider(me.user!.id)).value?.level;
-    if (shown != null && shown != progress.level) {
-      ref.invalidate(userProfileProvider(me.user!.id));
-    }
-  }
-  return progress;
-}
+Future<GrowthProgress> growthProgress(Ref ref) => ref
+    .watch(growthRepositoryProvider)
+    .progress(cancelToken: ref.cancelToken());
 
 /// 本人的经验明细, 按入账时间倒序.
 @riverpod

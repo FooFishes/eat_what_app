@@ -6,12 +6,11 @@ part of 'push_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-PushSettingDto _$PushSettingDtoFromJson(Map<String, dynamic> json) =>
-    PushSettingDto(
-      category: json['category'] as String?,
-      enabled: json['enabled'] as bool?,
-      revision: (json['revision'] as num?)?.toInt(),
-      closeFrontier: json['closeFrontier'] as String?,
+PushSettingsDto _$PushSettingsDtoFromJson(Map<String, dynamic> json) =>
+    PushSettingsDto(
+      categories: (json['categories'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as bool),
+      ),
     );
 
 // **************************************************************************

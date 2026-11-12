@@ -7,7 +7,6 @@ import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/place.dart';
-import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -19,31 +18,26 @@ part 'search_providers.g.dart';
 /// 防抖期间关键词变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-// TODO: `/foods/list` 不返回商圈, 搜菜结果只显示店名和距离. 接口返回 `hubName` 后补充测试, 确认菜品方块显示商圈名.
-/// 按菜名跨店搜索菜品.
-///
-/// 有定位时按店铺与用户的距离升序排列, 每道菜带距离. 没有定位时按后端默认的新建时间倒序.
-/// 不使用校区中心代替定位, 因为与校区中心的距离不代表用户的实际步行距离.
+// TODO: `/foods/list` 不返回商圈和距离, 也不按校区过滤. 后端支持后补充商圈, 距离和校区.
+/// 按菜名跨店搜索菜品, 最新的在前.
 @riverpod
 Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return const [];
-  final me = ref.read(currentLocationProvider).point;
   final page = await ref
       .watch(foodRepositoryProvider)
       .list(
         keyword: keyword,
-        near: me,
-        sort: me == null ? null : FoodSort.distance,
+        sort: FoodSort.newest,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
   return page.items;
 }
 
-/// 按店名或菜名搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 后端把已关门的店排在最后.
+/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
 @riverpod
 Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -52,14 +46,19 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   if (!ref.mounted || scope == null) return const [];
   final page = await ref
       .watch(placeRepositoryProvider)
-      .browseShops(
+      .searchShops(
         keyword: keyword,
         campusId: scope.campusId,
         near: scope.point,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
-  return page.items;
+  return [
+    for (final shop in page.items)
+      if (!shop.closed) shop,
+    for (final shop in page.items)
+      if (shop.closed) shop,
+  ];
 }
 
 /// 最近搜索的词, 按时间倒序, 数量有上限.

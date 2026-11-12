@@ -1,5 +1,3 @@
-import 'package:eat/core/format/time_format.dart';
-import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -10,31 +8,31 @@ import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 
 void main() {
-  testWidgets('舞台上是获赞最多的菜、昵称和统计；没认证时提示去认证', (tester) async {
+  testWidgets('舞台上是获赞最多的菜、昵称和三项统计；没认证时提示去认证', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
         FakeAdapter.ok({
+          'id': 42,
           'displayName': '天凉被破王',
           'avatar': null,
-          'earnedLikes': 128,
           'fansCount': 3,
           'followingsCount': 5,
           'fansVisible': true,
           'followingsVisible': true,
           'isFollowingMe': false,
           'isFollowingHim': false,
-          'uploadedRestaurantsCount': 1,
-          'uploadedFoodsCount': 2,
+          'blocked': false,
         }),
       ])
       ..on('GET /foods/my', [
-        FakeAdapter.ok(
-          pageJson([
+        FakeAdapter.ok({
+          ...pageJson([
             foodJson(id: 1, name: '虾仁云吞', likes: 30, stageColor: 'chili'),
             foodJson(id: 2, name: '紫菜汤', likes: 2),
           ]),
-        ),
+          'totalItems': 26,
+        }),
       ]);
     await pumpApp(
       tester,
@@ -44,7 +42,10 @@ void main() {
     );
 
     expect(find.text('天凉被破王'), findsOneWidget);
-    expect(find.text('128'), findsOneWidget);
+    expect(find.bySemanticsLabel('上传的菜 26'), findsOneWidget);
+    expect(find.bySemanticsLabel('粉丝 3'), findsOneWidget);
+    expect(find.bySemanticsLabel('关注 5'), findsOneWidget);
+    expect(find.textContaining('获赞'), findsNothing);
     expect(find.text('认证后可以发布和互动'), findsOneWidget);
     expect(find.text('虾仁云吞'), findsOneWidget);
     expect(
@@ -52,6 +53,31 @@ void main() {
       containsPair('userId', 42),
     );
     await expectAccessible(tester);
+  });
+
+  testWidgets('等级胶囊标着待接入，点了只提示，不请求等级接口', (tester) async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({'id': 42, 'displayName': '天凉被破王'}),
+      ])
+      ..on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.me,
+    );
+
+    final badge = find.bySemanticsLabel('等级，待接入');
+    expect(badge, findsOneWidget);
+    await tester.tap(badge);
+    await tester.pumpAndSettle();
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    expect(locationOf(router), Paths.me);
+    expect(env.adapter.sent('GET /user/growth'), isEmpty);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
   });
 
   group('收藏的店', () {
@@ -118,77 +144,6 @@ void main() {
       await openShops(tester);
       expect(find.text('还没收藏过店'), findsOneWidget);
       await expectAccessible(tester);
-    });
-  });
-
-  group('封禁中', () {
-    final now = DateTime.now();
-    final until = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).add(const Duration(days: 20));
-    CurrentUser banned({DateTime? until}) => CurrentUser(
-      id: 42,
-      nickname: '天凉被破王',
-      hasPassword: false,
-      verified: true,
-      banned: true,
-      banReason: '刷赞',
-      banUntil: until,
-    );
-
-    TestEnv bannedEnv() {
-      final env = TestEnv();
-      env.adapter
-        ..on('GET /user/userInfo', [
-          FakeAdapter.ok({'displayName': '天凉被破王'}),
-        ])
-        ..on('GET /foods/by-user/42', [
-          FakeAdapter.ok(pageJson([foodJson(id: 1, name: '虾仁云吞')])),
-        ]);
-      return env;
-    }
-
-    testWidgets('提示封禁期限和原因；上传改走公开接口，收藏不请求', (tester) async {
-      final env = bannedEnv();
-      await pumpApp(
-        tester,
-        env,
-        session: SignedIn(user: banned(until: until)),
-        location: Paths.me,
-      );
-
-      expect(
-        find.text('账号封禁中，封禁至 ${TimeFormat.date(until, now)}，原因：刷赞'),
-        findsOneWidget,
-      );
-      expect(find.text('虾仁云吞'), findsOneWidget);
-      expect(env.adapter.sent('GET /foods/my'), isEmpty);
-
-      await tester.tap(find.text('收藏'));
-      await tester.pumpAndSettle();
-      expect(find.text('封禁期间暂时不能查看收藏的菜。'), findsOneWidget);
-      expect(env.adapter.sent('GET /foods/favorites'), isEmpty);
-    });
-
-    testWidgets('没有截止时间时是永久封禁；点足迹弹拦截对话框，不进页面', (tester) async {
-      final env = bannedEnv();
-      final (_, router) = await pumpApp(
-        tester,
-        env,
-        session: SignedIn(user: banned()),
-        location: Paths.me,
-      );
-
-      expect(find.text('账号封禁中，永久封禁，原因：刷赞'), findsOneWidget);
-
-      await tester.tap(find.text('足迹'));
-      await tester.pumpAndSettle();
-      expect(find.text('账号封禁中，暂时不能查看足迹'), findsOneWidget);
-      expect(find.text('永久封禁'), findsOneWidget);
-      expect(locationOf(router), Paths.me);
-      expect(env.adapter.sent('GET /history/browse'), isEmpty);
     });
   });
 }

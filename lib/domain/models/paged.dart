@@ -1,8 +1,11 @@
 /// 一页列表数据, 由接口的 `PageResult` 转换而来. [page] 从 1 开始.
+///
+/// [total] 是全部条目数, 接口没有给出时为 null.
 class const Paged<T>({
   required final List<T> items,
   final int page = 1,
   final bool hasNext = false,
+  final int? total,
 }) {
   const Paged.empty() : this(items: const []);
 
@@ -11,5 +14,6 @@ class const Paged<T>({
     items: [...items, ...next.items],
     page: next.page,
     hasNext: next.hasNext,
+    total: next.total ?? total,
   );
 }

@@ -87,13 +87,20 @@ class _FollowsPageState extends ConsumerState<FollowsPage> {
             child: _Hidden(name: name, kind: _kind),
           ),
           null => SliverToBoxAdapter(
-            child: profileValue.hasError && !profileValue.isLoading
-                ? FailureState(
-                    message: (profileValue.error as AppFailure?)?.message,
-                    onRetry: () =>
-                        ref.invalidate(userProfileProvider(widget.userId)),
-                  )
-                : const RowListPlaceholder(count: 6, thumbSize: EatSize.avatar),
+            child: switch (profileValue) {
+              AsyncValue(:final error?, isLoading: false)
+                  when isMissingUser(error) =>
+                const _Missing(),
+              AsyncValue(:final error?, isLoading: false) => FailureState(
+                message: (error as AppFailure?)?.message,
+                onRetry: () =>
+                    ref.invalidate(userProfileProvider(widget.userId)),
+              ),
+              _ => const RowListPlaceholder(
+                count: 6,
+                thumbSize: EatSize.avatar,
+              ),
+            },
           ),
         },
       ],
@@ -125,6 +132,9 @@ class _UserList extends ConsumerWidget {
           return SliverToBoxAdapter(
             child: _Hidden(name: name, kind: kind),
           );
+        }
+        if (isMissingUser(value.error)) {
+          return const SliverToBoxAdapter(child: _Missing());
         }
         return SliverToBoxAdapter(
           child: FailureState(
@@ -203,6 +213,17 @@ class _UserRow extends ConsumerWidget {
       },
     );
   }
+}
+
+/// 用户不存在.
+class _Missing extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.only(top: 40),
+    child: EmptyState(icon: EatIcons.me, title: '该用户不存在'),
+  );
 }
 
 /// 对方没有公开该列表.

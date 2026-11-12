@@ -17,11 +17,15 @@ void main() {
           name: true,
           price: price,
           category: true,
-          meal: true,
         );
     expect(missing(), isNull);
     expect(missing(photo: false), '请添加照片');
     expect(missing(price: false), '请填写价格');
     expect(missing(photo: false, price: false), '请添加照片并填写价格');
+  });
+
+  test('菜名查重忽略空白和大小写', () {
+    expect(PublishRules.dishNameKey(' Coco 奶茶 '), 'coco奶茶');
+    expect(PublishRules.dishNameKey('\t'), isEmpty);
   });
 }

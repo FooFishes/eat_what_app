@@ -8,12 +8,16 @@ part of 'taste_vocabulary.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
+/// 可选的口味, 以 [TasteTag] 的形式提供, [TasteTag.id] 是 [Taste.index].
+///
+/// 后端 v2 的口味固定为 [Taste] 的五个值, 删除了口味词表接口, 因此不发请求.
 
 @ProviderFor(tasteVocabulary)
 final tasteVocabularyProvider = TasteVocabularyProvider._();
 
-/// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
+/// 可选的口味, 以 [TasteTag] 的形式提供, [TasteTag.id] 是 [Taste.index].
+///
+/// 后端 v2 的口味固定为 [Taste] 的五个值, 删除了口味词表接口, 因此不发请求.
 
 final class TasteVocabularyProvider
     extends
@@ -23,7 +27,9 @@ final class TasteVocabularyProvider
           FutureOr<List<TasteTag>>
         >
     with $FutureModifier<List<TasteTag>>, $FutureProvider<List<TasteTag>> {
-  /// 口味词表, 由运营维护, 全局共用一份. 用于加标签面板和发布时的标签选择.
+  /// 可选的口味, 以 [TasteTag] 的形式提供, [TasteTag.id] 是 [Taste.index].
+  ///
+  /// 后端 v2 的口味固定为 [Taste] 的五个值, 删除了口味词表接口, 因此不发请求.
   TasteVocabularyProvider._()
     : super(
         from: null,
@@ -50,4 +56,4 @@ final class TasteVocabularyProvider
   }
 }
 
-String _$tasteVocabularyHash() => r'b306fa1480ed47ce2fab8cc87ebc7c7528f89ca2';
+String _$tasteVocabularyHash() => r'0a185f0270dc24d59955dbfe98058052e8acb87a';

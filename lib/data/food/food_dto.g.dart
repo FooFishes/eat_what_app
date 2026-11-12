@@ -8,41 +8,24 @@ part of 'food_dto.dart';
 
 FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   id: (json['id'] as num?)?.toInt(),
-  accountId: (json['accountId'] as num?)?.toInt(),
-  uploaderName: json['uploaderName'] as String?,
-  user: json['user'] == null
-      ? null
-      : FoodAuthorDto.fromJson(json['user'] as Map<String, dynamic>),
   restaurantId: (json['restaurantId'] as num?)?.toInt(),
   restaurantName: json['restaurantName'] as String?,
-  distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
-  restaurantAddress: json['restaurantAddress'] as String?,
-  restaurantGcjLng: (json['restaurantGcjLng'] as num?)?.toDouble(),
-  restaurantGcjLat: (json['restaurantGcjLat'] as num?)?.toDouble(),
-  hubId: (json['hubId'] as num?)?.toInt(),
-  hubName: json['hubName'] as String?,
+  accountId: (json['accountId'] as num?)?.toInt(),
   name: json['name'] as String?,
-  description: json['description'] as String?,
-  price: (json['price'] as num?)?.toDouble(),
   category: json['category'] as String?,
-  pictureUrl: (json['pictureUrl'] as List<dynamic>?)
+  price: (json['price'] as num?)?.toDouble(),
+  description: json['description'] as String?,
+  pictureUrls: (json['pictureUrls'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
-  pictureKeys: (json['pictureKeys'] as List<dynamic>)
-      .map((e) => e as String)
-      .toList(),
-  systemTags: (json['systemTags'] as List<dynamic>?)
-      ?.map((e) => FoodTagDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  myCustomTags: (json['myCustomTags'] as List<dynamic>?)
-      ?.map((e) => FoodTagDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+  signature: json['signature'] as bool?,
+  likeCount: (json['likeCount'] as num?)?.toInt(),
+  favoriteCount: (json['favoriteCount'] as num?)?.toInt(),
   isLiked: json['isLiked'] as bool?,
   isFavorite: json['isFavorite'] as bool?,
-  likesCount: (json['likesCount'] as num?)?.toInt(),
-  mealTimes: (json['mealTimes'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
+  createdAt: (json['createdAt'] as num?)?.toInt(),
+  updatedAt: (json['updatedAt'] as num?)?.toInt(),
   stageColor: json['stageColor'] as String?,
   stageAlternates: (json['stageAlternates'] as List<dynamic>?)
       ?.map((e) => e as String)
@@ -50,38 +33,29 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   coverCrop: json['coverCrop'] == null
       ? null
       : CoverCropDto.fromJson(json['coverCrop'] as Map<String, dynamic>),
-  createdAt: (json['createdAt'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'id': ?instance.id,
-  'accountId': ?instance.accountId,
-  'uploaderName': ?instance.uploaderName,
-  'user': ?instance.user,
   'restaurantId': ?instance.restaurantId,
   'restaurantName': ?instance.restaurantName,
-  'distanceMeters': ?instance.distanceMeters,
-  'restaurantAddress': ?instance.restaurantAddress,
-  'restaurantGcjLng': ?instance.restaurantGcjLng,
-  'restaurantGcjLat': ?instance.restaurantGcjLat,
-  'hubId': ?instance.hubId,
-  'hubName': ?instance.hubName,
+  'accountId': ?instance.accountId,
   'name': ?instance.name,
-  'description': ?instance.description,
-  'price': ?instance.price,
   'category': ?instance.category,
-  'pictureUrl': ?instance.pictureUrl,
-  'pictureKeys': instance.pictureKeys,
-  'systemTags': ?instance.systemTags,
-  'myCustomTags': ?instance.myCustomTags,
+  'price': ?instance.price,
+  'description': ?instance.description,
+  'pictureUrls': ?instance.pictureUrls,
+  'tags': ?instance.tags,
+  'signature': ?instance.signature,
+  'likeCount': ?instance.likeCount,
+  'favoriteCount': ?instance.favoriteCount,
   'isLiked': ?instance.isLiked,
   'isFavorite': ?instance.isFavorite,
-  'likesCount': ?instance.likesCount,
-  'mealTimes': ?instance.mealTimes,
+  'createdAt': ?instance.createdAt,
+  'updatedAt': ?instance.updatedAt,
   'stageColor': ?instance.stageColor,
   'stageAlternates': ?instance.stageAlternates,
   'coverCrop': ?instance.coverCrop,
-  'createdAt': ?instance.createdAt,
 };
 
 FoodTagDto _$FoodTagDtoFromJson(Map<String, dynamic> json) => FoodTagDto(
@@ -100,15 +74,6 @@ Map<String, dynamic> _$FoodTagDtoToJson(FoodTagDto instance) =>
       'taggedByMe': ?instance.taggedByMe,
       'usageCount': ?instance.usageCount,
     };
-
-FoodAuthorDto _$FoodAuthorDtoFromJson(Map<String, dynamic> json) =>
-    FoodAuthorDto(
-      id: (json['id'] as num?)?.toInt(),
-      displayName: json['displayName'] as String?,
-    );
-
-Map<String, dynamic> _$FoodAuthorDtoToJson(FoodAuthorDto instance) =>
-    <String, dynamic>{'id': ?instance.id, 'displayName': ?instance.displayName};
 
 CoverCropDto _$CoverCropDtoFromJson(Map<String, dynamic> json) => CoverCropDto(
   centerX: (json['centerX'] as num?)?.toDouble(),
@@ -136,14 +101,65 @@ Map<String, dynamic> _$CreateFoodDtoToJson(CreateFoodDto instance) =>
     <String, dynamic>{
       'restaurantId': instance.restaurantId,
       'name': instance.name,
-      'pictureUrl': instance.pictureUrl,
+      'category': instance.category,
       'price': ?instance.price,
-      'category': ?instance.category,
-      'mealTimes': ?instance.mealTimes,
       'description': ?instance.description,
-      'systemTagIds': ?instance.systemTagIds,
-      'myCustomTagNames': ?instance.myCustomTagNames,
+      'pictures': ?instance.pictures,
+      'tags': ?instance.tags,
+      'signature': ?instance.signature,
       'stageColor': ?instance.stageColor,
       'stageAlternates': ?instance.stageAlternates,
       'coverCrop': ?instance.coverCrop?.toJson(),
     };
+
+Map<String, dynamic> _$EditFoodDtoToJson(EditFoodDto instance) =>
+    <String, dynamic>{
+      'name': ?instance.name,
+      'category': ?instance.category,
+      'price': ?instance.price,
+      'description': ?instance.description,
+      'pictures': ?instance.pictures,
+      'tags': ?instance.tags,
+      'signature': ?instance.signature,
+      'stageColor': ?instance.stageColor,
+      'stageAlternates': ?instance.stageAlternates,
+      'coverCrop': ?instance.coverCrop?.toJson(),
+    };
+
+Map<String, dynamic> _$SuggestFoodDtoToJson(SuggestFoodDto instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'restaurantId': ?instance.restaurantId,
+      'description': ?instance.description,
+      'pictures': ?instance.pictures,
+    };
+
+FoodSuggestionDto _$FoodSuggestionDtoFromJson(Map<String, dynamic> json) =>
+    FoodSuggestionDto(
+      category: json['category'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+    );
+
+FoodRevisionDto _$FoodRevisionDtoFromJson(Map<String, dynamic> json) =>
+    FoodRevisionDto(
+      id: (json['id'] as num?)?.toInt(),
+      action: json['action'] as String?,
+      editor: json['editor'] == null
+          ? null
+          : FoodEditorDto.fromJson(json['editor'] as Map<String, dynamic>),
+      restoredFrom: (json['restoredFrom'] as num?)?.toInt(),
+      changes: (json['changes'] as List<dynamic>?)
+          ?.map((e) => FoodFieldChangeDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      createdAt: (json['createdAt'] as num?)?.toInt(),
+    );
+
+FoodEditorDto _$FoodEditorDtoFromJson(Map<String, dynamic> json) =>
+    FoodEditorDto(
+      id: (json['id'] as num?)?.toInt(),
+      displayName: json['displayName'] as String?,
+      avatar: json['avatar'] as String?,
+    );
+
+FoodFieldChangeDto _$FoodFieldChangeDtoFromJson(Map<String, dynamic> json) =>
+    FoodFieldChangeDto(field: json['field'] as String?);

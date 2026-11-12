@@ -43,7 +43,7 @@ void main() {
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /topics/current', [FakeAdapter.ok()])
       ..on('GET /foods/recommend', [
-        FakeAdapter.ok([foodJson(recommend: true)]),
+        FakeAdapter.ok([foodJson()]),
       ])
       ..on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())])
       ..on('GET /restaurant/detail/7', [FakeAdapter.ok(restaurantJson())]);
@@ -120,7 +120,7 @@ void main() {
       );
       expect(Uri.parse(locationOf(router)).path, Paths.login);
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
@@ -135,7 +135,7 @@ void main() {
       final (_, router) = await pumpApp(tester, env, location: Paths.inbox);
       expect(Uri.parse(locationOf(router)).queryParameters['from'], '/inbox');
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
@@ -162,7 +162,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(locationOf(router), Paths.login);
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策和用户协议'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
@@ -178,14 +178,15 @@ void main() {
         location: Paths.dish(1),
       );
 
+      // 游客不能查上传者资料, 上传者写 "同学".
       await tester.scrollUntilVisible(
-        find.text('小林'),
+        find.text('同学'),
         200,
         scrollable: find.byWidgetPredicate(
           (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
         ),
       );
-      await tester.tap(find.text('小林'));
+      await tester.tap(find.text('同学'));
       await tester.pumpAndSettle();
       expect(find.text('登录后才能看主页'), findsOneWidget);
       await tester.tap(find.text('去登录'));
@@ -239,7 +240,7 @@ void main() {
     testWidgets('搜过的词不保存', (tester) async {
       env.adapter
         ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
-        ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
+        ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
       final (container, _) = await pumpApp(
         tester,
         env,

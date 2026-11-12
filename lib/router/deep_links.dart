@@ -22,6 +22,7 @@ abstract final class DeepLinks {
 
   /// Web 的统一认证回跳地址 ([Paths.ssoCallback]) 的查询参数对应的认证页地址.
   ///
+  /// 成功时带上 `ticket`, 由认证页提交. 失败时带上 `code`.
   /// `result` 既不是 success 也不是 failure 时只打开认证页, 认证页仍会刷新认证状态.
   static String ssoLocation(Map<String, String> query) {
     final result = query['result'];
@@ -30,6 +31,7 @@ abstract final class DeepLinks {
       path: Paths.verify,
       queryParameters: {
         'sso': result!,
+        if (result == 'success') 'ticket': ?query['ticket'],
         if (result == 'failure') 'code': ?query['code'],
       },
     ).toString();
@@ -38,7 +40,7 @@ abstract final class DeepLinks {
   /// 认证页地址中的统一认证结果. 没有结果时返回 null.
   static SsoResult? ssoResultOf(Map<String, String> query) =>
       switch (query['sso']) {
-        'success' => const SsoResult(success: true),
+        'success' => SsoResult(success: true, ticket: query['ticket']),
         'failure' => SsoResult(
           success: false,
           code: int.tryParse(query['code'] ?? ''),

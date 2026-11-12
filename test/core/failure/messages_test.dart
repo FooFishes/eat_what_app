@@ -5,24 +5,19 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('业务码归类', () {
     expect(failureKindOf(10003), FailureKind.tooFrequent);
-    for (final code in <Object>[
-      20001,
-      20002,
-      20003,
-      20010,
-      'CLUSTER_SESSION_INVALID',
-      'CLUSTER_SESSION_REVOKED',
-    ]) {
-      expect(failureKindOf(code), FailureKind.sessionExpired, reason: '$code');
-    }
+    expect(failureKindOf(20001), FailureKind.sessionExpired);
     expect(failureKindOf(20004), FailureKind.forbidden);
     expect(failureKindOf(30005), FailureKind.business);
-    expect(failureKindOf(20006), FailureKind.business);
     expect(failureKindOf(40008), FailureKind.business);
     expect(failureKindOf(90004), FailureKind.server);
-    for (final code in [20005, 20007, 20008, 20009]) {
+    for (final code in [20005, 20009, 30002, 30006, 30008, 30009]) {
       expect(failureKindOf(code), FailureKind.business, reason: '$code');
     }
+    expect(
+      failureKindOf(40001),
+      FailureKind.unknown,
+      reason: '含义随接口而定, 由页面就地说明',
+    );
     expect(failureKindOf('SITE_ENROLLMENT_REQUIRED'), FailureKind.unknown);
   });
 
@@ -54,8 +49,7 @@ void main() {
     }
   });
 
-  test('账号或密码不对的几个码说同一句话，不透露是哪一个错了', () {
-    expect(AppFailure.fromCode(BizCodes.userNotFound).message, '账号或密码错误');
+  test('密码登录的失败统一说账号或密码错误，不透露是哪一个错了', () {
     expect(AppFailure.fromCode(BizCodes.wrongPassword).message, '账号或密码错误');
   });
 }

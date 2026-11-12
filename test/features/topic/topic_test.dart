@@ -96,7 +96,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('菜品详情：收进过专题时店卡下写「收进了本周专题」，点进专题页', (tester) async {
+  testWidgets('菜品详情不请求专题，也不显示「收进了本周专题」', (tester) async {
     env.adapter
       ..on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())])
       ..on('GET /topics/by-food/1', [
@@ -109,29 +109,8 @@ void main() {
       location: Paths.dish(1),
     );
 
-    final hint = find.text('收进了本周专题「期末续命餐」');
-    expect(hint, findsOneWidget);
-    await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-
-    await tester.tap(hint);
-    await tester.pumpAndSettle();
-    expect(tester.widget<TopicPage>(find.byType(TopicPage)).topicId, 7);
-    await unmountApp(tester, container);
-  });
-
-  testWidgets('菜品详情：没收进过专题时不显示提示', (tester) async {
-    env.adapter
-      ..on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())])
-      ..on('GET /topics/by-food/1', [FakeAdapter.ok(<Object>[])]);
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.dish(1),
-    );
-
     expect(find.textContaining('收进了'), findsNothing);
+    expect(env.adapter.sent('GET /topics/by-food/1'), isEmpty);
     await unmountApp(tester, container);
   });
 }

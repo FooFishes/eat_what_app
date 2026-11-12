@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -23,6 +24,7 @@ import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/report_panel.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/comments.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +52,8 @@ class CommentCard extends ConsumerWidget {
       children: [
         EatAvatar(
           name: comment.authorName,
-          color: avatarColorOf(comment.authorName),
+          color: avatarColorOf(comment.authorId),
+          image: networkImage(comment.authorAvatar, width: 36),
           size: 36,
         ),
         Expanded(
@@ -126,11 +129,9 @@ class CommentCard extends ConsumerWidget {
   }
 }
 
-/// 头像的底色. 按昵称确定舞台色, 同一用户在各处颜色一致.
-StageColor avatarColorOf(String name) {
-  final sum = name.runes.fold(0, (a, b) => a + b);
-  return StageColor.values[sum % StageColor.values.length];
-}
+/// 没有头像时的底色. 按用户 id 确定舞台色, 与个人主页一致.
+StageColor avatarColorOf(int userId) =>
+    StageColor.values[userId % StageColor.values.length];
 
 /// 回复 [comment]. [to] 是被回复的那条回复, 回复评论本身时为 null.
 Future<void> _reply(
@@ -159,21 +160,14 @@ class CommentLikeButton extends ConsumerWidget {
   final Comment comment;
 
   /// 回复行里的小号样式.
-  ///
-  /// 小号样式不查询是否赞过. 每条回复各查询一次会使一页评论的请求数成倍增加.
-  /// 代价: 已赞过的回复显示为未赞. 此时点击发送的仍是赞, 计数以服务端返回为准.
   final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
-    final fetched = compact
-        ? null
-        : ref.watch(commentLikeOfProvider(comment.id)).value;
     final like =
         ref.watch(commentLikesProvider.select((m) => m[comment.id])) ??
-        fetched ??
-        CommentLike(liked: false, likes: comment.likes);
+        CommentLike(liked: comment.liked ?? false, likes: comment.likes);
     return EatTappable(
       onTap: () => _toggle(context, ref, like),
       label: '赞，${like.likes}',
@@ -218,6 +212,7 @@ class CommentLikeButton extends ConsumerWidget {
         .read(commentLikesProvider.notifier)
         .toggle(comment.id, current);
     if (failure != null && context.mounted) {
+      if (_goneHandled(context, ref, comment, failure)) return;
       await reportActionFailure(
         context,
         ref,
@@ -261,7 +256,6 @@ class _TextAction extends StatelessWidget {
   }
 }
 
-// TODO: 评论照片的签名地址 30 秒后失效, 列表停留超过 30 秒后才滚动到的照片会加载失败. 后端延长有效期或提供按条刷新的接口后, 失败时重新获取地址.
 /// 评论里的照片, 最多 3 张小图. 点击打开大图.
 class _Photos extends StatelessWidget {
   const new({required this.urls, required this.author});
@@ -306,8 +300,9 @@ class _Photos extends StatelessWidget {
   }
 }
 
-// TODO: 回复接口只能按时间倒序分页, 回复超过一页时最早的几条不在第一页里, 显示的不是最早的 2 条. 接口支持正序后改为按正序请求第一页.
 /// 评论下面的回复. 默认显示最早的 2 条, 其余折叠在 "展开 N 条回复" 中.
+///
+/// 回复条数为 0 时不请求回复列表.
 class _Replies extends ConsumerStatefulWidget {
   const new({required this.comment});
 
@@ -322,6 +317,7 @@ class _RepliesState extends ConsumerState<_Replies> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.comment.replyCount <= 0) return const SizedBox.shrink();
     final eat = context.eat;
     final c = eat.colors;
     final replies = ref.watch(commentRepliesProvider(widget.comment.id));
@@ -337,10 +333,9 @@ class _RepliesState extends ConsumerState<_Replies> {
       return const SizedBox.shrink();
     }
     if (list.items.isEmpty) return const SizedBox.shrink();
-    final ordered = CommentRules.chronological(list.items);
     final shown = _expanded
-        ? ordered
-        : ordered.take(CommentRules.replyPreview).toList();
+        ? list.items
+        : list.items.take(CommentRules.replyPreview).toList();
     final hidden = list.data.total - shown.length;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -352,11 +347,7 @@ class _RepliesState extends ConsumerState<_Replies> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final reply in shown)
-              _ReplyLine(
-                root: widget.comment,
-                reply: reply,
-                toName: CommentRules.replyToName(reply, list.items),
-              ),
+              _ReplyLine(root: widget.comment, reply: reply),
             if (!_expanded && hidden > 0)
               _ExpandButton(
                 label: '展开 $hidden 条回复',
@@ -413,11 +404,10 @@ class _ExpandButton extends StatelessWidget {
 /// 文字与右侧按钮在同一行时, 每行只能显示七八个字, 短句也会折成多行.
 /// 点击昵称或文字回复这条回复.
 class _ReplyLine extends ConsumerWidget {
-  const new({required this.root, required this.reply, required this.toName});
+  const new({required this.root, required this.reply});
 
   final Comment root;
   final Comment reply;
-  final String? toName;
 
   /// 昵称所在的行右端为赞和 "更多" 预留的宽度.
   static const _actionsWidth = 116.0;
@@ -451,7 +441,7 @@ class _ReplyLine extends ConsumerWidget {
                             text: reply.authorName,
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          if (toName != null)
+                          if (reply.replyToName case final toName?)
                             TextSpan(
                               text: ' 回复 $toName',
                               style: TextStyle(color: c.inkMuted),
@@ -483,8 +473,7 @@ class _ReplyLine extends ConsumerWidget {
                 EatIcons.more,
                 label: '更多',
                 color: c.inkMuted,
-                onPressed: () =>
-                    showCommentMenu(context, ref, reply, rootId: root.id),
+                onPressed: () => showCommentMenu(context, ref, reply),
               ),
             ],
           ),
@@ -497,19 +486,13 @@ class _ReplyLine extends ConsumerWidget {
 enum _MenuAction { delete, report }
 
 /// 评论的 "更多" 面板: 自己写的显示 "删除", 别人写的显示 "举报".
-///
-/// [rootId] 是回复所属评论的 id. 删除回复后据此从该评论的回复列表中移除.
-/// 读取 "我的评论" 失败时按别人的评论处理, 只提供举报.
 Future<void> showCommentMenu(
   BuildContext context,
   WidgetRef ref,
-  Comment comment, {
-  int? rootId,
-}) async {
-  final mine = await ref
-      .read(myCommentIdsProvider.future)
-      .then((ids) => ids.contains(comment.id), onError: (Object _) => false);
-  if (!context.mounted) return;
+  Comment comment,
+) async {
+  final session = ref.read(sessionProvider);
+  final mine = session is SignedIn && session.user?.id == comment.authorId;
   final action = await showPanel<_MenuAction>(
     context,
     builder: (panel) => EatPanel(
@@ -530,9 +513,15 @@ Future<void> showCommentMenu(
   if (!context.mounted) return;
   switch (action) {
     case _MenuAction.report:
-      await showReportPanel(context, ref, ReportTarget.comment(comment.id));
+      await showReportPanel(
+        context,
+        ref,
+        ReportTarget.comment(comment.id),
+        onGone: () =>
+            ref.read(commentWriterProvider.notifier).removeLocal(comment),
+      );
     case _MenuAction.delete:
-      await _delete(context, ref, comment, rootId: rootId);
+      await _delete(context, ref, comment);
     case null:
   }
 }
@@ -540,9 +529,8 @@ Future<void> showCommentMenu(
 Future<void> _delete(
   BuildContext context,
   WidgetRef ref,
-  Comment comment, {
-  required int? rootId,
-}) async {
+  Comment comment,
+) async {
   if (!await guardAction(context, ref, Capability.deleteComment) ||
       !context.mounted ||
       !await _confirmDelete(context, comment)) {
@@ -550,10 +538,12 @@ Future<void> _delete(
   }
   final failure = await ref
       .read(commentWriterProvider.notifier)
-      .delete(comment, rootId: rootId);
+      .delete(comment);
   if (!context.mounted) return;
   if (failure == null) {
     showToast(context, '已删除');
+  } else if (isCommentGone(failure)) {
+    showToast(context, _goneMessage(comment));
   } else {
     await reportActionFailure(
       context,
@@ -564,6 +554,21 @@ Future<void> _delete(
     );
   }
 }
+
+/// 服务端答复 [comment] 不存在时, 提示已删除并从列表中移除, 返回 true. 其他失败返回 false.
+bool _goneHandled(
+  BuildContext context,
+  WidgetRef ref,
+  Comment comment,
+  AppFailure failure,
+) {
+  if (!isCommentGone(failure)) return false;
+  ref.read(commentWriterProvider.notifier).removeLocal(comment);
+  showToast(context, _goneMessage(comment));
+  return true;
+}
+
+String _goneMessage(Comment comment) => comment.isReply ? '这条回复已删除' : '这条评论已删除';
 
 Future<bool> _confirmDelete(BuildContext context, Comment comment) async =>
     await showEatDialog<bool>(

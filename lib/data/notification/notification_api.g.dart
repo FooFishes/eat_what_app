@@ -8,7 +8,7 @@ part of 'notification_api.dart';
 
 NoticeCardDto _$NoticeCardDtoFromJson(Map<String, dynamic> json) =>
     NoticeCardDto(
-      id: json['id'] as String?,
+      id: (json['id'] as num?)?.toInt(),
       column: json['column'] as String?,
       kind: json['kind'] as String?,
       target: json['target'] == null
@@ -20,27 +20,21 @@ NoticeCardDto _$NoticeCardDtoFromJson(Map<String, dynamic> json) =>
       actors: (json['actors'] as List<dynamic>?)
           ?.map((e) => NoticeActorDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      data: json['data'] == null
-          ? null
-          : NoticeDataDto.fromJson(json['data'] as Map<String, dynamic>),
+      data: json['data'] as Map<String, dynamic>?,
     );
 
 NoticeTargetDto _$NoticeTargetDtoFromJson(Map<String, dynamic> json) =>
     NoticeTargetDto(
       domain: json['domain'] as String?,
       id: (json['id'] as num?)?.toInt(),
-      unavailable: json['unavailable'] as bool?,
     );
 
 NoticeActorDto _$NoticeActorDtoFromJson(Map<String, dynamic> json) =>
     NoticeActorDto(
       id: (json['id'] as num?)?.toInt(),
-      name: json['name'] as String?,
+      displayName: json['displayName'] as String?,
       avatar: json['avatar'] as String?,
     );
-
-NoticeDataDto _$NoticeDataDtoFromJson(Map<String, dynamic> json) =>
-    NoticeDataDto(detail: json['detail'] as Map<String, dynamic>?);
 
 UnreadDto _$UnreadDtoFromJson(Map<String, dynamic> json) => UnreadDto(
   cards: (json['cards'] as num?)?.toInt(),

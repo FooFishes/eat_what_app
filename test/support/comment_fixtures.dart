@@ -4,61 +4,68 @@ library;
 /// 2026-11-01 12:00 (UTC+8). 测试中的评论时间由该时刻减去 ageMinutes 得出.
 final commentEpoch = DateTime.utc(2026, 11, 1, 4);
 
-/// 比 [commentEpoch] 早 [minutes] 分钟的接口时间, 格式同服务端 (ISO 8601).
-String commentTime([int minutes = 0]) =>
-    commentEpoch.subtract(Duration(minutes: minutes)).toIso8601String();
+/// 比 [commentEpoch] 早 [minutes] 分钟的接口时间, 格式同服务端 (Unix 毫秒).
+int commentTime([int minutes = 0]) =>
+    commentEpoch.subtract(Duration(minutes: minutes)).millisecondsSinceEpoch;
 
-/// 一条公开评论或回复 (`CommentPublicReads.Comment`).
+/// 评论的作者或被回复的人 (`CommentDtos.Author`). 作者 id 由昵称确定, 同一昵称 id 相同.
+Map<String, Object?> authorJson(String name, {int? id, String? avatar}) => {
+  'id': id ?? authorIdOf(name),
+  'displayName': name,
+  'avatar': avatar,
+};
+
+/// [authorJson] 为昵称 [name] 分配的用户 id.
+int authorIdOf(String name) => 500 + name.runes.fold(0, (a, b) => a + b) % 400;
+
+/// 一条公开评论或回复 (`CommentDtos.Comment`). [root] 不为 null 时是回复.
 Map<String, Object?> commentJson({
   int id = 11,
-  String? gid,
-  String kind = 'COMMENT',
   int foodId = 1,
-  String? root,
+  int? root,
   String? replyTo,
   String author = '安安',
+  int? authorId,
   String text = '酸笋给得很大方',
   int likes = 3,
+  bool? liked = false,
+  int replies = 0,
   int ageMinutes = 60,
   List<String> images = const [],
-}) {
-  final self = gid ?? 'g-$id';
-  return {
-    'id': id,
-    'gid': self,
-    'revisionId': 'r-$id',
-    'kind': kind,
-    'foodId': foodId,
-    'rootCommentGid': root ?? self,
-    'replyToGid': replyTo,
-    'authorName': author,
-    'text': text,
-    'likesCount': likes,
-    'createdAt': commentTime(ageMinutes),
-    'images': [
-      for (final (i, url) in images.indexed)
-        {'slot': i, 'url': url, 'expiresInSeconds': 30},
-    ],
-  };
-}
+}) => {
+  'id': id,
+  'foodId': foodId,
+  'rootId': root,
+  'author': authorJson(author, id: authorId),
+  'replyTo': replyTo == null ? null : authorJson(replyTo),
+  'text': text,
+  'pictureUrls': images,
+  'likeCount': likes,
+  'replyCount': replies,
+  'isLiked': liked,
+  'createdAt': commentTime(ageMinutes),
+};
 
-/// 一条回复. [root] 是所属评论的 gid.
+/// 一条回复. [root] 是所属评论的 id, [replyTo] 是被回复的人.
 Map<String, Object?> replyJson({
   required int id,
-  String root = 'g-11',
+  int root = 11,
   String? replyTo,
   String author = '阿哲',
+  int? authorId,
   String text = '同意，加辣更好',
   int likes = 0,
+  bool? liked = false,
   int ageMinutes = 30,
 }) => commentJson(
   id: id,
-  kind: 'REPLY',
   root: root,
   replyTo: replyTo,
   author: author,
+  authorId: authorId,
   text: text,
   likes: likes,
+  liked: liked,
   ageMinutes: ageMinutes,
 );
 
@@ -77,33 +84,5 @@ Map<String, Object?> commentPageJson(
   'hasNext': hasNext,
 };
 
-/// 发表评论或回复的结果.
-Map<String, Object?> acceptedJson({int id = 99, String status = 'PENDING'}) => {
-  'id': id,
-  'commentGid': 'g-$id',
-  'revisionId': 'r-$id',
-  'moderationStatus': status,
-};
-
-/// 我写过的一条评论 (`CommentQueries.Submission`).
-Map<String, Object?> submissionJson({
-  int id = 11,
-  int foodId = 1,
-  String kind = 'COMMENT',
-  String status = 'APPROVED',
-  String? reason,
-  String? text = '汤很鲜，虾仁很多',
-  int imageCount = 0,
-}) => {
-  'id': id,
-  'gid': 'g-$id',
-  'revisionId': 'r-$id',
-  'kind': kind,
-  'foodId': foodId,
-  'moderationStatus': status,
-  'reasonCode': reason == null ? null : 'NOT_REAL_PHOTO',
-  'reasonMessage': reason,
-  'text': text,
-  'imageCount': imageCount,
-  'createdAt': commentTime(60),
-};
+/// 发表评论或回复的结果 (`CommentDtos.Created`).
+Map<String, Object?> createdJson({int id = 99}) => {'id': id};

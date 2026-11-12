@@ -7,10 +7,7 @@ part of 'consent_api.dart';
 // **************************************************************************
 
 ConsentPolicyDto _$ConsentPolicyDtoFromJson(Map<String, dynamic> json) =>
-    ConsentPolicyDto(
-      version: json['version'] as String?,
-      url: json['url'] as String?,
-    );
+    ConsentPolicyDto(version: json['version'] as String?);
 
 // **************************************************************************
 // RiverpodGenerator

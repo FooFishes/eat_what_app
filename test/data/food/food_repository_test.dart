@@ -1,58 +1,79 @@
 import 'dart:math';
 
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/food/food_api.dart';
 import 'package:eat/data/food/food_dto.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/crop_viewport.dart';
 import 'package:eat/domain/models/dish.dart';
-import 'package:eat/domain/models/geo.dart';
+import 'package:eat/domain/models/dish_revision.dart';
+import 'package:eat/domain/models/taste.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fakes.dart';
 
 void main() {
-  test('推荐接口返回数组', () async {
+  const newDish = NewDish(
+    shopId: 7,
+    name: '云吞',
+    imageKeys: ['foods/a.jpg', 'foods/b.jpg'],
+    price: 18,
+    category: DishCategory.staple,
+    stage: StageColor.broth,
+    stageAlternates: [StageColor.mango, StageColor.bamboo],
+    tags: [Taste.spicy, Taste.numbing],
+    signature: true,
+    description: '汤很鲜',
+  );
+
+  test('发布：照片、口味、招牌按 v2 字段发出，舞台色和取景照常带上，不带幂等键', () async {
     final env = TestEnv();
-    env.adapter.on('GET /foods/recommend', [
-      FakeAdapter.ok([foodJson(recommend: true)]),
+    env.adapter.on('POST /foods/upload', [
+      FakeAdapter.ok({'id': 9}),
     ]);
     final container = await env.container();
-    final repo = container.read(foodRepositoryProvider);
 
-    final dishes = await repo.recommend(campusId: 1, meal: MealTime.lunch);
+    final id = await container.read(foodRepositoryProvider).publish(newDish);
 
-    expect(dishes.single.id, 1);
-    final query = env.adapter.sent('GET /foods/recommend').first.query;
-    expect(query, containsPair('campusId', 1));
-    expect(query, containsPair('mealTime', 'lunch'));
-    expect(query, containsPair('size', 8));
+    expect(id, 9);
+    final request = env.adapter.sent('POST /foods/upload').single;
+    expect(request.body, {
+      'restaurantId': 7,
+      'name': '云吞',
+      'category': '主食',
+      'price': 18.0,
+      'description': '汤很鲜',
+      'pictures': ['foods/a.jpg', 'foods/b.jpg'],
+      'tags': ['辣', '麻'],
+      'signature': true,
+      'stageColor': 'broth',
+      'stageAlternates': ['mango', 'bamboo'],
+      'coverCrop': {'centerX': 0.5, 'centerY': 0.5, 'diameter': 1.0},
+    });
+    expect(request.headers.containsKey('Idempotency-Key'), isFalse);
   });
 
-  test('推荐请求都带同一个设备标识，换容器后从存储读出', () async {
+  test('发布撞名时失败原因带上已有那道菜的 id', () async {
     final env = TestEnv();
-    env.adapter.on('GET /foods/recommend', [FakeAdapter.ok(<Object>[])]);
+    env.adapter.on('POST /foods/upload', [
+      {
+        'code': BizCodes.duplicateDish,
+        'msg': 'exists',
+        'data': {'id': 5},
+        'timestamp': 0,
+      },
+    ]);
     final container = await env.container();
-    final repo = container.read(foodRepositoryProvider);
 
-    await repo.recommend(campusId: 1, meal: MealTime.lunch);
-    await repo.recommend(
-      campusId: 1,
-      meal: MealTime.lunch,
-      category: DishCategory.staple,
-    );
-    final again = await env.container();
-    await again
+    final failure = await container
         .read(foodRepositoryProvider)
-        .recommend(campusId: 1, meal: MealTime.lunch);
+        .publish(newDish)
+        .then<AppFailure?>((_) => null, onError: (Object e) => e as AppFailure);
 
-    final ids = env.adapter
-        .sent('GET /foods/recommend')
-        .map((r) => r.query['deviceId'])
-        .toSet();
-    expect(ids, hasLength(1));
-    expect(ids.single, matches(RegExp(r'^[0-9a-f]{32}$')));
+    expect(failure?.code, BizCodes.duplicateDish);
+    expect(failure?.data, {'id': 5});
   });
 
   test('发布时裁切参数取整到 4 位小数', () async {
@@ -71,7 +92,6 @@ void main() {
             imageKeys: ['k'],
             price: 18,
             category: DishCategory.staple,
-            mealTimes: [MealTime.lunch],
             stage: StageColor.broth,
             stageAlternates: [],
             crop: CoverCrop(
@@ -92,113 +112,184 @@ void main() {
     });
   });
 
-  group('发布的幂等键和审核状态', () {
-    const dish = NewDish(
-      shopId: 7,
-      name: '云吞',
-      imageKeys: ['k'],
-      price: 18,
-      category: DishCategory.staple,
-      mealTimes: [MealTime.lunch],
-      stage: StageColor.broth,
-      stageAlternates: [],
-    );
-    final uuid = RegExp(
-      r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-    );
-
-    test('失败后原样重试沿用键，改了内容换键，成功后下一份换键', () async {
+  group('编辑', () {
+    test('只发出改动的字段；空说明、空照片和空口味表示清除；返回修改记录 id', () async {
       final env = TestEnv();
-      env.adapter.on('POST /foods/upload', [
-        const FakeResponse.offline(),
-        const FakeResponse.offline(),
-        FakeAdapter.ok({'id': 9}),
-        FakeAdapter.ok({'id': 10}),
+      env.adapter.on('PUT /foods/edit/1', [
+        FakeAdapter.ok({'id': 1, 'revisionId': 31}),
       ]);
       final container = await env.container();
-      final repo = container.read(foodRepositoryProvider);
-      const changed = NewDish(
-        shopId: 7,
-        name: '鲜虾云吞',
-        imageKeys: ['k'],
-        price: 18,
-        category: DishCategory.staple,
-        mealTimes: [MealTime.lunch],
-        stage: StageColor.broth,
-        stageAlternates: [],
-      );
 
-      await expectLater(repo.publish(dish), throwsA(isA<AppFailure>()));
-      await expectLater(repo.publish(dish), throwsA(isA<AppFailure>()));
-      await repo.publish(changed);
-      await repo.publish(changed);
+      final revision = await container
+          .read(foodRepositoryProvider)
+          .edit(
+            1,
+            const DishChange(
+              price: 16,
+              description: '',
+              imageKeys: [],
+              tags: [],
+              signature: false,
+            ),
+          );
 
-      final keys = [
-        for (final r in env.adapter.sent('POST /foods/upload'))
-          r.headers['Idempotency-Key'] as String,
-      ];
-      expect(keys, everyElement(matches(uuid)));
-      expect(keys[1], keys[0], reason: '原样重试');
-      expect(keys[2], isNot(keys[1]), reason: '内容变了');
-      expect(keys[3], isNot(keys[2]), reason: '上一次已成功');
+      expect(revision, 31);
+      expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
+        'price': 16.0,
+        'description': '',
+        'pictures': <String>[],
+        'tags': <String>[],
+        'signature': false,
+      });
     });
 
-    test('返回 PENDING 时进入审核，不返回审核状态时按已公开', () async {
+    test('改了分类、口味、舞台色和取景时按 v2 字段发出', () async {
       final env = TestEnv();
-      env.adapter.on('POST /foods/upload', [
-        FakeAdapter.ok({'id': 9, 'moderationStatus': 'PENDING'}),
-        FakeAdapter.ok({'id': 10}),
+      env.adapter.on('PUT /foods/edit/1', [
+        FakeAdapter.ok({'id': 1, 'revisionId': 32}),
       ]);
       final container = await env.container();
-      final repo = container.read(foodRepositoryProvider);
 
-      final pending = await repo.publish(dish);
-      final public = await repo.publish(dish);
+      await container
+          .read(foodRepositoryProvider)
+          .edit(
+            1,
+            const DishChange(
+              name: '鲜虾云吞',
+              category: DishCategory.drinkDessert,
+              tags: [Taste.sweet],
+              stage: StageColor.mango,
+              stageAlternates: [StageColor.soy, StageColor.chili],
+              crop: CoverCrop(centerX: 0.123456, diameter: 0.55555),
+            ),
+          );
 
-      expect((pending.id, pending.pending), (9, true));
-      expect((public.id, public.pending), (10, false));
+      expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
+        'name': '鲜虾云吞',
+        'category': '饮品甜品',
+        'tags': ['甜'],
+        'stageColor': 'mango',
+        'stageAlternates': ['soy', 'chili'],
+        'coverCrop': {'centerX': 0.1235, 'centerY': 0.5, 'diameter': 0.5555},
+      });
+    });
+
+    test('内容没有变化时返回 null', () async {
+      final env = TestEnv();
+      env.adapter.on('PUT /foods/edit/1', [
+        FakeAdapter.ok({'id': 1, 'revisionId': null}),
+      ]);
+      final container = await env.container();
+
+      final revision = await container
+          .read(foodRepositoryProvider)
+          .edit(1, const DishChange(name: '鲜虾蟹籽云吞'));
+
+      expect(revision, isNull);
     });
   });
 
-  group('封面被滤掉时不用裁切', () {
-    Future<CoverCrop> cropOf(Map<String, Object?> json) async {
-      final container = await TestEnv().container();
-      return container
-          .read(foodRepositoryProvider)
-          .toDish(FoodDto.fromJson(json))
-          .crop;
-    }
+  test('修改记录：动作、编辑者、改动的字段，不认识的字段跳过', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /foods/1/history', [
+      FakeAdapter.ok({
+        'currentPage': 1,
+        'items': [
+          {
+            'id': 32,
+            'action': 'restore',
+            'editor': {'id': 9, 'displayName': '小林', 'avatar': ''},
+            'restoredFrom': 30,
+            'changes': [
+              {'field': 'price', 'from': 16, 'to': 18},
+              {
+                'field': 'pictures',
+                'from': ['https://img.test/a.jpg'],
+                'to': <String>[],
+              },
+              {'field': 'spiciness', 'from': 1, 'to': 2},
+            ],
+            'createdAt': 1792763739329,
+          },
+          {
+            'id': 30,
+            'action': 'create',
+            'editor': {'id': null, 'displayName': null, 'avatar': null},
+            'restoredFrom': null,
+            'changes': [
+              {'field': 'name', 'from': null, 'to': '云吞'},
+            ],
+            'createdAt': 1792763739000,
+          },
+        ],
+        'totalPages': 2,
+        'totalItems': 21,
+        'hasNext': true,
+      }),
+    ]);
+    final container = await env.container();
 
-    const custom = {'centerX': 0.3, 'centerY': 0.6, 'diameter': 0.5};
+    final page = await container.read(foodRepositoryProvider).history(1);
 
-    test('pictureKeys 与 pictureUrl 张数相同，沿用裁切', () async {
-      final crop = await cropOf({
-        ...foodJson(),
-        'pictureUrl': ['https://img.test/a.jpg', 'https://img.test/b.jpg'],
-        'pictureKeys': ['foods/a.jpg', 'foods/b.jpg'],
-        'coverCrop': custom,
-      });
-      expect((crop.centerX, crop.centerY, crop.diameter), (0.3, 0.6, 0.5));
+    expect(page.total, 21);
+    expect(page.hasNext, isTrue);
+    final [restored, created] = page.items;
+    expect(restored.action, RevisionAction.restore);
+    expect(restored.restoredFrom, 30);
+    expect((restored.editorId, restored.editorName), (9, '小林'));
+    expect(restored.editorAvatar, isNull);
+    expect(restored.fields, [DishField.price, DishField.pictures]);
+    expect(created.action, RevisionAction.create);
+    expect((created.editorId, created.editorName), (null, null));
+    expect(env.adapter.sent('GET /foods/1/history').single.query, {
+      'page': 1,
+      'pageSize': 20,
     });
+  });
 
-    test('张数不同时第一张不能确认是封面，按居中内切圆显示', () async {
-      final crop = await cropOf({
-        ...foodJson(),
-        'pictureUrl': ['https://img.test/b.jpg'],
-        'pictureKeys': ['foods/a.jpg', 'foods/b.jpg'],
-        'coverCrop': custom,
-      });
-      expect((crop.centerX, crop.centerY, crop.diameter), (0.5, 0.5, 1.0));
-    });
+  test('恢复到当前版本时失败原因是 40002', () async {
+    final env = TestEnv();
+    env.adapter.on('POST /foods/1/history/30/restore', [
+      FakeAdapter.fail(BizCodes.stateNotAllowed),
+    ]);
+    final container = await env.container();
 
-    test('没有可显示的图时不用裁切', () async {
-      final crop = await cropOf({
-        ...foodJson(),
-        'pictureUrl': <String>[],
-        'pictureKeys': <String>[],
-        'coverCrop': custom,
-      });
-      expect((crop.centerX, crop.centerY, crop.diameter), (0.5, 0.5, 1.0));
+    await expectLater(
+      container.read(foodRepositoryProvider).restore(1, 30),
+      throwsA(
+        isA<AppFailure>().having(
+          (e) => e.code,
+          'code',
+          BizCodes.stateNotAllowed,
+        ),
+      ),
+    );
+  });
+
+  test('识别分类和口味：最多发 3 张照片，不认识的口味跳过', () async {
+    final env = TestEnv();
+    env.adapter.on('POST /foods/suggest-tags', [
+      FakeAdapter.ok({
+        'category': '汤',
+        'tags': ['辣', '咸'],
+      }),
+    ]);
+    final container = await env.container();
+
+    final suggestion = await container
+        .read(foodRepositoryProvider)
+        .suggestTags(
+          name: '酸辣汤',
+          shopId: 7,
+          imageKeys: ['k1', 'k2', 'k3', 'k4'],
+        );
+
+    expect(suggestion.category, DishCategory.soup);
+    expect(suggestion.tags, [Taste.spicy]);
+    expect(env.adapter.sent('POST /foods/suggest-tags').single.body, {
+      'name': '酸辣汤',
+      'restaurantId': 7,
+      'pictures': ['k1', 'k2', 'k3'],
     });
   });
 
@@ -266,88 +357,128 @@ void main() {
     expect((center.centerX, center.centerY, center.diameter), (0.5, 0.5, 1.0));
   });
 
-  test('DTO 转成菜：舞台色、备选色、饭点、店的坐标和图片地址', () async {
+  test('DTO 转成菜：分类、口味、招牌、赞数、上传者和图片地址', () async {
     final env = TestEnv();
     env.adapter.on('GET /foods/detail/1', [
-      FakeAdapter.ok(foodJson(stageColor: 'soy', recommend: true)),
+      FakeAdapter.ok(
+        foodJson(category: '小吃', tags: ['辣', '咸', '麻'], signature: true),
+      ),
     ]);
     final container = await env.container();
 
     final dish = await container.read(foodRepositoryProvider).detail(1);
 
-    expect(dish.stage, StageColor.soy);
-    expect(dish.stageAlternates, [StageColor.mango, StageColor.bamboo]);
-    expect(dish.mealTimes, [MealTime.lunch, MealTime.dinner]);
-    expect(dish.category, DishCategory.staple);
-    expect(dish.shopPoint, const GcjPoint(36.6681, 117.1412));
+    expect(dish.category, DishCategory.snack);
+    expect(dish.tags, [Taste.spicy, Taste.numbing]);
+    expect(dish.signature, isTrue);
+    expect(dish.likes, 12);
+    expect(dish.uploaderId, 9);
     expect(dish.cover, 'https://img.test/foods/1.jpg');
     expect(dish.price, 18);
   });
 
-  test('带坐标按距离搜菜，距离解析进菜；没有坐标时不带距离排序', () async {
+  group('舞台色和取景', () {
+    Future<Dish> dishOf(Map<String, Object?> json) async {
+      final container = await TestEnv().container();
+      return container
+          .read(foodRepositoryProvider)
+          .toDish(FoodDto.fromJson(json));
+    }
+
+    test('服务端没返回时用分类的默认色，取景居中', () async {
+      final dish = await dishOf(foodJson(category: '小吃'));
+      expect(dish.stage, StageColor.chili);
+      expect(dish.stageAlternates, isEmpty);
+      expect(
+        (dish.crop.centerX, dish.crop.centerY, dish.crop.diameter),
+        (0.5, 0.5, 1.0),
+      );
+    });
+
+    test('没有分类时用 broth', () async {
+      final dish = await dishOf(foodJson(category: '盖饭'));
+      expect(dish.category, isNull);
+      expect(dish.stage, StageColor.broth);
+    });
+
+    test('服务端返回舞台色、备选色和取景时照用', () async {
+      final dish = await dishOf({
+        ...foodJson(stageColor: 'soy', alternates: ['mango', 'bamboo']),
+        'coverCrop': {'centerX': 0.3, 'centerY': 0.6, 'diameter': 0.5},
+      });
+      expect(dish.stage, StageColor.soy);
+      expect(dish.stageAlternates, [StageColor.mango, StageColor.bamboo]);
+      expect(
+        (dish.crop.centerX, dish.crop.centerY, dish.crop.diameter),
+        (0.3, 0.6, 0.5),
+      );
+    });
+
+    test('没有可显示的图时不用取景', () async {
+      final dish = await dishOf({
+        ...foodJson(),
+        'pictureUrls': <String>[],
+        'coverCrop': {'centerX': 0.3, 'centerY': 0.6, 'diameter': 0.5},
+      });
+      expect(
+        (dish.crop.centerX, dish.crop.centerY, dish.crop.diameter),
+        (0.5, 0.5, 1.0),
+      );
+    });
+  });
+
+  test('按店、分类、招牌和菜单顺序查菜，分页带总数', () async {
     final env = TestEnv();
     env.adapter.on('GET /foods/list', [
-      FakeAdapter.ok(
-        pageJson([
-          {...foodJson(), 'distanceMeters': 321.4},
-        ]),
-      ),
-      FakeAdapter.ok(pageJson([foodJson()])),
+      FakeAdapter.ok(pageJson([foodJson(), foodJson(id: 2)])),
     ]);
     final container = await env.container();
-    final repository = container.read(foodRepositoryProvider);
-    const here = GcjPoint(36.6681, 117.1412);
 
-    final near = await repository.list(
-      keyword: '云吞',
-      near: here,
-      sort: FoodSort.distance,
-    );
-    final far = await repository.list(keyword: '云吞', sort: FoodSort.distance);
+    final page = await container
+        .read(foodRepositoryProvider)
+        .list(
+          restaurantId: 7,
+          category: DishCategory.dish,
+          signatureOnly: true,
+          sort: FoodSort.menu,
+        );
 
-    final [withPoint, noPoint] = env.adapter
-        .sent('GET /foods/list')
-        .map((r) => r.query)
-        .toList();
-    expect(withPoint, containsPair('gcjLat', here.lat));
-    expect(withPoint, containsPair('gcjLng', here.lng));
-    expect(withPoint, containsPair('sort', 'DISTANCE'));
-    expect(near.items.single.distance, 321.4);
-    expect(noPoint.containsKey('gcjLat'), isFalse);
-    expect(noPoint.containsKey('sort'), isFalse);
-    expect(far.items.single.distance, isNull);
+    expect(page.total, 2);
+    expect(env.adapter.sent('GET /foods/list').single.query, {
+      'restaurantId': 7,
+      'category': '菜',
+      'signatureOnly': true,
+      'sort': 'MENU',
+      'page': 1,
+      'pageSize': 20,
+    });
   });
 
-  test('没存舞台色时用分类的默认色', () async {
+  test('收藏列表不再带排序参数', () async {
     final env = TestEnv();
-    env.adapter.on('GET /foods/detail/1', [
-      FakeAdapter.ok(foodJson(stageColor: null, category: 'hot_pot')),
-    ]);
+    env.adapter.on('GET /foods/favorites', [FakeAdapter.ok(pageJson([]))]);
     final container = await env.container();
 
-    final dish = await container.read(foodRepositoryProvider).detail(1);
+    await container.read(foodRepositoryProvider).favorites();
 
-    expect(dish.stage, StageColor.redoil);
+    expect(env.adapter.sent('GET /foods/favorites').single.query, {
+      'page': 1,
+      'pageSize': 20,
+    });
   });
 
-  test('推荐拿到后存成这个校区和饭点的上一批，断网时还能拿出来', () async {
+  test('同名判断忽略空白和大小写', () async {
     final env = TestEnv();
-    env.adapter.on('GET /foods/recommend', [
-      FakeAdapter.ok([foodJson(), foodJson(id: 2)]),
-      const FakeResponse.offline(),
+    env.adapter.on('GET /foods/list', [
+      FakeAdapter.ok(pageJson([foodJson(id: 3, name: 'Coco 奶茶')])),
     ]);
     final container = await env.container();
-    final repo = container.read(foodRepositoryProvider);
 
-    await repo.recommend(campusId: 1, meal: MealTime.dinner);
-    await expectLater(
-      repo.recommend(campusId: 1, meal: MealTime.dinner),
-      throwsA(isA<AppFailure>()),
-    );
+    final same = await container
+        .read(foodRepositoryProvider)
+        .sameName(7, 'coco奶茶');
 
-    final last = await repo.lastBatch(campusId: 1, meal: MealTime.dinner);
-    expect(last.map((d) => d.id), [1, 2]);
-    expect(await repo.lastBatch(campusId: 1, meal: MealTime.lunch), isEmpty);
+    expect(same?.id, 3);
   });
 
   test('看过的菜品详情断网时从缓存读', () async {

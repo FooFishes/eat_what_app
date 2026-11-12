@@ -11,9 +11,9 @@ part 'notification_api.g.dart';
 /// NotificationApi 调用的接口路径, 相对于业务接口地址.
 abstract final class NotificationEndpoints {
   static const unreadCount = '/notification/cards/unread/count';
-  static String readCard(String id) => '/notification/cards/$id/read';
+  static String readCard(int id) => '/notification/cards/$id/read';
+  static const readAll = '/notification/cards/read-all';
   static const cards = '/notification/cards';
-  static const readLegacyAll = '/notification/read/all';
 }
 
 /// 接口分组 NotificationCards: 按分栏获取合并后的消息, 未读数, 标记已读.
@@ -46,23 +46,23 @@ class NotificationApi {
     UnreadDto.fromJson,
   );
 
-  /// 把一行合并的各条都标为已读. [id] 是卡片的 UUID.
-  Future<void> read(String id) =>
-      _client.post(NotificationEndpoints.readCard(id));
+  /// 把一行合并的各条都标为已读.
+  Future<void> read(int id) => _client.post(NotificationEndpoints.readCard(id));
 
-  /// 只标记旧版通知表中的消息 (关注和旧版活动的赞), 不包括其他来源的卡片.
-  Future<void> readLegacyAll() =>
-      _client.post(NotificationEndpoints.readLegacyAll);
+  /// 把分栏 [column] 的全部消息标为已读, 含未加载的页. `ALL` 表示全部分栏.
+  Future<void> readAll(String column) =>
+      _client.post(NotificationEndpoints.readAll, query: {'column': column});
 }
 
-/// 消息卡片.
+/// 消息卡片 (`NotificationDtos.Card`).
 ///
 /// - [unreadMemberCount] 为 0 表示合并的各条都已读.
 /// - [latestAt] 是最近一条的 Unix 毫秒时间.
 /// - [actors] 是最近的至多 3 个互动者. 系统消息为空.
+/// - [data] 只有系统消息有, 按其中的 `type` 区分结构, 由仓库逐种解析.
 @JsonSerializable(createToJson: false)
 class const NoticeCardDto({
-  final String? id,
+  final int? id,
   final String? column,
   final String? kind,
   final NoticeTargetDto? target,
@@ -70,19 +70,15 @@ class const NoticeCardDto({
   final int? unreadMemberCount,
   final int? latestAt,
   final List<NoticeActorDto>? actors,
-  final NoticeDataDto? data,
+  final Map<String, dynamic>? data,
 }) {
   factory NoticeCardDto.fromJson(Map<String, dynamic> json) =>
       _$NoticeCardDtoFromJson(json);
 }
 
-/// 消息的对象. [domain] 如 `foods`, `users`, `topics`, `restaurant`, `feedback`.
+/// 消息的对象. [domain] 如 `foods`, `comments`, `users`, `feedback`, `announcements`.
 @JsonSerializable(createToJson: false)
-class const NoticeTargetDto({
-  final String? domain,
-  final int? id,
-  final bool? unavailable,
-}) {
+class const NoticeTargetDto({final String? domain, final int? id}) {
   factory NoticeTargetDto.fromJson(Map<String, dynamic> json) =>
       _$NoticeTargetDtoFromJson(json);
 }
@@ -90,18 +86,11 @@ class const NoticeTargetDto({
 @JsonSerializable(createToJson: false)
 class const NoticeActorDto({
   final int? id,
-  final String? name,
+  final String? displayName,
   final String? avatar,
 }) {
   factory NoticeActorDto.fromJson(Map<String, dynamic> json) =>
       _$NoticeActorDtoFromJson(json);
-}
-
-/// 卡片的附加数据. [detail] 按其中的 `type` 区分结构, 由仓库逐种解析.
-@JsonSerializable(createToJson: false)
-class const NoticeDataDto({final Map<String, dynamic>? detail}) {
-  factory NoticeDataDto.fromJson(Map<String, dynamic> json) =>
-      _$NoticeDataDtoFromJson(json);
 }
 
 @JsonSerializable(createToJson: false)
@@ -132,6 +121,7 @@ class NotificationRepository {
       items: [for (final dto in result.items) ?_notice(dto)],
       page: result.page,
       hasNext: result.hasNext,
+      total: result.total,
     );
   }
 
@@ -139,26 +129,19 @@ class NotificationRepository {
   Future<int> unreadCount({CancelToken? cancelToken}) async =>
       (await _api.unread(cancelToken: cancelToken)).cards ?? 0;
 
-  Future<void> read(String id) => _api.read(id);
+  Future<void> read(int id) => _api.read(id);
 
-  // TODO: 后端没有消息卡片的全部已读接口, 旧版接口只标记关注和旧版活动的赞. 后端提供卡片的全部已读接口后改为调用该接口, 并删除逐行标记.
-  /// 全部已读: 标记旧版通知表中的全部消息, 并逐行标记 [unreadIds].
-  ///
-  /// [unreadIds] 只包含已加载的行. 未加载的页中, 旧版通知表以外的消息仍为未读.
-  Future<void> readAll(Iterable<String> unreadIds) async {
-    await _api.readLegacyAll();
-    await Future.wait([for (final id in unreadIds) _api.read(id)]);
-  }
+  /// 把分栏 [column] 的全部消息标为已读, 含未加载的页.
+  Future<void> readAll(NoticeColumn column) => _api.readAll(column.api);
 
   static Notice? _notice(NoticeCardDto dto) {
     final id = dto.id;
-    if (id == null || id.isEmpty) return null;
+    if (id == null) return null;
     return Notice(
       id: id,
       kind: NoticeKind.fromApi(dto.kind),
       targetDomain: dto.target?.domain ?? '',
       targetId: dto.target?.id ?? 0,
-      targetUnavailable: dto.target?.unavailable ?? false,
       memberCount: dto.memberCount ?? 1,
       read: (dto.unreadMemberCount ?? 0) == 0,
       latestAt: dateFromMillis(dto.latestAt) ?? DateTime.now(),
@@ -167,38 +150,22 @@ class NotificationRepository {
           if (actor.id != null)
             NoticeActor(
               id: actor.id!,
-              name: actor.name?.trim().isNotEmpty == true
-                  ? actor.name!.trim()
+              name: actor.displayName?.trim().isNotEmpty == true
+                  ? actor.displayName!.trim()
                   : '同学',
               avatar: imageUrl(actor.avatar),
             ),
       ],
-      detail: _detail(dto.data?.detail),
+      detail: _detail(dto.data),
     );
   }
 
   static NoticeDetail? _detail(Map<String, dynamic>? json) {
     if (json == null) return null;
-    int? id(String key) => (json[key] as num?)?.toInt();
     String text(String key) => (json[key] as String?)?.trim() ?? '';
-    bool flag(String key) => json[key] as bool? ?? false;
     return switch (json['type']) {
-      'topic_included' => TopicIncludedDetail(
-        dishId: flag('foodUnavailable') ? null : id('foodId'),
-        dishName: text('foodName'),
-        topicId: flag('topicUnavailable') ? null : id('topicId'),
-        topicName: text('topicName'),
-      ),
-      'moderation_result' => ModerationDetail(
-        shop: json['targetDomain'] == 'RESTAURANT',
-        approved: json['verdict'] == 'APPROVE',
-      ),
-      'comment' => CommentDetail(
-        dishId: id('foodId'),
-        commentId: id('commentId'),
-        unavailable: flag('unavailable'),
-      ),
       'case_result' => CaseResultDetail(
+        caseId: (json['caseId'] as num?)?.toInt(),
         kind: switch (json['kind']) {
           'CATALOG_ERROR' => CaseKind.catalogError,
           'REPORT' => CaseKind.report,
@@ -207,6 +174,10 @@ class NotificationRepository {
         outcome: json['outcome'] as String?,
         reasonCode: json['reasonCode'] as String?,
         reply: text('reply'),
+      ),
+      'announcement' => AnnouncementDetail(
+        title: text('title'),
+        content: text('content'),
       ),
       _ => null,
     };

@@ -10,19 +10,22 @@ part of 'auth_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// 登录页的协议勾选状态.
 ///
-/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
+/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 
 @ProviderFor(LoginAgreement)
 final loginAgreementProvider = LoginAgreementProvider._();
 
 /// 登录页的协议勾选状态.
 ///
-/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
+/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 final class LoginAgreementProvider
     extends $NotifierProvider<LoginAgreement, bool> {
   /// 登录页的协议勾选状态.
   ///
-  /// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
+  /// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+  /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
   LoginAgreementProvider._()
     : super(
         from: null,
@@ -54,7 +57,8 @@ String _$loginAgreementHash() => r'7cc20187bd7bdd547dd4ef1c5856be844ee14ef8';
 
 /// 登录页的协议勾选状态.
 ///
-/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
+/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 
 abstract class _$LoginAgreement extends $Notifier<bool> {
   bool build();
@@ -106,7 +110,7 @@ final class PhoneLoginProvider
   }
 }
 
-String _$phoneLoginHash() => r'80fb264f6407c587e5fe7516e6cdcd4b38df82fc';
+String _$phoneLoginHash() => r'a9a14d5d350224ab5bc8ebb4f98bc35331bb8b1f';
 
 abstract class _$PhoneLogin extends $Notifier<PhoneLoginState> {
   PhoneLoginState build();
@@ -158,7 +162,7 @@ final class PasswordLoginProvider
   }
 }
 
-String _$passwordLoginHash() => r'7601f4a287842935b3da2e1ac7565f95bb148bbc';
+String _$passwordLoginHash() => r'2689026a9f15e9de95fea1ef9b9e3eb96e1e0fb0';
 
 abstract class _$PasswordLogin extends $Notifier<PasswordLoginState> {
   PasswordLoginState build();

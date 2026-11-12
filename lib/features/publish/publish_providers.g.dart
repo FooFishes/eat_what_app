@@ -8,16 +8,18 @@ part of 'publish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
 ///
-/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 搜店接口也返回已关门的店, 这里去掉.
 
 @ProviderFor(pickableShops)
 final pickableShopsProvider = PickableShopsFamily._();
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
 ///
-/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 搜店接口也返回已关门的店, 这里去掉.
 
 final class PickableShopsProvider
     extends
@@ -27,9 +29,10 @@ final class PickableShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
   ///
-  /// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+  /// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+  /// - 搜店接口也返回已关门的店, 这里去掉.
   PickableShopsProvider._({
     required PickableShopsFamily super.from,
     required String super.argument,
@@ -73,11 +76,12 @@ final class PickableShopsProvider
   }
 }
 
-String _$pickableShopsHash() => r'86738175957e99747c1478d7bba3985e85f1a669';
+String _$pickableShopsHash() => r'332dcc19c5cbbbed05260ac9fcbbb7524f7a54ac';
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
 ///
-/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 搜店接口也返回已关门的店, 这里去掉.
 
 final class PickableShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -90,9 +94,10 @@ final class PickableShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
   ///
-  /// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+  /// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+  /// - 搜店接口也返回已关门的店, 这里去掉.
 
   PickableShopsProvider call(String keyword) =>
       PickableShopsProvider._(argument: keyword, from: this);
@@ -217,17 +222,26 @@ final class HubAtFamily extends $Family
   String toString() => r'hubAtProvider';
 }
 
-/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+/// 没有时为 null.
+///
+/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
 
 @ProviderFor(sameNameShop)
 final sameNameShopProvider = SameNameShopFamily._();
 
-/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+/// 没有时为 null.
+///
+/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
 
 final class SameNameShopProvider
     extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
     with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
-  /// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+  /// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+  /// 没有时为 null.
+  ///
+  /// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
   SameNameShopProvider._({
     required SameNameShopFamily super.from,
     required (String, GcjPoint) super.argument,
@@ -271,9 +285,12 @@ final class SameNameShopProvider
   }
 }
 
-String _$sameNameShopHash() => r'caca0dee6c04bdc969c1e531a304cca94d8dcd20';
+String _$sameNameShopHash() => r'd8e572fdb1ece7be3321034f5a8b91282bca5990';
 
-/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+/// 没有时为 null.
+///
+/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
 
 final class SameNameShopFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
@@ -286,7 +303,10 @@ final class SameNameShopFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+  /// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+  /// 没有时为 null.
+  ///
+  /// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
 
   SameNameShopProvider call(String name, GcjPoint point) =>
       SameNameShopProvider._(argument: (name, point), from: this);
@@ -545,39 +565,127 @@ final class SameNameDishFamily extends $Family
   String toString() => r'sameNameDishProvider';
 }
 
+/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+
+@ProviderFor(dishToEdit)
+final dishToEditProvider = DishToEditFamily._();
+
+/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+
+final class DishToEditProvider
+    extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
+    with $FutureModifier<Dish>, $FutureProvider<Dish> {
+  /// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+  DishToEditProvider._({
+    required DishToEditFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'dishToEditProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$dishToEditHash();
+
+  @override
+  String toString() {
+    return r'dishToEditProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Dish> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Dish> create(Ref ref) {
+    final argument = this.argument as int;
+    return dishToEdit(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DishToEditProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$dishToEditHash() => r'ad7666735026f144ef01713b2a4cac9df85b2719';
+
+/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+
+final class DishToEditFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
+  DishToEditFamily._()
+    : super(
+        retry: null,
+        name: r'dishToEditProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+
+  DishToEditProvider call(int dishId) =>
+      DishToEditProvider._(argument: dishId, from: this);
+
+  @override
+  String toString() => r'dishToEditProvider';
+}
+
 /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
+/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
 /// - 照片添加后立即在后台上传, 并发数有上限.
 /// - 上传失败的照片可以单张重试.
 /// - 回到前台时, 失败的照片自动重试一次.
 
 @ProviderFor(Draft)
-final draftProvider = DraftProvider._();
+final draftProvider = DraftFamily._();
 
 /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
+/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
 /// - 照片添加后立即在后台上传, 并发数有上限.
 /// - 上传失败的照片可以单张重试.
 /// - 回到前台时, 失败的照片自动重试一次.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
   ///
+  /// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
   /// - 照片添加后立即在后台上传, 并发数有上限.
   /// - 上传失败的照片可以单张重试.
   /// - 回到前台时, 失败的照片自动重试一次.
-  DraftProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'draftProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  DraftProvider._({
+    required DraftFamily super.from,
+    required Dish? super.argument,
+  }) : super(
+         retry: null,
+         name: r'draftProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$draftHash();
+
+  @override
+  String toString() {
+    return r'draftProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -590,18 +698,71 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
       providerOverride: $SyncValueProvider<PublishDraft>(value),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DraftProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
-String _$draftHash() => r'74843abe9ceb74e308cb64cbfa99337978f84c2d';
+String _$draftHash() => r'fd0968064ec6865ead8e59e39844433df1fe3a01';
 
 /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
+/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
+/// - 照片添加后立即在后台上传, 并发数有上限.
+/// - 上传失败的照片可以单张重试.
+/// - 回到前台时, 失败的照片自动重试一次.
+
+final class DraftFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          Draft,
+          PublishDraft,
+          PublishDraft,
+          PublishDraft,
+          Dish?
+        > {
+  DraftFamily._()
+    : super(
+        retry: null,
+        name: r'draftProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+  ///
+  /// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
+  /// - 照片添加后立即在后台上传, 并发数有上限.
+  /// - 上传失败的照片可以单张重试.
+  /// - 回到前台时, 失败的照片自动重试一次.
+
+  DraftProvider call({Dish? original}) =>
+      DraftProvider._(argument: original, from: this);
+
+  @override
+  String toString() => r'draftProvider';
+}
+
+/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+///
+/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
 /// - 照片添加后立即在后台上传, 并发数有上限.
 /// - 上传失败的照片可以单张重试.
 /// - 回到前台时, 失败的照片自动重试一次.
 
 abstract class _$Draft extends $Notifier<PublishDraft> {
-  PublishDraft build();
+  late final _$args = ref.$arg as Dish?;
+  Dish? get original => _$args;
+
+  PublishDraft build({Dish? original});
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -614,6 +775,6 @@ abstract class _$Draft extends $Notifier<PublishDraft> {
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, build);
+    return element.handleCreate(ref, () => build(original: _$args));
   }
 }

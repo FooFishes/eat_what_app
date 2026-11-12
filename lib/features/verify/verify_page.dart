@@ -35,10 +35,10 @@ class VerifyPage extends ConsumerStatefulWidget {
   /// 认证引导结束后的目标地址, 即登录前要去的页面. 为 null 时去发现页.
   final String? from;
 
-  /// 统一认证回跳链接带来的结果, 来自地址中的 `sso` 和 `code`.
+  /// 统一认证回跳链接带来的结果, 来自地址中的 `sso`, `code` 和 `ticket`.
   ///
-  /// 页面读取后立即从地址中移除这两个参数. 否则登录态变化引起的重建会重复读取,
-  /// 再次刷新登录态并形成循环. 移除后 Web 刷新页面时不会重复显示结果.
+  /// 页面读取后立即从地址中移除这些参数. 否则登录态变化引起的重建会重复读取,
+  /// 再次提交票据并形成循环. 移除后 Web 刷新页面时不会重复处理结果.
   final SsoResult? sso;
 
   @override
@@ -84,7 +84,8 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     final uri = GoRouterState.of(context).uri;
     final query = Map.of(uri.queryParameters)
       ..remove('sso')
-      ..remove('code');
+      ..remove('code')
+      ..remove('ticket');
     context.replace(
       Uri(
         path: uri.path,

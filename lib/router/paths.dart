@@ -7,7 +7,7 @@ abstract final class Paths {
   static const nearby = '/nearby';
   static const me = '/me';
 
-  /// 登录. 可带 `from` (登录后返回的地址) 和 `expired=1` (因登录过期而进入).
+  /// 登录. 可带 `from` (登录后返回的地址), `expired=1` (因登录过期而进入) 和 `banned=1` (因账号被封禁而进入).
   static const login = '/login';
 
   /// 登录后回到 [from]. [from] 是发现页时不带, 因为登录后默认进入发现页.
@@ -18,19 +18,27 @@ abstract final class Paths {
   static const loginPhone = '/login/phone';
   static const loginPassword = '/login/password';
 
-  /// 撤销注销. 登录时发现账号在注销冷静期内, 从登录页进入. 申请信息只在内存里, 刷新后回到登录页.
+  /// 撤销注销. 申请信息只在内存里, 刷新后回到登录页.
+  ///
+  /// 后端没有注销接口, 登录流程不再进入本页. 页面保留, 接口恢复后接回登录流程.
   static const loginRestore = '/login/restore';
 
   /// 学生认证. `onboarding=1` 表示新号码注册后的认证引导, 左上角显示 "先逛逛" 而不是返回.
   ///
-  /// `sso=success|failure` 和 `code` 是 Web 统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
+  /// `sso=success|failure`, `code` 和 `ticket` 是 Web 统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
   static const verify = '/verify';
 
-  /// Web 统一认证结束后后端重定向到的地址, 带 `result=success|failure` 和业务码 `code`.
+  /// Web 统一认证结束后后端重定向到的地址, 带 `result=success|failure`.
+  /// 成功时带一次性的 `ticket`, 由认证页提交后认证才生效. 失败时带业务码 `code`.
   ///
   /// 该地址不是页面, 路由表把它重定向到 [verify]. 改动需同步后端的 `app.oauth-success-redirect`.
   /// App 的回跳地址是自定义 scheme, 见 `core/platform/browser.dart` 的 `ssoCallbackScheme`.
   static const ssoCallback = '/app/auth/callback';
+
+  /// 学校邮箱验证. 邮件里的链接带 `token`, 登录后由发起认证的账号提交.
+  ///
+  /// 改动需同步后端的 `APP_EMAIL_VERIFY_URL`.
+  static const verifyEmail = '/verify/email';
 
   static const meEdit = '/me/edit';
   static const myTags = '/me/tags';
@@ -112,6 +120,14 @@ abstract final class Paths {
   static String dish(int id, {int? comment}) =>
       comment == null ? '/dishes/$id' : '/dishes/$id?comment=$comment';
 
+  /// 编辑菜品. 认证用户都能编辑, 不能换店.
+  static const dishEditPattern = '/dishes/:dishId/edit';
+  static String dishEdit(int id) => '/dishes/$id/edit';
+
+  /// 菜品的修改记录, 可以恢复到某个版本.
+  static const dishHistoryPattern = '/dishes/:dishId/history';
+  static String dishHistory(int id) => '/dishes/$id/history';
+
   /// 一道菜的全部评论.
   static const commentsPattern = '/dishes/:dishId/comments';
   static String comments(int dishId) => '/dishes/$dishId/comments';
@@ -144,6 +160,14 @@ abstract final class Paths {
   /// 餐厅详情.
   static const shopPattern = '/shops/:shopId';
   static String shop(int id) => '/shops/$id';
+
+  /// 编辑店铺. 认证用户都能编辑.
+  static const shopEditPattern = '/shops/:shopId/edit';
+  static String shopEdit(int id) => '/shops/$id/edit';
+
+  /// 店铺的修改记录, 可以恢复到某个版本.
+  static const shopHistoryPattern = '/shops/:shopId/history';
+  static String shopHistory(int id) => '/shops/$id/history';
 
   /// 搜索, 入口在发现页右上角.
   static const search = '/search';

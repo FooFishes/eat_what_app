@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
-import 'package:eat/data/common/convert.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'push_api.g.dart';
 
-// TODO: 未接入推送 SDK, 设备登记接口未对接, 服务端无法向本机推送. 接入推送 SDK 后对接设备登记接口.
+// TODO: 未接入推送 SDK, 未对接设备登记接口 `/push/bindings`, 服务端无法向本机推送. 接入推送 SDK 后对接设备登记接口.
 /// PushApi 调用的接口路径, 相对于业务接口地址.
 abstract final class PushEndpoints {
   static const enable = '/push/settings/enable';
@@ -20,43 +19,30 @@ class PushApi {
 
   final ApiClient _client;
 
-  Future<List<PushSettingDto>> settings({CancelToken? cancelToken}) async =>
-      decodeList(
+  Future<PushSettingsDto> settings({CancelToken? cancelToken}) async =>
+      decodeJson(
         await _client.get(PushEndpoints.settings, cancelToken: cancelToken),
-        PushSettingDto.fromJson,
+        PushSettingsDto.fromJson,
       );
 
-  /// 开关一个栏目. 开启时需回传读取到的 [revision] 和最近一次关闭的 [closeFrontier].
-  ///
-  /// 请求体只能有接口列出的字段, 多余的字段会被拒绝.
-  Future<void> set({
-    required String commandId,
+  /// 开关一个栏目, 返回修改后的全部开关.
+  Future<PushSettingsDto> set({
     required String category,
     required bool enabled,
-    required int revision,
-    String? closeFrontier,
-  }) => _client.post(
-    enabled ? PushEndpoints.enable : PushEndpoints.disable,
-    body: {
-      'commandId': commandId,
-      'operation': enabled ? 'ENABLE' : 'DISABLE',
-      'category': category,
-      'expectedPreferenceRevision': revision,
-      if (enabled) 'observedCloseFrontier': ?closeFrontier,
-    },
+  }) async => decodeJson(
+    await _client.post(
+      enabled ? PushEndpoints.enable : PushEndpoints.disable,
+      body: {'category': category},
+    ),
+    PushSettingsDto.fromJson,
   );
 }
 
-/// 一个推送栏目的开关. [revision] 和 [closeFrontier] 是开启时要原样回传的版本信息.
+/// 推送开关 (`PushDtos.Settings`). [categories] 以栏目的接口取值为键, 默认都为 true.
 @JsonSerializable(createToJson: false)
-class const PushSettingDto({
-  final String? category,
-  final bool? enabled,
-  final int? revision,
-  final String? closeFrontier,
-}) {
-  factory PushSettingDto.fromJson(Map<String, dynamic> json) =>
-      _$PushSettingDtoFromJson(json);
+class const PushSettingsDto({final Map<String, bool>? categories}) {
+  factory PushSettingsDto.fromJson(Map<String, dynamic> json) =>
+      _$PushSettingsDtoFromJson(json);
 }
 
 @Riverpod(keepAlive: true)

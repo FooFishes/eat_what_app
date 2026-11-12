@@ -199,12 +199,12 @@ const testConfig = AppConfig(
   termsUrl: 'https://eat.test/terms.html',
 );
 
-/// `/user/info` 的响应数据样例.
+/// `/user/info` 的响应数据样例. [phone] 为 null 表示还没有绑定手机.
 Map<String, Object?> userInfoJson({
   bool verified = false,
   String? method,
-  bool banned = false,
   bool hasPassword = false,
+  String? phone = '13812345678',
 }) => {
   'id': 42,
   'displayName': '天凉被破王',
@@ -212,10 +212,7 @@ Map<String, Object?> userInfoJson({
   'hasUsername': false,
   'avatar': null,
   'role': 'user',
-  'banned': banned,
-  'banReason': banned ? '多次发布不是实拍的照片' : null,
-  'bannedAt': banned ? 1792763739329 : null,
-  'phone': '13812345678',
+  'phone': phone,
   'verified': verified,
   'method': method,
   'hasPassword': hasPassword,
@@ -227,7 +224,6 @@ const testUser = CurrentUser(
   phone: '13812345678',
   hasPassword: false,
   verified: false,
-  banned: false,
 );
 
 /// 已认证版本的 [testUser], 具备点赞, 收藏和打标签的权限.
@@ -237,7 +233,6 @@ const verifiedUser = CurrentUser(
   phone: '13812345678',
   hasPassword: false,
   verified: true,
-  banned: false,
 );
 
 /// 模拟的人机验证. 直接返回预设结果, 不显示任何界面.
@@ -431,55 +426,45 @@ class TestEnv {
   }
 }
 
-/// 菜品接口 (`FoodVO`) 的响应样例.
+/// 菜品接口 (后端 `FoodDtos.Food`) 的响应样例.
 ///
-/// 店铺坐标和商圈只出现在推荐接口中, [recommend] 为 true 时添加.
+/// 后端 v2 不返回舞台色和备选色. 传入 [stageColor] 或 [alternates] 时才加上, 模拟后端恢复这两项后的响应.
+/// [uploaderId] 为 null 表示上传者账号已删除.
 Map<String, Object?> foodJson({
   int id = 1,
   String name = '鲜虾蟹籽云吞',
   int restaurantId = 7,
   String restaurantName = '袁记云饺',
-  double price = 18,
-  String category = 'staple',
-  String? stageColor = 'broth',
-  List<String> alternates = const ['mango', 'bamboo'],
+  double? price = 18,
+  String category = '主食',
+  List<String> tags = const [],
+  bool signature = false,
+  String? stageColor,
+  List<String>? alternates,
   int likes = 12,
   bool liked = false,
   bool favorite = false,
-  int uploaderId = 9,
-  bool authorPublic = true,
-  List<Map<String, Object?>> systemTags = const [],
-  bool recommend = false,
+  int? uploaderId = 9,
 }) => {
   'id': id,
-  'accountId': uploaderId,
-  'uploaderName': authorPublic ? '小林' : null,
-  'user': authorPublic ? {'id': uploaderId, 'displayName': '小林'} : null,
   'restaurantId': restaurantId,
   'restaurantName': restaurantName,
-  'restaurantAddress': recommend ? '万达金街 1 层' : null,
-  'restaurantGcjLng': recommend ? 117.1412 : null,
-  'restaurantGcjLat': recommend ? 36.6681 : null,
-  'hubId': recommend ? 3 : null,
-  'hubName': recommend ? '万达金街' : null,
+  'accountId': uploaderId,
   'name': name,
-  'description': '汤很鲜，虾仁很多',
-  'price': price,
   'category': category,
-  'categoryLabel': '主食',
-  'pictureUrl': ['https://img.test/foods/$id.jpg'],
-  'pictureKeys': ['foods/$id.jpg'],
-  'systemTags': systemTags,
-  'myCustomTags': <Object>[],
+  'price': price,
+  'description': '汤很鲜，虾仁很多',
+  'pictureUrls': ['https://img.test/foods/$id.jpg'],
+  'tags': tags,
+  'signature': signature,
+  'likeCount': likes,
+  'favoriteCount': 3,
   'isLiked': liked,
   'isFavorite': favorite,
-  'likesCount': likes,
-  'mealTimes': ['lunch', 'dinner'],
-  'stageColor': stageColor,
-  'stageAlternates': alternates,
-  'coverCrop': {'centerX': 0.5, 'centerY': 0.5, 'diameter': 1},
   'createdAt': 1792763739329,
   'updatedAt': 1792763739329,
+  'stageColor': ?stageColor,
+  'stageAlternates': ?alternates,
 };
 
 /// 分页外壳样例.
@@ -491,7 +476,7 @@ Map<String, Object?> pageJson(List<Object?> items, {bool hasNext = false}) => {
   'hasNext': hasNext,
 };
 
-/// 餐厅接口 (`RestaurantVO`) 的响应样例.
+/// 店铺接口 (`RestaurantDtos.Restaurant`) 的响应样例, 游客视角: 没有收藏和我的评价.
 Map<String, Object?> restaurantJson({
   int id = 7,
   String name = '袁记云饺',
@@ -503,25 +488,24 @@ Map<String, Object?> restaurantJson({
   'accountId': 9,
   'name': name,
   'address': '万达金街 1 层',
-  'cityId': 1,
-  'location': {
-    'type': 'Point',
-    'coordinates': [lng, lat],
-  },
   'gcjLng': lng,
   'gcjLat': lat,
-  'hubId': 3,
-  'POI': poi,
-  'pictureUrl': <String>[],
-  'operatingStatus': 'OPEN',
+  'poi': poi,
+  'pictureUrl': null,
   'permanentlyClosed': false,
-  'visibleFoodCount': 0,
-  'ratingSummaryState': 'SYNC_PENDING',
-  'signatureFoods': <Object>[],
-  'matchedFoods': <Object>[],
-  'publicTastes': <Object>[],
-  'publicTastesState': 'SYNC_PENDING',
-  'personalState': 'NOT_LOGGED_IN',
+  'hubId': 3,
+  'hubName': '万达金街',
+  'campusId': 1,
+  'isFavorite': null,
+  'deliveryEnabled': false,
+  'kind': 'food',
+  'mealTimes': ['lunch', 'dinner'],
+  'priceBand': null,
+  'categories': <String>[],
+  'tags': <String>[],
+  'dineIn': {'rate': null, 'count': 0},
+  'delivery': {'rate': null, 'count': 0},
+  'myRatings': null,
   'createdAt': 1792763739329,
   'updatedAt': 1792763739329,
 };
@@ -534,7 +518,6 @@ final campusListJson = [
     'gcjLng': 117.140109,
     'gcjLat': 36.667382,
     'isDefault': true,
-    'open': true,
     'sort': 0,
   },
 ];

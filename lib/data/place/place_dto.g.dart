@@ -38,61 +38,58 @@ RestaurantDto _$RestaurantDtoFromJson(Map<String, dynamic> json) =>
       address: json['address'] as String?,
       gcjLng: (json['gcjLng'] as num?)?.toDouble(),
       gcjLat: (json['gcjLat'] as num?)?.toDouble(),
+      poi: json['poi'] as String?,
+      pictureUrl: json['pictureUrl'] as String?,
+      permanentlyClosed: json['permanentlyClosed'] as bool?,
       hubId: (json['hubId'] as num?)?.toInt(),
-      pictureUrl: (json['pictureUrl'] as List<dynamic>?)
+      hubName: json['hubName'] as String?,
+      campusId: (json['campusId'] as num?)?.toInt(),
+      distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
+      isFavorite: json['isFavorite'] as bool?,
+      deliveryEnabled: json['deliveryEnabled'] as bool?,
+      kind: json['kind'] as String?,
+      mealTimes: (json['mealTimes'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      poi: json['POI'] as String?,
-      operatingStatus: json['operatingStatus'] as String,
-      permanentlyClosed: json['permanentlyClosed'] as bool?,
-      visibleFoodCount: (json['visibleFoodCount'] as num).toInt(),
       priceBand: json['priceBand'] as String?,
-      ratingCount: (json['ratingCount'] as num?)?.toInt(),
-      recommendationRate: (json['recommendationRate'] as num?)?.toInt(),
-      signatureFoods: (json['signatureFoods'] as List<dynamic>)
-          .map((e) => RestaurantFoodDto.fromJson(e as Map<String, dynamic>))
+      categories: (json['categories'] as List<dynamic>?)
+          ?.map((e) => e as String)
           .toList(),
-      matchedFoods: (json['matchedFoods'] as List<dynamic>)
-          .map((e) => RestaurantFoodDto.fromJson(e as Map<String, dynamic>))
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      dineIn: json['dineIn'] == null
+          ? null
+          : StatDto.fromJson(json['dineIn'] as Map<String, dynamic>),
+      delivery: json['delivery'] == null
+          ? null
+          : StatDto.fromJson(json['delivery'] as Map<String, dynamic>),
+      myRatings: json['myRatings'] == null
+          ? null
+          : MyRatingsDto.fromJson(json['myRatings'] as Map<String, dynamic>),
+      signatureFoods: (json['signatureFoods'] as List<dynamic>?)
+          ?.map((e) => SignatureFoodDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      publicTastes: (json['publicTastes'] as List<dynamic>)
-          .map((e) => RestaurantTasteDto.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      coverUrl: json['coverUrl'] as String?,
-      myRating: json['myRating'] as String?,
-      isFavorite: json['isFavorite'] as bool?,
     );
 
-RestaurantFoodDto _$RestaurantFoodDtoFromJson(Map<String, dynamic> json) =>
-    RestaurantFoodDto(
+StatDto _$StatDtoFromJson(Map<String, dynamic> json) => StatDto(
+  rate: (json['rate'] as num?)?.toDouble(),
+  count: (json['count'] as num?)?.toInt(),
+);
+
+MyRatingsDto _$MyRatingsDtoFromJson(Map<String, dynamic> json) => MyRatingsDto(
+  dineIn: json['dineIn'] as String?,
+  delivery: json['delivery'] as String?,
+);
+
+SignatureFoodDto _$SignatureFoodDtoFromJson(Map<String, dynamic> json) =>
+    SignatureFoodDto(
       id: (json['id'] as num?)?.toInt(),
       name: json['name'] as String?,
       price: (json['price'] as num?)?.toDouble(),
-      coverUrl: json['coverUrl'] as String?,
-      stageColor: json['stageColor'] as String?,
-      likesCount: (json['likesCount'] as num?)?.toInt(),
+      pictureUrl: json['pictureUrl'] as String?,
     );
 
-RestaurantTasteDto _$RestaurantTasteDtoFromJson(Map<String, dynamic> json) =>
-    RestaurantTasteDto(
-      tagId: (json['tagId'] as num?)?.toInt(),
-      name: json['name'] as String?,
-      taggerCount: (json['taggerCount'] as num?)?.toInt(),
-    );
-
-RestaurantRatingDto _$RestaurantRatingDtoFromJson(Map<String, dynamic> json) =>
-    RestaurantRatingDto(rating: json['rating'] as String?);
-
-Map<String, dynamic> _$RestaurantRatingDtoToJson(
-  RestaurantRatingDto instance,
-) => <String, dynamic>{'rating': ?instance.rating};
-
-CreatedRestaurantDto _$CreatedRestaurantDtoFromJson(
-  Map<String, dynamic> json,
-) => CreatedRestaurantDto(
-  id: (json['id'] as num?)?.toInt(),
-  moderationStatus: json['moderationStatus'] as String?,
-);
+Map<String, dynamic> _$RatingRequestDtoToJson(RatingRequestDto instance) =>
+    <String, dynamic>{'scene': instance.scene, 'rating': instance.rating};
 
 Map<String, dynamic> _$CreateRestaurantDtoToJson(
   CreateRestaurantDto instance,
@@ -101,7 +98,62 @@ Map<String, dynamic> _$CreateRestaurantDtoToJson(
   'address': instance.address,
   'gcjLng': instance.gcjLng,
   'gcjLat': instance.gcjLat,
-  'hubId': ?instance.hubId,
-  'POI': ?instance.poi,
-  'pictureUrl': ?instance.pictureUrl,
+  'poi': ?instance.poi,
+  'picture': ?instance.picture,
+  'kind': instance.kind,
+  'mealTimes': ?instance.mealTimes,
+  'priceBand': ?instance.priceBand,
+  'categories': ?instance.categories,
+  'tags': ?instance.tags,
+  'deliveryEnabled': ?instance.deliveryEnabled,
 };
+
+Map<String, dynamic> _$EditRestaurantDtoToJson(EditRestaurantDto instance) =>
+    <String, dynamic>{
+      'name': ?instance.name,
+      'address': ?instance.address,
+      'gcjLng': ?instance.gcjLng,
+      'gcjLat': ?instance.gcjLat,
+      'poi': ?instance.poi,
+      'picture': ?instance.picture,
+      'permanentlyClosed': ?instance.permanentlyClosed,
+      'kind': ?instance.kind,
+      'mealTimes': ?instance.mealTimes,
+      'priceBand': ?instance.priceBand,
+      'categories': ?instance.categories,
+      'tags': ?instance.tags,
+      'deliveryEnabled': ?instance.deliveryEnabled,
+    };
+
+EditedRestaurantDto _$EditedRestaurantDtoFromJson(Map<String, dynamic> json) =>
+    EditedRestaurantDto(
+      id: (json['id'] as num?)?.toInt(),
+      revisionId: (json['revisionId'] as num?)?.toInt(),
+    );
+
+RevisionDto _$RevisionDtoFromJson(Map<String, dynamic> json) => RevisionDto(
+  id: (json['id'] as num?)?.toInt(),
+  action: json['action'] as String?,
+  editor: json['editor'] == null
+      ? null
+      : RevisionEditorDto.fromJson(json['editor'] as Map<String, dynamic>),
+  restoredFrom: (json['restoredFrom'] as num?)?.toInt(),
+  changes: (json['changes'] as List<dynamic>?)
+      ?.map((e) => FieldChangeDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  createdAt: (json['createdAt'] as num?)?.toInt(),
+);
+
+RevisionEditorDto _$RevisionEditorDtoFromJson(Map<String, dynamic> json) =>
+    RevisionEditorDto(
+      id: (json['id'] as num?)?.toInt(),
+      displayName: json['displayName'] as String?,
+      avatar: json['avatar'] as String?,
+    );
+
+FieldChangeDto _$FieldChangeDtoFromJson(Map<String, dynamic> json) =>
+    FieldChangeDto(
+      field: json['field'] as String?,
+      from: json['from'],
+      to: json['to'],
+    );

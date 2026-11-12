@@ -28,12 +28,8 @@ Future<void> showShopErrorPanel(
       options: ShopErrorType.values,
       label: (type) => type.label,
       capability: Capability.reportShopError,
-      submit: (type, note, key) => repository.reportShopError(
-        shopId: shop.id,
-        type: type,
-        note: note,
-        idempotencyKey: key,
-      ),
+      submit: (type, note) =>
+          repository.reportShopError(shopId: shop.id, type: type, note: note),
     ),
   );
   if (sent == true && context.mounted) {

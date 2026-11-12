@@ -9,23 +9,14 @@ part of 'write_comment_providers.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-///
-/// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-/// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 
 @ProviderFor(CommentComposer)
 final commentComposerProvider = CommentComposerFamily._();
 
 /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-///
-/// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-/// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 final class CommentComposerProvider
     extends $NotifierProvider<CommentComposer, Composer> {
   /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-  ///
-  /// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-  /// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
   CommentComposerProvider._({
     required CommentComposerFamily super.from,
     required int super.argument,
@@ -70,12 +61,9 @@ final class CommentComposerProvider
   }
 }
 
-String _$commentComposerHash() => r'5ac4658178853480b7564722063f45b5810e468d';
+String _$commentComposerHash() => r'bb43fc1e898221696f9100bcb4cc88bf0f3b7ba4';
 
 /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-///
-/// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-/// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 
 final class CommentComposerFamily extends $Family
     with
@@ -96,9 +84,6 @@ final class CommentComposerFamily extends $Family
       );
 
   /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-  ///
-  /// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-  /// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 
   CommentComposerProvider call(int dishId) =>
       CommentComposerProvider._(argument: dishId, from: this);
@@ -108,9 +93,6 @@ final class CommentComposerFamily extends $Family
 }
 
 /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
-///
-/// 发送失败后重试沿用同一个 `Idempotency-Key`, 服务端对同一次发表只受理一次.
-/// 文字或照片变化后换用新键. 沿用旧键时服务端判定为同一个键对应不同正文, 拒绝请求.
 
 abstract class _$CommentComposer extends $Notifier<Composer> {
   late final _$args = ref.$arg as int;

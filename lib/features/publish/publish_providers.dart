@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:clock/clock.dart';
 import 'package:dio/dio.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/ref_extensions.dart';
@@ -14,8 +13,9 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
-import 'package:eat/domain/rules/meal_rules.dart';
+import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
+import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:flutter/painting.dart';
@@ -29,9 +29,10 @@ part 'publish_providers.g.dart';
 /// 防抖期间参数变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或菜名搜索.
+/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
 ///
-/// 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
+/// - 搜店接口也返回已关门的店, 这里去掉.
 @riverpod
 Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
   // 定位或校区变化时重新请求. 搜店范围由 shopSearchScope 读取.
@@ -52,7 +53,10 @@ Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
-  return page.items;
+  return [
+    for (final shop in page.items)
+      if (!shop.closed) shop,
+  ];
 }
 
 /// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
@@ -71,7 +75,10 @@ Future<Hub?> hubAt(Ref ref, GcjPoint point) async {
   return ref.watch(placeRepositoryProvider).locateHub(point);
 }
 
-/// 新建店时, 当前校区内地图中心附近的同名店, 包括已关门的店. 没有时为 null.
+/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
+/// 没有时为 null.
+///
+/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
 @riverpod
 Future<Shop?> sameNameShop(Ref ref, String name, GcjPoint point) async {
   if (name.trim().isEmpty) return null;
@@ -84,6 +91,7 @@ Future<Shop?> sameNameShop(Ref ref, String name, GcjPoint point) async {
         name,
         point,
         campusId: campusId,
+        radius: ShopRules.sameNameHintRadius,
         cancelToken: ref.cancelToken(),
       );
 }
@@ -120,6 +128,12 @@ Future<Dish?> sameNameDish(Ref ref, int shopId, String name) async {
       .sameName(shopId, name, cancelToken: ref.cancelToken());
 }
 
+/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+@riverpod
+Future<Dish> dishToEdit(Ref ref, int dishId) => ref
+    .watch(foodRepositoryProvider)
+    .detail(dishId, cancelToken: ref.cancelToken());
+
 /// 照片在上传队列中的状态.
 enum UploadStatus { waiting, uploading, done, failed }
 
@@ -155,6 +169,8 @@ class const DraftPhoto({
 }
 
 /// 加菜页的草稿. 第一张照片是封面, 裁切和舞台色都属于封面.
+///
+/// 编辑已有的菜时, [photos] 只包含换上的新照片. 为空表示不换照片, 页面显示原有照片.
 class const PublishDraft({
   final List<DraftPhoto> photos = const [],
   final CoverCrop crop = const CoverCrop(),
@@ -167,10 +183,20 @@ class const PublishDraft({
   /// 有值时优先于推荐色, 之后更换分类也不改变舞台色.
   final StageColor? pickedStage,
   final DishCategory? category,
-  final Set<MealTime> meals = const {},
-  final Set<int> tasteTagIds = const {},
-  final List<String> myTags = const [],
+
+  /// 选中的口味, 最多 [PublishRules.tagsMax] 个.
+  final Set<Taste> tastes = const {},
+  final bool signature = false,
+
+  /// 分类或口味是按识别结果预选的, 用户之后还没有手动改过.
+  final bool preselected = false,
 }) {
+  /// 按枚举顺序排列的口味, 用于提交.
+  List<Taste> get tasteList => [
+    for (final taste in Taste.values)
+      if (tastes.contains(taste)) taste,
+  ];
+
   /// "调整照片" 中的推荐色. 取色可靠时按距离排序, 不可靠时第一个是分类默认色.
   List<StageColor> get candidates =>
       suggestion?.top3(category?.stage ?? StageColor.broth) ?? const [];
@@ -207,6 +233,47 @@ class const PublishDraft({
                 .reduce((a, b) => a + b) /
             photos.length;
 
+  /// 编辑时相对 [original] 的改动. 没有任何改动时返回 null.
+  ///
+  /// - [name] 和 [description] 是输入框中去掉首尾空白的文字. [description] 为空表示清除.
+  /// - [price] 为 null 表示价格没有改动. 接口不能清除价格.
+  /// - 换了照片时提交整组新照片, 以及新封面的舞台色, 备选色和取景. 没换照片时这几项都不提交.
+  DishChange? changeFrom(
+    Dish original, {
+    required String name,
+    required double? price,
+    required String description,
+  }) {
+    final tags = tasteList;
+    final tagsChanged =
+        tags.length != original.tags.toSet().length ||
+        !tags.every(original.tags.contains);
+    final replacing = photos.isNotEmpty;
+    final change = DishChange(
+      name: name != original.name ? name : null,
+      category: category != original.category ? category : null,
+      price: price != null && price != original.price ? price : null,
+      description: description != (original.description ?? '')
+          ? description
+          : null,
+      tags: tagsChanged ? tags : null,
+      signature: signature != original.signature ? signature : null,
+      imageKeys: replacing ? [for (final p in photos) ?p.key] : null,
+      stage: replacing ? stage : null,
+      stageAlternates: replacing ? alternates : null,
+      crop: replacing ? crop : null,
+    );
+    final empty =
+        change.name == null &&
+        change.category == null &&
+        change.price == null &&
+        change.description == null &&
+        change.tags == null &&
+        change.signature == null &&
+        change.imageKeys == null;
+    return empty ? null : change;
+  }
+
   PublishDraft copy({
     List<DraftPhoto>? photos,
     CoverCrop? crop,
@@ -215,23 +282,24 @@ class const PublishDraft({
     StageColor? pickedStage,
     bool clearPicked = false,
     DishCategory? category,
-    Set<MealTime>? meals,
-    Set<int>? tasteTagIds,
-    List<String>? myTags,
+    Set<Taste>? tastes,
+    bool? signature,
+    bool? preselected,
   }) => PublishDraft(
     photos: photos ?? this.photos,
     crop: crop ?? this.crop,
     suggestion: clearSuggestion ? null : suggestion ?? this.suggestion,
     pickedStage: clearPicked ? null : pickedStage ?? this.pickedStage,
     category: category ?? this.category,
-    meals: meals ?? this.meals,
-    tasteTagIds: tasteTagIds ?? this.tasteTagIds,
-    myTags: myTags ?? this.myTags,
+    tastes: tastes ?? this.tastes,
+    signature: signature ?? this.signature,
+    preselected: preselected ?? this.preselected,
   );
 }
 
 /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
 ///
+/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
 /// - 照片添加后立即在后台上传, 并发数有上限.
 /// - 上传失败的照片可以单张重试.
 /// - 回到前台时, 失败的照片自动重试一次.
@@ -246,14 +314,26 @@ class Draft extends _$Draft {
   Future<StageSample>? _coverSample;
   int? _coverSampleId;
 
+  /// 是否已经请求过识别. 每份草稿最多请求一次, 后端对识别按人按天限次.
+  var _suggestAsked = false;
+
+  /// 用户是否手动选过分类和口味. 手动选过的项不被识别结果覆盖.
+  var _categoryTouched = false;
+  var _tastesTouched = false;
+
   @override
-  PublishDraft build() {
+  PublishDraft build({Dish? original}) {
     ref.onDispose(() {
       for (final token in _tokens.values) {
         token.cancel();
       }
     });
-    return PublishDraft(meals: {MealRules.at(clock.now())});
+    if (original == null) return const PublishDraft();
+    return PublishDraft(
+      category: original.category,
+      tastes: original.tags.take(PublishRules.tagsMax).toSet(),
+      signature: original.signature,
+    );
   }
 
   /// 添加照片, 超出张数上限的部分丢弃.
@@ -345,33 +425,74 @@ class Draft extends _$Draft {
     clearPicked: picked == null,
   );
 
-  void setCategory(DishCategory category) =>
-      state = state.copy(category: category);
-
-  void toggleMeal(MealTime meal) => state = state.copy(
-    meals: state.meals.contains(meal)
-        ? ({...state.meals}..remove(meal))
-        : {...state.meals, meal},
-  );
-
-  void toggleTaste(int id) {
-    final ids = {...state.tasteTagIds};
-    if (!ids.remove(id) && ids.length < PublishRules.tagsMax) ids.add(id);
-    state = state.copy(tasteTagIds: ids);
+  void setCategory(DishCategory category) {
+    _categoryTouched = true;
+    state = state.copy(category: category, preselected: false);
   }
 
-  void addMyTag(String name) {
-    final tag = name.trim();
-    if (tag.isEmpty ||
-        state.myTags.contains(tag) ||
-        state.myTags.length >= PublishRules.tagsMax) {
+  /// 选中或取消一个口味. 已选满 [PublishRules.tagsMax] 个时不能再选, 返回 false.
+  bool toggleTaste(Taste taste) {
+    final tastes = {...state.tastes};
+    if (!tastes.remove(taste)) {
+      if (tastes.length >= PublishRules.tagsMax) return false;
+      tastes.add(taste);
+    }
+    _tastesTouched = true;
+    state = state.copy(tastes: tastes, preselected: false);
+    return true;
+  }
+
+  void setSignature(bool signature) => state = state.copy(signature: signature);
+
+  /// 撤销换照片: 删除全部新照片, 取消未完成的上传. 编辑时回到原有照片.
+  void clearPhotos() {
+    for (final token in _tokens.values) {
+      token.cancel();
+    }
+    _tokens.clear();
+    state = state.copy(photos: const []);
+    _resetCover();
+  }
+
+  /// 按菜名, 说明和已上传的照片识别分类和口味, 预选到草稿中.
+  ///
+  /// 只在封面已上传, 还没选分类且本草稿没有请求过时请求. 结果返回前用户手动选过的项不覆盖.
+  /// 识别失败 (未启用, 识别不出或网络错误) 时不提示, 用户照常手动选择.
+  Future<void> suggest({
+    required String name,
+    required int shopId,
+    String? description,
+  }) async {
+    final keys = [for (final p in state.photos) ?p.key];
+    if (_suggestAsked ||
+        state.photos.firstOrNull?.key == null ||
+        state.category != null ||
+        _categoryTouched) {
       return;
     }
-    state = state.copy(myTags: [...state.myTags, tag]);
+    _suggestAsked = true;
+    try {
+      final suggestion = await ref
+          .read(foodRepositoryProvider)
+          .suggestTags(
+            name: name,
+            shopId: shopId,
+            description: description,
+            imageKeys: keys,
+          );
+      if (!ref.mounted) return;
+      final category = _categoryTouched || state.category != null
+          ? null
+          : suggestion.category;
+      final tastes = _tastesTouched || suggestion.tags.isEmpty
+          ? null
+          : suggestion.tags.take(PublishRules.tagsMax).toSet();
+      if (category == null && tastes == null) return;
+      state = state.copy(category: category, tastes: tastes, preselected: true);
+    } on AppFailure {
+      // 识别只是辅助. 失败时保持用户已有的选择, 不打断填写.
+    }
   }
-
-  void removeMyTag(String name) =>
-      state = state.copy(myTags: [...state.myTags.where((t) => t != name)]);
 
   void _resetCover() {
     state = state.copy(

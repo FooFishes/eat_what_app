@@ -4,9 +4,8 @@ import 'package:eat/domain/models/geo.dart';
 
 /// 坐标转换, 距离计算和距离文字.
 ///
-/// - WGS-84 转 GCJ-02 使用公开的偏移算法.
-/// - GCJ-02 转 WGS-84 没有解析解, 使用迭代反算, 误差在米级.
-/// - 境外坐标不做偏移, 原样返回.
+/// - WGS-84 转 GCJ-02 使用公开的偏移算法. 境外坐标不做偏移, 原样返回.
+/// - 接口的坐标都是 GCJ-02, 不需要反向转换.
 abstract final class GeoRules {
   static const _a = 6378245.0;
   static const _ee = 0.00669342162296594323;
@@ -16,18 +15,6 @@ abstract final class GeoRules {
     if (_outOfChina(p.lat, p.lng)) return GcjPoint(p.lat, p.lng);
     final (dLat, dLng) = _offset(p.lat, p.lng);
     return GcjPoint(p.lat + dLat, p.lng + dLng);
-  }
-
-  static WgsPoint toWgs(GcjPoint p) {
-    if (_outOfChina(p.lat, p.lng)) return WgsPoint(p.lat, p.lng);
-    var lat = p.lat;
-    var lng = p.lng;
-    for (var i = 0; i < 6; i++) {
-      final back = toGcj(WgsPoint(lat, lng));
-      lat += p.lat - back.lat;
-      lng += p.lng - back.lng;
-    }
-    return WgsPoint(lat, lng);
   }
 
   /// 两点之间的球面距离, 单位为米.

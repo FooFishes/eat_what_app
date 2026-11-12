@@ -5,6 +5,7 @@ import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/auth_token.dart';
+import 'package:eat/core/platform/app_info.dart';
 import 'package:eat/core/telemetry/crash_reporter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,6 +19,9 @@ part 'api_client.g.dart';
 /// `core` 不能导入 `state`, 因此由 `state` 构造回调并注入.
 class const ApiHooks({
   final VoidCallback? onSessionExpired,
+
+  /// 带凭证的请求收到 [BizCodes.userDisabled] 后调用. 服务端已让该会话下线.
+  final VoidCallback? onBanned,
   final VoidCallback? onForbidden,
 
   /// 已登录时收到要求同意的业务码 ([BizCodes.consentCodes]) 后调用: 请用户同意, 并提交同意.
@@ -32,11 +36,14 @@ class const ApiHooks({
 /// - 只返回外壳中的 `data`.
 /// - HTTP 200 但 `code` 非零同样视为失败.
 /// - 写请求不自动重试. 读请求的重试由 Provider 的重试策略 [retryOnNetworkFailure] 负责.
+///
+/// [userAgent] 为 null 时不设置 `User-Agent`, 由浏览器或 Dart 运行时决定.
 class ApiClient {
   ApiClient({
     required String baseUrl,
     required this._tokens,
     this._hooks = const ApiHooks(),
+    Future<String>? userAgent,
     HttpClientAdapter? adapter,
   }) : _dio = Dio(
          BaseOptions(
@@ -50,6 +57,7 @@ class ApiClient {
     if (adapter != null) _dio.httpClientAdapter = adapter;
     // 只给崩溃上报加上最近请求的面包屑. 失败的请求由页面处理, 不作为错误上报.
     _dio.addSentry(captureFailedRequests: false);
+    if (userAgent != null) _dio.interceptors.add(_UserAgent(userAgent));
     if (kDebugMode) _dio.interceptors.add(const _DebugBodyLogger());
   }
 
@@ -152,7 +160,7 @@ class ApiClient {
         );
       }
       final failure = switch (e.code) {
-        // 受限会话在解封后收到封禁码, 要重新登录才能取得普通会话, 因此按登录过期处理.
+        // 服务端在封禁时让会话下线, 因此带凭证的请求按登录过期处理, 由 [_notify] 通知封禁.
         // 登录请求不带凭证, 仍按码表提示封禁.
         BizCodes.userDisabled when token != null => AppFailure(
           FailureKind.sessionExpired,
@@ -203,7 +211,11 @@ class ApiClient {
       // 第一次通知会清除凭证, 并发过期的其余请求据此跳过, 避免重复处理.
       case FailureKind.sessionExpired
           when sent != null && identical(_tokens.current, sent):
-        _hooks.onSessionExpired?.call();
+        if (failure.code == BizCodes.userDisabled) {
+          _hooks.onBanned?.call();
+        } else {
+          _hooks.onSessionExpired?.call();
+        }
       case FailureKind.forbidden:
         _hooks.onForbidden?.call();
       default:
@@ -224,7 +236,7 @@ class ApiClient {
       case DioExceptionType.badResponse:
         final status = e.response?.statusCode ?? 0;
         final body = e.response?.data;
-        // 网关和鉴权拦截返回非 200 状态码和 `ErrorResponse`, 其中 `code` 是字符串, 原样保留.
+        // 接口不存在等少数情况返回非 200 状态码, 响应体仍是 `{code, msg}` 外壳.
         if (body is Map) {
           final code = body['code'];
           if (code != null && code != BizCodes.success) {
@@ -254,6 +266,32 @@ class ApiClient {
     if (kDebugMode) debugPrint('[api] $method $path → $code');
     CrashReporter.recordRequestFailure(method, path, code);
   }
+}
+
+/// 给 App 端的请求加上 [_value] 作为 `User-Agent`. 后端按它区分登录设备是 iOS 还是安卓.
+///
+/// 值依赖异步读取的版本名, 因此在发出请求前等待. 读取完成后每次请求只等待一个已完成的 Future.
+class const _UserAgent(final Future<String> _value) extends Interceptor {
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    options.headers['User-Agent'] = await _value;
+    handler.next(options);
+  }
+}
+
+/// App 端请求的 `User-Agent`, 如 `EatWhat/0.1.0 (Android)`. [version] 读取失败时为 null, 省略版本.
+///
+/// 后端在 `User-Agent` 中查找 `android` 和 `ios` (不区分大小写) 判断设备类型. 不能识别时登录设备显示为其他设备.
+String appUserAgent(TargetPlatform platform, String? version) {
+  final name = switch (platform) {
+    TargetPlatform.android => 'Android',
+    TargetPlatform.iOS => 'iOS',
+    final other => other.name,
+  };
+  return '${version == null ? 'EatWhat' : 'EatWhat/$version'} ($name)';
 }
 
 /// 调试构建打印每个请求的请求体和响应体.
@@ -341,9 +379,16 @@ Duration? retryOnNetworkFailure(int retryCount, Object error) {
 @Riverpod(keepAlive: true)
 ApiHooks apiHooks(Ref ref) => const ApiHooks();
 
+/// Web 不能设置 `User-Agent`, 由浏览器决定.
 @Riverpod(keepAlive: true)
 ApiClient apiClient(Ref ref) => ApiClient(
   baseUrl: ref.watch(appConfigProvider).apiBaseUrl,
   tokens: ref.watch(tokenStoreProvider),
   hooks: ref.watch(apiHooksProvider),
+  userAgent: kIsWeb
+      ? null
+      : ref
+            .read(appVersionProvider.future)
+            .then<String?>((v) => v, onError: (Object _) => null)
+            .then((v) => appUserAgent(defaultTargetPlatform, v)),
 );

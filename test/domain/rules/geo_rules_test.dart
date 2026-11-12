@@ -10,16 +10,6 @@ void main() {
     expect(gcj.lng, closeTo(116.403714, 0.00002));
   });
 
-  test('GCJ-02 反算回 WGS-84，误差在 1 米以内', () {
-    const wgs = WgsPoint(36.6644, 117.1350);
-    final back = GeoRules.toWgs(GeoRules.toGcj(wgs));
-    final error = GeoRules.distance(
-      GcjPoint(back.lat, back.lng),
-      GcjPoint(wgs.lat, wgs.lng),
-    );
-    expect(error, lessThan(1));
-  });
-
   test('境外不加偏移', () {
     final gcj = GeoRules.toGcj(const WgsPoint(35.6812, 139.7671));
     expect(gcj, const GcjPoint(35.6812, 139.7671));

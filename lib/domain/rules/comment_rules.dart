@@ -1,6 +1,4 @@
-import 'package:eat/domain/models/comment.dart';
-
-/// 评论和回复的规则: 字数, 照片数, 能否发送, 回复的显示顺序.
+/// 评论和回复的规则: 字数, 照片数, 能否发送.
 abstract final class CommentRules {
   /// 文字上限, 按 Unicode 码点计. 服务端先去掉首尾空白再计数.
   static const textMax = 200;
@@ -23,21 +21,5 @@ abstract final class CommentRules {
     if (length > textMax) return false;
     if (reply) return length > 0 && photos == 0;
     return photos <= photoMax && (length > 0 || photos > 0);
-  }
-
-  /// 按发表时间从早到晚排列的回复.
-  ///
-  /// 回复接口按时间倒序返回. 产品要求先露出最早的回复, 因此在客户端重新排序.
-  static List<Comment> chronological(List<Comment> replies) =>
-      [...replies]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-
-  /// [reply] 回复的那条回复的作者. 直接回复评论, 或被回复的那条不在 [siblings] 中时为 null.
-  static String? replyToName(Comment reply, List<Comment> siblings) {
-    final target = reply.replyToGid;
-    if (target == null || target == reply.rootGid) return null;
-    for (final c in siblings) {
-      if (c.gid == target) return c.authorName;
-    }
-    return null;
   }
 }

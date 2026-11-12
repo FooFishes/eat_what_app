@@ -17,7 +17,7 @@ import 'package:go_router/go_router.dart';
 
 /// "我的" 中的评论分栏: 我写过的评论和回复. 每行是菜的缩略图, 菜名, 我说的话和时间.
 ///
-/// 点击进入菜品详情并滚动到该评论. 审核中和未通过的评论同样列出, 并注明状态.
+/// 点击进入菜品详情并滚动到该评论. 回复滚动到所属的评论.
 class MyCommentsSliver extends ConsumerWidget {
   const new({super.key});
 
@@ -82,11 +82,6 @@ class _Row extends ConsumerWidget {
         dish.error is AppFailure &&
         (dish.error! as AppFailure).code == BizCodes.foodNotFound;
     final name = removed ? '这道菜已删除' : dish.value?.name ?? '这道菜';
-    final status = switch (comment.status) {
-      CommentStatus.pending => '审核中',
-      CommentStatus.rejected => ['未通过审核', ?comment.reason].join('：'),
-      _ => null,
-    };
     final text = comment.text.isNotEmpty
         ? comment.text
         : comment.imageCount > 0
@@ -113,8 +108,6 @@ class _Row extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
             style: eat.text.body.copyWith(color: c.inkSoft),
           ),
-        if (status != null)
-          Text(status, style: eat.text.caption.copyWith(color: c.inkMuted)),
       ],
       trailing: Text(
         TimeFormat.relative(comment.createdAt, clock.now()),
@@ -122,7 +115,9 @@ class _Row extends ConsumerWidget {
       ),
       onTap: removed
           ? null
-          : () => context.push(Paths.dish(comment.dishId, comment: comment.id)),
+          : () => context.push(
+              Paths.dish(comment.dishId, comment: comment.rootId ?? comment.id),
+            ),
     );
   }
 }

@@ -8,12 +8,11 @@ const _user = CurrentUser(
   nickname: '同学',
   hasPassword: false,
   verified: false,
-  banned: false,
 );
 
 void main() {
   group('账号状态', () {
-    test('没登录、没认证、已认证、封禁中', () {
+    test('没登录、没认证、已认证', () {
       expect(AccountStatus.of(signedIn: false), isA<SignedOutStatus>());
       expect(
         AccountStatus.of(signedIn: true, user: _user),
@@ -24,59 +23,15 @@ void main() {
         nickname: '同学',
         hasPassword: false,
         verified: true,
-        banned: false,
       );
       expect(
         AccountStatus.of(signedIn: true, user: verified),
         isA<VerifiedStatus>(),
       );
-      final banned = AccountStatus.of(
-        signedIn: true,
-        user: const CurrentUser(
-          id: 1,
-          nickname: '同学',
-          hasPassword: false,
-          verified: true,
-          banned: true,
-          banReason: '刷赞',
-        ),
-      );
-      expect(banned, isA<BannedStatus>());
-      expect((banned as BannedStatus).reason, '刷赞');
     });
 
     test('登录了但还没拉到用户信息时按没认证处理，宁可多拦一次', () {
       expect(AccountStatus.of(signedIn: true), isA<UnverifiedStatus>());
-    });
-
-    test('受限会话还没拉到用户信息时按封禁中处理，拉到后以 banned 为准', () {
-      expect(
-        AccountStatus.of(signedIn: true, restricted: true),
-        isA<BannedStatus>(),
-      );
-      expect(
-        AccountStatus.of(signedIn: true, user: _user, restricted: true),
-        isA<UnverifiedStatus>(),
-      );
-    });
-
-    test('封禁带上原因、开始和截止时间', () {
-      final status = AccountStatus.of(
-        signedIn: true,
-        user: CurrentUser(
-          id: 1,
-          nickname: '同学',
-          hasPassword: false,
-          verified: false,
-          banned: true,
-          banReason: '刷赞',
-          bannedAt: DateTime(2026, 11, 1),
-          banUntil: DateTime(2026, 11, 30),
-        ),
-      ) as BannedStatus;
-      expect(status.reason, '刷赞');
-      expect(status.since, DateTime(2026, 11, 1));
-      expect(status.until, DateTime(2026, 11, 30));
     });
   });
 
@@ -92,7 +47,8 @@ void main() {
       Capability.follow,
       Capability.publishDish,
       Capability.createShop,
-      Capability.editOwnDish,
+      Capability.editDish,
+      Capability.editShop,
     ];
 
     /// 所有已登录状态都能做, 只拦没登录 (含游客).
@@ -101,6 +57,8 @@ void main() {
       Capability.reportShopError,
       Capability.viewInbox,
       Capability.viewProfile,
+      Capability.viewFavorites,
+      Capability.dismissShop,
       Capability.feedback,
     ];
 
@@ -128,18 +86,8 @@ void main() {
       );
     });
 
-    test('封禁中除了上面几项什么都不能做，连资料也不能改，不引导去认证', () {
-      const banned = BannedStatus(reason: '刷赞');
-      for (final capability in Capability.values) {
-        if (capability.openToBanned) continue;
-        final result = checkPermission(banned, capability);
-        expect(result, isA<BlockedByBan>(), reason: '$capability');
-        expect((result as BlockedByBan).status.reason, '刷赞');
-      }
-    });
-
-    test('后端没给受限会话登记的接口：没认证能做，封禁中拦住', () {
-      const restrictedOnly = [
+    test('改资料、看足迹和账号设置：没认证也能做', () {
+      const accountOnly = [
         Capability.editProfile,
         Capability.deleteComment,
         Capability.viewHistory,
@@ -151,34 +99,24 @@ void main() {
         Capability.setUsername,
         Capability.verify,
       ];
-      for (final capability in restrictedOnly) {
+      for (final capability in accountOnly) {
         expect(
           checkPermission(const UnverifiedStatus(), capability),
           isA<Allowed>(),
           reason: '$capability',
         );
-        expect(
-          checkPermission(const BannedStatus(), capability),
-          isA<BlockedByBan>(),
-          reason: '$capability',
-        );
       }
       expect(
-        {...interactions, ...restrictedOnly, ...openToAll},
+        {...interactions, ...accountOnly, ...openToAll},
         Capability.values.toSet(),
         reason: '新增的操作要归到其中一类',
       );
     });
 
-    test('举报、信息有误、看消息、看他人主页、反馈：没认证和封禁中都能做', () {
+    test('举报、信息有误、看消息、看他人主页、反馈：没认证也能做', () {
       for (final capability in openToAll) {
         expect(
           checkPermission(const UnverifiedStatus(), capability),
-          isA<Allowed>(),
-          reason: '$capability',
-        );
-        expect(
-          checkPermission(const BannedStatus(), capability),
           isA<Allowed>(),
           reason: '$capability',
         );

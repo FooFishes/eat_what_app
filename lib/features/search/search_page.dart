@@ -16,14 +16,11 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/search/search_providers.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
-import 'package:eat/state/location.dart';
-import 'package:eat/state/place.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,6 +31,7 @@ import 'package:go_router/go_router.dart';
 /// - 搜索框代替标题, 与返回按钮在同一行, 不随结果滚动.
 /// - 未输入时显示最近搜索的词. 没有搜索记录时说明可以搜索的内容.
 /// - 结果分为 "菜" 和 "店" 两个分栏. 默认显示 "菜", 只有店有结果时显示 "店".
+/// - "菜" 按发布时间倒序, 不写距离. "店" 按距离升序, 已关门的店排在最后并标明.
 /// - 没有结果时显示 "没找到". 认证用户额外显示 "新建一家店".
 class SearchPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -96,10 +94,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   List<Widget> _results(String keyword) {
-    final me = ref.watch(currentLocationProvider.select((s) => s.point));
-    final campus = ref.watch(
-      currentPlaceProvider.select((p) => p.campus?.center),
-    );
     final dishes = ref.watch(dishSearchProvider(keyword));
     final shops = ref.watch(shopSearchProvider(keyword));
     final dishCount = dishes.value?.length;
@@ -128,11 +122,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           dishes,
           keyword,
           retry: () => ref.invalidate(dishSearchProvider(keyword)),
+          // 搜菜接口不返回店的位置和商圈, 方块只写店名.
           builder: (items) => SliverTileGrid(
             count: items.length,
             builder: (context, i) {
               final dish = items[i];
-              final shop = [?dish.shopName, ?dish.hubName].join('  ');
               return DishTile(
                 image: networkImage(
                   dish.cover,
@@ -140,12 +134,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 ),
                 name: dish.name,
                 price: DishRules.priceText(dish.price),
-                shop: shop.isEmpty ? null : shop,
-                distance: GeoRules.meterLabel(
-                  dish.distance,
-                  me: me,
-                  campusCenter: campus,
-                ),
+                shop: dish.shopName,
                 onTap: () {
                   remember();
                   context.push(Paths.dish(dish.id), extra: dish);

@@ -1,4 +1,3 @@
-import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/profile/growth_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -10,11 +9,11 @@ import '../../support/fakes.dart';
 import '../../support/growth_fixtures.dart';
 
 void main() {
-  TestEnv meEnv({int? level = 3}) {
+  TestEnv meEnv() {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
-        FakeAdapter.ok({'displayName': '天凉被破王', 'level': ?level}),
+        FakeAdapter.ok({'displayName': '天凉被破王'}),
       ])
       ..on('GET /foods/my', [FakeAdapter.ok(pageJson([]))])
       ..on('GET /user/growth', [FakeAdapter.ok(growthJson())])
@@ -29,18 +28,14 @@ void main() {
     return env;
   }
 
-  testWidgets('「我的」昵称旁是等级，点了进等级页：进度、规则和明细', (tester) async {
+  testWidgets('等级页：进度、规则和明细', (tester) async {
     final env = meEnv();
     final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
-      location: Paths.me,
+      location: Paths.growth,
     );
-
-    expect(find.text('Lv.3'), findsOneWidget);
-    await tester.tap(find.bySemanticsLabel('等级 3'));
-    await tester.pumpAndSettle();
 
     expect(find.byType(GrowthPage), findsOneWidget);
     expect(find.text('累计 125 经验'), findsOneWidget);
@@ -72,46 +67,11 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('等级页上的等级和舞台上的不一样时，回到「我的」看到新等级', (tester) async {
-    final env = meEnv(level: 2)
-      ..adapter.on('GET /user/userInfo', [
-        FakeAdapter.ok({'displayName': '天凉被破王', 'level': 2}),
-        FakeAdapter.ok({'displayName': '天凉被破王', 'level': 3}),
-      ]);
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.me,
-    );
-    expect(find.text('Lv.2'), findsOneWidget);
-
-    await tester.tap(find.bySemanticsLabel('等级 2'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel('返回'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Lv.3'), findsOneWidget);
-    await unmountApp(tester, container);
-  });
-
-  testWidgets('资料里没有等级时不显示胶囊', (tester) async {
-    final (container, _) = await pumpApp(
-      tester,
-      meEnv(level: null),
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.me,
-    );
-
-    expect(find.textContaining('Lv.'), findsNothing);
-    await unmountApp(tester, container);
-  });
-
-  testWidgets('他人主页显示等级，点了没有反应', (tester) async {
+  testWidgets('他人主页不显示等级胶囊', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
-        FakeAdapter.ok({'displayName': '阿哲', 'level': 2}),
+        FakeAdapter.ok({'displayName': '阿哲'}),
       ])
       ..on('GET /foods/by-user/9', [FakeAdapter.ok(pageJson([]))]);
     final (container, _) = await pumpApp(
@@ -121,42 +81,8 @@ void main() {
       location: Paths.user(9),
     );
 
-    expect(find.text('Lv.2'), findsOneWidget);
-    await tester.tap(find.text('Lv.2'));
-    await tester.pumpAndSettle();
-    expect(find.byType(GrowthPage), findsNothing);
-    expect(env.adapter.sent('GET /user/growth'), isEmpty);
-    await unmountApp(tester, container);
-  });
-
-  testWidgets('封禁中点等级弹拦截对话框，不请求', (tester) async {
-    final env = TestEnv();
-    env.adapter
-      ..on('GET /user/userInfo', [
-        FakeAdapter.ok({'displayName': '天凉被破王', 'level': 3}),
-      ])
-      ..on('GET /foods/by-user/42', [FakeAdapter.ok(pageJson([]))]);
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(
-        user: CurrentUser(
-          id: 42,
-          nickname: '天凉被破王',
-          hasPassword: true,
-          verified: true,
-          banned: true,
-          banReason: '刷赞',
-        ),
-      ),
-      location: Paths.me,
-    );
-
-    await tester.tap(find.bySemanticsLabel('等级 3'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('账号封禁中，暂时不能查看等级'), findsOneWidget);
-    expect(find.byType(GrowthPage), findsNothing);
+    expect(find.textContaining('Lv.'), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('^等级')), findsNothing);
     expect(env.adapter.sent('GET /user/growth'), isEmpty);
     await unmountApp(tester, container);
   });

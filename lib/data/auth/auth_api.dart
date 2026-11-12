@@ -12,7 +12,9 @@ abstract final class AuthEndpoints {
   static const login = '/auth/login';
   static const logout = '/auth/logout';
   static const sdu = '/auth/sdu';
+  static const sduConfirm = '/auth/sdu/confirm';
   static const sendEmail = '/auth/sendEmail';
+  static const verifyEmail = '/auth/verifyEmail';
   static const checkUsername = '/auth/checkUsername';
   static const passwordCode = '/auth/password/code';
   static const passwordReset = '/auth/password/reset';
@@ -51,11 +53,18 @@ class AuthApi {
         LoginReplyDto.fromJson,
       );
 
-  Future<LoginReplyDto> passwordLogin(PasswordLoginRequestDto request) async =>
-      decodeJson(
-        await _client.post(AuthEndpoints.login, body: request.toJson()),
-        LoginReplyDto.fromJson,
-      );
+  /// 同一账号密码错误次数过多后, 服务端要求带 [captchaHeaders], 否则返回 `BizCodes.captchaMissing`.
+  Future<LoginReplyDto> passwordLogin(
+    PasswordLoginRequestDto request, {
+    Map<String, String> captchaHeaders = const {},
+  }) async => decodeJson(
+    await _client.post(
+      AuthEndpoints.login,
+      body: request.toJson(),
+      headers: captchaHeaders,
+    ),
+    LoginReplyDto.fromJson,
+  );
 
   Future<void> logout() => _client.post(AuthEndpoints.logout);
 
@@ -65,18 +74,27 @@ class AuthApi {
     SsoStartDto.fromJson,
   );
 
+  /// 完成统一认证. [ticket] 取自回跳地址, 只能由发起认证的账号使用一次.
+  Future<void> confirmSso(String ticket) =>
+      _client.post(AuthEndpoints.sduConfirm, body: {'ticket': ticket});
+
+  /// 邮箱放在请求体中, 不进入服务端的访问日志.
   Future<void> sendVerifyEmail(
     String email, {
     Map<String, String> captchaHeaders = const {},
-  }) => _client.get(
+  }) => _client.post(
     AuthEndpoints.sendEmail,
-    query: {'email': email},
+    body: {'email': email},
     headers: captchaHeaders,
   );
 
+  /// 提交认证邮件链接中的 [token]. token 必须属于当前登录的账号.
+  Future<void> verifyEmail(String token) =>
+      _client.post(AuthEndpoints.verifyEmail, body: {'token': token});
+
   /// 用户名是否可用. 已被占用时失败, 业务码为 `BizCodes.usernameTaken`.
   Future<void> checkUsername(String userName) =>
-      _client.post(AuthEndpoints.checkUsername, query: {'userName': userName});
+      _client.post(AuthEndpoints.checkUsername, body: {'userName': userName});
 
   /// 向当前账号绑定的手机发送验证码, 供设置用户名和设置或修改密码使用.
   Future<void> sendAccountCode({
@@ -101,7 +119,9 @@ class AuthApi {
     body: {'oldPassword': oldPassword, 'newPassword': newPassword},
   );
 
-  /// 首次设置用户名. [newPassword] 为 null 时不设置密码. 成功后所有设备都要重新登录.
+  /// 首次设置用户名. [newPassword] 为 null 时不设置密码.
+  ///
+  /// 本机保持登录. 同时设置密码时, 其他设备要重新登录.
   Future<void> setUsername({
     required String userName,
     required String code,

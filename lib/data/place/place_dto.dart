@@ -16,9 +16,9 @@ class const CampusDto({
       _$CampusDtoFromJson(json);
 }
 
-/// 商圈 (`HubVO`).
+/// 商圈.
 ///
-/// [boundary] 为 GeoJSON, 坐标系是 WGS-84, 与 [gcjLng] 和 [gcjLat] 的 GCJ-02 不同. 接口契约如此规定.
+/// [boundary] 为 GeoJSON MultiPolygon, 坐标系与 [gcjLng] 和 [gcjLat] 相同, 都是 GCJ-02. 没有边界时为 null.
 @JsonSerializable(createToJson: false)
 class const HubDto({
   final int? id,
@@ -38,7 +38,9 @@ class const GeoJsonDto({final String? type, final List<dynamic>? coordinates}) {
       _$GeoJsonDtoFromJson(json);
 }
 
-/// 餐厅 (`RestaurantVO`).
+/// 店铺 (`RestaurantDtos.Restaurant`), 也用于解析推荐卡片 (`RecommendDtos.Card`).
+///
+/// 推荐卡片是店铺的子集, 另带 [signatureFoods]. 店铺接口不返回 [signatureFoods].
 @JsonSerializable(createToJson: false)
 class const RestaurantDto({
   final int? id,
@@ -46,108 +48,168 @@ class const RestaurantDto({
   final String? address,
   final double? gcjLng,
   final double? gcjLat,
-  final int? hubId,
-  final List<String>? pictureUrl,
 
   /// 百度地点的 uid. 手动添加的店为 null.
-  @JsonKey(name: 'POI') final String? poi,
+  final String? poi,
 
-  /// `OPEN`, `CLOSED` 或 `SYNC_PENDING`.
-  required final String operatingStatus,
-
-  /// 运营确认已关门时为 true. [operatingStatus] 为 `SYNC_PENDING` 时为 null.
+  /// 门头照片的地址.
+  final String? pictureUrl,
   final bool? permanentlyClosed,
-  required final int visibleFoodCount,
+  final int? hubId,
+  final String? hubName,
+  final int? campusId,
 
-  /// `UNDER_15`, `FROM_15_TO_30` 或 `OVER_30`. 没有可见菜时为 null.
-  final String? priceBand,
+  /// 与请求坐标的距离. 只在请求带坐标时返回.
+  final double? distanceMeters,
 
-  /// 评价人数. 汇总缺失或过期时为 null.
-  final int? ratingCount,
-
-  /// 推荐率, 整数百分比. 评价不满 5 人或汇总未就绪时为 null.
-  final int? recommendationRate,
-
-  /// 获赞最多的至多 3 道菜.
-  required final List<RestaurantFoodDto> signatureFoods,
-
-  /// 带关键词搜索时, 菜名匹配的至多 3 道菜. 不带关键词时为空.
-  required final List<RestaurantFoodDto> matchedFoods,
-
-  /// 口味标签按人数汇总的至多 6 个.
-  required final List<RestaurantTasteDto> publicTastes,
-
-  /// 第一道招牌菜的封面. 没有招牌菜时为 null.
-  final String? coverUrl,
-
-  /// 当前用户的评价: `RECOMMEND`, `GOOD`, `AVERAGE` 或 `NOT_RECOMMEND`. 未评价或个人状态未就绪时为 null.
-  final String? myRating,
-
-  /// 当前用户是否收藏. 未登录或个人状态未就绪时为 null.
+  /// 游客为 null.
   final bool? isFavorite,
+  final bool? deliveryEnabled,
+
+  /// `food` 或 `drink`.
+  final String? kind,
+  final List<String>? mealTimes,
+
+  /// `UNDER_15`, `FROM_15_TO_30` 或 `OVER_30`. 没填时为 null.
+  final String? priceBand,
+  final List<String>? categories,
+
+  /// 口味.
+  final List<String>? tags,
+  final StatDto? dineIn,
+  final StatDto? delivery,
+
+  /// 游客为 null.
+  final MyRatingsDto? myRatings,
+  final List<SignatureFoodDto>? signatureFoods,
 }) {
   factory RestaurantDto.fromJson(Map<String, dynamic> json) =>
       _$RestaurantDtoFromJson(json);
 }
 
-/// 餐厅响应中的菜品摘要 (`RestaurantFoodSummary`).
+/// 一个场景的评价统计. [rate] 为 0–1 的推荐率, 没有评价时为 null.
 @JsonSerializable(createToJson: false)
-class const RestaurantFoodDto({
+class const StatDto({final double? rate, final int? count}) {
+  factory StatDto.fromJson(Map<String, dynamic> json) =>
+      _$StatDtoFromJson(json);
+}
+
+/// 当前用户在两个场景的评价: `RECOMMEND` 或 `NOT_RECOMMEND`, 没评过为 null.
+@JsonSerializable(createToJson: false)
+class const MyRatingsDto({final String? dineIn, final String? delivery}) {
+  factory MyRatingsDto.fromJson(Map<String, dynamic> json) =>
+      _$MyRatingsDtoFromJson(json);
+}
+
+/// 推荐卡片的招牌菜摘要. [pictureUrl] 是第一张照片.
+@JsonSerializable(createToJson: false)
+class const SignatureFoodDto({
   final int? id,
   final String? name,
   final double? price,
-  final String? coverUrl,
-  final String? stageColor,
-  final int? likesCount,
+  final String? pictureUrl,
 }) {
-  factory RestaurantFoodDto.fromJson(Map<String, dynamic> json) =>
-      _$RestaurantFoodDtoFromJson(json);
+  factory SignatureFoodDto.fromJson(Map<String, dynamic> json) =>
+      _$SignatureFoodDtoFromJson(json);
 }
 
-/// 餐厅响应中的口味标签汇总 (`RestaurantTasteSummary`).
-@JsonSerializable(createToJson: false)
-class const RestaurantTasteDto({
-  final int? tagId,
-  final String? name,
-  final int? taggerCount,
+/// 评价的请求体. [scene] 为 `dine_in` 或 `delivery`.
+@JsonSerializable(createFactory: false)
+class const RatingRequestDto({
+  required final String scene,
+  required final String rating,
 }) {
-  factory RestaurantTasteDto.fromJson(Map<String, dynamic> json) =>
-      _$RestaurantTasteDtoFromJson(json);
+  Map<String, dynamic> toJson() => _$RatingRequestDtoToJson(this);
 }
 
-/// 店铺评价的请求体和响应 (`RestaurantRatingDTO`, `RestaurantRatingView`). 撤回后响应中的 [rating] 为 null.
-@JsonSerializable(includeIfNull: false)
-class const RestaurantRatingDto({final String? rating}) {
-  factory RestaurantRatingDto.fromJson(Map<String, dynamic> json) =>
-      _$RestaurantRatingDtoFromJson(json);
-
-  Map<String, dynamic> toJson() => _$RestaurantRatingDtoToJson(this);
-}
-
-/// 新增餐厅的结果 (`CreatedResourceVO`).
-@JsonSerializable(createToJson: false)
-class const CreatedRestaurantDto({
-  final int? id,
-
-  /// 审核状态, 如 `PENDING`. 服务端未启用内容审核时不返回, 店铺直接公开.
-  final String? moderationStatus,
-}) {
-  factory CreatedRestaurantDto.fromJson(Map<String, dynamic> json) =>
-      _$CreatedRestaurantDtoFromJson(json);
-}
-
-/// 新增餐厅的请求体 (`RestaurantDTO`). [address] 为地址描述, 如 "万达金街 1 层".
+/// 新建店铺的请求体. 所属商圈由后端按坐标计算.
+///
+/// - [picture] 是门头照片上传后的存储 key.
+/// - 省略 [mealTimes] 时后端按午饭和晚饭处理.
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const CreateRestaurantDto({
   required final String name,
   required final String address,
   required final double gcjLng,
   required final double gcjLat,
-  final int? hubId,
 
   /// 从地图候选里选的店带百度地点的 uid, 手动添加的不带.
-  @JsonKey(name: 'POI') final String? poi,
-  final List<String>? pictureUrl,
+  final String? poi,
+  final String? picture,
+  required final String kind,
+  final List<String>? mealTimes,
+  final String? priceBand,
+  final List<String>? categories,
+  final List<String>? tags,
+  final bool? deliveryEnabled,
 }) {
   Map<String, dynamic> toJson() => _$CreateRestaurantDtoToJson(this);
+}
+
+/// 修改店铺的请求体. 省略的字段不修改.
+///
+/// 清除时 [poi], [picture], [priceBand] 传空串, [categories], [tags] 传空数组.
+@JsonSerializable(createFactory: false, includeIfNull: false)
+class const EditRestaurantDto({
+  final String? name,
+  final String? address,
+  final double? gcjLng,
+  final double? gcjLat,
+  final String? poi,
+  final String? picture,
+  final bool? permanentlyClosed,
+  final String? kind,
+  final List<String>? mealTimes,
+  final String? priceBand,
+  final List<String>? categories,
+  final List<String>? tags,
+  final bool? deliveryEnabled,
+}) {
+  Map<String, dynamic> toJson() => _$EditRestaurantDtoToJson(this);
+}
+
+/// 修改和恢复的结果. 内容没有变化时 [revisionId] 为 null.
+@JsonSerializable(createToJson: false)
+class const EditedRestaurantDto({final int? id, final int? revisionId}) {
+  factory EditedRestaurantDto.fromJson(Map<String, dynamic> json) =>
+      _$EditedRestaurantDtoFromJson(json);
+}
+
+/// 店铺的一条修改记录.
+///
+/// - [action] 为 `create`, `edit` 或 `restore`.
+/// - [restoredFrom] 是恢复到的修改记录 id, 只有 `restore` 有值.
+@JsonSerializable(createToJson: false)
+class const RevisionDto({
+  final int? id,
+  final String? action,
+  final RevisionEditorDto? editor,
+  final int? restoredFrom,
+  final List<FieldChangeDto>? changes,
+  final int? createdAt,
+}) {
+  factory RevisionDto.fromJson(Map<String, dynamic> json) =>
+      _$RevisionDtoFromJson(json);
+}
+
+/// 修改记录的编辑者. [avatar] 是头像地址.
+@JsonSerializable(createToJson: false)
+class const RevisionEditorDto({
+  final int? id,
+  final String? displayName,
+  final String? avatar,
+}) {
+  factory RevisionEditorDto.fromJson(Map<String, dynamic> json) =>
+      _$RevisionEditorDtoFromJson(json);
+}
+
+/// 一个字段的改动. `picture` 的 [from] 和 [to] 是图片地址, 其余是字段原值.
+@JsonSerializable(createToJson: false)
+class const FieldChangeDto({
+  final String? field,
+  final Object? from,
+  final Object? to,
+}) {
+  factory FieldChangeDto.fromJson(Map<String, dynamic> json) =>
+      _$FieldChangeDtoFromJson(json);
 }

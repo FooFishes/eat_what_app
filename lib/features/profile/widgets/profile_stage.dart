@@ -9,6 +9,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
@@ -28,11 +29,12 @@ import 'package:go_router/go_router.dart';
 StageColor avatarColorOf(int userId) =>
     StageColor.values[userId % StageColor.values.length];
 
+// TODO: 后端 v2 删除了获赞数, 舞台统计少了 "获赞" 一项. 资料接口恢复获赞数后加回第一项.
 /// "我的" 和他人主页的舞台内容.
 ///
 /// - 右侧: 获赞最多的菜. 没有上传过菜时显示插画空盘, 上传列表加载中时留空.
-/// - 左下: 头像, 昵称和等级, 用户名, 签名和四项统计. 点击粉丝和关注进入对应列表.
-/// - 等级来自 [profile], 加载中或接口没有返回时不显示. [onLevelTap] 为 null 时等级不可点.
+/// - 左下: 头像, 昵称和等级, 用户名, 签名和三项统计. 点击粉丝和关注进入对应列表.
+/// - [onLevelTap] 不为 null 时昵称旁显示标有 "待接入" 的等级胶囊.
 class ProfileStage extends ConsumerWidget {
   const new({
     super.key,
@@ -42,6 +44,7 @@ class ProfileStage extends ConsumerWidget {
     this.username,
     this.signature,
     required this.profile,
+    this.uploads,
     required this.top,
     required this.loading,
     this.onLevelTap,
@@ -53,8 +56,11 @@ class ProfileStage extends ConsumerWidget {
   final String? username;
   final String? signature;
 
-  /// 统计. 加载中为 null, 数字显示为 "–".
+  /// 粉丝和关注数. 加载中为 null, 数字显示为 "–".
   final UserProfile? profile;
+
+  /// 上传的菜的总数, 取自上传列表. 加载中为 null.
+  final int? uploads;
   final Dish? top;
   final bool loading;
   final VoidCallback? onLevelTap;
@@ -76,11 +82,17 @@ class ProfileStage extends ConsumerWidget {
       }
     }
 
-    final stats = <(String, int?, VoidCallback?)>[
-      ('获赞', profile?.earnedLikes, null),
-      ('上传的菜', profile?.uploadedDishes, null),
-      ('粉丝', profile?.fans, () => openList(FollowListKind.fans)),
-      ('关注', profile?.followings, () => openList(FollowListKind.followings)),
+    // 资料已加载而数字为 null 时, 对方未公开该项.
+    final missing = profile == null ? '加载中' : '未公开';
+    final stats = <(String, int?, String, VoidCallback?)>[
+      ('上传的菜', uploads, '加载中', null),
+      ('粉丝', profile?.fans, missing, () => openList(FollowListKind.fans)),
+      (
+        '关注',
+        profile?.followings,
+        missing,
+        () => openList(FollowListKind.followings),
+      ),
     ];
     return Stack(
       children: [
@@ -133,8 +145,7 @@ class ProfileStage extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  if (profile?.level case final level?)
-                    LevelBadge(level: level, onTap: onLevelTap),
+                  if (onLevelTap case final onTap?) LevelBadge(onTap: onTap),
                 ],
               ),
               if (username case final username?)
@@ -159,9 +170,14 @@ class ProfileStage extends ConsumerWidget {
               const SizedBox(height: EatSpace.s10),
               Row(
                 children: [
-                  for (final (label, value, onTap) in stats)
+                  for (final (label, value, missing, onTap) in stats)
                     Expanded(
-                      child: _Stat(label: label, value: value, onTap: onTap),
+                      child: _Stat(
+                        label: label,
+                        value: value,
+                        missing: missing,
+                        onTap: onTap,
+                      ),
                     ),
                 ],
               ),
@@ -174,10 +190,12 @@ class ProfileStage extends ConsumerWidget {
 }
 
 /// 舞台上昵称旁的等级胶囊 "Lv.3". 可点时点击区域不小于 44px, 胶囊本身保持小号.
+///
+/// [level] 为 null 时显示 "等级" 和 "待接入" 标记.
 class LevelBadge extends StatelessWidget {
-  const new({super.key, required this.level, this.onTap});
+  const new({super.key, this.level, this.onTap});
 
-  final int level;
+  final int? level;
   final VoidCallback? onTap;
 
   @override
@@ -191,14 +209,27 @@ class LevelBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        child: Text(
-          'Lv.$level',
-          textScaler: TextScaler.noScaling,
-          style: eat.text.count.copyWith(color: palette.foreground),
-        ),
+        child: switch (level) {
+          final level? => Text(
+            'Lv.$level',
+            textScaler: TextScaler.noScaling,
+            style: eat.text.count.copyWith(color: palette.foreground),
+          ),
+          null => DefaultTextStyle.merge(
+            style: TextStyle(color: palette.foreground),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: EatSpace.s4,
+              children: [
+                Text('等级', style: eat.text.caption),
+                const PendingTag(),
+              ],
+            ),
+          ),
+        },
       ),
     );
-    final label = '等级 $level';
+    final label = level == null ? '等级，待接入' : '等级 $level';
     if (onTap == null) {
       return Semantics(
         label: label,
@@ -222,10 +253,18 @@ class LevelBadge extends StatelessWidget {
 
 /// 一项统计: 数字在上, 名称在下. 可点击的统计高度不小于 44px.
 class _Stat extends StatelessWidget {
-  const new({required this.label, required this.value, this.onTap});
+  const new({
+    required this.label,
+    required this.value,
+    required this.missing,
+    this.onTap,
+  });
 
   final String label;
   final int? value;
+
+  /// [value] 为 null 时读屏报告的状态, 如 "加载中", "未公开".
+  final String missing;
   final VoidCallback? onTap;
 
   @override
@@ -252,7 +291,7 @@ class _Stat extends StatelessWidget {
         ],
       ),
     );
-    final semantics = '$label ${value ?? '加载中'}';
+    final semantics = '$label ${value ?? missing}';
     if (onTap == null) {
       return Semantics(
         label: semantics,

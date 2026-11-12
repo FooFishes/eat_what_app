@@ -40,29 +40,43 @@ class HistoryApi {
   );
 }
 
-/// 足迹的一项. 按 [targetType] 只有 [food] 或 [restaurant] 其中之一.
+/// 足迹的一项 (`HistoryDtos.Item`). 按 [targetType] 只有 [food] 或 [restaurant] 其中之一.
+///
+/// 对象已删除时两者都为 null.
 @JsonSerializable(createToJson: false)
 class const BrowseItemDto({
   final String? targetType,
   final int? targetId,
   final int? viewedAt,
-  final BrowseTargetDto? food,
-  final BrowseTargetDto? restaurant,
+  final BrowseFoodDto? food,
+  final BrowseShopDto? restaurant,
 }) {
   factory BrowseItemDto.fromJson(Map<String, dynamic> json) =>
       _$BrowseItemDtoFromJson(json);
 }
 
-/// 足迹中菜或店的摘要. [likesCount] 只有菜有.
+/// 足迹中菜的摘要 (`HistoryDtos.Food`).
 @JsonSerializable(createToJson: false)
-class const BrowseTargetDto({
+class const BrowseFoodDto({
+  final int? id,
+  final int? restaurantId,
+  final String? name,
+  final List<String>? pictureUrls,
+  final int? likeCount,
+}) {
+  factory BrowseFoodDto.fromJson(Map<String, dynamic> json) =>
+      _$BrowseFoodDtoFromJson(json);
+}
+
+/// 足迹中店的摘要 (`HistoryDtos.Restaurant`). [pictureUrl] 是门头照.
+@JsonSerializable(createToJson: false)
+class const BrowseShopDto({
   final int? id,
   final String? name,
-  final List<String>? pictureUrl,
-  final int? likesCount,
+  final String? pictureUrl,
 }) {
-  factory BrowseTargetDto.fromJson(Map<String, dynamic> json) =>
-      _$BrowseTargetDtoFromJson(json);
+  factory BrowseShopDto.fromJson(Map<String, dynamic> json) =>
+      _$BrowseShopDtoFromJson(json);
 }
 
 @Riverpod(keepAlive: true)

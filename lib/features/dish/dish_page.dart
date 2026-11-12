@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
@@ -24,7 +25,6 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/photo_viewer.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
-import 'package:eat/design/widgets/taste_cloud.dart';
 import 'package:eat/data/comment/comment_repository.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
@@ -33,8 +33,6 @@ import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/dish/dish_providers.dart';
-import 'package:eat/features/dish/dish_topic.dart';
-import 'package:eat/features/dish/tag_panel.dart';
 import 'package:eat/features/system/comment_card.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
@@ -43,15 +41,15 @@ import 'package:eat/state/comments.dart';
 import 'package:eat/state/dish_interactions.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/shops.dart';
+import 'package:eat/state/social.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 编辑自己的菜品未实现, 页面缺少编辑入口. 实现编辑流程后为上传者本人显示编辑入口.
 /// 菜品详情页.
 ///
-/// - 舞台: 封面, 分类, 菜名, 价格.
-/// - 抽屉: 依次为店卡, 专题提示, 赞和导航, "大家怎么说", 上传者, "吃过的人说".
+/// - 舞台: 封面, 招牌标记和分类, 菜名, 价格.
+/// - 抽屉: 依次为店卡, 赞和导航, "大家怎么说", 上传者, 编辑和修改记录, "吃过的人说".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -106,7 +104,6 @@ class DishPage extends ConsumerWidget {
           sliver: SliverList.list(
             children: [
               _ShopCard(dish: dish),
-              DishTopicHint(dishId: dishId),
               const SizedBox(height: EatSpace.s16),
               _Actions(dish: dish),
               const SizedBox(height: 28),
@@ -121,6 +118,8 @@ class DishPage extends ConsumerWidget {
                 const RowListPlaceholder(count: 2),
               const SizedBox(height: 28),
               _Uploader(dish: dish),
+              const SizedBox(height: EatSpace.s16),
+              _EditActions(dish: dish),
               const SizedBox(height: 28),
               _Comments(dishId: dishId, focus: focusComment),
             ],
@@ -254,7 +253,7 @@ Future<void> _toggleFavorite(
 /// 菜品详情的舞台内容.
 ///
 /// - 右侧: 封面盘子, 点击查看大图.
-/// - 左下: 分类, 菜名, 价格.
+/// - 左下: 招牌标记和分类, 菜名, 价格.
 class _StageContent extends ConsumerWidget {
   const new({required this.dish});
 
@@ -270,6 +269,10 @@ class _StageContent extends ConsumerWidget {
     final lines = DishRules.stageLines(dish.name);
     final nameSize = layout.stageNameSize(lines);
     final price = DishRules.priceText(dish.price);
+    final kicker = [
+      if (dish.signature) '招牌',
+      ?dish.category?.label,
+    ].join(' · ');
     return LayoutBuilder(
       builder: (context, constraints) {
         final plate = layout.isWide
@@ -308,11 +311,11 @@ class _StageContent extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (dish.category case final category?)
+                      if (kicker.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Text(
-                            category.label,
+                            kicker,
                             style: eat.text.meta.copyWith(
                               fontWeight: FontWeight.w600,
                               color: palette.secondaryForeground,
@@ -356,10 +359,9 @@ class _StageContent extends ConsumerWidget {
   }
 }
 
-// TODO: 图库接口不返回拍摄者, 评论照片的作者昵称只能从已加载的评论中查找, 查找不到时不标注. 接口返回作者昵称后改为读取接口字段.
-/// 打开大图浏览: 上传者的照片在前, 评论中的照片在后.
+/// 打开大图浏览: 上传者的照片在前, 评论中的照片在后, 每张标注拍摄者.
 ///
-/// 评论照片的地址 30 秒后失效, 因此每次打开时重新请求图库, 不复用打开详情时的结果.
+/// 每次打开时请求图库, 以包含打开详情之后新发表的评论照片.
 /// 图库请求失败时只显示上传者的照片.
 Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
   var gallery = const <GalleryPhoto>[];
@@ -369,20 +371,14 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
     gallery = const [];
   }
   if (!context.mounted) return;
-  final known = {
-    for (final c
-        in ref
-                .read(dishCommentsProvider(dish.id, CommentSort.mostUseful))
-                .value
-                ?.items ??
-            const <Comment>[])
-      c.id: c.authorName,
-  };
+  final uploaderId = dish.uploaderId;
+  final uploader = uploaderId != null && ref.read(sessionProvider) is SignedIn
+      ? ref.read(userProfileProvider(uploaderId)).value?.nickname
+      : null;
   final photos = [
-    for (final url in dish.images)
-      ViewerPhoto(url: url, credit: dish.uploaderName),
+    for (final url in dish.images) ViewerPhoto(url: url, credit: uploader),
     for (final photo in gallery)
-      ViewerPhoto(url: photo.url, credit: known[photo.commentId]),
+      ViewerPhoto(url: photo.url, credit: photo.authorName),
   ];
   if (photos.isEmpty) return;
   await Navigator.of(context).push(PhotoViewer.route(photos: photos));
@@ -398,13 +394,9 @@ class _ShopCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.eat.colors;
     final shop = ref.watch(shopProvider(dish.shopId)).value;
-    final distance = ref.watch(
-      distanceToProvider(shop?.point ?? dish.shopPoint),
-    );
-    final hub =
-        ref.watch(hubNameProvider(shop?.hubId ?? dish.hubId)) ?? dish.hubName;
-    final address = shop?.address ?? dish.shopAddress;
-    final meta = [?distance, ?hub, ?address].join('  ');
+    final distance = ref.watch(distanceToProvider(shop?.point));
+    final hub = ref.watch(hubNameProvider(shop?.hubId));
+    final meta = [?distance, ?hub, ?shop?.address].join('  ');
     return EatListRow(
       leading: Container(
         width: EatSize.thumb,
@@ -435,7 +427,7 @@ class _Actions extends ConsumerWidget {
         ref.watch(dishInteractionsProvider.select((m) => m[dish.id])) ??
         DishInteraction.of(dish);
     final shop = ref.watch(shopProvider(dish.shopId)).value;
-    final point = shop?.point ?? dish.shopPoint;
+    final point = shop?.point;
     return Row(
       spacing: EatSpace.s10,
       children: [
@@ -486,83 +478,78 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-/// "大家怎么说": 按人数排序的口味标签, 末尾是 "+ 加标签".
+// TODO: 后端 v2 的口味是菜品自身的属性, 没有投票接口. 投票接口上线后恢复点词投票和加标签面板, 并去掉 "待接入".
+/// "大家怎么说": 菜品自身的口味, 由编辑者设置, 只读.
 ///
-/// 点击未打过的标签即打上, 点击已打过的标签则撤回.
-class _TasteSection extends ConsumerWidget {
+/// 点口味词投票和 "加标签" 保留入口, 标 "待接入", 点击不发请求.
+class _TasteSection extends StatelessWidget {
   const new({required this.dish});
 
   final Dish dish;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final eat = context.eat;
-    final tags = ref.watch(dishTagsOfProvider(dish.id));
-    final taste = (tags?.taste ?? dish.tasteTags)
-        .where((t) => t.count > 0)
-        .toList();
-    final add = EatChip.add(
-      '加标签',
-      onTap: () async {
-        if (!await guardAction(context, ref, Capability.tasteTag) ||
-            !context.mounted) {
-          return;
-        }
-        await showTagPanel(context, dishId: dish.id);
-      },
-    );
+    void pending() => showPending(context, PendingFeature.tasteVote);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: EatSpace.s8,
       children: [
         Semantics(header: true, child: Text('大家怎么说', style: eat.text.heading)),
-        // 口味词的外观是文字, 没有可点击的提示. 这行说明点击的结果.
-        if (taste.isNotEmpty)
+        if (dish.tags.isEmpty)
           Text(
-            '有同感就点选，再点一次取消',
-            style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
-          ),
-        if (taste.isEmpty) ...[
-          Text(
-            '还没有口味词，来加第一个',
+            '还没有标注口味，编辑菜品时可以添加',
             style: eat.text.body.copyWith(color: eat.colors.inkMuted),
           ),
-          add,
-        ] else
-          TasteCloud(
-            words: [
-              for (final t in taste)
-                TasteWord(label: t.name, count: t.count, selected: t.mine),
+        Wrap(
+          spacing: EatSpace.s8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final (i, taste) in dish.tags.indexed) ...[
+              if (i > 0)
+                ExcludeSemantics(
+                  child: Text(
+                    '·',
+                    style: eat.text.subhead.copyWith(
+                      color: eat.colors.inkMuted,
+                    ),
+                  ),
+                ),
+              EatTappable(
+                onTap: pending,
+                label: '${taste.label}，投票待接入',
+                focusShape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                builder: (context, _) => ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: EatSize.touch,
+                    minHeight: EatSize.touch,
+                  ),
+                  child: Center(
+                    widthFactor: 1,
+                    child: Text(
+                      taste.label,
+                      style: eat.text.subhead.copyWith(color: eat.colors.ink),
+                    ),
+                  ),
+                ),
+              ),
             ],
-            selectedLabel: '已选',
-            onTap: (i) async {
-              if (!await guardAction(context, ref, Capability.tasteTag)) return;
-              final failure = await ref
-                  .read(dishTagsOfProvider(dish.id).notifier)
-                  .toggleTaste(taste[i]);
-              if (failure != null && context.mounted) {
-                await reportActionFailure(
-                  context,
-                  ref,
-                  failure,
-                  capability: Capability.tasteTag,
-                  fallback: '加标签失败，请重试',
-                );
-              }
-            },
-            trailing: add,
-          ),
-        if (tags?.mine case final mine? when mine.isNotEmpty)
-          Text(
-            '我的标签：${mine.map((t) => t.name).join('、')}',
-            style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
-          ),
+            EatChip.add('加标签', onTap: pending),
+            const PendingTag(),
+          ],
+        ),
       ],
     );
   }
 }
 
+// TODO: 菜品响应没有上传者昵称, `/user/userInfo` 需要登录, 游客看到的上传者是 "同学". 后端在菜品响应中提供上传者摘要后改为读取接口字段.
 /// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明. 点击进入上传者主页.
+///
+/// 登录用户按 [Dish.uploaderId] 获取上传者资料. 游客不发请求, 资料未获取到时显示 "同学".
+/// 上传者账号已删除时显示 "已注销用户", 不能点.
 class _Uploader extends ConsumerWidget {
   const new({required this.dish});
 
@@ -571,7 +558,12 @@ class _Uploader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
-    final name = dish.uploaderName ?? '同学';
+    final id = dish.uploaderId;
+    final signedIn = ref.watch(sessionProvider.select((s) => s is SignedIn));
+    final profile = id != null && signedIn
+        ? ref.watch(userProfileProvider(id)).value
+        : null;
+    final name = id == null ? '已注销用户' : profile?.nickname ?? '同学';
     final created = dish.createdAt;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -580,15 +572,15 @@ class _Uploader extends ConsumerWidget {
         EatListRow(
           leading: EatAvatar(
             name: name,
-            color: StageColor
-                .values[(dish.uploaderId ?? 0) % StageColor.values.length],
+            color: StageColor.values[(id ?? 0) % StageColor.values.length],
+            image: networkImage(profile?.avatarUrl, width: EatSize.avatar),
           ),
           title: Text(name),
           lines: [
             if (created != null)
               Text('${TimeFormat.date(created, clock.now())}上传'),
           ],
-          onTap: switch (dish.authorId) {
+          onTap: switch (id) {
             final id? => () async {
               if (await guardAction(context, ref, Capability.viewProfile) &&
                   context.mounted) {
@@ -606,6 +598,42 @@ class _Uploader extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// "编辑" 和 "修改记录" 两个入口.
+///
+/// - 认证用户都能编辑任何一道菜, 未认证时点 "编辑" 弹拦截.
+/// - 修改记录公开, 游客也能看.
+class _EditActions extends ConsumerWidget {
+  const new({required this.dish});
+
+  final Dish dish;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Row(
+    spacing: EatSpace.s10,
+    children: [
+      Expanded(
+        child: EatButton.outline(
+          '编辑',
+          icon: EatIcons.edit,
+          onPressed: () async {
+            if (await guardAction(context, ref, Capability.editDish) &&
+                context.mounted) {
+              await context.push(Paths.dishEdit(dish.id), extra: dish);
+            }
+          },
+        ),
+      ),
+      Expanded(
+        child: EatButton.outline(
+          '修改记录',
+          icon: EatIcons.history,
+          onPressed: () => context.push(Paths.dishHistory(dish.id)),
+        ),
+      ),
+    ],
+  );
 }
 
 /// "吃过的人说" 评论区: 标题后跟评论条数, 右侧 "写一条". 显示最有用的 3 条, 其下为 "看全部 N 条".

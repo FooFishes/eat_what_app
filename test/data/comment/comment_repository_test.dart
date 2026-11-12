@@ -16,20 +16,19 @@ void main() {
     repo = container.read(commentRepositoryProvider);
   });
 
-  test('评论列表带排序和分页参数，带回总条数，照片按位置排好，时间读 ISO 字符串', () async {
+  test('评论列表带排序和分页参数，带回总条数、作者、赞过没有和回复数，时间读毫秒', () async {
     env.adapter.on('GET /foods/1/comments', [
       FakeAdapter.ok(
         commentPageJson(
           [
-            {
-              ...commentJson(id: 11),
-              'images': [
-                {'slot': 1, 'url': 'https://img.test/b.jpg'},
-                {'slot': 0, 'url': 'https://img.test/a.jpg'},
-                {'slot': 2, 'url': ''},
-              ],
-            },
-            {...commentJson(id: 12), 'gid': null},
+            commentJson(
+              id: 11,
+              authorId: 7,
+              liked: true,
+              replies: 4,
+              images: ['https://img.test/a.jpg', ''],
+            ),
+            {...commentJson(id: 12), 'author': null},
           ],
           total: 23,
           hasNext: true,
@@ -45,162 +44,137 @@ void main() {
     expect(page.page.hasNext, isTrue);
     final comment = page.page.items.single;
     expect(comment.id, 11);
-    expect(comment.authorName, '安安');
+    expect((comment.authorId, comment.authorName), (7, '安安'));
     expect(comment.isReply, isFalse);
-    expect(comment.rootGid, 'g-11');
+    expect(comment.liked, isTrue);
+    expect(comment.replyCount, 4);
     expect(comment.createdAt.isUtc, isFalse);
     expect(
       comment.createdAt.toUtc(),
       commentEpoch.subtract(const Duration(hours: 1)),
     );
-    expect(comment.images, [
-      'https://img.test/a.jpg',
-      'https://img.test/b.jpg',
-    ]);
+    expect(comment.images, ['https://img.test/a.jpg']);
   });
 
-  test('回复带所属评论和被回复的那条', () async {
+  test('"最有用" 按 HOT 请求', () async {
+    env.adapter.on('GET /foods/1/comments', [
+      FakeAdapter.ok(commentPageJson(const [])),
+    ]);
+
+    await repo.comments(1, sort: CommentSort.mostUseful);
+
+    expect(
+      env.adapter.sent('GET /foods/1/comments').single.query['sort'],
+      'HOT',
+    );
+  });
+
+  test('回复带所属评论和被回复的人；游客的赞过没有为空', () async {
     env.adapter.on('GET /comments/11/replies', [
-      FakeAdapter.ok(commentPageJson([replyJson(id: 21, replyTo: 'g-20')])),
+      FakeAdapter.ok(
+        commentPageJson([replyJson(id: 21, replyTo: '小林', liked: null)]),
+      ),
     ]);
 
     final reply = (await repo.replies(11)).page.items.single;
 
     expect(reply.isReply, isTrue);
-    expect(reply.rootGid, 'g-11');
-    expect(reply.replyToGid, 'g-20');
+    expect(reply.rootId, 11);
+    expect(reply.replyToName, '小林');
+    expect(reply.liked, isNull);
   });
 
-  test('发表评论带幂等键，文字去掉首尾空白，进入审核时标为待审', () async {
-    env.adapter.on('POST /foods/1/comments', [FakeAdapter.ok(acceptedJson())]);
+  test('发表评论不带幂等键，文字去掉首尾空白，返回新评论的 id', () async {
+    env.adapter.on('POST /foods/1/comments', [FakeAdapter.ok(createdJson())]);
 
     final posted = await repo.create(
       1,
       text: '  加了辣油更好吃 ',
       pictureKeys: ['comments/a.jpg'],
-      idempotencyKey: 'key-1',
     );
 
     final sent = env.adapter.sent('POST /foods/1/comments').single;
-    expect(sent.headers['Idempotency-Key'], 'key-1');
+    expect(sent.headers.containsKey('Idempotency-Key'), isFalse);
     expect(sent.body, {
       'text': '加了辣油更好吃',
       'pictureKeys': ['comments/a.jpg'],
     });
     expect(posted.id, 99);
-    expect(posted.pending, isTrue);
   });
 
-  test('回复只带文字和被回复的那条；直接公开时不算待审', () async {
+  test('回复只带文字和被回复的那条', () async {
     env.adapter.on('POST /foods/1/comments/11/replies', [
-      FakeAdapter.ok(acceptedJson(id: 30, status: 'APPROVED')),
+      FakeAdapter.ok(createdJson(id: 30)),
     ]);
 
-    final posted = await repo.reply(
-      1,
-      11,
-      text: '同意',
-      replyToId: 21,
-      idempotencyKey: 'key-2',
-    );
+    final posted = await repo.reply(1, 11, text: '同意', replyToId: 21);
 
     final sent = env.adapter.sent('POST /foods/1/comments/11/replies').single;
     expect(sent.body, {'text': '同意', 'replyToId': 21});
-    expect(sent.headers['Idempotency-Key'], 'key-2');
-    expect(posted.pending, isFalse);
+    expect(posted.id, 30);
   });
 
-  test('赞和取消赞分别用 PUT 和 DELETE，带幂等键，返回服务端计数', () async {
+  test('赞和取消赞分别用 PUT 和 DELETE，接口返回 null 也算成功', () async {
     env.adapter
-      ..on('PUT /comments/11/like', [
-        FakeAdapter.ok({'commentId': 11, 'liked': true, 'likesCount': 4}),
-      ])
-      ..on('DELETE /comments/11/like', [
-        FakeAdapter.ok({'commentId': 11, 'liked': false, 'likesCount': 3}),
-      ]);
+      ..on('PUT /comments/11/like', [FakeAdapter.ok(null)])
+      ..on('DELETE /comments/11/like', [FakeAdapter.ok(null)]);
 
-    final liked = await repo.setLiked(11, liked: true, idempotencyKey: 'a');
-    final unliked = await repo.setLiked(11, liked: false, idempotencyKey: 'b');
+    await repo.setLiked(11, liked: true);
+    await repo.setLiked(11, liked: false);
 
-    expect((liked.liked, liked.likes), (true, 4));
-    expect((unliked.liked, unliked.likes), (false, 3));
-    expect(
-      env.adapter
-          .sent('PUT /comments/11/like')
-          .single
-          .headers['Idempotency-Key'],
-      'a',
-    );
-    expect(
-      env.adapter
-          .sent('DELETE /comments/11/like')
-          .single
-          .headers['Idempotency-Key'],
-      'b',
-    );
+    expect(env.adapter.sent('PUT /comments/11/like'), hasLength(1));
+    expect(env.adapter.sent('DELETE /comments/11/like'), hasLength(1));
   });
 
-  test('删除带幂等键；失败时抛出原因', () async {
+  test('删除失败时抛出原因', () async {
     env.adapter.on('DELETE /comments/11', [
-      FakeAdapter.ok({'id': 11, 'state': 'DELETED'}),
+      FakeAdapter.ok(null),
       FakeAdapter.fail(20004),
     ]);
 
-    await repo.delete(11, idempotencyKey: 'del-1');
-    expect(
-      env.adapter.sent('DELETE /comments/11').single.headers['Idempotency-Key'],
-      'del-1',
-    );
+    await repo.delete(11);
     await expectLater(
-      repo.delete(11, idempotencyKey: 'del-2'),
+      repo.delete(11),
       throwsA(
         isA<AppFailure>().having((f) => f.kind, 'kind', FailureKind.forbidden),
       ),
     );
   });
 
-  test('我的评论带审核状态和未通过的原因', () async {
-    env.adapter.on('GET /comments/submissions/my', [
+  test('我的评论读 /comments/my，回复带所属评论，照片数取地址条数', () async {
+    env.adapter.on('GET /comments/my', [
       FakeAdapter.ok(
         commentPageJson([
-          submissionJson(id: 11, status: 'PENDING'),
-          submissionJson(
-            id: 12,
-            kind: 'REPLY',
-            status: 'REJECTED',
-            reason: '不是这道菜的实拍',
-          ),
-          submissionJson(id: 13, status: 'DELETED', text: null),
+          commentJson(id: 11, images: ['https://img.test/a.jpg']),
+          replyJson(id: 12, root: 11),
         ]),
       ),
     ]);
 
     final mine = (await repo.mine()).items;
 
-    expect(
-      [for (final c in mine) c.status],
-      [CommentStatus.pending, CommentStatus.rejected, CommentStatus.deleted],
-    );
-    expect(mine[1].isReply, isTrue);
-    expect(mine[1].reason, '不是这道菜的实拍');
-    expect(mine[2].text, '');
+    expect([for (final c in mine) c.id], [11, 12]);
+    expect((mine[0].isReply, mine[0].imageCount), (false, 1));
+    expect((mine[1].isReply, mine[1].rootId), (true, 11));
   });
 
-  test('图库只留下有地址的照片', () async {
+  test('图库只留下有地址的照片，并带拍摄者', () async {
     env.adapter.on('GET /foods/1/gallery', [
       FakeAdapter.ok(
         commentPageJson([
           {
             'commentId': 11,
-            'commentGid': 'g-11',
+            'slot': 0,
+            'url': 'https://img.test/a.jpg',
+            'author': authorJson('安安'),
             'createdAt': commentTime(),
-            'image': {'slot': 0, 'url': 'https://img.test/a.jpg'},
           },
           {
             'commentId': 12,
-            'commentGid': 'g-12',
+            'slot': 0,
+            'url': '',
+            'author': authorJson('阿哲'),
             'createdAt': commentTime(),
-            'image': {'slot': 0, 'url': ''},
           },
         ]),
       ),
@@ -210,5 +184,6 @@ void main() {
 
     expect(photos.single.commentId, 11);
     expect(photos.single.url, 'https://img.test/a.jpg');
+    expect(photos.single.authorName, '安安');
   });
 }

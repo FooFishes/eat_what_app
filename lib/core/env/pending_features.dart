@@ -6,4 +6,22 @@
 enum PendingFeature {
   /// "调整照片" 中的 "自动去掉背景". 后端尚未生成去背景的图片, 也不保存开关.
   removeBackground,
+
+  /// 校园专题和往期专题. 后端 v2 暂缓, 没有 `/topics/*`.
+  topics,
+
+  /// 我的标签和标签下的菜. 后端 v2 不提供 `/foods/tags/my*`.
+  myTags,
+
+  /// 给菜打口味标签、撤回和 "＋ 加标签". 后端 v2 的口味是菜品自身的属性, 没有投票接口.
+  tasteVote,
+
+  /// 等级与经验. 后端 v2 不提供 `/user/growth*`, 资料里也没有等级.
+  growth,
+
+  /// 注销账号. 后端 v2 不提供注销接口.
+  deleteAccount,
+
+  /// 设置里的 "个性化推荐" 开关. 后端 v2 删除了 `/user/recommendation-settings`.
+  personalizedRecommend,
 }

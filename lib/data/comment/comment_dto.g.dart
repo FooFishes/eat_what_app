@@ -6,68 +6,40 @@ part of 'comment_dto.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+CommentAuthorDto _$CommentAuthorDtoFromJson(Map<String, dynamic> json) =>
+    CommentAuthorDto(
+      id: (json['id'] as num?)?.toInt(),
+      displayName: json['displayName'] as String?,
+      avatar: json['avatar'] as String?,
+    );
+
 CommentDto _$CommentDtoFromJson(Map<String, dynamic> json) => CommentDto(
   id: (json['id'] as num?)?.toInt(),
-  gid: json['gid'] as String?,
-  revisionId: json['revisionId'] as String?,
-  kind: json['kind'] as String?,
   foodId: (json['foodId'] as num?)?.toInt(),
-  rootCommentGid: json['rootCommentGid'] as String?,
-  replyToGid: json['replyToGid'] as String?,
-  authorName: json['authorName'] as String?,
+  rootId: (json['rootId'] as num?)?.toInt(),
+  author: json['author'] == null
+      ? null
+      : CommentAuthorDto.fromJson(json['author'] as Map<String, dynamic>),
+  replyTo: json['replyTo'] == null
+      ? null
+      : CommentAuthorDto.fromJson(json['replyTo'] as Map<String, dynamic>),
   text: json['text'] as String?,
-  likesCount: (json['likesCount'] as num?)?.toInt(),
-  createdAt: json['createdAt'] as String?,
-  images: (json['images'] as List<dynamic>?)
-      ?.map((e) => CommentImageDto.fromJson(e as Map<String, dynamic>))
+  pictureUrls: (json['pictureUrls'] as List<dynamic>?)
+      ?.map((e) => e as String)
       .toList(),
+  likeCount: (json['likeCount'] as num?)?.toInt(),
+  replyCount: (json['replyCount'] as num?)?.toInt(),
+  isLiked: json['isLiked'] as bool?,
+  createdAt: (json['createdAt'] as num?)?.toInt(),
 );
-
-CommentImageDto _$CommentImageDtoFromJson(Map<String, dynamic> json) =>
-    CommentImageDto(
-      slot: (json['slot'] as num?)?.toInt(),
-      url: json['url'] as String?,
-      expiresInSeconds: (json['expiresInSeconds'] as num?)?.toInt(),
-    );
 
 GalleryImageDto _$GalleryImageDtoFromJson(Map<String, dynamic> json) =>
     GalleryImageDto(
       commentId: (json['commentId'] as num?)?.toInt(),
-      commentGid: json['commentGid'] as String?,
-      createdAt: json['createdAt'] as String?,
-      image: json['image'] == null
+      slot: (json['slot'] as num?)?.toInt(),
+      url: json['url'] as String?,
+      author: json['author'] == null
           ? null
-          : CommentImageDto.fromJson(json['image'] as Map<String, dynamic>),
-    );
-
-CommentAcceptedDto _$CommentAcceptedDtoFromJson(Map<String, dynamic> json) =>
-    CommentAcceptedDto(
-      id: (json['id'] as num?)?.toInt(),
-      commentGid: json['commentGid'] as String?,
-      revisionId: json['revisionId'] as String?,
-      moderationStatus: json['moderationStatus'] as String?,
-    );
-
-CommentSubmissionDto _$CommentSubmissionDtoFromJson(
-  Map<String, dynamic> json,
-) => CommentSubmissionDto(
-  id: (json['id'] as num?)?.toInt(),
-  gid: json['gid'] as String?,
-  revisionId: json['revisionId'] as String?,
-  kind: json['kind'] as String?,
-  foodId: (json['foodId'] as num?)?.toInt(),
-  moderationStatus: json['moderationStatus'] as String?,
-  reasonCode: json['reasonCode'] as String?,
-  reasonMessage: json['reasonMessage'] as String?,
-  text: json['text'] as String?,
-  imageCount: (json['imageCount'] as num?)?.toInt(),
-  createdAt: json['createdAt'] as String?,
-);
-
-CommentLikeDto _$CommentLikeDtoFromJson(Map<String, dynamic> json) =>
-    CommentLikeDto(
-      commentId: (json['commentId'] as num?)?.toInt(),
-      liked: json['liked'] as bool?,
-      likesCount: (json['likesCount'] as num?)?.toInt(),
-      authorLikesCount: (json['authorLikesCount'] as num?)?.toInt(),
+          : CommentAuthorDto.fromJson(json['author'] as Map<String, dynamic>),
+      createdAt: (json['createdAt'] as num?)?.toInt(),
     );

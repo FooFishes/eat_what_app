@@ -1,13 +1,9 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
-import 'package:eat/core/network/recovery_capability.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/common/convert.dart';
-import 'package:eat/data/sessions/session_rotation.dart';
 import 'package:eat/data/user/user_api.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/domain/models/paged.dart';
@@ -57,15 +53,17 @@ class UserRepository {
           ? dto.displayName!.trim()
           : '同学',
       avatarUrl: imageUrl(dto.avatar),
-      earnedLikes: dto.earnedLikes ?? 0,
-      fans: dto.fansCount ?? 0,
-      followings: dto.followingsCount ?? 0,
-      uploadedDishes: dto.uploadedFoodsCount ?? 0,
+      signature: switch (dto.signature?.trim()) {
+        final text? when text.isNotEmpty => text,
+        _ => null,
+      },
+      fans: dto.fansCount,
+      followings: dto.followingsCount,
       fansVisible: dto.fansVisible ?? false,
       followingsVisible: dto.followingsVisible ?? false,
       followsMe: dto.isFollowingMe ?? false,
       followedByMe: dto.isFollowingHim ?? false,
-      level: dto.level,
+      blocked: dto.blocked ?? false,
     );
   }
 
@@ -143,60 +141,31 @@ class UserRepository {
   Future<void> setPersonalized({required bool personalized}) =>
       _api.setPersonalized(personalized: personalized);
 
-  /// 开始换绑到 [mobile], 返回换绑的命令. 新号码已注册过其他账号时失败.
-  Future<MobileChange> startMobileChange(String mobile) async {
-    final dto = await _api.prepareMobileChange(
-      commandId: newIdempotencyKey(),
-      mobile: mobile,
-    );
-    final id = dto.commandId;
-    if (id == null) {
-      throw const AppFailure(FailureKind.unknown, serverMessage: 'no command');
-    }
-    return MobileChange(
-      commandId: id,
-      mobile: mobile,
-      oldProofRequired: dto.oldProofRequired ?? true,
-    );
-  }
+  /// 换绑第一步: 给当前绑定的号码发验证码.
+  Future<void> sendOldMobileCode(CaptchaTicket? ticket) =>
+      _api.sendOldMobileCode(captchaHeaders: ticket?.headers ?? const {});
 
-  /// 给新手机 ([oldPhone] 为 false) 或旧手机发验证码.
-  Future<void> sendMobileChangeCode(
-    MobileChange change, {
-    required bool oldPhone,
+  /// 换绑第二步: 给新号码 [mobile] 发验证码. [oldCode] 是旧号码收到的验证码, 已验证过时为 null.
+  Future<void> sendNewMobileCode(
+    String mobile, {
+    String? oldCode,
     CaptchaTicket? ticket,
-  }) => _api.sendMobileChangeCode(
-    change.commandId,
-    type: oldPhone ? 'OLD_PHONE' : 'NEW_PHONE',
+  }) => _api.sendNewMobileCode(
+    oldCode: oldCode,
+    mobile: mobile,
     captchaHeaders: ticket?.headers ?? const {},
   );
 
-  /// 提交换绑. 成功后本机的会话会换发, 返回换发的结果.
-  Future<Rotation> commitMobileChange(
-    MobileChange change, {
-    required String newCode,
-    String? oldCode,
-    String? password,
-  }) async {
-    final capability = newRecoveryCapability();
-    final committed = await _api.commitMobileChange(
-      change.commandId,
-      newCode: newCode,
-      oldCode: oldCode,
-      password: password,
-      recoveryCapability: capability,
-    );
-    if (rotationOf(committed.replacement) case final ready?) return ready;
-    if (committed.currentDevice == 'REAUTHENTICATION_REQUIRED') {
-      return const RotationNeedsSignIn();
-    }
-    return awaitRotation(
-      () => _api.resumeMobileChange(
-        change.commandId,
-        recoveryCapability: capability,
-      ),
-    );
-  }
+  /// 换绑第三步: 提交新号码和它的验证码. 本机的会话不变.
+  Future<void> commitMobileChange(String mobile, String code) =>
+      _api.commitMobileChange(mobile: mobile, code: code);
+
+  /// 补绑手机: 给 [mobile] 发验证码. 只用于还没有手机号的账号.
+  Future<void> sendBindCode(String mobile, CaptchaTicket? ticket) =>
+      _api.sendBindCode(mobile, captchaHeaders: ticket?.headers ?? const {});
+
+  Future<void> bindMobile(String mobile, String code) =>
+      _api.bindMobile(mobile: mobile, code: code);
 
   Paged<UserBrief> _briefs(Paged<FansDto> page) => Paged(
     items: [
@@ -229,14 +198,10 @@ class UserRepository {
     verified: dto.verified ?? false,
     verifyMethod: switch (dto.method) {
       'sso' => VerifyMethod.sso,
-      'school_email' => VerifyMethod.schoolEmail,
+      'email' => VerifyMethod.schoolEmail,
       _ => null,
     },
     verifiedEmail: dto.verifiedEmail,
-    banned: dto.banned ?? false,
-    banReason: dto.banReason?.isNotEmpty == true ? dto.banReason : null,
-    bannedAt: dateFromMillis(dto.bannedAt),
-    banUntil: dateFromMillis(dto.banUntil),
   );
 }
 

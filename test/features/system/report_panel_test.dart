@@ -57,17 +57,14 @@ void main() {
       'reason': 'ADVERTISING',
       'note': '店家的二维码',
     });
-    expect(
-      sent.headers['Idempotency-Key'],
-      matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-')),
-    );
+    expect(sent.headers.containsKey('Idempotency-Key'), isFalse);
     expect(find.text('举报这道菜'), findsNothing);
     expect(find.text('已提交，处理结果会通过消息通知你'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 
-  testWidgets('换了原因再提交时用新的请求编号', (tester) async {
+  testWidgets('提交失败时面板保留，换了原因可以再提交', (tester) async {
     env.adapter.on('POST /feedback/reports', [
       const FakeResponse.offline(),
       FakeAdapter.ok({'id': 3, 'duplicate': false}),
@@ -90,11 +87,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final sent = env.adapter.sent('POST /feedback/reports').toList();
+    expect(sent, hasLength(2));
     expect(sent.last.body, containsPair('reason', 'OTHER'));
-    expect(
-      sent.last.headers['Idempotency-Key'],
-      isNot(sent.first.headers['Idempotency-Key']),
-    );
+    expect(find.text('已提交，处理结果会通过消息通知你'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

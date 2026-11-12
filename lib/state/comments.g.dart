@@ -59,7 +59,7 @@ final class DishCommentsProvider
   }
 }
 
-String _$dishCommentsHash() => r'faf5cb0db26a9aec5d4d7afdd79bd56d87341312';
+String _$dishCommentsHash() => r'a7a6cc77d6320ee42700d6b34e96939b453ef7e1';
 
 /// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
 ///
@@ -120,15 +120,15 @@ abstract class _$DishComments extends $AsyncNotifier<CommentList> {
   }
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+/// 一条评论下的回复, 每页 20 条, 按时间正序.
 
 @ProviderFor(CommentReplies)
 final commentRepliesProvider = CommentRepliesFamily._();
 
-/// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+/// 一条评论下的回复, 每页 20 条, 按时间正序.
 final class CommentRepliesProvider
     extends $AsyncNotifierProvider<CommentReplies, CommentList> {
-  /// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+  /// 一条评论下的回复, 每页 20 条, 按时间正序.
   CommentRepliesProvider._({
     required CommentRepliesFamily super.from,
     required int super.argument,
@@ -167,7 +167,7 @@ final class CommentRepliesProvider
 
 String _$commentRepliesHash() => r'9cb593f31113c0f0312050d0dc66f1fb5949f31b';
 
-/// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+/// 一条评论下的回复, 每页 20 条, 按时间正序.
 
 final class CommentRepliesFamily extends $Family
     with
@@ -187,7 +187,7 @@ final class CommentRepliesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+  /// 一条评论下的回复, 每页 20 条, 按时间正序.
 
   CommentRepliesProvider call(int commentId) =>
       CommentRepliesProvider._(argument: commentId, from: this);
@@ -196,7 +196,7 @@ final class CommentRepliesFamily extends $Family
   String toString() => r'commentRepliesProvider';
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间倒序加载. 显示时由 `CommentRules.chronological` 排成正序.
+/// 一条评论下的回复, 每页 20 条, 按时间正序.
 
 abstract class _$CommentReplies extends $AsyncNotifier<CommentList> {
   late final _$args = ref.$arg as int;
@@ -219,15 +219,15 @@ abstract class _$CommentReplies extends $AsyncNotifier<CommentList> {
   }
 }
 
-/// 删除评论和回复. 删除成功后从已加载的各个列表中移除该条目, 并刷新 "我的评论".
+/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
 
 @ProviderFor(CommentWriter)
 final commentWriterProvider = CommentWriterProvider._();
 
-/// 删除评论和回复. 删除成功后从已加载的各个列表中移除该条目, 并刷新 "我的评论".
+/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
 final class CommentWriterProvider
     extends $NotifierProvider<CommentWriter, void> {
-  /// 删除评论和回复. 删除成功后从已加载的各个列表中移除该条目, 并刷新 "我的评论".
+  /// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
   CommentWriterProvider._()
     : super(
         from: null,
@@ -255,9 +255,9 @@ final class CommentWriterProvider
   }
 }
 
-String _$commentWriterHash() => r'eaa7da69fa2134f86e39fe3ddb2c36eb5e27fc02';
+String _$commentWriterHash() => r'bb4ed516ccf84b9f76dc6cc4d4b98a7105e790f5';
 
-/// 删除评论和回复. 删除成功后从已加载的各个列表中移除该条目, 并刷新 "我的评论".
+/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
 
 abstract class _$CommentWriter extends $Notifier<void> {
   void build();
@@ -275,100 +275,6 @@ abstract class _$CommentWriter extends $Notifier<void> {
             >;
     return element.handleCreate(ref, build);
   }
-}
-
-/// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-///
-/// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-
-@ProviderFor(commentLikeOf)
-final commentLikeOfProvider = CommentLikeOfFamily._();
-
-/// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-///
-/// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-
-final class CommentLikeOfProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<CommentLike?>,
-          CommentLike?,
-          FutureOr<CommentLike?>
-        >
-    with $FutureModifier<CommentLike?>, $FutureProvider<CommentLike?> {
-  /// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-  ///
-  /// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-  CommentLikeOfProvider._({
-    required CommentLikeOfFamily super.from,
-    required int super.argument,
-  }) : super(
-         retry: null,
-         name: r'commentLikeOfProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$commentLikeOfHash();
-
-  @override
-  String toString() {
-    return r'commentLikeOfProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<CommentLike?> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<CommentLike?> create(Ref ref) {
-    final argument = this.argument as int;
-    return commentLikeOf(ref, argument);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is CommentLikeOfProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$commentLikeOfHash() => r'ad50778f99269107dfcc09f2b79c78983464399e';
-
-/// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-///
-/// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-
-final class CommentLikeOfFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<CommentLike?>, int> {
-  CommentLikeOfFamily._()
-    : super(
-        retry: null,
-        name: r'commentLikeOfProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// 当前用户对 [commentId] 的赞. 未登录, 封禁中或请求失败时为 null, 界面按未赞过显示列表中的赞数.
-  ///
-  /// 受限会话不能调用查询赞的接口, 调用会返回无权限并触发账号状态刷新, 因此封禁中不请求.
-
-  CommentLikeOfProvider call(int commentId) =>
-      CommentLikeOfProvider._(argument: commentId, from: this);
-
-  @override
-  String toString() => r'commentLikeOfProvider';
 }
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
@@ -413,7 +319,7 @@ final class CommentLikesProvider
   }
 }
 
-String _$commentLikesHash() => r'94e51e9510009f05991aa9d53d8ab432221efdb6';
+String _$commentLikesHash() => r'502070c72b7917ca2bb424bfdf666aadb8c3b754';
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
 ///
@@ -437,77 +343,19 @@ abstract class _$CommentLikes extends $Notifier<Map<int, CommentLike>> {
   }
 }
 
-/// 当前用户写过的评论和回复的 id, 用于在 "更多" 中显示 "删除" 还是 "举报".
-///
-/// 取 "我的评论" 最近 100 条. 本次启动后发表的评论在发表成功时加入.
-
-@ProviderFor(MyCommentIds)
-final myCommentIdsProvider = MyCommentIdsProvider._();
-
-/// 当前用户写过的评论和回复的 id, 用于在 "更多" 中显示 "删除" 还是 "举报".
-///
-/// 取 "我的评论" 最近 100 条. 本次启动后发表的评论在发表成功时加入.
-final class MyCommentIdsProvider
-    extends $AsyncNotifierProvider<MyCommentIds, Set<int>> {
-  /// 当前用户写过的评论和回复的 id, 用于在 "更多" 中显示 "删除" 还是 "举报".
-  ///
-  /// 取 "我的评论" 最近 100 条. 本次启动后发表的评论在发表成功时加入.
-  MyCommentIdsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'myCommentIdsProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$myCommentIdsHash();
-
-  @$internal
-  @override
-  MyCommentIds create() => MyCommentIds();
-}
-
-String _$myCommentIdsHash() => r'1c68b1ab8574092688a7a8746d98f34ec94e955f';
-
-/// 当前用户写过的评论和回复的 id, 用于在 "更多" 中显示 "删除" 还是 "举报".
-///
-/// 取 "我的评论" 最近 100 条. 本次启动后发表的评论在发表成功时加入.
-
-abstract class _$MyCommentIds extends $AsyncNotifier<Set<int>> {
-  FutureOr<Set<int>> build();
-  @$mustCallSuper
-  @override
-  WhenComplete runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<Set<int>>, Set<int>>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<AsyncValue<Set<int>>, Set<int>>,
-              AsyncValue<Set<int>>,
-              Object?,
-              Object?
-            >;
-    return element.handleCreate(ref, build);
-  }
-}
-
-/// "我的" 中的评论分栏: 我写过的评论和回复, 不含已删除和被新版本取代的.
+/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
 ///
 /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
 
 @ProviderFor(MyComments)
 final myCommentsProvider = MyCommentsProvider._();
 
-/// "我的" 中的评论分栏: 我写过的评论和回复, 不含已删除和被新版本取代的.
+/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
 ///
 /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
 final class MyCommentsProvider
     extends $AsyncNotifierProvider<MyComments, CommentFeed> {
-  /// "我的" 中的评论分栏: 我写过的评论和回复, 不含已删除和被新版本取代的.
+  /// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
   ///
   /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
   MyCommentsProvider._()
@@ -529,9 +377,9 @@ final class MyCommentsProvider
   MyComments create() => MyComments();
 }
 
-String _$myCommentsHash() => r'e818efaaa17f94f3dccb49eb2fb8c620b9d2423e';
+String _$myCommentsHash() => r'f51ca02a6bda79a7668712e1c080c9a62be253e3';
 
-/// "我的" 中的评论分栏: 我写过的评论和回复, 不含已删除和被新版本取代的.
+/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
 ///
 /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
 

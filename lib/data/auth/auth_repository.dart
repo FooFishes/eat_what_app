@@ -1,10 +1,8 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/data/auth/auth_api.dart';
 import 'package:eat/data/auth/auth_dto.dart';
-import 'package:eat/data/consent/consent_api.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,21 +11,16 @@ part 'auth_repository.g.dart';
 /// 登录成功的结果: 会话凭证, 以及本次是否为新号码自动注册.
 class const SignInResult({
   required final AuthToken token,
-  required final bool newUser,
-
-  /// 封禁账号登录得到的受限会话. 账号状态仍以 `/user/info` 的 `banned` 为准.
-  final bool restricted = false,
+  final bool newUser = false,
 });
 
 /// 登录, 发送验证码, 学生认证, 设置用户名和密码.
 ///
-/// 数据跨境同意由用户确认, 本类不代替用户同意.
-/// 登录需要同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure], 临时凭证用 [consentProofOf] 读取.
+/// 隐私政策由用户确认, 本类不代替用户同意. 登录请求携带调用方给出的政策版本.
 class AuthRepository {
-  AuthRepository(this._auth, this._consent);
+  AuthRepository(this._auth);
 
   final AuthApi _auth;
-  final ConsentApi _consent;
 
   static String get _device => kIsWeb ? 'WEB' : 'APP';
 
@@ -60,38 +53,40 @@ class AuthRepository {
 
   /// 验证码登录. 新号码在此步自动注册.
   ///
-  /// [crossBorderConsent] 为 true 表示用户已在同意对话框中同意, 请求携带同意和政策版本.
-  /// 注册新号码时必须携带, 否则服务端返回不带临时凭证的 [BizCodes.consentRequired].
+  /// [policyVersion] 是用户同意的隐私政策版本, 服务端还没发布政策时为 null.
+  /// 服务端在核销验证码之前校验同意, 因此收到要求同意的业务码时可以用同一个验证码重试.
   Future<SignInResult> loginWithCode(
     String mobile,
     String code, {
-    bool crossBorderConsent = false,
-  }) async {
-    final version = crossBorderConsent ? await _policyVersionOrNull() : null;
-    return _login(
-      () => _auth.phoneLogin(
-        PhoneLoginRequestDto(
-          mobile: mobile,
-          code: code,
-          device: _device,
-          crossBorderConsent: version == null ? null : true,
-          consentPolicyVersion: version,
-        ),
+    String? policyVersion,
+  }) async => _resultOf(
+    await _auth.phoneLogin(
+      PhoneLoginRequestDto(
+        mobile: mobile,
+        code: code,
+        device: _device,
+        policyVersion: policyVersion,
       ),
-    );
-  }
+    ),
+  );
 
-  /// [account] 为手机号, 用户名或邮箱.
-  Future<SignInResult> loginWithPassword(String account, String password) =>
-      _login(
-        () => _auth.passwordLogin(
-          PasswordLoginRequestDto(
-            userName: account,
-            password: password,
-            device: _device,
-          ),
-        ),
-      );
+  /// [account] 为手机号, 用户名或邮箱. [ticket] 是人机验证的票据, 服务端要求时才需要.
+  Future<SignInResult> loginWithPassword(
+    String account,
+    String password, {
+    String? policyVersion,
+    CaptchaTicket? ticket,
+  }) async => _resultOf(
+    await _auth.passwordLogin(
+      PasswordLoginRequestDto(
+        userName: account,
+        password: password,
+        device: _device,
+        policyVersion: policyVersion,
+      ),
+      captchaHeaders: ticket?.headers ?? const {},
+    ),
+  );
 
   /// 退出登录时通知服务端. 通知失败不影响退出, 因此不抛出异常.
   Future<void> logout() async {
@@ -112,8 +107,14 @@ class AuthRepository {
     return uri;
   }
 
+  /// 用统一认证回跳地址中的 [ticket] 完成认证.
+  Future<void> confirmSso(String ticket) => _auth.confirmSso(ticket);
+
   Future<void> sendVerifyEmail(String email, CaptchaTicket? ticket) =>
       _auth.sendVerifyEmail(email, captchaHeaders: ticket?.headers ?? const {});
+
+  /// 用认证邮件链接中的 [token] 完成邮箱认证.
+  Future<void> verifyEmail(String token) => _auth.verifyEmail(token);
 
   Future<void> checkUsername(String userName) => _auth.checkUsername(userName);
 
@@ -129,64 +130,25 @@ class AuthRepository {
   Future<void> changePassword(String oldPassword, String newPassword) =>
       _auth.changePassword(oldPassword: oldPassword, newPassword: newPassword);
 
-  /// 首次设置用户名, 可同时设置初始密码. 成功后本机和其他设备都要重新登录.
+  /// 首次设置用户名, 可同时设置初始密码. 本机保持登录, 同时设置密码时其他设备要重新登录.
   Future<void> setUsername(String userName, String code, {String? password}) =>
       _auth.setUsername(userName: userName, code: code, newPassword: password);
 
-  /// 读取政策版本. 网络错误向上抛出, 其余失败返回 null.
-  ///
-  /// 部分部署没有注册同意接口. 读取失败时登录请求不带同意参数.
-  Future<String?> _policyVersionOrNull() async {
-    try {
-      return await _consent.policyVersion();
-    } on AppFailure catch (e) {
-      if (e.kind == FailureKind.network) rethrow;
-      return null;
-    }
-  }
-
-  /// 发送登录请求. 只返回临时凭证 `consentProof` 时不算成功.
-  ///
-  /// 服务端要求同意时通常返回业务码 [BizCodes.consentRequired], 凭证在失败的 `data` 中.
-  /// 成功外壳中只带凭证的响应也转换为同一种失败, 页面只需处理一种情况.
-  Future<SignInResult> _login(Future<LoginReplyDto> Function() send) async {
-    final reply = await send();
-    if (_resultOf(reply) case final result?) return result;
-    if (reply.consentProof case final proof? when proof.isNotEmpty) {
-      throw AppFailure.fromCode(
-        BizCodes.consentRequired,
-        data: {'consentProof': proof},
-      );
-    }
-    throw const AppFailure(FailureKind.unknown, serverMessage: 'no token');
-  }
-
-  static SignInResult? _resultOf(LoginReplyDto reply) {
+  static SignInResult _resultOf(LoginReplyDto reply) {
     final LoginReplyDto(:tokenName, :tokenValue) = reply;
-    if (tokenName == null || tokenName.isEmpty) return null;
-    if (tokenValue == null || tokenValue.isEmpty) return null;
+    if (tokenName == null ||
+        tokenName.isEmpty ||
+        tokenValue == null ||
+        tokenValue.isEmpty) {
+      throw const AppFailure(FailureKind.unknown, serverMessage: 'no token');
+    }
     return SignInResult(
       token: AuthToken(name: tokenName, value: tokenValue),
       newUser: reply.newUser ?? false,
-      restricted: reply.restricted ?? false,
     );
   }
 }
 
-/// 登录要求同意时服务端给出的临时凭证. 只用于提交同意, 不是登录凭证.
-///
-/// 不是要求同意的失败, 或没有凭证时返回 null.
-/// 注册新号码时服务端不发凭证, 用户同意后需在注册请求中携带同意.
-String? consentProofOf(AppFailure failure) => switch (failure) {
-  AppFailure(
-    code: BizCodes.consentRequired,
-    data: {'consentProof': final String proof},
-  )
-      when proof.isNotEmpty =>
-    proof,
-  _ => null,
-};
-
 @Riverpod(keepAlive: true)
 AuthRepository authRepository(Ref ref) =>
-    AuthRepository(ref.watch(authApiProvider), ref.watch(consentApiProvider));
+    AuthRepository(ref.watch(authApiProvider));

@@ -17,7 +17,7 @@ void main() {
 
   setUp(() => env = TestEnv());
 
-  testWidgets('「我的」上有编辑资料、我的标签和足迹的入口', (tester) async {
+  testWidgets('「我的」上有编辑资料、我的标签和足迹的入口，我的标签待接入', (tester) async {
     env.adapter.on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
     await pumpApp(
       tester,
@@ -26,12 +26,13 @@ void main() {
       location: Paths.me,
     );
 
+    expect(find.text('待接入'), findsWidgets);
     await tester.tap(find.text('我的标签'));
     await tester.pumpAndSettle();
-    expect(find.byType(MyTagsPage), findsOneWidget);
-    expect(find.text('认证后才能加标签'), findsOneWidget);
+    expect(find.byType(MyTagsPage), findsNothing);
+    expect(find.text('该功能即将上线'), findsOneWidget);
     expect(env.adapter.sent('GET /foods/tags/my'), isEmpty);
-    await tester.tap(find.bySemanticsLabel('返回'));
+    await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('足迹'));
@@ -191,7 +192,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('足迹：菜和店分栏，清空当前分栏', (tester) async {
+  testWidgets('足迹：菜和店分栏，菜带赞数，店带门头照，清空当前分栏', (tester) async {
     final viewed = DateTime.now()
         .subtract(const Duration(minutes: 12))
         .millisecondsSinceEpoch;
@@ -205,11 +206,27 @@ void main() {
               'viewedAt': viewed,
               'food': {
                 'id': 1,
+                'restaurantId': 7,
                 'name': '柳州螺蛳粉',
-                'pictureUrl': <String>[],
-                'likesCount': 96,
+                'pictureUrls': <String>[],
+                'likeCount': 96,
               },
               'restaurant': null,
+            },
+          ]),
+        ),
+        FakeAdapter.ok(
+          pageJson([
+            {
+              'targetType': 'restaurant',
+              'targetId': 7,
+              'viewedAt': viewed,
+              'food': null,
+              'restaurant': {
+                'id': 7,
+                'name': '袁记云饺',
+                'pictureUrl': 'https://img.test/shops/7.jpg',
+              },
             },
           ]),
         ),
@@ -223,6 +240,7 @@ void main() {
     );
 
     expect(find.text('柳州螺蛳粉'), findsOneWidget);
+    expect(find.textContaining('96', findRichText: true), findsOneWidget);
     expect(find.text('12 分钟前'), findsOneWidget);
     expect(
       env.adapter.sent('GET /history/browse').single.query['targetType'],
@@ -240,5 +258,15 @@ void main() {
       'food',
     );
     expect(find.text('还没看过菜'), findsOneWidget);
+
+    // 切换分栏触发的请求在当前帧之后发出. 单独调用 pumpAndSettle 时, 断言执行前该请求尚未发出.
+    await tester.tap(find.text('店'));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('GET /history/browse').last.query['targetType'],
+      'restaurant',
+    );
+    expect(find.text('袁记云饺'), findsOneWidget);
   });
 }

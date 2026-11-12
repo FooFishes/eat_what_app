@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
+import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/design/icons/eat_icon.dart';
@@ -13,7 +15,6 @@ import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
-import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
@@ -26,18 +27,19 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
-import 'package:eat/domain/models/dish.dart';
-import 'package:eat/domain/models/topic.dart';
+import 'package:eat/domain/models/meal_time.dart';
+import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
-import 'package:eat/domain/rules/topic_rules.dart';
+import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
+import 'package:eat/state/shops.dart';
 import 'package:eat/state/unread_count.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,9 +47,10 @@ import 'package:go_router/go_router.dart';
 
 /// 发现页.
 ///
-/// - 舞台: 转盘. 拖动或点击 "换一个" 切换菜品, 点击 "就它了" 进入菜品详情.
-/// - 抽屉: 分类栏和两列推荐流. 有当期专题时, 专题紧跟 "今日推荐" 出现在分类栏中.
-/// - 顶栏: 左侧为地点和饭点, 右侧为搜索和消息.
+/// - 舞台: 转盘, 一格一家推荐的美食店. 拖动或点击 "换一个" 切换, 点击 "就它了" 进入餐厅详情.
+///   "更多" 里可以选 "不想去这家".
+/// - 抽屉: 分类栏 ("美食" "甜点饮品" 和待接入的专题) 和推荐店列表. 分类栏只影响列表, 不影响转盘.
+/// - 顶栏: 左侧为地点, 饭点和场景, 右侧为搜索和消息.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -56,10 +59,8 @@ class DiscoverPage extends ConsumerStatefulWidget {
 }
 
 class _DiscoverPageState extends ConsumerState<DiscoverPage> {
-  DishCategory? _category;
-
-  /// 分类栏选中了专题. 当期专题消失 (如切换到没有专题的校区) 时按 "今日推荐" 显示.
-  var _topicSelected = false;
+  /// 抽屉列表的类型.
+  var _kind = ShopKind.food;
   late final AppLifecycleListener _lifecycle;
   var _staleNoticed = false;
   var _explaining = false;
@@ -74,7 +75,6 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       onResume: () {
         ref.read(unreadCountProvider.notifier).refresh();
         ref.invalidate(currentPlaceProvider);
-        ref.invalidate(currentTopicProvider);
       },
     );
     _scheduleMealChange();
@@ -153,7 +153,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     final current = feed?.current;
     final colors = feed == null
         ? const <StageColor>[]
-        : DishRules.turntableColors(feed.dishes);
+        : turntableColors(feed.shops);
     final stage = current == null ? StageColor.broth : colors[feed!.index];
     ref.listen(turntableQueueProvider, (_, next) {
       if (next.value?.stale == true && !_staleNoticed) {
@@ -175,24 +175,19 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent = const StagePlaceholder();
     }
 
-    final topic = ref.watch(currentTopicProvider).value;
-    final topicShown = _topicSelected && topic != null;
-    final shelfStart = topic == null ? 1 : 2;
     final tabs = EatTabs(
       tabs: [
-        const EatTabItem('今日推荐'),
-        if (topic != null) EatTabItem(topic.name, icon: EatIcons.topic),
-        for (final category in DishCategory.shelf) EatTabItem(category.label),
+        for (final kind in ShopKind.values) EatTabItem(kind.label),
+        const EatTabItem('专题', icon: EatIcons.topic, pending: true),
       ],
-      selected: topicShown
-          ? 1
-          : _category == null
-          ? 0
-          : DishCategory.shelf.indexOf(_category!) + shelfStart,
-      onSelected: (i) => setState(() {
-        _topicSelected = topic != null && i == 1;
-        _category = i < shelfStart ? null : DishCategory.shelf[i - shelfStart];
-      }),
+      selected: ShopKind.values.indexOf(_kind),
+      onSelected: (i) {
+        if (i >= ShopKind.values.length) {
+          showPending(context, PendingFeature.topics);
+          return;
+        }
+        setState(() => _kind = ShopKind.values[i]);
+      },
       padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
     );
 
@@ -200,44 +195,35 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stage: stage,
       topBar: const _TopBar(),
       stageContent: stageContent,
-      // 分类栏滚动到顶栏下方后固定显示. 浏览推荐流的任意位置都可以切换分类.
+      // 分类栏滚动到顶栏下方后固定显示. 浏览列表的任意位置都可以切换分类.
       pinnedBottom: tabs,
-      onRefresh: () => _refresh(topicShown ? topic : null),
+      onRefresh: _refresh,
       sheetSlivers: [
         SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-          sliver: topicShown
-              ? _TopicList(topic: topic)
-              : _DishList(category: _category),
+          sliver: _ShopList(kind: _kind),
         ),
       ],
     );
   }
 
-  /// 下拉刷新: 重新请求抽屉里当前这一栏, 当期专题和未读数.
+  /// 下拉刷新: 重新请求抽屉里当前这一栏和未读数.
   ///
-  /// 转盘上有菜时不重新请求转盘, 换菜由 "换一个" 完成.
+  /// 转盘上有店时不重新请求转盘, 换店由 "换一个" 完成.
   /// 转盘为空, 加载失败或显示上一次的批次时, 同时重新请求转盘.
-  Future<void> _refresh(Topic? shownTopic) async {
+  Future<void> _refresh() async {
     ref.read(unreadCountProvider.notifier).refresh();
-    ref.invalidate(currentTopicProvider);
     final queue = ref.read(turntableQueueProvider).value;
     if (queue?.current == null || queue!.stale) {
       _staleNoticed = false;
       ref.invalidate(turntableQueueProvider);
     }
     try {
-      if (shownTopic != null) {
-        final provider = discoverTopicProvider(shownTopic.id);
-        ref.invalidate(provider);
-        await ref.read(provider.future);
-      } else {
-        final provider = discoverListProvider(_category);
-        ref.invalidate(provider);
-        await ref.read(provider.future);
-      }
+      final provider = discoverShopsProvider(_kind);
+      ref.invalidate(provider);
+      await ref.read(provider.future);
     } on AppFailure catch (e) {
       if (mounted) showToast(context, e.message);
     }
@@ -246,7 +232,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 
 /// 舞台顶栏.
 ///
-/// - 左侧: 当前地点和饭点, 点击打开选择面板.
+/// - 左侧: 当前地点和饭点, 点外卖时后接 "· 外卖". 点击打开选择面板.
 /// - 右侧: 搜索和消息. 有未读消息时铃铛上显示圆点.
 class _TopBar extends ConsumerWidget {
   const new();
@@ -258,6 +244,7 @@ class _TopBar extends ConsumerWidget {
     final unread = ref.watch(unreadCountProvider).value ?? 0;
     final where = place.campus?.name ?? '软件园';
     final what = place.meal.label;
+    final delivery = place.scene == RatingScene.delivery;
     final strong = eat.text.subhead;
     final plain = strong.copyWith(fontWeight: FontWeight.w400);
     final dotBorder =
@@ -269,7 +256,9 @@ class _TopBar extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: EatTappable(
               onTap: () => _showPlacePanel(context, ref),
-              label: '在$where吃$what，切换地点和饭点',
+              label: delivery
+                  ? '在$where吃$what，点外卖，切换地点和饭点'
+                  : '在$where吃$what，切换地点和饭点',
               focusShape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
               ),
@@ -290,6 +279,7 @@ class _TopBar extends ConsumerWidget {
                               TextSpan(text: where),
                               TextSpan(text: ' 吃 ', style: strong),
                               TextSpan(text: what),
+                              if (delivery) const TextSpan(text: ' · 外卖'),
                             ],
                           ),
                           maxLines: 1,
@@ -344,7 +334,7 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// "地点和饭点" 面板: 校区和饭点两组单选, 另有 "按现在的时间" 选项.
+/// "在哪吃" 面板: 校区, 饭点, 去店里吃还是点外卖三组单选, 另有 "按现在的时间" 选项.
 ///
 /// 面板里的选择先暂存, 点击 "确定" 才生效; 直接关闭面板则不改动.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
@@ -362,6 +352,7 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
 
   /// 手动选择的饭点. 为 null 时按当前时间自动选择.
   late MealTime? _meal;
+  late RatingScene _scene;
 
   @override
   void initState() {
@@ -369,6 +360,7 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
     final place = ref.read(currentPlaceProvider);
     _campusId = place.campus?.id;
     _meal = place.autoMeal ? null : place.meal;
+    _scene = place.scene;
   }
 
   void _confirm() {
@@ -384,12 +376,12 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
         unawaited(notifier.selectMeal(meal));
       default:
     }
+    if (_scene != place.scene) unawaited(notifier.selectScene(_scene));
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final eat = context.eat;
     final campuses = ref.watch(campusesProvider).value ?? const [];
     final meal = _meal ?? MealRules.at(clock.now());
     return EatPanel(
@@ -418,21 +410,22 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
               selected: campus.id == _campusId,
               onSelected: () => setState(() => _campusId = campus.id),
             ),
-          Padding(
-            padding: const EdgeInsets.only(top: EatSpace.s20, bottom: 4),
-            child: Semantics(
-              header: true,
-              child: Text(
-                '吃哪顿？',
-                style: eat.text.heading.copyWith(color: eat.colors.ink),
-              ),
-            ),
-          ),
+          const _GroupTitle('吃哪顿？'),
           for (final m in MealTime.values)
             EatRadioRow(
               title: m.label,
               selected: m == meal,
               onSelected: () => setState(() => _meal = m),
+            ),
+          const _GroupTitle('怎么吃？'),
+          for (final scene in RatingScene.values)
+            EatRadioRow(
+              title: switch (scene) {
+                RatingScene.dineIn => '去店里吃',
+                RatingScene.delivery => '点外卖',
+              },
+              selected: scene == _scene,
+              onSelected: () => setState(() => _scene = scene),
             ),
         ],
       ),
@@ -440,33 +433,69 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
   }
 }
 
-/// 发现页舞台: 转盘, 菜名, 店名和距离, 价格, 批次圆点, 以及 "换一个" 和 "就它了" 按钮.
+/// 面板中一组单选的标题, 如 "吃哪顿？".
+class _GroupTitle extends StatelessWidget {
+  const new(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return Padding(
+      padding: const EdgeInsets.only(top: EatSpace.s20, bottom: 4),
+      child: Semantics(
+        header: true,
+        child: Text(
+          text,
+          style: eat.text.heading.copyWith(color: eat.colors.ink),
+        ),
+      ),
+    );
+  }
+}
+
+/// 发现页舞台: 转盘, 店名, 第一道招牌菜和价格, 距离 (或商圈) 和推荐率, 批次圆点,
+/// 以及 "换一个" "就它了" 和 "更多" 按钮.
+///
+/// 盘子依次放第一道招牌菜的照片, 门头照片, 都没有时是 `mist` 底. 招牌菜摘要不含封面取景, 按居中的短边内切圆显示.
 class _TurntableStage extends ConsumerWidget {
   const new({required this.feed});
 
   final TurntableFeed feed;
+
+  /// 手机上店名一行的最大宽度: 四个字的 40px 字号. 更宽时文字右端压到盘沿上.
+  static const _nameMaxWidth = 160.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final layout = EatLayout.of(context);
     final palette = StageTheme.of(context);
     final eat = context.eat;
-    final dish = feed.current!;
-    final place = ref.watch(currentPlaceProvider);
-    final me = ref.watch(currentLocationProvider.select((s) => s.point));
-    final distance = GeoRules.distanceLabel(
-      me: me,
-      target: dish.shopPoint,
-      campusCenter: place.campus?.center,
-    );
+    final shop = feed.current!;
+    final distance = ref.watch(distanceToProvider(shop.point));
+    final where = distance ?? shop.hubName;
+    final rate = ShopRules.rateOf(shop);
+    final signature = shop.signatures.firstOrNull;
+    final price = DishRules.priceText(signature?.price);
     final scale = layout.stageScale;
     final textScale = layout.stageTextScale;
     final batch = feed.batch;
     final queue = ref.read(turntableQueueProvider.notifier);
-    final price = DishRules.priceText(dish.price);
-    final lines = DishRules.stageLines(dish.name);
-    final nameSize = layout.stageNameSize(lines);
-    final where = [?dish.shopName, distance ?? dish.hubName].join('  ');
+    final lines = ShopRules.stageLines(shop.name);
+    final longest = lines.fold(0, (m, l) => math.max(m, l.runes.length));
+    final nameWidth = layout.isWide ? 260.0 : _nameMaxWidth * textScale;
+    final nameSize = math.min(
+      layout.stageNameSize(lines),
+      nameWidth / math.max(longest, 1),
+    );
+    final numberStyle = eat.text.count.copyWith(
+      fontSize: 16,
+      color: palette.foreground,
+    );
+    final metaStyle = eat.text.meta.copyWith(
+      color: palette.secondaryForeground,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -479,24 +508,24 @@ class _TurntableStage extends ConsumerWidget {
             ? Offset(width - plate * 0.3, height / 2)
             : Offset(width - 58 * scale, 300 * scale);
         final textWidth = layout.isWide ? 260.0 : 200.0 * textScale;
-        // 店名和距离所在的高度接近盘子的圆心, 此处盘子最宽.
-        // 宽度限制在盘子左边缘以内, 店名过长时换行, 不与照片重叠.
-        final whereWidth = layout.isWide
+        // 招牌菜和距离所在的高度接近盘子的圆心, 此处盘子最宽.
+        // 宽度限制在盘子左边缘以内, 文字过长时换行, 不与照片重叠.
+        final lineWidth = layout.isWide
             ? textWidth
             : plateCenter.dx - plate / 2 - EatSpace.s20 - EatSpace.s8;
         return Stack(
           children: [
             Positioned.fill(
               child: Semantics(
-                label: '转盘，左右拖动换一道菜',
+                label: '转盘，左右拖动换一家店',
                 child: Turntable(
                   items: [
-                    for (final d in feed.dishes)
+                    for (final s in feed.shops)
                       TurntableItem(
-                        image: networkImage(d.cover, width: plate),
-                        centerX: d.crop.centerX,
-                        centerY: d.crop.centerY,
-                        diameter: d.crop.diameter,
+                        image: networkImage(
+                          s.signatures.firstOrNull?.photo ?? s.photo,
+                          width: plate,
+                        ),
                       ),
                   ],
                   index: feed.index,
@@ -504,7 +533,7 @@ class _TurntableStage extends ConsumerWidget {
                   plateSize: plate,
                   plateCenter: plateCenter,
                   wide: layout.isWide,
-                  spinning: feed.dishes.length >= 5,
+                  spinning: feed.shops.length >= 5,
                 ),
               ),
             ),
@@ -520,8 +549,8 @@ class _TurntableStage extends ConsumerWidget {
                       width: textWidth,
                       child: Semantics(
                         liveRegion: true,
-                        // 换菜时文字交叉淡入淡出, 与盘子转动和舞台换色同时过渡.
-                        // 两道菜的行数可能不同. 按左下角对齐时, 价格的位置保持不变.
+                        // 换店时文字交叉淡入淡出, 与盘子转动和舞台换色同时过渡.
+                        // 两家店的行数可能不同. 按左下角对齐时, 最后一行的位置保持不变.
                         child: AnimatedSwitcher(
                           duration: context.motion(EatMotion.select),
                           switchInCurve: Curves.easeOut,
@@ -531,12 +560,12 @@ class _TurntableStage extends ConsumerWidget {
                             children: [...previous, ?current],
                           ),
                           child: Column(
-                            key: ValueKey(dish.id),
+                            key: ValueKey(shop.id),
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 lines.join('\n'),
-                                semanticsLabel: dish.name,
+                                semanticsLabel: shop.name,
                                 textScaler: TextScaler.noScaling,
                                 style: eat.text.stage.copyWith(
                                   fontSize: nameSize,
@@ -544,32 +573,66 @@ class _TurntableStage extends ConsumerWidget {
                                   color: palette.foreground,
                                 ),
                               ),
-                              if (where.isNotEmpty)
+                              if (signature != null)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 6),
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(
-                                      maxWidth: whereWidth,
+                                      maxWidth: lineWidth,
                                     ),
-                                    child: Text(
-                                      where,
+                                    child: Text.rich(
+                                      TextSpan(
+                                        style: metaStyle,
+                                        children: [
+                                          TextSpan(
+                                            text: '招牌 ${signature.name}',
+                                          ),
+                                          if (price != null)
+                                            TextSpan(
+                                              text: '  $price',
+                                              style: eat.text.priceInline
+                                                  .copyWith(
+                                                    color: palette.foreground,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: eat.text.meta.copyWith(
-                                        color: palette.secondaryForeground,
-                                      ),
                                     ),
                                   ),
                                 ),
-                              if (price != null)
+                              if (where != null || rate != null)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: Text(
-                                    price,
-                                    textScaler: TextScaler.noScaling,
-                                    style: eat.text.priceHero.copyWith(
-                                      fontSize: 56 * textScale,
-                                      color: palette.foreground,
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: lineWidth,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      spacing: EatSpace.s16,
+                                      children: [
+                                        if (distance != null)
+                                          Text(distance, style: numberStyle)
+                                        else if (shop.hubName case final hub?)
+                                          Flexible(
+                                            child: Text(
+                                              hub,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: metaStyle,
+                                            ),
+                                          ),
+                                        if (rate != null)
+                                          Text(
+                                            ShopRules.rateText(rate),
+                                            style: numberStyle,
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -605,9 +668,14 @@ class _TurntableStage extends ConsumerWidget {
                         Expanded(
                           child: EatButton.stageSolid(
                             '就它了',
-                            onPressed: () =>
-                                context.push(Paths.dish(dish.id), extra: dish),
+                            onPressed: () => context.push(Paths.shop(shop.id)),
                           ),
+                        ),
+                        EatIconButton(
+                          EatIcons.more,
+                          label: '更多',
+                          color: palette.foreground,
+                          onPressed: () => _showShopMore(context, ref, shop),
                         ),
                       ],
                     ),
@@ -622,7 +690,43 @@ class _TurntableStage extends ConsumerWidget {
   }
 }
 
-/// 当前地点和饭点下没有菜品时的舞台: 插画, 说明文字和 "发布一道菜" 按钮.
+/// 舞台上这家店的 "更多" 面板: "不想去这家".
+///
+/// 游客点 "不想去这家" 时弹出登录拦截. 标记成功后这家店从转盘和抽屉列表里去掉, 30 天内不再推荐.
+Future<void> _showShopMore(
+  BuildContext context,
+  WidgetRef ref,
+  Shop shop,
+) async {
+  final dismiss = await showPanel<bool>(
+    context,
+    builder: (panel) => EatPanel(
+      title: shop.name,
+      child: EatPanelAction(
+        icon: EatIcons.eyeOff,
+        label: '不想去这家',
+        onTap: () => Navigator.of(panel).pop(true),
+      ),
+    ),
+  );
+  if (dismiss != true || !context.mounted) return;
+  if (!await guardAction(context, ref, Capability.dismissShop)) return;
+  try {
+    await dismissShop(ref, shop.id);
+    if (context.mounted) showToast(context, '30 天内不再推荐这家店');
+  } on AppFailure catch (e) {
+    if (!context.mounted) return;
+    await reportActionFailure(
+      context,
+      ref,
+      e,
+      capability: Capability.dismissShop,
+      fallback: '标记失败，请重试',
+    );
+  }
+}
+
+/// 当前地点, 饭点和场景下一家店都没有时的舞台: 插画, 说明文字和 "发布一道菜" 按钮.
 class _EmptyStage extends ConsumerWidget {
   const new();
 
@@ -633,7 +737,7 @@ class _EmptyStage extends ConsumerWidget {
     final scale = EatLayout.of(context).stageScale;
     return Stack(
       children: [
-        // 盘子直径小于有菜时的 296. 直径为 280 时, 盘子与左下角的两行说明重叠.
+        // 盘子直径小于有店时的 296. 直径为 280 时, 盘子与左下角的两行说明重叠.
         Positioned(
           right: -40 * scale,
           top: 104 * scale,
@@ -653,12 +757,12 @@ class _EmptyStage extends ConsumerWidget {
               SizedBox(
                 width: 210,
                 child: Text(
-                  '这附近还没人发过菜，来发第一道',
+                  '这附近还没人加过店，来发第一道菜',
                   style: eat.text.title.copyWith(color: palette.foreground),
                 ),
               ),
               EatButton.stageSolid(
-                '加一道菜',
+                '发布一道菜',
                 icon: EatIcons.add,
                 onPressed: () async {
                   if (await guardAction(context, ref, Capability.publishDish) &&
@@ -712,15 +816,16 @@ class _StageFailure extends StatelessWidget {
   }
 }
 
-/// 抽屉中的两列推荐流, 滚动到底部时加载下一批.
-class _DishList extends ConsumerWidget {
-  const new({required this.category});
+/// 抽屉中 [kind] 一栏的推荐店, 滚动到底部时加载下一批. 点一行进入餐厅详情.
+class _ShopList extends ConsumerWidget {
+  const new({required this.kind});
 
-  final DishCategory? category;
+  final ShopKind kind;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final list = ref.watch(discoverListProvider(category));
+    final provider = discoverShopsProvider(kind);
+    final list = ref.watch(provider);
     final feed = list.value;
     if (feed == null) {
       if (list.hasError && !list.isLoading) {
@@ -729,175 +834,48 @@ class _DishList extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
             child: FailureState(
               message: (list.error as AppFailure?)?.message,
-              onRetry: () => ref.invalidate(discoverListProvider(category)),
+              onRetry: () => ref.invalidate(provider),
             ),
           ),
         );
       }
-      return const SliverToBoxAdapter(child: TileGridPlaceholder(count: 6));
+      return const SliverToBoxAdapter(
+        child: RowListPlaceholder(count: 5, thumbSize: EatSize.thumbLg),
+      );
     }
-    if (feed.dishes.isEmpty) {
+    if (feed.shops.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
           child: EmptyState(
-            icon: EatIcons.bowl,
-            title: category == null ? '还没有推荐' : '这一类还没有菜',
-            message: '换个饭点或分类看看，也可以发布第一道。',
+            icon: EatIcons.store,
+            title: switch (kind) {
+              ShopKind.food => '还没有推荐的店',
+              ShopKind.drink => '还没有推荐的甜点饮品店',
+            },
+            message: '换个饭点或校区看看，也可以发布第一道菜。',
           ),
         ),
       );
     }
-    final tileWidth = (MediaQuery.sizeOf(context).width - 54) / 2;
-    final me = ref.watch(currentLocationProvider.select((s) => s.point));
-    final campusCenter = ref.watch(
-      currentPlaceProvider.select((p) => p.campus?.center),
-    );
     return SliverMainAxisGroup(
       slivers: [
-        SliverTileGrid(
-          count: feed.dishes.length,
-          builder: (context, i) {
-            final dish = feed.dishes[i];
-            return DishTile(
-              image: networkImage(dish.cover, width: tileWidth),
-              name: dish.name,
-              price: DishRules.priceText(dish.price),
-              shop: dish.shopName,
-              distance: GeoRules.distanceLabel(
-                me: me,
-                target: dish.shopPoint,
-                campusCenter: campusCenter,
-              ),
-              onTap: () => context.push(Paths.dish(dish.id), extra: dish),
-            );
-          },
+        SliverList.separated(
+          itemCount: feed.shops.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 18),
+          itemBuilder: (context, i) => ShopRow(
+            shop: feed.shops[i],
+            onTap: () => context.push(Paths.shop(feed.shops[i].id)),
+          ),
         ),
         if (feed.hasMore || feed.moreError != null)
           SliverToBoxAdapter(
             child: LoadMoreTrigger(
-              generation: feed.dishes.length,
+              generation: feed.shops.length,
               failed: feed.moreError != null,
-              onVisible: () =>
-                  ref.read(discoverListProvider(category).notifier).loadMore(),
+              onVisible: () => ref.read(provider.notifier).loadMore(),
             ),
           ),
-      ],
-    );
-  }
-}
-
-/// 分类栏选中专题时的抽屉内容: 介绍, 称呼和起止时间, 专题里的菜, 底部为 "往期专题".
-///
-/// 专题里的菜由运营排定, 不受饭点影响.
-class _TopicList extends ConsumerWidget {
-  const new({required this.topic});
-
-  final Topic topic;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final c = eat.colors;
-    final now = clock.now();
-    final provider = discoverTopicProvider(topic.id);
-    final value = ref.watch(provider);
-    final dishes = value.value?.dishes;
-
-    final Widget list;
-    if (!value.hasValue) {
-      list = SliverToBoxAdapter(
-        child: value.hasError && !value.isLoading
-            ? FailureState(
-                message: (value.error as AppFailure?)?.message,
-                onRetry: () => ref.invalidate(provider),
-              )
-            : const TileGridPlaceholder(count: 4),
-      );
-    } else if (dishes == null || dishes.isEmpty) {
-      list = SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
-          child: dishes == null
-              ? const EmptyState(
-                  icon: EatIcons.topic,
-                  title: '这期专题已下线',
-                  message: '看看其他推荐的菜。',
-                )
-              : const EmptyState(
-                  icon: EatIcons.bowl,
-                  title: '这期专题暂无菜品',
-                  message: '看看其他推荐的菜。',
-                ),
-        ),
-      );
-    } else {
-      final tileWidth = (MediaQuery.sizeOf(context).width - 54) / 2;
-      list = SliverTileGrid(
-        count: dishes.length,
-        builder: (context, i) => DishTile(
-          image: networkImage(dishes[i].cover, width: tileWidth),
-          name: dishes[i].name,
-          price: DishRules.priceText(dishes[i].price),
-          shop: dishes[i].shopName,
-          onTap: () => context.push(Paths.dish(dishes[i].id), extra: dishes[i]),
-        ),
-      );
-    }
-
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: EatSpace.s4,
-            children: [
-              if (topic.introduction.isNotEmpty)
-                Text(
-                  topic.introduction,
-                  style: eat.text.body.copyWith(color: c.ink),
-                ),
-              Text(
-                '${TopicRules.kind(topic, now)}，${TopicRules.range(topic, now)}',
-                style: eat.text.meta.copyWith(color: c.inkMuted),
-              ),
-            ],
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s16)),
-        list,
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: EatSpace.s8),
-            child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: EatTappable(
-                onTap: () => context.push(Paths.topics),
-                label: '往期专题',
-                focusShape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-                builder: (context, _) => SizedBox(
-                  height: EatSize.touch,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 2,
-                    children: [
-                      Text(
-                        '往期专题',
-                        style: eat.text.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: c.ink,
-                        ),
-                      ),
-                      EatIcon(EatIcons.chevronRight, size: 16, color: c.ink),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

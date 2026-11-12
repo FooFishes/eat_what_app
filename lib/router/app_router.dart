@@ -7,6 +7,7 @@ import 'package:eat/domain/models/dish.dart';
 import 'package:eat/features/comments/comments_page.dart';
 import 'package:eat/features/comments/write_comment_page.dart';
 import 'package:eat/features/discover/discover_page.dart';
+import 'package:eat/features/dish/dish_history_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/inbox/inbox_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
@@ -25,6 +26,8 @@ import 'package:eat/features/publish/new_shop_page.dart';
 import 'package:eat/features/publish/publish_page.dart';
 import 'package:eat/features/search/search_page.dart';
 import 'package:eat/features/settings/about_page.dart';
+import 'package:eat/features/shop/shop_edit_page.dart';
+import 'package:eat/features/shop/shop_history_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/features/settings/blocked_page.dart';
@@ -40,6 +43,7 @@ import 'package:eat/features/settings/username_page.dart';
 import 'package:eat/features/system/not_found_page.dart';
 import 'package:eat/features/topic/topic_archive_page.dart';
 import 'package:eat/features/topic/topic_page.dart';
+import 'package:eat/features/verify/verify_email_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/deep_links.dart';
 import 'package:eat/router/guard.dart';
@@ -149,6 +153,12 @@ GoRouter appRouter(Ref ref) {
           ),
           sso: DeepLinks.ssoResultOf(state.uri.queryParameters),
         ),
+      ),
+      // 认证邮件里的链接. 不作为认证页的子路由, 否则返回时先回到认证页并触发它的刷新.
+      GoRoute(
+        path: Paths.verifyEmail,
+        builder: (_, state) =>
+            VerifyEmailPage(token: state.uri.queryParameters['token']),
       ),
       // Web 统一认证的回跳地址, 由本路由转换为认证页地址. App 的回跳由认证会话收下, 不经过路由.
       GoRoute(
@@ -327,6 +337,25 @@ GoRouter appRouter(Ref ref) {
         },
       ),
       GoRoute(
+        path: Paths.dishHistoryPattern,
+        metadata: guestRoute,
+        builder: (_, state) => switch (_idOf(state, 'dishId')) {
+          final id? => DishHistoryPage(dishId: id),
+          null => const NotFoundPage(),
+        },
+      ),
+      // 编辑页复用加菜页. 详情页跳转时 extra 带上菜品, 刷新后 extra 丢失, 由页面按 id 读取.
+      GoRoute(
+        path: Paths.dishEditPattern,
+        builder: (_, state) => switch (_idOf(state, 'dishId')) {
+          final id? => AddDishPage.edit(
+            dishId: id,
+            initial: state.extra is Dish ? state.extra! as Dish : null,
+          ),
+          null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
         path: Paths.writeCommentPattern,
         builder: (_, state) {
           final query = state.uri.queryParameters;
@@ -347,6 +376,21 @@ GoRouter appRouter(Ref ref) {
         metadata: guestRoute,
         builder: (_, state) => switch (_idOf(state, 'shopId')) {
           final id? => ShopPage(shopId: id),
+          null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
+        path: Paths.shopEditPattern,
+        builder: (_, state) => switch (_idOf(state, 'shopId')) {
+          final id? => ShopEditPage(shopId: id),
+          null => const NotFoundPage(),
+        },
+      ),
+      GoRoute(
+        path: Paths.shopHistoryPattern,
+        metadata: guestRoute,
+        builder: (_, state) => switch (_idOf(state, 'shopId')) {
+          final id? => ShopHistoryPage(shopId: id),
           null => const NotFoundPage(),
         },
       ),
@@ -390,6 +434,6 @@ int? _idOf(GoRouterState state, String name) =>
 
 /// 登录各页之间原样传递的查询参数.
 Map<String, String> _loginQuery(GoRouterState state) => {
-  for (final key in const ['from', 'expired'])
+  for (final key in const ['from', 'expired', 'banned'])
     key: ?state.uri.queryParameters[key],
 };

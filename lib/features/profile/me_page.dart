@@ -1,3 +1,4 @@
+import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -34,7 +35,7 @@ import 'package:go_router/go_router.dart';
 
 /// "我的" 页面.
 ///
-/// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和四项统计.
+/// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和三项统计.
 /// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 评论三个分栏.
 /// - 右上角: 编辑资料和设置.
 ///
@@ -81,8 +82,7 @@ class _MePageState extends ConsumerState<MePage> {
         ? null
         : ref.watch(userProfileProvider(user.id)).value;
     final uploads = ref.watch(myUploadsProvider);
-    final banned = ref.watch(accountStatusProvider) is BannedStatus;
-    final top = DishRules.signatures(
+    final top = DishRules.mostLiked(
       uploads.value?.pages.items ?? const <Dish>[],
       count: 1,
     ).firstOrNull;
@@ -117,14 +117,10 @@ class _MePageState extends ConsumerState<MePage> {
         username: user?.username,
         signature: user?.signature,
         profile: profile,
+        uploads: uploads.value?.pages.total,
         top: top,
         loading: uploads.isLoading,
-        onLevelTap: () async {
-          if (await guardAction(context, ref, Capability.viewGrowth) &&
-              context.mounted) {
-            await context.push(Paths.growth);
-          }
-        },
+        onLevelTap: () => showPending(context, PendingFeature.growth),
       ),
       sheetSlivers: [
         const SliverToBoxAdapter(child: _StatusNotice()),
@@ -133,7 +129,7 @@ class _MePageState extends ConsumerState<MePage> {
         SliverToBoxAdapter(
           child: EatTabs(
             tabs: [
-              EatTabItem('上传', count: profile?.uploadedDishes),
+              EatTabItem('上传', count: uploads.value?.pages.total),
               const EatTabItem('收藏'),
               const EatTabItem('评论'),
             ],
@@ -193,15 +189,6 @@ class _MePageState extends ConsumerState<MePage> {
                 const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s10)),
                 if (_favoriteShops)
                   const _FavoriteShops()
-                // 受限会话不能调用 `/foods/favorites`, 封禁中不请求.
-                else if (banned)
-                  const SliverToBoxAdapter(
-                    child: EmptyState(
-                      icon: EatIcons.block,
-                      title: '账号封禁中',
-                      message: '封禁期间暂时不能查看收藏的菜。',
-                    ),
-                  )
                 else
                   DishGridSliver(
                     value: ref.watch(myFavoritesProvider),
@@ -371,14 +358,6 @@ class _StatusNotice extends ConsumerWidget {
           onPressed: () => context.push(Paths.verify),
         ),
       ),
-      final BannedStatus banned => StageNotice(
-        icon: EatIcons.block,
-        text: [
-          '账号封禁中',
-          banTerm(banned, DateTime.now()),
-          if (banned.reason case final reason?) '原因：$reason',
-        ].join('，'),
-      ),
       _ => const SizedBox(),
     };
   }
@@ -397,11 +376,13 @@ class _Shortcuts extends ConsumerWidget {
         spacing: EatSpace.s10,
         children: [
           Expanded(
+            // TODO: 后端 v2 不提供我的标签接口, 入口标 "待接入", 不进入我的标签页. 接口上线后去掉标记并进入我的标签页.
             child: _Shortcut(
               icon: EatIcons.tag,
               title: '我的标签',
               subtitle: '用来给菜分类',
-              onTap: () => context.push(Paths.myTags),
+              pending: true,
+              onTap: () => showPending(context, PendingFeature.myTags),
             ),
           ),
           Expanded(
@@ -429,12 +410,16 @@ class _Shortcut extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.pending = false,
   });
 
   final EatIcons icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+
+  /// 为 true 时标题旁显示 "待接入".
+  final bool pending;
 
   @override
   Widget build(BuildContext context) {
@@ -461,7 +446,18 @@ class _Shortcut extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 2,
                   children: [
-                    Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
+                    Row(
+                      spacing: EatSpace.s4,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: eat.text.subhead.copyWith(color: c.ink),
+                          ),
+                        ),
+                        if (pending) const PendingTag(),
+                      ],
+                    ),
                     Text(
                       subtitle,
                       maxLines: 1,

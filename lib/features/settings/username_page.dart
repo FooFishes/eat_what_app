@@ -6,6 +6,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/settings/widgets/account_code_field.dart';
@@ -17,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// 设置用户名. 用户名用于密码登录, 只能设一次.
 ///
 /// - 用绑定手机的验证码确认身份. 未设置密码时可同时设置密码.
-/// - 设置后本机和其他设备都需要重新登录, 本机回到登录页.
+/// - 设置后本机保持登录, 返回上一页. 同时设置了密码时, 其他设备要重新登录.
 /// - 已设置时只显示用户名.
 class UsernamePage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -76,17 +77,21 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
     }
     setState(() => _submitting = true);
     final auth = ref.read(authRepositoryProvider);
+    final withPassword = askPassword && password.isNotEmpty;
     try {
       await auth.checkUsername(username);
       await auth.setUsername(
         username,
         _code.text,
-        password: askPassword && password.isNotEmpty ? password : null,
+        password: withPassword ? password : null,
       );
+      await ref.read(sessionProvider.notifier).refreshUser();
       if (!mounted) return;
-      showToast(context, '用户名已设置，请重新登录');
-      // 登录态清除后, 路由守卫负责跳转到登录页.
-      await ref.read(sessionProvider.notifier).reauthenticate();
+      showToast(context, withPassword ? '用户名和密码已设置，其他设备需要重新登录' : '用户名已设置');
+      // 登录态变化后路由会重新匹配当前地址. 在本轮重建结束后返回, 否则本页会被重新放回路由栈.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) BackFallback.back(context);
+      });
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() {
@@ -182,8 +187,10 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
                   Text('同时设置密码后，可直接用用户名和密码登录', style: note),
                 ],
                 const SizedBox(height: 40),
-                Text('设置后，所有设备都需要重新登录。', style: note),
-                const SizedBox(height: EatSpace.s14),
+                if (askPassword) ...[
+                  Text('同时设置密码后，其他设备需要重新登录。', style: note),
+                  const SizedBox(height: EatSpace.s14),
+                ],
                 EatButton.solid(
                   '设置用户名',
                   loading: _submitting,

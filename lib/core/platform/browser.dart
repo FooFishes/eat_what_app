@@ -11,9 +11,9 @@ sealed class SsoOutcome {
   const SsoOutcome();
 }
 
-/// 后端重定向到了 App 的回跳地址, [link] 带 `result` 和 `code`.
+/// 后端重定向到了 App 的回跳地址, [link] 带 `result`, 成功时带一次性的 `ticket`, 失败时带 `code`.
 ///
-/// 回跳地址任何 App 都能构造, 结果只用于提示.
+/// 回跳地址任何 App 都能构造, 结果只用于提示. 认证在提交 `ticket` 后才生效.
 final class SsoReturned extends SsoOutcome {
   const SsoReturned(this.link);
 

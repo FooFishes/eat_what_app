@@ -1,0 +1,90 @@
+import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
+import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/features/verify/verify_providers.dart';
+import 'package:eat/router/paths.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+/// 邮箱认证的落地页: 认证邮件里的链接打开本页, 提交链接中的 [token] 并显示结果.
+///
+/// 只给登录用户. 未登录时守卫先带去登录页, 登录后回到本页.
+/// token 必须由发起认证的账号提交, 其他账号打开时提示在发起认证的账号上打开.
+class VerifyEmailPage extends ConsumerStatefulWidget {
+  const new({super.key, required this.token});
+
+  /// 地址中的 `token`. 链接不完整时为 null.
+  final String? token;
+
+  @override
+  ConsumerState<VerifyEmailPage> createState() => _VerifyEmailPageState();
+}
+
+class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
+  @override
+  void initState() {
+    super.initState();
+    final token = widget.token;
+    if (token == null || token.isEmpty) return;
+    // 构建过程中不能修改 Provider, 因此在首帧结束后提交.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(emailVerificationProvider.notifier).submit(token);
+    });
+  }
+
+  void _toVerify() => context.go(Paths.verify);
+
+  @override
+  Widget build(BuildContext context) {
+    final token = widget.token;
+    final progress = ref.watch(emailVerificationProvider);
+    final Widget body;
+    if (token == null || token.isEmpty) {
+      body = _failed('链接不完整，请从邮件中重新打开');
+    } else {
+      body = switch (progress) {
+        null || AsyncLoading() => const LoadingArea(
+          child: EmptyState(icon: EatIcons.mail, title: '正在认证'),
+        ),
+        AsyncData() => EmptyState(
+          icon: EatIcons.verify,
+          title: '邮箱认证成功',
+          message: '认证长期有效，现在可以发布和互动。',
+          action: EatButton.solid('完成', onPressed: _toVerify),
+        ),
+        AsyncError(:final error) => switch (error) {
+          AppFailure(code: BizCodes.alreadyVerified) => EmptyState(
+            icon: EatIcons.verify,
+            title: '账号已经认证过了',
+            action: EatButton.solid('完成', onPressed: _toVerify),
+          ),
+          final AppFailure failure => _failed(failure.message),
+          _ => _failed('操作失败，请重试'),
+        },
+      };
+    }
+    return PlainScaffold(
+      title: '邮箱认证',
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(top: EatSpace.s24),
+            child: body,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _failed(String message) => EmptyState(
+    icon: EatIcons.warning,
+    title: '认证没有完成',
+    message: message,
+    action: EatButton.outline('去认证页', onPressed: _toVerify),
+  );
+}

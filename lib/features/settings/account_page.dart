@@ -1,3 +1,4 @@
+import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -14,6 +15,7 @@ import 'package:go_router/go_router.dart';
 
 /// 账号与安全页面: 学生认证, 手机号, 用户名, 密码, 登录设备和注销账号.
 ///
+/// - 没有手机号时点 "手机号" 进入绑定, 有手机号时进入换绑.
 /// - 未设置用户名时可点击进入设置. 设置后只显示, 不可修改.
 /// - 未设置密码时显示 "设置密码", 已设置时显示 "修改密码".
 class AccountPage extends ConsumerWidget {
@@ -85,7 +87,8 @@ class AccountPage extends ConsumerWidget {
             SettingsRow(
               icon: EatIcons.delete,
               label: '注销账号',
-              onTap: () => context.push(Paths.settingsDelete),
+              pending: true,
+              onTap: () => showPending(context, PendingFeature.deleteAccount),
             ),
             const SizedBox(height: EatSpace.s24),
           ],
@@ -95,7 +98,7 @@ class AccountPage extends ConsumerWidget {
   }
 }
 
-/// 按账号状态检查后打开 [path]. 封禁中时弹出拦截对话框.
+/// 按账号状态检查后打开 [path]. 未登录时弹出拦截对话框.
 Future<void> _open(
   BuildContext context,
   WidgetRef ref,

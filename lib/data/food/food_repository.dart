@@ -1,89 +1,32 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:eat/core/network/idempotency.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/storage/cache_store.dart';
-import 'package:eat/core/storage/device_id.dart';
-import 'package:eat/core/storage/secure_store.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/food/food_api.dart';
 import 'package:eat/data/food/food_dto.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
-import 'package:eat/domain/models/geo.dart';
+import 'package:eat/domain/models/dish_revision.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/domain/models/taste.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_repository.g.dart';
 
-/// 发布菜品的结果.
+/// 菜品数据. 把接口 DTO 转换为 [Dish], 并缓存浏览过的菜品详情.
 ///
-/// [pending] 为 true 时菜品进入审核, 审核通过前没有公开记录, 详情接口返回 `BizCodes.foodNotFound`.
-/// 服务端未启用内容审核时不返回审核状态, 菜品直接公开.
-class const PublishResult({required final int id, final bool pending = false});
-
-/// 菜品数据. 把接口 DTO 转换为 [Dish], 并缓存上一批推荐和浏览过的菜品详情.
+/// 标签的方法对应的接口在后端 v2 中已删除, 只有保留的待接入页面引用.
 class FoodRepository {
-  FoodRepository(this._api, this._cache, this._deviceId);
+  FoodRepository(this._api, this._cache);
 
   final FoodApi _api;
   final CacheStore _cache;
-  final DeviceId _deviceId;
 
-  static const _recommendGroup = 'recommend';
   static const _detailGroup = 'dish';
-
-  /// 请求一批推荐.
-  ///
-  /// 未按分类筛选且结果非空时, 结果保存为该校区和饭点的 "上一批".
-  /// 请求失败时, 页面使用 [lastBatch].
-  ///
-  /// 请求总是携带设备标识, 服务端只对游客使用该标识.
-  /// 游客请求不带标识时, 服务端不记录推荐过的菜, 每次返回相同的菜.
-  Future<List<Dish>> recommend({
-    required int? campusId,
-    required MealTime meal,
-    DishCategory? category,
-    CancelToken? cancelToken,
-  }) async {
-    final items = await _api.recommend(
-      campusId: campusId,
-      mealTime: meal.api,
-      category: category?.api,
-      deviceId: await _deviceId.read(),
-      cancelToken: cancelToken,
-    );
-    if (category == null && items.isNotEmpty) {
-      await _cache.write(
-        _recommendGroup,
-        '${campusId ?? 0}.${meal.api}',
-        jsonEncode([for (final dto in items) dto.toJson()]),
-        maxEntries: 8,
-      );
-    }
-    return items.map(toDish).toList();
-  }
-
-  /// 该校区和饭点上次获取的推荐. 没有缓存时返回空列表.
-  Future<List<Dish>> lastBatch({
-    required int? campusId,
-    required MealTime meal,
-  }) async {
-    final raw = await _cache.read(
-      _recommendGroup,
-      '${campusId ?? 0}.${meal.api}',
-    );
-    if (raw == null) return const [];
-    try {
-      return [
-        for (final e in jsonDecode(raw) as List<dynamic>)
-          toDish(FoodDto.fromJson(e as Map<String, dynamic>)),
-      ];
-    } on Object {
-      return const [];
-    }
-  }
 
   Future<Dish> detail(int id, {CancelToken? cancelToken}) async {
     final dto = await _api.detail(id, cancelToken: cancelToken);
@@ -111,80 +54,134 @@ class FoodRepository {
     }
   }
 
-  /// 按条件查询菜品. 传入 [near] 时每道菜带 [Dish.distance].
+  /// 按条件查询菜品, 返回的分页带 [Paged.total]. 不按校区过滤.
   ///
-  /// 没有 [near] 时不发送 [FoodSort.distance], 因为后端对缺少坐标的距离排序返回参数错误.
+  /// - [keyword] 只匹配菜名.
+  /// - 不传 [sort] 时, 指定 [restaurantId] 按菜单顺序, 否则按最新排列.
   Future<Paged<Dish>> list({
-    int? shopId,
-    int? hubId,
+    int? restaurantId,
     String? keyword,
-    List<int>? myTagIds,
-    List<int>? tasteTagIds,
-    GcjPoint? near,
+    DishCategory? category,
+    bool? signatureOnly,
     FoodSort? sort,
     int page = 1,
     int pageSize = 20,
     CancelToken? cancelToken,
   }) async => _map(
     await _api.list(
-      restaurantId: shopId,
-      hubId: hubId,
+      restaurantId: restaurantId,
       keyword: keyword,
-      myCustomTagIds: myTagIds,
-      systemTagIds: tasteTagIds,
-      gcjLat: near?.lat,
-      gcjLng: near?.lng,
-      sort: near == null && sort == FoodSort.distance ? null : sort,
+      category: category?.api,
+      signatureOnly: signatureOnly,
+      sort: sort,
       page: page,
       pageSize: pageSize,
       cancelToken: cancelToken,
     ),
   );
 
+  /// 我收藏的菜, 按收藏时间倒序.
   Future<Paged<Dish>> favorites({
     int page = 1,
     CancelToken? cancelToken,
   }) async => _map(await _api.favorites(page: page, cancelToken: cancelToken));
 
+  /// 我首次发布的菜, 最新的在前.
   Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
       _map(await _api.mine(page: page, cancelToken: cancelToken));
 
-  /// 上一次未成功的发布: 请求正文和所用的幂等键.
-  ({String body, String key})? _unconfirmedPublish;
-
-  /// 发布菜品.
+  /// 发布菜品, 返回新菜品的 id. 发布后即公开, 不经审核.
   ///
-  /// 请求带 `Idempotency-Key`. 正文与上一次未成功的发布相同时视为重试, 沿用上一次的键.
-  /// 超时的请求可能已被服务端受理, 沿用键可避免重复发布.
-  ///
-  /// 正文不同时使用新键, 因为服务端拒绝同一个键对应不同正文的请求.
-  /// 发布成功后清除记录, 下一份草稿使用新键.
-  Future<PublishResult> publish(NewDish dish) async {
-    final body = CreateFoodDto(
+  /// 失败时抛出 [AppFailure]:
+  /// - 同一店铺已有同名菜品时, 业务码为 `BizCodes.duplicateDish`, `data.id` 是已有菜品的 id.
+  /// - 标为招牌菜而店铺已有 3 道招牌菜时, 业务码为 `BizCodes.stateNotAllowed`.
+  Future<int> publish(NewDish dish) => _api.create(
+    CreateFoodDto(
       restaurantId: dish.shopId,
       name: dish.name,
-      pictureUrl: dish.imageKeys,
-      price: dish.price,
       category: dish.category.api,
-      mealTimes: [for (final meal in dish.mealTimes) meal.api],
+      price: dish.price,
       description: dish.description,
-      systemTagIds: dish.tasteTagIds.isEmpty ? null : dish.tasteTagIds,
-      myCustomTagNames: dish.myTagNames.isEmpty ? null : dish.myTagNames,
+      pictures: dish.imageKeys,
+      tags: [for (final taste in dish.tags) taste.api],
+      signature: dish.signature,
       stageColor: dish.stage.name,
       stageAlternates: [for (final c in dish.stageAlternates) c.name],
       coverCrop: _cropDto(roundCrop(dish.crop)),
+    ),
+  );
+
+  // TODO: 菜品响应只有图片地址, 没有存储 key, 编辑时无法提交保留的原图. 后端在响应中提供 key 或允许提交原图地址后补充保留原图的方式.
+  /// 编辑菜品, 返回本次修改的记录 id. 内容没有变化时返回 null, 不产生修改记录.
+  ///
+  /// 失败时的业务码与 [publish] 相同: 改名后与同一店铺的菜品重名, 或招牌菜已满.
+  Future<int?> edit(int id, DishChange change) => _api.edit(
+    id,
+    EditFoodDto(
+      name: change.name,
+      category: change.category?.api,
+      price: change.price,
+      description: change.description,
+      pictures: change.imageKeys,
+      tags: change.tags?.map((taste) => taste.api).toList(),
+      signature: change.signature,
+      stageColor: change.stage?.name,
+      stageAlternates: change.stageAlternates?.map((c) => c.name).toList(),
+      coverCrop: switch (change.crop) {
+        final crop? => _cropDto(roundCrop(crop)),
+        null => null,
+      },
+    ),
+  );
+
+  /// 菜品的修改记录, 最新的在前. 不需要登录.
+  Future<Paged<DishRevision>> history(
+    int id, {
+    int page = 1,
+    CancelToken? cancelToken,
+  }) async {
+    final result = await _api.history(id, page: page, cancelToken: cancelToken);
+    return Paged(
+      items: [for (final dto in result.items) ?_revision(dto)],
+      page: result.page,
+      hasNext: result.hasNext,
+      total: result.total,
     );
-    final text = jsonEncode(body.toJson());
-    final previous = _unconfirmedPublish;
-    final key = previous != null && previous.body == text
-        ? previous.key
-        : newIdempotencyKey();
-    _unconfirmedPublish = (body: text, key: key);
-    final created = await _api.create(body, idempotencyKey: key);
-    _unconfirmedPublish = null;
-    return PublishResult(
-      id: created.id,
-      pending: created.moderationStatus == 'PENDING',
+  }
+
+  /// 把菜品恢复到 [revisionId] 之后的内容, 记为一次新的修改.
+  ///
+  /// 当前内容已经是该版本时抛出业务码为 `BizCodes.stateNotAllowed` 的 [AppFailure].
+  Future<void> restore(int id, int revisionId) => _api.restore(id, revisionId);
+
+  /// 识别时最多发送的照片张数. 后端超出时拒绝整个请求.
+  static const _suggestPhotosMax = 3;
+
+  /// 按菜名, 说明和照片识别分类和口味. 结果只是建议, 由用户确认后再提交.
+  ///
+  /// [imageKeys] 是本人上传的存储 key, 只发送前 3 张.
+  /// 后端未启用识别或识别失败时抛出业务码为 40001 的 [AppFailure].
+  Future<DishSuggestion> suggestTags({
+    required String name,
+    int? shopId,
+    String? description,
+    List<String> imageKeys = const [],
+    CancelToken? cancelToken,
+  }) async {
+    final dto = await _api.suggestTags(
+      SuggestFoodDto(
+        name: name,
+        restaurantId: shopId,
+        description: description,
+        pictures: imageKeys.isEmpty
+            ? null
+            : imageKeys.take(_suggestPhotosMax).toList(),
+      ),
+      cancelToken: cancelToken,
+    );
+    return DishSuggestion(
+      category: DishCategory.fromApi(dto.category),
+      tags: _tastes(dto.tags),
     );
   }
 
@@ -221,22 +218,22 @@ class FoodRepository {
     return n / scale;
   }
 
-  /// 该店中与 [name] 同名 (忽略空白) 的菜品. 没有时返回 null.
+  /// 该店中与 [name] 同名 (忽略空白和大小写) 的菜品. 没有时返回 null.
   Future<Dish?> sameName(
     int shopId,
     String name, {
     CancelToken? cancelToken,
   }) async {
-    final key = PublishRules.compactName(name);
+    final key = PublishRules.dishNameKey(name);
     if (key.isEmpty) return null;
     final page = await list(
-      shopId: shopId,
+      restaurantId: shopId,
       keyword: key,
       pageSize: 50,
       cancelToken: cancelToken,
     );
     for (final dish in page.items) {
-      if (PublishRules.compactName(dish.name) == key) return dish;
+      if (PublishRules.dishNameKey(dish.name) == key) return dish;
     }
     return null;
   }
@@ -307,38 +304,32 @@ class FoodRepository {
     items: page.items.map(toDish).toList(),
     page: page.page,
     hasNext: page.hasNext,
+    total: page.total,
   );
 
+  /// 把接口的菜品转换为 [Dish].
+  ///
+  /// 舞台色, 备选色和取景使用服务端保存的值, 没有时舞台色取分类默认色, 取景居中.
+  /// 没有图片时不使用取景, 因为取景只针对封面.
   Dish toDish(FoodDto dto) {
     final category = DishCategory.fromApi(dto.category);
-    final stage = StageColor.values.asNameMap()[dto.stageColor];
-    final lat = dto.restaurantGcjLat;
-    final lng = dto.restaurantGcjLng;
+    final stages = StageColor.values.asNameMap();
     final images = [
-      for (final url in dto.pictureUrl ?? const <String>[]) ?imageUrl(url),
+      for (final url in dto.pictureUrls ?? const <String>[]) ?imageUrl(url),
     ];
-    final crop = _coverConfirmed(dto, images) ? dto.coverCrop : null;
+    final crop = images.isEmpty ? null : dto.coverCrop;
     return Dish(
       id: dto.id ?? 0,
       name: dto.name?.trim() ?? '',
       shopId: dto.restaurantId ?? 0,
       shopName: _text(dto.restaurantName),
-      shopAddress: _text(dto.restaurantAddress),
-      shopPoint: lat != null && lng != null ? GcjPoint(lat, lng) : null,
-      hubId: dto.hubId,
-      hubName: _text(dto.hubName),
-      distance: dto.distanceMeters,
       price: dto.price,
       category: category,
-      mealTimes: [
-        for (final meal in dto.mealTimes ?? const <String>[])
-          ?MealTime.fromApi(meal),
-      ],
       images: images,
-      stage: stage ?? category?.stage ?? StageColor.broth,
+      stage: stages[dto.stageColor] ?? DishRules.defaultStage(category),
       stageAlternates: [
         for (final name in dto.stageAlternates ?? const <String>[])
-          ?StageColor.values.asNameMap()[name],
+          ?stages[name],
       ],
       crop: crop == null
           ? const CoverCrop()
@@ -347,26 +338,39 @@ class FoodRepository {
               centerY: crop.centerY ?? 0.5,
               diameter: crop.diameter ?? 1,
             ),
-      tasteTags: _tasteTags(dto.systemTags),
-      myTags: _myTags(dto.myCustomTags),
+      tags: _tastes(dto.tags),
+      signature: dto.signature ?? false,
       liked: dto.isLiked ?? false,
       favorite: dto.isFavorite ?? false,
-      likes: dto.likesCount ?? 0,
+      likes: dto.likeCount ?? 0,
       uploaderId: dto.accountId,
-      uploaderName: _text(dto.user?.displayName) ?? _text(dto.uploaderName),
-      authorId: dto.user?.id,
       description: _text(dto.description),
       createdAt: dateFromMillis(dto.createdAt),
     );
   }
 
-  // TODO: 原封面未通过审核被滤掉时 pictureKeys 和 pictureUrl 都从第二张开始, 后端不提供标记, 裁切参数会应用到第二张图上. 后端提供封面标记后改为按标记判断.
-  /// 显示的第一张图能否确认对应 pictureKeys 的第一张. 不能确认时不使用裁切, 按居中内切圆显示.
-  ///
-  /// pictureUrl 由 pictureKeys 逐个签名得到, 签名失败的图被跳过. 两者张数相同时才逐项对应.
-  /// 张数不同时第一张图可能不是封面, 裁切参数只针对封面.
-  static bool _coverConfirmed(FoodDto dto, List<String> images) =>
-      images.isNotEmpty && dto.pictureKeys.length == images.length;
+  static List<Taste> _tastes(List<String>? values) => [
+    for (final value in values ?? const <String>[]) ?Taste.fromApi(value),
+  ];
+
+  static DishRevision? _revision(FoodRevisionDto dto) {
+    final id = dto.id;
+    if (id == null) return null;
+    final editor = dto.editor;
+    return DishRevision(
+      id: id,
+      action: RevisionAction.fromApi(dto.action),
+      editorId: editor?.id,
+      editorName: _text(editor?.displayName),
+      editorAvatar: imageUrl(editor?.avatar),
+      restoredFrom: dto.restoredFrom,
+      fields: [
+        for (final change in dto.changes ?? const <FoodFieldChangeDto>[])
+          ?DishField.fromApi(change.field),
+      ],
+      createdAt: dateFromMillis(dto.createdAt),
+    );
+  }
 
   static List<TasteTag> _tasteTags(List<FoodTagDto>? tags) => [
     for (final tag in tags ?? const <FoodTagDto>[])
@@ -390,8 +394,5 @@ class FoodRepository {
 }
 
 @Riverpod(keepAlive: true)
-FoodRepository foodRepository(Ref ref) => FoodRepository(
-  ref.watch(foodApiProvider),
-  ref.watch(cacheStoreProvider),
-  DeviceId(ref.watch(secureStoreProvider)),
-);
+FoodRepository foodRepository(Ref ref) =>
+    FoodRepository(ref.watch(foodApiProvider), ref.watch(cacheStoreProvider));

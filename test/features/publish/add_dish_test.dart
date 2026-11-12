@@ -1,5 +1,7 @@
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
+import 'package:eat/domain/models/dish.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,11 +19,6 @@ void _routes(
   env.photos.next = [PickedPhoto(bytes: transparentImage, width: 1, height: 1)];
   env.adapter
     ..on('GET /restaurant/detail/7', [FakeAdapter.ok(shop ?? restaurantJson())])
-    ..on('GET /foods/tags/system', [
-      FakeAdapter.ok([
-        {'id': 3, 'name': '皮薄'},
-      ]),
-    ])
     ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
     ..on('POST /upload/presign', [
       FakeAdapter.ok({
@@ -38,37 +35,65 @@ void _routes(
     ..on('GET /foods/detail/99', [FakeAdapter.ok(foodJson(id: 99))]);
 }
 
-/// 加一张照片, 填好菜名, 价格和分类, 点 "发布".
-Future<void> _fillAndPublish(WidgetTester tester) async {
+Finder _field(String label) => find.descendant(
+  of: find.widgetWithText(EatFormField, label),
+  matching: find.byType(TextField),
+);
+
+Finder _page() => find
+    .byWidgetPredicate(
+      (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+    )
+    .first;
+
+/// 滚动抽屉直到 [text] 可见, 再点它.
+Future<void> _tapText(WidgetTester tester, String text) async {
+  await tester.scrollUntilVisible(find.text(text), 200, scrollable: _page());
+  await tester.tap(find.text(text));
+  await tester.pumpAndSettle();
+}
+
+/// 滚动抽屉直到 [text] 可见. 抽屉的内容按需构建, 不滚动到附近时找不到.
+Future<void> _seeText(WidgetTester tester, String text) =>
+    tester.scrollUntilVisible(find.text(text), 200, scrollable: _page());
+
+/// 加一张照片. 加入第一张照片后自动打开 "调整照片", 此处直接点 "完成".
+Future<void> _addPhoto(WidgetTester tester) async {
   await tester.tap(find.text('加一张照片'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('从相册选'));
   await tester.pumpAndSettle();
-  // 加入第一张照片后自动打开 "调整照片", 此处直接点 "完成".
   expect(find.text('调整照片'), findsWidgets);
   await tester.tap(find.text('完成'));
   await tester.pumpAndSettle();
+}
 
-  Finder field(String label) => find.descendant(
-    of: find.widgetWithText(EatFormField, label),
-    matching: find.byType(TextField),
-  );
-  final page = find
-      .byWidgetPredicate(
-        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
-      )
-      .first;
-  await tester.enterText(field('菜名'), '鲜虾云吞');
-  await tester.scrollUntilVisible(field('价格'), 200, scrollable: page);
-  await tester.enterText(field('价格'), '18');
+/// 填菜名并等识别的延时过去.
+Future<void> _enterName(WidgetTester tester, String name) async {
+  await tester.enterText(_field('菜名'), name);
+  await tester.pump(const Duration(seconds: 1));
   await tester.pumpAndSettle();
-  await tester.ensureVisible(find.text('小吃'));
-  await tester.tap(find.text('小吃'));
+}
+
+Future<void> _enterPrice(WidgetTester tester, String price) async {
+  await tester.scrollUntilVisible(_field('价格'), 200, scrollable: _page());
+  await tester.enterText(_field('价格'), price);
   await tester.pumpAndSettle();
+}
+
+/// 加一张照片, 填好菜名, 价格和分类, 点 "发布".
+Future<void> _fillAndPublish(WidgetTester tester) async {
+  await _addPhoto(tester);
+  await tester.enterText(_field('菜名'), '鲜虾云吞');
+  await _enterPrice(tester, '18');
+  await _tapText(tester, '小吃');
 
   await tester.tap(find.text('发布'));
   await tester.pump();
 }
+
+Map<String, dynamic> _published(TestEnv env) =>
+    env.adapter.sent('POST /foods/upload').last.body! as Map<String, dynamic>;
 
 void main() {
   testWidgets('加照片后在后台传完，填好必填项发布，退出发布流程打开这道菜', (tester) async {
@@ -82,6 +107,7 @@ void main() {
     );
 
     expect(find.text('请添加照片并填写菜名、价格和分类'), findsOneWidget);
+    expect(find.textContaining('适合哪顿'), findsNothing);
 
     await _fillAndPublish(tester);
     await tester.pumpAndSettle();
@@ -91,17 +117,16 @@ void main() {
     expect(body['restaurantId'], 7);
     expect(body['name'], '鲜虾云吞');
     expect(body['price'], 18);
-    expect(body['category'], 'snack');
-    expect(body['pictureUrl'], ['foods/a.jpg']);
+    expect(body['category'], '小吃');
+    expect(body['pictures'], ['foods/a.jpg']);
+    expect(body['tags'], isEmpty);
+    expect(body['signature'], isFalse);
+    expect(body['stageColor'], isA<String>());
     expect(body['stageAlternates'], hasLength(2));
-    expect(
-      request.headers['Idempotency-Key'],
-      matches(
-        RegExp(
-          r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
-        ),
-      ),
-    );
+    expect(body['coverCrop'], isA<Map<String, dynamic>>());
+    expect(body.containsKey('mealTimes'), isFalse);
+    expect(request.headers.containsKey('Idempotency-Key'), isFalse);
+    expect(env.adapter.sent('GET /foods/tags/system'), isEmpty);
     expect(env.adapter.sent('PUT https://oss.test/put/a').single.headers, {
       'content-type': 'image/jpeg',
       'content-length': transparentImage.length,
@@ -112,32 +137,12 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('发布后进入审核：不打开详情，提示已提交审核', (tester) async {
-    final env = TestEnv();
-    _routes(env, {'id': 99, 'moderationStatus': 'PENDING'});
-    final (container, router) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.publishDish(7),
-    );
-
-    await _fillAndPublish(tester);
-    await tester.pumpAndSettle();
-
-    expect(find.text('已提交审核，通过后公开'), findsOneWidget);
-    expect(locationOf(router), Paths.discover);
-    expect(env.adapter.sent('GET /foods/detail/99'), isEmpty);
-    await tester.pump(const Duration(seconds: 2));
-    await unmountApp(tester, container);
-  });
-
   testWidgets('店已关门时拦下发布', (tester) async {
     final env = TestEnv();
     _routes(
       env,
       {'id': 99},
-      shop: {...restaurantJson(), 'operatingStatus': 'CLOSED'},
+      shop: {...restaurantJson(), 'permanentlyClosed': true},
     );
     final (container, router) = await pumpApp(
       tester,
@@ -154,5 +159,208 @@ void main() {
     expect(locationOf(router), Paths.publishDish(7));
     await tester.pump(const Duration(seconds: 2));
     await unmountApp(tester, container);
+  });
+
+  testWidgets('分类 6 个；口味最多选 3 个；「自己写」待接入，点了不发请求', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    // 抽屉滚动后舞台上的盘子会移出屏幕, 所以先加照片.
+    await _addPhoto(tester);
+    for (final category in DishCategory.values) {
+      await tester.scrollUntilVisible(
+        find.text(category.label),
+        200,
+        scrollable: _page(),
+      );
+    }
+    for (final taste in ['辣', '麻', '甜']) {
+      await _tapText(tester, taste);
+    }
+    await _tapText(tester, '酸');
+    expect(find.text('口味最多选 3 个'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+
+    final before = env.adapter.requests.length;
+    await _tapText(tester, '自己写');
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    expect(find.text('待接入'), findsOneWidget);
+    expect(find.text('自己写一个标签'), findsNothing);
+    expect(env.adapter.requests, hasLength(before));
+
+    await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
+    await tester.enterText(_field('菜名'), '鲜虾云吞');
+    await _enterPrice(tester, '18');
+    await _tapText(tester, '小吃');
+    await tester.tap(find.text('发布'));
+    await tester.pumpAndSettle();
+    expect(_published(env)['tags'], ['辣', '麻', '甜']);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('标为招牌菜发布；招牌菜已满时就地提示，关掉开关后能发布', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    env.adapter.on('POST /foods/upload', [
+      FakeAdapter.fail(40002, '每家店最多 3 个招牌菜，请先取消一个'),
+      FakeAdapter.ok({'id': 99}),
+    ]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    await tester.enterText(_field('菜名'), '鲜虾云吞');
+    await _enterPrice(tester, '18');
+    await _tapText(tester, '小吃');
+    await _tapText(tester, '招牌菜');
+    await tester.tap(find.text('发布'));
+    await tester.pumpAndSettle();
+
+    expect(_published(env)['signature'], isTrue);
+    expect(find.text('这家店已有 3 道招牌菜，先取消一道'), findsWidgets);
+    expect(locationOf(router), Paths.publishDish(7));
+    final publish = find.widgetWithText(EatButton, '发布');
+    expect(tester.widget<EatButton>(publish).onPressed, isNull);
+
+    await _tapText(tester, '招牌菜');
+    expect(find.text('这家店已有 3 道招牌菜，先取消一道'), findsNothing);
+    await tester.tap(find.text('发布'));
+    await tester.pumpAndSettle();
+
+    expect(env.adapter.sent('POST /foods/upload'), hasLength(2));
+    expect(_published(env)['signature'], isFalse);
+    expect(locationOf(router), Paths.dish(99));
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  group('按照片预选', () {
+    testWidgets('菜名和封面都好了、还没选分类时识别一次，预选分类和口味', (tester) async {
+      final env = TestEnv();
+      _routes(env, {'id': 99});
+      env.adapter.on('POST /foods/suggest-tags', [
+        FakeAdapter.ok({
+          'category': '主食',
+          'tags': ['辣', '清淡'],
+        }),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.publishDish(7),
+      );
+
+      await _addPhoto(tester);
+      expect(env.adapter.sent('POST /foods/suggest-tags'), isEmpty);
+      await _enterName(tester, '鲜虾云吞');
+
+      expect(env.adapter.sent('POST /foods/suggest-tags').single.body, {
+        'name': '鲜虾云吞',
+        'restaurantId': 7,
+        'pictures': ['foods/a.jpg'],
+      });
+      await _seeText(tester, '按照片预选，可以改');
+
+      await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
+      await _enterName(tester, '鲜虾馄饨');
+      expect(env.adapter.sent('POST /foods/suggest-tags'), hasLength(1));
+
+      await _enterPrice(tester, '18');
+      await tester.tap(find.text('发布'));
+      await tester.pumpAndSettle();
+      expect(_published(env)['category'], '主食');
+      expect(_published(env)['tags'], ['辣', '清淡']);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('识别回来前手动选过的口味不覆盖；改了分类后不再显示预选说明', (tester) async {
+      final env = TestEnv();
+      _routes(env, {'id': 99});
+      env.adapter.on('POST /foods/suggest-tags', [
+        FakeAdapter.ok({
+          'category': '主食',
+          'tags': ['辣'],
+        }),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.publishDish(7),
+      );
+
+      await _addPhoto(tester);
+      await _tapText(tester, '甜');
+      await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
+      await _enterName(tester, '鲜虾云吞');
+      expect(env.adapter.sent('POST /foods/suggest-tags'), hasLength(1));
+      await _seeText(tester, '按照片预选，可以改');
+
+      await _tapText(tester, '小吃');
+      expect(find.text('按照片预选，可以改'), findsNothing);
+      await _enterPrice(tester, '18');
+      await tester.tap(find.text('发布'));
+      await tester.pumpAndSettle();
+      expect(_published(env)['category'], '小吃');
+      expect(_published(env)['tags'], ['甜']);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('识别失败时不提示，照常手动选择', (tester) async {
+      final env = TestEnv();
+      _routes(env, {'id': 99});
+      env.adapter.on('POST /foods/suggest-tags', [
+        FakeAdapter.fail(40001, '没能识别这道菜，请手动选择'),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.publishDish(7),
+      );
+
+      await _addPhoto(tester);
+      await _enterName(tester, '鲜虾云吞');
+
+      expect(env.adapter.sent('POST /foods/suggest-tags'), hasLength(1));
+      expect(find.text('没能识别这道菜，请手动选择'), findsNothing);
+      expect(find.text('按照片预选，可以改'), findsNothing);
+      expect(find.text('请填写价格和分类'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('已经选了分类时不识别', (tester) async {
+      final env = TestEnv();
+      _routes(env, {'id': 99});
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.publishDish(7),
+      );
+
+      await _addPhoto(tester);
+      await _tapText(tester, '小吃');
+      await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
+      await _enterName(tester, '鲜虾云吞');
+
+      expect(env.adapter.sent('POST /foods/suggest-tags'), isEmpty);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
   });
 }

@@ -54,12 +54,17 @@ final class ApiHooksProvider
 
 String _$apiHooksHash() => r'9356f30fd6d2f2140911e7ebeeb94100386e5fba';
 
+/// Web 不能设置 `User-Agent`, 由浏览器决定.
+
 @ProviderFor(apiClient)
 final apiClientProvider = ApiClientProvider._();
+
+/// Web 不能设置 `User-Agent`, 由浏览器决定.
 
 final class ApiClientProvider
     extends $FunctionalProvider<ApiClient, ApiClient, ApiClient>
     with $Provider<ApiClient> {
+  /// Web 不能设置 `User-Agent`, 由浏览器决定.
   ApiClientProvider._()
     : super(
         from: null,
@@ -93,4 +98,4 @@ final class ApiClientProvider
   }
 }
 
-String _$apiClientHash() => r'e99b89f31cdd4bc8f8b8ce65d8815e2ed34f1237';
+String _$apiClientHash() => r'efbea5884227d8b6930caf572759150dd68319ef';

@@ -5,6 +5,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fakes.dart';
@@ -178,8 +179,8 @@ void main() {
         ),
       );
       tokens = store;
-      adapter.on('GET /a', [FakeAdapter.fail(20003)]);
-      adapter.on('GET /b', [FakeAdapter.fail(20002)]);
+      adapter.on('GET /a', [FakeAdapter.fail(20001)]);
+      adapter.on('GET /b', [FakeAdapter.fail(20001)]);
 
       final failures = await Future.wait([
         _failure(client.get('/a')),
@@ -192,57 +193,27 @@ void main() {
       expect(expired, 1);
     });
 
-    test('账号授权过期和集群会话失效也按登录过期处理', () async {
-      for (final response in [
-        FakeAdapter.fail(20010),
-        const FakeResponse(
-          status: 401,
-          body: {'code': 'CLUSTER_SESSION_INVALID'},
-        ),
-        const FakeResponse(
-          status: 401,
-          body: {'code': 'CLUSTER_SESSION_REVOKED'},
-        ),
-      ]) {
-        var expired = 0;
-        var grants = 0;
-        final (client, adapter, _) = await _client(
-          hooks: ApiHooks(
-            onSessionExpired: () => expired++,
-            requestConsent: () async => grants++,
-          ),
-        );
-        adapter.on('GET /a', [response]);
-
-        final failure = await _failure(client.get('/a'));
-        expect(failure.kind, FailureKind.sessionExpired, reason: '$response');
-        expect(expired, 1, reason: '$response');
-        expect(grants, 0, reason: '不得自动续同意');
-      }
-    });
-
-    test('受限会话收到封禁码 (解封后) 按登录过期处理；登录请求不带凭证时提示封禁', () async {
+    test('带凭证的请求收到封禁码时按会话失效处理，只通知封禁；登录请求不带凭证时提示封禁', () async {
       var expired = 0;
-      final (client, adapter, _) = await _client(
-        token: const AuthToken(name: 'satoken', value: 'rbs1_x'),
-        hooks: ApiHooks(onSessionExpired: () => expired++),
+      var banned = 0;
+      final hooks = ApiHooks(
+        onSessionExpired: () => expired++,
+        onBanned: () => banned++,
       );
+      final (client, adapter, _) = await _client(hooks: hooks);
       adapter.on('GET /user/info', [FakeAdapter.fail(30002)]);
 
       final failure = await _failure(client.get('/user/info'));
       expect(failure.kind, FailureKind.sessionExpired);
-      expect(failure.message, '登录已过期，请重新登录');
-      expect(expired, 1);
+      expect(failure.code, BizCodes.userDisabled);
+      expect((expired, banned), (0, 1));
 
-      final (login, loginAdapter, _) = await _client(
-        token: null,
-        hooks: ApiHooks(onSessionExpired: () => expired++),
-      );
+      final (login, loginAdapter, _) = await _client(token: null, hooks: hooks);
       loginAdapter.on('POST /auth/login', [FakeAdapter.fail(30002)]);
       final rejected = await _failure(login.post('/auth/login'));
       expect(rejected.kind, FailureKind.business);
       expect(rejected.message, '账号已被封禁');
-      expect(expired, 1);
+      expect((expired, banned), (0, 1));
     });
 
     test('没登录时遇到 2000x 不当作过期', () async {
@@ -271,7 +242,7 @@ void main() {
     expect(forbidden, 1);
   });
 
-  group('数据跨境同意', () {
+  group('隐私政策同意', () {
     test('要求同意时请用户确认，同意后把原请求重发一次', () async {
       var asks = 0;
       final (client, adapter, _) = await _client(
@@ -319,7 +290,7 @@ void main() {
 
       final failure = await _failure(client.post('/a'));
       expect(failure.kind, FailureKind.business);
-      expect(failure.message, '同意数据跨境后才能继续');
+      expect(failure.message, '同意隐私政策后才能继续');
       expect(adapter.sent('POST /a'), hasLength(1));
     });
 
@@ -355,23 +326,6 @@ void main() {
       );
       expect(asks, 0);
     });
-
-    test('数据处理中 (20006) 不请用户同意，也不重发写请求', () async {
-      var asks = 0;
-      final (client, adapter, _) = await _client(
-        hooks: ApiHooks(requestConsent: () async => asks++),
-      );
-      adapter.on('POST /foods/1/like', [
-        FakeAdapter.fail(20006),
-        FakeAdapter.ok(),
-      ]);
-
-      final failure = await _failure(client.post('/foods/1/like'));
-      expect(failure.kind, FailureKind.business);
-      expect(failure.message, '数据正在处理，请稍后再试');
-      expect(asks, 0);
-      expect(adapter.sent('POST /foods/1/like'), hasLength(1));
-    });
   });
 
   test('只对网络错误自动重试，最多 2 次', () {
@@ -380,7 +334,38 @@ void main() {
     expect(retryOnNetworkFailure(1, network), isNotNull);
     expect(retryOnNetworkFailure(2, network), isNull);
     expect(retryOnNetworkFailure(0, AppFailure.fromCode(30005)), isNull);
-    expect(retryOnNetworkFailure(0, AppFailure.fromCode(20003)), isNull);
+    expect(retryOnNetworkFailure(0, AppFailure.fromCode(20001)), isNull);
     expect(retryOnNetworkFailure(0, StateError('x')), isNull);
+  });
+
+  group('User-Agent', () {
+    test('App 端的请求带上能识别平台的 User-Agent', () async {
+      final adapter = FakeAdapter()..on('GET /a', [FakeAdapter.ok()]);
+      final client = ApiClient(
+        baseUrl: 'https://api.test/api',
+        tokens: TokenStore(MemorySecureStore()),
+        userAgent: Future.value('EatWhat/0.1.0 (Android)'),
+        adapter: adapter,
+      );
+
+      await client.get('/a');
+      expect(
+        adapter.sent('GET /a').single.headers['User-Agent'],
+        'EatWhat/0.1.0 (Android)',
+      );
+    });
+
+    test('后端能从中认出 iOS 和安卓，读不到版本时省略版本', () {
+      expect(
+        appUserAgent(TargetPlatform.android, '0.1.0'),
+        'EatWhat/0.1.0 (Android)',
+      );
+      expect(appUserAgent(TargetPlatform.iOS, '0.1.0'), 'EatWhat/0.1.0 (iOS)');
+      expect(appUserAgent(TargetPlatform.iOS, null), 'EatWhat (iOS)');
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        final ua = appUserAgent(platform, '1.0.0').toLowerCase();
+        expect(ua.contains('android') || ua.contains('ios'), isTrue);
+      }
+    });
   });
 }

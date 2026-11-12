@@ -3,6 +3,7 @@ import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/settings/about_page.dart';
 import 'package:eat/features/settings/account_page.dart';
+import 'package:eat/features/settings/delete_account_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/paths.dart';
@@ -93,7 +94,6 @@ void main() {
           hasPassword: true,
           verified: true,
           verifyMethod: VerifyMethod.schoolEmail,
-          banned: false,
         ),
       ),
       location: Paths.settingsAccount,
@@ -103,7 +103,6 @@ void main() {
     expect(find.text('138 **** 5678'), findsOneWidget);
     expect(find.text('已认证，山大邮箱'), findsOneWidget);
     expect(find.text('修改密码'), findsOneWidget);
-    expect(find.text('待接入'), findsNothing);
     expect(
       tester.getTopRight(find.text('未设置')).dx,
       tester.getTopRight(find.text('138 **** 5678')).dx,
@@ -113,6 +112,29 @@ void main() {
     await tester.tap(find.text('学生认证'));
     await tester.pumpAndSettle();
     expect(find.byType(VerifyPage), findsOneWidget);
+  });
+
+  testWidgets('注销账号标着待接入，点了只提示，不进注销页', (tester) async {
+    final (_, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: testUser),
+      location: Paths.settingsAccount,
+    );
+
+    expect(find.text('注销账号'), findsOneWidget);
+    expect(find.text('待接入'), findsOneWidget);
+    await tester.tap(find.text('注销账号'));
+    await tester.pump();
+    expect(find.text('该功能即将上线'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(locationOf(router), Paths.settingsAccount);
+    expect(find.byType(DeleteAccountPage), findsNothing);
+    expect(
+      env.adapter.requests.where((r) => r.path.contains('cancellation')),
+      isEmpty,
+    );
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets('关于页写出版本名、构建号和补丁号', (tester) async {

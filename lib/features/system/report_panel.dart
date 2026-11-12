@@ -1,5 +1,4 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
 import 'package:eat/data/feedback/feedback_repository.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -12,17 +11,20 @@ import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/state/comments.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 举报面板: 选一个原因, 补充说明选填. 提交成功后关闭面板并提示 "已提交, 我们会尽快处理".
 ///
 /// [target] 决定标题和可选的原因. 从其他面板进入时, 关闭该面板后调用.
+/// 举报评论时服务端答复评论已删除, 面板关闭并提示, 再调用 [onGone].
 Future<void> showReportPanel(
   BuildContext context,
   WidgetRef ref,
-  ReportTarget target,
-) async {
+  ReportTarget target, {
+  VoidCallback? onGone,
+}) async {
   if (!await guardAction(context, ref, Capability.report) || !context.mounted) {
     return;
   }
@@ -35,25 +37,28 @@ Future<void> showReportPanel(
       options: target.reasons,
       label: (reason) => reason.label,
       capability: Capability.report,
-      submit: (reason, note, key) => repository.report(
-        target,
-        reason: reason,
-        note: note,
-        idempotencyKey: key,
-      ),
+      gone: target.kind == ReportKind.comment ? isCommentGone : null,
+      submit: (reason, note) =>
+          repository.report(target, reason: reason, note: note),
     ),
   );
-  if (sent == true && context.mounted) {
-    showToast(context, '已提交，处理结果会通过消息通知你');
+  if (!context.mounted) return;
+  switch (sent) {
+    case true:
+      showToast(context, '已提交，处理结果会通过消息通知你');
+    case false:
+      onGone?.call();
+      showToast(context, '${target.kind.noun}已删除');
+    case null:
   }
 }
 
 /// 选一个原因并填写选填补充说明的面板, 用于举报和店铺 "信息有误".
 ///
 /// 提交成功后以 true 关闭面板, 由调用方显示提示. 失败时面板保留, 显示失败提示.
+/// 失败原因符合 [gone] 时以 false 关闭面板, 由调用方提示对象已删除.
 ///
 /// 不预选原因, 选好后 "提交" 才可用, 避免误提交第一项.
-/// 同一份内容重试时沿用同一个 `Idempotency-Key`. 内容变化后换用新值, 因为服务端拒绝同一个键提交不同内容.
 class ReasonPanel<T> extends ConsumerStatefulWidget {
   const new({
     super.key,
@@ -62,6 +67,7 @@ class ReasonPanel<T> extends ConsumerStatefulWidget {
     required this.options,
     required this.label,
     required this.capability,
+    this.gone,
     required this.submit,
   });
 
@@ -73,8 +79,11 @@ class ReasonPanel<T> extends ConsumerStatefulWidget {
   /// 服务端拒绝时按该操作弹拦截对话框.
   final Capability capability;
 
-  /// 提交. [key] 是本次请求的 `Idempotency-Key`. 失败时抛出 [AppFailure].
-  final Future<void> Function(T option, String note, String key) submit;
+  /// 判断失败原因是否为对象已删除.
+  final bool Function(AppFailure failure)? gone;
+
+  /// 提交. 失败时抛出 [AppFailure].
+  final Future<void> Function(T option, String note) submit;
 
   @override
   ConsumerState<ReasonPanel<T>> createState() => _ReasonPanelState<T>();
@@ -87,9 +96,6 @@ class _ReasonPanelState<T> extends ConsumerState<ReasonPanel<T>> {
   final _note = TextEditingController();
   T? _selected;
   var _sending = false;
-
-  /// 最近一次提交的内容及对应的 `Idempotency-Key`.
-  ({T option, String note, String key})? _last;
 
   @override
   void initState() {
@@ -104,18 +110,16 @@ class _ReasonPanelState<T> extends ConsumerState<ReasonPanel<T>> {
   }
 
   Future<void> _submit(T option) async {
-    final note = _note.text.trim();
-    final last = _last;
-    final key = last != null && last.option == option && last.note == note
-        ? last.key
-        : newIdempotencyKey();
-    _last = (option: option, note: note, key: key);
     setState(() => _sending = true);
     try {
-      await widget.submit(option, note, key);
+      await widget.submit(option, _note.text.trim());
       if (mounted) Navigator.of(context).pop(true);
     } on AppFailure catch (e) {
       if (!mounted) return;
+      if (widget.gone?.call(e) ?? false) {
+        Navigator.of(context).pop(false);
+        return;
+      }
       setState(() => _sending = false);
       await reportActionFailure(
         context,

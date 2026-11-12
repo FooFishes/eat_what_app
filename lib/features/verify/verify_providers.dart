@@ -26,14 +26,21 @@ class const VerifyState({
 /// 认证邮件的重发间隔, 与短信验证码一致.
 const emailResendInterval = Duration(seconds: 60);
 
-/// 统一认证的结果, 来自后端重定向到回跳链接时附带的 `result` 和 `code`.
+/// 统一认证的结果, 来自后端重定向到回跳链接时附带的 `result`, `code` 和 `ticket`.
 ///
-/// 回跳链接任何人都能构造, 因此结果只用于提示, 不能作为认证凭证.
-class const SsoResult({required final bool success, final int? code}) {
+/// 成功时认证还没有生效, 要由发起认证的账号提交 [ticket].
+/// 回跳链接任何人都能构造, 因此 [success] 和 [code] 只用于提示.
+class const SsoResult({
+  required final bool success,
+  final int? code,
+
+  /// 一次性的认证票据, 5 分钟内有效. 只在成功时有值.
+  final String? ticket,
+}) {
   /// 回跳链接查询参数中的结果. `result` 既不是 success 也不是 failure 时返回 null.
   static SsoResult? fromCallback(Map<String, String> query) =>
       switch (query['result']) {
-        'success' => const SsoResult(success: true),
+        'success' => SsoResult(success: true, ticket: query['ticket']),
         'failure' => SsoResult(
           success: false,
           code: int.tryParse(query['code'] ?? ''),
@@ -42,7 +49,7 @@ class const SsoResult({required final bool success, final int? code}) {
       };
 }
 
-/// 统一认证回跳链接中的失败业务码, 取值与后端 `AuthService` 重定向时附带的 `code` 一致.
+/// 统一认证失败的业务码. 回跳链接的 `code` 和提交票据的响应都可能是这些值.
 abstract final class SsoCodes {
   /// 认证链接无效, 过期或已用过.
   static const linkExpired = 30012;
@@ -59,8 +66,7 @@ String ssoFailureMessage(int? code) => switch (code) {
   SsoCodes.linkExpired => '认证链接已失效，请重新发起认证',
   SsoCodes.studentIdTaken => '该学号已认证其他账号',
   SsoCodes.badSchoolResponse => '学校返回的认证结果无效，请重新认证',
-  BizCodes.consentRequired => '同意数据跨境后才能认证',
-  BizCodes.dataSyncPending => '账号正在处理，请稍后重新认证',
+  BizCodes.opFailed => '这次认证不是当前账号发起的，请重新认证',
   BizCodes.userDisabled => '账号已被封禁',
   final int code when code ~/ 10000 == 9 => '暂时无法认证，请稍后再试',
   _ => '认证未完成，请重新认证',
@@ -103,7 +109,7 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 通过人机验证后发送认证邮件.
+  /// 通过人机验证后发送认证邮件. 邮箱已被其他账号认证时服务端返回 [BizCodes.opFailed].
   Future<void> sendEmail(CaptchaPresenter present, String email) async {
     if (state.busy) return;
     state = _copy(busy: true, notice: null);
@@ -122,7 +128,10 @@ class Verify extends _$Verify {
           : _copy(busy: false, notice: null);
     } on AppFailure catch (e) {
       if (!ref.mounted) return;
-      state = _copy(busy: false, notice: _noticeOf(e));
+      state = _copy(
+        busy: false,
+        notice: e.code == BizCodes.opFailed ? '该邮箱已认证其他账号' : _noticeOf(e),
+      );
     }
   }
 
@@ -143,16 +152,33 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 显示统一认证回跳的结果, 并重新请求认证状态.
+  /// 处理统一认证回跳的结果: 成功时提交票据完成认证, 然后重新请求认证状态.
   ///
-  /// 是否已认证以服务端返回的当前账号为准: 期间切换过账号时, 结果不套用到新账号.
-  /// 成功但账号仍未认证时, 可能是认证结果尚未生效, 提示稍后刷新而不是重新认证.
+  /// 票据只能由发起认证的账号提交. 期间切换过账号时, 服务端拒绝提交, 结果不套用到新账号.
+  /// 提交成功但账号仍未认证时, 可能是刷新失败, 提示稍后刷新而不是重新认证.
   Future<void> showSsoResult(SsoResult result) async {
+    String? failure;
+    if (result case SsoResult(success: true, :final ticket?)) {
+      try {
+        await ref.read(authRepositoryProvider).confirmSso(ticket);
+      } on AppFailure catch (e) {
+        failure = switch (e.kind) {
+          FailureKind.cancelled => null,
+          FailureKind.business || FailureKind.unknown => ssoFailureMessage(
+            e.code is int ? e.code! as int : null,
+          ),
+          _ => e.message,
+        };
+      }
+      if (!ref.mounted) return;
+    }
     await ref.read(sessionProvider.notifier).refreshUser();
     if (!ref.mounted) return;
     if (_verified) {
       state = _copy(notice: null);
-    } else if (result.success) {
+    } else if (failure != null) {
+      state = _copy(notice: failure);
+    } else if (result.success && result.ticket != null) {
       state = _copy(ssoStarted: true, notice: '认证结果尚未生效，请稍后刷新状态');
     } else {
       state = _copy(notice: ssoFailureMessage(result.code));
@@ -175,4 +201,26 @@ class Verify extends _$Verify {
 
   static String? _noticeOf(AppFailure failure) =>
       failure.kind == FailureKind.cancelled ? null : failure.message;
+}
+
+/// 邮箱认证落地页的进度. null 表示还没有提交.
+@riverpod
+class EmailVerification extends _$EmailVerification {
+  @override
+  AsyncValue<void>? build() => null;
+
+  /// 提交邮件链接中的 [token], 成功后刷新账号状态. 失败的原因见 [AsyncError.error].
+  ///
+  /// token 只能使用一次, 因此只提交一次. 页面重建不会重复提交.
+  Future<void> submit(String token) async {
+    if (state != null) return;
+    state = const AsyncLoading();
+    try {
+      await ref.read(authRepositoryProvider).verifyEmail(token);
+      await ref.read(sessionProvider.notifier).refreshUser();
+      if (ref.mounted) state = const AsyncData(null);
+    } on AppFailure catch (e, stack) {
+      if (ref.mounted) state = AsyncError(e, stack);
+    }
+  }
 }

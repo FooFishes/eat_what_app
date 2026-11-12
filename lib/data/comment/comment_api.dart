@@ -19,20 +19,20 @@ abstract final class CommentEndpoints {
   static String foodGallery(int foodId) => '/foods/$foodId/gallery';
   static String like(int commentId) => '/comments/$commentId/like';
   static String comment(int commentId) => '/comments/$commentId';
-  static const mySubmissions = '/comments/submissions/my';
+  static const my = '/comments/my';
 }
 
 /// 接口分组 Comment: 评论和回复的列表, 发表, 删除, 赞, 我的评论, 菜的图库.
 ///
-/// 写操作都要求 `Idempotency-Key` 请求头, 值为 UUID.
-/// 服务端对同一个键只受理一次, 并拒绝同一个键对应不同正文的请求.
-/// 因此网络失败后的重试沿用原键, 内容变化后换用新键.
+/// 评论不经审核, 发表后立即公开. 评论不存在时服务端返回 10001.
 class CommentApi {
   CommentApi(this._client);
 
   final ApiClient _client;
 
-  /// 一道菜的评论, 不含回复. [sort] 为 `MOST_USEFUL` 或 `NEWEST`.
+  /// 一道菜的根评论, 不含回复. [sort] 为 `HOT` 或 `NEWEST`.
+  ///
+  /// 当前用户屏蔽的人写的评论不返回.
   Future<CountedPage<CommentDto>> comments(
     int foodId, {
     required String sort,
@@ -48,7 +48,7 @@ class CommentApi {
     CommentDto.fromJson,
   );
 
-  /// 一条评论下的回复, 按时间倒序.
+  /// 一条根评论下的回复, 按时间正序.
   Future<CountedPage<CommentDto>> replies(
     int commentId, {
     int page = 1,
@@ -63,7 +63,7 @@ class CommentApi {
     CommentDto.fromJson,
   );
 
-  /// 菜的图库中来自评论的照片, 按评论时间倒序. 上传者的照片不在其中.
+  /// 菜的图库中来自根评论的照片, 新的在前. 上传者的照片不在其中.
   Future<Paged<GalleryImageDto>> gallery(
     int foodId, {
     int page = 1,
@@ -78,92 +78,56 @@ class CommentApi {
     GalleryImageDto.fromJson,
   );
 
-  /// 发表评论. [pictureKeys] 是 `biz=comments` 上传完成的存储 key, 最多 3 个.
-  ///
-  /// 不传 `campusId`: 服务端按菜所属的校区推导, 传错会被拒绝.
-  Future<CommentAcceptedDto> create(
+  /// 发表评论, 返回新评论的 id. [pictureKeys] 是 `biz=comments` 上传完成的存储 key, 最多 3 个.
+  Future<int> create(
     int foodId, {
     required String text,
     List<String> pictureKeys = const [],
-    required String idempotencyKey,
-  }) async => decodeJson(
+  }) async => decodeCreatedId(
     await _client.post(
       CommentEndpoints.foodComments(foodId),
       body: {'text': text, 'pictureKeys': pictureKeys},
-      headers: {'Idempotency-Key': idempotencyKey},
     ),
-    CommentAcceptedDto.fromJson,
   );
 
-  /// 回复评论 [commentId]. [replyToId] 是被回复的那条回复, 直接回复评论时为 null.
-  Future<CommentAcceptedDto> reply(
+  /// 回复根评论 [commentId], 返回新回复的 id.
+  ///
+  /// [replyToId] 是被回复的那条回复, 直接回复根评论时为 null.
+  /// 被根评论的作者或被回复的人屏蔽时返回 40002.
+  Future<int> reply(
     int foodId,
     int commentId, {
     required String text,
     int? replyToId,
-    required String idempotencyKey,
-  }) async => decodeJson(
+  }) async => decodeCreatedId(
     await _client.post(
       CommentEndpoints.replyToComment(foodId, commentId),
       body: {'text': text, 'replyToId': ?replyToId},
-      headers: {'Idempotency-Key': idempotencyKey},
     ),
-    CommentAcceptedDto.fromJson,
   );
 
   /// 删除自己的评论或回复. 删除评论时下面的回复一起删除.
-  Future<void> delete(int commentId, {required String idempotencyKey}) =>
-      _client.delete(
-        CommentEndpoints.comment(commentId),
-        headers: {'Idempotency-Key': idempotencyKey},
-      );
+  Future<void> delete(int commentId) =>
+      _client.delete(CommentEndpoints.comment(commentId));
 
-  Future<CommentLikeDto> like(
-    int commentId, {
-    required String idempotencyKey,
-  }) async => decodeJson(
-    await _client.put(
-      CommentEndpoints.like(commentId),
-      headers: {'Idempotency-Key': idempotencyKey},
-    ),
-    CommentLikeDto.fromJson,
-  );
+  Future<void> like(int commentId) =>
+      _client.put(CommentEndpoints.like(commentId));
 
-  Future<CommentLikeDto> unlike(
-    int commentId, {
-    required String idempotencyKey,
-  }) async => decodeJson(
-    await _client.delete(
-      CommentEndpoints.like(commentId),
-      headers: {'Idempotency-Key': idempotencyKey},
-    ),
-    CommentLikeDto.fromJson,
-  );
+  Future<void> unlike(int commentId) =>
+      _client.delete(CommentEndpoints.like(commentId));
 
-  /// 当前用户是否赞过评论 [commentId], 以及该评论的赞数. 受限会话不能调用.
-  Future<CommentLikeDto> likeOf(
-    int commentId, {
-    CancelToken? cancelToken,
-  }) async => decodeJson(
-    await _client.get(
-      CommentEndpoints.like(commentId),
-      cancelToken: cancelToken,
-    ),
-    CommentLikeDto.fromJson,
-  );
-
-  /// 我写过的评论和回复, 含审核中, 未通过和已删除的, 按时间倒序. 受限会话可以调用.
-  Future<Paged<CommentSubmissionDto>> mine({
+  /// 我写过的评论和回复, 按时间倒序. 已删除的不返回.
+  Future<Paged<CommentDto>> mine({
     int page = 1,
     int pageSize = 20,
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      CommentEndpoints.mySubmissions,
+      CommentEndpoints.my,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
-    CommentSubmissionDto.fromJson,
+    CommentDto.fromJson,
   );
 
   static CountedPage<T> _counted<T>(

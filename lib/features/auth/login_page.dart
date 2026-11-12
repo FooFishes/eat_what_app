@@ -32,10 +32,11 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
 /// - 抽屉: "验证码登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
+///   勾选同时同意隐私政策, 用户协议和数据存放在境外.
 ///
 /// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
 ///
-/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页和密码登录页.
+/// [query] 包含地址中的 `from`, `expired` 和 `banned`, 原样传给手机号登录页和密码登录页.
 /// 登录成功后, 守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
   const new({
@@ -111,7 +112,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: EatSpace.s10,
             children: [
-              if (query['expired'] == '1') const _Notice('登录已过期，请重新登录'),
+              if (query['banned'] == '1')
+                const _Notice('账号已被封禁')
+              else if (query['expired'] == '1')
+                const _Notice('登录已过期，请重新登录'),
               EatButton.solid(
                 '验证码登录',
                 icon: EatIcons.phone,
@@ -397,6 +401,8 @@ class _TurntableState extends State<_Turntable>
 }
 
 /// 协议勾选行. 左侧为勾选框, 协议名可点击查看. 默认不勾.
+///
+/// 一次勾选同时同意隐私政策, 用户协议和数据存放在境外. 服务端把三者作为同一份同意记录.
 class AgreementCheck extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -440,7 +446,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
       children: [
         EatTappable(
           onTap: toggle,
-          label: '同意隐私政策和用户协议',
+          label: '同意隐私政策、用户协议和数据存放在境外',
           checked: agreed,
           button: false,
           focusShape: const CircleBorder(),
@@ -463,6 +469,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
                     children: [
                       const TextSpan(text: '我已阅读并同意'),
                       ..._links.spans(c.inkSoft),
+                      const TextSpan(text: '，同意数据存放在境外'),
                     ],
                   ),
                   style: style,
@@ -474,18 +481,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
         const SizedBox(width: gap),
       ],
     );
-
-    /// 行尾的全角 "》" 字面只占左半边, 右半边是空白.
-    /// 整组按这段空白的一半右移, 看上去才居中.
-    final bracketSpace =
-        MediaQuery.textScalerOf(context).scale(style.fontSize!) / 2;
-    return Align(
-      heightFactor: 1,
-      child: Transform.translate(
-        offset: Offset(bracketSpace / 2, 0),
-        child: row,
-      ),
-    );
+    return Align(heightFactor: 1, child: row);
   }
 }
 
@@ -591,7 +587,7 @@ class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
       child: Text.rich(
         TextSpan(
           children: [
-            const TextSpan(text: '使用时会用到设备信息和使用记录，详见'),
+            const TextSpan(text: '使用时会用到设备信息和使用记录，这些数据存放在境外服务器。详见'),
             ..._links.spans(c.ink),
             const TextSpan(text: '。'),
           ],

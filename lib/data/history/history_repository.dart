@@ -34,22 +34,35 @@ class HistoryRepository {
   Future<void> clear(FootprintKind kind) => _api.clear(targetType: kind.api);
 
   Footprint? _toFootprint(FootprintKind kind, BrowseItemDto item) {
-    final target = switch (kind) {
-      FootprintKind.dish => item.food,
-      FootprintKind.shop => item.restaurant,
+    final (id, name, image, likes) = switch (kind) {
+      FootprintKind.dish => (
+        item.food?.id,
+        item.food?.name,
+        item.food?.pictureUrls?.firstOrNull,
+        item.food?.likeCount,
+      ),
+      FootprintKind.shop => (
+        item.restaurant?.id,
+        item.restaurant?.name,
+        item.restaurant?.pictureUrl,
+        null,
+      ),
     };
-    final id = target?.id ?? item.targetId;
-    final name = target?.name?.trim();
+    final title = name?.trim();
     final viewedAt = dateFromMillis(item.viewedAt);
-    if (id == null || name == null || name.isEmpty || viewedAt == null) {
+    final targetId = id ?? item.targetId;
+    if (targetId == null ||
+        title == null ||
+        title.isEmpty ||
+        viewedAt == null) {
       return null;
     }
     return Footprint(
       kind: kind,
-      id: id,
-      name: name,
-      image: imageUrl(target?.pictureUrl?.firstOrNull),
-      likes: target?.likesCount,
+      id: targetId,
+      name: title,
+      image: imageUrl(image),
+      likes: likes,
       viewedAt: viewedAt,
     );
   }

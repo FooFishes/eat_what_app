@@ -22,6 +22,8 @@ Future<Shop> shop(Ref ref, int shopId) {
 }
 
 /// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+///
+/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
 @riverpod
 String? hubName(Ref ref, int? hubId) {
   if (hubId == null) return null;

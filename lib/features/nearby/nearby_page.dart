@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
-import 'package:eat/data/place/place_api.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
@@ -13,7 +12,6 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
-import 'package:eat/design/widgets/eat_radio_row.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
@@ -23,11 +21,13 @@ import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
-import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/nearby/nearby_providers.dart';
 import 'package:eat/features/system/base_map.dart';
+import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
@@ -42,7 +42,7 @@ import 'package:go_router/go_router.dart';
 /// - 顶部: 搜索框, 筛选按钮, 商圈胶囊.
 /// - 地图: 每家店一个圆形标记, 右下角是 "回到我的位置".
 /// - 拖动地图停止后, 按新的地图中心重新查找店铺.
-/// - 筛选和排序同时作用于地图标记和抽屉列表.
+/// - 店铺只按距离排列. 筛选同时作用于地图标记和抽屉列表.
 ///
 /// 地图是百度地图. 当前平台没有 AK, 或地图加载失败时整页改为列表, 不留空白的地图区域.
 class NearbyPage extends ConsumerStatefulWidget {
@@ -74,7 +74,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   int? _selectedShopId;
   var _keyword = '';
   var _filter = const NearbyFilter();
-  var _sort = ShopSort.distance;
   var _mapFailed = false;
 
   /// 抽屉高度占屏幕高度的比例. "回到我的位置" 按钮随抽屉上沿移动.
@@ -88,8 +87,8 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
 
   static const _sheetInitial = 0.42;
 
-  /// 店铺行的估算高度: 店名一行, 距离, 地址, 招牌各一行.
-  static const _rowExtent = 90.0;
+  /// 店铺行的估算高度: 店名, 距离和商圈, 地址各一行.
+  static const _rowExtent = 70.0;
   static const _zoom = 16.0;
 
   @override
@@ -189,31 +188,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     });
   }
 
-  Future<void> _openSort() async {
-    final sort = await showPanel<ShopSort>(
-      context,
-      builder: (panel) => EatPanel(
-        title: '排序',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final sort in ShopSort.values)
-              EatRadioRow(
-                title: sort.label,
-                selected: sort == _sort,
-                onSelected: () => Navigator.of(panel).pop(sort),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || sort == null || sort == _sort) return;
-    setState(() {
-      _sort = sort;
-      _selectedShopId = null;
-    });
-  }
-
   void _tapShop(Shop shop, List<Shop> shops) {
     if (_selectedShopId == shop.id) {
       context.push(Paths.shop(shop.id));
@@ -223,7 +197,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final index = shops.indexOf(shop);
     final list = _list;
     if (index >= 0 && list != null && list.hasClients) {
-      // 行高随文字行数变化, 无法精确计算目标位置. 按四行文字的行高估算, 误差不超过一行.
+      // 行高随文字行数变化, 无法精确计算目标位置. 按三行文字的行高估算, 误差不超过一行.
       list.animateTo(
         (_rowExtent + 18) * index,
         duration: const Duration(milliseconds: 360),
@@ -238,9 +212,12 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final campus = ref.watch(currentPlaceProvider.select((p) => p.campus));
     final me = ref.watch(currentLocationProvider.select((s) => s.point));
     final myHub = ref.watch(myHubProvider).value;
+    // 与后端的校区范围一致: 没有校区的商圈只算在默认校区里.
     final hubs = [
       for (final hub in ref.watch(hubsProvider).value ?? const <Hub>[])
-        if (campus == null || hub.campusId == null || hub.campusId == campus.id)
+        if (campus == null ||
+            hub.campusId == campus.id ||
+            (hub.campusId == null && campus.isDefault))
           hub,
     ];
     final hubId = _hubTouched ? _hubId : myHub?.id;
@@ -263,7 +240,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       hubId: hubId,
       keyword: _keyword,
       filter: _filter,
-      sort: _sort,
     );
     final shops = ref.watch(nearbyShopsProvider(query));
     final list = shops.value ?? const <Shop>[];
@@ -297,7 +273,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         : ColoredBox(color: context.eat.colors.mapGround);
 
     final search = EatSearchField(
-      hintText: '搜店名或菜名',
+      hintText: '搜店名或地址',
       controller: _keywordInput,
       floating: _hasMap,
       onSubmitted: (value) => setState(() {
@@ -356,11 +332,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         ),
       ),
     );
-    final header = _ListHeader(
-      count: shops.value?.length,
-      sort: _sort,
-      onSort: _openSort,
-    );
+    final header = _ListHeader(count: shops.value?.length);
     final rows = _rows(shops, list);
 
     if (layout.isWide) {
@@ -559,7 +531,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           child: EmptyState(
             icon: EatIcons.store,
             title: _keyword.isEmpty ? '这附近还没有店' : '没找到「$_keyword」',
-            message: _keyword.isEmpty ? '拖动地图看看附近，或切换其他商圈。' : '换个店名或菜名试试。',
+            message: _keyword.isEmpty ? '拖动地图看看附近，或切换其他商圈。' : '换个店名或地址试试。',
           ),
         ),
       );
@@ -575,13 +547,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   }
 }
 
-/// 列表头: 店铺数量和排序按钮. 点击排序按钮打开排序面板.
+/// 列表头: 店铺数量. 店铺只按距离排列, 不提供排序选项.
 class _ListHeader extends StatelessWidget {
-  const new({required this.count, required this.sort, required this.onSort});
+  const new({required this.count});
 
   final int? count;
-  final ShopSort sort;
-  final VoidCallback onSort;
 
   @override
   Widget build(BuildContext context) {
@@ -593,10 +563,11 @@ class _ListHeader extends StatelessWidget {
         EatSpace.s20,
         EatSpace.s10,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Semantics(
+      child: SizedBox(
+        height: EatSize.touch,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Semantics(
             header: true,
             child: Text.rich(
               TextSpan(
@@ -612,48 +583,17 @@ class _ListHeader extends StatelessWidget {
               style: eat.text.heading,
             ),
           ),
-          const Spacer(),
-          EatTappable(
-            onTap: onSort,
-            label: '排序：${sort.label}',
-            builder: (context, _) => ExcludeSemantics(
-              child: SizedBox(
-                height: EatSize.touch,
-                child: Row(
-                  spacing: 2,
-                  children: [
-                    Text(
-                      sort.label,
-                      style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
-                    ),
-                    EatIcon(
-                      EatIcons.chevronDown,
-                      size: 14,
-                      color: eat.colors.inkMuted,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-extension on ShopSort {
-  String get label => switch (this) {
-    ShopSort.distance => '按距离',
-    ShopSort.recommendation => '推荐率最高',
-    ShopSort.dishCount => '菜最多',
-  };
-}
-
-/// 筛选面板: 分类多选, 价位单选, 只看推荐率 80% 以上, 只看我收藏的店.
+/// 筛选面板: 类型单选, 品类多选, 价位单选, 只看口碑好的, 只看我收藏的店.
 ///
-/// 选项先作用于草稿, 点 "看 N 家" 后才生效. N 是按草稿查询的结果数, 随选项实时变化.
-/// 草稿查询与生效后的查询条件相同, 因此生效时复用缓存的结果.
+/// - 选项先作用于草稿, 点 "看 N 家" 后才生效. N 是按草稿查询的结果数, 随选项实时变化.
+///   草稿查询与生效后的查询条件相同, 因此生效时复用缓存的结果.
+/// - 游客打开 "只看我收藏的店" 时先弹登录拦截, 选项不打开, 也不发请求.
 class _FilterPanel extends ConsumerStatefulWidget {
   const new({required this.query});
 
@@ -665,6 +605,7 @@ class _FilterPanel extends ConsumerStatefulWidget {
 }
 
 class _FilterPanelState extends ConsumerState<_FilterPanel> {
+  late var _kind = widget.query.filter.kind;
   late var _categories = {...widget.query.filter.categories};
   late var _priceBand = widget.query.filter.priceBand;
   late var _recommendedOnly = widget.query.filter.recommendedOnly;
@@ -674,19 +615,28 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
   int? _count;
 
   NearbyFilter get _draft => NearbyFilter(
+    kind: _kind,
     categories: _categories,
     priceBand: _priceBand,
     recommendedOnly: _recommendedOnly,
     favoritesOnly: _favoritesOnly,
   );
 
-  void _toggleCategory(DishCategory category) => setState(() {
+  void _toggleCategory(ShopCategory category) => setState(() {
     _categories = _categories.contains(category)
         ? ({..._categories}..remove(category))
         : {..._categories, category};
   });
 
+  Future<void> _setFavoritesOnly(bool value) async {
+    if (value && !await guardAction(context, ref, Capability.viewFavorites)) {
+      return;
+    }
+    if (mounted) setState(() => _favoritesOnly = value);
+  }
+
   void _reset() => setState(() {
+    _kind = null;
     _categories = {};
     _priceBand = null;
     _recommendedOnly = false;
@@ -735,11 +685,29 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          group('店里有这些菜，可以多选'),
+          group('类型'),
           Wrap(
             spacing: EatSpace.s8,
             children: [
-              for (final category in DishCategory.values)
+              EatChip.choice(
+                '不限',
+                selected: _kind == null,
+                onTap: () => setState(() => _kind = null),
+              ),
+              for (final kind in ShopKind.values)
+                EatChip.choice(
+                  kind.label,
+                  selected: _kind == kind,
+                  onTap: () => setState(() => _kind = kind),
+                ),
+            ],
+          ),
+          const SizedBox(height: EatSpace.s8),
+          group('品类，可以多选'),
+          Wrap(
+            spacing: EatSpace.s8,
+            children: [
+              for (final category in ShopCategory.values)
                 EatChip.tag(
                   category.label,
                   selected: _categories.contains(category),
@@ -767,14 +735,17 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
           ),
           const SizedBox(height: EatSpace.s8),
           EatSwitch(
-            label: '只看推荐率 80% 以上',
+            label: '只看口碑好的',
+            description:
+                '至少 ${ShopRules.rateMinCount} 条评价，推荐率不低于 '
+                '${NearbyFilter.recommendedRate}%',
             value: _recommendedOnly,
             onChanged: (value) => setState(() => _recommendedOnly = value),
           ),
           EatSwitch(
             label: '只看我收藏的店',
             value: _favoritesOnly,
-            onChanged: (value) => setState(() => _favoritesOnly = value),
+            onChanged: _setFavoritesOnly,
           ),
         ],
       ),
@@ -784,7 +755,8 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
 
 /// 附近页地图: 商圈范围, 店铺标记和我的位置. 标记由 [PinImages] 画成位图交给地图引擎.
 ///
-/// 选中的店 `zIndex` 最高, 压在其他标记上面. 我的位置在最下面, 不接点击.
+/// - 标记里是店的门头照片. 选中时外圈是店铺的舞台色.
+/// - 选中的店 `zIndex` 最高, 压在其他标记上面. 我的位置在最下面, 不接点击.
 class _NearbyMap extends StatelessWidget {
   const new({
     required this.controller,
@@ -817,7 +789,6 @@ class _NearbyMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final ring = StageColor.broth.color;
     final byId = {for (final shop in shops) '${shop.id}': shop};
     final markers = <MapMarker>[
       if (me case final me?)
@@ -827,9 +798,9 @@ class _NearbyMap extends StatelessWidget {
         if (pins.shop(
               context,
               name: shop.name,
-              cover: shop.cover ?? shop.photos.firstOrNull,
+              cover: shop.photo,
               selected: shop.id == selectedShopId,
-              ring: ring,
+              ring: ShopRules.stageOf(shop).color,
             )
             case final image?)
           MapMarker(

@@ -17,10 +17,9 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 登录设备: 已登录的设备和最近使用时间, 可以使单台设备或其他全部设备下线.
+/// 登录设备: 已登录的设备和登录时间, 可以使单台设备或其他全部设备下线.
 ///
-/// 其他设备全部下线后, 本机的会话换发为新会话, 用户无需重新登录.
-/// 未能获取新会话时回到登录页.
+/// 本机的会话不受影响. 服务端只记录登录时间, 不记录最近使用时间.
 class DevicesPage extends ConsumerWidget {
   const new({super.key});
 
@@ -106,7 +105,7 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
     final eat = context.eat;
     final c = eat.colors;
     final device = widget.device;
-    final lastUsed = device.lastUsedAt;
+    final signedInAt = device.signedInAt;
     return EatListRow(
       leading: Container(
         width: EatSize.avatar,
@@ -127,9 +126,9 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
         Text(
           device.current
               ? '当前设备'
-              : lastUsed == null
-              ? '最近使用时间未知'
-              : '${TimeFormat.relative(lastUsed, clock.now())}活跃',
+              : signedInAt == null
+              ? '登录时间未知'
+              : '${TimeFormat.relative(signedInAt, clock.now())}登录',
         ),
       ],
       action: device.current
@@ -183,12 +182,8 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
     if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
     try {
-      final kept = await ref
-          .read(deviceSessionsProvider.notifier)
-          .revokeOthers();
-      if (mounted) {
-        showToast(context, kept ? '其他设备已下线' : '其他设备已下线，请重新登录');
-      }
+      await ref.read(deviceSessionsProvider.notifier).revokeOthers();
+      if (mounted) showToast(context, '其他设备已下线');
     } on AppFailure catch (e) {
       if (!mounted) return;
       showToast(

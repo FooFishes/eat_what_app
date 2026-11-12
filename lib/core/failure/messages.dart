@@ -4,59 +4,64 @@ import 'package:eat/core/failure/app_failure.dart';
 abstract final class BizCodes {
   static const success = 0;
 
+  /// 参数不合法.
+  ///
+  /// 对象不存在的部分情况也返回该码, 例如评论不存在, 被回复的评论不存在, 消息卡片不存在.
+  static const paramInvalid = 10001;
+
+  /// 缺少参数. 换绑手机时也表示当前号码的校验已过期, 需要重新验证.
+  static const paramMissing = 10002;
+
   /// 限流. 短信发送过频, 密码输错锁定都返回该码.
   ///
   /// 部分分支在 `data.retryAfterSeconds` 中给出可重试的秒数, 其余分支 `data` 为 null.
   /// 因此不能把每次 10003 都解释为同一种限制.
   static const tooFrequent = 10003;
 
-  /// 当前场景不支持该操作. 对方未公开粉丝或关注列表时, 列表接口返回该码.
+  /// 接口不存在 (HTTP 404) 或请求方法不支持 (HTTP 405).
   static const notSupported = 10004;
-  static const notLoggedIn = 20001;
-  static const tokenInvalid = 20002;
-  static const tokenExpired = 20003;
 
-  /// 无权限. 未认证访问需认证的接口, 或受限会话访问后端未登记的接口时返回.
+  /// 未登录, 包括登录过期和在其他设备上被下线.
+  static const notLoggedIn = 20001;
+
+  /// 无权限. 未认证访问需认证的接口时返回.
+  ///
+  /// 对方未公开粉丝或关注列表时, 列表接口也返回该码.
   static const permissionDenied = 20004;
 
-  /// 用户未同意数据跨境.
+  /// 登录请求没有带隐私政策的版本. 只在服务端发布过政策后出现.
   ///
-  /// 登录时 `data.consentProof` 带有临时凭证, 用户同意后用它提交同意.
-  /// 已登录时网络层请用户同意, 同意后重发一次原请求. 该码表示原请求未被执行, 因此可以重发.
+  /// 服务端在核销验证码之前校验同意. 用户同意后用同一个验证码或密码重试.
   static const consentRequired = 20005;
 
-  /// 账号或数据正在等待服务端处理, 如注册等待协调, 目录冲突. 多个接口都可能返回.
+  /// 隐私政策已更新.
   ///
-  /// 不触发自动同意, 不重发请求.
-  /// 该码不保证写入未被受理, 自动重发写请求可能重复提交.
-  static const dataSyncPending = 20006;
-
-  /// 身份验证暂不可用. 登录时保留输入, 提示稍后再试.
-  ///
-  /// 已登录时提交同意返回该码, 表示当前会话不能提交同意, 需要重新登录取得临时凭证.
-  static const authUnavailable = 20007;
-
-  /// 同意的临时凭证无效或已过期. 需要重新登录取得新凭证.
-  static const consentProofInvalid = 20008;
-
-  /// 同意政策已更新. 处理方式同 [consentRequired], 请用户按新政策重新同意.
+  /// 登录时表示带的版本不是当前版本, 处理方式同 [consentRequired].
+  /// 已登录时网络层请用户同意, 同意后重发一次原请求. 该码表示原请求未被执行, 因此可以重发.
   static const consentPolicyChanged = 20009;
-
-  /// 账号授权已过期. 按登录过期处理.
-  ///
-  /// 后端要求重新登录, 客户端不得代替用户重新同意.
-  static const authorizationExpired = 20010;
 
   static const userNotFound = 30001;
 
-  /// 账号已被封禁. 登录时提示封禁, 不显示码.
+  /// 账号已被封禁. 封禁不能登录, 已登录的会话同时被下线.
   ///
-  /// 站点不支持受限会话时, 封禁账号登录返回该码.
-  /// 受限会话在解封后, 每个请求都返回该码. 网络层据此按登录过期处理, 重新登录取得普通会话.
+  /// 登录请求不带凭证, 按码表提示封禁. 带凭证的请求收到该码时, 网络层通知登录态回到登录页.
   static const userDisabled = 30002;
   static const usernameTaken = 30003;
+
+  /// 密码登录的所有失败: 账号不存在, 没设过密码, 密码错误. 也用于改密码时旧密码错误.
   static const wrongPassword = 30004;
   static const wrongCode = 30005;
+
+  /// 账号已完成学生认证.
+  static const alreadyVerified = 30006;
+
+  /// 邮箱认证链接无效, 已用过, 或不属于当前登录的账号.
+  static const emailTokenInvalid = 30008;
+
+  /// 邮箱不是山大邮箱.
+  static const emailNotSdu = 30009;
+
+  /// 账号没设过密码. 只在用旧密码修改密码时出现.
   static const passwordNotSet = 30010;
   static const mobileNotBound = 30011;
 
@@ -68,33 +73,32 @@ abstract final class BizCodes {
 
   static const captchaUnavailable = 50004;
 
+  /// 操作失败. 含义随接口而定, 由页面就地说明, 不进入码表.
+  ///
+  /// 例如号码或邮箱已被其他账号使用, 统一认证不是当前账号发起的, 要下线的设备不存在.
+  static const opFailed = 40001;
+
   /// 当前状态不允许该操作.
   ///
   /// 含义随接口而定, 例如重复设置登录用户名, 未认证时发送绑定验证码, 本站未启用某项同步.
   /// 因此不归为无权限, 不触发账号状态刷新.
   static const stateNotAllowed = 40002;
 
+  /// 新建或修改店铺时, 附近 100 m 内已有同名的店, 或地图地点已被别的店使用. `data` 为空.
+  ///
+  /// 推送等其他模块也用该码表示重复提交, 含义随接口而定, 因此不登记全局提示, 由页面就地处理.
+  static const duplicateSubmit = 40004;
+
   static const foodNotFound = 40008;
+
+  /// 店铺不存在, 如已被管理员删除.
+  static const restaurantNotFound = 40009;
 
   /// 发布的菜品与该店已有菜品重名 (忽略空白). `data.id` 为已有菜品的 id.
   static const duplicateDish = 40016;
 
-  /// 集群会话无效或已撤销. HTTP 401, 响应体只有字符串 `code`.
-  static const clusterSessionInvalid = 'CLUSTER_SESSION_INVALID';
-  static const clusterSessionRevoked = 'CLUSTER_SESSION_REVOKED';
-
-  static const sessionCodes = {
-    notLoggedIn,
-    tokenInvalid,
-    tokenExpired,
-    authorizationExpired,
-    clusterSessionInvalid,
-    clusterSessionRevoked,
-  };
+  static const sessionCodes = {notLoggedIn};
   static const consentCodes = {consentRequired, consentPolicyChanged};
-
-  /// 已登录时提交同意失败, 需要清除会话重新登录的业务码. 重新登录时服务端会返回临时凭证.
-  static const consentSignInCodes = {authUnavailable, consentProofInvalid};
   static const captchaRetryCodes = {captchaMissing, captchaInvalid};
 }
 
@@ -102,23 +106,24 @@ abstract final class BizCodes {
 const failureMessages = <Object, String>{
   10001: '提交的内容有误，请检查后重试',
   10002: '提交的内容有误，请检查后重试',
-  BizCodes.userNotFound: '账号或密码错误',
+  BizCodes.userNotFound: '用户不存在',
   BizCodes.wrongPassword: '账号或密码错误',
   BizCodes.userDisabled: '账号已被封禁',
   BizCodes.usernameTaken: '用户名已被占用',
   BizCodes.wrongCode: '验证码错误，请重新输入',
-  BizCodes.passwordNotSet: '该号码未设置密码，请使用验证码登录',
+  BizCodes.alreadyVerified: '账号已经认证过了',
+  BizCodes.emailTokenInvalid: '链接无效或已过期，请在发起认证的账号上打开',
+  BizCodes.emailNotSdu: '请填写山大邮箱',
+  BizCodes.passwordNotSet: '还没有设置过密码',
   BizCodes.mobileNotBound: '请先绑定手机号',
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
-  BizCodes.consentRequired: '同意数据跨境后才能继续',
-  BizCodes.dataSyncPending: '数据正在处理，请稍后再试',
-  BizCodes.authUnavailable: '身份验证暂不可用，请稍后再试',
-  BizCodes.consentProofInvalid: '验证信息已过期，请重新登录',
-  BizCodes.consentPolicyChanged: '数据跨境说明已更新，请重新确认',
+  BizCodes.consentRequired: '同意隐私政策后才能继续',
+  BizCodes.consentPolicyChanged: '隐私政策已更新，请重新确认',
   BizCodes.stateNotAllowed: '当前无法执行此操作，请刷新后重试',
   BizCodes.foodNotFound: '这道菜已删除',
+  BizCodes.restaurantNotFound: '这家店已删除',
   BizCodes.duplicateDish: '这家店已有这道菜',
 };
 

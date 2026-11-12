@@ -20,16 +20,7 @@ DeviceSessionDto _$DeviceSessionDtoFromJson(Map<String, dynamic> json) =>
       sessionId: json['sessionId'] as String?,
       device: json['device'] as String?,
       issuedAt: json['issuedAt'] as String?,
-      lastSeenAt: json['lastSeenAt'] as String?,
       current: json['current'] as bool?,
-    );
-
-SessionOutcomeDto _$SessionOutcomeDtoFromJson(Map<String, dynamic> json) =>
-    SessionOutcomeDto(
-      status: json['status'] as String?,
-      tokenName: json['tokenName'] as String?,
-      tokenValue: json['tokenValue'] as String?,
-      restricted: json['restricted'] as bool?,
     );
 
 // **************************************************************************

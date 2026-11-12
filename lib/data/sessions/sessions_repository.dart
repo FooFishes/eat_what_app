@@ -1,9 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:eat/core/network/recovery_capability.dart';
-import 'package:eat/data/sessions/session_rotation.dart';
 import 'package:eat/data/sessions/sessions_api.dart';
 import 'package:eat/domain/models/device_session.dart';
-import 'package:eat/core/network/idempotency.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sessions_repository.g.dart';
@@ -33,18 +30,8 @@ class SessionsRepository {
 
   Future<void> revoke(String sessionId) => _api.revoke(sessionId);
 
-  /// 下线其他设备. 本机的会话随之换发, 返回换发的结果.
-  Future<Rotation> revokeOthers() async {
-    final commandId = newIdempotencyKey();
-    final capability = newRecoveryCapability();
-    await _api.revokeOthers(
-      commandId: commandId,
-      recoveryCapability: capability,
-    );
-    return awaitRotation(
-      () => _api.resume(commandId: commandId, recoveryCapability: capability),
-    );
-  }
+  /// 下线本机以外的所有设备. 本机的会话不变.
+  Future<void> revokeOthers() => _api.revokeOthers();
 
   static DeviceSession? _toDevice(DeviceSessionDto dto) {
     final id = dto.sessionId;
@@ -57,8 +44,7 @@ class SessionsRepository {
         'ANDROID' => DevicePlatform.android,
         _ => DevicePlatform.unknown,
       },
-      lastUsedAt: DateTime.tryParse(dto.lastSeenAt ?? dto.issuedAt ?? '')
-          ?.toLocal(),
+      signedInAt: DateTime.tryParse(dto.issuedAt ?? '')?.toLocal(),
       current: dto.current ?? false,
     );
   }

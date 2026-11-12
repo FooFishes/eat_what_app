@@ -13,7 +13,7 @@ class const GcjPoint(final double lat, final double lng) {
   String toString() => 'GcjPoint($lat, $lng)';
 }
 
-/// WGS-84 坐标系中的点. 设备定位, 天地图瓦片和接口中的 GeoJSON 使用该坐标系.
+/// WGS-84 坐标系中的点. 设备定位使用该坐标系, 使用前转换为 [GcjPoint].
 class const WgsPoint(final double lat, final double lng) {
   @override
   bool operator ==(Object other) =>

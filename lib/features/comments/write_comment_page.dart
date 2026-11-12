@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -29,8 +30,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// - 写评论: 文字最多 200 字, 照片最多 3 张, 两者至少填写一项.
 /// - 回复: 只能写字, 输入框提示 "回复 小林".
 ///
-/// 发送后回到上一页. 进入审核时提示 "已提交审核, 通过后公开".
-/// 已填写内容时返回需要确认. 发送失败时保留内容, 可重新发送.
+/// 发送后回到上一页, 评论立即公开. 已填写内容时返回需要确认. 发送失败时保留内容, 可重新发送.
+///
+/// 回复时被对方屏蔽, 提示 "无法回复对方". 被回复的评论已删除时提示, 并刷新该评论所在的列表.
 class WriteCommentPage extends ConsumerStatefulWidget {
   const new({
     super.key,
@@ -180,15 +182,27 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
     final capability = _reply ? Capability.reply : Capability.comment;
     if (!await guardAction(context, ref, capability) || !mounted) return;
     try {
-      final posted = await ref
+      await ref
           .read(commentComposerProvider(widget.dishId).notifier)
           .send(_text.text, rootId: widget.rootId, replyToId: widget.replyToId);
       if (!mounted) return;
-      showToast(context, posted.pending ? '已提交审核，通过后公开' : '发送成功');
+      showToast(context, '发送成功');
       _sent = true;
       BackFallback.back(context);
     } on AppFailure catch (e) {
       if (!mounted) return;
+      final rootId = widget.rootId;
+      if (rootId != null && e.code == BizCodes.stateNotAllowed) {
+        showToast(context, '无法回复对方');
+        return;
+      }
+      if (rootId != null && isCommentGone(e)) {
+        ref
+            .read(commentWriterProvider.notifier)
+            .refreshThread(widget.dishId, rootId);
+        showToast(context, '这条评论已删除');
+        return;
+      }
       await reportActionFailure(
         context,
         ref,

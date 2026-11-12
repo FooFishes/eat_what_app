@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -9,43 +10,55 @@ abstract final class FeedbackEndpoints {
   static const catalogErrors = '/feedback/catalog-errors';
   static const reports = '/feedback/reports';
   static const messages = '/feedback/messages';
+  static String mine(int id) => '/feedback/mine/$id';
 }
 
-/// 接口分组 Feedback: 意见反馈, 店铺 "信息有误" 和举报.
+/// 接口分组 Feedback: 意见反馈, 店铺 "信息有误", 举报, 以及我提交过的记录.
 ///
-/// 提交都要求携带 `Idempotency-Key`. 同一个键重放时, 服务端返回第一次的结果.
-/// 同一个键对应不同内容时, 服务端拒绝请求.
-///
-/// 同一个对象已有未处理的记录时, 服务端返回已有记录, 客户端按提交成功处理.
+/// 同一个对象已有本人未处理的同类记录时, 服务端返回已有记录, 客户端按提交成功处理.
+/// 意见反馈没有这一合并, 网络失败后重试可能产生两条记录.
 class FeedbackApi {
   FeedbackApi(this._client);
 
   final ApiClient _client;
 
-  Future<void> submitCatalogError(
-    CatalogErrorDto body, {
-    required String idempotencyKey,
-  }) => _client.post(
-    FeedbackEndpoints.catalogErrors,
-    body: body.toJson(),
-    headers: {'Idempotency-Key': idempotencyKey},
-  );
+  Future<void> submitCatalogError(CatalogErrorDto body) =>
+      _client.post(FeedbackEndpoints.catalogErrors, body: body.toJson());
 
-  Future<void> submitReport(ReportDto body, {required String idempotencyKey}) =>
-      _client.post(
-        FeedbackEndpoints.reports,
-        body: body.toJson(),
-        headers: {'Idempotency-Key': idempotencyKey},
+  Future<void> submitReport(ReportDto body) =>
+      _client.post(FeedbackEndpoints.reports, body: body.toJson());
+
+  Future<void> submitFeedback(FeedbackMessageDto body) =>
+      _client.post(FeedbackEndpoints.messages, body: body.toJson());
+
+  /// 我提交过的一条记录. 记录不存在或不是本人提交的, 返回 10001.
+  Future<FeedbackCaseDto> mine(int id, {CancelToken? cancelToken}) async =>
+      decodeJson(
+        await _client.get(FeedbackEndpoints.mine(id), cancelToken: cancelToken),
+        FeedbackCaseDto.fromJson,
       );
+}
 
-  Future<void> submitFeedback(
-    FeedbackMessageDto body, {
-    required String idempotencyKey,
-  }) => _client.post(
-    FeedbackEndpoints.messages,
-    body: body.toJson(),
-    headers: {'Idempotency-Key': idempotencyKey},
-  );
+/// 我提交过的一条反馈, 信息有误或举报 (`FeedbackDtos.CaseView`). 只读取消息页跳转需要的字段.
+@JsonSerializable(createToJson: false)
+class const FeedbackCaseDto({
+  final int? id,
+
+  /// `FEEDBACK`, `CATALOG_ERROR` 或 `REPORT`.
+  final String? kind,
+
+  /// 记录关于的对象. 意见反馈没有关联对象时为 null.
+  final FeedbackTargetDto? target,
+}) {
+  factory FeedbackCaseDto.fromJson(Map<String, dynamic> json) =>
+      _$FeedbackCaseDtoFromJson(json);
+}
+
+/// 记录关于的对象 (`FeedbackDtos.Target`). [type] 为 `FOOD`, `RESTAURANT`, `COMMENT` 或 `USER`.
+@JsonSerializable(createToJson: false)
+class const FeedbackTargetDto({final String? type, final int? id}) {
+  factory FeedbackTargetDto.fromJson(Map<String, dynamic> json) =>
+      _$FeedbackTargetDtoFromJson(json);
 }
 
 /// 店铺 "信息有误" 的请求体 (`CatalogErrorInput`). [note] 最多 200 字.

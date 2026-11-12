@@ -48,4 +48,4 @@ final class FoodRepositoryProvider
   }
 }
 
-String _$foodRepositoryHash() => r'70cf5002230a87aba91bc5f26d6a19a17005e1cd';
+String _$foodRepositoryHash() => r'b642f2138a858a6614b9c93bfdee17b728b35877';

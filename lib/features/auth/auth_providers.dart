@@ -4,8 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/auth/auth_repository.dart';
-import 'package:eat/data/cancellation/cancellation_repository.dart';
-import 'package:eat/features/auth/restore_providers.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/cross_border_consent.dart';
@@ -17,7 +15,8 @@ part 'auth_providers.g.dart';
 
 /// 登录页的协议勾选状态.
 ///
-/// 手机号登录和密码登录都要求先勾选. 登录成功后写入本机的同意记录.
+/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 @Riverpod(keepAlive: true)
 class LoginAgreement extends _$LoginAgreement {
   @override
@@ -46,25 +45,12 @@ final class AuthCodeLimited extends AuthFormEvent {
   final AppFailure failure;
 }
 
-/// 用户在同意对话框中同意了数据跨境, 但本次提交已核销验证码. 页面清空验证码并提示重新获取.
-final class AuthCodeConsumed extends AuthFormEvent {
-  const AuthCodeConsumed();
-}
-
-/// 账号正在注销冷静期内. 页面打开撤销注销页, 申请已交给 [AccountRestore].
-final class AuthRestoreRequired extends AuthFormEvent {
-  const AuthRestoreRequired();
-}
-
 /// 手机号登录页的状态: 验证码重发倒计时, 提交状态, 最近一次失败.
 class const PhoneLoginState({
   final DateTime? resendAt,
   final bool sending = false,
   final bool submitting = false,
   final AuthFormEvent? event,
-
-  /// 用户是否已在同意对话框中同意数据跨境. 为 true 时登录请求携带同意, 新号码据此注册.
-  final bool consented = false,
 });
 
 /// 验证码的重发间隔.
@@ -78,11 +64,7 @@ class PhoneLogin extends _$PhoneLogin {
   /// 先完成人机验证再发送验证码. 用户关闭验证时不发送请求, 也不开始倒计时.
   Future<void> sendCode(CaptchaPresenter present, String mobile) async {
     if (state.sending) return;
-    state = PhoneLoginState(
-      resendAt: state.resendAt,
-      sending: true,
-      consented: state.consented,
-    );
+    state = PhoneLoginState(resendAt: state.resendAt, sending: true);
     final auth = ref.read(authRepositoryProvider);
     try {
       final sent = await ref
@@ -91,13 +73,11 @@ class PhoneLogin extends _$PhoneLogin {
       if (!ref.mounted) return;
       state = PhoneLoginState(
         resendAt: sent ? clock.now().add(resendInterval) : state.resendAt,
-        consented: state.consented,
       );
     } on AppFailure catch (e) {
       if (!ref.mounted) return;
       state = PhoneLoginState(
         resendAt: state.resendAt,
-        consented: state.consented,
         event: e.kind == FailureKind.tooFrequent
             ? AuthCodeLimited(e)
             : AuthFormFailed(e),
@@ -105,86 +85,38 @@ class PhoneLogin extends _$PhoneLogin {
     }
   }
 
-  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意对话框.
-  ///
-  /// 要求同意的响应已核销验证码, 因此用户同意后不自动重新登录, 而是要求重新获取验证码.
-  /// 已有账号带临时凭证, 同意后立即提交. 新号码没有凭证, 下次登录请求携带同意完成注册.
+  /// 服务端要求同意新版政策时, 用 [present] 弹出同意对话框, 用户同意后用同一个验证码重试.
   Future<void> submit(
     ConsentPresenter present,
     String mobile,
     String code,
   ) async {
     if (state.submitting) return;
-    state = PhoneLoginState(
-      resendAt: state.resendAt,
-      submitting: true,
-      consented: state.consented,
-    );
+    state = PhoneLoginState(resendAt: state.resendAt, submitting: true);
+    final auth = ref.read(authRepositoryProvider);
     try {
-      final result = await ref
-          .read(authRepositoryProvider)
-          .loginWithCode(mobile, code, crossBorderConsent: state.consented);
+      final result = await _withConsent(
+        ref,
+        present,
+        (version) => auth.loginWithCode(mobile, code, policyVersion: version),
+      );
       await _signIn(ref, result);
+      if (ref.mounted) state = PhoneLoginState(resendAt: state.resendAt);
+    } on AppFailure catch (e) {
       if (ref.mounted) {
         state = PhoneLoginState(
           resendAt: state.resendAt,
-          consented: state.consented,
+          event: AuthFormFailed(e),
         );
-      }
-    } on AppFailure catch (e) {
-      if (!ref.mounted) return;
-      if (e.code == BizCodes.consentRequired) {
-        await _consent(present, e);
-      } else if (pendingCancellationOf(e) case final pending?) {
-        unawaited(
-          ref
-              .read(accountRestoreProvider.notifier)
-              .begin(pending, account: mobile, method: RestoreMethod.code),
-        );
-        state = PhoneLoginState(
-          resendAt: state.resendAt,
-          consented: state.consented,
-          event: const AuthRestoreRequired(),
-        );
-      } else {
-        _fail(e);
       }
     }
   }
-
-  Future<void> _consent(ConsentPresenter present, AppFailure required) async {
-    final consent = ref.read(crossBorderConsentProvider);
-    try {
-      if (consentProofOf(required) case final proof?) {
-        await consent.grant(present, proof: proof);
-      } else {
-        await consent.confirm(present);
-      }
-      if (!ref.mounted) return;
-      state = PhoneLoginState(
-        resendAt: state.resendAt,
-        consented: true,
-        event: const AuthCodeConsumed(),
-      );
-    } on AppFailure catch (e) {
-      if (ref.mounted) _fail(e);
-    }
-  }
-
-  void _fail(AppFailure failure) => state = PhoneLoginState(
-    resendAt: state.resendAt,
-    consented: state.consented,
-    event: AuthFormFailed(failure),
-  );
 }
 
 /// 密码登录页的状态: 提交状态和最近一次失败.
 class const PasswordLoginState({
   final bool submitting = false,
   final AppFailure? failure,
-
-  /// 账号正在注销冷静期内. 页面打开撤销注销页, 申请已交给 [AccountRestore].
-  final bool restore = false,
 });
 
 @riverpod
@@ -192,12 +124,13 @@ class PasswordLogin extends _$PasswordLogin {
   @override
   PasswordLoginState build() => const PasswordLoginState();
 
-  /// 服务端要求同意数据跨境时, 用 [present] 弹出同意对话框.
+  /// 服务端要求同意新版政策时, 用 [consent] 弹出同意对话框. 要求人机验证时, 用 [captcha] 弹出验证.
   ///
-  /// 用户同意后用临时凭证提交同意, 随后用同一组账号密码重新登录.
-  /// 账号密码只在本次调用中保留在内存里.
+  /// 两种情况都在用户确认后用同一组账号密码重新登录. 账号密码只在本次调用中保留在内存里.
+  /// 用户关闭人机验证时按取消处理, 页面不显示提示.
   Future<void> submit(
-    ConsentPresenter present,
+    ConsentPresenter consent,
+    CaptchaPresenter captcha,
     String account,
     String password,
   ) async {
@@ -205,30 +138,53 @@ class PasswordLogin extends _$PasswordLogin {
     state = const PasswordLoginState(submitting: true);
     final auth = ref.read(authRepositoryProvider);
     try {
-      SignInResult result;
-      try {
-        result = await auth.loginWithPassword(account, password);
-      } on AppFailure catch (e) {
-        final proof = consentProofOf(e);
-        if (proof == null) rethrow;
-        await ref.read(crossBorderConsentProvider).grant(present, proof: proof);
-        result = await auth.loginWithPassword(account, password);
-      }
+      final result = await _withConsent(ref, consent, (version) async {
+        try {
+          return await auth.loginWithPassword(
+            account,
+            password,
+            policyVersion: version,
+          );
+        } on AppFailure catch (e) {
+          if (!BizCodes.captchaRetryCodes.contains(e.code)) rethrow;
+          SignInResult? verified;
+          await ref
+              .read(captchaGateProvider)
+              .run(
+                captcha,
+                (ticket) async => verified = await auth.loginWithPassword(
+                  account,
+                  password,
+                  policyVersion: version,
+                  ticket: ticket,
+                ),
+              );
+          return verified ?? (throw const AppFailure.cancelled());
+        }
+      });
       await _signIn(ref, result);
       if (ref.mounted) state = const PasswordLoginState();
     } on AppFailure catch (e) {
-      if (!ref.mounted) return;
-      if (pendingCancellationOf(e) case final pending?) {
-        unawaited(
-          ref
-              .read(accountRestoreProvider.notifier)
-              .begin(pending, account: account, method: RestoreMethod.password),
-        );
-        state = const PasswordLoginState(restore: true);
-        return;
-      }
-      state = PasswordLoginState(failure: e);
+      if (ref.mounted) state = PasswordLoginState(failure: e);
     }
+  }
+}
+
+/// 带服务端当前的政策版本登录. 服务端要求同意时请用户确认, 用户同意后用同一组凭据重试一次.
+///
+/// 服务端在核销验证码之前校验同意, 因此重试不需要重新获取验证码.
+/// 用户不同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
+Future<SignInResult> _withConsent(
+  Ref ref,
+  ConsentPresenter present,
+  Future<SignInResult> Function(String? policyVersion) login,
+) async {
+  final consent = ref.read(crossBorderConsentProvider);
+  try {
+    return await login(await consent.currentVersion());
+  } on AppFailure catch (e) {
+    if (!BizCodes.consentCodes.contains(e.code)) rethrow;
+    return login(await consent.confirm(present));
   }
 }
 
@@ -243,5 +199,4 @@ Future<void> _signIn(Ref ref, SignInResult result) async {
 
 /// [failure] 是否为账号或密码错误. 是时输入框下划线显示 `warn` 色, 并提示账号或密码错误.
 bool isWrongCredentials(AppFailure failure) =>
-    failure.code == BizCodes.wrongPassword ||
-    failure.code == BizCodes.userNotFound;
+    failure.code == BizCodes.wrongPassword;

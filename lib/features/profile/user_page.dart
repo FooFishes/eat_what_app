@@ -26,7 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 他人主页.
 ///
-/// - 舞台: 对方获赞最多的菜, 头像, 昵称和四项统计.
+/// - 舞台: 对方获赞最多的菜, 头像, 昵称, 签名和三项统计.
 /// - 右上角: 关注按钮 ("关注" "回关" "已关注" "已互关") 和 "更多" (屏蔽, 举报).
 /// - 抽屉: 只有 "上传" 一栏. 收藏, 评论, 标签和足迹是私人的.
 ///
@@ -45,7 +45,7 @@ class UserPage extends ConsumerWidget {
     final profileValue = ref.watch(userProfileProvider(userId));
     final profile = profileValue.value;
     final uploads = ref.watch(userUploadsProvider(userId));
-    final top = DishRules.signatures(
+    final top = DishRules.mostLiked(
       uploads.value?.pages.items ?? const <Dish>[],
       count: 1,
     ).firstOrNull;
@@ -53,6 +53,7 @@ class UserPage extends ConsumerWidget {
         ? false
         : ref.watch(blockStateProvider(userId)).value ?? false;
     if (profile == null && profileValue.hasError && !profileValue.isLoading) {
+      final error = profileValue.error;
       return StageScaffold(
         stage: StageColor.mango,
         topBar: const Row(children: [EatBackButton()]),
@@ -64,10 +65,13 @@ class UserPage extends ConsumerWidget {
               vertical: EatSpace.s24,
             ),
             sliver: SliverToBoxAdapter(
-              child: FailureState(
-                message: (profileValue.error as AppFailure?)?.message,
-                onRetry: () => ref.invalidate(userProfileProvider(userId)),
-              ),
+              child: isMissingUser(error)
+                  ? const EmptyState(icon: EatIcons.me, title: '该用户不存在')
+                  : FailureState(
+                      message: (error as AppFailure?)?.message,
+                      onRetry: () =>
+                          ref.invalidate(userProfileProvider(userId)),
+                    ),
             ),
           ),
         ],
@@ -102,7 +106,9 @@ class UserPage extends ConsumerWidget {
         userId: userId,
         name: profile?.nickname ?? '',
         avatarUrl: profile?.avatarUrl,
+        signature: profile?.signature,
         profile: profile,
+        uploads: uploads.value?.pages.total,
         top: top,
         loading: uploads.isLoading,
       ),
@@ -121,7 +127,7 @@ class UserPage extends ConsumerWidget {
           ),
         SliverToBoxAdapter(
           child: EatTabs(
-            tabs: [EatTabItem('上传', count: profile?.uploadedDishes)],
+            tabs: [EatTabItem('上传', count: uploads.value?.pages.total)],
             selected: 0,
             onSelected: (_) {},
             padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),

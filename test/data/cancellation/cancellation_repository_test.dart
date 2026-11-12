@@ -197,7 +197,7 @@ void main() {
     test('登录返回注销冷静期时读出申请', () {
       final pending = pendingCancellationOf(
         AppFailure.fromCode(
-          BizCodes.dataSyncPending,
+          cancellationPendingCode,
           data: {
             'recoveryRequired': true,
             'subjectId': _subject,
@@ -214,7 +214,7 @@ void main() {
 
     test('普通的同步中、别的业务码都不算', () {
       expect(
-        pendingCancellationOf(AppFailure.fromCode(BizCodes.dataSyncPending)),
+        pendingCancellationOf(AppFailure.fromCode(cancellationPendingCode)),
         isNull,
       );
       expect(

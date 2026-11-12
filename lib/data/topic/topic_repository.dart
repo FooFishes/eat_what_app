@@ -87,10 +87,6 @@ class TopicRepository {
       shopName: _text(dto.restaurantName),
       price: dto.price,
       category: category,
-      mealTimes: [
-        for (final meal in dto.mealTimes ?? const <String>[])
-          ?MealTime.fromApi(meal),
-      ],
       images: [
         for (final url in dto.pictureUrl ?? const <String>[]) ?imageUrl(url),
       ],
@@ -106,7 +102,6 @@ class TopicRepository {
         diameter: dto.coverDiameter ?? 1,
       ),
       likes: dto.likesCount ?? 0,
-      uploaderName: _text(dto.uploaderName),
       description: _text(dto.description),
     );
   }

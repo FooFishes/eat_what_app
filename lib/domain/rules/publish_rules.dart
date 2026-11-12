@@ -3,17 +3,20 @@ abstract final class PublishRules {
   static const dishNameMax = 12;
   static const shopNameMax = 20;
   static const addressMax = 30;
-  static const noteMax = 300;
-  static const photosMax = 9;
-  static const myTagMax = 10;
+  static const noteMax = 200;
+  static const photosMax = 6;
 
-  /// 一次发布中口味标签和我的标签各自的数量上限.
-  static const tagsMax = 20;
+  /// 一道菜的口味数量上限.
+  static const tagsMax = 3;
 
   static const priceMax = 999.0;
 
-  /// 查重用的名字: 去掉所有空白字符. 同一家店中查重名字相同即视为重名.
+  /// 去掉所有空白字符后的名字.
   static String compactName(String name) => name.replaceAll(RegExp(r'\s'), '');
+
+  /// 菜名查重用的名字: 去掉所有空白字符并转为小写, 与后端的菜名判重一致.
+  /// 同一家店中查重名字相同即视为重名.
+  static String dishNameKey(String name) => compactName(name).toLowerCase();
 
   /// 解析价格. 合法范围为 0–999 元, 最多一位小数. 不合法或为空时返回 null.
   static double? parsePrice(String text) {
@@ -35,14 +38,8 @@ abstract final class PublishRules {
     required bool name,
     required bool price,
     required bool category,
-    required bool meal,
   }) {
-    final fields = [
-      if (!name) '菜名',
-      if (!price) '价格',
-      if (!category) '分类',
-      if (!meal) '适合哪顿',
-    ];
+    final fields = [if (!name) '菜名', if (!price) '价格', if (!category) '分类'];
     final fill = fields.isEmpty ? null : '填写${_join(fields)}';
     return switch ((photo, fill)) {
       (true, null) => null,

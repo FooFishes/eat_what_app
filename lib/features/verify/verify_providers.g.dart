@@ -40,7 +40,7 @@ final class VerifyProvider extends $NotifierProvider<Verify, VerifyState> {
   }
 }
 
-String _$verifyHash() => r'e47d9b746c7ff4bdce8a6f3711126e9acdea9132';
+String _$verifyHash() => r'a9d1ae61c3199faa0f26983fb3e02fbe4aa17dcc';
 
 abstract class _$Verify extends $Notifier<VerifyState> {
   VerifyState build();
@@ -53,6 +53,64 @@ abstract class _$Verify extends $Notifier<VerifyState> {
             as $ClassProviderElement<
               AnyNotifier<VerifyState, VerifyState>,
               VerifyState,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// 邮箱认证落地页的进度. null 表示还没有提交.
+
+@ProviderFor(EmailVerification)
+final emailVerificationProvider = EmailVerificationProvider._();
+
+/// 邮箱认证落地页的进度. null 表示还没有提交.
+final class EmailVerificationProvider
+    extends $NotifierProvider<EmailVerification, AsyncValue<void>?> {
+  /// 邮箱认证落地页的进度. null 表示还没有提交.
+  EmailVerificationProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'emailVerificationProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$emailVerificationHash();
+
+  @$internal
+  @override
+  EmailVerification create() => EmailVerification();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AsyncValue<void>? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AsyncValue<void>?>(value),
+    );
+  }
+}
+
+String _$emailVerificationHash() => r'cc642af8ebd837ec2a326c188ce3e7988477d60c';
+
+/// 邮箱认证落地页的进度. null 表示还没有提交.
+
+abstract class _$EmailVerification extends $Notifier<AsyncValue<void>?> {
+  AsyncValue<void>? build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<void>?, AsyncValue<void>?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<void>?, AsyncValue<void>?>,
+              AsyncValue<void>?,
               Object?,
               Object?
             >;

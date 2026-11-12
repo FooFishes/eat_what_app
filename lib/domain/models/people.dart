@@ -1,21 +1,21 @@
 /// 用户的公开资料和统计, 来自 `/user/userInfo`. 他人主页和 "我的" 共用.
 ///
+/// - [fans] 和 [followings] 在对方未公开对应列表时为 null, 查看自己时总有值.
 /// - [fansVisible] 和 [followingsVisible] 是对方的隐私设置. 查看自己时即为自己的设置.
 /// - [followsMe] 和 [followedByMe] 是对方与当前用户之间的关注关系.
-/// - [level] 是等级, 接口没有返回时为 null, 不显示.
+/// - [blocked] 表示当前用户屏蔽了对方.
 class const UserProfile({
   required final int id,
   required final String nickname,
   final String? avatarUrl,
-  final int earnedLikes = 0,
-  final int fans = 0,
-  final int followings = 0,
-  final int uploadedDishes = 0,
+  final String? signature,
+  final int? fans,
+  final int? followings,
   final bool fansVisible = true,
   final bool followingsVisible = true,
   final bool followsMe = false,
   final bool followedByMe = false,
-  final int? level,
+  final bool blocked = false,
 });
 
 /// 列表中的一个用户: 粉丝和关注列表, 屏蔽的人.
@@ -81,11 +81,4 @@ class const Footprint({
 class const PrivacySettings({
   final bool followingsPublic = true,
   final bool fansPublic = true,
-});
-
-/// 一次换绑手机. [oldProofRequired] 为 true 时提交前要用旧手机验证码或密码确认身份.
-class const MobileChange({
-  required final String commandId,
-  required final String mobile,
-  required final bool oldProofRequired,
 });

@@ -1,7 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/failure/messages.dart';
-import 'package:eat/core/network/idempotency.dart';
-import 'package:eat/core/network/recovery_capability.dart';
 import 'package:eat/core/storage/secure_store.dart';
 import 'package:eat/data/cancellation/cancellation_api.dart';
 import 'package:eat/data/common/convert.dart';
@@ -46,8 +46,8 @@ class CancellationRepository {
   final SecureStore _secure;
 
   CancellationDraft draft({required bool deleteComments}) => CancellationDraft(
-    requestId: newIdempotencyKey(),
-    recoveryCapability: newRecoveryCapability(),
+    requestId: _newId(),
+    recoveryCapability: _newRecoveryCapability(),
     deleteComments: deleteComments,
   );
 
@@ -86,7 +86,7 @@ class CancellationRepository {
 
   /// 给账号绑定的手机发撤销用的验证码. 每次都用新的操作 id, 否则服务端不重发.
   Future<RestoreCode> sendRestoreCode(CancellationTicket ticket) async {
-    final operationId = newIdempotencyKey();
+    final operationId = _newId();
     await _api.sendRecoveryCode(
       subjectId: ticket.subjectId,
       requestId: ticket.requestId,
@@ -107,7 +107,7 @@ class CancellationRepository {
       password: password,
       subjectId: ticket.subjectId,
       requestId: ticket.requestId,
-      operationId: newIdempotencyKey(),
+      operationId: _newId(),
       recoveryCapability: ticket.recoveryCapability,
     );
     return _cancel(ticket, grant);
@@ -157,14 +157,36 @@ class CancellationRepository {
       );
 }
 
+/// 申请和操作的 id: 随机的 UUID v4. 旧版注销接口要求 id 为 UUID.
+String _newId() {
+  final r = Random.secure();
+  final bytes = [for (var i = 0; i < 16; i++) r.nextInt(256)];
+  bytes[6] = bytes[6] & 0x0f | 0x40;
+  bytes[8] = bytes[8] & 0x3f | 0x80;
+  final hex = [for (final b in bytes) b.toRadixString(16).padLeft(2, '0')]
+      .join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+}
+
+/// 恢复凭据: 32 字节密码学随机值, 编码为不带填充的 Base64URL, 共 43 个字符.
+String _newRecoveryCapability() {
+  final r = Random.secure();
+  final bytes = [for (var i = 0; i < 32; i++) r.nextInt(256)];
+  return base64Url.encode(bytes).replaceAll('=', '');
+}
+
+/// 旧版登录接口表示账号在注销冷静期内的业务码.
+const cancellationPendingCode = 20006;
+
 /// 登录失败是否因为账号正在注销. 是时返回登录接口给出的申请, 否则返回 null.
 ///
-/// 冷静期内验证账号密码或验证码后, 登录接口返回 [BizCodes.dataSyncPending],
+/// 冷静期内验证账号密码或验证码后, 登录接口返回 [cancellationPendingCode],
 /// `data` 带 `recoveryRequired`, `subjectId`, `requestId` 和 `phase`.
 PendingCancellation? pendingCancellationOf(AppFailure failure) =>
     switch (failure) {
       AppFailure(
-        code: BizCodes.dataSyncPending,
+        code: cancellationPendingCode,
         data: {
               'recoveryRequired': true,
               'subjectId': final String subjectId,

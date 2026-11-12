@@ -40,7 +40,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('店铺行写出招牌菜，评价够了的店右边是推荐率', (tester) async {
+  testWidgets('店铺行右边是推荐率，评价不满 3 条的不写；已关门的店不出现；没有排序入口', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
@@ -50,14 +50,16 @@ void main() {
           pageJson([
             {
               ...restaurantJson(id: 1, name: '袁记云饺'),
-              'ratingSummaryState': 'READY',
-              'ratingCount': 32,
-              'recommendationRate': 86,
-              'signatureFoods': [
-                {'id': 5, 'name': '鲜虾蟹籽云吞', 'price': 18, 'likesCount': 40},
-              ],
+              'dineIn': {'rate': 0.86, 'count': 32},
             },
-            restaurantJson(id: 2, name: '新开的店', lat: 36.6760),
+            {
+              ...restaurantJson(id: 2, name: '新开的店', lat: 36.6760),
+              'dineIn': {'rate': 1.0, 'count': 2},
+            },
+            {
+              ...restaurantJson(id: 3, name: '关门的店', lat: 36.6690),
+              'permanentlyClosed': true,
+            },
           ]),
         ),
       ]);
@@ -68,9 +70,50 @@ void main() {
       location: Paths.nearby,
     );
 
-    expect(find.text('招牌：鲜虾蟹籽云吞'), findsOneWidget);
+    expect(find.text('附近 2 家', findRichText: true), findsOneWidget);
+    expect(find.text('关门的店'), findsNothing);
     expect(find.text('86%'), findsOneWidget);
-    expect(find.text('推荐'), findsOneWidget, reason: '没人评价的店不写推荐率');
+    expect(find.text('推荐'), findsOneWidget, reason: '不满 3 条评价的店不写推荐率');
+    expect(find.bySemanticsLabel(RegExp('^排序')), findsNothing);
+    expect(
+      env.adapter.sent('GET /restaurant/search').last.query,
+      containsPair('sort', 'DISTANCE'),
+    );
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('商圈胶囊：默认校区显示本校区和不属于任何校区的商圈', (tester) async {
+    final env = TestEnv();
+    Map<String, Object?> hub(int id, String name, int? campusId) => {
+      'id': id,
+      'name': name,
+      'gcjLng': 117.1412,
+      'gcjLat': 36.6681,
+      'campusId': campusId,
+      'boundary': null,
+    };
+    env.adapter
+      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+      ..on('GET /hub/list', [
+        FakeAdapter.ok(
+          pageJson([
+            hub(1, '舜泰广场', 1),
+            hub(2, '西门小吃街', null),
+            hub(3, '洪家楼', 2),
+          ]),
+        ),
+      ])
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.nearby,
+    );
+
+    expect(find.text('舜泰广场'), findsOneWidget);
+    expect(find.text('西门小吃街'), findsOneWidget);
+    expect(find.text('洪家楼'), findsNothing);
     await unmountApp(tester, container);
   });
 
@@ -136,15 +179,20 @@ void main() {
     expect(find.text('看 2 家'), findsOneWidget);
     await expectAccessible(tester);
 
-    await tester.tap(find.text('小吃'));
-    await _settle(tester);
-    await tester.tap(find.text('¥15–30'));
-    await _settle(tester);
-    await tester.ensureVisible(find.text('只看推荐率 80% 以上'));
-    await tester.tap(find.text('只看推荐率 80% 以上'));
-    await _settle(tester);
+    Future<void> tap(String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.tap(find.text(text));
+      await _settle(tester);
+    }
+
+    await tap('甜点饮品');
+    await tap('粉面');
+    await tap('¥15–30');
+    expect(find.text('至少 3 条评价，推荐率不低于 70%'), findsOneWidget);
+    await tap('只看口碑好的');
     final query = env.adapter.sent('GET /restaurant/search').last.query;
-    expect(query['categories'], ['snack']);
+    expect(query, containsPair('kind', 'drink'));
+    expect(query['categories'], ['粉面']);
     expect(query, containsPair('priceBand', 'FROM_15_TO_30'));
     expect(query, containsPair('recommendedOnly', true));
     expect(query, containsPair('sort', 'DISTANCE'));
@@ -160,9 +208,9 @@ void main() {
     );
     expect(find.text('附近 1 家', findRichText: true), findsOneWidget);
     expect(find.text('远一点的店'), findsNothing);
-    expect(find.bySemanticsLabel('筛选，已选 3 项'), findsOneWidget);
+    expect(find.bySemanticsLabel('筛选，已选 4 项'), findsOneWidget);
 
-    await tester.tap(find.bySemanticsLabel('筛选，已选 3 项'));
+    await tester.tap(find.bySemanticsLabel('筛选，已选 4 项'));
     await _settle(tester);
     await tester.tap(find.text('重置'));
     await _settle(tester);
@@ -203,46 +251,40 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('排序：选「推荐率最高」后按后端的顺序排，不再按距离重排', (tester) async {
+  testWidgets('游客打开「只看我收藏的店」先弹登录拦截，选项不打开，也不请求', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
       ..on('GET /restaurant/search', [
-        FakeAdapter.ok(
-          pageJson([
-            restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
-            restaurantJson(id: 2, name: '近一点的店', lat: 36.6680),
-          ]),
-        ),
+        FakeAdapter.ok(pageJson([restaurantJson(id: 2, name: '近一点的店')])),
       ]);
     final (container, _) = await pumpApp(
       tester,
       env,
-      session: const SignedIn(user: verifiedUser),
+      session: const Guest(),
       location: Paths.nearby,
     );
-    expect(
-      tester.getTopLeft(find.text('近一点的店')).dy,
-      lessThan(tester.getTopLeft(find.text('远一点的店')).dy),
-    );
 
-    await tester.tap(find.bySemanticsLabel('排序：按距离'));
+    await tester.tap(find.bySemanticsLabel('筛选'));
     await _settle(tester);
+    await tester.ensureVisible(find.text('只看我收藏的店'));
+    await tester.tap(find.text('只看我收藏的店'));
+    await _settle(tester);
+    expect(find.text('登录后才能看收藏'), findsOneWidget);
     await expectAccessible(tester);
-    await tester.tap(find.text('推荐率最高'));
-    await _settle(tester);
 
+    await tester.tap(find.text('先逛逛'));
+    await _settle(tester);
     expect(
-      env.adapter.sent('GET /restaurant/search').last.query,
-      containsPair('sort', 'RECOMMENDATION_RATE'),
+      env.adapter
+          .sent('GET /restaurant/search')
+          .where((r) => r.query.containsKey('favoritesOnly')),
+      isEmpty,
     );
-    expect(find.bySemanticsLabel('排序：推荐率最高'), findsOneWidget);
-    expect(
-      tester.getTopLeft(find.text('远一点的店')).dy,
-      lessThan(tester.getTopLeft(find.text('近一点的店')).dy),
-    );
-    await expectAccessible(tester);
+    await tester.tap(find.text('看 1 家'));
+    await _settle(tester);
+    expect(find.bySemanticsLabel('筛选'), findsOneWidget, reason: '没有选上任何一项');
     await unmountApp(tester, container);
   });
 }

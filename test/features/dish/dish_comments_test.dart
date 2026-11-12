@@ -66,7 +66,7 @@ void main() {
     expect(find.text('第 2 条评论'), findsOneWidget);
     expect(find.text('第 3 条评论'), findsNothing);
     final sort = env.adapter.sent('GET /foods/1/comments').first.query['sort'];
-    expect(sort, 'MOST_USEFUL');
+    expect(sort, 'HOT');
     await expectAccessible(tester);
 
     await tester.ensureVisible(find.text('看全部 23 条'));
@@ -133,14 +133,18 @@ void main() {
   });
 
   testWidgets('看大图：先是上传者的照片，接着是评论里的照片', (tester) async {
+    env.adapter.on('GET /user/userInfo', [
+      FakeAdapter.ok({'id': 9, 'displayName': '小林'}),
+    ]);
     env.adapter.on('GET /foods/1/gallery', [
       FakeAdapter.ok(
         commentPageJson([
           {
             'commentId': 12,
-            'commentGid': 'g-12',
+            'slot': 0,
+            'url': 'https://img.test/c/12.jpg',
+            'author': authorJson('同学1'),
             'createdAt': commentTime(),
-            'image': {'slot': 0, 'url': 'https://img.test/c/12.jpg'},
           },
         ]),
       ),

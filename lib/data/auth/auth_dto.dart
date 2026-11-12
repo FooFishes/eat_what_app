@@ -2,42 +2,37 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'auth_dto.g.dart';
 
-/// 登录接口的 `data` (`AuthReply`, `PhoneLoginReply`).
-///
-/// `tokenName` 和 `tokenValue` 都有值才算登录成功.
-/// 只带 [consentProof] 时, 需要先用它同意数据跨境, 再重新登录.
+/// 登录接口的 `data` (`SaTokenInfo`). `tokenName` 和 `tokenValue` 都有值才算登录成功.
 @JsonSerializable(createToJson: false)
 class const LoginReplyDto({
   final String? tokenName,
   final String? tokenValue,
-  final bool? isLogin,
-  final bool? newUser,
-  final String? consentProof,
-  final String? status,
 
-  /// 封禁账号登录时为 true, 此时 token 是受限会话, 只能调用后端登记的接口. 普通登录不带该字段.
-  final bool? restricted,
+  // TODO: 后端登录响应没有 newUser, 新号码注册后不进认证引导. 后端在验证码登录的响应中加上 newUser 后删除本 TODO.
+  /// 本次验证码登录是否自动注册了新号码.
+  final bool? newUser,
 }) {
   factory LoginReplyDto.fromJson(Map<String, dynamic> json) =>
       _$LoginReplyDtoFromJson(json);
 }
 
+/// [policyVersion] 是用户同意的隐私政策版本. 服务端还没发布政策时为 null, 不带该字段.
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const PhoneLoginRequestDto({
   required final String mobile,
   required final String code,
   required final String device,
-  final bool? crossBorderConsent,
-  final String? consentPolicyVersion,
+  final String? policyVersion,
 }) {
   Map<String, dynamic> toJson() => _$PhoneLoginRequestDtoToJson(this);
 }
 
-@JsonSerializable(createFactory: false)
+@JsonSerializable(createFactory: false, includeIfNull: false)
 class const PasswordLoginRequestDto({
   required final String userName,
   required final String password,
   required final String device,
+  final String? policyVersion,
 }) {
   Map<String, dynamic> toJson() => _$PasswordLoginRequestDtoToJson(this);
 }

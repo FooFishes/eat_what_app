@@ -1,5 +1,4 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/network/idempotency.dart';
 import 'package:eat/core/platform/app_info.dart';
 import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/photo_picker.dart';
@@ -24,7 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// - 从菜品详情或餐厅详情进入时, 顶部显示 "关于 某某", 提交时附带该菜或店.
 /// - 提交成功后提示处理结果会通过消息通知, 并返回上一页.
-/// - 内容不变时重试沿用同一个幂等键, 已上传的截图不重复上传.
+/// - 重试时已上传的截图不重复上传.
 class FeedbackPage extends ConsumerStatefulWidget {
   const new({super.key, this.dishId, this.shopId});
 
@@ -45,22 +44,10 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
   /// 已上传的截图的 key. 重试时不重复上传.
   final _uploaded = <Uint8List, String>{};
 
-  /// 本次内容的幂等键. 文字或截图变化时生成新键.
-  var _idempotencyKey = newIdempotencyKey();
-  String _keyedText = '';
-
   @override
   void initState() {
     super.initState();
-    _text.addListener(() {
-      if (_text.text != _keyedText) _renewKey();
-      setState(() {});
-    });
-  }
-
-  void _renewKey() {
-    _keyedText = _text.text;
-    _idempotencyKey = newIdempotencyKey();
+    _text.addListener(() => setState(() {}));
   }
 
   Future<void> _submit() async {
@@ -74,7 +61,6 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
             uploaded: _uploaded,
             dishId: widget.dishId,
             shopId: widget.shopId,
-            idempotencyKey: _idempotencyKey,
           );
       if (!mounted) return;
       showToast(context, '已提交，处理结果会通过消息通知你');
@@ -101,10 +87,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
           .read(photoPickerProvider)
           .pickFromGallery(limit: _maxShots - _shots.length);
       if (mounted && picked.isNotEmpty) {
-        setState(() {
-          _shots.addAll(picked);
-          _renewKey();
-        });
+        setState(() => _shots.addAll(picked));
       }
     } on PhotoPickException catch (e) {
       if (mounted) {
@@ -190,10 +173,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
                 for (final (i, shot) in _shots.indexed)
                   _Shot(
                     image: MemoryImage(shot.bytes),
-                    onRemove: () => setState(() {
-                      _shots.removeAt(i);
-                      _renewKey();
-                    }),
+                    onRemove: () => setState(() => _shots.removeAt(i)),
                   ),
                 if (_shots.length < _maxShots)
                   EatTappable(

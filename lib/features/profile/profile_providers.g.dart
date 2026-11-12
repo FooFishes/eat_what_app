@@ -48,7 +48,7 @@ final class MyUploadsProvider
   MyUploads create() => MyUploads();
 }
 
-String _$myUploadsHash() => r'8db7af5ec8e860f384a114828a60f74f00b2cc19';
+String _$myUploadsHash() => r'e6438957c369fc385180727cea0b1512a712322a';
 
 /// 我上传的菜. 发布成功后重新请求.
 ///
@@ -275,19 +275,19 @@ abstract class _$UserUploads extends $AsyncNotifier<DishPages> {
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 
 @ProviderFor(FollowList)
 final followListProvider = FollowListFamily._();
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 final class FollowListProvider
     extends $AsyncNotifierProvider<FollowList, ListPages<UserBrief>> {
   /// [userId] 的粉丝或关注列表.
   ///
-  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
   FollowListProvider._({
     required FollowListFamily super.from,
     required (int, FollowListKind) super.argument,
@@ -328,7 +328,7 @@ String _$followListHash() => r'2e6657246ee4dd4fe43e383cf0f3dbab96ec0f48';
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 
 final class FollowListFamily extends $Family
     with
@@ -350,7 +350,7 @@ final class FollowListFamily extends $Family
 
   /// [userId] 的粉丝或关注列表.
   ///
-  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 
   FollowListProvider call(int userId, FollowListKind kind) =>
       FollowListProvider._(argument: (userId, kind), from: this);
@@ -361,7 +361,7 @@ final class FollowListFamily extends $Family
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.notSupported`, 页面显示 "对方未公开".
+/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
 
 abstract class _$FollowList extends $AsyncNotifier<ListPages<UserBrief>> {
   late final _$args = ref.$arg as (int, FollowListKind);
@@ -391,14 +391,20 @@ abstract class _$FollowList extends $AsyncNotifier<ListPages<UserBrief>> {
 }
 
 /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+///
+/// 取自对方的资料, 不单独请求.
 
 @ProviderFor(BlockState)
 final blockStateProvider = BlockStateFamily._();
 
 /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+///
+/// 取自对方的资料, 不单独请求.
 final class BlockStateProvider
     extends $AsyncNotifierProvider<BlockState, bool> {
   /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+  ///
+  /// 取自对方的资料, 不单独请求.
   BlockStateProvider._({
     required BlockStateFamily super.from,
     required int super.argument,
@@ -435,9 +441,11 @@ final class BlockStateProvider
   }
 }
 
-String _$blockStateHash() => r'd88e7605bba55e54b6be4583adae92339f0cf196';
+String _$blockStateHash() => r'0082280f9599e14ee42b9b92b78b30127138d304';
 
 /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+///
+/// 取自对方的资料, 不单独请求.
 
 final class BlockStateFamily extends $Family
     with
@@ -458,6 +466,8 @@ final class BlockStateFamily extends $Family
       );
 
   /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+  ///
+  /// 取自对方的资料, 不单独请求.
 
   BlockStateProvider call(int userId) =>
       BlockStateProvider._(argument: userId, from: this);
@@ -467,6 +477,8 @@ final class BlockStateFamily extends $Family
 }
 
 /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+///
+/// 取自对方的资料, 不单独请求.
 
 abstract class _$BlockState extends $AsyncNotifier<bool> {
   late final _$args = ref.$arg as int;
@@ -742,15 +754,11 @@ abstract class _$Footprints extends $AsyncNotifier<ListPages<Footprint>> {
 }
 
 /// 本人的等级进度. 每次打开等级页重新请求.
-///
-/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
 
 @ProviderFor(growthProgress)
 final growthProgressProvider = GrowthProgressProvider._();
 
 /// 本人的等级进度. 每次打开等级页重新请求.
-///
-/// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
 
 final class GrowthProgressProvider
     extends
@@ -761,8 +769,6 @@ final class GrowthProgressProvider
         >
     with $FutureModifier<GrowthProgress>, $FutureProvider<GrowthProgress> {
   /// 本人的等级进度. 每次打开等级页重新请求.
-  ///
-  /// 等级与 "我的" 舞台上的不一致时 (如今天刚升级), 刷新本人的公开资料.
   GrowthProgressProvider._()
     : super(
         from: null,
@@ -789,7 +795,7 @@ final class GrowthProgressProvider
   }
 }
 
-String _$growthProgressHash() => r'b773ed2deb0f47ca409fe8da9b66a4c028c51ee5';
+String _$growthProgressHash() => r'2a518e771adf0fa4b6300427bcabb661fbeed532';
 
 /// 本人的经验明细, 按入账时间倒序.
 

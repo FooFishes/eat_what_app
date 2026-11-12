@@ -12,6 +12,8 @@ part of 'dish_providers.dart';
 ///
 /// 获取到最新数据时清除赞和收藏的本地覆盖值.
 /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+///
+/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
 
 @ProviderFor(dishDetail)
 final dishDetailProvider = DishDetailFamily._();
@@ -20,6 +22,8 @@ final dishDetailProvider = DishDetailFamily._();
 ///
 /// 获取到最新数据时清除赞和收藏的本地覆盖值.
 /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+///
+/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
 
 final class DishDetailProvider
     extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
@@ -28,6 +32,8 @@ final class DishDetailProvider
   ///
   /// 获取到最新数据时清除赞和收藏的本地覆盖值.
   /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+  ///
+  /// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
   DishDetailProvider._({
     required DishDetailFamily super.from,
     required int super.argument,
@@ -71,12 +77,14 @@ final class DishDetailProvider
   }
 }
 
-String _$dishDetailHash() => r'0e45f82ebcdb10e610570ece7ed4368ecc7aa7a4';
+String _$dishDetailHash() => r'1e1bdb24474feb6d199038dbf08fc176da5d17f6';
 
 /// 菜品详情.
 ///
 /// 获取到最新数据时清除赞和收藏的本地覆盖值.
 /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+///
+/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
 
 final class DishDetailFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
@@ -93,12 +101,126 @@ final class DishDetailFamily extends $Family
   ///
   /// 获取到最新数据时清除赞和收藏的本地覆盖值.
   /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
+  ///
+  /// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
 
   DishDetailProvider call(int dishId) =>
       DishDetailProvider._(argument: dishId, from: this);
 
   @override
   String toString() => r'dishDetailProvider';
+}
+
+/// 一道菜的修改记录, 最新的在前.
+///
+/// 恢复成功后重新请求修改记录和菜品详情.
+
+@ProviderFor(DishHistory)
+final dishHistoryProvider = DishHistoryFamily._();
+
+/// 一道菜的修改记录, 最新的在前.
+///
+/// 恢复成功后重新请求修改记录和菜品详情.
+final class DishHistoryProvider
+    extends $AsyncNotifierProvider<DishHistory, DishRevisionPages> {
+  /// 一道菜的修改记录, 最新的在前.
+  ///
+  /// 恢复成功后重新请求修改记录和菜品详情.
+  DishHistoryProvider._({
+    required DishHistoryFamily super.from,
+    required int super.argument,
+  }) : super(
+         retry: null,
+         name: r'dishHistoryProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$dishHistoryHash();
+
+  @override
+  String toString() {
+    return r'dishHistoryProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  DishHistory create() => DishHistory();
+
+  @override
+  bool operator ==(Object other) {
+    return other is DishHistoryProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$dishHistoryHash() => r'9d8f45471fd4370fb3b6fb2bcc432fa0ed0b3258';
+
+/// 一道菜的修改记录, 最新的在前.
+///
+/// 恢复成功后重新请求修改记录和菜品详情.
+
+final class DishHistoryFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          DishHistory,
+          AsyncValue<DishRevisionPages>,
+          DishRevisionPages,
+          FutureOr<DishRevisionPages>,
+          int
+        > {
+  DishHistoryFamily._()
+    : super(
+        retry: null,
+        name: r'dishHistoryProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 一道菜的修改记录, 最新的在前.
+  ///
+  /// 恢复成功后重新请求修改记录和菜品详情.
+
+  DishHistoryProvider call(int dishId) =>
+      DishHistoryProvider._(argument: dishId, from: this);
+
+  @override
+  String toString() => r'dishHistoryProvider';
+}
+
+/// 一道菜的修改记录, 最新的在前.
+///
+/// 恢复成功后重新请求修改记录和菜品详情.
+
+abstract class _$DishHistory extends $AsyncNotifier<DishRevisionPages> {
+  late final _$args = ref.$arg as int;
+  int get dishId => _$args;
+
+  FutureOr<DishRevisionPages> build(int dishId);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<DishRevisionPages>, DishRevisionPages>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<DishRevisionPages>, DishRevisionPages>,
+              AsyncValue<DishRevisionPages>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args));
+  }
 }
 
 @ProviderFor(DishTagsOf)
@@ -150,7 +272,7 @@ final class DishTagsOfProvider
   }
 }
 
-String _$dishTagsOfHash() => r'3f18f6ca54d78ca5adf91e4f3aff9b4720646922';
+String _$dishTagsOfHash() => r'0e1082a8a7077853e71b3e7ef171481bcc49a92b';
 
 final class DishTagsOfFamily extends $Family
     with

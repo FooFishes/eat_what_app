@@ -3,7 +3,6 @@ import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/domain/models/current_user.dart';
-import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/settings/feedback_page.dart';
 import 'package:eat/features/settings/password_page.dart';
 import 'package:eat/features/settings/privacy_page.dart';
@@ -25,7 +24,6 @@ const _withPassword = CurrentUser(
   phone: '13812345678',
   hasPassword: true,
   verified: true,
-  banned: false,
 );
 
 /// 文字为 [label] 的 [EatButton]. 页面标题与按钮同名时, 按文字查找会同时命中标题.
@@ -49,7 +47,7 @@ void main() {
         );
   });
 
-  testWidgets('设置页列出隐私和通知，隐私开关读自己的设置，改了就保存', (tester) async {
+  testWidgets('设置页列出隐私和通知，隐私开关读自己的设置，改了就保存；个性化推荐待接入', (tester) async {
     env.adapter
       ..on('GET /user/userInfo', [
         FakeAdapter.ok({
@@ -58,11 +56,7 @@ void main() {
           'followingsVisible': true,
         }),
       ])
-      ..on('GET /user/recommendation-settings', [
-        FakeAdapter.ok({'personalized': true}),
-      ])
-      ..on('POST /user/changePrivacy', [FakeAdapter.ok()])
-      ..on('PUT /user/recommendation-settings', [const FakeResponse.offline()]);
+      ..on('POST /user/changePrivacy', [FakeAdapter.ok()]);
     await pumpApp(
       tester,
       env,
@@ -83,13 +77,17 @@ void main() {
       'follower': false,
     });
 
+    final personalized = find.widgetWithText(EatSwitch, '个性化推荐');
+    expect(tester.widget<EatSwitch>(personalized).pending, isTrue);
+    expect(
+      find.descendant(of: personalized, matching: find.text('待接入')),
+      findsOneWidget,
+    );
     await tester.tap(find.text('个性化推荐'));
     await tester.pumpAndSettle();
-    expect(find.text('网络连接失败，请重试'), findsOneWidget);
-    expect(
-      tester.widget<EatSwitch>(find.widgetWithText(EatSwitch, '个性化推荐')).value,
-      isTrue,
-    );
+    expect(tester.widget<EatSwitch>(personalized).value, isTrue);
+    expect(env.adapter.sent('GET /user/recommendation-settings'), isEmpty);
+    expect(env.adapter.sent('PUT /user/recommendation-settings'), isEmpty);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -122,22 +120,22 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('设置用户名：验证手机后提交，所有设备要重新登录，回到登录页', (tester) async {
+  testWidgets('设置用户名：验证手机后提交，本机保持登录，刷新账号后返回', (tester) async {
     env.adapter
       ..on('GET /auth/captcha/config', [
         FakeAdapter.ok({'enabled': false}),
       ])
       ..on('POST /auth/password/code', [FakeAdapter.ok()])
       ..on('POST /auth/checkUsername', [FakeAdapter.ok()])
-      ..on('POST /auth/username/set', [
+      ..on('POST /auth/username/set', [FakeAdapter.ok()])
+      ..on('GET /user/info', [
         FakeAdapter.ok({
+          ...userInfoJson(hasPassword: true),
           'userName': 'zhe_01',
           'hasUsername': true,
-          'hasPassword': true,
-          'reauthenticationRequired': true,
         }),
       ]);
-    final (_, router) = await pumpApp(
+    final (container, router) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: testUser),
@@ -161,18 +159,19 @@ void main() {
     await tester.tap(_button('设置用户名'));
     await tester.pumpAndSettle();
 
-    expect(
-      env.adapter.sent('POST /auth/checkUsername').single.query,
-      containsPair('userName', 'zhe_01'),
-    );
+    final check = env.adapter.sent('POST /auth/checkUsername').single;
+    expect(check.body, {'userName': 'zhe_01'});
+    expect(check.query, isEmpty);
     expect(env.adapter.sent('POST /auth/username/set').single.body, {
       'userName': 'zhe_01',
       'code': '123456',
       'newPassword': 'secret1',
     });
-    expect(find.byType(LoginPage), findsOneWidget);
-    expect(locationOf(router), Paths.login);
-    expect(env.secure.values.keys, isNot(contains('auth.tokenValue')));
+    expect(find.text('用户名和密码已设置，其他设备需要重新登录'), findsOneWidget);
+    expect(locationOf(router), Paths.settingsAccount);
+    expect(find.text('zhe_01'), findsOneWidget);
+    expect(env.secure.values['auth.tokenValue'], 'tk');
+    expect(container.read(sessionProvider), isA<SignedIn>());
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -243,7 +242,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('反馈：截图先上传，再带着菜和幂等键提交，成功后返回', (tester) async {
+  testWidgets('反馈：截图先上传，再带着菜提交；重试时截图不重复上传，成功后返回', (tester) async {
     env.photos.next = [
       PickedPhoto(bytes: transparentImage, width: 1, height: 1),
     ];
@@ -264,7 +263,6 @@ void main() {
         const FakeResponse.offline(),
         FakeAdapter.ok({
           'id': 5,
-          'gid': 'g',
           'kind': 'FEEDBACK',
           'status': 'OPEN',
           'duplicate': false,
@@ -306,10 +304,7 @@ void main() {
       'screenshotKeys': ['feedback/42/a.jpg'],
       'context': {'type': 'FOOD', 'id': 1},
     });
-    expect(
-      sent.last.headers['Idempotency-Key'],
-      sent.first.headers['Idempotency-Key'],
-    );
+    expect(sent.last.headers.containsKey('Idempotency-Key'), isFalse);
     expect(find.byType(FeedbackPage), findsNothing);
     await tester.pump(const Duration(seconds: 2));
   });

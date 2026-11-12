@@ -1,4 +1,5 @@
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -11,7 +12,6 @@ import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
 import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/paths.dart';
-import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +19,9 @@ import 'package:go_router/go_router.dart';
 
 /// 密码登录页. 账号为手机号, 用户名或邮箱, 只有设置过密码的账号可用.
 ///
-/// 出错时就地提示, 不清空账号输入.
+/// 出错时就地提示, 不清空账号输入. 服务端不区分账号不存在, 没设过密码和密码错误,
+/// 因此页面常驻说明没设过密码的用验证码登录.
+/// 同一账号密码错误次数过多后, 服务端要求先完成人机验证.
 /// 不提供找回密码, 忘记密码时改用验证码登录.
 class PasswordLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
@@ -55,9 +57,15 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
   }
 
   /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
-  Future<bool> _presentConsent(ConsentPolicy policy) async {
+  Future<bool> _presentConsent() async {
     if (!mounted) return false;
-    return showConsentDialog(context, policy);
+    return showConsentDialog(context);
+  }
+
+  /// 在本页弹出人机验证. 页面已关闭时按用户取消处理.
+  Future<CaptchaOutcome> _presentCaptcha(CaptchaParams params) async {
+    if (!mounted) return const CaptchaCancelled();
+    return ref.read(humanVerifierProvider).verify(context, params);
   }
 
   void _onChanged() => setState(() {});
@@ -71,7 +79,12 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     FocusScope.of(context).unfocus();
     ref
         .read(passwordLoginProvider.notifier)
-        .submit(_presentConsent, _account.text.trim(), _password.text);
+        .submit(
+          _presentConsent,
+          _presentCaptcha,
+          _account.text.trim(),
+          _password.text,
+        );
   }
 
   /// 切换到验证码登录.
@@ -94,11 +107,6 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     final eat = context.eat;
     final c = eat.colors;
     final login = ref.watch(passwordLoginProvider);
-    ref.listen(passwordLoginProvider.select((s) => s.restore), (_, restore) {
-      if (!restore) return;
-      _password.clear();
-      context.push(Paths.loginRestore);
-    });
     final failure = switch (login.failure) {
       final failure? when failure.kind != FailureKind.cancelled => failure,
       _ => null,
@@ -142,7 +150,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                     if (ready && !login.submitting) _submit();
                   },
                   // 只有账号或密码错误时下划线显示 `warn` 色.
-                  // 未设置密码和网络不可达等错误与输入无关, 提示显示在表单下方.
+                  // 网络不可达等错误与输入无关, 提示显示在表单下方.
                   errorText: wrong ? '账号或密码错误' : null,
                   trailing: EatIconButton(
                     _showPassword ? EatIcons.eye : EatIcons.eyeOff,
@@ -151,6 +159,11 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                     onPressed: () =>
                         setState(() => _showPassword = !_showPassword),
                   ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '没设过密码的用验证码登录',
+                  style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),
                 if (failure != null && !wrong) ...[
                   const SizedBox(height: EatSpace.s10),

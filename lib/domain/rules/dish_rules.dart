@@ -57,6 +57,10 @@ abstract final class DishRules {
     return result;
   }
 
+  /// 菜品没有保存舞台色时使用的颜色: 分类默认色, 没有分类时为 `broth`.
+  static StageColor defaultStage(DishCategory? category) =>
+      category?.stage ?? StageColor.broth;
+
   /// 转盘上每道菜实际使用的舞台色.
   ///
   /// 与前一道菜撞色时依次尝试该菜的备选色, 全部撞色则保持原色.
@@ -83,8 +87,10 @@ abstract final class DishRules {
     return '¥${fixed.endsWith('.0') ? fixed.substring(0, fixed.length - 2) : fixed}';
   }
 
-  /// 招牌菜: 获赞最多的 [count] 道菜.
-  static List<Dish> signatures(List<Dish> dishes, {int count = 3}) {
+  /// 获赞最多的 [count] 道菜, 用于个人主页的舞台.
+  ///
+  /// 与招牌菜无关: 招牌菜由编辑者标记, 见 [Dish.signature].
+  static List<Dish> mostLiked(List<Dish> dishes, {int count = 3}) {
     final sorted = [...dishes]..sort((a, b) => b.likes.compareTo(a.likes));
     return sorted.take(count).toList();
   }

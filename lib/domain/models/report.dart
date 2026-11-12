@@ -58,3 +58,12 @@ enum ShopErrorType {
   final String api;
   final String label;
 }
+
+/// 反馈, 信息有误或举报关于的对象的类型.
+enum CaseSubjectKind { dish, shop, comment, user }
+
+/// 我提交的反馈, 信息有误或举报关于的对象. 由消息页点击处理结果时获取.
+class const CaseSubject({
+  required final CaseSubjectKind kind,
+  required final int id,
+});

@@ -1,4 +1,5 @@
 import 'package:eat/domain/models/notice.dart';
+import 'package:eat/domain/models/report.dart';
 
 /// 点击消息后的跳转目标.
 sealed class NoticeTarget {
@@ -6,12 +7,9 @@ sealed class NoticeTarget {
 }
 
 final class DishTarget extends NoticeTarget {
-  const DishTarget(this.dishId, {this.commentId});
+  const DishTarget(this.dishId);
 
   final int dishId;
-
-  /// 菜品详情打开后滚动到的评论. 只有评论和回复消息带有.
-  final int? commentId;
 }
 
 final class UserTarget extends NoticeTarget {
@@ -26,10 +24,11 @@ final class ShopTarget extends NoticeTarget {
   final int shopId;
 }
 
-final class TopicTarget extends NoticeTarget {
-  const TopicTarget(this.topicId);
+/// 处理结果关于的对象. 卡片只带提交记录的 id, 点击后先获取记录, 再按 [NoticeRules.targetOfCase] 跳转.
+final class CaseTarget extends NoticeTarget {
+  const CaseTarget(this.caseId);
 
-  final int topicId;
+  final int caseId;
 }
 
 /// 我的粉丝列表. 多人合并的关注消息跳到这里.
@@ -42,8 +41,7 @@ final class NoTarget extends NoticeTarget {
   const NoTarget();
 }
 
-// TODO: 消息卡片不含菜名和封面, 赞, 收藏和标签消息只能写 "你上传的菜", 右侧不显示缩略图. 卡片返回菜名和封面后补上.
-// TODO: 处理结果消息不含相关的店或菜, 反馈结果不能跳到相关的店或菜. 卡片返回相关对象后按对象跳转.
+// TODO: 消息卡片不含菜名和封面, 赞, 收藏和评论消息只能写 "你上传的菜", 右侧不显示缩略图. 卡片返回菜名和封面后补上.
 /// 消息的分组, 显示文字和跳转目标.
 ///
 /// 无法识别的消息按普通消息显示, 点击后不跳转.
@@ -56,45 +54,37 @@ abstract final class NoticeRules {
     return time.isBefore(week) ? '更早' : '本周';
   }
 
-  /// 点击后的跳转目标. 对象已删除或撤下时不跳转.
+  /// 点击后的跳转目标.
   ///
-  /// 旧版活动内容 (`activity_*`) 在产品上没有页面, 也不跳转.
+  /// 对象已删除时仍然跳转, 由目标页面显示已删除.
   static NoticeTarget targetOf(Notice notice) {
     switch (notice.kind) {
-      case NoticeKind.like || NoticeKind.favorite || NoticeKind.tag:
-        return _dishOrNone(notice);
+      case NoticeKind.like || NoticeKind.favorite || NoticeKind.comment:
+        return notice.targetDomain == 'foods'
+            ? DishTarget(notice.targetId)
+            : const NoTarget();
       case NoticeKind.follow:
         final user = followBackUserOf(notice);
         return user == null ? const MyFansTarget() : UserTarget(user);
-      case NoticeKind.comment || NoticeKind.reply:
-        if (notice.detail case CommentDetail(
-          :final dishId?,
-          :final commentId,
-          :final unavailable,
-        )) {
-          return unavailable
-              ? const NoTarget()
-              : DishTarget(dishId, commentId: commentId);
-        }
-        return _dishOrNone(notice);
-      case NoticeKind.topicIncluded:
-        if (notice.detail case TopicIncludedDetail(:final topicId?)) {
-          return TopicTarget(topicId);
+      case NoticeKind.caseResult:
+        if (notice.detail case CaseResultDetail(:final caseId?)) {
+          return CaseTarget(caseId);
         }
         return const NoTarget();
-      case NoticeKind.moderationResult:
-        if (notice.targetUnavailable) return const NoTarget();
-        return switch (notice.detail) {
-          ModerationDetail(approved: true, shop: true) => ShopTarget(
-            notice.targetId,
-          ),
-          ModerationDetail(approved: true) => DishTarget(notice.targetId),
-          _ => const NoTarget(),
-        };
-      case NoticeKind.caseResult || NoticeKind.other:
+      // TODO: 回复和评论赞的卡片只带评论 id, 不带菜 id, 后端也没有按 id 读取评论的接口, 因此无法跳到菜品详情. 卡片带上菜 id 后跳到菜品详情并滚动到该评论.
+      case NoticeKind.reply || NoticeKind.commentLike:
+        return const NoTarget();
+      case NoticeKind.announcement || NoticeKind.other:
         return const NoTarget();
     }
   }
+
+  /// 处理结果关于的对象对应的跳转目标. 只跳转到菜和店, 没有对象或对象是评论, 用户时不跳转.
+  static NoticeTarget targetOfCase(CaseSubject? subject) => switch (subject) {
+    CaseSubject(kind: CaseSubjectKind.dish, :final id) => DishTarget(id),
+    CaseSubject(kind: CaseSubjectKind.shop, :final id) => ShopTarget(id),
+    _ => const NoTarget(),
+  };
 
   /// 只有一个人的关注消息可以回关, 返回对方的 id. 其余返回 null.
   static int? followBackUserOf(Notice notice) =>
@@ -114,16 +104,21 @@ abstract final class NoticeRules {
   }
 
   /// 消息正文. 有互动者时不含互动者的名字, 名字在正文前单独加粗显示.
+  ///
+  /// 公告的正文是公告标题.
   static String sentenceOf(Notice notice) => switch (notice.kind) {
-    NoticeKind.like => notice.targetDomain == 'foods' ? '赞了你上传的菜' : '赞了你的内容',
+    NoticeKind.like => '赞了你上传的菜',
     NoticeKind.favorite => '收藏了你上传的菜',
-    NoticeKind.tag => '给你上传的菜加了标签',
     NoticeKind.follow => '关注了你',
     NoticeKind.comment => '评论了你上传的菜',
     NoticeKind.reply => '回复了你',
-    NoticeKind.topicIncluded => _topicSentence(notice.detail),
-    NoticeKind.moderationResult => _moderationSentence(notice.detail),
+    NoticeKind.commentLike => '赞了你的评论',
     NoticeKind.caseResult => _caseSentence(notice.detail),
+    NoticeKind.announcement => switch (notice.detail) {
+      AnnouncementDetail(:final title) when title.trim().isNotEmpty =>
+        title.trim(),
+      _ => '系统公告',
+    },
     NoticeKind.other => '你有一条新消息',
   };
 
@@ -133,25 +128,11 @@ abstract final class NoticeRules {
     _ => null,
   };
 
-  static NoticeTarget _dishOrNone(Notice notice) =>
-      notice.targetDomain == 'foods' && !notice.targetUnavailable
-      ? DishTarget(notice.targetId)
-      : const NoTarget();
-
-  static String _topicSentence(NoticeDetail? detail) {
-    if (detail is! TopicIncludedDetail) return '你上传的菜已被收录到专题';
-    final dish = detail.dishId == null ? '菜' : '「${detail.dishName}」';
-    return detail.topicId == null
-        ? '你上传的$dish已被收录到专题，该专题已下线'
-        : '你上传的$dish已被收录到专题「${detail.topicName}」';
-  }
-
-  static String _moderationSentence(NoticeDetail? detail) => switch (detail) {
-    ModerationDetail(shop: true, approved: true) => '你新建的店已通过审核',
-    ModerationDetail(shop: true) => '你新建的店未通过审核',
-    ModerationDetail(approved: true) => '你上传的菜已通过审核',
-    ModerationDetail() => '你上传的菜未通过审核',
-    _ => '你发布的内容已审核',
+  /// 公告的内容. 不是公告或没有内容时返回 null.
+  static String? contentOf(Notice notice) => switch (notice.detail) {
+    AnnouncementDetail(:final content) when content.trim().isNotEmpty =>
+      content.trim(),
+    _ => null,
   };
 
   static String _caseSentence(NoticeDetail? detail) {

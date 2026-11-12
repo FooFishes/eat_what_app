@@ -42,4 +42,24 @@ void main() {
     expect(query.containsKey('gcjLat'), isFalse);
     expect(query.containsKey('gcjLng'), isFalse);
   });
+
+  test('已关门的店不出现在选店列表里', () async {
+    env.adapter
+      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+      ..on('GET /restaurant/search', [
+        FakeAdapter.ok(
+          pageJson([
+            {...restaurantJson(id: 8, name: '老店'), 'permanentlyClosed': true},
+            restaurantJson(),
+          ]),
+        ),
+      ]);
+    final container = await env.container();
+    final provider = pickableShopsProvider('');
+    container.listen(provider, (_, _) {});
+
+    final shops = await container.read(provider.future);
+
+    expect([for (final shop in shops) shop.id], [7]);
+  });
 }

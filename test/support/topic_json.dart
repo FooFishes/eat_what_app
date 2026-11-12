@@ -41,7 +41,7 @@ Map<String, Object?> topicFoodJson({
   'restaurantName': shop,
   'uploaderName': '小林',
   'price': 16.5,
-  'category': 'staple',
+  'category': '主食',
   'categoryLabel': '主食',
   'pictureUrl': ['https://img.test/foods/$id.jpg'],
   'likesCount': 8,
@@ -68,59 +68,36 @@ Map<String, Object?> topicDetailJson({
       ],
 };
 
-/// 消息卡片 (`NotificationCardModels.Card`) 的响应样例.
+/// 消息卡片 (`NotificationDtos.Card`) 的响应样例. [data] 只有系统消息有.
 Map<String, Object?> noticeCardJson({
-  String id = '6f1c1c9e-0000-4000-8000-000000000001',
+  int id = 1,
   String column = 'LIKES_AND_FAVORITES',
   String kind = 'like',
   String domain = 'foods',
   int targetId = 1,
-  bool unavailable = false,
   int members = 1,
   int unread = 1,
   DateTime? latestAt,
   List<Map<String, Object?>> actors = const [
-    {
-      'id': 5,
-      'gid': '6f1c1c9e-0000-4000-8000-000000000005',
-      'name': '小林',
-      'avatar': null,
-    },
+    {'id': 5, 'displayName': '小林', 'avatar': null},
   ],
-  Map<String, Object?>? detail,
-}) {
-  final target = {
-    'domain': domain,
-    'gid': '6f1c1c9e-0000-4000-8000-0000000000aa',
-    'id': targetId,
-    'unavailable': unavailable,
-  };
-  final day = (latestAt ?? DateTime.now()).toIso8601String().substring(0, 10);
-  return {
-    'id': id,
-    'column': column,
-    'kind': kind,
-    'target': target,
-    'day': day,
-    'memberCount': members,
-    'unreadMemberCount': unread,
-    'latestAt': (latestAt ?? DateTime.now()).millisecondsSinceEpoch,
-    'actors': actors,
-    'data': {
-      'schema': 1,
-      'kind': kind,
-      'target': target,
-      'day': day,
-      'memberCount': members,
-      'detail': detail,
-    },
-  };
-}
+  Map<String, Object?>? data,
+}) => {
+  'id': id,
+  'column': column,
+  'kind': kind,
+  'target': {'domain': domain, 'id': targetId},
+  'day': (latestAt ?? DateTime.now()).toIso8601String().substring(0, 10),
+  'memberCount': members,
+  'unreadMemberCount': unread,
+  'latestAt': (latestAt ?? DateTime.now()).millisecondsSinceEpoch,
+  'actors': actors,
+  'data': data,
+};
 
-/// 一位互动者.
+/// 一位互动者 (`NotificationDtos.Actor`).
 Map<String, Object?> actorJson(int id, String name) => {
   'id': id,
-  'gid': '6f1c1c9e-0000-4000-8000-0000000000${id.toString().padLeft(2, '0')}',
-  'name': name,
+  'displayName': name,
   'avatar': null,
 };

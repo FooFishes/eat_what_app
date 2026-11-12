@@ -16,14 +16,14 @@ enum NoticeColumn {
 enum NoticeKind {
   like('like'),
   favorite('favorite'),
-  tag('tag'),
   follow('follow'),
-  // TODO: 后端还没有产生评论消息卡片的来源, `comment` 和 `reply` 两个取值按推测填写. 后端接入评论消息后按实际的 kind 核对.
   comment('comment'),
   reply('reply'),
-  topicIncluded('topic_included'),
-  moderationResult('moderation_result'),
+
+  /// 赞了我的评论或回复.
+  commentLike('comment_like'),
   caseResult('case_result'),
+  announcement('announcement'),
 
   /// 客户端不认识的类型. 显示为普通消息, 不跳转.
   other('');
@@ -51,15 +51,13 @@ class const NoticeActor({
 ///
 /// 同一对象, 同一类互动在同一天的消息由服务端合并为一行.
 /// - [memberCount] 是合并的条数. [actors] 是其中最近的至多 3 人, 最近的在前.
-/// - [targetDomain] 原样保留接口取值, 如 `foods`, `users`, `topics`, 由 `NoticeRules` 识别.
-/// - [targetUnavailable] 表示对象已删除或撤下, 此时不跳转.
+/// - [targetDomain] 原样保留接口取值, 如 `foods`, `users`, `comments`, 由 `NoticeRules` 识别.
 /// - [read] 表示合并的各条都已读.
 class const Notice({
-  required final String id,
+  required final int id,
   required final NoticeKind kind,
   required final String targetDomain,
   required final int targetId,
-  final bool targetUnavailable = false,
   final int memberCount = 1,
   final bool read = false,
   required final DateTime latestAt,
@@ -71,7 +69,6 @@ class const Notice({
     kind: kind,
     targetDomain: targetDomain,
     targetId: targetId,
-    targetUnavailable: targetUnavailable,
     memberCount: memberCount,
     read: true,
     latestAt: latestAt,
@@ -80,55 +77,23 @@ class const Notice({
   );
 }
 
-/// 系统消息和评论消息附带的内容. 赞, 收藏, 标签和关注没有附带内容.
+/// 系统消息附带的内容. 互动消息没有附带内容.
 sealed class NoticeDetail {
   const NoticeDetail();
-}
-
-/// 菜被收进专题. 菜或专题不可用时对应的 id 为 null.
-final class TopicIncludedDetail extends NoticeDetail {
-  const TopicIncludedDetail({
-    this.dishId,
-    required this.dishName,
-    this.topicId,
-    required this.topicName,
-  });
-
-  final int? dishId;
-  final String dishName;
-  final int? topicId;
-  final String topicName;
-}
-
-/// 投稿的审核结果. [approved] 为 false 表示未通过.
-final class ModerationDetail extends NoticeDetail {
-  const ModerationDetail({required this.shop, required this.approved});
-
-  /// 审核对象是店. 为 false 时是菜.
-  final bool shop;
-  final bool approved;
-}
-
-/// 评论或回复. 评论已删除时 [unavailable] 为 true.
-final class CommentDetail extends NoticeDetail {
-  const CommentDetail({this.dishId, this.commentId, this.unavailable = false});
-
-  final int? dishId;
-
-  /// 评论的 id. 回复消息中为回复所属评论的 id, 菜品详情打开后滚动到该评论.
-  final int? commentId;
-  final bool unavailable;
 }
 
 /// 反馈, 信息有误和举报的处理结果.
 final class CaseResultDetail extends NoticeDetail {
   const CaseResultDetail({
+    this.caseId,
     required this.kind,
     this.outcome,
     this.reasonCode,
     this.reply = '',
   });
 
+  /// 提交记录的 id. 用于获取记录关于的菜或店.
+  final int? caseId;
   final CaseKind kind;
 
   /// `ACCEPTED`, `REJECTED` 或 `RESOLVED`. `RESOLVED` 只用于意见反馈.
@@ -143,3 +108,11 @@ final class CaseResultDetail extends NoticeDetail {
 
 /// 处理结果对应的提交类型.
 enum CaseKind { feedback, catalogError, report }
+
+/// 运营发布的公告. 只显示, 不跳转.
+final class AnnouncementDetail extends NoticeDetail {
+  const AnnouncementDetail({required this.title, this.content = ''});
+
+  final String title;
+  final String content;
+}

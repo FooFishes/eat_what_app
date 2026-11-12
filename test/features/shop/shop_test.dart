@@ -1,7 +1,9 @@
-import 'package:eat/domain/models/current_user.dart';
+import 'package:clock/clock.dart';
+import 'package:eat/features/shop/shop_edit_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
@@ -10,27 +12,20 @@ import '../../support/fakes.dart';
 
 void main() {
   Map<String, Object?> detail({
-    int? ratingCount = 32,
-    int? rate = 86,
-    String? myRating,
+    int dineIn = 32,
+    double? dineInRate = 0.856,
+    int delivery = 0,
+    double? deliveryRate,
+    String? myDineIn,
+    String? myDelivery,
     bool isFavorite = false,
   }) => {
     ...restaurantJson(),
-    'visibleFoodCount': 13,
-    'ratingCount': ratingCount,
-    'recommendationRate': rate,
-    'ratingSummaryState': 'READY',
-    'signatureFoods': [
-      {'id': 1, 'name': '虾仁云吞', 'stageColor': 'chili', 'likesCount': 30},
-      {'id': 2, 'name': '牛肉饺子', 'likesCount': 20},
-      {'id': 4, 'name': '煎饺', 'likesCount': 9},
-    ],
-    'publicTastes': [
-      {'tagId': 3, 'name': '皮薄', 'taggerCount': 5},
-    ],
-    'publicTastesState': 'READY',
-    'personalState': 'READY',
-    'myRating': myRating,
+    'categories': ['粉面'],
+    'tags': ['辣', '酸'],
+    'dineIn': {'rate': dineInRate, 'count': dineIn},
+    'delivery': {'rate': deliveryRate, 'count': delivery},
+    'myRatings': {'dineIn': myDineIn, 'delivery': myDelivery},
     'isFavorite': isFavorite,
   };
 
@@ -38,25 +33,28 @@ void main() {
     (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
   );
 
+  /// 招牌菜和菜单都请求 `/foods/list`, 先后顺序不固定, 因此两者用同一份响应. 这家店共 13 道菜.
   TestEnv shopEnv({List<Object>? details}) {
     final env = TestEnv();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /restaurant/detail/7', details ?? [FakeAdapter.ok(detail())])
       ..on('GET /foods/list', [
-        FakeAdapter.ok(
-          pageJson([
+        FakeAdapter.ok({
+          ...pageJson([
             foodJson(id: 1, name: '虾仁云吞', likes: 30),
             foodJson(id: 2, name: '牛肉饺子', likes: 20),
-            foodJson(id: 3, name: '紫菜汤', likes: 2),
           ]),
-        ),
-        FakeAdapter.ok(pageJson([foodJson(id: 1, name: '虾仁云吞', likes: 30)])),
+          'totalItems': 13,
+        }),
       ]);
     return env;
   }
 
-  testWidgets('舞台写店名、菜数和推荐率；招牌和口味取自店铺详情，点口味词按标签请求菜单', (tester) async {
+  Future<void> scrollTo(WidgetTester tester, String text) =>
+      tester.scrollUntilVisible(find.text(text), 200, scrollable: downward);
+
+  testWidgets('舞台写店名、商圈、菜数和堂食推荐率；招牌单独请求，菜单按菜单顺序', (tester) async {
     final env = shopEnv();
     final (container, _) = await pumpApp(
       tester,
@@ -66,32 +64,63 @@ void main() {
     );
 
     expect(find.text('袁记云饺'), findsOneWidget);
+    expect(find.text('万达金街  万达金街 1 层'), findsOneWidget);
     expect(find.text('13 道菜'), findsOneWidget);
     expect(find.text('86% 推荐'), findsOneWidget);
     expect(find.text('32 人评过'), findsOneWidget);
     expect(find.text('招牌'), findsOneWidget);
-    expect(find.text('煎饺'), findsOneWidget);
-    final sent = env.adapter.sent('GET /foods/list').single.query;
-    expect(sent, containsPair('restaurantId', 7));
-    expect(sent, containsPair('sort', 'POPULAR'));
-    expect(sent.containsKey('systemTagIds'), isFalse);
+    expect(find.bySemanticsLabel('招牌菜 虾仁云吞'), findsOneWidget);
+    final queries = [
+      for (final r in env.adapter.sent('GET /foods/list')) r.query,
+    ];
+    expect(queries, hasLength(2));
+    final signatures = queries.singleWhere((q) => q['signatureOnly'] == true);
+    final menu = queries.singleWhere((q) => q['signatureOnly'] == null);
+    expect(signatures, containsPair('restaurantId', 7));
+    expect(signatures, containsPair('pageSize', 3));
+    expect(menu, containsPair('restaurantId', 7));
+    expect(menu, containsPair('sort', 'MENU'));
     await expectAccessible(tester);
 
-    await tester.scrollUntilVisible(find.text('皮薄'), 200, scrollable: downward);
-    await tester.tap(find.text('皮薄'));
-    await tester.pumpAndSettle();
-    expect(
-      env.adapter.sent('GET /foods/list').last.query,
-      containsPair('systemTagIds', [3]),
-    );
-    expect(find.text('紫菜汤'), findsNothing, reason: '只看带「皮薄」的菜');
+    await scrollTo(tester, '辣、酸');
+    expect(find.text('品类和口味'), findsOneWidget);
+    expect(find.text('粉面'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
-  for (final (count, text) in [(3, '3 人评过'), (0, '还没人评价')]) {
-    testWidgets('评价不满 5 人时舞台写「$text」，不写推荐率', (tester) async {
+  testWidgets('堂食评价不满 3 条、外卖满 3 条时，舞台写外卖的推荐率', (tester) async {
+    final env = shopEnv(
+      details: [
+        FakeAdapter.ok(
+          detail(dineIn: 2, dineInRate: 1, delivery: 5, deliveryRate: 0.8),
+        ),
+      ],
+    );
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.shop(7),
+    );
+
+    expect(find.text('外卖 80% 推荐'), findsOneWidget);
+    expect(find.text('5 人评过'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  for (final (dineIn, delivery, text) in [(1, 1, '2 条评价'), (0, 0, '还没人评价')]) {
+    testWidgets('两个场景都不满 3 条时写「$text」，不写推荐率', (tester) async {
       final env = shopEnv(
-        details: [FakeAdapter.ok(detail(ratingCount: count, rate: null))],
+        details: [
+          FakeAdapter.ok(
+            detail(
+              dineIn: dineIn,
+              dineInRate: dineIn == 0 ? null : 1,
+              delivery: delivery,
+              deliveryRate: delivery == 0 ? null : 0,
+            ),
+          ),
+        ],
       );
       final (container, _) = await pumpApp(
         tester,
@@ -102,25 +131,24 @@ void main() {
 
       expect(find.text(text), findsOneWidget);
       expect(find.textContaining('% 推荐'), findsNothing);
-      await expectAccessible(tester);
       await unmountApp(tester, container);
     });
   }
 
-  testWidgets('认证用户点一档就提交，再点同一档撤回', (tester) async {
+  testWidgets('评价：先选堂食或外卖，再选推荐或不推荐；再点一次撤回', (tester) async {
     final env = shopEnv(
       details: [
         FakeAdapter.ok(detail()),
-        FakeAdapter.ok(detail(myRating: 'RECOMMEND')),
+        FakeAdapter.ok(detail(myDelivery: 'RECOMMEND')),
         FakeAdapter.ok(detail()),
       ],
     );
     env.adapter
       ..on('PUT /restaurant/7/rating', [
-        FakeAdapter.ok({'rating': 'RECOMMEND'}),
+        FakeAdapter.ok({'dineIn': null, 'delivery': 'RECOMMEND'}),
       ])
       ..on('DELETE /restaurant/7/rating', [
-        FakeAdapter.ok({'rating': null}),
+        FakeAdapter.ok({'dineIn': null, 'delivery': null}),
       ]);
     final (container, _) = await pumpApp(
       tester,
@@ -129,29 +157,64 @@ void main() {
       location: Paths.shop(7),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('不推荐'),
-      200,
-      scrollable: downward,
-    );
+    await scrollTo(tester, '吃过的话，说说推不推荐');
+    await tester.tap(find.text('评价'));
+    await tester.pumpAndSettle();
+    expect(find.text('评价这家店'), findsOneWidget);
+    expect(find.text('先选在店里吃的还是点的外卖'), findsOneWidget);
+    expect(find.text('推荐'), findsNothing, reason: '选场景之前不显示评价');
+    await expectAccessible(tester);
+
+    await tester.tap(find.text('外卖'));
+    await tester.pumpAndSettle();
     expect(find.text('点选即提交，之后可修改'), findsOneWidget);
     await tester.tap(find.text('推荐'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /restaurant/7/rating').single.body, {
+      'scene': 'delivery',
       'rating': 'RECOMMEND',
     });
     expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
+    expect(find.text('你的评价：外卖推荐'), findsWidgets);
     expect(
       env.adapter.sent('GET /restaurant/detail/7'),
       hasLength(2),
       reason: '评价后重新请求店铺详情，更新推荐率',
     );
-    await expectAccessible(tester);
 
     await tester.tap(find.text('推荐'));
     await tester.pumpAndSettle();
-    expect(env.adapter.sent('DELETE /restaurant/7/rating'), hasLength(1));
-    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
+    expect(env.adapter.sent('DELETE /restaurant/7/rating').single.query, {
+      'scene': 'delivery',
+    });
+    expect(find.text('你还没评价过这家店'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('已评价时页面写出两个场景的评价，面板里选中已有的评价', (tester) async {
+    final env = shopEnv(
+      details: [
+        FakeAdapter.ok(
+          detail(myDineIn: 'RECOMMEND', myDelivery: 'NOT_RECOMMEND'),
+        ),
+      ],
+    );
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.shop(7),
+    );
+
+    await scrollTo(tester, '你的评价：堂食推荐，外卖不推荐');
+    await tester.tap(find.text('改评价'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('堂食'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
+    await tester.tap(find.text('外卖'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选「不推荐」，再点一次取消'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -165,12 +228,12 @@ void main() {
       location: Paths.shop(7),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('不推荐'),
-      200,
-      scrollable: downward,
-    );
-    await tester.tap(find.text('一般'));
+    await scrollTo(tester, '吃过的话，说说推不推荐');
+    await tester.tap(find.text('评价'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('堂食'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不推荐'));
     await tester.pumpAndSettle();
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
@@ -206,9 +269,9 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点收藏和评价都弹拦截对话框，不发请求', (tester) async {
+  testWidgets('没认证时点收藏、评价和编辑都弹拦截对话框，不发请求', (tester) async {
     final env = shopEnv();
-    final (container, _) = await pumpApp(
+    final (container, router) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: testUser),
@@ -221,14 +284,19 @@ void main() {
     await tester.tap(find.text('先逛逛'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('不推荐'),
-      200,
-      scrollable: downward,
-    );
-    await tester.tap(find.text('还不错'));
+    await scrollTo(tester, '吃过的话，说说推不推荐');
+    await tester.tap(find.text('评价'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能评价'), findsOneWidget);
+    expect(find.text('评价这家店'), findsNothing);
+    await tester.tap(find.text('先逛逛'));
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, '编辑店铺');
+    await tester.tap(find.text('编辑店铺'));
+    await tester.pumpAndSettle();
+    expect(find.text('认证后才能编辑店铺'), findsOneWidget);
+    expect(locationOf(router), Paths.shop(7));
     expect(env.adapter.sent('PUT /restaurant/7/favorite'), isEmpty);
     expect(env.adapter.sent('PUT /restaurant/7/rating'), isEmpty);
     await unmountApp(tester, container);
@@ -245,7 +313,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('选一项、写补充说明后提交，提示已提交；失败重试沿用同一个请求编号', (tester) async {
+    testWidgets('选一项、写补充说明后提交，提示已提交；失败后面板保留，可以重试', (tester) async {
       final env = shopEnv();
       env.adapter.on('POST /feedback/catalog-errors', [
         const FakeResponse.offline(),
@@ -281,45 +349,8 @@ void main() {
         'errorType': 'WRONG_LOCATION',
         'note': '在二楼',
       });
-      expect(
-        sent.last.headers['Idempotency-Key'],
-        sent.first.headers['Idempotency-Key'],
-      );
+      expect(sent.last.headers.containsKey('Idempotency-Key'), isFalse);
       expect(find.text('信息有误'), findsOneWidget);
-      expect(find.text('已提交，核实后会通过消息通知你'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 3));
-      await unmountApp(tester, container);
-    });
-
-    testWidgets('封禁中也能提交', (tester) async {
-      final env = shopEnv();
-      env.adapter.on('POST /feedback/catalog-errors', [
-        FakeAdapter.ok({'id': 1, 'duplicate': true}),
-      ]);
-      final (container, _) = await pumpApp(
-        tester,
-        env,
-        session: const SignedIn(
-          user: CurrentUser(
-            id: 42,
-            nickname: '天凉被破王',
-            hasPassword: false,
-            verified: true,
-            banned: true,
-          ),
-        ),
-        location: Paths.shop(7),
-      );
-
-      await openPanel(tester);
-      await tester.tap(find.text('已关门'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('提交'));
-      await tester.pumpAndSettle();
-      expect(env.adapter.sent('POST /feedback/catalog-errors').single.body, {
-        'restaurantId': 7,
-        'errorType': 'CLOSED',
-      });
       expect(find.text('已提交，核实后会通过消息通知你'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
       await unmountApp(tester, container);
@@ -327,19 +358,11 @@ void main() {
   });
 
   testWidgets('已关门的店写「这家店已关门」，导航和加菜都不可用', (tester) async {
-    final env = TestEnv();
-    env.adapter
-      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /restaurant/detail/7', [
-        FakeAdapter.ok({
-          ...restaurantJson(),
-          'operatingStatus': 'CLOSED',
-          'permanentlyClosed': true,
-        }),
-      ])
-      ..on('GET /foods/list', [
-        FakeAdapter.ok(pageJson([foodJson()])),
-      ]);
+    final env = shopEnv(
+      details: [
+        FakeAdapter.ok({...detail(), 'permanentlyClosed': true}),
+      ],
+    );
     final (container, router) = await pumpApp(
       tester,
       env,
@@ -352,5 +375,211 @@ void main() {
     await tester.pumpAndSettle();
     expect(locationOf(router), Paths.shop(7));
     await unmountApp(tester, container);
+  });
+
+  testWidgets('店铺已删除时写「这家店已删除」，不提供重试', (tester) async {
+    final env = shopEnv(details: [FakeAdapter.fail(40009)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.shop(7),
+    );
+
+    expect(find.text('这家店已删除'), findsOneWidget);
+    expect(find.text('重试'), findsNothing);
+    expect(env.adapter.sent('GET /restaurant/detail/7'), hasLength(1));
+    await unmountApp(tester, container);
+  });
+
+  group('编辑店铺', () {
+    Future<ProviderContainer> openEdit(WidgetTester tester, TestEnv env) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.shop(7),
+      );
+      await scrollTo(tester, '编辑店铺');
+      await tester.tap(find.text('编辑店铺'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShopEditPage), findsOneWidget);
+      return container;
+    }
+
+    testWidgets('只提交改动的字段，保存后回到店铺页并刷新', (tester) async {
+      final env = shopEnv(
+        details: [
+          FakeAdapter.ok(detail()),
+          FakeAdapter.ok({...detail(), 'name': '袁记云饺万达店'}),
+        ],
+      );
+      env.adapter.on('PUT /restaurant/edit/7', [
+        FakeAdapter.ok({'id': 7, 'revisionId': 30}),
+      ]);
+      final container = await openEdit(tester, env);
+
+      await tester.enterText(find.byType(EditableText).first, '袁记云饺万达店');
+      await tester.tap(find.text('火锅麻辣烫'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('能点外卖'),
+        200,
+        scrollable: downward,
+      );
+      await tester.tap(find.text('能点外卖'));
+      await tester.pumpAndSettle();
+      await expectAccessible(tester);
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(env.adapter.sent('PUT /restaurant/edit/7').single.body, {
+        'name': '袁记云饺万达店',
+        'categories': ['粉面', '火锅麻辣烫'],
+        'deliveryEnabled': true,
+      });
+      expect(find.text('已保存'), findsOneWidget);
+      expect(find.byType(ShopEditPage), findsNothing);
+      expect(find.text('袁记云饺万达店'), findsWidgets);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('附近已有同名的店时在店名下提示，留在编辑页', (tester) async {
+      final env = shopEnv();
+      env.adapter.on('PUT /restaurant/edit/7', [
+        FakeAdapter.fail(40004, '附近已经有同名的店铺了'),
+      ]);
+      final container = await openEdit(tester, env);
+
+      await tester.enterText(find.byType(EditableText).first, '张亮麻辣烫');
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('附近已有同名的店，请换一个店名'), findsOneWidget);
+      expect(find.byType(ShopEditPage), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('品类最多选 2 个；改过内容后返回要确认放弃', (tester) async {
+      final env = shopEnv();
+      final container = await openEdit(tester, env);
+
+      await tester.tap(find.text('火锅麻辣烫'));
+      await tester.tap(find.text('汤粥'));
+      await tester.pumpAndSettle();
+      expect(find.text('品类最多选 2 个'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+
+      await tester.tap(find.bySemanticsLabel('返回'));
+      await tester.pumpAndSettle();
+      expect(find.text('放弃修改？'), findsOneWidget);
+      await tester.tap(find.text('放弃'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShopEditPage), findsNothing);
+      expect(env.adapter.sent('PUT /restaurant/edit/7'), isEmpty);
+      await unmountApp(tester, container);
+    });
+  });
+
+  group('修改记录', () {
+    Map<String, Object?> revision(int id, String action, List<String> fields) =>
+        {
+          'id': id,
+          'action': action,
+          'editor': {'id': 9, 'displayName': '小林', 'avatar': null},
+          'changes': [
+            for (final f in fields) {'field': f, 'from': null, 'to': null},
+          ],
+          'createdAt': clock
+              .now()
+              .subtract(const Duration(minutes: 10))
+              .millisecondsSinceEpoch,
+        };
+
+    testWidgets('写出编辑者、动作和改了哪些字段；最新一条是当前版本', (tester) async {
+      final env = shopEnv();
+      env.adapter.on('GET /restaurant/7/history', [
+        FakeAdapter.ok(
+          pageJson([
+            revision(31, 'edit', ['name', 'gcjLng', 'gcjLat']),
+            revision(29, 'create', ['name', 'address']),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.shop(7),
+      );
+
+      await scrollTo(tester, '修改记录');
+      await tester.tap(find.text('修改记录'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('改了店名、位置'), findsOneWidget);
+      expect(find.text('新建了这家店'), findsOneWidget);
+      expect(find.text('小林'), findsNWidgets(2));
+      expect(find.text('10 分钟前'), findsNWidgets(2));
+      expect(find.text('当前版本'), findsOneWidget);
+      expect(find.text('恢复'), findsOneWidget);
+      await expectAccessible(tester);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('恢复前二次确认；已经是这个版本时提示，成功后刷新', (tester) async {
+      final env = shopEnv();
+      env.adapter
+        ..on('GET /restaurant/7/history', [
+          FakeAdapter.ok(
+            pageJson([
+              revision(31, 'edit', ['name']),
+              revision(29, 'create', ['name']),
+            ]),
+          ),
+        ])
+        ..on('POST /restaurant/7/history/29/restore', [
+          FakeAdapter.fail(40002, '当前内容已经是这个版本'),
+          FakeAdapter.ok({'id': 7, 'revisionId': 32}),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.shopHistory(7),
+      );
+
+      Future<void> restore() async {
+        await tester.tap(find.text('恢复'));
+        await tester.pumpAndSettle();
+        expect(find.text('恢复到这个版本？'), findsOneWidget);
+        await tester.tap(find.text('恢复').last);
+        await tester.pumpAndSettle();
+      }
+
+      await tester.tap(find.text('恢复'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('先不恢复'));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('POST /restaurant/7/history/29/restore'),
+        isEmpty,
+      );
+
+      await restore();
+      expect(find.text('已经是这个版本'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+
+      await restore();
+      expect(find.text('已恢复'), findsOneWidget);
+      expect(
+        env.adapter.sent('POST /restaurant/7/history/29/restore'),
+        hasLength(2),
+      );
+      expect(env.adapter.sent('GET /restaurant/7/history'), hasLength(2));
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
   });
 }

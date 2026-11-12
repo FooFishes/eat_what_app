@@ -8,23 +8,23 @@ part of 'published.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
 ///
-/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
 /// 功能之间不能互相导入, 因此通过该 Provider 通知.
 
 @ProviderFor(PublishedCount)
 final publishedCountProvider = PublishedCountProvider._();
 
-/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
 ///
-/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
 /// 功能之间不能互相导入, 因此通过该 Provider 通知.
 final class PublishedCountProvider
     extends $NotifierProvider<PublishedCount, int> {
-  /// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+  /// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
   ///
-  /// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+  /// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
   /// 功能之间不能互相导入, 因此通过该 Provider 通知.
   PublishedCountProvider._()
     : super(
@@ -55,9 +55,9 @@ final class PublishedCountProvider
 
 String _$publishedCountHash() => r'c0e0c731fb85afbf7fcf0ce1742a717e6544648b';
 
-/// 本次启动以来的发布次数, 包括发布菜品和新建店铺.
+/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
 ///
-/// "我的" 的统计与上传列表, 以及餐厅详情的菜单监听该值, 变化后重新请求.
+/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
 /// 功能之间不能互相导入, 因此通过该 Provider 通知.
 
 abstract class _$PublishedCount extends $Notifier<int> {

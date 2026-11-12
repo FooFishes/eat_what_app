@@ -26,7 +26,7 @@ void main() {
     map = FakeMapEngine();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
   });
 
   Future<(dynamic, GoRouter)> open(WidgetTester tester, String name) async {
@@ -50,6 +50,15 @@ void main() {
       .controller
       .text;
 
+  /// 选 "美食" 后提交.
+  Future<void> submit(WidgetTester tester) async {
+    await tester.ensureVisible(find.text('美食'));
+    await tester.tap(find.text('美食'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下一步：去加菜'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('按选店页的关键词搜地图，选中后预填店名和地址，提交时带上地点', (tester) async {
     map.places = [place];
     env.adapter.on('POST /restaurant/add', [
@@ -67,11 +76,10 @@ void main() {
     expect(fieldText(tester, 0), '袁记云饺(舜泰店)');
     expect(fieldText(tester, 1), '舜泰广场 9 号楼 1-105');
     expect(map.last!.initialCenter, place.point);
-    await tester.tap(find.text('下一步：去加菜'));
-    await tester.pumpAndSettle();
+    await submit(tester);
 
     final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
-    expect(body['POI'], 'baidu-1');
+    expect(body['poi'], 'baidu-1');
     expect(body['name'], '袁记云饺(舜泰店)');
     expect(body['gcjLat'], 36.6681);
     expect(env.adapter.sent('GET /restaurant/detail/9'), isNotEmpty);
@@ -80,7 +88,7 @@ void main() {
 
   testWidgets('选中的地点已经有人建过店：提示，可以直接选那家', (tester) async {
     map.places = [place];
-    env.adapter.on('GET /restaurant/browse', [
+    env.adapter.on('GET /restaurant/search', [
       FakeAdapter.ok(pageJson([restaurantJson(id: 7, poi: 'baidu-1')])),
     ]);
     final (container, _) = await open(tester, '袁记');
@@ -95,6 +103,35 @@ void main() {
 
     expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
     expect(env.adapter.sent('GET /restaurant/detail/7'), isNotEmpty);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('选中的地点已经有店，也可以继续新建：提交时不带地点', (tester) async {
+    map.places = [place];
+    env.adapter
+      ..on('GET /restaurant/search', [
+        FakeAdapter.ok(pageJson([restaurantJson(id: 7, poi: 'baidu-1')])),
+      ])
+      ..on('POST /restaurant/add', [
+        FakeAdapter.ok({'id': 9}),
+      ]);
+    final (container, _) = await open(tester, '袁记');
+    await tester.tap(find.text('袁记云饺(舜泰店)'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('下一步：去加菜'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
+    await tester.tap(find.text('继续新建'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('这家店已经有了'), findsNothing);
+    await submit(tester);
+
+    final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
+    expect(body.containsKey('poi'), isFalse);
+    expect(body['name'], '袁记云饺(舜泰店)');
+    expect(body['gcjLat'], 36.6681);
     await unmountApp(tester, container);
   });
 
@@ -119,11 +156,10 @@ void main() {
     await tester.enterText(find.byType(EditableText).at(1), '万达金街 1 层');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('下一步：去加菜'));
-    await tester.pumpAndSettle();
+    await submit(tester);
 
     final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
-    expect(body.containsKey('POI'), isFalse);
+    expect(body.containsKey('poi'), isFalse);
     await unmountApp(tester, container);
   });
 

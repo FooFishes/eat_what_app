@@ -64,13 +64,30 @@ void main() {
     expect(DishRules.priceText(null), isNull);
   });
 
-  test('招牌是获赞最多的三道', () {
+  test('获赞最多的三道', () {
     final dishes = [
       _dish(1, likes: 3),
       _dish(2, likes: 40),
       _dish(3, likes: 12),
       _dish(4, likes: 1),
     ];
-    expect(DishRules.signatures(dishes).map((d) => d.id), [2, 3, 1]);
+    expect(DishRules.mostLiked(dishes).map((d) => d.id), [2, 3, 1]);
+  });
+
+  test('没保存舞台色时用分类的默认色，没有分类时用 broth', () {
+    expect(DishRules.defaultStage(DishCategory.staple), StageColor.broth);
+    expect(DishRules.defaultStage(DishCategory.dish), StageColor.soy);
+    expect(DishRules.defaultStage(DishCategory.snack), StageColor.chili);
+    expect(DishRules.defaultStage(DishCategory.soup), StageColor.bamboo);
+    expect(DishRules.defaultStage(DishCategory.drinkDessert), StageColor.mango);
+    expect(DishRules.defaultStage(DishCategory.special), StageColor.matcha);
+    expect(DishRules.defaultStage(null), StageColor.broth);
+  });
+
+  test('分类按中文原值解析，不认识的值为 null', () {
+    expect(DishCategory.fromApi('饮品甜品'), DishCategory.drinkDessert);
+    expect(DishCategory.fromApi(' 菜 '), DishCategory.dish);
+    expect(DishCategory.fromApi('staple'), isNull);
+    expect(DishCategory.fromApi(null), isNull);
   });
 }

@@ -19,37 +19,38 @@ void main() {
       ..on('GET /foods/1/comments', [
         FakeAdapter.ok(
           commentPageJson([
-            commentJson(id: 11, author: '安安', text: '酸笋给得很大方', likes: 3),
-            commentJson(id: 12, author: 'Momo', text: '中辣已经很够了', likes: 1),
+            commentJson(
+              id: 11,
+              author: '安安',
+              text: '酸笋给得很大方',
+              likes: 3,
+              liked: true,
+              replies: 3,
+            ),
+            commentJson(
+              id: 12,
+              author: 'Momo',
+              authorId: verifiedUser.id,
+              text: '中辣已经很够了',
+              likes: 1,
+            ),
           ], total: 2),
         ),
       ])
       ..on('GET /comments/11/replies', [
         FakeAdapter.ok(
           commentPageJson([
+            replyJson(id: 21, author: '阿哲', text: '同意，加个炸蛋更香', ageMinutes: 20),
+            replyJson(id: 22, author: 'Momo', text: '汤底够酸', ageMinutes: 10),
             replyJson(
               id: 23,
-              replyTo: 'g-21',
+              replyTo: '阿哲',
               author: '天凉被破王',
               text: '炸蛋要早点说',
               ageMinutes: 5,
             ),
-            replyJson(id: 22, author: 'Momo', text: '汤底够酸', ageMinutes: 10),
-            replyJson(id: 21, author: '阿哲', text: '同意，加个炸蛋更香', ageMinutes: 20),
           ], total: 3),
         ),
-      ])
-      ..on('GET /comments/12/replies', [
-        FakeAdapter.ok(commentPageJson(const [])),
-      ])
-      ..on('GET /comments/11/like', [
-        FakeAdapter.ok({'commentId': 11, 'liked': false, 'likesCount': 3}),
-      ])
-      ..on('GET /comments/12/like', [
-        FakeAdapter.ok({'commentId': 12, 'liked': false, 'likesCount': 1}),
-      ])
-      ..on('GET /comments/submissions/my', [
-        FakeAdapter.ok(commentPageJson([submissionJson(id: 12)])),
       ]);
   });
 
@@ -82,6 +83,21 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('回复数为 0 的评论不请求回复，也不逐条查询赞', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.comments(1),
+    );
+
+    expect(env.adapter.sent('GET /comments/11/replies'), hasLength(1));
+    expect(env.adapter.sent('GET /comments/12/replies'), isEmpty);
+    expect(env.adapter.sent('GET /comments/11/like'), isEmpty);
+    expect(env.adapter.sent('GET /comments/my'), isEmpty);
+    await unmountApp(tester, container);
+  });
+
   testWidgets('切到「最新」按最新排序重新请求', (tester) async {
     final (container, _) = await pumpApp(
       tester,
@@ -96,7 +112,7 @@ void main() {
       for (final r in env.adapter.sent('GET /foods/1/comments'))
         r.query['sort'],
     ];
-    expect(sorts, ['MOST_USEFUL', 'NEWEST']);
+    expect(sorts, ['HOT', 'NEWEST']);
     await unmountApp(tester, container);
   });
 
@@ -112,9 +128,6 @@ void main() {
       FakeAdapter.ok(
         commentPageJson([commentJson(id: 13, text: '第二页')], page: 2, total: 2),
       ),
-    ]);
-    env.adapter.on('GET /comments/13/replies', [
-      FakeAdapter.ok(commentPageJson(const [])),
     ]);
     final (container, _) = await pumpApp(
       tester,
@@ -133,10 +146,8 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('认证后给评论点赞：先加一，再用服务端计数', (tester) async {
-    env.adapter.on('PUT /comments/12/like', [
-      FakeAdapter.ok({'commentId': 12, 'liked': true, 'likesCount': 5}),
-    ]);
+  testWidgets('认证后给评论点赞：接口不返回计数，保留加一后的数', (tester) async {
+    env.adapter.on('PUT /comments/12/like', [FakeAdapter.ok(null)]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -147,8 +158,42 @@ void main() {
     await tester.tap(find.bySemanticsLabel('赞，1'));
     await tester.pumpAndSettle();
     final sent = env.adapter.sent('PUT /comments/12/like').single;
-    expect(sent.headers['Idempotency-Key'], isNotEmpty);
-    expect(find.bySemanticsLabel('赞，5'), findsOneWidget);
+    expect(sent.headers.containsKey('Idempotency-Key'), isFalse);
+    expect(find.bySemanticsLabel('赞，2'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('列表标着赞过的评论，点一下是取消赞', (tester) async {
+    env.adapter.on('DELETE /comments/11/like', [FakeAdapter.ok(null)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.comments(1),
+    );
+
+    await tester.tap(find.bySemanticsLabel('赞，3'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('DELETE /comments/11/like'), hasLength(1));
+    expect(env.adapter.sent('PUT /comments/11/like'), isEmpty);
+    expect(find.bySemanticsLabel('赞，2'), findsWidgets);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('点赞时评论已删除：提示并从列表中去掉', (tester) async {
+    env.adapter.on('PUT /comments/12/like', [FakeAdapter.fail(10001)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.comments(1),
+    );
+
+    await tester.tap(find.bySemanticsLabel('赞，1'));
+    await tester.pumpAndSettle();
+    expect(find.text('这条评论已删除'), findsOneWidget);
+    expect(find.text('中辣已经很够了'), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 
@@ -175,9 +220,7 @@ void main() {
   });
 
   testWidgets('自己的评论能删除：确认后从列表中去掉', (tester) async {
-    env.adapter.on('DELETE /comments/12', [
-      FakeAdapter.ok({'id': 12, 'state': 'DELETED'}),
-    ]);
+    env.adapter.on('DELETE /comments/12', [FakeAdapter.ok(null)]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -194,8 +237,7 @@ void main() {
     await tester.tap(find.text('删除'));
     await tester.pumpAndSettle();
 
-    final sent = env.adapter.sent('DELETE /comments/12').single;
-    expect(sent.headers['Idempotency-Key'], isNotEmpty);
+    expect(env.adapter.sent('DELETE /comments/12'), hasLength(1));
     expect(find.text('中辣已经很够了'), findsNothing);
     expect(find.text('已删除'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
@@ -216,6 +258,30 @@ void main() {
     await tester.tap(find.text('举报'));
     await tester.pumpAndSettle();
     expect(find.text('举报这条评论'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('举报时评论已删除：关闭面板，提示并从列表中去掉', (tester) async {
+    env.adapter.on('POST /feedback/reports', [FakeAdapter.fail(10001)]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.comments(1),
+    );
+
+    await tester.tap(find.bySemanticsLabel('更多').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('举报'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('广告'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    expect(find.text('举报这条评论'), findsNothing);
+    expect(find.text('这条评论已删除'), findsOneWidget);
+    expect(find.text('酸笋给得很大方'), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 

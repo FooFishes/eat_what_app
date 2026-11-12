@@ -22,8 +22,8 @@ import 'package:go_router/go_router.dart';
 
 /// 发布流程第 1 步: 选店.
 ///
-/// - 列表按与我的距离升序排列.
-/// - 可以按店名搜索. 找不到时可以新建店铺.
+/// - 列表按与我的距离升序排列. 已关门的店不出现.
+/// - 可以按店名或地址搜索. 找不到时可以新建店铺.
 ///
 /// [changing] 为 true 表示由加菜页的 "换一家" 打开. 此时选好后带着店返回加菜页, 不进入下一步.
 class PublishPage extends ConsumerStatefulWidget {
@@ -209,13 +209,12 @@ class _ShopOption extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final distance = ref.watch(distanceToProvider(shop.point));
-    final hub = ref.watch(hubNameProvider(shop.hubId));
-    final where = [?distance, ?hub, ?shop.address].join('  ');
+    final where = [?distance, ?shop.hubName, ?shop.address].join('  ');
     return EatRadioRow(
       title: shop.name,
       subtitle: where.isEmpty ? null : Text(where),
       thumbnail: ListThumb(
-        image: networkImage(shop.photos.firstOrNull, width: EatSize.thumb),
+        image: networkImage(shop.photo, width: EatSize.thumb),
       ),
       selected: selected,
       onSelected: onSelected,

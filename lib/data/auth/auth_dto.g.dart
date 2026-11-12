@@ -10,11 +10,7 @@ LoginReplyDto _$LoginReplyDtoFromJson(Map<String, dynamic> json) =>
     LoginReplyDto(
       tokenName: json['tokenName'] as String?,
       tokenValue: json['tokenValue'] as String?,
-      isLogin: json['isLogin'] as bool?,
       newUser: json['newUser'] as bool?,
-      consentProof: json['consentProof'] as String?,
-      status: json['status'] as String?,
-      restricted: json['restricted'] as bool?,
     );
 
 Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
@@ -23,8 +19,7 @@ Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
   'mobile': instance.mobile,
   'code': instance.code,
   'device': instance.device,
-  'crossBorderConsent': ?instance.crossBorderConsent,
-  'consentPolicyVersion': ?instance.consentPolicyVersion,
+  'policyVersion': ?instance.policyVersion,
 };
 
 Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
@@ -33,6 +28,7 @@ Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
   'userName': instance.userName,
   'password': instance.password,
   'device': instance.device,
+  'policyVersion': ?instance.policyVersion,
 };
 
 CaptchaConfigDto _$CaptchaConfigDtoFromJson(Map<String, dynamic> json) =>

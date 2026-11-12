@@ -6,7 +6,7 @@ part 'upload_api.g.dart';
 
 /// 上传用途, 决定文件的存储位置和所需权限: 头像和反馈截图只需登录, 菜品, 店铺和评论需要认证.
 ///
-/// 评论照片存放在私有空间, 审核通过后才出现在公开的评论和菜的大图里.
+/// 各用途的文件都通过公开的稳定地址访问, 发表后立即可见.
 enum UploadBiz { avatar, foods, restaurants, comments, feedback }
 
 /// UploadApi 调用的接口路径, 相对于业务接口地址.

@@ -1,5 +1,7 @@
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
@@ -9,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 关注按钮. 未关注时为实心 "关注" 或 "回关", 已关注时为次要样式的 "已关注" 或 "已互关", 点击取消关注.
 ///
-/// 关注要求已认证. 取消关注不要求认证, 但封禁中不能取消. [onStage] 为 true 时使用舞台上的按钮样式.
+/// 关注要求已认证, 取消关注不要求认证. [onStage] 为 true 时使用舞台上的按钮样式.
+///
+/// 任一方屏蔽了对方时服务端拒绝关注, 提示 "无法关注对方".
 class FollowButton extends ConsumerWidget {
   const new({super.key, required this.profile, this.onStage = false});
 
@@ -27,7 +31,10 @@ class FollowButton extends ConsumerWidget {
       final failure = await ref
           .read(followsProvider.notifier)
           .set(profile.id, following: following);
-      if (failure != null && context.mounted) {
+      if (failure == null || !context.mounted) return;
+      if (following && failure.code == BizCodes.stateNotAllowed) {
+        showToast(context, '无法关注对方');
+      } else {
         await reportActionFailure(
           context,
           ref,

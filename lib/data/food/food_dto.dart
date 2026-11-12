@@ -2,45 +2,44 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'food_dto.g.dart';
 
-/// 菜品接口返回的菜品 (`FoodVO`, `FoodRecommendationVO`). 除 [pictureKeys] 外字段按接口声明均为可空.
+/// 菜品接口返回的菜品 (后端 `FoodDtos.Food`).
 ///
 /// 推荐的上一批和菜品详情会原样存入本地缓存, 因此需要支持转回 JSON.
+/// 接口文档中同名的 `Food` 结构属于足迹模块, 字段以后端源码为准.
 @JsonSerializable(includeIfNull: false)
 class const FoodDto({
   final int? id,
-  final int? accountId,
-  final String? uploaderName,
-
-  /// 可以公开展示的作者. 作者资料未到达或不能展示时为 null, 此时 [uploaderName] 也为 null.
-  final FoodAuthorDto? user,
   final int? restaurantId,
   final String? restaurantName,
 
-  /// 店铺与请求坐标的距离, 单位米. 请求不带坐标时为 null.
-  final double? distanceMeters,
-  final String? restaurantAddress,
-  final double? restaurantGcjLng,
-  final double? restaurantGcjLat,
-  final int? hubId,
-  final String? hubName,
+  /// 首次发布者的账号. 账号已删除时为 null.
+  final int? accountId,
   final String? name,
-  final String? description,
-  final double? price,
-  final String? category,
-  final List<String>? pictureUrl,
 
-  /// 图片的持久化引用, 已滤掉未通过审核的图. 与 [pictureUrl] 不保证逐项对应.
-  required final List<String> pictureKeys,
-  final List<FoodTagDto>? systemTags,
-  final List<FoodTagDto>? myCustomTags,
+  /// 分类的中文原值, 如 "主食".
+  final String? category,
+  final double? price,
+  final String? description,
+
+  /// 图片的公开地址, 第一张是封面. 响应不带存储 key.
+  final List<String>? pictureUrls,
+
+  /// 口味的中文原值, 如 "辣", 最多 3 个.
+  final List<String>? tags,
+  final bool? signature,
+  final int? likeCount,
+  final int? favoriteCount,
+
+  /// 游客为 null.
   final bool? isLiked,
   final bool? isFavorite,
-  final int? likesCount,
-  final List<String>? mealTimes,
+  final int? createdAt,
+  final int? updatedAt,
+
+  // TODO: 后端 v2 不再保存舞台色, 备选色和封面取景, 响应中没有这三项. 后端恢复后按实际字段名核对.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
-  final int? createdAt,
 }) {
   factory FoodDto.fromJson(Map<String, dynamic> json) =>
       _$FoodDtoFromJson(json);
@@ -48,7 +47,7 @@ class const FoodDto({
   Map<String, dynamic> toJson() => _$FoodDtoToJson(this);
 }
 
-/// 菜品上的标签.
+/// 菜品上的投票标签. 后端 v2 已删除标签接口, 只有保留的待接入页面使用.
 ///
 /// - 系统标签带 [count] 和 [taggedByMe].
 /// - 个人标签只有名称.
@@ -65,15 +64,6 @@ class const FoodTagDto({
       _$FoodTagDtoFromJson(json);
 
   Map<String, dynamic> toJson() => _$FoodTagDtoToJson(this);
-}
-
-/// 菜品作者的公开摘要 (`FoodVO.Author`).
-@JsonSerializable(includeIfNull: false)
-class const FoodAuthorDto({final int? id, final String? displayName}) {
-  factory FoodAuthorDto.fromJson(Map<String, dynamic> json) =>
-      _$FoodAuthorDtoFromJson(json);
-
-  Map<String, dynamic> toJson() => _$FoodAuthorDtoToJson(this);
 }
 
 @JsonSerializable(includeIfNull: false)
@@ -98,7 +88,12 @@ class const FoodTagsDto({
       _$FoodTagsDtoFromJson(json);
 }
 
-/// 发布菜品的请求体 (`CreateFoodDTO`). [pictureUrl] 为上传后获得的存储 key, 第一张为封面.
+/// 发布菜品的请求体 (后端 `FoodDtos.UploadRequest`).
+///
+/// - [pictures] 是上传后获得的存储 key, 第一张为封面.
+/// - [category] 和 [tags] 是中文原值.
+///
+/// 后端忽略不认识的字段, 因此保留 [stageColor], [stageAlternates], [coverCrop], 以便后端恢复保存后无需改动客户端.
 @JsonSerializable(
   createFactory: false,
   includeIfNull: false,
@@ -107,16 +102,102 @@ class const FoodTagsDto({
 class const CreateFoodDto({
   required final int restaurantId,
   required final String name,
-  required final List<String> pictureUrl,
+  required final String category,
   final double? price,
-  final String? category,
-  final List<String>? mealTimes,
   final String? description,
-  final List<int>? systemTagIds,
-  final List<String>? myCustomTagNames,
+  final List<String>? pictures,
+  final List<String>? tags,
+  final bool? signature,
+
+  // TODO: 后端 v2 不保存舞台色, 备选色和封面取景. 后端恢复后按实际字段名核对.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
 }) {
   Map<String, dynamic> toJson() => _$CreateFoodDtoToJson(this);
+}
+
+/// 编辑菜品的请求体 (后端 `FoodDtos.EditRequest`). 值为 null 的字段不发送, 表示不修改.
+///
+/// - [description] 为空字符串表示清除.
+/// - [pictures] 和 [tags] 为空数组表示清除.
+///
+/// 接口文档中同名的 `EditRequest` 结构属于店铺模块, 字段以后端源码为准.
+@JsonSerializable(
+  createFactory: false,
+  includeIfNull: false,
+  explicitToJson: true,
+)
+class const EditFoodDto({
+  final String? name,
+  final String? category,
+  final double? price,
+  final String? description,
+  final List<String>? pictures,
+  final List<String>? tags,
+  final bool? signature,
+
+  // TODO: 后端 v2 不保存舞台色, 备选色和封面取景. 后端恢复后按实际字段名核对.
+  final String? stageColor,
+  final List<String>? stageAlternates,
+  final CoverCropDto? coverCrop,
+}) {
+  Map<String, dynamic> toJson() => _$EditFoodDtoToJson(this);
+}
+
+/// 请求识别分类和口味的请求体 (后端 `FoodDtos.SuggestRequest`).
+///
+/// [pictures] 是本人上传的存储 key, 最多 3 张.
+@JsonSerializable(createFactory: false, includeIfNull: false)
+class const SuggestFoodDto({
+  required final String name,
+  final int? restaurantId,
+  final String? description,
+  final List<String>? pictures,
+}) {
+  Map<String, dynamic> toJson() => _$SuggestFoodDtoToJson(this);
+}
+
+/// 识别出的分类和口味 (后端 `FoodDtos.Suggestion`), 都是中文原值.
+@JsonSerializable(createToJson: false)
+class const FoodSuggestionDto({
+  final String? category,
+  final List<String>? tags,
+}) {
+  factory FoodSuggestionDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodSuggestionDtoFromJson(json);
+}
+
+/// 菜品的一条修改记录 (后端 `FoodDtos.Revision`).
+///
+/// [action] 为 `create`, `edit` 或 `restore`. [restoredFrom] 是恢复到的记录 id.
+@JsonSerializable(createToJson: false)
+class const FoodRevisionDto({
+  final int? id,
+  final String? action,
+  final FoodEditorDto? editor,
+  final int? restoredFrom,
+  final List<FoodFieldChangeDto>? changes,
+  final int? createdAt,
+}) {
+  factory FoodRevisionDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodRevisionDtoFromJson(json);
+}
+
+/// 修改记录的编辑者. 账号已删除时 [id] 和 [displayName] 为 null.
+@JsonSerializable(createToJson: false)
+class const FoodEditorDto({
+  final int? id,
+  final String? displayName,
+  final String? avatar,
+}) {
+  factory FoodEditorDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodEditorDtoFromJson(json);
+}
+
+/// 修改记录中一个字段的改动. 只读取字段名, 改动前后的值不展示.
+@JsonSerializable(createToJson: false)
+class const FoodFieldChangeDto({final String? field}) {
+  factory FoodFieldChangeDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodFieldChangeDtoFromJson(json);
 }

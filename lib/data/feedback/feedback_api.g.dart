@@ -6,6 +6,21 @@ part of 'feedback_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+FeedbackCaseDto _$FeedbackCaseDtoFromJson(Map<String, dynamic> json) =>
+    FeedbackCaseDto(
+      id: (json['id'] as num?)?.toInt(),
+      kind: json['kind'] as String?,
+      target: json['target'] == null
+          ? null
+          : FeedbackTargetDto.fromJson(json['target'] as Map<String, dynamic>),
+    );
+
+FeedbackTargetDto _$FeedbackTargetDtoFromJson(Map<String, dynamic> json) =>
+    FeedbackTargetDto(
+      type: json['type'] as String?,
+      id: (json['id'] as num?)?.toInt(),
+    );
+
 Map<String, dynamic> _$CatalogErrorDtoToJson(CatalogErrorDto instance) =>
     <String, dynamic>{
       'restaurantId': instance.restaurantId,

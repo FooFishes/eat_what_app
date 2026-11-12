@@ -9,8 +9,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'comment_repository.g.dart';
 
 /// 评论数据. 把接口 DTO 转换为 [Comment] 等领域模型. 评论不做本地缓存.
-///
-/// 写操作的 `Idempotency-Key` 由调用方生成并在重试时沿用, 因为只有调用方知道两次请求是否为同一份内容.
 class CommentRepository {
   CommentRepository(this._api);
 
@@ -32,6 +30,7 @@ class CommentRepository {
     ),
   );
 
+  /// 一条评论下的回复, 按时间正序.
   Future<CommentPage> replies(
     int commentId, {
     int page = 1,
@@ -59,11 +58,12 @@ class CommentRepository {
     );
     return [
       for (final dto in page.items)
-        if ((dto.commentId, imageUrl(dto.image?.url)) case (
-          final id?,
-          final url?,
-        ))
-          GalleryPhoto(commentId: id, url: url),
+        if ((dto.commentId, imageUrl(dto.url)) case (final id?, final url?))
+          GalleryPhoto(
+            commentId: id,
+            url: url,
+            authorName: dto.author?.displayName,
+          ),
     ];
   }
 
@@ -71,14 +71,8 @@ class CommentRepository {
     int dishId, {
     required String text,
     List<String> pictureKeys = const [],
-    required String idempotencyKey,
-  }) async => _posted(
-    await _api.create(
-      dishId,
-      text: text.trim(),
-      pictureKeys: pictureKeys,
-      idempotencyKey: idempotencyKey,
-    ),
+  }) async => CommentPosted(
+    id: await _api.create(dishId, text: text.trim(), pictureKeys: pictureKeys),
   );
 
   Future<CommentPosted> reply(
@@ -86,33 +80,20 @@ class CommentRepository {
     int commentId, {
     required String text,
     int? replyToId,
-    required String idempotencyKey,
-  }) async => _posted(
-    await _api.reply(
+  }) async => CommentPosted(
+    id: await _api.reply(
       dishId,
       commentId,
       text: text.trim(),
       replyToId: replyToId,
-      idempotencyKey: idempotencyKey,
     ),
   );
 
-  Future<void> delete(int commentId, {required String idempotencyKey}) =>
-      _api.delete(commentId, idempotencyKey: idempotencyKey);
+  Future<void> delete(int commentId) => _api.delete(commentId);
 
-  /// 赞或取消赞, 返回服务端的最新状态.
-  Future<CommentLike> setLiked(
-    int commentId, {
-    required bool liked,
-    required String idempotencyKey,
-  }) async => _like(
-    liked
-        ? await _api.like(commentId, idempotencyKey: idempotencyKey)
-        : await _api.unlike(commentId, idempotencyKey: idempotencyKey),
-  );
-
-  Future<CommentLike> likeOf(int commentId, {CancelToken? cancelToken}) async =>
-      _like(await _api.likeOf(commentId, cancelToken: cancelToken));
+  /// 赞或取消赞. 接口不返回赞数, 调用方自行维护计数.
+  Future<void> setLiked(int commentId, {required bool liked}) =>
+      liked ? _api.like(commentId) : _api.unlike(commentId);
 
   Future<Paged<MyComment>> mine({
     int page = 1,
@@ -130,17 +111,16 @@ class CommentRepository {
           if ((dto.id, dto.foodId) case (final id?, final dishId?))
             MyComment(
               id: id,
-              isReply: dto.kind == 'REPLY',
+              rootId: dto.rootId,
               dishId: dishId,
-              status: CommentStatus.fromApi(dto.moderationStatus),
-              reason: dto.reasonMessage,
               text: dto.text ?? '',
-              imageCount: dto.imageCount ?? 0,
+              imageCount: dto.pictureUrls?.length ?? 0,
               createdAt: _time(dto.createdAt),
             ),
       ],
       page: result.page,
       hasNext: result.hasNext,
+      total: result.total,
     );
   }
 
@@ -149,41 +129,40 @@ class CommentRepository {
       items: [for (final dto in result.page.items) ?_comment(dto)],
       page: result.page.page,
       hasNext: result.page.hasNext,
+      total: result.page.total,
     ),
     total: result.total,
   );
 
-  /// 缺少 id 或全局 id 的条目无法点赞, 回复和删除, 因此不显示.
+  /// 缺少 id, 菜 id 或作者 id 的条目无法点赞, 回复和判断能否删除, 因此不显示.
   static Comment? _comment(CommentDto dto) {
-    final (id, gid) = (dto.id, dto.gid);
-    if (id == null || gid == null) return null;
-    final images = [...?dto.images]
-      ..sort((a, b) => (a.slot ?? 0).compareTo(b.slot ?? 0));
+    final (id, dishId, authorId) = (dto.id, dto.foodId, dto.author?.id);
+    if (id == null || dishId == null || authorId == null) return null;
     return Comment(
       id: id,
-      gid: gid,
-      dishId: dto.foodId ?? 0,
-      isReply: dto.kind == 'REPLY',
-      rootGid: dto.rootCommentGid ?? gid,
-      replyToGid: dto.replyToGid,
-      authorName: dto.authorName ?? '同学',
+      dishId: dishId,
+      rootId: dto.rootId,
+      authorId: authorId,
+      authorName: _name(dto.author?.displayName),
+      authorAvatar: imageUrl(dto.author?.avatar),
+      replyToName: switch (dto.replyTo?.displayName) {
+        final name? when name.isNotEmpty => name,
+        _ => null,
+      },
       text: dto.text ?? '',
-      likes: dto.likesCount ?? 0,
+      likes: dto.likeCount ?? 0,
+      liked: dto.isLiked,
+      replyCount: dto.replyCount ?? 0,
       createdAt: _time(dto.createdAt),
-      images: [for (final image in images) ?imageUrl(image.url)],
+      images: [for (final url in dto.pictureUrls ?? const []) ?imageUrl(url)],
     );
   }
 
-  static CommentPosted _posted(CommentAcceptedDto dto) => CommentPosted(
-    id: dto.id ?? 0,
-    pending: dto.moderationStatus != 'APPROVED',
-  );
+  static String _name(String? value) =>
+      value == null || value.isEmpty ? '同学' : value;
 
-  static CommentLike _like(CommentLikeDto dto) =>
-      CommentLike(liked: dto.liked ?? false, likes: dto.likesCount ?? 0);
-
-  static DateTime _time(String? iso) =>
-      dateFromIso(iso) ?? DateTime.fromMillisecondsSinceEpoch(0);
+  static DateTime _time(int? millis) =>
+      dateFromMillis(millis) ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 @Riverpod(keepAlive: true)

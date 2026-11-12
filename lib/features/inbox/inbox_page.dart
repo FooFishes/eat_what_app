@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/core/network/ref_extensions.dart';
+import 'package:eat/data/feedback/feedback_repository.dart';
 import 'package:eat/data/notification/notification_api.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -21,6 +23,7 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/notice.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
+import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/notice_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
@@ -91,17 +94,14 @@ class Inbox extends _$Inbox {
     );
   }
 
-  /// 全部已读. 成功返回 null, 失败返回原因.
+  /// 把当前分栏的全部消息标为已读, 含未加载的页. 成功返回 null, 失败返回原因.
   ///
-  /// 成功后重新请求未读数. 本地只能标记已加载的行, 服务端的结果才是准确的未读数.
+  /// 成功后重新请求未读数, 因为其他分栏可能仍有未读.
   Future<AppFailure?> readAll() async {
     final current = state.value?.pages;
     if (current == null) return null;
     try {
-      await ref.read(notificationRepositoryProvider).readAll([
-        for (final n in current.items)
-          if (!n.read) n.id,
-      ]);
+      await ref.read(notificationRepositoryProvider).readAll(column);
     } on AppFailure catch (e) {
       return e;
     }
@@ -261,7 +261,7 @@ class _Empty extends StatelessWidget {
     NoticeColumn.system => const EmptyState(
       icon: EatIcons.bell,
       title: '还没有系统消息',
-      message: '认证、专题收录和反馈的处理结果会在这里通知你。',
+      message: '反馈和举报的处理结果、公告会在这里通知你。',
     ),
   };
 }
@@ -319,6 +319,7 @@ class _NoticeRow extends ConsumerWidget {
     final actors = NoticeRules.actorsOf(notice);
     final sentence = NoticeRules.sentenceOf(notice);
     final reply = NoticeRules.replyOf(notice);
+    final content = NoticeRules.contentOf(notice);
     final followBack = NoticeRules.followBackUserOf(notice);
     final actor = notice.actors.firstOrNull;
     final sentenceStyle = eat.text.body.copyWith(color: eat.colors.ink);
@@ -343,6 +344,7 @@ class _NoticeRow extends ConsumerWidget {
             ),
       lines: [
         if (reply != null) Text('回复：$reply'),
+        if (content != null) Text(content),
         Text(TimeFormat.relative(notice.latestAt, now)),
       ],
       action: followBack == null ? null : _FollowBack(userId: followBack),
@@ -350,26 +352,44 @@ class _NoticeRow extends ConsumerWidget {
           ? null
           : () {
               ref.read(inboxProvider(column).notifier).markRead(notice);
-              _open(context, ref, target);
+              unawaited(_open(context, ref, target));
             },
       tapHint: target is NoTarget ? '标为已读' : null,
     );
   }
 
-  static void _open(BuildContext context, WidgetRef ref, NoticeTarget target) {
+  static Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    NoticeTarget target,
+  ) async {
     switch (target) {
-      case DishTarget(:final dishId, :final commentId):
-        context.push(Paths.dish(dishId, comment: commentId));
+      case DishTarget(:final dishId):
+        await context.push(Paths.dish(dishId));
       case UserTarget(:final userId):
-        context.push(Paths.user(userId));
+        await context.push(Paths.user(userId));
       case ShopTarget(:final shopId):
-        context.push(Paths.shop(shopId));
-      case TopicTarget(:final topicId):
-        context.push(Paths.topic(topicId));
+        await context.push(Paths.shop(shopId));
+      case CaseTarget(:final caseId):
+        final CaseSubject? subject;
+        try {
+          subject = await ref
+              .read(feedbackRepositoryProvider)
+              .caseSubject(caseId);
+        } on AppFailure catch (e) {
+          if (context.mounted && e.kind != FailureKind.cancelled) {
+            showToast(context, e.message);
+          }
+          return;
+        }
+        final next = NoticeRules.targetOfCase(subject);
+        if (next is! NoTarget && context.mounted) {
+          await _open(context, ref, next);
+        }
       case MyFansTarget():
         final me = ref.read(sessionProvider);
         if (me case SignedIn(user: final user?)) {
-          context.push(Paths.follows(user.id, fans: true));
+          await context.push(Paths.follows(user.id, fans: true));
         }
       case NoTarget():
     }
@@ -387,8 +407,7 @@ class _SystemIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.eat.colors;
     final icon = switch ((kind, detail)) {
-      (NoticeKind.topicIncluded, _) => EatIcons.topic,
-      (NoticeKind.moderationResult, _) => EatIcons.shield,
+      (NoticeKind.announcement, _) => EatIcons.announce,
       (_, CaseResultDetail(kind: CaseKind.report)) => EatIcons.report,
       (NoticeKind.caseResult, _) => EatIcons.feedback,
       _ => EatIcons.bell,
@@ -424,7 +443,10 @@ class _FollowBack extends ConsumerWidget {
       final failure = await ref
           .read(followsProvider.notifier)
           .set(userId, following: following);
-      if (failure != null && context.mounted) {
+      if (failure == null || !context.mounted) return;
+      if (following && failure.code == BizCodes.stateNotAllowed) {
+        showToast(context, '无法关注对方');
+      } else {
         await reportActionFailure(
           context,
           ref,
