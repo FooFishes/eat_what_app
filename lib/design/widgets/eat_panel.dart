@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
+import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -140,6 +141,37 @@ class EatPanel extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 面板中的一项操作: `mist` 圆底图标和文字, 整行可点. 用于分享, 选择地图和 "更多" 等操作列表.
+///
+/// 各面板的操作列表统一使用本组件, 以保持行高和图标样式一致. 相邻两项的间距为 `space-8`.
+class EatPanelAction extends StatelessWidget {
+  const new({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final EatIcons icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.eat.colors;
+    return EatListRow(
+      leading: Container(
+        width: EatSize.touch,
+        height: EatSize.touch,
+        decoration: BoxDecoration(color: c.mist, shape: BoxShape.circle),
+        child: Center(child: EatIcon(icon, size: 20, color: c.ink)),
+      ),
+      title: Text(label),
+      onTap: onTap,
     );
   }
 }

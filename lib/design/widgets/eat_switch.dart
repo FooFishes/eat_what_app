@@ -2,6 +2,7 @@ import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/widgets.dart';
@@ -35,9 +36,15 @@ class EatSwitch extends StatelessWidget {
     final onChanged = pending ? null : this.onChanged;
     final duration = context.motion(EatMotion.select);
     return EatTappable(
-      onTap: onChanged == null ? null : () => onChanged(!value),
+      onTap: onChanged == null
+          ? null
+          : () {
+              EatHaptics.selection();
+              onChanged(!value);
+            },
       button: false,
       toggled: value,
+      dimOnPress: false,
       focusShape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(EatRadius.thumb),
       ),

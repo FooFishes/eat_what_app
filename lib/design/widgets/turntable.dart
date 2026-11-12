@@ -4,6 +4,7 @@ import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:flutter/widgets.dart';
 
 /// 转盘上的一道菜: 封面和圆形取景.
@@ -17,7 +18,7 @@ class const TurntableItem({
 /// 发现页舞台中的转盘. 几道菜排列在一张大圆桌的边缘, 拖动或点击 "换一个" 转到下一道.
 ///
 /// 布局:
-/// - 手机上圆心位于当前菜品正下方, 屏幕上只露出当前菜品和左下角的上一道.
+/// - 手机上圆心位于当前菜品正下方, 屏幕上只显示当前菜品. 上一道菜转向左下角的过程中淡出.
 /// - 宽屏时圆心位于屏幕右侧之外, 菜品沿右边缘纵向转动, 下一道从右上角露出.
 /// - 离开正位的菜品缩小显示, 照片始终保持正向.
 ///
@@ -126,6 +127,7 @@ class _TurntableState extends State<Turntable>
     if (next == widget.index) {
       _animateTo(next);
     } else {
+      EatHaptics.selection();
       widget.onIndexChanged(next);
     }
   }
@@ -193,7 +195,13 @@ class _TurntableState extends State<Turntable>
     final position =
         center + Offset(math.sin(angle) * radius, -math.cos(angle) * radius);
     final size = widget.plateSize * (1 - 0.15 * away);
-    final opacity = (visible + 0.4 - offset.abs()).clamp(0.0, 1.0);
+    // 手机上转过的菜停在舞台左下角, 与价格, 批次圆点和 "换一个" 按钮重叠.
+    // 因此向左转动时不透明度随角度降低, 转过 0.8 格后为 0. 向右转回时恢复.
+    // 宽屏上转过的菜位于右下角, 不与文字重叠, 不做此处理.
+    final turned = degrees / Turntable.step;
+    final opacity = !widget.wide && turned < 0
+        ? (1 + turned * 1.25).clamp(0.0, 1.0)
+        : (visible + 0.4 - offset.abs()).clamp(0.0, 1.0);
     final item = widget.items[i];
     return Positioned(
       left: position.dx - size / 2,

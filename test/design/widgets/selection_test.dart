@@ -136,6 +136,34 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
+
+    testWidgets('选中露出一半的分类后，分类栏把它滚到中间', (tester) async {
+      var selected = 0;
+      const names = ['今日推荐', '主食', '小吃', '饮品', '甜品', '汤', '火锅'];
+      await pumpEat(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) => SizedBox(
+            width: 200,
+            child: EatTabs(
+              tabs: [for (final name in names) EatTabItem(name)],
+              selected: selected,
+              onSelected: (i) => setState(() => selected = i),
+            ),
+          ),
+        ),
+        disableAnimations: true,
+      );
+      final strip = tester.getRect(find.byType(EatTabs));
+
+      await tester.tap(find.text('小吃'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(selected, 2);
+      final tab = tester.getRect(find.text('小吃'));
+      expect(tab.left, greaterThanOrEqualTo(strip.left));
+      expect(tab.right, lessThanOrEqualTo(strip.right));
+      expect(tab.center.dx, closeTo(strip.center.dx, 24));
+    });
   });
 
   group('EatRadioRow', () {

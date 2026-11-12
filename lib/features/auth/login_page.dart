@@ -724,6 +724,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
       label: '先逛逛',
       tapHint: '不登录先看看',
       focusShape: const RoundedRectangleBorder(),
+      dimOnPress: false,
       builder: (context, pressed) => TweenAnimationBuilder<double>(
         tween: Tween(end: pressed ? 1 : 0),
         duration: context.motion(EatMotion.press),

@@ -34,8 +34,10 @@ class SliverTileGrid extends StatelessWidget {
   );
 }
 
-/// 推荐流和 "我的" 中的菜品方块. 上方为原图裁成的圆角方图, 菜名和店名位于图片下方.
+/// 推荐流和 "我的" 中的菜品方块. 上方为原图裁成的圆角方图, 文字位于图片下方.
 ///
+/// - 第一行: 菜名在左, 价格在右. 菜名过长时截断, 价格始终完整.
+/// - 第二行: 店名和距离在左, 赞数在右. 都没有时不占这一行.
 /// - 文字不叠加在图片上.
 /// - 方块不加底色, 边框, 阴影和盘沿.
 /// - 整个方块是一个链接.
@@ -46,14 +48,19 @@ class DishTile extends StatelessWidget {
     super.key,
     required this.image,
     required this.name,
+    this.price,
     this.shop,
     this.distance,
     this.likes,
+    this.compact = false,
     required this.onTap,
   });
 
   final ImageProvider? image;
   final String name;
+
+  /// 价格文字, 如 "¥18". 为 null 时不显示.
+  final String? price;
 
   /// 店名, 用于推荐流和搜索结果.
   final String? shop;
@@ -61,8 +68,13 @@ class DishTile extends StatelessWidget {
   /// 距离文字, 如 "320 m". 跟在店名后面, 店名过长时只截断店名.
   final String? distance;
 
-  /// 赞数, 用于 "我的". 显示在菜名右侧, 此时不传店名.
+  /// 赞数, 用于 "我的" 和餐厅详情.
   final int? likes;
+
+  /// 三列排列时使用的窄版式: 图片为正方形, 菜名独占第一行, 价格移到第二行. 不显示店名和距离.
+  ///
+  /// 窄版式的宽度约 108px. 价格与菜名同一行时, 菜名只能显示三个字.
+  final bool compact;
 
   final VoidCallback? onTap;
 
@@ -70,12 +82,13 @@ class DishTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final title = Text(
-      name,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: eat.text.subhead.copyWith(color: c.ink),
-    );
+    final meta = eat.text.meta.copyWith(color: c.inkMuted);
+    final count = eat.text.count.copyWith(color: c.inkMuted);
+    final hasSecond =
+        shop != null ||
+        distance != null ||
+        likes != null ||
+        (compact && price != null);
     return EatTappable(
       onTap: onTap,
       button: false,
@@ -87,56 +100,72 @@ class DishTile extends StatelessWidget {
         spacing: EatSpace.s8,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.all(EatRadius.tile),
-            child: SizedBox(height: 150, child: CoverImage(image: image)),
+            borderRadius: BorderRadius.all(
+              compact ? EatRadius.thumbLg : EatRadius.tile,
+            ),
+            child: compact
+                ? AspectRatio(aspectRatio: 1, child: CoverImage(image: image))
+                : SizedBox(height: 150, child: CoverImage(image: image)),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (likes case final likes?)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                spacing: EatSpace.s8,
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: eat.text.subhead.copyWith(color: c.ink),
+                    ),
+                  ),
+                  if (price case final price? when !compact)
+                    Text(
+                      price,
+                      style: eat.text.priceInline.copyWith(color: c.ink),
+                    ),
+                ],
+              ),
+              if (hasSecond)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(child: title),
-                    const SizedBox(width: EatSpace.s8),
-                    EatIcon(EatIcons.heart, size: 14, color: c.inkMuted),
-                    const SizedBox(width: EatSpace.s4),
-                    Text(
-                      '$likes',
-                      semanticsLabel: '$likes 个赞',
-                      style: eat.text.count.copyWith(color: c.inkMuted),
-                    ),
-                  ],
-                )
-              else
-                title,
-              if (distance case final distance?)
-                Row(
-                  spacing: EatSpace.s8,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    if (shop case final shop?)
+                    if (price case final price? when compact)
+                      Expanded(
+                        child: Text(
+                          price,
+                          style: eat.text.priceInline.copyWith(
+                            fontSize: 14,
+                            height: 20 / 14,
+                            color: c.ink,
+                          ),
+                        ),
+                      ),
+                    if (shop case final shop? when !compact)
                       Flexible(
                         child: Text(
                           shop,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: eat.text.meta.copyWith(color: c.inkMuted),
+                          style: meta,
                         ),
                       ),
-                    Text(
-                      distance,
-                      style: eat.text.count.copyWith(color: c.inkMuted),
-                    ),
+                    if (distance case final distance? when !compact) ...[
+                      if (shop != null) const SizedBox(width: EatSpace.s8),
+                      Text(distance, style: count),
+                    ],
+                    if (likes case final likes?) ...[
+                      if (!compact && (shop != null || distance != null))
+                        const Spacer(),
+                      EatIcon(EatIcons.heart, size: 14, color: c.inkMuted),
+                      const SizedBox(width: EatSpace.s4),
+                      Text('$likes', semanticsLabel: '$likes 个赞', style: count),
+                    ],
                   ],
-                )
-              else if (shop case final shop?)
-                Text(
-                  shop,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: eat.text.meta.copyWith(color: c.inkMuted),
                 ),
             ],
           ),

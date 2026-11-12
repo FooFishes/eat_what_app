@@ -2,6 +2,7 @@ import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/add_mark.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/painting.dart';
 import 'package:eat/design/widgets/surface.dart';
@@ -84,7 +85,12 @@ class EatChip extends StatelessWidget {
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.3,
       child: EatTappable(
-        onTap: onTap,
+        onTap: onTap == null
+            ? null
+            : () {
+                if (_kind != _Kind.add) EatHaptics.selection();
+                onTap!();
+              },
         button: _kind == _Kind.add,
         checked: _kind == _Kind.choice ? selected : null,
         inMutuallyExclusiveGroup: _kind == _Kind.choice,

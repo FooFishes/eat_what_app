@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -10,6 +11,7 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -103,6 +105,48 @@ void main() {
       expect(typed, ['螺蛳粉']);
       expect(filters, 1);
       expect(tester.getSize(find.byType(EatSearchField)).height, 48);
+    });
+
+    testWidgets('搜索框输入了内容才有清空按钮，点了清空并回调空串', (tester) async {
+      final typed = <String>[];
+      await pumpEat(
+        tester,
+        SizedBox(
+          width: 360,
+          child: EatSearchField(hintText: '搜菜名或店名', onChanged: typed.add),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('清空'), findsNothing);
+      await tester.enterText(find.byType(TextField), '螺蛳粉');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel('清空'));
+      await tester.pump();
+      expect(typed, ['螺蛳粉', '']);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        '',
+      );
+      expect(find.bySemanticsLabel('清空'), findsNothing);
+    });
+
+    testWidgets('占位文字用细体，和输入内容区分开', (tester) async {
+      await pumpEat(
+        tester,
+        const SizedBox(
+          width: 360,
+          child: EatFormField(label: '用户名', hintText: '3–10 位字母'),
+        ),
+      );
+
+      final decoration = tester
+          .widget<TextField>(find.byType(TextField))
+          .decoration!;
+      expect(decoration.hintStyle!.fontWeight, FontWeight.w400);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).style!.fontWeight,
+        FontWeight.w700,
+      );
     });
 
     testWidgets('价格只能输数字和小数点，前面带 ¥', (tester) async {
@@ -216,6 +260,79 @@ void main() {
     expect(taps, 1);
     expect(find.text('23'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('23 个赞')), findsOneWidget);
+  });
+
+  testWidgets('DishTile 菜名在左价格在右，店名和距离在第二行', (tester) async {
+    await pumpEat(
+      tester,
+      SizedBox(
+        width: 170,
+        child: DishTile(
+          image: null,
+          name: '老坛酸菜牛肉手擀宽面加蛋',
+          price: '¥19.5',
+          shop: '鲁味面食档',
+          distance: '70 m',
+          onTap: () {},
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull, reason: '菜名再长也只截断菜名');
+    final name = tester.getRect(find.text('老坛酸菜牛肉手擀宽面加蛋'));
+    final price = tester.getRect(find.text('¥19.5'));
+    expect(price.left, greaterThan(name.right - 1));
+    expect(
+      price.right,
+      closeTo(tester.getRect(find.byType(DishTile)).right, 1),
+    );
+    expect(tester.getTopLeft(find.text('鲁味面食档')).dy, greaterThan(name.top));
+    expect(find.text('70 m'), findsOneWidget);
+  });
+
+  testWidgets('DishTile 窄版：图片是正方形，价格挪到第二行，菜名独占一行', (tester) async {
+    await pumpEat(
+      tester,
+      SizedBox(
+        width: 108,
+        child: DishTile(
+          image: null,
+          name: '红烧肉盖饭',
+          price: '¥15',
+          likes: 412,
+          compact: true,
+          onTap: () {},
+        ),
+      ),
+    );
+
+    final image = tester.getSize(find.byType(CoverImage));
+    expect(image.width, image.height);
+    expect(
+      tester.getTopLeft(find.text('¥15')).dy,
+      greaterThan(tester.getTopLeft(find.text('红烧肉盖饭')).dy),
+    );
+    expect(
+      tester.getSize(find.text('红烧肉盖饭')).width,
+      greaterThan(70),
+      reason: '价格不和菜名抢一行',
+    );
+  });
+
+  testWidgets('没有图片时 mist 底上有图片图标，小图只有底色', (tester) async {
+    await pumpEat(
+      tester,
+      const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox.square(dimension: 150, child: CoverImage(image: null)),
+          SizedBox.square(dimension: 28, child: CoverImage(image: null)),
+        ],
+      ),
+    );
+
+    expect(find.byType(EatIcon), findsOneWidget);
+    expect(tester.widget<EatIcon>(find.byType(EatIcon)).icon, EatIcons.image);
   });
 
   group('状态占位', () {

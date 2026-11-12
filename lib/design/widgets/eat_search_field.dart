@@ -2,6 +2,7 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -9,8 +10,9 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// 白底页面上为 `mist` 底. [floating] 为 true 时浮于地图之上, 使用 `paper` 底加 `shadow-float`.
 ///
-/// [hintText] 写明可搜索的内容, 如 "搜店名" "搜店名或菜名". 读屏同样朗读这段文字.
-class EatSearchField extends StatelessWidget {
+/// - [hintText] 写明可搜索的内容, 如 "搜店名" "搜店名或菜名". 读屏同样朗读这段文字.
+/// - 输入框有内容时, 右端显示清空按钮. 点击后清空内容并以空串调用 [onChanged], 输入框保持焦点.
+class EatSearchField extends StatefulWidget {
   const new({
     super.key,
     required this.hintText,
@@ -39,17 +41,41 @@ class EatSearchField extends StatelessWidget {
   final int filterCount;
 
   @override
+  State<EatSearchField> createState() => _EatSearchFieldState();
+}
+
+class _EatSearchFieldState extends State<EatSearchField> {
+  /// 调用方未传入控制器时创建的控制器. 清空按钮的显示依赖控制器中的文字.
+  TextEditingController? _own;
+
+  TextEditingController get _controller =>
+      widget.controller ?? (_own ??= TextEditingController());
+
+  @override
+  void dispose() {
+    _own?.dispose();
+    super.dispose();
+  }
+
+  void _clear() {
+    _controller.clear();
+    widget.onChanged?.call('');
+  }
+
+  @override
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
     final textStyle = eat.text.body.copyWith(color: c.ink);
+    final onFilter = widget.onFilter;
+    final filterCount = widget.filterCount;
     return Container(
       height: 48,
-      padding: EdgeInsets.only(left: 16, right: onFilter == null ? 16 : 4),
+      padding: const EdgeInsets.only(left: 16, right: 4),
       decoration: ShapeDecoration(
         shape: const StadiumBorder(),
-        color: floating ? c.paper : c.mist,
-        shadows: floating ? eat.shadows.float.outer : null,
+        color: widget.floating ? c.paper : c.mist,
+        shadows: widget.floating ? eat.shadows.float.outer : null,
       ),
       child: Row(
         children: [
@@ -59,11 +85,11 @@ class EatSearchField extends StatelessWidget {
             child: Material(
               type: MaterialType.transparency,
               child: TextField(
-                controller: controller,
-                focusNode: focusNode,
-                autofocus: autofocus,
-                onChanged: onChanged,
-                onSubmitted: onSubmitted,
+                controller: _controller,
+                focusNode: widget.focusNode,
+                autofocus: widget.autofocus,
+                onChanged: widget.onChanged,
+                onSubmitted: widget.onSubmitted,
                 textInputAction: TextInputAction.search,
                 style: textStyle,
                 cursorColor: c.ink,
@@ -73,11 +99,23 @@ class EatSearchField extends StatelessWidget {
                   isCollapsed: true,
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                  hintText: hintText,
+                  hintText: widget.hintText,
                   hintStyle: textStyle.copyWith(color: c.inkMuted),
                 ),
               ),
             ),
+          ),
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) => _controller.text.isEmpty
+                ? SizedBox(width: onFilter == null ? 12 : 0)
+                : EatIconButton(
+                    EatIcons.closeCircle,
+                    label: '清空',
+                    size: 20,
+                    color: c.inkMuted,
+                    onPressed: _clear,
+                  ),
           ),
           if (onFilter case final onFilter?)
             EatTappable(

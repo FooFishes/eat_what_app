@@ -1,4 +1,5 @@
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/widgets.dart';
@@ -45,4 +46,25 @@ class EatIcon extends StatelessWidget {
       excludeFromSemantics: semanticLabel == null,
     );
   }
+}
+
+/// 有两种状态的图标, 如赞和收藏. [icon] 变化时, 新图标由小放大, 略微超过原大小后回落.
+///
+/// 只有一种状态的图标使用 [EatIcon]. 系统开启减少动态效果时不播放动画.
+class EatIconSwap extends StatelessWidget {
+  const new(this.icon, {super.key, this.size = 24, this.color});
+
+  final EatIcons icon;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => AnimatedSwitcher(
+    duration: context.motion(EatMotion.select),
+    switchInCurve: Curves.easeOutBack,
+    switchOutCurve: Curves.easeIn,
+    transitionBuilder: (child, animation) =>
+        ScaleTransition(scale: animation, child: child),
+    child: EatIcon(icon, key: ValueKey(icon), size: size, color: color),
+  );
 }

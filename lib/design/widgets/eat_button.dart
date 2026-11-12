@@ -144,6 +144,7 @@ class EatButton extends StatelessWidget {
     return EatTappable(
       onTap: loading ? null : onPressed,
       label: loading ? '$label，进行中' : null,
+      dimOnPress: false,
       builder: (context, pressed) {
         final look = _look(eat, stage, pressed: pressed);
         final sinks = onPressed != null && !loading && !muted;
@@ -167,7 +168,12 @@ class EatButton extends StatelessWidget {
                 ),
                 const SizedBox(width: EatSpace.s8),
               ] else if (icon case final icon?) ...[
-                EatIcon(icon, size: compact ? 16 : 18, color: foreground),
+                // 实心心形不传颜色, 由 [EatIcon] 使用 `stage-tomato`. 已赞状态因此不随按钮文字色变化.
+                EatIconSwap(
+                  icon,
+                  size: compact ? 16 : 18,
+                  color: icon == EatIcons.heartOn ? null : foreground,
+                ),
                 const SizedBox(width: EatSpace.s8),
               ],
               Flexible(

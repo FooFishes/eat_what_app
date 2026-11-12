@@ -243,6 +243,7 @@ class TileGridPlaceholder extends StatelessWidget {
 /// - [generation] 通常传当前条数. 加载后条数变化时会再次触发.
 /// - 没有更多数据时不放置本组件.
 /// - [failed] 为 true 时不自动加载, 改为显示 "加载失败" 和 "重试", 避免反复重试.
+/// - 加载期间显示一行 "正在加载". 列表末尾留空时, 无法区分正在加载和已经到底.
 class LoadMoreTrigger extends StatefulWidget {
   const new({
     super.key,
@@ -294,7 +295,14 @@ class _LoadMoreTriggerState extends State<LoadMoreTrigger> {
               onPressed: widget.onVisible,
             ),
           )
-        : const SizedBox(height: 20),
+        : Center(
+            child: Text(
+              '正在加载',
+              style: context.eat.text.caption.copyWith(
+                color: context.eat.colors.inkMuted,
+              ),
+            ),
+          ),
   );
 }
 

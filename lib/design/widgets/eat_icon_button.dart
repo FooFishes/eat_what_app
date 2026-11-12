@@ -35,7 +35,7 @@ class EatIconButton extends StatelessWidget {
     builder: (context, _) => SizedBox.square(
       dimension: EatSize.touch,
       child: Center(
-        child: EatIcon(icon, size: size, color: color),
+        child: EatIconSwap(icon, size: size, color: color),
       ),
     ),
   );

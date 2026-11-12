@@ -1,8 +1,10 @@
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -71,7 +73,7 @@ class EatTabs extends StatelessWidget {
   }
 }
 
-class _Tab extends StatelessWidget {
+class _Tab extends StatefulWidget {
   const new({
     required this.tab,
     required this.selected,
@@ -85,14 +87,45 @@ class _Tab extends StatelessWidget {
   final EatTheme eat;
 
   @override
+  State<_Tab> createState() => _TabState();
+}
+
+class _TabState extends State<_Tab> {
+  @override
+  void didUpdateWidget(_Tab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected && !oldWidget.selected) _reveal();
+  }
+
+  /// 把本项滚动到分类栏中间. 点击的分类只露出一部分时, 选中后完整显示.
+  void _reveal() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // 只滚动分类栏. `Scrollable.ensureVisible` 会同时滚动外层的页面, 使页面纵向跳动.
+      final box = context.findRenderObject();
+      if (box == null) return;
+      Scrollable.maybeOf(context)?.position.ensureVisible(
+        box,
+        alignment: 0.5,
+        duration: context.motion(EatMotion.select),
+        curve: EatMotion.select.curve,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final _Tab(:tab, :selected, :eat) = widget;
     final color = selected ? eat.colors.ink : eat.colors.inkMuted;
     final labelStyle = eat.text.subhead.copyWith(
       color: color,
       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
     );
     return EatTappable(
-      onTap: onTap,
+      onTap: () {
+        if (!selected) EatHaptics.selection();
+        widget.onTap();
+      },
       button: false,
       role: SemanticsRole.tab,
       selected: selected,

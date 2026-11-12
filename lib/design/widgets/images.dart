@@ -1,4 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:flutter/widgets.dart';
 
@@ -37,7 +40,9 @@ ImageProvider? networkImage(String? url, {double? width, double dpr = 3}) {
 
 /// 铺满父组件的图片, 按 `cover` 裁切.
 ///
-/// 加载完成前或加载失败时显示 `mist` 底, 不用插画替代.
+/// - 加载中显示 `mist` 底, 下载完成后淡入.
+/// - 没有图片或加载失败时, 在 `mist` 底中央显示图片图标, 与加载中的状态区分. 不用插画替代.
+///   短边小于 40 时不显示图标, 只显示 `mist` 底.
 class CoverImage extends StatelessWidget {
   const new({super.key, required this.image, this.semanticLabel});
 
@@ -50,9 +55,27 @@ class CoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final placeholder = ColoredBox(color: context.eat.colors.mist);
+    final c = context.eat.colors;
+    final placeholder = ColoredBox(color: c.mist);
+    final missing = LayoutBuilder(
+      builder: (context, constraints) {
+        final side = constraints.biggest.shortestSide;
+        return ColoredBox(
+          color: c.mist,
+          child: side.isFinite && side >= 40
+              ? Center(
+                  child: EatIcon(
+                    EatIcons.image,
+                    size: (side * 0.28).clamp(18.0, 32.0),
+                    color: c.disabledFg,
+                  ),
+                )
+              : null,
+        );
+      },
+    );
     final image = this.image;
-    if (image == null) return placeholder;
+    if (image == null) return missing;
     return Image(
       image: image,
       fit: BoxFit.cover,
@@ -60,9 +83,22 @@ class CoverImage extends StatelessWidget {
       height: double.infinity,
       semanticLabel: semanticLabel,
       excludeFromSemantics: semanticLabel == null,
-      frameBuilder: (context, child, frame, synchronous) =>
-          synchronous || frame != null ? child : placeholder,
-      errorBuilder: (context, error, stackTrace) => placeholder,
+      // 内存缓存中的图片同步显示. 异步加载的图片在 `mist` 底上淡入.
+      frameBuilder: (context, child, frame, synchronous) => synchronous
+          ? child
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                placeholder,
+                AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: context.motion(EatMotion.select),
+                  curve: EatMotion.select.curve,
+                  child: child,
+                ),
+              ],
+            ),
+      errorBuilder: (context, error, stackTrace) => missing,
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/widgets/painting.dart';
 import 'package:flutter/rendering.dart';
@@ -5,7 +6,9 @@ import 'package:flutter/widgets.dart';
 
 /// 可点击组件共用的外壳. 提供点击和按下状态, 键盘操作, 焦点双环, 鼠标手型和读屏语义.
 ///
-/// - 不绘制底色和水波纹, 外观完全由 [builder] 决定. `pressed` 用于实现按钮的下沉效果.
+/// - 不绘制底色和水波纹, 外观由 [builder] 决定. `pressed` 用于实现按钮的下沉效果.
+/// - 按下时内容的不透明度降到 [pressedOpacity], 作为点击已被识别的反馈.
+///   [builder] 自行绘制按下效果的组件 (如按钮) 通过 [dimOnPress] 关闭.
 /// - [onTap] 为 null 时不可点击, 读屏报告 "不可用".
 class EatTappable extends StatefulWidget {
   const new({
@@ -21,6 +24,7 @@ class EatTappable extends StatefulWidget {
     this.inMutuallyExclusiveGroup = false,
     this.role,
     this.tapHint,
+    this.dimOnPress = true,
   });
 
   final VoidCallback? onTap;
@@ -42,6 +46,12 @@ class EatTappable extends StatefulWidget {
 
   /// 读屏朗读的点击结果, 如 "标为已读". 不传时使用平台默认的 "激活".
   final String? tapHint;
+
+  /// 按下时是否降低内容的不透明度. [builder] 已根据 `pressed` 绘制按下效果时传 false, 避免两种反馈叠加.
+  final bool dimOnPress;
+
+  /// 按下时内容的不透明度.
+  static const pressedOpacity = 0.55;
 
   @override
   State<EatTappable> createState() => _EatTappableState();
@@ -99,7 +109,15 @@ class _EatTappableState extends State<EatTappable> {
                       outer: colors.ink,
                     )
                   : null,
-              child: widget.builder(context, _pressed && enabled),
+              child: widget.dimOnPress
+                  ? AnimatedOpacity(
+                      opacity: _pressed && enabled
+                          ? EatTappable.pressedOpacity
+                          : 1,
+                      duration: context.motion(EatMotion.press),
+                      child: widget.builder(context, _pressed && enabled),
+                    )
+                  : widget.builder(context, _pressed && enabled),
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
@@ -45,8 +46,14 @@ class EatRadioRow extends StatelessWidget {
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           );
     final duration = context.motion(EatMotion.select);
+    final onSelected = this.onSelected;
     return EatTappable(
-      onTap: onSelected,
+      onTap: onSelected == null
+          ? null
+          : () {
+              if (!selected) EatHaptics.selection();
+              onSelected();
+            },
       button: false,
       checked: selected,
       inMutuallyExclusiveGroup: true,

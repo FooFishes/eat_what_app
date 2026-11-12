@@ -60,8 +60,8 @@ class EatNavBar extends StatelessWidget {
                 selectedIndex: currentIndex,
                 onTabSelected: onSelected,
                 settings: _barGlass(c.paper),
-                indicatorSettings: _indicatorGlass(c.paper),
-                indicatorColor: c.paper.withValues(alpha: 0.5),
+                indicatorSettings: _indicatorGlass(c.ink),
+                indicatorColor: c.ink.withValues(alpha: 0.07),
                 glowDuration: const Duration(milliseconds: 150),
                 horizontalPadding: 0,
                 verticalPadding: 0,
@@ -86,21 +86,25 @@ class EatNavBar extends StatelessWidget {
   }
 }
 
-/// 胶囊和发布按钮的玻璃. 用 clear 样式让底下的内容透出来, 再加厚边缘折射和高光, 使轮廓更明显.
+/// 胶囊和发布按钮的玻璃: `paper` 着色 78%, 模糊半径 14.
+///
+/// 导航悬浮在照片和舞台色上方. 着色低于该值时, 下方内容的颜色透过玻璃,
+/// 未选中标签的 `ink-muted` 文字与背景的对比度不足 4.5:1.
+/// 边缘的折射和高光不受着色影响, 轮廓保持玻璃质感.
 LiquidGlassSettings _barGlass(Color tint) => LiquidGlassSettings(
   bodyMode: GlassBodyMode.clear,
-  glassColor: tint.withValues(alpha: 0.12),
+  glassColor: tint.withValues(alpha: 0.78),
   thickness: 30,
-  blur: 6,
+  blur: 14,
   lightIntensity: 0.9,
   fresnelStrength: 1.4,
   refractiveIndex: 1.3,
 );
 
-/// 选中指示块的玻璃. 比胶囊更亮一档, 才能在胶囊里分出层次.
+/// 选中指示块的玻璃: `ink` 着色 7%, 在偏白的胶囊中显示为略深的色块.
 LiquidGlassSettings _indicatorGlass(Color tint) => LiquidGlassSettings(
   bodyMode: GlassBodyMode.clear,
-  glassColor: tint.withValues(alpha: 0.35),
+  glassColor: tint.withValues(alpha: 0.07),
   thickness: 24,
   blur: 2,
   lightIntensity: 1.1,

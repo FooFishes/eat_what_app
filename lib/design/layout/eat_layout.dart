@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
@@ -68,6 +70,24 @@ class const EatLayout({
   /// 窄屏上舞台菜名和价格的缩小系数. 其余宽度为 1.
   double get stageTextScale =>
       widthClass == WidthClass.narrow ? screen.width / narrowBreakpoint : 1;
+
+  /// 舞台菜名一行最多的字数.
+  static const _fullLine = 4;
+
+  /// 舞台上菜名和店名的字号.
+  ///
+  /// - 三行时缩小, 使三行的总高度不超过舞台左下的文字区域.
+  /// - 某一行排满四个字时略小, 使文字右端不超出盘子的左边缘.
+  ///   深色舞台的文字为白色, 与白色盘沿重叠的部分无法辨认.
+  double stageNameSize(List<String> lines) {
+    final longest = lines.fold(0, (m, l) => math.max(m, l.characters.length));
+    final size = lines.length >= 3
+        ? 36.0
+        : longest >= _fullLine
+        ? 40.0
+        : 44.0;
+    return size * stageTextScale;
+  }
 
   /// 白底页面内容的左右留白.
   ///

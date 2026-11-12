@@ -1,6 +1,7 @@
 import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/widgets.dart';
 /// 白底页面骨架, 用于消息, 选店, 搜索, 评论和设置.
 ///
 /// - 返回按钮和 `page-title` 标题在同一行, 标题过长时换行, 左右边距 `space-20`.
+/// - 标题行固定在顶部, 不随内容滚动. 内容滚动到标题行下方时, 标题行底边显示 `hairline`.
 /// - 宽屏时整页收窄为居中的一栏.
 /// - 分组靠小标题和留白分隔, 不加卡片. [slivers] 已包含左右边距.
 /// - 键盘弹出时页面避让到键盘上方, 获得焦点的输入框会滚动到可见位置.
@@ -22,11 +24,13 @@ class PlainScaffold extends StatefulWidget {
     this.showBack = true,
     this.onBack,
     this.physics,
+    this.onRefresh,
+    this.header,
   });
 
   final String title;
 
-  /// 标题下方一两行的说明, 使用 `ink-muted`.
+  /// 标题下方一两行的说明, 使用 `ink-muted`. 随内容滚动.
   final String? subtitle;
 
   final List<Widget> slivers;
@@ -45,18 +49,125 @@ class PlainScaffold extends StatefulWidget {
   /// 否则纵向拖动会被页面滚动接管.
   final ScrollPhysics? physics;
 
+  /// 下拉刷新. 不传时页面不能下拉刷新.
+  final Future<void> Function()? onRefresh;
+
+  /// 代替标题显示在返回按钮右侧的组件, 如搜索页的搜索框. 传入时 [title] 只用于读屏.
+  final Widget? header;
+
   @override
   State<PlainScaffold> createState() => _PlainScaffoldState();
 }
 
 class _PlainScaffoldState extends State<PlainScaffold>
     with ScrollToTopOnReselect {
+  /// 内容是否已滚动到标题行下方.
+  final _scrolled = ValueNotifier(false);
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    _scrolled.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (scrollController.hasClients) {
+      _scrolled.value = scrollController.offset > 0.5;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
     final media = MediaQuery.of(context);
     final padding = EatLayout.of(context).plainHorizontalPadding;
     final navInset = NavBarInset.of(context);
+    final header = widget.header;
+    final titleRow = Padding(
+      padding: EdgeInsets.fromLTRB(
+        widget.showBack ? padding - EatBackButton.inset : padding,
+        media.padding.top + 4,
+        widget.actions.isEmpty ? padding : padding - 4,
+        4,
+      ),
+      child: Row(
+        children: [
+          if (widget.showBack) ...[
+            EatBackButton(onPressed: widget.onBack),
+            const SizedBox(width: EatSpace.s4),
+          ],
+          Expanded(
+            child: header != null
+                ? Semantics(header: true, label: widget.title, child: header)
+                : Semantics(
+                    header: true,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        widget.title,
+                        textScaler: TextScaler.noScaling,
+                        style: eat.text.heading.copyWith(color: eat.colors.ink),
+                      ),
+                    ),
+                  ),
+          ),
+          if (widget.actions.isNotEmpty)
+            SizedBox(
+              height: EatBackButton.extent,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: widget.actions,
+              ),
+            ),
+        ],
+      ),
+    );
+    Widget scroll = CustomScrollView(
+      controller: scrollController,
+      physics: switch ((widget.physics, widget.onRefresh)) {
+        (final physics?, _) => physics,
+        // 内容不足一屏时默认不能滚动, 下拉手势不会触发刷新.
+        (null, _?) => const AlwaysScrollableScrollPhysics(),
+        (null, null) => null,
+      },
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      slivers: [
+        SliverToBoxAdapter(
+          child: SizedBox(height: widget.subtitle == null ? 20 : 4),
+        ),
+        if (widget.subtitle case final subtitle?)
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                subtitle,
+                style: eat.text.body.copyWith(color: eat.colors.inkMuted),
+              ),
+            ),
+          ),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: padding),
+          sliver: SliverMainAxisGroup(slivers: widget.slivers),
+        ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: navInset > 0
+                ? navInset
+                : media.padding.bottom + EatSpace.s24,
+          ),
+        ),
+      ],
+    );
+    if (widget.onRefresh case final onRefresh?) {
+      scroll = EatRefresh(onRefresh: onRefresh, child: scroll);
+    }
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: ColoredBox(
@@ -72,73 +183,29 @@ class _PlainScaffoldState extends State<PlainScaffold>
               child: MediaQuery.removeViewInsets(
                 context: context,
                 removeBottom: true,
-                child: CustomScrollView(
-                  controller: scrollController,
-                  physics: widget.physics,
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        widget.showBack
-                            ? padding - EatBackButton.inset
-                            : padding,
-                        media.padding.top + 4,
-                        widget.actions.isEmpty ? padding : padding - 4,
-                        widget.subtitle == null ? 24 : 8,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: Row(
-                          children: [
-                            if (widget.showBack) ...[
-                              EatBackButton(onPressed: widget.onBack),
-                              const SizedBox(width: EatSpace.s4),
-                            ],
-                            Expanded(
-                              child: Semantics(
-                                header: true,
-                                child: Text(
-                                  widget.title,
-                                  textScaler: TextScaler.noScaling,
-                                  style: eat.text.heading.copyWith(
-                                    color: eat.colors.ink,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (widget.actions.isNotEmpty)
-                              SizedBox(
-                                height: EatBackButton.extent,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: widget.actions,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (widget.subtitle case final subtitle?)
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),
-                        sliver: SliverToBoxAdapter(
-                          child: Text(
-                            subtitle,
-                            style: eat.text.body.copyWith(
-                              color: eat.colors.inkMuted,
+                child: Column(
+                  children: [
+                    ValueListenableBuilder(
+                      valueListenable: _scrolled,
+                      builder: (context, scrolled, child) => DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: scrolled
+                                  ? eat.colors.hairline
+                                  : eat.colors.paper,
                             ),
                           ),
                         ),
+                        child: child,
                       ),
-                    SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      sliver: SliverMainAxisGroup(slivers: widget.slivers),
+                      child: titleRow,
                     ),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: navInset > 0
-                            ? navInset
-                            : media.padding.bottom + EatSpace.s24,
+                    Expanded(
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: scroll,
                       ),
                     ),
                   ],

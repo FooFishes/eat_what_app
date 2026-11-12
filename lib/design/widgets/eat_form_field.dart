@@ -7,7 +7,7 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// - 下划线默认为 `handle`, 获得焦点时为 `ink`, 出错时为 `warn`.
 /// - 出错说明显示在下方, 写明错误原因和修改方法.
-/// - 必须提供标签, 不能只用占位文字代替.
+/// - 必须提供标签, 不能只用占位文字代替. 占位文字与输入内容字号相同, 字重为 400.
 ///
 /// 参数:
 /// - [numeric]: 手机号, 验证码等数字输入, 使用数字字体.
@@ -173,7 +173,11 @@ class _EatFormFieldState extends State<EatFormField> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
           hintText: widget.hintText,
-          hintStyle: inputStyle.copyWith(color: c.inkMuted),
+          // 占位文字的字重为 400. 与输入内容同为 700 时, 未填写的输入框与已填写的难以区分.
+          hintStyle: inputStyle.copyWith(
+            color: c.inkMuted,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ),
     );
