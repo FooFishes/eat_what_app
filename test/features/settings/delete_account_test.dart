@@ -40,13 +40,13 @@ void main() {
     );
 
     expect(find.text('待接入'), findsNothing);
-    expect(find.text('不删除时内容保留，作者显示为「已注销用户」'), findsOneWidget);
+    expect(find.text('若不删除，内容将保留，作者显示为「已注销用户」'), findsOneWidget);
     await expectAccessible(tester);
 
     await tester.tap(_button('申请注销'));
     await tester.pumpAndSettle();
-    expect(find.text('确认注销账号？'), findsOneWidget);
-    expect(find.text('7 天内在这台设备上重新登录可以撤销。'), findsOneWidget);
+    expect(find.text('注销账号？'), findsOneWidget);
+    expect(find.text('7 天内在当前设备重新登录可撤销。'), findsOneWidget);
     await tester.tap(_button('注销'));
     await tester.pumpAndSettle();
 
@@ -78,7 +78,7 @@ void main() {
     expect(find.text('评论和回复会一起删除'), findsOneWidget);
     await tester.tap(_button('申请注销'));
     await tester.pumpAndSettle();
-    expect(find.text('7 天内在这台设备上重新登录可以撤销。评论和回复会一起删除。'), findsOneWidget);
+    expect(find.text('7 天内在当前设备重新登录可撤销。评论和回复将一并删除。'), findsOneWidget);
     await tester.tap(_button('注销'));
     await tester.pumpAndSettle();
 
@@ -104,7 +104,7 @@ void main() {
 
     await tester.tap(_button('申请注销'));
     await tester.pumpAndSettle();
-    await tester.tap(_button('先不注销'));
+    await tester.tap(_button('取消'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('POST /user/cancellation'), isEmpty);
 

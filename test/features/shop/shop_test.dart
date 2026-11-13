@@ -134,13 +134,13 @@ void main() {
       200,
       scrollable: downward,
     );
-    expect(find.text('点一个就提交，以后可以改'), findsOneWidget);
+    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
     await tester.tap(find.text('推荐'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /restaurant/7/rating').single.body, {
       'rating': 'RECOMMEND',
     });
-    expect(find.text('你选了「推荐」，再点一次撤回'), findsOneWidget);
+    expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
     expect(
       env.adapter.sent('GET /restaurant/detail/7'),
       hasLength(2),
@@ -151,7 +151,7 @@ void main() {
     await tester.tap(find.text('推荐'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /restaurant/7/rating'), hasLength(1));
-    expect(find.text('点一个就提交，以后可以改'), findsOneWidget);
+    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -174,7 +174,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text('点一个就提交，以后可以改'), findsOneWidget);
+    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -194,7 +194,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /restaurant/7/favorite'), hasLength(1));
     expect(find.bySemanticsLabel('取消收藏店铺'), findsOneWidget);
-    expect(find.text('已收藏，在「我的」里能找到'), findsOneWidget);
+    expect(find.text('已收藏，可在「我的」查看'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('取消收藏店铺'));
     await tester.pumpAndSettle();
@@ -261,7 +261,7 @@ void main() {
       await openPanel(tester);
       expect(find.text('信息有误'), findsNWidgets(2));
       expect(find.text('袁记云饺  万达金街 1 层'), findsOneWidget);
-      expect(find.text('选一个原因'), findsOneWidget, reason: '没选原因时不能提交');
+      expect(find.text('提交'), findsOneWidget, reason: '没选原因时仍显示静态按钮文案');
       await expectAccessible(tester);
 
       await tester.tap(find.text('位置不对'));

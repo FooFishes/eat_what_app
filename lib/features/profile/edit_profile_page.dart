@@ -79,7 +79,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       context,
       builder: (panel) => EatPanel(
         title: '换头像',
-        subtitle: '选好后可以拖动、缩放，放进圆圈里',
+        subtitle: '选好后可拖动、缩放，调整头像位置',
         actions: Row(
           spacing: EatSpace.s10,
           children: [

@@ -344,7 +344,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     ),
                   const SizedBox(height: EatSpace.s24),
                   Text(
-                    mapReady ? '位置，拖动地图让针对准店门口' : '位置',
+                    mapReady ? '位置，拖动地图将标记对准店门口' : '位置',
                     style: eat.text.meta.copyWith(color: c.inkMuted),
                   ),
                   const SizedBox(height: EatSpace.s8),
@@ -374,7 +374,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                         TextSpan(
                           text: switch (hub) {
                             AsyncData(:final value?) => value.name,
-                            AsyncData() => '不在已有的商圈里',
+                            AsyncData() => '不在已有商圈内',
                             _ => '判断中',
                           },
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -481,7 +481,7 @@ class _ExistingNotice extends StatelessWidget {
               spacing: EatSpace.s10,
               children: [
                 EatButton.outline('就选它', height: 36, onPressed: onUse),
-                EatButton.mist('不是同一家，继续建', height: 36, onPressed: onKeep),
+                EatButton.mist('不是同一家，继续新建', height: 36, onPressed: onKeep),
               ],
             ),
           ],
@@ -599,7 +599,7 @@ class _StorefrontPhoto extends StatelessWidget {
             children: [
               EatIcon(EatIcons.camera, size: 20, color: c.ink),
               Text(
-                '选填，拍一张招牌，别人更好找',
+                '选填，拍一张门头招牌，方便大家找到',
                 style: eat.text.body.copyWith(color: c.inkSoft),
               ),
             ],

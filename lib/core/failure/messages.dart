@@ -100,8 +100,8 @@ abstract final class BizCodes {
 
 /// 业务码对应的提示. 只收录需要专门说明的业务码, 其余使用 [AppFailure.message] 的默认提示.
 const failureMessages = <Object, String>{
-  10001: '填写的内容有误，请检查后重试',
-  10002: '填写的内容有误，请检查后重试',
+  10001: '提交的内容有误，请检查后重试',
+  10002: '提交的内容有误，请检查后重试',
   BizCodes.userNotFound: '账号或密码错误',
   BizCodes.wrongPassword: '账号或密码错误',
   BizCodes.userDisabled: '账号已被封禁',
@@ -112,7 +112,7 @@ const failureMessages = <Object, String>{
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
-  BizCodes.consentRequired: '需要同意数据跨境后才能继续',
+  BizCodes.consentRequired: '同意数据跨境后才能继续',
   BizCodes.dataSyncPending: '数据正在处理，请稍后再试',
   BizCodes.authUnavailable: '身份验证暂不可用，请稍后再试',
   BizCodes.consentProofInvalid: '验证信息已过期，请重新登录',

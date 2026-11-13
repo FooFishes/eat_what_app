@@ -109,7 +109,7 @@ void main() {
       ),
     );
     expect(NoticeRules.targetOf(withdrawn), isA<NoTarget>());
-    expect(NoticeRules.sentenceOf(withdrawn), '你上传的菜已被收录到专题，该专题已撤下');
+    expect(NoticeRules.sentenceOf(withdrawn), '你上传的菜已被收录到专题，该专题已下线');
   });
 
   test('审核通过去菜或店，未通过不跳转', () {

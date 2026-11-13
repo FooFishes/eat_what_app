@@ -212,7 +212,7 @@ class _MePageState extends ConsumerState<MePage> {
                     empty: const EmptyState(
                       icon: EatIcons.bookmark,
                       title: '还没收藏过菜',
-                      message: '在菜品详情右上角点收藏，想吃的菜都在这里。',
+                      message: '在菜品右上角点收藏，想吃的菜都在这里。',
                     ),
                   ),
               ],
@@ -325,7 +325,7 @@ class _FavoriteShops extends ConsumerWidget {
           child: EmptyState(
             icon: EatIcons.bookmark,
             title: '还没收藏过店',
-            message: '在餐厅详情右上角点收藏，常去的店都在这里。',
+            message: '在店铺右上角点收藏，常去的店都在这里。',
           ),
         ),
       );

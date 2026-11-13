@@ -281,7 +281,7 @@ void main() {
     expect(find.byType(FeedbackPage), findsOneWidget);
     expect(find.text('关于 鲜虾蟹籽云吞'), findsOneWidget);
     expect(find.text('待接入'), findsNothing);
-    expect(find.text('写几句再提交'), findsOneWidget);
+    expect(find.text('提交'), findsOneWidget);
     await expectAccessible(tester);
 
     await tester.enterText(find.byType(EditableText), '找不到想要的口味词');

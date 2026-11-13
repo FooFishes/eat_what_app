@@ -124,7 +124,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
           children: [
             Expanded(
               child: EatButton.mist(
-                '先不用',
+                '暂不开启',
                 onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
@@ -269,7 +269,7 @@ class _TopBar extends ConsumerWidget {
             alignment: AlignmentDirectional.centerStart,
             child: EatTappable(
               onTap: () => _showPlacePanel(context, ref),
-              label: '在$where吃$what，点击切换地点和饭点',
+              label: '在$where吃$what，切换地点和饭点',
               focusShape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(10)),
               ),
@@ -653,7 +653,7 @@ class _EmptyStage extends ConsumerWidget {
               SizedBox(
                 width: 210,
                 child: Text(
-                  '这附近还没人发过菜，发第一道',
+                  '这附近还没人发过菜，来发第一道',
                   style: eat.text.title.copyWith(color: palette.foreground),
                 ),
               ),
@@ -821,13 +821,13 @@ class _TopicList extends ConsumerWidget {
           child: dishes == null
               ? const EmptyState(
                   icon: EatIcons.topic,
-                  title: '这期专题已撤下',
-                  message: '去看看其他推荐的菜。',
+                  title: '这期专题已下线',
+                  message: '看看其他推荐的菜。',
                 )
               : const EmptyState(
                   icon: EatIcons.bowl,
-                  title: '这期专题的菜都已删除',
-                  message: '去看看其他推荐的菜。',
+                  title: '这期专题暂无菜品',
+                  message: '看看其他推荐的菜。',
                 ),
         ),
       );

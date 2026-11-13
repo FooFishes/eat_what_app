@@ -238,7 +238,7 @@ Future<void> _toggleFavorite(
   if (!context.mounted) return;
   if (failure == null) {
     // 收藏成功后页面上只有右上角的图标变化, 因此用轻提示说明收藏的菜在哪里查看.
-    showToast(context, was ? '已取消收藏' : '已收藏，在「我的」里能找到');
+    showToast(context, was ? '已取消收藏' : '已收藏，可在「我的」查看');
   }
   if (failure != null) {
     await reportActionFailure(
@@ -519,12 +519,12 @@ class _TasteSection extends ConsumerWidget {
         // 口味词的外观是文字, 没有可点击的提示. 这行说明点击的结果.
         if (taste.isNotEmpty)
           Text(
-            '同感就点一下，点过的再点一次撤回',
+            '有同感就点选，再点一次取消',
             style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
           ),
         if (taste.isEmpty) ...[
           Text(
-            '还没人说过，来第一个',
+            '还没有口味词，来加第一个',
             style: eat.text.body.copyWith(color: eat.colors.inkMuted),
           ),
           add,
@@ -534,7 +534,7 @@ class _TasteSection extends ConsumerWidget {
               for (final t in taste)
                 TasteWord(label: t.name, count: t.count, selected: t.mine),
             ],
-            selectedLabel: '我打过',
+            selectedLabel: '已选',
             onTap: (i) async {
               if (!await guardAction(context, ref, Capability.tasteTag)) return;
               final failure = await ref

@@ -38,8 +38,8 @@ class BlockedPage extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.only(bottom: EatSpace.s20),
             child: Text(
-              '屏蔽后，对方的评论和回复对你隐藏，对方的赞、评论和关注不再通知你，'
-              '对方也不能关注你。对方上传的菜不会出现在你的转盘里。',
+              '屏蔽后，你将看不到对方的评论、回复与上传的菜，也不会收到对方的互动通知，'
+              '对方也无法再关注你。',
               style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
             ),
           ),

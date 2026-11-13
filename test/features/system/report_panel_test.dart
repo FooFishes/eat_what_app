@@ -40,7 +40,7 @@ void main() {
     expect(find.text('分享给朋友'), findsNothing, reason: '先关闭分享面板');
     expect(find.text('举报这道菜'), findsOneWidget);
     expect(find.text('不是这道菜的实拍'), findsOneWidget);
-    expect(find.text('选一个原因'), findsOneWidget);
+    expect(find.text('提交'), findsOneWidget);
     await expectAccessible(tester);
 
     await tester.tap(find.text('广告'));

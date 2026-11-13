@@ -42,7 +42,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     final empty = value.value?.pages.items.isEmpty ?? true;
     return PlainScaffold(
       title: '足迹',
-      subtitle: '只有你自己看得见',
+      subtitle: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -100,7 +100,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
           children: [
             Expanded(
               child: EatButton.mist(
-                '先不清空',
+                '取消',
                 onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
@@ -160,7 +160,7 @@ class _FootprintList extends ConsumerWidget {
               FootprintKind.dish => '还没看过菜',
               FootprintKind.shop => '还没看过店',
             },
-            message: '看过的菜和店会按时间排在这里。',
+            message: '看过的菜和店会按时间记录在这里。',
           ),
         ),
       );

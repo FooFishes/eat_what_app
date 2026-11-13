@@ -27,7 +27,7 @@ abstract final class PublishRules {
   static String? priceError(String text) =>
       text.trim().isEmpty || parsePrice(text) != null
       ? null
-      : '价格填 0 到 999，最多一位小数';
+      : '请输入 0 到 999 的价格，最多一位小数';
 
   /// 发布按钮上方的必填项提示, 如 "请填写价格和分类". 必填项都已填写时返回 null.
   static String? missingText({

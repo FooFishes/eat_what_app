@@ -80,7 +80,7 @@ void main() {
     });
     expect(find.textContaining('认证链接已发送至'), findsOneWidget);
 
-    await tester.tap(find.text('我已完成，刷新状态'));
+    await tester.tap(find.text('已完成，刷新状态'));
     await tester.pumpAndSettle();
     expect(find.text('已认证'), findsOneWidget);
     expect(find.text('山大邮箱'), findsWidgets);
@@ -195,7 +195,7 @@ void main() {
       await startSso(tester, _returned('result=success&code=0'));
 
       expect(find.text('认证结果尚未生效，请稍后刷新状态'), findsOneWidget);
-      expect(find.text('我已完成，刷新状态'), findsOneWidget);
+      expect(find.text('已完成，刷新状态'), findsOneWidget);
     });
 
     testWidgets('Web：地址栏打开回跳地址时转到认证页', (tester) async {

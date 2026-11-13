@@ -59,7 +59,7 @@ String ssoFailureMessage(int? code) => switch (code) {
   SsoCodes.linkExpired => '认证链接已失效，请重新发起认证',
   SsoCodes.studentIdTaken => '该学号已认证其他账号',
   SsoCodes.badSchoolResponse => '学校返回的认证结果无效，请重新认证',
-  BizCodes.consentRequired => '需要同意数据跨境后才能认证',
+  BizCodes.consentRequired => '同意数据跨境后才能认证',
   BizCodes.dataSyncPending => '账号正在处理，请稍后重新认证',
   BizCodes.userDisabled => '账号已被封禁',
   final int code when code ~/ 10000 == 9 => '暂时无法认证，请稍后再试',

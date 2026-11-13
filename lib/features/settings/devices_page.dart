@@ -31,7 +31,7 @@ class DevicesPage extends ConsumerWidget {
     final others = devices?.where((d) => !d.current).length ?? 0;
     return PlainScaffold(
       title: '登录设备',
-      subtitle: '看到不认识的设备，先让它下线，再修改密码。',
+      subtitle: '发现陌生设备，建议先将其下线，再修改密码。',
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -58,7 +58,7 @@ class DevicesPage extends ConsumerWidget {
               const SizedBox(height: 12),
               if (others == 0)
                 Text(
-                  '只有这台设备登录着',
+                  '仅当前设备登录',
                   textAlign: TextAlign.center,
                   style: context.eat.text.meta.copyWith(
                     color: context.eat.colors.inkMuted,
@@ -126,10 +126,10 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
       lines: [
         Text(
           device.current
-              ? '这台设备，正在用'
+              ? '当前设备'
               : lastUsed == null
               ? '最近使用时间未知'
-              : '${TimeFormat.relative(lastUsed, clock.now())}用过',
+              : '${TimeFormat.relative(lastUsed, clock.now())}活跃',
         ),
       ],
       action: device.current
@@ -159,25 +159,25 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
     final confirmed = await showEatDialog<bool>(
       context,
       builder: (dialog) => EatDialog(
-        title: '让其他设备都下线？',
+        title: '下线其他所有设备？',
         actions: Row(
           spacing: EatSpace.s10,
           children: [
             Expanded(
               child: EatButton.mist(
-                '先不下线',
+                '取消',
                 onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
             Expanded(
               child: EatButton.solid(
-                '都下线',
+                '全部下线',
                 onPressed: () => Navigator.of(dialog).pop(true),
               ),
             ),
           ],
         ),
-        subtitle: '其他设备要重新登录，这台设备不受影响。',
+        subtitle: '其他设备需要重新登录，当前设备不受影响。',
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -202,5 +202,5 @@ class _RevokeOthersButtonState extends ConsumerState<_RevokeOthersButton> {
 
   @override
   Widget build(BuildContext context) =>
-      EatButton.mist('让其他设备都下线', loading: _busy, onPressed: _revokeOthers);
+      EatButton.mist('下线其他设备', loading: _busy, onPressed: _revokeOthers);
 }

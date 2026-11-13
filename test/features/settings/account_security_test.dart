@@ -80,7 +80,7 @@ void main() {
       location: Paths.settingsDevices,
     );
 
-    expect(find.text('这台设备，正在用'), findsOneWidget);
+    expect(find.text('当前设备'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('iPhone')).dy,
       lessThan(tester.getTopLeft(find.text('网页版')).dy),
@@ -92,7 +92,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /auth/sessions/s-web'), hasLength(1));
     expect(find.text('网页版'), findsNothing);
-    expect(find.text('只有这台设备登录着'), findsOneWidget);
+    expect(find.text('仅当前设备登录'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
   });
 
@@ -129,9 +129,9 @@ void main() {
       location: Paths.settingsDevices,
     );
 
-    await tester.tap(_button('让其他设备都下线'));
+    await tester.tap(_button('下线其他设备'));
     await tester.pumpAndSettle();
-    await tester.tap(_button('都下线'));
+    await tester.tap(_button('全部下线'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
@@ -150,7 +150,7 @@ void main() {
     expect(env.secure.values['auth.tokenValue'], 'new');
     expect(container.read(sessionProvider), isA<SignedIn>());
     expect(find.text('其他设备已下线'), findsOneWidget);
-    expect(find.text('只有这台设备登录着'), findsOneWidget);
+    expect(find.text('仅当前设备登录'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await unmountApp(tester, container);
   });

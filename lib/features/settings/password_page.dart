@@ -131,7 +131,7 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
         _repeat.text.isNotEmpty;
     return PlainScaffold(
       title: hasPassword ? '修改密码' : '设置密码',
-      subtitle: '设好后可以用手机号或用户名加密码登录',
+      subtitle: '设置后可使用手机号或用户名配合密码登录',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
@@ -197,7 +197,7 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
                 const SizedBox(height: 40),
                 if (hasPassword) ...[
                   Text(
-                    '改好后，其他设备要重新登录。',
+                    '修改后，其他设备需要重新登录。',
                     style: eat.text.caption.copyWith(
                       color: eat.colors.inkMuted,
                     ),

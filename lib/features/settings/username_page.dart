@@ -127,7 +127,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
             children: [
               Text(username, style: eat.text.heading.copyWith(color: c.ink)),
               const SizedBox(height: EatSpace.s8),
-              Text('用户名设好后不能再改，可以用它和密码登录。', style: note),
+              Text('用户名设置后无法修改，可用于配合密码登录。', style: note),
             ],
           ),
         ],
@@ -160,7 +160,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
                   errorText: _usernameError,
                 ),
                 const SizedBox(height: 6),
-                Text('区分大小写，设好后不能再改', style: note),
+                Text('区分大小写，设置后无法修改', style: note),
                 const SizedBox(height: 26),
                 AccountCodeField(
                   controller: _code,
@@ -182,7 +182,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
                   Text('同时设置密码后，可直接用用户名和密码登录', style: note),
                 ],
                 const SizedBox(height: 40),
-                Text('设好后，这台和其他设备都要重新登录。', style: note),
+                Text('设置后，所有设备都需要重新登录。', style: note),
                 const SizedBox(height: EatSpace.s14),
                 EatButton.solid(
                   '设置用户名',

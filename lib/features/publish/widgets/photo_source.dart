@@ -22,7 +22,7 @@ Future<List<PickedPhoto>> pickPhotos(
     context,
     builder: (panel) => EatPanel(
       title: title,
-      subtitle: '要是这道菜的实拍，不用网图和菜单截图',
+      subtitle: '请上传这道菜的实拍，不要用网图或菜单截图',
       actions: Row(
         spacing: EatSpace.s10,
         children: [

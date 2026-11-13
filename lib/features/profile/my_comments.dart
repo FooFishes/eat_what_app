@@ -43,7 +43,7 @@ class MyCommentsSliver extends ConsumerWidget {
           child: EmptyState(
             icon: EatIcons.comment,
             title: '还没写过评论',
-            message: '吃过的菜，在菜品详情里说两句。',
+            message: '点开吃过的菜，就能写评价。',
           ),
         ),
       );

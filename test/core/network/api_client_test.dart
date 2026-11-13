@@ -319,7 +319,7 @@ void main() {
 
       final failure = await _failure(client.post('/a'));
       expect(failure.kind, FailureKind.business);
-      expect(failure.message, '需要同意数据跨境后才能继续');
+      expect(failure.message, '同意数据跨境后才能继续');
       expect(adapter.sent('POST /a'), hasLength(1));
     });
 

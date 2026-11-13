@@ -21,7 +21,7 @@ class TagDishesPage extends ConsumerWidget {
     final provider = tagDishesProvider(tagId);
     return PlainScaffold(
       title: name.isEmpty ? '我的标签' : name,
-      subtitle: '只有你自己看得见',
+      subtitle: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -37,7 +37,7 @@ class TagDishesPage extends ConsumerWidget {
           empty: const EmptyState(
             icon: EatIcons.tag,
             title: '这个标签下还没有菜',
-            message: '在菜品详情点「加标签」，用「自己写」加上这个标签。',
+            message: '在任意菜品下点「加标签」，选「自己写」即可添加。',
           ),
         ),
       ],

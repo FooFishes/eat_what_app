@@ -103,7 +103,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
                       child: EmptyState(
                         icon: EatIcons.comment,
                         title: '还没有人说过',
-                        message: '吃过的话，说两句，帮同学们选一选。',
+                        message: '吃过的话，写一条帮同学们做参考。',
                       ),
                     ),
                   )

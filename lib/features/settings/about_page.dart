@@ -64,7 +64,7 @@ class AboutPage extends ConsumerWidget {
             SettingsRow(
               icon: EatIcons.feedback,
               label: '反馈',
-              value: '出问题、提建议都行',
+              value: '问题反馈与建议',
               onTap: () async {
                 if (await guardAction(context, ref, Capability.feedback) &&
                     context.mounted) {

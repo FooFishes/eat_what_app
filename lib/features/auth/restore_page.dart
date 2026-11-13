@@ -138,7 +138,7 @@ class _RestorePageState extends ConsumerState<RestorePage> {
           SliverList.list(
             children: [
               const SizedBox(height: EatSpace.s14),
-              Text('账号正在注销。注销申请是在其他设备上提交的，在那台设备上登录可以撤销。', style: body),
+              Text('账号正在注销。请在提交注销申请的设备上登录撤销。', style: body),
               const SizedBox(height: 40),
               EatButton.solid('知道了', onPressed: _leave),
             ],

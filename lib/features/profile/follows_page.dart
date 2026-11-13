@@ -150,7 +150,7 @@ class _UserList extends ConsumerWidget {
             },
             message: switch (kind) {
               FollowListKind.fans => '多发几道好菜，让更多同学认识你。',
-              FollowListKind.followings => '在菜品详情点上传者，可以进主页关注。',
+              FollowListKind.followings => '点击菜品的上传者，即可进入对方主页关注。',
             },
           ),
         ),

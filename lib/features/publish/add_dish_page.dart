@@ -109,7 +109,7 @@ class _AddDishPageState extends ConsumerState<AddDishPage> {
         context,
         builder: (dialog) => EatDialog(
           icon: EatIcons.warning,
-          title: '这道菜还未发布，确定放弃吗？',
+          title: '放弃发布这道菜？',
           actions: Row(
             spacing: EatSpace.s10,
             children: [

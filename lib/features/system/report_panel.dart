@@ -137,7 +137,7 @@ class _ReasonPanelState<T> extends ConsumerState<ReasonPanel<T>> {
       title: widget.title,
       subtitle: widget.subtitle,
       actions: EatButton.solid(
-        selected == null ? '选一个原因' : '提交',
+        '提交',
         loading: _sending,
         onPressed: selected == null ? null : () => _submit(selected),
       ),

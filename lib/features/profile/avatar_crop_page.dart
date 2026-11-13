@@ -101,7 +101,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
               ),
             ),
             Text(
-              '拖动、缩放，放进圆圈里',
+              '拖动或缩放，将头像移入圆框内',
               style: eat.text.meta.copyWith(
                 color: c.paper.withValues(alpha: 0.7),
               ),

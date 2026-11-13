@@ -571,13 +571,13 @@ Future<bool> _confirmDelete(BuildContext context, Comment comment) async =>
       builder: (dialog) => EatDialog(
         icon: EatIcons.delete,
         title: comment.isReply ? '删除这条回复？' : '删除这条评论？',
-        subtitle: comment.isReply ? null : '下面的回复会一起删除，删除后不能恢复。',
+        subtitle: comment.isReply ? null : '下面的回复也会一并删除，且无法恢复。',
         actions: Row(
           spacing: EatSpace.s10,
           children: [
             Expanded(
               child: EatButton.mist(
-                '先不删',
+                '取消',
                 onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),

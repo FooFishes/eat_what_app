@@ -99,7 +99,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
         context,
         builder: (dialog) => EatDialog(
           icon: EatIcons.warning,
-          title: _reply ? '这条回复还未发送，确定放弃吗？' : '这条评论还未发送，确定放弃吗？',
+          title: _reply ? '放弃这条回复？' : '放弃这条评论？',
           actions: Row(
             spacing: EatSpace.s10,
             children: [
@@ -135,7 +135,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
       context,
       builder: (panel) => EatPanel(
         title: '加照片',
-        subtitle: '要是这道菜的实拍，不用网图和菜单截图',
+        subtitle: '请上传这道菜的实拍，不要用网图或菜单截图',
         actions: Row(
           spacing: EatSpace.s10,
           children: [
@@ -304,7 +304,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
                 ),
                 const SizedBox(height: EatSpace.s10),
                 Text(
-                  '照片要是这道菜的实拍，会和上传者的照片一起出现在大图里',
+                  '请上传这道菜的实拍，提交后会与上传者的照片一起展示',
                   style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),
               ],

@@ -46,7 +46,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
     final tags = value.value;
     return PlainScaffold(
       title: '我的标签',
-      subtitle: '只有你自己看得见，删掉标签不影响菜',
+      subtitle: '仅自己可见，删除标签不影响菜品',
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -84,7 +84,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
               child: EmptyState(
                 icon: EatIcons.tag,
                 title: '认证后才能加标签',
-                message: '用山大统一认证或山大邮箱认证，认证后可以给菜写自己的标签。',
+                message: '完成学生认证后，就能为菜品添加专属标签。',
                 action: EatButton.solid(
                   '去认证',
                   height: 48,
@@ -150,7 +150,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
           children: [
             Expanded(
               child: EatButton.mist(
-                '先不删',
+                '取消',
                 onPressed: () => Navigator.of(dialog).pop(false),
               ),
             ),
@@ -163,8 +163,8 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
           ],
         ),
         subtitle: usage == null || usage == 0
-            ? '只删掉标签，菜不受影响。'
-            : '只删掉标签，标过的 $usage 道菜不受影响。',
+            ? '仅删除标签，菜品不受影响。'
+            : '仅删除标签，已标记的 $usage 道菜不受影响。',
       ),
     );
     if (confirmed != true) return;

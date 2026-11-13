@@ -290,7 +290,7 @@ class _ShopPageState extends ConsumerState<ShopPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: EatSpace.s4),
                 child: Text(
-                  _tagFilter == null ? '点一个词，只看带这个词的菜' : '再点一次，看回全部菜品',
+                  _tagFilter == null ? '点选口味词，筛选相关菜品' : '再次点选，查看全部菜品',
                   style: context.eat.text.meta.copyWith(
                     color: context.eat.colors.inkMuted,
                   ),
@@ -419,7 +419,7 @@ class _Rating extends ConsumerWidget {
           ],
         ),
         Text(
-          mine == null ? '点一个就提交，以后可以改' : '你选了「${mine.label}」，再点一次撤回',
+          mine == null ? '点选即提交，之后可修改' : '已选「${mine.label}」，再点一次取消',
           style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
         ),
       ],
@@ -501,7 +501,7 @@ class _FavoriteButton extends ConsumerWidget {
             .toggleFavorite();
         if (!context.mounted) return;
         if (failure == null) {
-          showToast(context, favorite ? '已取消收藏' : '已收藏，在「我的」里能找到');
+          showToast(context, favorite ? '已取消收藏' : '已收藏，可在「我的」查看');
         }
         if (failure != null) {
           await reportActionFailure(

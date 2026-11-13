@@ -287,7 +287,7 @@ class _Unverified extends StatelessWidget {
         ],
         if (sentTo != null || state.ssoStarted) ...[
           if (sentTo == null) const SizedBox(height: EatSpace.s10),
-          EatButton.outline('我已完成，刷新状态', onPressed: onRefresh),
+          EatButton.outline('已完成，刷新状态', onPressed: onRefresh),
         ],
         if (sentTo != null) ...[
           const SizedBox(height: 6),

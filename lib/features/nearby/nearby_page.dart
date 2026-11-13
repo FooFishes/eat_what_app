@@ -542,8 +542,8 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
           child: EmptyState(
             icon: EatIcons.filter,
-            title: '没有符合筛选的店',
-            message: '少选几项，或者拖动地图看看别处。',
+            title: '没有符合筛选条件的店',
+            message: '减少筛选条件，或拖动地图看看附近。',
             action: EatButton.mist(
               '清空筛选',
               onPressed: () => setState(() => _filter = const NearbyFilter()),
@@ -559,7 +559,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           child: EmptyState(
             icon: EatIcons.store,
             title: _keyword.isEmpty ? '这附近还没有店' : '没找到「$_keyword」',
-            message: _keyword.isEmpty ? '拖动地图看看别处，或者换个商圈。' : '换个店名或菜名试试。',
+            message: _keyword.isEmpty ? '拖动地图看看附近，或切换其他商圈。' : '换个店名或菜名试试。',
           ),
         ),
       );

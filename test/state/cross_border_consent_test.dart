@@ -61,7 +61,7 @@ void main() {
 
     final failure = await _result(container.read(apiClientProvider).get('/a'));
     expect(failure, isA<AppFailure>());
-    expect((failure! as AppFailure).message, '需要同意数据跨境后才能继续');
+    expect((failure! as AppFailure).message, '同意数据跨境后才能继续');
     expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
     expect(env.adapter.sent('GET /a'), hasLength(1));
     expect(container.read(sessionProvider), isA<SignedIn>());

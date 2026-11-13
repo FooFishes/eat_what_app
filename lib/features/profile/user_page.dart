@@ -198,7 +198,7 @@ class UserPage extends ConsumerWidget {
             children: [
               Expanded(
                 child: EatButton.mist(
-                  '先不屏蔽',
+                  '取消',
                   onPressed: () => Navigator.of(dialog).pop(false),
                 ),
               ),
@@ -211,9 +211,8 @@ class UserPage extends ConsumerWidget {
             ],
           ),
           subtitle:
-              '屏蔽后，对方的评论和回复对你隐藏，对方的赞、评论和关注不再通知你，'
-              '对方也不能关注你，已有的关注关系会解除。'
-              '对方上传的菜不会出现在你的转盘里。可以在设置 → 隐私里解除。',
+              '屏蔽后，你将看不到对方的评论、回复与上传的菜，也不会收到对方的互动通知。'
+              '双方已有关注关系将解除，对方也无法再关注你。可在「设置 → 隐私」中解除屏蔽。',
         ),
       ) ==
       true;

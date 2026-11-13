@@ -142,7 +142,7 @@ abstract final class NoticeRules {
     if (detail is! TopicIncludedDetail) return '你上传的菜已被收录到专题';
     final dish = detail.dishId == null ? '菜' : '「${detail.dishName}」';
     return detail.topicId == null
-        ? '你上传的$dish已被收录到专题，该专题已撤下'
+        ? '你上传的$dish已被收录到专题，该专题已下线'
         : '你上传的$dish已被收录到专题「${detail.topicName}」';
   }
 

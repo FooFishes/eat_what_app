@@ -55,7 +55,7 @@ class TopicPage extends ConsumerWidget {
             child: EmptyState(
               icon: EatIcons.topic,
               title: '找不到这期专题',
-              message: '可能已撤下，去看看其他推荐的菜。',
+              message: '可能已下线，看看其他推荐的菜。',
             ),
           ),
         ],
@@ -90,8 +90,8 @@ class TopicPage extends ConsumerWidget {
           const SliverToBoxAdapter(
             child: EmptyState(
               icon: EatIcons.bowl,
-              title: '这期专题的菜都已删除',
-              message: '去看看其他推荐的菜。',
+              title: '这期专题暂无菜品',
+              message: '看看其他推荐的菜。',
             ),
           )
         else

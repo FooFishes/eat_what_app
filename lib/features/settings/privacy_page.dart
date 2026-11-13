@@ -57,7 +57,7 @@ class PrivacyPage extends ConsumerWidget {
             if (privacy.value case final settings?) ...[
               EatSwitch(
                 label: '公开我的关注列表',
-                description: '关掉后别人点开，看到的是「对方未公开」',
+                description: '关闭后他人查看时将显示「对方未公开」',
                 value: settings.followingsPublic,
                 onChanged: (on) async => report(
                   !await allowed()
@@ -74,7 +74,7 @@ class PrivacyPage extends ConsumerWidget {
               ),
               EatSwitch(
                 label: '公开我的粉丝列表',
-                description: '关掉后别人点开，看到的是「对方未公开」',
+                description: '关闭后他人查看时将显示「对方未公开」',
                 value: settings.fansPublic,
                 onChanged: (on) async => report(
                   !await allowed()
@@ -102,7 +102,7 @@ class PrivacyPage extends ConsumerWidget {
             else if (personalized.value case final on?)
               EatSwitch(
                 label: '个性化推荐',
-                description: '参考你赞过、收藏过的菜。关掉后推荐只看大家公认的好菜',
+                description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
                 value: on,
                 onChanged: (on) async => report(
                   !await allowed()

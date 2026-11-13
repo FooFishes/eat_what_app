@@ -449,7 +449,7 @@ void main() {
       await tester.tap(find.text('不同意'));
       await tester.pumpAndSettle();
       expect(find.byType(PasswordLoginPage), findsOneWidget);
-      expect(find.text('需要同意数据跨境后才能继续'), findsOneWidget);
+      expect(find.text('同意数据跨境后才能继续'), findsOneWidget);
       expect(find.text('zhang@mail.sdu.edu.cn'), findsOneWidget);
       expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
       expect(env.adapter.sent('POST /auth/login'), hasLength(1));

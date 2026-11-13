@@ -192,7 +192,7 @@ class _CropPageState extends State<CropPage> {
                 ),
               ),
               Text(
-                '拖动、缩放，把主菜放进圈里',
+                '拖动或缩放，将主菜移入圆框内',
                 style: eat.text.meta.copyWith(
                   color: c.paper.withValues(alpha: 0.7),
                 ),
@@ -330,7 +330,7 @@ class _RemoveBackground extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  '只留下碗盘，效果不好就关掉',
+                  '仅保留碗盘，效果不理想可关闭',
                   style: eat.text.caption.copyWith(
                     color: paper.withValues(alpha: 0.7),
                   ),

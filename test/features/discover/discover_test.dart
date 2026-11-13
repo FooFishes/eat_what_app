@@ -181,7 +181,7 @@ void main() {
     env.adapter.on('GET /foods/recommend', [FakeAdapter.ok(<Object>[])]);
     await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
 
-    expect(find.text('这附近还没人发过菜，发第一道'), findsOneWidget);
+    expect(find.text('这附近还没人发过菜，来发第一道'), findsOneWidget);
     expect(find.text('加一道菜'), findsWidgets);
   });
 

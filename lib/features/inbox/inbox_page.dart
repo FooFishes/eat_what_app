@@ -241,12 +241,12 @@ class _Empty extends StatelessWidget {
     NoticeColumn.all => const EmptyState(
       icon: EatIcons.bell,
       title: '还没有消息',
-      message: '有人赞了、收藏了你上传的菜，会在这里告诉你。',
+      message: '有新的赞、收藏、评论或系统通知时，会在这里告诉你。',
     ),
     NoticeColumn.comments => const EmptyState(
       icon: EatIcons.comment,
       title: '还没有评论',
-      message: '有人评论或回复你时，会在这里告诉你。',
+      message: '有新的评论或回复时，会在这里告诉你。',
     ),
     NoticeColumn.likes => const EmptyState(
       icon: EatIcons.heart,

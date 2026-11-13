@@ -151,7 +151,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
         PublishBottomBar(
           child: EatButton.solid(
             selected == null
-                ? '先选一家店'
+                ? (widget.changing ? '确定' : '下一步')
                 : widget.changing
                 ? '就选${selected.name}'
                 : '下一步：给${selected.name}加菜',
