@@ -165,16 +165,25 @@ jobs:
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
-      - name: Build with Flutter
+      - name: Prepare Flutter build arguments
         if: env.USE_SHOREBIRD != 'true'
         run: |
           # 混淆映射让 Sentry 还原错误标题中的类名.
-          map=""
           if [ "$IS_RELEASE" = true ]; then
-            map="--extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json"
+            echo "OBFUSCATION_MAP=--extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json" >> "$GITHUB_ENV"
           fi
-          flutter build apk --release $RELEASE_FLAGS $DEFINES $map
-          flutter build appbundle --release $RELEASE_FLAGS $DEFINES $map
+
+      - name: Build APK with Flutter
+        if: env.USE_SHOREBIRD != 'true'
+        run: |
+          flutter build apk --release $RELEASE_FLAGS $DEFINES $OBFUSCATION_MAP
+          # Gradle 和 Kotlin 守护进程在 step 之间不会退出, 留着会和打 AAB 时的 Dart 编译争内存,
+          # runner 内存不够时进程会被直接杀掉.
+          (cd android && ./gradlew --stop)
+
+      - name: Build AAB with Flutter
+        if: env.USE_SHOREBIRD != 'true'
+        run: flutter build appbundle --release $RELEASE_FLAGS $DEFINES $OBFUSCATION_MAP
 
       # 用 Shorebird 的引擎构建, 之后才能对这个版本推补丁. Flutter 版本必须和 .fvmrc 一致.
       - uses: shorebirdtech/setup-shorebird@v1
