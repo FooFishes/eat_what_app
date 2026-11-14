@@ -17,6 +17,7 @@
 | `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
 | `docs/EatWhat_设计与实现.md` | 设计稿和 App 的关系：设计稿是方向不是规格，正本在 App 里，哪些要守、哪些 App 自己定 | 初稿 |
+| `docs/EatWhat_设备标识与风控.md` | 设备标识：自报的设备信息和平台签发的证据分开，同意后注册一次，不加请求头；第 2 节自包含地写给后端看，不含服务端设计 | 方案稿，确认后拆进架构与选型 |
 | `docs/guideline/COMMENT-STYLE.md` | 代码注释风格：What 与 Why 各写在哪、篇幅、语体、格式、不要写的东西 | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 快照（2026-10-22），不再更新 |
 | `prototype/screens/*.dc.html` | 「G 定稿」各页面画板 | 快照（2026-10-22），不再更新 |
