@@ -269,6 +269,9 @@ jobs:
       IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
       IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
       IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+      # 去掉 geolocator 里的 requestAlwaysAuthorization 调用. App 只申请使用期间定位,
+      # 留着这个调用会被 App Store 的静态扫描判成缺少「始终定位」用途说明 (ITMS-90683).
+      BYPASS_PERMISSION_LOCATION_ALWAYS: "1"
     steps:
       - uses: actions/checkout@v7
 
