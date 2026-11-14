@@ -1,8 +1,12 @@
 name: Build
 
-# 发版 tag 写作 v<版本名>+<构建号>, 可以带一个后缀, 如 v1.2.3+62, v1.2.3+62-beta. 推送这样的 tag,
-# 或在这样的 tag 上手动运行, 构建 Release, 版本名和构建号取自 tag. 补丁 tag (以 -p<N> 结尾) 交给 patch.yml.
+# 发版 tag 写作 v<版本名>, 可以带一个后缀, 如 v1.2.3, v1.2.3-beta. 版本名必须和 pubspec.yaml 一致.
+# 推送这样的 tag, 或在这样的 tag 上手动运行, 构建 Release. 补丁 tag (以 -p<N> 结尾) 交给 patch.yml.
 # 其余分支的 push 和手动运行构建 Nightly. PR 只构建, 不上传.
+#
+# 版本名只在 pubspec.yaml 里维护. 构建号由 tool/build_number.sh 从 App Store Connect 查出:
+# 这个 App 用过的最大构建号加 1, 所有平台共用. pubspec.yaml 里的 +1 只是本地构建的占位.
+# main 和发版 tag 的 iOS 构建签名后上传 TestFlight.
 on:
   push:
     branches: ["**"]
@@ -11,9 +15,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# main 和发版 tag 共用一个组, 一次只跑一个, 不取消正在跑的: 从查构建号到上传 TestFlight 之间
+# 不能有第二次构建插进来, 否则两次会拿到同一个号. 排队中的旧 main 构建会被新的替换, 这没关系;
+# 发版 tag 的构建如果在排队时被替换 (显示为取消), 重新运行即可.
+# 其余分支和 PR 按 ref 分组, 新的推送取消旧的.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ (github.ref == 'refs/heads/main' || github.ref_type == 'tag') && 'store' || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && github.ref_type != 'tag' }}
 
 permissions:
   contents: read
@@ -25,12 +33,22 @@ permissions:
 # - SENTRY_AUTH_TOKEN 和 Variables 中的 SENTRY_URL, SENTRY_ORG, SENTRY_PROJECT: 发版时上传符号表和 source map.
 # - SHOREBIRD_TOKEN: 发版时 Android 改用 shorebird release. 还需要仓库里有 shorebird.yaml.
 # - 环境 Cloudflare R2 的 R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET: 产物上传到 R2. 缺省时不上传.
+# - ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 和 Variables 中的 ASC_APP_ID: App Store Connect API 密钥 (App Manager 权限即可)
+#   和 App 的 Apple ID. 用来查构建号和上传 TestFlight. 缺省时构建号用 pubspec.yaml 里的占位, 不上传.
+# - IOS_DIST_CERT_P12_BASE64, IOS_DIST_CERT_PASSWORD, IOS_PROFILE_BASE64: 发布证书 (.p12) 和 App Store 描述文件,
+#   都是 base64. 缺省时 iOS 只做未签名构建.
 env:
   APP_CONFIG: ${{ secrets.APP_CONFIG }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   SENTRY_URL: ${{ vars.SENTRY_URL }}
   SENTRY_ORG: ${{ vars.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+  ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+  ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+  ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+  ASC_APP_ID: ${{ vars.ASC_APP_ID }}
+  # 构建号下限. 改用 App Store Connect 之前, 安卓包用 CI 运行号 (到过 50 左右) 做 versionCode, 新号要比它们大.
+  BUILD_NUMBER_MIN: 100
 
 jobs:
   check:
@@ -42,6 +60,7 @@ jobs:
       build-name: ${{ steps.version.outputs.build-name }}
       build-number: ${{ steps.version.outputs.build-number }}
       r2-prefix: ${{ steps.version.outputs.r2-prefix }}
+      testflight: ${{ steps.version.outputs.testflight }}
     steps:
       - uses: actions/checkout@v7
 
@@ -49,36 +68,52 @@ jobs:
       - id: fvm
         run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
 
-      # 发版 tag 决定版本名和构建号, Shorebird 补丁按它们找到对应的版本. 其余构建用 pubspec.yaml 的版本名和运行号.
-      # 以 v 开头但格式不对的 tag 直接失败, 免得当成 Nightly 构建出去.
+      # 版本名取自 pubspec.yaml, 发版 tag 里的版本名必须和它一致. 以 v 开头但格式不对的 tag 直接失败,
+      # 免得当成 Nightly 构建出去. 构建号见文件开头.
       - id: version
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          STORE_REF: ${{ github.ref == 'refs/heads/main' || github.ref_type == 'tag' }}
         run: |
-          pattern='^v([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)(-([A-Za-z0-9.]+))?$'
+          name=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          release=false
+          suffix=""
           if [ "$REF_TYPE" = tag ] && [[ "$REF_NAME" == v* ]]; then
+            pattern='^v([0-9]+\.[0-9]+\.[0-9]+)(-([A-Za-z0-9.]+))?$'
             if [[ "$REF_NAME" =~ -p[0-9]+$ ]] || ! [[ "$REF_NAME" =~ $pattern ]]; then
-              echo "::error::发版 tag 应写作 v<版本名>+<构建号>[-后缀], 如 v1.2.3+62-beta. 当前为 $REF_NAME"
+              echo "::error::发版 tag 应写作 v<版本名>[-后缀], 如 v1.2.3, v1.2.3-beta. 当前为 $REF_NAME"
               exit 1
             fi
-            name="${BASH_REMATCH[1]}"
-            number="${BASH_REMATCH[2]}"
-            {
-              echo "release=true"
-              echo "build-name=$name"
-              echo "build-number=$number"
-              echo "r2-prefix=release/${REF_NAME#v}" | tr '+' '-'
-            } >> "$GITHUB_OUTPUT"
-          else
-            name=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
-            {
-              echo "release=false"
-              echo "build-name=$name"
-              echo "build-number=${{ github.run_number }}"
-              echo "r2-prefix=nightly/$name-${{ github.run_number }}-${GITHUB_SHA::7}"
-            } >> "$GITHUB_OUTPUT"
+            if [ "${BASH_REMATCH[1]}" != "$name" ]; then
+              echo "::error::tag 的版本名 ${BASH_REMATCH[1]} 和 pubspec.yaml 的 $name 不一致"
+              exit 1
+            fi
+            release=true
+            suffix="${BASH_REMATCH[3]}"
           fi
+          # 有 App Store Connect 密钥时查号, 查询失败整个构建失败, 不猜号.
+          # 没有密钥 (如来自 fork 的 PR) 时用 pubspec.yaml 里的占位, 这样的构建不会上传.
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_APP_ID" ]; then
+            number=$(tool/build_number.sh)
+            testflight=$STORE_REF
+          else
+            number=$(sed -n 's/^version: *[^+]*+\([0-9]*\).*/\1/p' pubspec.yaml)
+            testflight=false
+          fi
+          if [ "$release" = true ]; then
+            prefix="release/$name-$number${suffix:+-$suffix}"
+          else
+            prefix="nightly/$name-$number-${GITHUB_SHA::7}"
+          fi
+          {
+            echo "release=$release"
+            echo "build-name=$name"
+            echo "build-number=$number"
+            echo "r2-prefix=$prefix"
+            echo "testflight=$testflight"
+          } >> "$GITHUB_OUTPUT"
+          echo "版本 $name ($number)" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: subosito/flutter-action@v2
         with:
@@ -229,6 +264,10 @@ jobs:
       IS_RELEASE: ${{ needs.check.outputs.release }}
       BUILD_NAME: ${{ needs.check.outputs.build-name }}
       BUILD_NUMBER: ${{ needs.check.outputs.build-number }}
+      TESTFLIGHT: ${{ needs.check.outputs.testflight }}
+      IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+      IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+      IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
     steps:
       - uses: actions/checkout@v7
 
@@ -256,13 +295,45 @@ jobs:
           fi
           echo "BUILD_ARGS=$args" >> "$GITHUB_ENV"
 
-      # TODO: 未签名构建, 只验证能否编译, 不混淆, 也不上传符号表. 有 Apple 开发者账号后加签名, TestFlight 上传和 shorebird release ios.
-      - run: flutter build ios --release --no-codesign $BUILD_ARGS
+      # 有证书和描述文件时签名打 IPA, 没有时只做未签名构建, 验证能否编译.
+      # TODO: 不混淆, 也不上传 Dart 符号表. 发版改用 shorebird release ios 后才能给 iOS 推补丁.
+      - name: Prepare signing
+        if: env.IOS_DIST_CERT_P12_BASE64 != ''
+        run: |
+          tool/ios_signing.sh setup
+          echo "SIGNED=true" >> "$GITHUB_ENV"
 
-      - name: Package Runner.app
-        run: ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
+      - name: Build IPA
+        if: env.SIGNED == 'true'
+        run: flutter build ipa --release --export-options-plist=build/ios/ExportOptions.plist $BUILD_ARGS
+
+      - name: Build unsigned
+        if: env.SIGNED != 'true'
+        run: |
+          flutter build ios --release --no-codesign $BUILD_ARGS
+          ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
+
+      # 上传是同步的, 命令返回时 App Store Connect 的上传记录里已经有这个构建, 下一次构建查号能看到它.
+      - name: Upload to TestFlight
+        if: env.SIGNED == 'true' && env.TESTFLIGHT == 'true'
+        run: |
+          tool/testflight_upload.sh build/ios/ipa/*.ipa
+          echo "已上传 TestFlight: $BUILD_NAME ($BUILD_NUMBER)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up signing
+        if: always()
+        run: tool/ios_signing.sh cleanup
 
       - uses: actions/upload-artifact@v7
+        if: env.SIGNED == 'true'
+        with:
+          name: ios
+          path: build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v7
+        if: env.SIGNED != 'true'
         with:
           name: ios-unsigned
           path: build/ios/Runner.app.zip
@@ -362,6 +433,9 @@ jobs:
           if [ -d dist/android ]; then
             cp dist/android/flutter-apk/app-release.apk "$out/eat-$BUILD_NAME.apk"
             cp dist/android/bundle/release/app-release.aab "$out/eat-$BUILD_NAME.aab"
+          fi
+          if [ -d dist/ios ]; then
+            cp dist/ios/*.ipa "$out/eat-$BUILD_NAME.ipa"
           fi
           if [ -d dist/ios-unsigned ]; then
             cp dist/ios-unsigned/Runner.app.zip "$out/eat-$BUILD_NAME-ios-unsigned.zip"
