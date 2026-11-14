@@ -53,7 +53,8 @@ enum ShopCategory {
   hotPot('火锅麻辣烫'),
   grill('烧烤炸串'),
   soup('汤粥'),
-  fastFood('面点快餐');
+  fastFood('面点快餐'),
+  japaneseKorean('日韩料理');
 
   const new(this.api);
 

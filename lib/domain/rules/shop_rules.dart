@@ -53,7 +53,7 @@ abstract final class ShopRules {
       ShopCategory.grill => StageColor.chili,
       ShopCategory.soup => StageColor.broth,
       ShopCategory.fastFood => StageColor.bamboo,
-      null => StageColor.broth,
+      ShopCategory.japaneseKorean || null => StageColor.broth,
     };
   }
 

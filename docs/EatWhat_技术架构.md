@@ -726,7 +726,7 @@ extension RefCache on Ref {
 
 | 值 | 颜色 | 深浅 | 文字 | 次级文字 | 次按钮底 | 转盘桌面 / 细边 | 实心按钮 | 菜品分类默认 | 店铺默认 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 | 汤粥；没有品类 |
+| `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 | 汤粥、日韩料理；没有品类 |
 | `mango` | `#ffcb45` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品甜品；「我的」默认 | 粉面 |
 | `bamboo` | `#d8b27a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤 | 面点快餐 |
 | `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 | 烧烤炸串 |

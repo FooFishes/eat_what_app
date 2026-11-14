@@ -38,6 +38,10 @@ void main() {
       StageColor.porcelain,
     );
     expect(ShopRules.stageOf(shop()), StageColor.broth);
+    expect(
+      ShopRules.stageOf(shop(categories: [ShopCategory.japaneseKorean])),
+      StageColor.broth,
+    );
   });
 
   test('推荐率以堂食为主，满 3 条才显示，按整数百分比四舍五入', () {
