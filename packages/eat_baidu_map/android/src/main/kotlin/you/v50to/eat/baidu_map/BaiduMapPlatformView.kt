@@ -18,7 +18,7 @@ import com.baidu.mapapi.map.Overlay
 import com.baidu.mapapi.map.PolygonOptions
 import com.baidu.mapapi.map.PolylineDottedLineType
 import com.baidu.mapapi.map.Stroke
-import com.baidu.mapapi.map.TextureMapView
+import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
 import io.flutter.plugin.common.BinaryMessenger
@@ -43,8 +43,13 @@ class BaiduMapViewFactory(
 }
 
 /**
- * 一张百度地图. 用 `TextureMapView`: 基于 TextureView, Flutter 能用纹理合成叠加组件和裁切;
- * 普通 `MapView` 基于 SurfaceView, 会迫使 Flutter 退回更慢的合成方式.
+ * 一张百度地图. 用基于 SurfaceView 的 `MapView`, Flutter 见到 SurfaceView 会把它放进虚拟显示器,
+ * 画面作为纹理参与合成, 照样能裁切和叠组件.
+ * 不用 `TextureMapView`: 纹理合成要靠视图树把重绘通知给包装层, 部分机型 (华为 EMUI 10 实测) 收不到,
+ * 地图画了新的一帧, Flutter 却不出帧, 拖动时画面停住. 混合合成能动, 但地图上有组件在动时帧率低三到五成.
+ *
+ * TODO: 上面的结论只在一台 EMUI 10 机型 (HMA-AL00) 上比过.
+ * 虚拟显示器和混合合成在其他机型和 Android 版本上的表现还要调研, 再决定是否换方案.
  *
  * 浮层盖住的区域 ([setInsets]) 之外剩下的部分叫可见区域.
  * 相机的中心总是可见区域的中心: 移动时把 `targetScreen` 设成它, 读取时按屏幕点反算坐标.
@@ -60,7 +65,7 @@ class BaiduMapPlatformView(
     private val suffix = viewId.toString()
     private val events = MapViewFlutterApi(messenger, suffix)
     private val density = context.resources.displayMetrics.density
-    private val mapView: TextureMapView
+    private val mapView: MapView
     private val map: BaiduMap
     private val markers = HashMap<String, Marker>()
     private val markerIds = IdentityHashMap<Marker, String>()
@@ -85,7 +90,7 @@ class BaiduMapPlatformView(
             .compassEnabled(false)
             .zoomControlsEnabled(false)
             .scaleControlEnabled(true)
-        mapView = TextureMapView(context, options)
+        mapView = MapView(context, options)
         map = mapView.map
         map.setMaxAndMinZoomLevel(params.double("maxZoom").toFloat(), params.double("minZoom").toFloat())
         map.uiSettings.apply {

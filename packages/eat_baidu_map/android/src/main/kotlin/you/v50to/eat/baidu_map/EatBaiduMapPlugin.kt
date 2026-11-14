@@ -101,7 +101,7 @@ class EatBaiduMapPlugin : FlutterPlugin, ActivityAware, SdkHostApi {
 }
 
 /**
- * 把宿主 Activity 的前后台切换转给所有地图. `TextureMapView` 要随 Activity 调 `onResume` 和 `onPause`.
+ * 把宿主 Activity 的前后台切换转给所有地图. `MapView` 要随 Activity 调 `onResume` 和 `onPause`.
  */
 class ViewLifecycle : Application.ActivityLifecycleCallbacks {
     var activity: Activity? = null
