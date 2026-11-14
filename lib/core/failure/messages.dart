@@ -74,6 +74,7 @@ abstract final class BizCodes {
 
   /// 账号在注销冷静期内. 登录时 `data.deleteAt` 是彻底删除的时间 (Unix 毫秒).
   ///
+  /// 在申请注销的设备上登录时带上撤销凭据即撤销, 不会收到该码.
   /// 冷静期内服务端让账号的所有会话下线, 带凭证的请求收到该码时按登录过期处理.
   static const accountDeletionPending = 30017;
 
@@ -131,6 +132,7 @@ const failureMessages = <Object, String>{
   BizCodes.foodNotFound: '这道菜已删除',
   BizCodes.restaurantNotFound: '这家店已删除',
   BizCodes.duplicateDish: '这家店已有这道菜',
+  BizCodes.accountDeletionPending: '账号注销中，在申请注销的设备上重新登录可以撤销',
 };
 
 /// 业务码所属的失败类别.

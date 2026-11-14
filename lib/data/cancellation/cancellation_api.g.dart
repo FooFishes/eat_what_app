@@ -6,21 +6,12 @@ part of 'cancellation_api.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-CancellationStatusDto _$CancellationStatusDtoFromJson(
+DeletionRequestedDto _$DeletionRequestedDtoFromJson(
   Map<String, dynamic> json,
-) => CancellationStatusDto(
-  requestId: json['requestId'] as String?,
-  phase: json['phase'] as String?,
-  deadline: json['deadline'] as String?,
-  complete: json['complete'] as bool?,
+) => DeletionRequestedDto(
+  deleteAt: (json['deleteAt'] as num?)?.toInt(),
+  deletionKey: json['deletionKey'] as String?,
 );
-
-RecoveryGrantDto _$RecoveryGrantDtoFromJson(Map<String, dynamic> json) =>
-    RecoveryGrantDto(operationId: json['operationId'] as String?);
-
-RecoveryChallengeDto _$RecoveryChallengeDtoFromJson(
-  Map<String, dynamic> json,
-) => RecoveryChallengeDto(expiresAt: json['expiresAt'] as String?);
 
 // **************************************************************************
 // RiverpodGenerator

@@ -20,6 +20,7 @@ Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
   'code': instance.code,
   'device': instance.device,
   'policyVersion': ?instance.policyVersion,
+  'deletionKey': ?instance.deletionKey,
 };
 
 Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
@@ -29,6 +30,7 @@ Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
   'password': instance.password,
   'device': instance.device,
   'policyVersion': ?instance.policyVersion,
+  'deletionKey': ?instance.deletionKey,
 };
 
 CaptchaConfigDto _$CaptchaConfigDtoFromJson(Map<String, dynamic> json) =>

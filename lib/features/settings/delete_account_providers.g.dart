@@ -41,7 +41,7 @@ final class DeleteAccountProvider
   }
 }
 
-String _$deleteAccountHash() => r'79628ee9c5f56d660c50f8615982dcff2e578354';
+String _$deleteAccountHash() => r'36114d3398258f0d40e41d01b2d5d97fcc6c83e8';
 
 abstract class _$DeleteAccount extends $Notifier<DeleteAccountState> {
   DeleteAccountState build();

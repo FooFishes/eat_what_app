@@ -23,6 +23,9 @@ class const PhoneLoginRequestDto({
   required final String code,
   required final String device,
   final String? policyVersion,
+
+  /// 申请注销时保存在本机的撤销凭据. 账号在冷静期内时, 验证码通过后撤销注销.
+  final String? deletionKey,
 }) {
   Map<String, dynamic> toJson() => _$PhoneLoginRequestDtoToJson(this);
 }
@@ -33,6 +36,9 @@ class const PasswordLoginRequestDto({
   required final String password,
   required final String device,
   final String? policyVersion,
+
+  /// 同 [PhoneLoginRequestDto.deletionKey].
+  final String? deletionKey,
 }) {
   Map<String, dynamic> toJson() => _$PasswordLoginRequestDtoToJson(this);
 }

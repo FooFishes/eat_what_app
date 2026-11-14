@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
@@ -398,6 +400,60 @@ void main() {
     expect(env.adapter.sent('POST /auth/login'), hasLength(1));
     expect(find.text('人机验证未通过，请重试'), findsNothing);
     expect(find.text('操作失败，请重试'), findsNothing);
+  });
+
+  group('注销冷静期', () {
+    Future<void> passwordLogin(WidgetTester tester) async {
+      await _agreeAndOpenPhoneLogin(tester);
+      await tester.tap(find.text('用密码登录'));
+      await tester.pumpAndSettle();
+      await _enter(tester, '账号', 'chi_fan');
+      await _enter(tester, '密码', 'secret-1');
+      await tester.tap(find.text('登录'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('本机存着撤销凭据时随登录带上；登录的是申请注销的账号时删掉凭据', (tester) async {
+      env.secure.values['account.deletion'] = jsonEncode({
+        'userId': 42,
+        'key': 'k-1',
+      });
+      env.adapter.on('POST /auth/login', [_token()]);
+      final (container, _) = await pumpApp(tester, env);
+      await passwordLogin(tester);
+
+      expect(
+        env.adapter.sent('POST /auth/login').single.body,
+        containsPair('deletionKey', 'k-1'),
+      );
+      expect(container.read(sessionProvider), isA<SignedIn>());
+      expect(env.secure.values['account.deletion'], isNull);
+    });
+
+    testWidgets('登录了别的账号时保留凭据', (tester) async {
+      env.secure.values['account.deletion'] = jsonEncode({
+        'userId': 7,
+        'key': 'k-1',
+      });
+      env.adapter.on('POST /auth/login', [_token()]);
+      await pumpApp(tester, env);
+      await passwordLogin(tester);
+
+      expect(env.secure.values['account.deletion'], isNotNull);
+    });
+
+    testWidgets('没有撤销凭据时返回 30017：提示账号注销中，不登录', (tester) async {
+      env.adapter.on('POST /auth/login', [FakeAdapter.fail(30017)]);
+      final (container, _) = await pumpApp(tester, env);
+      await passwordLogin(tester);
+
+      expect(
+        env.adapter.sent('POST /auth/login').single.body,
+        isNot(contains('deletionKey')),
+      );
+      expect(find.text('账号注销中，在申请注销的设备上重新登录可以撤销'), findsOneWidget);
+      expect(container.read(sessionProvider), isA<SignedOut>());
+    });
   });
 
   group('封禁', () {

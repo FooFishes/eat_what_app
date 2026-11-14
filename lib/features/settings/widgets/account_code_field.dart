@@ -17,18 +17,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// 发到本账号绑定手机的验证码输入框. 右侧是 "获取验证码" 或重发倒计时.
 ///
 /// 发送前需完成人机验证. 发送失败时用轻提示说明原因.
-/// [phone] 是绑定的手机号, 打码后显示在输入框下方.
+/// [phone] 是绑定的手机号, 打码后显示在输入框下方. [purpose] 决定发哪种验证码.
 class AccountCodeField extends ConsumerStatefulWidget {
   const new({
     super.key,
     required this.controller,
     required this.phone,
+    this.purpose = AccountCodePurpose.password,
     this.errorText,
     this.onSubmitted,
   });
 
   final TextEditingController controller;
   final String? phone;
+  final AccountCodePurpose purpose;
   final String? errorText;
   final ValueChanged<String>? onSubmitted;
 
@@ -53,9 +55,11 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
   }
 
   Future<void> _send() async {
-    await ref.read(accountCodeProvider.notifier).send(_presentCaptcha);
+    await ref
+        .read(accountCodeProvider(widget.purpose).notifier)
+        .send(_presentCaptcha);
     if (!mounted) return;
-    final state = ref.read(accountCodeProvider);
+    final state = ref.read(accountCodeProvider(widget.purpose));
     if (state.failure case final failure?) {
       if (failure.kind == FailureKind.cancelled) return;
       showToast(
@@ -72,7 +76,7 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
       _focus.requestFocus();
       _ticker?.cancel();
       _ticker = Timer.periodic(const Duration(seconds: 1), (timer) {
-        final resendAt = ref.read(accountCodeProvider).resendAt;
+        final resendAt = ref.read(accountCodeProvider(widget.purpose)).resendAt;
         if (resendAt == null || !clock.now().isBefore(resendAt)) {
           timer.cancel();
         }
@@ -85,7 +89,7 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final code = ref.watch(accountCodeProvider);
+    final code = ref.watch(accountCodeProvider(widget.purpose));
     final resendAt = code.resendAt;
     final secondsLeft = resendAt == null
         ? 0

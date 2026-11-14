@@ -1,4 +1,3 @@
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -87,8 +86,7 @@ class AccountPage extends ConsumerWidget {
             SettingsRow(
               icon: EatIcons.delete,
               label: '注销账号',
-              pending: true,
-              onTap: () => showPending(context, PendingFeature.deleteAccount),
+              onTap: () => context.push(Paths.settingsDelete),
             ),
             const SizedBox(height: EatSpace.s24),
           ],

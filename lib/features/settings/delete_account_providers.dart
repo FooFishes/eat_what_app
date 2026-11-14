@@ -14,9 +14,6 @@ class const DeleteAccountState({
 
 @riverpod
 class DeleteAccount extends _$DeleteAccount {
-  /// 上次提交的申请. 失败重试时沿用, 服务端据此识别同一次申请.
-  CancellationDraft? _draft;
-
   @override
   DeleteAccountState build() => const DeleteAccountState();
 
@@ -25,24 +22,28 @@ class DeleteAccount extends _$DeleteAccount {
     state = DeleteAccountState(deleteComments: value);
   }
 
-  /// 申请注销. 成功返回 true, 之后由页面调用 [leave]; 失败时记录原因, 返回 false.
+  /// 申请注销. 有手机号的账号带 [code], 没有手机号的带 [password].
   ///
-  /// 同一次申请不能改变是否删除评论, 因此改了选择后换一份新的申请.
-  Future<bool> submit() async {
-    if (state.submitting) return false;
+  /// 成功返回 true, 之后由页面调用 [leave]; 失败时记录原因, 返回 false.
+  Future<bool> submit({String? code, String? password}) async {
+    final session = ref.read(sessionProvider);
+    if (state.submitting || session is! SignedIn) return false;
+    final userId = session.user?.id;
+    if (userId == null) return false;
     final deleteComments = state.deleteComments;
     state = DeleteAccountState(
       deleteComments: deleteComments,
       submitting: true,
     );
-    final repository = ref.read(cancellationRepositoryProvider);
-    final draft = switch (_draft) {
-      final draft? when draft.deleteComments == deleteComments => draft,
-      _ => repository.draft(deleteComments: deleteComments),
-    };
-    _draft = draft;
     try {
-      await repository.request(draft);
+      await ref
+          .read(cancellationRepositoryProvider)
+          .request(
+            userId: userId,
+            code: code,
+            password: password,
+            deleteComments: deleteComments,
+          );
       return true;
     } on AppFailure catch (e) {
       if (ref.mounted) {
@@ -52,6 +53,6 @@ class DeleteAccount extends _$DeleteAccount {
     }
   }
 
-  /// 申请成功后退出登录. 冷静期内账号不能用, 本机的会话也随之失效.
+  /// 申请成功后退出登录. 服务端已让全部设备下线, 这里清除本机的登录态.
   Future<void> leave() => ref.read(sessionProvider.notifier).logout();
 }

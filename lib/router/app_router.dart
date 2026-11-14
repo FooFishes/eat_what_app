@@ -2,7 +2,6 @@ import 'package:eat/core/telemetry/crash_reporter.dart';
 import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
-import 'package:eat/features/auth/restore_page.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/features/comments/comments_page.dart';
 import 'package:eat/features/comments/write_comment_page.dart';
@@ -136,10 +135,6 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _child(Paths.loginPassword, Paths.login),
             builder: (_, state) => PasswordLoginPage(query: _loginQuery(state)),
-          ),
-          GoRoute(
-            path: _child(Paths.loginRestore, Paths.login),
-            builder: (_, _) => const RestorePage(),
           ),
         ],
       ),

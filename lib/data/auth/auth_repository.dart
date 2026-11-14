@@ -55,10 +55,13 @@ class AuthRepository {
   ///
   /// [policyVersion] 是用户同意的隐私政策版本, 服务端还没发布政策时为 null.
   /// 服务端在核销验证码之前校验同意, 因此收到要求同意的业务码时可以用同一个验证码重试.
+  ///
+  /// [deletionKey] 是申请注销时保存在本机的撤销凭据, 账号在注销冷静期内时随登录撤销注销.
   Future<SignInResult> loginWithCode(
     String mobile,
     String code, {
     String? policyVersion,
+    String? deletionKey,
   }) async => _resultOf(
     await _auth.phoneLogin(
       PhoneLoginRequestDto(
@@ -66,15 +69,18 @@ class AuthRepository {
         code: code,
         device: _device,
         policyVersion: policyVersion,
+        deletionKey: deletionKey,
       ),
     ),
   );
 
   /// [account] 为手机号, 用户名或邮箱. [ticket] 是人机验证的票据, 服务端要求时才需要.
+  /// [deletionKey] 同 [loginWithCode].
   Future<SignInResult> loginWithPassword(
     String account,
     String password, {
     String? policyVersion,
+    String? deletionKey,
     CaptchaTicket? ticket,
   }) async => _resultOf(
     await _auth.passwordLogin(
@@ -83,6 +89,7 @@ class AuthRepository {
         password: password,
         device: _device,
         policyVersion: policyVersion,
+        deletionKey: deletionKey,
       ),
       captchaHeaders: ticket?.headers ?? const {},
     ),

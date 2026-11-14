@@ -15,7 +15,4 @@ enum PendingFeature {
 
   /// 给菜打口味标签、撤回和 "＋ 加标签". 后端 v2 的口味是菜品自身的属性, 没有投票接口.
   tasteVote,
-
-  /// 注销账号. 后端 v2 不提供注销接口.
-  deleteAccount,
 }

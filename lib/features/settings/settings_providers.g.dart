@@ -10,23 +10,30 @@ part of 'settings_providers.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(AccountCode)
-final accountCodeProvider = AccountCodeProvider._();
+final accountCodeProvider = AccountCodeFamily._();
 
 final class AccountCodeProvider
     extends $NotifierProvider<AccountCode, AccountCodeState> {
-  AccountCodeProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'accountCodeProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+  AccountCodeProvider._({
+    required AccountCodeFamily super.from,
+    required AccountCodePurpose super.argument,
+  }) : super(
+         retry: null,
+         name: r'accountCodeProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$accountCodeHash();
+
+  @override
+  String toString() {
+    return r'accountCodeProvider'
+        ''
+        '($argument)';
+  }
 
   @$internal
   @override
@@ -39,12 +46,50 @@ final class AccountCodeProvider
       providerOverride: $SyncValueProvider<AccountCodeState>(value),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AccountCodeProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
 }
 
-String _$accountCodeHash() => r'c764e2677d54f502f44d88b14fc53141b8e8c46f';
+String _$accountCodeHash() => r'6467167d188a34ff7df72d62baaa197e6895f543';
+
+final class AccountCodeFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          AccountCode,
+          AccountCodeState,
+          AccountCodeState,
+          AccountCodeState,
+          AccountCodePurpose
+        > {
+  AccountCodeFamily._()
+    : super(
+        retry: null,
+        name: r'accountCodeProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  AccountCodeProvider call(AccountCodePurpose purpose) =>
+      AccountCodeProvider._(argument: purpose, from: this);
+
+  @override
+  String toString() => r'accountCodeProvider';
+}
 
 abstract class _$AccountCode extends $Notifier<AccountCodeState> {
-  AccountCodeState build();
+  late final _$args = ref.$arg as AccountCodePurpose;
+  AccountCodePurpose get purpose => _$args;
+
+  AccountCodeState build(AccountCodePurpose purpose);
   @$mustCallSuper
   @override
   WhenComplete runBuild() {
@@ -57,7 +102,7 @@ abstract class _$AccountCode extends $Notifier<AccountCodeState> {
               Object?,
               Object?
             >;
-    return element.handleCreate(ref, build);
+    return element.handleCreate(ref, () => build(_$args));
   }
 }
 

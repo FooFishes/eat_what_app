@@ -1,26 +1,67 @@
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
+import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/settings/delete_account_providers.dart';
+import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/settings/widgets/account_code_field.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 注销账号: 说明删除和保留的内容以及冷静期, 让用户选择是否同时删除评论和回复.
+/// 注销账号: 说明删除和保留的内容以及冷静期, 让用户选择是否同时删除评论和回复, 再验证身份.
 ///
-/// 确认后提交申请并退出登录. 冷静期内在这台设备上重新登录可以撤销, 见登录流程的撤销注销页.
-class DeleteAccountPage extends ConsumerWidget {
+/// 绑定了手机号的账号用发到该号码的验证码验证, 没有手机号的用密码.
+/// 确认后提交申请并退出登录. 冷静期内在这台设备上重新登录即撤销注销.
+class DeleteAccountPage extends ConsumerStatefulWidget {
   const new({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DeleteAccountPage> createState() => _DeleteAccountPageState();
+}
+
+class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
+  final _code = TextEditingController();
+  final _password = TextEditingController();
+  String? _codeError;
+  String? _passwordError;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final c in [_code, _password]) {
+      c.addListener(() => setState(() {}));
+    }
+  }
+
+  @override
+  void dispose() {
+    _code.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
     final form = ref.watch(deleteAccountProvider);
+    final phone = switch (ref.watch(sessionProvider)) {
+      SignedIn(:final user?) => user.phone,
+      _ => null,
+    };
+    final ready =
+        !form.submitting &&
+        (phone != null
+            ? AccountRules.isSmsCode(_code.text)
+            : _password.text.isNotEmpty);
     final body = eat.text.body.copyWith(color: c.ink);
     Widget section(String title, String text) => Padding(
       padding: const EdgeInsets.only(bottom: EatSpace.s20),
@@ -43,7 +84,7 @@ class DeleteAccountPage extends ConsumerWidget {
                 children: [
                   const TextSpan(text: '申请后有 '),
                   TextSpan(text: '7', style: eat.text.count),
-                  const TextSpan(text: ' 天冷静期，期间账号停用，在当前设备重新登录可撤销；'),
+                  const TextSpan(text: ' 天冷静期，期间账号停用，在这台设备上重新登录即撤销；'),
                   TextSpan(text: '7', style: eat.text.count),
                   const TextSpan(text: ' 天后彻底删除。'),
                 ],
@@ -72,11 +113,28 @@ class DeleteAccountPage extends ConsumerWidget {
             ),
             const SizedBox(height: EatSpace.s20),
             section('之后', '原手机号可重新注册，此前绑定过的统一认证与校园邮箱也可用于新账号认证。'),
-            const SizedBox(height: EatSpace.s20),
+            Text('验证身份', style: eat.text.subhead.copyWith(color: c.ink)),
+            const SizedBox(height: EatSpace.s10),
+            if (phone != null)
+              AccountCodeField(
+                controller: _code,
+                phone: phone,
+                purpose: AccountCodePurpose.deleteAccount,
+                errorText: _codeError,
+              )
+            else
+              EatFormField(
+                label: '密码',
+                controller: _password,
+                obscureText: true,
+                autofillHints: const [AutofillHints.password],
+                errorText: _passwordError,
+              ),
+            const SizedBox(height: 40),
             EatButton.solid(
               '申请注销',
               loading: form.submitting,
-              onPressed: () => _confirm(context, ref),
+              onPressed: ready ? () => _confirm(byCode: phone != null) : null,
             ),
             const SizedBox(height: EatSpace.s24),
           ],
@@ -85,7 +143,8 @@ class DeleteAccountPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirm(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirm({required bool byCode}) async {
+    FocusScope.of(context).unfocus();
     final deleteComments = ref.read(deleteAccountProvider).deleteComments;
     final confirmed = await showEatDialog<bool>(
       context,
@@ -109,24 +168,36 @@ class DeleteAccountPage extends ConsumerWidget {
           ],
         ),
         subtitle: deleteComments
-            ? '7 天内在当前设备重新登录可撤销。评论和回复将一并删除。'
-            : '7 天内在当前设备重新登录可撤销。',
+            ? '7 天内在这台设备上重新登录即撤销。评论和回复将一并删除。'
+            : '7 天内在这台设备上重新登录即撤销。',
       ),
     );
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true || !mounted) return;
+    setState(() => _codeError = _passwordError = null);
     final notifier = ref.read(deleteAccountProvider.notifier);
-    if (await notifier.submit()) {
+    final submitted = await notifier.submit(
+      code: byCode ? _code.text : null,
+      password: byCode ? null : _password.text,
+    );
+    if (submitted) {
       // 先提示再退出登录. 退出后本页关闭, 提示在根浮层上, 仍会显示.
-      if (context.mounted) showToast(context, '已申请注销，7 天内重新登录可以撤销');
+      if (mounted) showToast(context, '已申请注销，7 天内在这台设备上登录可以撤销');
       await notifier.leave();
       return;
     }
-    if (!context.mounted) return;
+    if (!mounted) return;
     final failure = ref.read(deleteAccountProvider).failure;
     if (failure == null || failure.kind == FailureKind.cancelled) return;
-    showToast(
-      context,
-      failure.kind == FailureKind.unknown ? '申请失败，请重试' : failure.message,
-    );
+    switch (failure.code) {
+      case BizCodes.wrongCode:
+        setState(() => _codeError = failure.message);
+      case BizCodes.wrongPassword:
+        setState(() => _passwordError = '密码错误，请重新输入');
+      default:
+        showToast(
+          context,
+          failure.kind == FailureKind.unknown ? '申请失败，请重试' : failure.message,
+        );
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/data/auth/auth_repository.dart';
+import 'package:eat/data/cancellation/cancellation_repository.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/cross_border_consent.dart';
@@ -95,10 +96,16 @@ class PhoneLogin extends _$PhoneLogin {
     state = PhoneLoginState(resendAt: state.resendAt, submitting: true);
     final auth = ref.read(authRepositoryProvider);
     try {
+      final deletionKey = await _deletionKey(ref);
       final result = await _withConsent(
         ref,
         present,
-        (version) => auth.loginWithCode(mobile, code, policyVersion: version),
+        (version) => auth.loginWithCode(
+          mobile,
+          code,
+          policyVersion: version,
+          deletionKey: deletionKey,
+        ),
       );
       await _signIn(ref, result);
       if (ref.mounted) state = PhoneLoginState(resendAt: state.resendAt);
@@ -138,12 +145,14 @@ class PasswordLogin extends _$PasswordLogin {
     state = const PasswordLoginState(submitting: true);
     final auth = ref.read(authRepositoryProvider);
     try {
+      final deletionKey = await _deletionKey(ref);
       final result = await _withConsent(ref, consent, (version) async {
         try {
           return await auth.loginWithPassword(
             account,
             password,
             policyVersion: version,
+            deletionKey: deletionKey,
           );
         } on AppFailure catch (e) {
           if (!BizCodes.captchaRetryCodes.contains(e.code)) rethrow;
@@ -156,6 +165,7 @@ class PasswordLogin extends _$PasswordLogin {
                   account,
                   password,
                   policyVersion: version,
+                  deletionKey: deletionKey,
                   ticket: ticket,
                 ),
               );
@@ -188,13 +198,30 @@ Future<SignInResult> _withConsent(
   }
 }
 
+/// 本机保存的注销撤销凭据. 读取失败时不带, 不影响登录.
+Future<String?> _deletionKey(Ref ref) async {
+  try {
+    return await ref.read(cancellationRepositoryProvider).deletionKey();
+  } on Object {
+    return null;
+  }
+}
+
 /// 登录成功后记录协议同意, 再更新登录态. 守卫随后把页面导回原目标地址.
 ///
 /// 首次同意时在这里补启动崩溃上报等服务.
+/// 登录的是在本机申请注销的账号时, 注销已随登录撤销, 删除本机的撤销凭据.
 Future<void> _signIn(Ref ref, SignInResult result) async {
   await ref.read(privacyConsentStoreProvider).record();
   unawaited(ref.read(consentedServicesProvider.notifier).start());
   await ref.read(sessionProvider.notifier).signIn(result);
+  if (ref.read(sessionProvider) case SignedIn(user: final user?)) {
+    try {
+      await ref.read(cancellationRepositoryProvider).signedIn(user.id);
+    } on Object {
+      // 凭据留在本机不影响使用. 下次登录时服务端忽略它.
+    }
+  }
 }
 
 /// [failure] 是否为账号或密码错误. 是时输入框下划线显示 `warn` 色, 并提示账号或密码错误.

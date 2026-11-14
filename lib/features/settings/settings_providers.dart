@@ -5,6 +5,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/data/auth/auth_repository.dart';
+import 'package:eat/data/cancellation/cancellation_repository.dart';
 import 'package:eat/data/feedback/feedback_repository.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/data/place/place_repository.dart';
@@ -29,7 +30,16 @@ part 'settings_providers.g.dart';
 /// 验证码的重发间隔.
 const _resendInterval = Duration(seconds: 60);
 
-/// 发给本账号绑定手机的验证码: 设置用户名和设置或修改密码共用.
+/// 发给本账号绑定手机的验证码的用途. 不同用途的验证码不通用, 重发倒计时也分开.
+enum AccountCodePurpose {
+  /// 设置用户名, 设置或修改密码.
+  password,
+
+  /// 注销账号.
+  deleteAccount,
+}
+
+/// 发给本账号绑定手机的验证码.
 ///
 /// [resendAt] 之前不能重发. [failure] 是最近一次发送失败的原因.
 class const AccountCodeState({
@@ -41,17 +51,21 @@ class const AccountCodeState({
 @riverpod
 class AccountCode extends _$AccountCode {
   @override
-  AccountCodeState build() => const AccountCodeState();
+  AccountCodeState build(AccountCodePurpose purpose) =>
+      const AccountCodeState();
 
   /// 完成人机验证后发送. 用户关闭验证时不发送, 不开始倒计时.
   Future<void> send(CaptchaPresenter present) async {
     if (state.sending) return;
     state = AccountCodeState(resendAt: state.resendAt, sending: true);
-    final auth = ref.read(authRepositoryProvider);
+    final send = switch (purpose) {
+      AccountCodePurpose.password =>
+        ref.read(authRepositoryProvider).sendAccountCode,
+      AccountCodePurpose.deleteAccount =>
+        ref.read(cancellationRepositoryProvider).sendCode,
+    };
     try {
-      final sent = await ref
-          .read(captchaGateProvider)
-          .run(present, auth.sendAccountCode);
+      final sent = await ref.read(captchaGateProvider).run(present, send);
       if (!ref.mounted) return;
       state = AccountCodeState(
         resendAt: sent ? clock.now().add(_resendInterval) : state.resendAt,

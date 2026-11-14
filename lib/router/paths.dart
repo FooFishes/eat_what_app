@@ -18,11 +18,6 @@ abstract final class Paths {
   static const loginPhone = '/login/phone';
   static const loginPassword = '/login/password';
 
-  /// 撤销注销. 申请信息只在内存里, 刷新后回到登录页.
-  ///
-  /// 后端没有注销接口, 登录流程不再进入本页. 页面保留, 接口恢复后接回登录流程.
-  static const loginRestore = '/login/restore';
-
   /// 学生认证. `onboarding=1` 表示新号码注册后的认证引导, 左上角显示 "先逛逛" 而不是返回.
   ///
   /// `sso=success|failure`, `code` 和 `ticket` 是 Web 统一认证的结果, 由 `router/deep_links.dart` 从 [ssoCallback] 转入.
