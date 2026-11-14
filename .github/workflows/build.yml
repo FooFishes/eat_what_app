@@ -2,14 +2,15 @@ name: Build
 
 # 发版 tag 写作 v<版本名>, 可以带一个后缀, 如 v1.2.3, v1.2.3-beta. 版本名必须和 pubspec.yaml 一致.
 # 推送这样的 tag, 或在这样的 tag 上手动运行, 构建 Release. 补丁 tag (以 -p<N> 结尾) 交给 patch.yml.
-# 其余分支的 push 和手动运行构建 Nightly. PR 只构建, 不上传.
+# main 的 push 和不在发版 tag 上的手动运行构建 Nightly. 其他分支不自动构建, 要构建就在 Actions 页手动选分支运行.
+# PR (目标为 main) 只构建, 不上传.
 #
 # 版本名只在 pubspec.yaml 里维护. 构建号由 tool/build_number.sh 从 App Store Connect 查出:
 # 这个 App 用过的最大构建号加 1, 所有平台共用. pubspec.yaml 里的 +1 只是本地构建的占位.
 # main 和发版 tag 的 iOS 构建签名后上传 TestFlight.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
     tags: ["v*", "!v*-p[0-9]*"]
   pull_request:
     branches: [main]

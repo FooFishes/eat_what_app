@@ -158,7 +158,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 | --- | --- | --- | --- | --- |
 | Release | 推送发版 tag `v<版本名>+<构建号>[-后缀]`，如 `v1.2.3+62`、`v1.2.3+62-beta`；或在这样的 tag 上手动运行 `build.yml` | 取自 tag | `release/1.2.3-62-beta/` | 32 天 |
 | Patch | 推送补丁 tag，即发版 tag 加 `-p<N>`，如 `v1.2.3+62-beta-p1`；或手动运行 `patch.yml` | 补丁目标取自 tag，后缀为 `beta` 推到 beta 轨道，否则推到 stable | `patch/1.2.3-62/beta-p1/` | 32 天 |
-| Nightly | 其余所有分支的 push，和不在发版 tag 上的手动运行 | `pubspec.yaml` 的版本名，构建号取 `github.run_number` | `nightly/<版本名>-<构建号>-<短 SHA>/` | 2 天 |
+| Nightly | `main` 的 push，和不在发版 tag 上的手动运行（可选任意分支） | `pubspec.yaml` 的版本名，构建号取 `github.run_number` | `nightly/<版本名>-<构建号>-<短 SHA>/` | 2 天 |
 
 PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
 
