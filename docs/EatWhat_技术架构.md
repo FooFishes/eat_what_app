@@ -71,7 +71,7 @@ lib/
     rules/                  权限表、饭点、价格与名称校验、店铺的推荐率和舞台色（shop_rules.dart）、
                             消息 → 跳转、菜名断行、坐标转换和距离（geo_rules.dart）
   data/                     数据层：按后端资源分组，做 IO
-    auth/ consent/ user/ sessions/ food/ place/ recommend/ comment/ feedback/ notification/ upload/ history/ push/ …
+    auth/ consent/ user/ sessions/ food/ place/ recommend/ comment/ feedback/ notification/ upload/ history/ push/ telemetry/ …
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）。
                             place/ 是校区、商圈和餐厅（含编辑、修改记录、评价）；recommend/ 是推荐店铺和不想去这家（10.6）；
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
@@ -530,7 +530,6 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
   | `tasteVote` | 菜品详情「大家怎么说」的点词和「＋ 加标签」 | `tag_panel.dart`、`tasteVocabularyProvider` |
   | `growth` | 「我的」和他人主页的等级胶囊 | `data/growth/`、`growth_page.dart`、`/me/growth` 路由 |
   | `deleteAccount` | 账号与安全的「注销账号」 | `data/cancellation/`、注销页和撤销注销页、两条路由 |
-  | `personalizedRecommend` | 隐私的「个性化推荐」开关（显示为打开） | `UserRepository` 的开关读写 |
 
 - 审核没有入口要保留：`moderationStatus`、「已提交审核」和待审核的分支都已删除（产品 9.10）。
 
@@ -1380,7 +1379,7 @@ class PushNotice({
 
 ### 19.1 埋点
 
-自建，批量上报到业务后端的 `POST /telemetry/events`（依赖选型第 14 节 D5）。v2 删掉了上报同意的接口（`/telemetry/consent*`），同意隐私政策即开启，请求不再带 `consentRevision`。接口要登录，`{events: [{eventId: UUID, properties: {event, …}}]}`，每批最多 50 条，每人每分钟 120 条；只收下表除 `experiment_exposure` 以外的 10 种事件和各自固定的属性，一条不合法整批返回 10001。客户端还没接，先只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
+自建，批量上报到业务后端的 `POST /telemetry/events`（依赖选型第 14 节 D5）。同意隐私政策即开启，可以单独关闭（产品 7.5）：`GET/PUT/DELETE /telemetry/consent` 读、开、关，返回 `{enabled, retentionDays}`，关闭时服务端删除本人已收集的事件，之后上报的直接丢弃（`/telemetry/events` 的响应 `enabled=false`）。开关在隐私页（`data/telemetry/telemetry_api.dart`、`usageStatsSettingProvider`），对封禁中的账号也开放。请求不带 `consentRevision`。接口要登录，`{events: [{eventId: UUID, properties: {event, …}}]}`，每批最多 50 条，每人每分钟 120 条；只收下表除 `experiment_exposure` 以外的 10 种事件和各自固定的属性，一条不合法整批返回 10001。客户端还没接，先只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
 
 - 接口：`Analytics.track(事件)`。事件是一组固定的类型（`sealed class`），属性只有枚举、id、数字、时长，**没有自由文本**，从类型上保证不采集输入框内容（产品 12.5）。
 
@@ -1402,7 +1401,7 @@ class PushNotice({
 - 产品 12.5 的指标怎么算：定下来的人数看 `dish_decide` 或 `navigate_shop` 的去重用户；换菜次数、定下来用时看 `dish_decide` 的属性；加载失败率看 `load_failed` / `page_view`；认证率、留存、内容供给用服务端数据。
 - 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
 - 客户端接上之前：只在调试日志里打印，不上报（现状差距 2.1）。
-- 只在同意隐私政策后采集。
+- 只在同意隐私政策、且使用统计开着时采集；上报的响应 `enabled=false` 时停止上报。
 - 游客不采集：`/telemetry` 要求登录，游客期间的事件不记、不进队列。游客转化（点「先逛逛」后登录的比例）以后需要时再和后端定一个不要求登录的上报口。
 
 ### 19.2 崩溃上报

@@ -134,7 +134,6 @@ class UserApi {
   Future<void> unblock(int userId) =>
       _client.delete(UserEndpoints.block(userId));
 
-  // TODO: 后端 v2 删除了 `/user/recommendation-settings`, 隐私页的开关标为待接入, 不调用本方法. 后端恢复开关接口后由隐私页重新调用.
   /// 个性化推荐开关. 默认开启.
   Future<bool> personalized({CancelToken? cancelToken}) async => _personalized(
     await _client.get(

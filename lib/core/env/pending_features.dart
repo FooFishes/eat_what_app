@@ -21,7 +21,4 @@ enum PendingFeature {
 
   /// 注销账号. 后端 v2 不提供注销接口.
   deleteAccount,
-
-  /// 设置里的 "个性化推荐" 开关. 后端 v2 删除了 `/user/recommendation-settings`.
-  personalizedRecommend,
 }

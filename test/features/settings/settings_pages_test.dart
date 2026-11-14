@@ -47,7 +47,7 @@ void main() {
         );
   });
 
-  testWidgets('设置页列出隐私和通知，隐私开关读自己的设置，改了就保存；个性化推荐待接入', (tester) async {
+  testWidgets('设置页列出隐私和通知，隐私、个性化推荐和使用统计开关读自己的设置，改了就保存', (tester) async {
     env.adapter
       ..on('GET /user/userInfo', [
         FakeAdapter.ok({
@@ -56,7 +56,19 @@ void main() {
           'followingsVisible': true,
         }),
       ])
-      ..on('POST /user/changePrivacy', [FakeAdapter.ok()]);
+      ..on('POST /user/changePrivacy', [FakeAdapter.ok()])
+      ..on('GET /user/recommendation-settings', [
+        FakeAdapter.ok({'personalized': true}),
+      ])
+      ..on('PUT /user/recommendation-settings', [
+        FakeAdapter.ok({'personalized': false}),
+      ])
+      ..on('GET /telemetry/consent', [
+        FakeAdapter.ok({'enabled': true, 'retentionDays': 7}),
+      ])
+      ..on('DELETE /telemetry/consent', [
+        FakeAdapter.ok({'enabled': false, 'retentionDays': 7}),
+      ]);
     await pumpApp(
       tester,
       env,
@@ -78,16 +90,79 @@ void main() {
     });
 
     final personalized = find.widgetWithText(EatSwitch, '个性化推荐');
-    expect(tester.widget<EatSwitch>(personalized).pending, isTrue);
-    expect(
-      find.descendant(of: personalized, matching: find.text('待接入')),
-      findsOneWidget,
-    );
+    expect(tester.widget<EatSwitch>(personalized).pending, isFalse);
+    expect(tester.widget<EatSwitch>(personalized).value, isTrue);
+    await tester.ensureVisible(personalized);
     await tester.tap(find.text('个性化推荐'));
     await tester.pumpAndSettle();
-    expect(tester.widget<EatSwitch>(personalized).value, isTrue);
-    expect(env.adapter.sent('GET /user/recommendation-settings'), isEmpty);
+    expect(tester.widget<EatSwitch>(personalized).value, isFalse);
+    expect(env.adapter.sent('PUT /user/recommendation-settings').single.body, {
+      'personalized': false,
+    });
+
+    final usage = find.widgetWithText(EatSwitch, '使用统计');
+    expect(find.textContaining('保存 7 天'), findsOneWidget);
+    expect(tester.widget<EatSwitch>(usage).value, isTrue);
+    await tester.ensureVisible(usage);
+    await tester.pumpAndSettle();
+    await tester.tap(usage);
+    await tester.pumpAndSettle();
+    expect(tester.widget<EatSwitch>(usage).value, isFalse);
+    expect(env.adapter.sent('DELETE /telemetry/consent'), hasLength(1));
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('封禁中：个性化推荐弹封禁说明，不保存；使用统计照常能关', (tester) async {
+    env.adapter
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({
+          'displayName': '天凉被破王',
+          'fansVisible': true,
+          'followingsVisible': true,
+        }),
+      ])
+      ..on('GET /user/recommendation-settings', [
+        FakeAdapter.ok({'personalized': true}),
+      ])
+      ..on('GET /telemetry/consent', [
+        FakeAdapter.ok({'enabled': true, 'retentionDays': 7}),
+      ])
+      ..on('DELETE /telemetry/consent', [
+        FakeAdapter.ok({'enabled': false, 'retentionDays': 7}),
+      ]);
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(
+        user: CurrentUser(
+          id: 42,
+          nickname: '天凉被破王',
+          hasPassword: false,
+          verified: true,
+          banned: true,
+          banReason: '刷赞',
+        ),
+      ),
+      location: Paths.settingsPrivacy,
+    );
+
+    final personalized = find.widgetWithText(EatSwitch, '个性化推荐');
+    await tester.ensureVisible(personalized);
+    await tester.tap(find.text('个性化推荐'));
+    await tester.pumpAndSettle();
+    expect(find.text('账号封禁中，暂时不能修改隐私设置'), findsOneWidget);
+    expect(find.text('刷赞'), findsOneWidget);
+    expect(find.text('永久封禁'), findsOneWidget);
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /user/recommendation-settings'), isEmpty);
+
+    final usage = find.widgetWithText(EatSwitch, '使用统计');
+    await tester.ensureVisible(usage);
+    await tester.pumpAndSettle();
+    await tester.tap(usage);
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('DELETE /telemetry/consent'), hasLength(1));
     await tester.pump(const Duration(seconds: 2));
   });
 

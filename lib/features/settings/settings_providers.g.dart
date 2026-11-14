@@ -169,6 +169,56 @@ abstract class _$Personalized extends $AsyncNotifier<bool> {
   }
 }
 
+/// 使用统计开关. 关闭时服务端删除已收集的记录.
+
+@ProviderFor(UsageStatsSetting)
+final usageStatsSettingProvider = UsageStatsSettingProvider._();
+
+/// 使用统计开关. 关闭时服务端删除已收集的记录.
+final class UsageStatsSettingProvider
+    extends $AsyncNotifierProvider<UsageStatsSetting, UsageStats> {
+  /// 使用统计开关. 关闭时服务端删除已收集的记录.
+  UsageStatsSettingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'usageStatsSettingProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$usageStatsSettingHash();
+
+  @$internal
+  @override
+  UsageStatsSetting create() => UsageStatsSetting();
+}
+
+String _$usageStatsSettingHash() => r'2f1eab7149ac02be3904b247dcb91b76e6e83b73';
+
+/// 使用统计开关. 关闭时服务端删除已收集的记录.
+
+abstract class _$UsageStatsSetting extends $AsyncNotifier<UsageStats> {
+  FutureOr<UsageStats> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<UsageStats>, UsageStats>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<UsageStats>, UsageStats>,
+              AsyncValue<UsageStats>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(BlockedUsers)
 final blockedUsersProvider = BlockedUsersProvider._();
 

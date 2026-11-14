@@ -12,11 +12,13 @@ import 'package:eat/data/push/push_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
 import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/data/sessions/sessions_repository.dart';
+import 'package:eat/data/telemetry/telemetry_api.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/device_session.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/domain/models/push.dart';
+import 'package:eat/domain/models/usage_stats.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,6 +112,31 @@ class Personalized extends _$Personalized {
       await ref
           .read(userRepositoryProvider)
           .setPersonalized(personalized: personalized);
+      return null;
+    } on AppFailure catch (e) {
+      if (ref.mounted) state = AsyncData(before);
+      return e;
+    }
+  }
+}
+
+/// 使用统计开关. 关闭时服务端删除已收集的记录.
+@riverpod
+class UsageStatsSetting extends _$UsageStatsSetting {
+  @override
+  Future<UsageStats> build() =>
+      ref.watch(telemetryApiProvider).consent(cancelToken: ref.cancelToken());
+
+  /// 成功返回 null, 并采用服务端返回的开关. 失败时退回原值并返回失败原因.
+  Future<AppFailure?> set({required bool enabled}) async {
+    final before = state.value;
+    if (before == null) return null;
+    state = AsyncData(
+      UsageStats(enabled: enabled, retentionDays: before.retentionDays),
+    );
+    try {
+      final saved = await ref.read(telemetryApiProvider).set(enabled: enabled);
+      if (ref.mounted) state = AsyncData(saved);
       return null;
     } on AppFailure catch (e) {
       if (ref.mounted) state = AsyncData(before);

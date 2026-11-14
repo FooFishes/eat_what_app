@@ -1,4 +1,3 @@
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -17,16 +16,18 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 隐私页面: 是否公开关注和粉丝列表, 个性化推荐开关, 屏蔽的人.
+/// 隐私页面: 是否公开关注和粉丝列表, 个性化推荐开关, 使用统计开关, 屏蔽的人.
 ///
 /// 点击开关后立即更新显示, 保存失败时恢复原值并提示.
-/// 个性化推荐开关标为待接入, 显示默认的开启状态, 不读取也不保存.
+/// 使用统计对封禁中的账号也开放, 不经过权限拦截.
 class PrivacyPage extends ConsumerWidget {
   const new({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final privacy = ref.watch(privacyProvider);
+    final personalized = ref.watch(personalizedProvider);
+    final usage = ref.watch(usageStatsSettingProvider);
     Future<bool> allowed() =>
         guardAction(context, ref, Capability.changePrivacy);
     void report(AppFailure? failure) {
@@ -90,15 +91,40 @@ class PrivacyPage extends ConsumerWidget {
               loading(privacy, () => ref.invalidate(privacyProvider)),
             const SizedBox(height: 18),
             const ListGroupTitle('推荐'),
-            // TODO: 后端 v2 删除了个性化推荐开关的接口, 开关标为待接入. 后端恢复接口后改回读取和保存 personalizedProvider.
-            EatSwitch(
-              label: '个性化推荐',
-              description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
-              value: true,
-              onChanged: (_) =>
-                  showPending(context, PendingFeature.personalizedRecommend),
-              pending: true,
-            ),
+            if (personalized.value case final on?)
+              EatSwitch(
+                label: '个性化推荐',
+                description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
+                value: on,
+                onChanged: (on) async => report(
+                  !await allowed()
+                      ? null
+                      : await ref
+                            .read(personalizedProvider.notifier)
+                            .set(personalized: on),
+                ),
+              )
+            else
+              loading(personalized, () => ref.invalidate(personalizedProvider)),
+            const SizedBox(height: 18),
+            const ListGroupTitle('使用统计'),
+            if (usage.value case final stats?)
+              EatSwitch(
+                label: '使用统计',
+                description: [
+                  '记录你用了哪些功能，用来改进体验',
+                  if (stats.retentionDays case final days?) '保存 $days 天',
+                  '关闭后删除已收集的记录',
+                ].join('，'),
+                value: stats.enabled,
+                onChanged: (on) async => report(
+                  await ref
+                      .read(usageStatsSettingProvider.notifier)
+                      .set(enabled: on),
+                ),
+              )
+            else
+              loading(usage, () => ref.invalidate(usageStatsSettingProvider)),
             const SizedBox(height: 18),
             const ListGroupTitle('屏蔽'),
             SettingsRow(
