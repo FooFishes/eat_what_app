@@ -189,4 +189,32 @@ void main() {
     expect(top[0], lessThan(top[1]), reason: '营业中的店保持后端的距离顺序');
     expect(top[1], lessThan(top[2]));
   });
+
+  testWidgets('按菜名搜到的店写出搜到的那道菜和价格', (tester) async {
+    env.adapter
+      ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/search', [
+        FakeAdapter.ok(
+          pageJson([
+            {
+              ...restaurantJson(id: 1, name: '袁记云饺'),
+              'matchedFood': {'id': 5, 'name': '鲜虾云吞', 'price': 18},
+            },
+          ]),
+        ),
+      ]);
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.search,
+    );
+
+    await tester.enterText(find.byType(EditableText), '云吞');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('有「鲜虾云吞」 ¥18'), findsOneWidget);
+  });
 }

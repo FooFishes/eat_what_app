@@ -5,6 +5,7 @@ import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_dto.dart';
+import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/dish_revision.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -251,7 +252,7 @@ class PlaceRepository {
   // TODO: 搜店接口不排除已关门的店, 也不把它们排在最后. 后端提供排除参数后, 附近和选店改用该参数, 不再在客户端过滤.
   /// 搜索 [campusId] 校区内的店, 包括已关门的店. 不传 [sort] 时, 传入 [near] 按距离升序排列, 否则按新建时间倒序.
   ///
-  /// - [keyword] 匹配店名和地址.
+  /// - [keyword] 匹配店名, 地址和店里的菜名. 因菜名命中的店带 [Shop.matchedDish].
   /// - [radius] 单位为米, 需要同时传入 [near], 为空时不限范围.
   /// - 不传 [campusId] 时后端不按校区限定范围.
   /// - [categories] 和 [tastes] 各自命中任一即可. [delivery] 只看能点外卖的店.
@@ -369,8 +370,21 @@ class PlaceRepository {
               name: f.name!.trim(),
               price: f.price,
               photo: imageUrl(f.pictureUrl),
+              crop: switch (f.coverCrop) {
+                final crop? when imageUrl(f.pictureUrl) != null => CoverCrop(
+                  centerX: crop.centerX ?? 0.5,
+                  centerY: crop.centerY ?? 0.5,
+                  diameter: crop.diameter ?? 1,
+                ),
+                _ => const CoverCrop(),
+              },
             ),
       ],
+      matchedDish: switch (dto.matchedFood) {
+        MatchedFoodDto(:final id?, :final name?) when name.trim().isNotEmpty =>
+          ShopDish(id: id, name: name.trim(), price: dto.matchedFood!.price),
+        _ => null,
+      },
       distance: dto.distanceMeters?.round(),
     );
   }

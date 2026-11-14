@@ -1,3 +1,4 @@
+import 'package:eat/data/food/food_dto.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'place_dto.g.dart';
@@ -82,6 +83,9 @@ class const RestaurantDto({
   /// 游客为 null.
   final MyRatingsDto? myRatings,
   final List<SignatureFoodDto>? signatureFoods,
+
+  /// 搜店时因菜名命中的一道菜. 按店名或地址命中, 或不是搜索时为 null.
+  final MatchedFoodDto? matchedFood,
 }) {
   factory RestaurantDto.fromJson(Map<String, dynamic> json) =>
       _$RestaurantDtoFromJson(json);
@@ -108,9 +112,25 @@ class const SignatureFoodDto({
   final String? name,
   final double? price,
   final String? pictureUrl,
+
+  /// 封面的圆形取景. 没有时按居中的短边内切圆显示.
+  ///
+  /// 菜的舞台色 `stageColor` 不读: 店的舞台色按类型和品类定, 招牌菜不改变它 (产品 4.7).
+  final CoverCropDto? coverCrop,
 }) {
   factory SignatureFoodDto.fromJson(Map<String, dynamic> json) =>
       _$SignatureFoodDtoFromJson(json);
+}
+
+/// 搜店时因菜名命中的菜 (`RestaurantDtos.MatchedFood`). [price] 可能为 null.
+@JsonSerializable(createToJson: false)
+class const MatchedFoodDto({
+  final int? id,
+  final String? name,
+  final double? price,
+}) {
+  factory MatchedFoodDto.fromJson(Map<String, dynamic> json) =>
+      _$MatchedFoodDtoFromJson(json);
 }
 
 /// 评价的请求体. [scene] 为 `dine_in` 或 `delivery`.

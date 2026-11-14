@@ -112,7 +112,7 @@ class PlaceApi {
         RestaurantDto.fromJson,
       );
 
-  /// 搜店, 包含已关门的店. [keyword] 匹配店名和地址.
+  /// 搜店, 包含已关门的店. [keyword] 匹配店名, 地址和店里的菜名, 因菜名命中的店带 `matchedFood`.
   ///
   /// - 坐标可选, 必须成对传入. 不传 [sort] 时, 带坐标按距离升序排列, 不带按新建时间倒序.
   /// - [radius] 和 [ShopSort.distance] 都需要坐标.

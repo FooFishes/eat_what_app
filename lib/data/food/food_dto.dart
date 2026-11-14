@@ -36,7 +36,7 @@ class const FoodDto({
   final int? createdAt,
   final int? updatedAt,
 
-  // TODO: 后端 v2 不再保存舞台色, 备选色和封面取景, 响应中没有这三项. 后端恢复后按实际字段名核对.
+  /// 舞台色和两个备选色, 取值是 `stage-*` 去掉前缀. 没有保存时 [stageColor] 为 null, [stageAlternates] 为空.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
@@ -92,8 +92,7 @@ class const FoodTagsDto({
 ///
 /// - [pictures] 是上传后获得的存储 key, 第一张为封面.
 /// - [category] 和 [tags] 是中文原值.
-///
-/// 后端忽略不认识的字段, 因此保留 [stageColor], [stageAlternates], [coverCrop], 以便后端恢复保存后无需改动客户端.
+/// - [stageColor] 和 [stageAlternates] 要么都传, 要么都不传. [coverCrop] 是封面的圆形取景, 有照片时才传.
 @JsonSerializable(
   createFactory: false,
   includeIfNull: false,
@@ -108,8 +107,6 @@ class const CreateFoodDto({
   final List<String>? pictures,
   final List<String>? tags,
   final bool? signature,
-
-  // TODO: 后端 v2 不保存舞台色, 备选色和封面取景. 后端恢复后按实际字段名核对.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
@@ -137,7 +134,7 @@ class const EditFoodDto({
   final List<String>? tags,
   final bool? signature,
 
-  // TODO: 后端 v2 不保存舞台色, 备选色和封面取景. 后端恢复后按实际字段名核对.
+  /// 舞台色和备选色要一起改. 换了封面而没传 [coverCrop] 时, 服务端把取景改回居中.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,

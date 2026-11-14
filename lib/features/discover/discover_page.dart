@@ -521,12 +521,17 @@ class _TurntableStage extends ConsumerWidget {
                 child: Turntable(
                   items: [
                     for (final s in feed.shops)
-                      TurntableItem(
-                        image: networkImage(
-                          s.signatures.firstOrNull?.photo ?? s.photo,
-                          width: plate,
+                      switch (s.signatures.firstOrNull) {
+                        ShopDish(:final photo?, :final crop) => TurntableItem(
+                          image: networkImage(photo, width: plate),
+                          centerX: crop.centerX,
+                          centerY: crop.centerY,
+                          diameter: crop.diameter,
                         ),
-                      ),
+                        _ => TurntableItem(
+                          image: networkImage(s.photo, width: plate),
+                        ),
+                      },
                   ],
                   index: feed.index,
                   onIndexChanged: queue.select,

@@ -68,6 +68,11 @@ RestaurantDto _$RestaurantDtoFromJson(Map<String, dynamic> json) =>
       signatureFoods: (json['signatureFoods'] as List<dynamic>?)
           ?.map((e) => SignatureFoodDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      matchedFood: json['matchedFood'] == null
+          ? null
+          : MatchedFoodDto.fromJson(
+              json['matchedFood'] as Map<String, dynamic>,
+            ),
     );
 
 StatDto _$StatDtoFromJson(Map<String, dynamic> json) => StatDto(
@@ -86,6 +91,16 @@ SignatureFoodDto _$SignatureFoodDtoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String?,
       price: (json['price'] as num?)?.toDouble(),
       pictureUrl: json['pictureUrl'] as String?,
+      coverCrop: json['coverCrop'] == null
+          ? null
+          : CoverCropDto.fromJson(json['coverCrop'] as Map<String, dynamic>),
+    );
+
+MatchedFoodDto _$MatchedFoodDtoFromJson(Map<String, dynamic> json) =>
+    MatchedFoodDto(
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      price: (json['price'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$RatingRequestDtoToJson(RatingRequestDto instance) =>

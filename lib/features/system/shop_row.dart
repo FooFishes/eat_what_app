@@ -3,6 +3,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
@@ -12,7 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// - 缩略图依次取 [image], 门头照片. 都没有时为 `mist` 底.
 /// - 第一行依次是 "已关门", 距离, 商圈名.
-/// - 第二行是地址. 第三行依次取 [extra], 第一道招牌菜 (如 "招牌：鲜虾蟹籽云吞"). 店铺接口不带招牌菜, 只有推荐卡片有.
+/// - 第二行是地址. 第三行依次取 [extra], 搜店时因菜名命中的菜 (如 "有「鲜虾蟹籽云吞」¥18"),
+///   第一道招牌菜 (如 "招牌：鲜虾蟹籽云吞"). 店铺接口不带招牌菜, 只有推荐卡片有.
 /// - 推荐率按 `ShopRules.rateOf` 显示, 评价不满门槛时不显示. 外卖的推荐率写作 "外卖推荐".
 class ShopRow extends ConsumerWidget {
   const new({
@@ -36,8 +38,14 @@ class ShopRow extends ConsumerWidget {
     final eat = context.eat;
     final distance = ref.watch(distanceToProvider(shop.point));
     final where = [if (shop.closed) '已关门', ?distance, ?shop.hubName].join('  ');
-    final signature = shop.signatures.firstOrNull;
-    final signatureLine = signature == null ? null : '招牌：${signature.name}';
+    final dishLine = switch ((shop.matchedDish, shop.signatures.firstOrNull)) {
+      (final matched?, _) => [
+        '有「${matched.name}」',
+        ?DishRules.priceText(matched.price),
+      ].join(' '),
+      (null, final signature?) => '招牌：${signature.name}',
+      (null, null) => null,
+    };
     final rate = ShopRules.rateOf(shop);
     return EatListRow(
       leading: ListThumb(
@@ -48,7 +56,7 @@ class ShopRow extends ConsumerWidget {
       lines: [
         if (where.isNotEmpty) Text(where),
         if (shop.address case final address?) Text(address),
-        if (extra ?? signatureLine case final line?)
+        if (extra ?? dishLine case final line?)
           Text(line, style: TextStyle(color: eat.colors.inkSoft)),
       ],
       trailing: rate == null

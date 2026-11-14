@@ -153,6 +153,8 @@ void main() {
           'name': '鲜虾云吞',
           'price': 18,
           'pictureUrl': 'https://img.test/foods/5.jpg',
+          'stageColor': 'chili',
+          'coverCrop': {'centerX': 0.4, 'centerY': 0.6, 'diameter': 0.8},
         },
         {'id': 6, 'name': '紫菜汤', 'price': null, 'pictureUrl': null},
       ],
@@ -163,6 +165,21 @@ void main() {
       ('鲜虾云吞', 18, 'https://img.test/foods/5.jpg'),
       ('紫菜汤', null, null),
     ]);
+    final crop = shop!.signatures.first.crop;
+    expect((crop.centerX, crop.centerY, crop.diameter), (0.4, 0.6, 0.8));
+    expect(shop.signatures.last.crop.diameter, 1, reason: '没有照片时按居中');
+    expect(shop.matchedDish, isNull);
+  });
+
+  test('搜店时因菜名命中的店带上那道菜', () {
+    final shop = PlaceRepository.shopFromJson({
+      ...restaurantJson(id: 7, name: '袁记云饺'),
+      'matchedFood': {'id': 5, 'name': ' 鲜虾云吞 ', 'price': 18},
+    });
+
+    expect(shop?.matchedDish?.id, 5);
+    expect(shop?.matchedDish?.name, '鲜虾云吞');
+    expect(shop?.matchedDish?.price, 18);
   });
 
   test('商圈边界原样按 GCJ-02 解析，只取外环', () async {

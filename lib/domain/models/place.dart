@@ -1,3 +1,4 @@
+import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/dish_revision.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -152,7 +153,7 @@ class const MyShopRatings({
 
 /// 店里的一道菜的摘要, 用于推荐卡片的招牌菜.
 ///
-/// 摘要不含封面取景, 舞台上的盘子按居中的短边内切圆显示.
+/// [crop] 是封面的圆形取景, 服务端没有保存时居中.
 class const ShopDish({
   required final int id,
   required final String name,
@@ -160,6 +161,7 @@ class const ShopDish({
 
   /// 第一张照片. 没有照片时为 null.
   final String? photo,
+  final CoverCrop crop = const CoverCrop(),
 });
 
 /// 新建店时可能重复的已有店. [distance] 是到新店位置的距离, 单位米.
@@ -186,6 +188,7 @@ class const MapPlace({
 ///
 /// - [address] 是地址描述, 如 "万达金街 1 层".
 /// - [signatures] 和 [distance] 只有推荐卡片带. 店铺接口不返回招牌菜, 店铺页另行请求.
+/// - [matchedDish] 只有搜店结果带.
 class const Shop({
   required final int id,
   required final String name,
@@ -228,6 +231,9 @@ class const Shop({
   /// 已关门. 不出现在附近和推荐里, 不能再加菜.
   final bool closed = false,
   final List<ShopDish> signatures = const [],
+
+  /// 搜店时因菜名命中的一道菜. 只有搜店结果可能有值, 不带照片.
+  final ShopDish? matchedDish,
 
   /// 与请求坐标的距离, 单位米. 只有带坐标的推荐卡片有值.
   final int? distance,

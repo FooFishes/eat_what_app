@@ -691,7 +691,7 @@ extension RefCache on Ref {
 推荐的单位是店（产品第 8 节）。数据层在 `data/recommend/`（`RecommendApi`、`RecommendRepository`），发现页的转盘队列和抽屉列表在 `features/discover/discover_providers.dart`。
 
 - **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`campusId`、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。`mealTime` 总是显式传，按产品 4.5 的时间段算（后端不传时的默认边界是 10、14、21 点，和产品不同，已反馈）。离校区中心超过 5 km 时不带位置。
-- **卡片**：店铺详情的子集加 `signatureFoods`（最多 3 道）和 `distanceMeters`，用店铺的转换（`PlaceRepository.shopFromJson`）变成 `Shop`，招牌菜在 `signatures`，距离在 `distance`。缺 id 或坐标的卡片丢弃。舞台色用 `ShopRules.stageOf`（11.3）。
+- **卡片**：店铺详情的子集加 `signatureFoods`（最多 3 道）和 `distanceMeters`，用店铺的转换（`PlaceRepository.shopFromJson`）变成 `Shop`，招牌菜在 `signatures`（带封面的 `coverCrop`，转盘的盘子按它取景），距离在 `distance`。缺 id 或坐标的卡片丢弃。舞台色用 `ShopRules.stageOf`（11.3）。
 - **分批**：转盘每批 8 家，少于 5 家不用转盘。下一批一律请求 `page + 1`。游客按页码翻页，同一天的顺序不变；登录用户由后端按「用户 + 日期」去重，每次给当天还没推过的店，页码只回显，转盘、抽屉列表和不同场景、校区共用这一份记录，当天推完了从头再来。客户端按 id 去重，一批全是已经拿到过的店就当没有下一批。
 - **上一批**：每次拿到的非空结果按「校区 + 场景 + 饭点 + 类型」存一份（10.1），请求失败时先用它。
 - **地点就绪再拉**：本机的校区和场景读出来之前不请求（14.3），避免按默认值发出去的请求在后端被记成推荐过。
@@ -884,7 +884,7 @@ extension RefCache on Ref {
 ```
 
 - 发布即公开，不审核：`POST /foods/upload` 只返回菜的 id，直接打开详情。v2 不再带 `Idempotency-Key`（7.7）。
-- 请求体按后端 `FoodDtos`：`pictures`（key 数组，最多 6 张）、`category`（中文原值）、`tags`（口味，最多 3 个）、`signature`、`price`、`description`（最多 200 字）。舞台色、备选色和 `coverCrop` 照常带上，后端暂时忽略（13.6）。
+- 请求体按后端 `FoodDtos`：`pictures`（key 数组，最多 6 张）、`category`（中文原值）、`tags`（口味，最多 3 个）、`signature`、`price`、`description`（最多 200 字）。舞台色、备选色和 `coverCrop` 随菜保存（13.6）。
 - 招牌菜：每家店最多 3 道，满了返回 40002，加菜页在开关下就地提示。
 - 按照片预选：菜名或封面变了 1 秒后，满足「菜名填好、第一张照片传完、还没选分类」时调一次 `POST /foods/suggest-tags`（菜名、店 id、说明、最多 3 张已上传的 key），把返回的分类和口味预选上。未启用和识别失败都返回 40001，静默回到手动选择；每人每天 50 次；编辑时不调。
 - 编辑菜品：`PUT /foods/edit/{id}` 只提交改动的字段，返回 `{id, revisionId}`，没改动时 `revisionId` 为 null。菜品响应只有图片地址、没有 key，保留的旧图传不回去，所以照片只能整组替换：换了照片就提交新的一组 key 和新的舞台色、取景；不换照片就不提交这三项。成功后 `publishedCountProvider` 加一，相关列表和详情重新拉。
@@ -936,9 +936,9 @@ extension RefCache on Ref {
 
 ### 13.6 舞台色和裁切的来源
 
-- **菜**：发布、编辑照常让用户选色和取景，请求里带 `stageColor`、`stageAlternates`、`coverCrop`。v2 后端暂时不保存这三个字段（已请后端恢复，见 `docs/EatWhat_后端反馈.md`）。显示时响应里有就用；没有时舞台色用分类默认色（`DishRules.defaultStage`，没有分类用 `broth`），封面按居中内切圆。
-- **店铺和推荐卡片**：没有舞台色字段，用 `ShopRules.stageOf` 按类型和第一个品类映射（11.3）。推荐卡片里的招牌菜只有一张图的地址，盘子按居中裁切。
-- 不在显示时按封面现算颜色：那要新增按图片地址取色、缓存的基础设施，Web 上还要对象存储允许跨域读。2026-11-13 定为请后端恢复字段，客户端先用默认色过渡。
+- **菜**：发布、编辑让用户选色和取景，请求里带 `stageColor`、`stageAlternates`、`coverCrop`，后端随菜保存（2026-11-13 恢复）。显示时用响应里的；没有时舞台色用分类默认色（`DishRules.defaultStage`，没有分类用 `broth`），封面按居中内切圆。
+- **店铺和推荐卡片**：没有舞台色字段，用 `ShopRules.stageOf` 按类型和第一个品类映射（11.3）。推荐卡片里的招牌菜带 `coverCrop`，盘子按它取景；招牌菜的 `stageColor` 不用，店的颜色不随招牌菜变（产品 4.7）。
+- 不在显示时按封面现算颜色：那要新增按图片地址取色、缓存的基础设施，Web 上还要对象存储允许跨域读。
 
 ### 13.7 显示
 
