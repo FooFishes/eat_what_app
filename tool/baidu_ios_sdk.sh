@@ -38,6 +38,8 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 
 # 静态 framework 没有 Info.plist, xcodebuild -create-xcframework 需要它.
+# MinimumOSVersion 要和 App 的最低系统版本一致 (Package.swift 的 platforms 和 Runner 都是 15.0):
+# Xcode 把这些 framework 按 App 的最低版本嵌进 App, 两边不一致时 App Store Connect 以 90208 拒收.
 info_plist() {
   cat > "$1/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -50,7 +52,7 @@ info_plist() {
   <key>CFBundlePackageType</key><string>FMWK</string>
   <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleVersion</key><string>$VERSION</string>
-  <key>MinimumOSVersion</key><string>12.0</string>
+  <key>MinimumOSVersion</key><string>15.0</string>
 </dict>
 </plist>
 PLIST
