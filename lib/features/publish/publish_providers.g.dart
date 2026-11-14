@@ -222,61 +222,66 @@ final class HubAtFamily extends $Family
   String toString() => r'hubAtProvider';
 }
 
-/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-/// 没有时为 null.
+/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
 ///
-/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
+/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
 
-@ProviderFor(sameNameShop)
-final sameNameShopProvider = SameNameShopFamily._();
+@ProviderFor(shopDuplicates)
+final shopDuplicatesProvider = ShopDuplicatesFamily._();
 
-/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-/// 没有时为 null.
+/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
 ///
-/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
+/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
 
-final class SameNameShopProvider
-    extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
-    with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
-  /// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-  /// 没有时为 null.
+final class ShopDuplicatesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<ShopDuplicate>>,
+          List<ShopDuplicate>,
+          FutureOr<List<ShopDuplicate>>
+        >
+    with
+        $FutureModifier<List<ShopDuplicate>>,
+        $FutureProvider<List<ShopDuplicate>> {
+  /// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
   ///
-  /// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
-  SameNameShopProvider._({
-    required SameNameShopFamily super.from,
-    required (String, GcjPoint) super.argument,
+  /// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+  ShopDuplicatesProvider._({
+    required ShopDuplicatesFamily super.from,
+    required (String, GcjPoint, String?) super.argument,
   }) : super(
          retry: null,
-         name: r'sameNameShopProvider',
+         name: r'shopDuplicatesProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$sameNameShopHash();
+  String debugGetCreateSourceHash() => _$shopDuplicatesHash();
 
   @override
   String toString() {
-    return r'sameNameShopProvider'
+    return r'shopDuplicatesProvider'
         ''
         '$argument';
   }
 
   @$internal
   @override
-  $FutureProviderElement<Shop?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $FutureProviderElement<List<ShopDuplicate>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<Shop?> create(Ref ref) {
-    final argument = this.argument as (String, GcjPoint);
-    return sameNameShop(ref, argument.$1, argument.$2);
+  FutureOr<List<ShopDuplicate>> create(Ref ref) {
+    final argument = this.argument as (String, GcjPoint, String?);
+    return shopDuplicates(ref, argument.$1, argument.$2, argument.$3);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is SameNameShopProvider && other.argument == argument;
+    return other is ShopDuplicatesProvider && other.argument == argument;
   }
 
   @override
@@ -285,34 +290,36 @@ final class SameNameShopProvider
   }
 }
 
-String _$sameNameShopHash() => r'd8e572fdb1ece7be3321034f5a8b91282bca5990';
+String _$shopDuplicatesHash() => r'79fb9cc4d861bb9cc753eeaa4b09c54a20ed6907';
 
-/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-/// 没有时为 null.
+/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
 ///
-/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
+/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
 
-final class SameNameShopFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
-  SameNameShopFamily._()
+final class ShopDuplicatesFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<ShopDuplicate>>,
+          (String, GcjPoint, String?)
+        > {
+  ShopDuplicatesFamily._()
     : super(
         retry: null,
-        name: r'sameNameShopProvider',
+        name: r'shopDuplicatesProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-  /// 没有时为 null.
+  /// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
   ///
-  /// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
+  /// 只用于提示, 用户可以继续新建. 输入停顿后再查.
 
-  SameNameShopProvider call(String name, GcjPoint point) =>
-      SameNameShopProvider._(argument: (name, point), from: this);
+  ShopDuplicatesProvider call(String name, GcjPoint point, String? poi) =>
+      ShopDuplicatesProvider._(argument: (name, point, poi), from: this);
 
   @override
-  String toString() => r'sameNameShopProvider';
+  String toString() => r'shopDuplicatesProvider';
 }
 
 /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
@@ -407,84 +414,6 @@ final class MapPlacesFamily extends $Family
 
   @override
   String toString() => r'mapPlacesProvider';
-}
-
-/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-
-@ProviderFor(poiShop)
-final poiShopProvider = PoiShopFamily._();
-
-/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-
-final class PoiShopProvider
-    extends $FunctionalProvider<AsyncValue<Shop?>, Shop?, FutureOr<Shop?>>
-    with $FutureModifier<Shop?>, $FutureProvider<Shop?> {
-  /// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-  PoiShopProvider._({
-    required PoiShopFamily super.from,
-    required (String, GcjPoint) super.argument,
-  }) : super(
-         retry: null,
-         name: r'poiShopProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$poiShopHash();
-
-  @override
-  String toString() {
-    return r'poiShopProvider'
-        ''
-        '$argument';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<Shop?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<Shop?> create(Ref ref) {
-    final argument = this.argument as (String, GcjPoint);
-    return poiShop(ref, argument.$1, argument.$2);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is PoiShopProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$poiShopHash() => r'df368426e17b5e2073c5da1a96803fe01b98409e';
-
-/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-
-final class PoiShopFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<Shop?>, (String, GcjPoint)> {
-  PoiShopFamily._()
-    : super(
-        retry: null,
-        name: r'poiShopProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  /// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-
-  PoiShopProvider call(String poi, GcjPoint point) =>
-      PoiShopProvider._(argument: (poi, point), from: this);
-
-  @override
-  String toString() => r'poiShopProvider';
 }
 
 /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.

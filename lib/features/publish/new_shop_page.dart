@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/place/place_repository.dart';
@@ -54,11 +53,9 @@ import 'package:go_router/go_router.dart';
 /// - 必填: 店名, 类型 (美食或甜点饮品), 地图选点, 地址描述. 所属商圈按地图中心自动判断.
 /// - 选填, 不改也能提交: 门头照片, 品类, 口味, 适合哪顿 (默认午饭和晚饭), 价位, 能点外卖.
 ///
-/// 已有店的提示:
-/// - 选中的地点已经有人建过店: 可以选那家, 也可以继续新建. 继续新建时不带地点提交, 同一地点可以有多家店, 如食堂的窗口.
-/// - 100 m 内有店名相同的店: 只能选那家或改名, 与后端查重一致.
-/// - 200 m 内有同名的店, 但更远或店名只差中间的空白: 只提示, 可以继续新建.
-/// - 提交时后端仍返回 "附近已有这家店" (40004): 重新查地点和同名, 显示已有店的入口. 店名不变时不能再继续新建.
+/// 已有店的提示: 选中的地点已经有人建过店, 或 200 m 内有同名 (忽略空白和大小写) 的店时, 由后端查出,
+/// 只提示, 可以选那家, 也可以继续新建. 同一地点可以有多家店, 如食堂的窗口, 继续新建时照样带上地点.
+/// 提交时后端仍说可能已有这家店 (40017) 时, 显示响应里的店; 用户选继续新建后带 `force` 重新提交.
 ///
 /// 创建成功后的去向:
 /// - [returnShop] 为 true 时, 带着新店返回上一页. 用于加菜页的 "换一家".
@@ -84,8 +81,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   /// 选中的地图候选. 手动添加时为 null.
   MapPlace? _place;
 
-  /// 用户在 "这家店已经有了" 的提示中选择了继续新建. 此时提交不带地点.
-  var _keepPoi = false;
   final _map = EatMapController();
   GcjPoint? _center;
   var _mapFailed = false;
@@ -100,11 +95,11 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   PriceBand? _priceBand;
   var _delivery = false;
 
-  /// 用户在同名店提示中选择了 "不是同一家, 继续建".
+  /// 用户在已有店的提示中选择了 "不是同一家, 继续新建". 提交时带 `force`.
   var _keepNew = false;
 
-  /// 提交时后端以 "附近已有这家店" 拒绝的店名. 店名不变时, 同名提示不能再继续新建.
-  String? _rejectedName;
+  /// 提交时后端以 "可能已有这家店" 拒绝时响应里的店. 改店名或位置后清空.
+  List<ShopDuplicate>? _rejected;
 
   /// 手指是否按在地图上.
   ///
@@ -147,8 +142,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _address.text = place.address;
     _center = place.point;
     _keepNew = false;
-    _keepPoi = false;
-    _rejectedName = null;
+    _rejected = null;
     _mapFailed = false;
     _editing = true;
   });
@@ -161,7 +155,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _address.clear();
     _center = null;
     _keepNew = false;
-    _rejectedName = null;
+    _rejected = null;
     _mapFailed = false;
     _editing = true;
   });
@@ -192,8 +186,8 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     setState(() => _busy = true);
     final name = _name.text.trim();
     final address = _address.text.trim();
-    final place = _keepPoi ? null : _place;
-    final poi = place?.uid;
+    final poi = _place?.uid;
+    final force = _keepNew;
     final meals = [...MealTime.values.where(_meals.contains)];
     final categories = [...ShopCategory.values.where(_categories.contains)];
     final tastes = [...Taste.values.where(_tastes.contains)];
@@ -224,6 +218,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
             categories: categories.isEmpty ? null : categories,
             tastes: tastes.isEmpty ? null : tastes,
             deliveryEnabled: delivery,
+            force: force,
           );
       if (!mounted) return;
       ref.read(publishedCountProvider.notifier).published();
@@ -250,8 +245,8 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      if (e.code == BizCodes.duplicateSubmit) {
-        await _onDuplicate(name, point, place);
+      if (shopDuplicatesOf(e) case final duplicates?) {
+        await _onDuplicate(duplicates);
         return;
       }
       await reportActionFailure(
@@ -264,34 +259,39 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     }
   }
 
-  // TODO: 40004 不区分地点重复和店名重复, 也不带已有店的 id. 重新查询可能找不到那家店, 此时只有轻提示. 后端在响应中带上已有店后直接给出入口.
-  /// 后端以 "附近已有这家店" 拒绝新建: 重新查这个地点和附近的同名店, 表单据此显示已有店的入口.
-  ///
-  /// - [place] 是这次提交带上的地点, 不带地点提交时为 null, 此时只可能是店名重复.
-  /// - 记下被拒绝的店名. 店名不变时, 同名提示不再提供 "继续建".
-  Future<void> _onDuplicate(
-    String name,
-    GcjPoint point,
-    MapPlace? place,
-  ) async {
-    showToast(context, '附近已有这家店');
+  /// 后端以 "可能已有这家店" 拒绝新建: 显示响应里的店, 让用户选它或确认继续新建.
+  Future<void> _onDuplicate(List<ShopDuplicate> duplicates) async {
+    showToast(context, '附近可能已有这家店');
     setState(() {
       _keepNew = false;
-      _rejectedName = name;
+      _rejected = duplicates;
     });
-    if (place != null) ref.invalidate(poiShopProvider(place.uid, place.point));
-    ref.invalidate(sameNameShopProvider(name, point));
     final field = _nameKey.currentContext;
     if (field != null && field.mounted) await Scrollable.ensureVisible(field);
   }
 
   /// 在已有店的提示中选择已有的店. 已关门的店不能选.
-  void _useExisting(Shop shop) {
-    if (!ensureShopOpen(context, shop)) return;
-    if (widget.returnShop) {
-      context.pop(shop);
-    } else {
-      context.pushReplacement(Paths.publishDish(shop.id));
+  ///
+  /// 加菜页的 "换一家" 要带回完整的店, 因此先读一次店铺详情.
+  Future<void> _useExisting(ShopDuplicate duplicate) async {
+    if (duplicate.closed) {
+      showToast(context, '这家店已关门，不能加菜');
+      return;
+    }
+    if (!widget.returnShop) {
+      context.pushReplacement(Paths.publishDish(duplicate.id));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final shop = await ref.read(placeRepositoryProvider).shop(duplicate.id);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (ensureShopOpen(context, shop)) context.pop(shop);
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (e.kind != FailureKind.cancelled) showToast(context, e.message);
     }
   }
 
@@ -334,19 +334,17 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     final address = _address.text.trim();
     final hub = point == null ? null : ref.watch(hubAtProvider(point));
     final place = _place;
-    final existing = place == null || _keepPoi
-        ? null
-        : ref.watch(poiShopProvider(place.uid, place.point)).value;
-    // 已经提示了同一个地点的店, 不再重复提示同名店.
-    final same = point == null || existing != null
-        ? null
-        : ref.watch(sameNameShopProvider(name, point)).value;
-    final sameBlocks =
-        same != null &&
-        point != null &&
-        (_rejectedName == name ||
-            ShopRules.blocksNewShop(same, name: name, point: point));
-    final showSame = same != null && (sameBlocks || !_keepNew);
+    final duplicate =
+        (_rejected ??
+                (point == null
+                    ? null
+                    : ref
+                          .watch(
+                            shopDuplicatesProvider(name, point, place?.uid),
+                          )
+                          .value))
+            ?.firstOrNull;
+    final showDuplicate = duplicate != null && !_keepNew;
     // 预填的店名和地址可能超出字数上限, 由用户删改.
     final nameTooLong = codePointLength(name) > PublishRules.shopNameMax;
     final addressTooLong = address.length > PublishRules.addressMax;
@@ -358,8 +356,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         point != null &&
         _kind != null &&
         _meals.isNotEmpty &&
-        existing == null &&
-        !showSame;
+        !showDuplicate;
     final mapReady = !_mapFailed && ref.watch(mapEngineProvider).available;
     final label = eat.text.meta.copyWith(color: c.inkMuted);
     Widget section(String title, Widget child) => Padding(
@@ -400,22 +397,18 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                       codePointLength(_name.text),
                       PublishRules.shopNameMax,
                     ),
-                    onChanged: (_) => setState(() => _keepNew = false),
+                    onChanged: (_) => setState(() {
+                      _keepNew = false;
+                      _rejected = null;
+                    }),
                   ),
-                  if (existing != null)
+                  if (showDuplicate)
                     _ExistingNotice(
-                      text: '这家店已经有了，叫「${existing.name}」',
-                      onUse: () => _useExisting(existing),
-                      keepLabel: '继续新建',
-                      onKeep: () => setState(() => _keepPoi = true),
-                    )
-                  else if (same != null && showSame && point != null)
-                    _ExistingNotice(
-                      text:
-                          '附近已有一家「${same.name}」，'
-                          '相距 ${GeoRules.formatDistance(GeoRules.distance(point, same.point))}',
-                      onUse: () => _useExisting(same),
-                      keepLabel: sameBlocks ? null : '不是同一家，继续新建',
+                      text: duplicate.samePlace
+                          ? '这家店已经有了，叫「${duplicate.name}」'
+                          : '附近已有一家「${duplicate.name}」，'
+                                '相距 ${GeoRules.formatDistance(duplicate.distance.toDouble())}',
+                      onUse: () => _useExisting(duplicate),
                       onKeep: () => setState(() => _keepNew = true),
                     ),
                   section(
@@ -444,7 +437,10 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                         key: ValueKey(place?.uid),
                         controller: _map,
                         initial: point,
-                        onMoved: (center) => setState(() => _center = center),
+                        onMoved: (center) => setState(() {
+                          _center = center;
+                          _rejected = null;
+                        }),
                         onFailed: () => setState(() => _mapFailed = true),
                       ),
                     )
@@ -596,8 +592,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
               ? '请选择店铺类型'
               : _meals.isEmpty
               ? '至少选一个饭点'
-              : sameBlocks
-              ? '附近已有同名的店，请换一个店名'
               : null,
           child: EatButton.solid(
             widget.returnShop ? '完成' : '下一步：去加菜',
@@ -636,16 +630,10 @@ class _Counter extends StatelessWidget {
 ///
 /// [keepLabel] 是继续新建的按钮文字. 为 null 时不能继续新建, 只有 "就选它".
 class _ExistingNotice extends StatelessWidget {
-  const new({
-    required this.text,
-    required this.onUse,
-    required this.keepLabel,
-    required this.onKeep,
-  });
+  const new({required this.text, required this.onUse, required this.onKeep});
 
   final String text;
   final VoidCallback onUse;
-  final String? keepLabel;
   final VoidCallback onKeep;
 
   @override
@@ -665,8 +653,7 @@ class _ExistingNotice extends StatelessWidget {
               spacing: EatSpace.s10,
               children: [
                 EatButton.outline('就选它', height: 36, onPressed: onUse),
-                if (keepLabel case final keepLabel?)
-                  EatButton.mist(keepLabel, height: 36, onPressed: onKeep),
+                EatButton.mist('不是同一家，继续新建', height: 36, onPressed: onKeep),
               ],
             ),
           ],

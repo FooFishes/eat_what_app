@@ -445,22 +445,6 @@ void main() {
       await unmountApp(tester, container);
     });
 
-    testWidgets('附近已有同名的店时在店名下提示，留在编辑页', (tester) async {
-      final env = shopEnv();
-      env.adapter.on('PUT /restaurant/edit/7', [
-        FakeAdapter.fail(40004, '附近已经有同名的店铺了'),
-      ]);
-      final container = await openEdit(tester, env);
-
-      await tester.enterText(find.byType(EditableText).first, '张亮麻辣烫');
-      await tester.tap(find.text('保存'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('附近已有同名的店，请换一个店名'), findsOneWidget);
-      expect(find.byType(ShopEditPage), findsOneWidget);
-      await unmountApp(tester, container);
-    });
-
     testWidgets('品类最多选 2 个；改过内容后返回要确认放弃', (tester) async {
       final env = shopEnv();
       final container = await openEdit(tester, env);

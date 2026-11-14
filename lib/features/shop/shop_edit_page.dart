@@ -43,7 +43,6 @@ enum _Source { camera, gallery }
 ///
 /// - 认证用户都能编辑任何一家店. 保存时检查权限.
 /// - 只提交改动的字段. 没有改动时保存直接返回.
-/// - 改名后附近 100 m 内已有同名的店时, 后端拒绝保存, 在店名下提示.
 /// - 改过内容后返回时确认是否放弃.
 class ShopEditPage extends ConsumerWidget {
   const new({super.key, required this.shopId});
@@ -89,7 +88,6 @@ class _Form extends ConsumerStatefulWidget {
 class _FormState extends ConsumerState<_Form> {
   late final _name = TextEditingController(text: widget.shop.name);
   late final _address = TextEditingController(text: widget.shop.address ?? '');
-  final _nameKey = GlobalKey();
 
   /// 新选的门头照片.
   PickedPhoto? _photo;
@@ -104,8 +102,6 @@ class _FormState extends ConsumerState<_Form> {
   late var _delivery = widget.shop.deliveryEnabled;
   late var _closed = widget.shop.closed;
 
-  /// 店名下方的提示, 如附近已有同名的店.
-  String? _nameError;
   var _busy = false;
 
   /// 已保存或已确认放弃, 返回时不再拦截.
@@ -211,14 +207,6 @@ class _FormState extends ConsumerState<_Form> {
     } on AppFailure catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      if (e.code == BizCodes.duplicateSubmit) {
-        setState(() => _nameError = '附近已有同名的店，请换一个店名');
-        final field = _nameKey.currentContext;
-        if (field != null && field.mounted) {
-          await Scrollable.ensureVisible(field);
-        }
-        return;
-      }
       await reportActionFailure(
         context,
         ref,
@@ -364,11 +352,9 @@ class _FormState extends ConsumerState<_Form> {
           SliverList.list(
             children: [
               EatFormField(
-                key: _nameKey,
                 label: '店名',
                 controller: _name,
                 hintText: '比如 袁记云饺',
-                errorText: _nameError,
                 textInputAction: TextInputAction.next,
                 inputFormatters: [
                   CodePointLengthLimitingFormatter(PublishRules.shopNameMax),
@@ -377,9 +363,6 @@ class _FormState extends ConsumerState<_Form> {
                   codePointLength(_name.text),
                   PublishRules.shopNameMax,
                 ),
-                onChanged: (_) {
-                  if (_nameError != null) setState(() => _nameError = null);
-                },
               ),
               const SizedBox(height: EatSpace.s24),
               EatFormField(

@@ -1,8 +1,6 @@
 import 'package:eat/design/tokens/stage_color.dart';
-import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
 
 /// 舞台和店铺行显示的推荐率. [percent] 是整数百分比, [count] 是该场景的评价条数.
 typedef ShopRateView = ({RatingScene scene, int percent, int count});
@@ -41,26 +39,6 @@ abstract final class ShopRules {
   ///
   /// 与搜店接口 `recommendedOnly` 的门槛相同, 附近页 "只看口碑好的" 筛出的店都能显示推荐率.
   static const rateMinCount = 3;
-
-  /// 同名查重的半径, 单位米.
-  ///
-  /// 与后端相同: 该范围内已有同名的店时, 新建和改名都返回 40004.
-  static const sameNameRadius = 100;
-
-  /// 新建店时提示同名店的半径, 单位米. 该范围内有同名 (忽略空白) 的店时提示用户.
-  static const sameNameHintRadius = 200;
-
-  /// 新建店时, 附近的同名店 [same] 是否阻止提交. 阻止时用户只能选已有的店或改名.
-  ///
-  /// 与后端查重一致: 与新店位置 [point] 相距不超过 [sameNameRadius], 且店名去掉首尾空白后完全相同.
-  /// 更远, 或店名只差中间的空白时只提示, 用户可以继续新建.
-  static bool blocksNewShop(
-    Shop same, {
-    required String name,
-    required GcjPoint point,
-  }) =>
-      same.name.trim() == name.trim() &&
-      GeoRules.distance(point, same.point) <= sameNameRadius;
 
   // TODO: 后端不保存店铺的舞台色. 后端恢复舞台色后, 响应中有舞台色时优先使用.
   /// 店铺的舞台色, 按类型和第一个品类映射. 甜点饮品店用 `porcelain`, 没有品类时用 `broth`.

@@ -26,6 +26,7 @@ abstract final class PlaceEndpoints {
   static const hubs = '/hub/list';
   static const locateHub = '/hub/locate';
   static const addRestaurant = '/restaurant/add';
+  static const duplicates = '/restaurant/duplicates';
   static String editRestaurant(int id) => '/restaurant/edit/$id';
   static String restaurant(int id) => '/restaurant/detail/$id';
   static const searchRestaurants = '/restaurant/search';
@@ -70,6 +71,22 @@ class PlaceApi {
     );
     return data == null ? null : decodeJson(data, HubDto.fromJson);
   }
+
+  /// 新建店时可能重复的店: 同一个地图地点 [poi], 或 200 m 内与 [name] 同名. 同地点的在前, 其余按距离.
+  Future<List<ShopDuplicateDto>> duplicates({
+    String? name,
+    required double gcjLat,
+    required double gcjLng,
+    String? poi,
+    CancelToken? cancelToken,
+  }) async => decodeList(
+    await _client.get(
+      PlaceEndpoints.duplicates,
+      query: {'name': ?name, 'gcjLng': gcjLng, 'gcjLat': gcjLat, 'poi': ?poi},
+      cancelToken: cancelToken,
+    ),
+    ShopDuplicateDto.fromJson,
+  );
 
   /// 新建店铺, 返回店铺 id. 店铺发布即公开.
   Future<int> createRestaurant(CreateRestaurantDto body) async =>

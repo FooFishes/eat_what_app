@@ -162,6 +162,18 @@ class const ShopDish({
   final String? photo,
 });
 
+/// 新建店时可能重复的已有店. [distance] 是到新店位置的距离, 单位米.
+///
+/// [samePlace] 为 true 时是同一个地图地点上的店, 否则是附近同名的店.
+class const ShopDuplicate({
+  required final int id,
+  required final String name,
+  final String address = '',
+  required final int distance,
+  final bool closed = false,
+  final bool samePlace = false,
+});
+
 /// 地图上的一个地点, 来自百度地点检索, 是新建店的候选. [uid] 提交时作为店的 `poi`.
 class const MapPlace({
   required final String uid,

@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/place/place_api.dart';
@@ -9,9 +11,6 @@ import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
-import 'package:eat/domain/rules/publish_rules.dart';
-import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_repository.g.dart';
@@ -80,22 +79,38 @@ class PlaceRepository {
     ];
   }
 
-  /// [point] 周围 [radius] 米内已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时返回 null.
+  /// 新建店时可能重复的店: 同一个地图地点 [poi], 或 [point] 200 m 内与 [name] 同名 (忽略空白和大小写).
   ///
-  /// 搜店接口不能按 `poi` 筛选, 所以取这一带的店逐个比较. 只看第一页, 200 m 内的店不会超过一页.
-  Future<Shop?> shopAtPoi(
-    String poi,
+  /// 同地点的在前, 其余按距离. [name] 为空且没有 [poi] 时为空列表.
+  Future<List<ShopDuplicate>> duplicates(
+    String name,
     GcjPoint point, {
-    int radius = 200,
+    String? poi,
     CancelToken? cancelToken,
   }) async {
-    final page = await searchShops(
-      near: point,
-      radius: radius,
-      pageSize: 100,
+    final trimmed = name.trim();
+    if (trimmed.isEmpty && poi == null) return const [];
+    final list = await _api.duplicates(
+      name: trimmed.isEmpty ? null : trimmed,
+      gcjLat: point.lat,
+      gcjLng: point.lng,
+      poi: poi,
       cancelToken: cancelToken,
     );
-    return page.items.where((s) => s.poi == poi).firstOrNull;
+    return [for (final dto in list) ?_duplicate(dto)];
+  }
+
+  static ShopDuplicate? _duplicate(ShopDuplicateDto dto) {
+    final id = dto.id;
+    if (id == null) return null;
+    return ShopDuplicate(
+      id: id,
+      name: dto.name?.trim() ?? '',
+      address: dto.address?.trim() ?? '',
+      distance: (dto.distanceMeters ?? 0).round(),
+      closed: dto.permanentlyClosed ?? false,
+      samePlace: dto.reason == 'poi',
+    );
   }
 
   /// 已开放的校区, 按运营设定的顺序排列.
@@ -131,7 +146,8 @@ class PlaceRepository {
   ///
   /// - [photoKey] 为门头照片上传后的存储 key.
   /// - 不传 [mealTimes] 时后端按午饭和晚饭处理.
-  /// - 附近已有同名的店, 或 [poi] 已被别的店使用时, 后端返回 40004.
+  /// - 同一个地图地点已有店, 或 200 m 内有同名的店时, 后端返回 40017, `data.duplicates` 是这些店
+  ///   (见 [shopDuplicatesOf]). 用户确认不是同一家后带 [force] 重新提交.
   Future<int> createShop({
     required String name,
     required String address,
@@ -144,6 +160,7 @@ class PlaceRepository {
     List<ShopCategory>? categories,
     List<Taste>? tastes,
     bool? deliveryEnabled,
+    bool force = false,
   }) => _api.createRestaurant(
     CreateRestaurantDto(
       name: name,
@@ -160,12 +177,13 @@ class PlaceRepository {
           : [for (final c in categories) c.api],
       tags: tastes == null ? null : [for (final t in tastes) t.api],
       deliveryEnabled: deliveryEnabled,
+      force: force ? true : null,
     ),
   );
 
   /// 修改店铺, 只提交 [change] 中的字段. 内容没有变化时后端不记修改记录, 返回 false.
   ///
-  /// 改名后附近已有同名的店时, 后端返回 40004.
+  /// 修改不查重, 真重复的店靠 "信息有误" 处理.
   Future<bool> editShop(int id, ShopChange change) async {
     final edited = await _api.editRestaurant(
       id,
@@ -221,39 +239,6 @@ class PlaceRepository {
   /// 当前内容已经是该版本时抛出 `BizCodes.stateNotAllowed`.
   Future<void> restore(int id, int revisionId) =>
       _api.restoreRestaurant(id, revisionId);
-
-  // TODO: 已有店名含空白而 [name] 不含时 (如已有 "麻辣 烫", 输入 "麻辣烫"), 关键词匹配不到已有店名. 搜店接口支持忽略空白匹配后改为只用一个关键词请求.
-  /// [point] 周围 [radius] 米内与 [name] 同名 (忽略空白) 的店铺, 包括已关门的店. 没有时返回 null.
-  ///
-  /// 搜店接口按子串匹配关键词, 不忽略空白.
-  /// 因此 [name] 含空白时, 原名和去掉空白的名字各请求一次, 合并结果后比较. 最多两次请求.
-  Future<Shop?> sameNameNearby(
-    String name,
-    GcjPoint point, {
-    int? campusId,
-    int radius = ShopRules.sameNameRadius,
-    CancelToken? cancelToken,
-  }) async {
-    final key = PublishRules.compactName(name);
-    if (key.isEmpty) return null;
-    final pages = await Future.wait([
-      for (final keyword in {name.trim(), key})
-        searchShops(
-          keyword: keyword,
-          campusId: campusId,
-          near: point,
-          radius: radius,
-          cancelToken: cancelToken,
-        ),
-    ]);
-    for (final shop in pages.expand((page) => page.items)) {
-      if (PublishRules.compactName(shop.name) == key &&
-          GeoRules.distance(point, shop.point) <= radius) {
-        return shop;
-      }
-    }
-    return null;
-  }
 
   Future<Shop> shop(int id, {CancelToken? cancelToken}) async {
     final shop = shopOf(await _api.restaurant(id, cancelToken: cancelToken));
@@ -458,6 +443,21 @@ class PlaceRepository {
     }
   }
 }
+
+/// 新建店被后端以 "可能已有这家店" (40017) 拒绝时, 响应里的已有店. 其他失败返回 null.
+List<ShopDuplicate>? shopDuplicatesOf(AppFailure failure) => switch (failure) {
+  AppFailure(
+    code: BizCodes.shopMayExist,
+    data: {'duplicates': final List<Object?> list},
+  ) =>
+    [
+      for (final item in list)
+        if (item is Map<String, dynamic>)
+          ?PlaceRepository._duplicate(ShopDuplicateDto.fromJson(item)),
+    ],
+  AppFailure(code: BizCodes.shopMayExist) => const [],
+  _ => null,
+};
 
 @Riverpod(keepAlive: true)
 PlaceRepository placeRepository(Ref ref) =>

@@ -142,8 +142,28 @@ class const CreateRestaurantDto({
   final List<String>? categories,
   final List<String>? tags,
   final bool? deliveryEnabled,
+
+  /// 用户确认不是同一家后为 true, 跳过查重.
+  final bool? force,
 }) {
   Map<String, dynamic> toJson() => _$CreateRestaurantDtoToJson(this);
+}
+
+/// 新建店时可能重复的店 (`RestaurantDtos.Duplicate`).
+///
+/// [reason] 为 `poi` (同一个地图地点) 或 `name` (200 m 内同名, 忽略空白和大小写).
+/// [distanceMeters] 是到新店位置的距离.
+@JsonSerializable(createToJson: false)
+class const ShopDuplicateDto({
+  final int? id,
+  final String? name,
+  final String? address,
+  final double? distanceMeters,
+  final bool? permanentlyClosed,
+  final String? reason,
+}) {
+  factory ShopDuplicateDto.fromJson(Map<String, dynamic> json) =>
+      _$ShopDuplicateDtoFromJson(json);
 }
 
 /// 修改店铺的请求体. 省略的字段不修改.

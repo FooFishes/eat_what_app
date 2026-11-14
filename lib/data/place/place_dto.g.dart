@@ -106,7 +106,18 @@ Map<String, dynamic> _$CreateRestaurantDtoToJson(
   'categories': ?instance.categories,
   'tags': ?instance.tags,
   'deliveryEnabled': ?instance.deliveryEnabled,
+  'force': ?instance.force,
 };
+
+ShopDuplicateDto _$ShopDuplicateDtoFromJson(Map<String, dynamic> json) =>
+    ShopDuplicateDto(
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      address: json['address'] as String?,
+      distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
+      permanentlyClosed: json['permanentlyClosed'] as bool?,
+      reason: json['reason'] as String?,
+    );
 
 Map<String, dynamic> _$EditRestaurantDtoToJson(EditRestaurantDto instance) =>
     <String, dynamic>{

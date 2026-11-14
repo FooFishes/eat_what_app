@@ -91,9 +91,7 @@ abstract final class BizCodes {
   /// 因此不归为无权限, 不触发账号状态刷新.
   static const stateNotAllowed = 40002;
 
-  /// 新建或修改店铺时, 附近 100 m 内已有同名的店, 或地图地点已被别的店使用. `data` 为空.
-  ///
-  /// 推送等其他模块也用该码表示重复提交, 含义随接口而定, 因此不登记全局提示, 由页面就地处理.
+  /// 重复提交. 推送等模块用该码, 含义随接口而定, 因此不登记全局提示, 由页面就地处理.
   static const duplicateSubmit = 40004;
 
   static const foodNotFound = 40008;
@@ -103,6 +101,11 @@ abstract final class BizCodes {
 
   /// 发布的菜品与该店已有菜品重名 (忽略空白). `data.id` 为已有菜品的 id.
   static const duplicateDish = 40016;
+
+  /// 新建店时同一个地图地点已有店, 或 200 m 内有同名的店. `data.duplicates` 是这些店.
+  ///
+  /// 只是提示, 用户确认不是同一家后带 `force` 重新提交.
+  static const shopMayExist = 40017;
 
   static const sessionCodes = {notLoggedIn};
   static const consentCodes = {consentRequired, consentPolicyChanged};

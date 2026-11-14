@@ -1,3 +1,4 @@
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/dish_revision.dart';
@@ -357,79 +358,102 @@ void main() {
     );
   });
 
-  test('店名带空白时，原名和去掉空白的名字各搜一次，合并后在 100 m 内查重', () async {
+  test('新建店前查可能重复的店：带店名、坐标和地点，同地点的标出来', () async {
     final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(pageJson([])),
-      FakeAdapter.ok(pageJson([restaurantJson(id: 8, name: '麻辣烫')])),
+    env.adapter.on('GET /restaurant/duplicates', [
+      FakeAdapter.ok([
+        {
+          'id': 8,
+          'name': '麻辣 烫',
+          'address': '南门',
+          'distanceMeters': 0.0,
+          'permanentlyClosed': false,
+          'reason': 'poi',
+        },
+        {
+          'id': 9,
+          'name': '麻辣烫',
+          'address': '',
+          'distanceMeters': 152.4,
+          'permanentlyClosed': true,
+          'reason': 'name',
+        },
+      ]),
     ]);
     final container = await env.container();
 
-    final shop = await container
+    final list = await container
         .read(placeRepositoryProvider)
-        .sameNameNearby(' 麻辣 烫 ', here, campusId: 2);
+        .duplicates(' 麻辣烫 ', here, poi: 'baidu-1');
 
-    expect(shop?.id, 8);
-    final sent = env.adapter.sent('GET /restaurant/search');
-    expect(
-      sent.map((r) => r.query['keyword']),
-      unorderedEquals(['麻辣 烫', '麻辣烫']),
+    expect(env.adapter.sent('GET /restaurant/duplicates').single.query, {
+      'name': '麻辣烫',
+      'gcjLng': here.lng,
+      'gcjLat': here.lat,
+      'poi': 'baidu-1',
+    });
+    expect(list.map((d) => d.id), [8, 9]);
+    expect(list.first.samePlace, isTrue);
+    expect(list.last.samePlace, isFalse);
+    expect(list.last.distance, 152);
+    expect(list.last.closed, isTrue);
+  });
+
+  test('没有店名也没有地点时不查', () async {
+    final env = TestEnv();
+    final container = await env.container();
+
+    final list = await container
+        .read(placeRepositoryProvider)
+        .duplicates('  ', here);
+
+    expect(list, isEmpty);
+    expect(env.adapter.sent('GET /restaurant/duplicates'), isEmpty);
+  });
+
+  test('新建店被 40017 拒绝时从 data.duplicates 取已有店；确认后带 force 提交', () async {
+    final env = TestEnv();
+    env.adapter.on('POST /restaurant/add', [
+      {
+        'code': 40017,
+        'msg': '附近已有一家麻辣烫',
+        'data': {
+          'duplicates': [
+            {
+              'id': 9,
+              'name': '麻辣烫',
+              'distanceMeters': 30.0,
+              'permanentlyClosed': false,
+              'reason': 'name',
+            },
+          ],
+        },
+        'timestamp': 0,
+      },
+      FakeAdapter.ok({'id': 12}),
+    ]);
+    final container = await env.container();
+    final repo = container.read(placeRepositoryProvider);
+
+    Future<int> create({bool force = false}) => repo.createShop(
+      name: '麻辣烫',
+      address: '南门',
+      point: here,
+      kind: ShopKind.food,
+      force: force,
     );
-    expect(sent.first.query, containsPair('campusId', 2));
-    expect(sent.first.query, containsPair('radius', 100));
-  });
+    final failure = await create().then<AppFailure?>(
+      (_) => null,
+      onError: (Object e) => e as AppFailure,
+    );
+    final duplicates = shopDuplicatesOf(failure!);
+    expect(duplicates?.single.id, 9);
+    expect(await create(force: true), 12);
 
-  test('店名不带空白时只查一次；已关门的同名店也算', () async {
-    final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(
-        pageJson([
-          {...restaurantJson(id: 9, name: '麻辣烫'), 'permanentlyClosed': true},
-        ]),
-      ),
-    ]);
-    final container = await env.container();
-
-    final shop = await container
-        .read(placeRepositoryProvider)
-        .sameNameNearby('麻辣烫', here);
-
-    expect(shop?.id, 9);
-    expect(shop?.closed, isTrue);
-    expect(env.adapter.sent('GET /restaurant/search'), hasLength(1));
-  });
-
-  test('名字只是包含关系的店不算同名', () async {
-    final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(pageJson([restaurantJson(name: '张亮麻辣烫')])),
-    ]);
-    final container = await env.container();
-
-    final shop = await container
-        .read(placeRepositoryProvider)
-        .sameNameNearby('麻辣烫', here);
-
-    expect(shop, isNull);
-  });
-
-  test('按 poi 找这个地点已有的店', () async {
-    final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(
-        pageJson([
-          restaurantJson(id: 1, poi: 'baidu-2'),
-          restaurantJson(id: 2, poi: 'baidu-1'),
-        ]),
-      ),
-    ]);
-    final container = await env.container();
-
-    final shop = await container
-        .read(placeRepositoryProvider)
-        .shopAtPoi('baidu-1', here);
-
-    expect(shop?.id, 2);
+    final [first, second] = env.adapter.sent('POST /restaurant/add').toList();
+    expect((first.body! as Map).containsKey('force'), isFalse);
+    expect(second.body, containsPair('force', true));
+    expect(shopDuplicatesOf(AppFailure.fromCode(10001)), isNull);
   });
 
   test('评价用 PUT 提交场景和评价，撤回用 DELETE 带场景，返回两个场景的评价', () async {

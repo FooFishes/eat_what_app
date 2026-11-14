@@ -15,7 +15,6 @@ import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
-import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:flutter/painting.dart';
@@ -75,25 +74,21 @@ Future<Hub?> hubAt(Ref ref, GcjPoint point) async {
   return ref.watch(placeRepositoryProvider).locateHub(point);
 }
 
-/// 新建店时, 当前校区内地图中心 [ShopRules.sameNameHintRadius] 米内的同名店 (忽略空白), 包括已关门的店.
-/// 没有时为 null.
+/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
 ///
-/// 是否阻止提交由 [ShopRules.blocksNewShop] 判断.
+/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
 @riverpod
-Future<Shop?> sameNameShop(Ref ref, String name, GcjPoint point) async {
-  if (name.trim().isEmpty) return null;
+Future<List<ShopDuplicate>> shopDuplicates(
+  Ref ref,
+  String name,
+  GcjPoint point,
+  String? poi,
+) async {
   await Future<void>.delayed(_debounce);
-  if (!ref.mounted) return null;
-  final campusId = ref.watch(currentPlaceProvider.select((p) => p.campus?.id));
+  if (!ref.mounted) return const [];
   return ref
       .watch(placeRepositoryProvider)
-      .sameNameNearby(
-        name,
-        point,
-        campusId: campusId,
-        radius: ShopRules.sameNameHintRadius,
-        cancelToken: ref.cancelToken(),
-      );
+      .duplicates(name, point, poi: poi, cancelToken: ref.cancelToken());
 }
 
 /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
@@ -110,12 +105,6 @@ Future<List<MapPlace>> mapPlaces(Ref ref, String keyword) async {
   if (!ref.mounted || scope?.point == null) return const [];
   return ref.watch(placeRepositoryProvider).mapPlaces(keyword, scope!.point!);
 }
-
-/// 已经关联了地图地点 [poi] 的店, 包括已关门的店. 没有时为 null.
-@riverpod
-Future<Shop?> poiShop(Ref ref, String poi, GcjPoint point) => ref
-    .watch(placeRepositoryProvider)
-    .shopAtPoi(poi, point, cancelToken: ref.cancelToken());
 
 /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
 @riverpod

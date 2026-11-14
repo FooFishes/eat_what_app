@@ -16,8 +16,18 @@ void main() {
     env = TestEnv();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/duplicates', [FakeAdapter.ok([])]);
   });
+
+  Map<String, Object?> duplicate({int id = 5, String reason = 'name'}) => {
+    'id': id,
+    'name': '麻辣烫',
+    'address': '万达金街',
+    'distanceMeters': 80.0,
+    'permanentlyClosed': false,
+    'reason': reason,
+  };
 
   /// 打开新建店页. 没配地图 Key, 直接进手动添加的表单, 店名预填 "麻辣烫".
   Future<(ProviderContainer, GoRouter)> open(WidgetTester tester) async {
@@ -150,41 +160,30 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('100 m 内有店名相同的店：只能选它或改名，改名后能提交', (tester) async {
-    env.adapter
-      ..on('GET /restaurant/search', [
-        FakeAdapter.ok(
-          pageJson([
-            restaurantJson(id: 5, name: '麻辣烫', lat: 36.6676, lng: 117.1402),
-          ]),
-        ),
-      ])
-      ..on('POST /restaurant/add', [
-        FakeAdapter.ok({'id': 9}),
-      ]);
+  testWidgets('附近有同名的店：只提示，「就选它」去那家店的加菜页，不新建', (tester) async {
+    env.adapter.on('GET /restaurant/duplicates', [
+      FakeAdapter.ok([duplicate()]),
+    ]);
     final (container, _) = await open(tester);
     await fill(tester);
 
-    expect(find.textContaining('附近已有一家「麻辣烫」'), findsOneWidget);
-    expect(find.text('就选它'), findsOneWidget);
-    expect(find.text('不是同一家，继续新建'), findsNothing);
-    expect(find.text('附近已有同名的店，请换一个店名'), findsOneWidget);
+    expect(find.text('附近已有一家「麻辣烫」，相距 80 m'), findsOneWidget);
+    final query = env.adapter.sent('GET /restaurant/duplicates').last.query;
+    expect(query, containsPair('name', '麻辣烫'));
+    expect(query.containsKey('poi'), isFalse);
     await submit(tester);
     expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
 
-    await tester.enterText(find.byType(EditableText).at(0), '麻辣烫二店');
-    await settle(tester);
-    expect(find.textContaining('附近已有一家'), findsNothing);
-    await submit(tester);
-    final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
-    expect(body, containsPair('name', '麻辣烫二店'));
+    await tap(tester, '就选它');
+    expect(env.adapter.sent('GET /restaurant/detail/5'), isNotEmpty);
+    expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
     await unmountApp(tester, container);
   });
 
-  testWidgets('100–200 m 内有同名的店：只提示，可以继续建', (tester) async {
+  testWidgets('同一个地图地点已有店也只提示；继续新建时带 force 提交', (tester) async {
     env.adapter
-      ..on('GET /restaurant/search', [
-        FakeAdapter.ok(pageJson([restaurantJson(id: 5, name: '麻辣烫')])),
+      ..on('GET /restaurant/duplicates', [
+        FakeAdapter.ok([duplicate(reason: 'poi')]),
       ])
       ..on('POST /restaurant/add', [
         FakeAdapter.ok({'id': 9}),
@@ -192,36 +191,45 @@ void main() {
     final (container, _) = await open(tester);
     await fill(tester);
 
-    expect(find.textContaining('附近已有一家「麻辣烫」'), findsOneWidget);
+    expect(find.text('这家店已经有了，叫「麻辣烫」'), findsOneWidget);
+    await tap(tester, '不是同一家，继续新建');
+    expect(find.textContaining('这家店已经有了'), findsNothing);
     await submit(tester);
-    expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
+    expect(
+      env.adapter.sent('POST /restaurant/add').single.body,
+      containsPair('force', true),
+    );
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('提交时后端说可能已有这家店 (40017)：显示响应里的店，继续新建后带 force 重新提交', (
+    tester,
+  ) async {
+    env.adapter.on('POST /restaurant/add', [
+      {
+        'code': 40017,
+        'msg': '附近已有一家麻辣烫',
+        'data': {
+          'duplicates': [duplicate()],
+        },
+        'timestamp': 0,
+      },
+      FakeAdapter.ok({'id': 9}),
+    ]);
+    final (container, _) = await open(tester);
+    await fill(tester);
+    expect(find.textContaining('附近已有一家'), findsNothing);
+
+    await submit(tester);
+    expect(find.text('附近可能已有这家店'), findsOneWidget);
+    expect(find.text('附近已有一家「麻辣烫」，相距 80 m'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     await tap(tester, '不是同一家，继续新建');
     await submit(tester);
-    expect(env.adapter.sent('POST /restaurant/add'), hasLength(1));
-    await unmountApp(tester, container);
-  });
 
-  testWidgets('提交时后端说附近已有这家店：提示，重新查同名，给出那家店的入口，不能再继续建', (tester) async {
-    env.adapter.on('POST /restaurant/add', [FakeAdapter.fail(40004)]);
-    final (container, _) = await open(tester);
-    await fill(tester);
-    expect(find.textContaining('附近已有一家'), findsNothing);
-
-    // 填表时还查不到, 提交前别人刚建好了同名的店.
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(pageJson([restaurantJson(id: 5, name: '麻辣烫')])),
-    ]);
-    await submit(tester);
-    expect(find.text('附近已有这家店'), findsOneWidget);
-    await settle(tester);
-
-    expect(find.textContaining('附近已有一家「麻辣烫」'), findsOneWidget);
-    expect(find.text('不是同一家，继续新建'), findsNothing);
-    expect(find.text('附近已有同名的店，请换一个店名'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 3));
-    await tap(tester, '就选它');
-    expect(env.adapter.sent('POST /restaurant/add'), hasLength(1));
-    expect(env.adapter.sent('GET /restaurant/detail/5'), isNotEmpty);
+    final [first, second] = env.adapter.sent('POST /restaurant/add').toList();
+    expect((first.body! as Map).containsKey('force'), isFalse);
+    expect(second.body, containsPair('force', true));
     await unmountApp(tester, container);
   });
 }

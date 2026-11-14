@@ -74,28 +74,4 @@ void main() {
     );
     expect(ShopRules.rateOf(shop()), isNull);
   });
-
-  test('新建店：100 m 内店名相同才挡住，更远或只差中间的空白只提示', () {
-    const here = GcjPoint(36.6681, 117.1412);
-    // 纬度每 0.0001 度约 11 m.
-    const near = GcjPoint(36.6688, 117.1412);
-    const far = GcjPoint(36.6694, 117.1412);
-    final existing = shop();
-    final at = Shop(
-      id: 2,
-      name: existing.name,
-      point: near,
-      kind: ShopKind.food,
-    );
-    expect(ShopRules.blocksNewShop(at, name: ' 袁记云饺 ', point: here), isTrue);
-    expect(ShopRules.blocksNewShop(at, name: '袁记 云饺', point: here), isFalse);
-    expect(
-      ShopRules.blocksNewShop(
-        Shop(id: 3, name: '袁记云饺', point: far, kind: ShopKind.food),
-        name: '袁记云饺',
-        point: here,
-      ),
-      isFalse,
-    );
-  });
 }

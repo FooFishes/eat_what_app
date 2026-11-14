@@ -26,8 +26,21 @@ void main() {
     map = FakeMapEngine();
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/duplicates', [FakeAdapter.ok([])]);
   });
+
+  /// 后端查出的同一地点上的店.
+  final samePlace = FakeAdapter.ok([
+    {
+      'id': 7,
+      'name': '袁记云饺',
+      'address': '舜泰广场',
+      'distanceMeters': 0.0,
+      'permanentlyClosed': false,
+      'reason': 'poi',
+    },
+  ]);
 
   Future<(dynamic, GoRouter)> open(WidgetTester tester, String name) async {
     final (container, router) = await pumpApp(
@@ -70,8 +83,11 @@ void main() {
     expect(find.text('先在地图上找找这家店'), findsOneWidget);
     await expectAccessible(tester);
     await tester.tap(find.text('袁记云饺(舜泰店)'));
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+    // 地图建好后报一次中心, 查重的防抖重新计时, 因此等两轮.
+    for (var i = 0; i < 2; i++) {
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
 
     expect(fieldText(tester, 0), '袁记云饺(舜泰店)');
     expect(fieldText(tester, 1), '舜泰广场 9 号楼 1-105');
@@ -88,16 +104,20 @@ void main() {
 
   testWidgets('选中的地点已经有人建过店：提示，可以直接选那家', (tester) async {
     map.places = [place];
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(pageJson([restaurantJson(id: 7, poi: 'baidu-1')])),
-    ]);
+    env.adapter.on('GET /restaurant/duplicates', [samePlace]);
     final (container, _) = await open(tester, '袁记');
     await tester.tap(find.text('袁记云饺(舜泰店)'));
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+    // 地图建好后报一次中心, 查重的防抖重新计时, 因此等两轮.
+    for (var i = 0; i < 2; i++) {
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
 
     expect(find.text('这家店已经有了，叫「袁记云饺」'), findsOneWidget);
-    expect(find.textContaining('附近已有一家'), findsNothing);
+    expect(
+      env.adapter.sent('GET /restaurant/duplicates').last.query,
+      containsPair('poi', 'baidu-1'),
+    );
     await tester.tap(find.text('就选它'));
     await tester.pumpAndSettle();
 
@@ -106,30 +126,32 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('选中的地点已经有店，也可以继续新建：提交时不带地点', (tester) async {
+  testWidgets('选中的地点已经有店，也可以继续新建：照样带上地点，并带 force', (tester) async {
     map.places = [place];
     env.adapter
-      ..on('GET /restaurant/search', [
-        FakeAdapter.ok(pageJson([restaurantJson(id: 7, poi: 'baidu-1')])),
-      ])
+      ..on('GET /restaurant/duplicates', [samePlace])
       ..on('POST /restaurant/add', [
         FakeAdapter.ok({'id': 9}),
       ]);
     final (container, _) = await open(tester, '袁记');
     await tester.tap(find.text('袁记云饺(舜泰店)'));
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+    // 地图建好后报一次中心, 查重的防抖重新计时, 因此等两轮.
+    for (var i = 0; i < 2; i++) {
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
 
     await tester.tap(find.text('下一步：去加菜'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('POST /restaurant/add'), isEmpty);
-    await tester.tap(find.text('继续新建'));
+    await tester.tap(find.text('不是同一家，继续新建'));
     await tester.pumpAndSettle();
     expect(find.textContaining('这家店已经有了'), findsNothing);
     await submit(tester);
 
     final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
-    expect(body.containsKey('poi'), isFalse);
+    expect(body['poi'], 'baidu-1');
+    expect(body['force'], true);
     expect(body['name'], '袁记云饺(舜泰店)');
     expect(body['gcjLat'], 36.6681);
     await unmountApp(tester, container);
