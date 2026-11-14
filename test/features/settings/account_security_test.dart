@@ -58,9 +58,10 @@ void main() {
 
   setUp(() => env = TestEnv());
 
-  testWidgets('登录设备：这台排最前，显示登录时间，可以让一台下线', (tester) async {
+  testWidgets('登录设备：这台排最前，显示设备名、登录和最近使用时间，可以让一台下线', (tester) async {
     // 页面按 clock 计算相对时间. testWidgets 的 clock 是模拟时钟, 与 DateTime.now() 不同步.
     final signedIn = clock.now().toUtc().subtract(const Duration(minutes: 10));
+    final used = clock.now().toUtc().subtract(const Duration(minutes: 3));
     env.adapter
       ..on('GET /auth/sessions', [
         FakeAdapter.ok({
@@ -68,7 +69,9 @@ void main() {
             {
               'sessionId': 's-web',
               'device': 'WEB',
+              'name': 'Chrome · macOS',
               'issuedAt': signedIn.toIso8601String(),
+              'lastActiveAt': used.toIso8601String(),
               'expiresAt': '2026-12-01T10:00:00Z',
               'current': false,
             },
@@ -92,7 +95,8 @@ void main() {
     );
 
     expect(find.text('当前设备'), findsOneWidget);
-    expect(find.text('10 分钟前登录'), findsOneWidget);
+    expect(find.text('Chrome · macOS'), findsOneWidget);
+    expect(find.text('10 分钟前登录，3 分钟前用过'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('iPhone')).dy,
       lessThan(tester.getTopLeft(find.text('网页版')).dy),

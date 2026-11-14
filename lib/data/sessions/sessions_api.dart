@@ -48,12 +48,17 @@ class const DeviceSessionPageDto({
       _$DeviceSessionPageDtoFromJson(json);
 }
 
-/// 一台已登录的设备. [device] 为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`. [issuedAt] 是登录时间, ISO 8601.
+/// 一台已登录的设备. [device] 为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`.
+///
+/// [name] 是登录时上报的设备名, 没有时服务端从 User-Agent 推断 (如 "Chrome · macOS"), 推断不出为 null.
+/// [issuedAt] 是登录时间, [lastActiveAt] 是最近使用时间, 都是 ISO 8601.
 @JsonSerializable(createToJson: false)
 class const DeviceSessionDto({
   final String? sessionId,
   final String? device,
+  final String? name,
   final String? issuedAt,
+  final String? lastActiveAt,
   final bool? current,
 }) {
   factory DeviceSessionDto.fromJson(Map<String, dynamic> json) =>

@@ -10,10 +10,15 @@ enum DevicePlatform {
   final String label;
 }
 
-/// 一台已登录的设备. [current] 表示本机. [signedInAt] 是登录时间, 服务端不提供最近使用时间.
+/// 一台已登录的设备. [current] 表示本机.
+///
+/// [name] 是设备名, 如 "Pixel 8", "Chrome · macOS", 服务端不知道时为 null.
+/// [signedInAt] 是登录时间, [lastActiveAt] 是最近使用时间.
 class const DeviceSession({
   required final String id,
   required final DevicePlatform platform,
+  final String? name,
   final DateTime? signedInAt,
+  final DateTime? lastActiveAt,
   final bool current = false,
 });

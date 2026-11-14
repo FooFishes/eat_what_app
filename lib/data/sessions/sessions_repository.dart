@@ -44,7 +44,12 @@ class SessionsRepository {
         'ANDROID' => DevicePlatform.android,
         _ => DevicePlatform.unknown,
       },
+      name: switch (dto.name?.trim()) {
+        final name? when name.isNotEmpty => name,
+        _ => null,
+      },
       signedInAt: DateTime.tryParse(dto.issuedAt ?? '')?.toLocal(),
+      lastActiveAt: DateTime.tryParse(dto.lastActiveAt ?? '')?.toLocal(),
       current: dto.current ?? false,
     );
   }

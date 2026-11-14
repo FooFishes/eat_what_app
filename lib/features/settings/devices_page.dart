@@ -105,7 +105,6 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
     final eat = context.eat;
     final c = eat.colors;
     final device = widget.device;
-    final signedInAt = device.signedInAt;
     return EatListRow(
       leading: Container(
         width: EatSize.avatar,
@@ -121,15 +120,10 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
           ),
         ),
       ),
-      title: Text(device.platform.label),
+      title: Text(device.name ?? device.platform.label),
       lines: [
-        Text(
-          device.current
-              ? '当前设备'
-              : signedInAt == null
-              ? '登录时间未知'
-              : '${TimeFormat.relative(signedInAt, clock.now())}登录',
-        ),
+        if (device.name != null) Text(device.platform.label),
+        Text(device.current ? '当前设备' : _timesOf(device)),
       ],
       action: device.current
           ? null
@@ -141,6 +135,16 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
             ),
     );
   }
+}
+
+/// 登录时间和最近使用时间, 如 "3 天前登录，2 小时前用过". 都不知道时为 "登录时间未知".
+String _timesOf(DeviceSession device) {
+  final now = clock.now();
+  final times = [
+    if (device.signedInAt case final at?) '${TimeFormat.relative(at, now)}登录',
+    if (device.lastActiveAt case final at?) '${TimeFormat.relative(at, now)}用过',
+  ];
+  return times.isEmpty ? '登录时间未知' : times.join('，');
 }
 
 class _RevokeOthersButton extends ConsumerStatefulWidget {

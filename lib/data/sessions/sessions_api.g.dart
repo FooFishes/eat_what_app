@@ -19,7 +19,9 @@ DeviceSessionDto _$DeviceSessionDtoFromJson(Map<String, dynamic> json) =>
     DeviceSessionDto(
       sessionId: json['sessionId'] as String?,
       device: json['device'] as String?,
+      name: json['name'] as String?,
       issuedAt: json['issuedAt'] as String?,
+      lastActiveAt: json['lastActiveAt'] as String?,
       current: json['current'] as bool?,
     );
 
