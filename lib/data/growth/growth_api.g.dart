@@ -8,21 +8,23 @@ part of 'growth_api.dart';
 
 GrowthProgressDto _$GrowthProgressDtoFromJson(Map<String, dynamic> json) =>
     GrowthProgressDto(
-      totalExperience: (json['totalExperience'] as num?)?.toInt(),
       level: (json['level'] as num?)?.toInt(),
-      levelStartExperience: (json['levelStartExperience'] as num?)?.toInt(),
+      experience: (json['experience'] as num?)?.toInt(),
+      levelExperience: (json['levelExperience'] as num?)?.toInt(),
+      nextLevel: (json['nextLevel'] as num?)?.toInt(),
       nextLevelExperience: (json['nextLevelExperience'] as num?)?.toInt(),
-      experienceToNextLevel: (json['experienceToNextLevel'] as num?)?.toInt(),
+      toNextLevel: (json['toNextLevel'] as num?)?.toInt(),
       maxLevel: json['maxLevel'] as bool?,
-      dailyExperience: (json['dailyExperience'] as num?)?.toInt(),
+      dailyUseExperience: (json['dailyUseExperience'] as num?)?.toInt(),
     );
 
 ExperienceEntryDto _$ExperienceEntryDtoFromJson(Map<String, dynamic> json) =>
     ExperienceEntryDto(
-      entryId: json['entryId'] as String?,
-      businessDate: json['businessDate'] as String?,
-      sourceType: json['sourceType'] as String?,
-      experience: (json['experience'] as num?)?.toInt(),
+      id: (json['id'] as num?)?.toInt(),
+      source: json['source'] as String?,
+      sourceName: json['sourceName'] as String?,
+      amount: (json['amount'] as num?)?.toInt(),
+      day: json['day'] as String?,
     );
 
 // **************************************************************************

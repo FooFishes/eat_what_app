@@ -57,6 +57,8 @@ class UserRepository {
         final text? when text.isNotEmpty => text,
         _ => null,
       },
+      level: dto.level,
+      earnedLikes: dto.earnedLikes,
       fans: dto.fansCount,
       followings: dto.followingsCount,
       fansVisible: dto.fansVisible ?? false,

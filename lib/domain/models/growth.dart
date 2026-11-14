@@ -25,7 +25,7 @@ class const GrowthProgress({
   };
 }
 
-/// 经验的来源. [label] 是明细中的名称.
+/// 经验的来源. [label] 是服务端没有给出显示名时用的名称.
 enum ExperienceSource {
   dailyUse('每日使用'),
 
@@ -37,15 +37,18 @@ enum ExperienceSource {
   final String label;
 
   static ExperienceSource fromApi(String? value) => switch (value) {
-    'DAILY_USE' => dailyUse,
+    'daily_use' => dailyUse,
     _ => other,
   };
 }
 
 /// 经验明细中的一笔. [date] 是这笔经验所属的那一天 (北京时间), 只有日期部分有意义.
+///
+/// [label] 是明细中的名称, 如 "每日使用", 优先用服务端给的显示名.
 class const ExperienceEntry({
   required final String id,
   required final ExperienceSource source,
+  required final String label,
   required final int amount,
   required final DateTime date,
 });

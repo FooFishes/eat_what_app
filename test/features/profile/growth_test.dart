@@ -1,3 +1,4 @@
+import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/profile/growth_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -16,12 +17,12 @@ void main() {
         FakeAdapter.ok({'displayName': '天凉被破王'}),
       ])
       ..on('GET /foods/my', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /user/growth', [FakeAdapter.ok(growthJson())])
-      ..on('GET /user/growth/ledger', [
+      ..on('GET /user/level', [FakeAdapter.ok(growthJson())])
+      ..on('GET /user/level/logs', [
         FakeAdapter.ok(
           pageJson([
             experienceJson(),
-            experienceJson(id: 'e-2', date: '2026-11-09'),
+            experienceJson(id: 2, date: '2026-11-09'),
           ]),
         ),
       ]);
@@ -50,7 +51,7 @@ void main() {
 
   testWidgets('满级时写「已满级」，没有进度条', (tester) async {
     final env = meEnv()
-      ..adapter.on('GET /user/growth', [
+      ..adapter.on('GET /user/level', [
         FakeAdapter.ok(
           growthJson(level: 10, total: 16020, start: 16000, next: null),
         ),
@@ -67,11 +68,69 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('他人主页不显示等级胶囊', (tester) async {
+  testWidgets('「我的」昵称旁是等级胶囊，点了进等级页；统计第一项是获赞', (tester) async {
+    final env = meEnv()
+      ..adapter.on('GET /user/userInfo', [
+        FakeAdapter.ok({
+          'displayName': '天凉被破王',
+          'level': 3,
+          'earnedLikes': 128,
+          'fansCount': 2,
+          'followingsCount': 5,
+          'fansVisible': true,
+          'followingsVisible': true,
+        }),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.me,
+    );
+
+    expect(find.text('128'), findsOneWidget);
+    expect(find.text('获赞'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('等级 3'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GrowthPage), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('封禁中点等级弹拦截对话框，不进等级页', (tester) async {
+    final env = meEnv()
+      ..adapter.on('GET /user/userInfo', [
+        FakeAdapter.ok({'displayName': '天凉被破王', 'level': 3}),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(
+        user: CurrentUser(
+          id: 42,
+          nickname: '天凉被破王',
+          hasPassword: false,
+          verified: true,
+          banned: true,
+          banReason: '刷赞',
+        ),
+      ),
+      location: Paths.me,
+    );
+
+    expect(find.textContaining('账号封禁中，永久封禁，原因：刷赞'), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('等级 3'));
+    await tester.pumpAndSettle();
+    expect(find.text('账号封禁中，暂时不能查看等级'), findsOneWidget);
+    expect(find.byType(GrowthPage), findsNothing);
+    expect(env.adapter.sent('GET /user/level/logs'), isEmpty);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('他人主页的等级胶囊点了没有反应', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
-        FakeAdapter.ok({'displayName': '阿哲'}),
+        FakeAdapter.ok({'displayName': '阿哲', 'level': 4, 'earnedLikes': 7}),
       ])
       ..on('GET /foods/by-user/9', [FakeAdapter.ok(pageJson([]))]);
     final (container, _) = await pumpApp(
@@ -81,9 +140,12 @@ void main() {
       location: Paths.user(9),
     );
 
-    expect(find.textContaining('Lv.'), findsNothing);
-    expect(find.bySemanticsLabel(RegExp('^等级')), findsNothing);
-    expect(env.adapter.sent('GET /user/growth'), isEmpty);
+    expect(find.text('Lv.4'), findsOneWidget);
+    await tester.tap(find.text('Lv.4'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GrowthPage), findsNothing);
+    expect(env.adapter.sent('GET /user/level'), isEmpty);
+    expect(find.text('7'), findsOneWidget);
     await unmountApp(tester, container);
   });
 }

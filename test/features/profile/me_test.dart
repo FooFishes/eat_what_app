@@ -8,7 +8,7 @@ import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 
 void main() {
-  testWidgets('舞台上是获赞最多的菜、昵称和三项统计；没认证时提示去认证', (tester) async {
+  testWidgets('舞台上是获赞最多的菜、昵称、等级和四项统计；没认证时提示去认证', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
@@ -16,6 +16,8 @@ void main() {
           'id': 42,
           'displayName': '天凉被破王',
           'avatar': null,
+          'level': 2,
+          'earnedLikes': 40,
           'fansCount': 3,
           'followingsCount': 5,
           'fansVisible': true,
@@ -45,7 +47,8 @@ void main() {
     expect(find.bySemanticsLabel('上传的菜 26'), findsOneWidget);
     expect(find.bySemanticsLabel('粉丝 3'), findsOneWidget);
     expect(find.bySemanticsLabel('关注 5'), findsOneWidget);
-    expect(find.textContaining('获赞'), findsNothing);
+    expect(find.bySemanticsLabel('获赞 40'), findsOneWidget);
+    expect(find.bySemanticsLabel('等级 2'), findsOneWidget);
     expect(find.text('认证后可以发布和互动'), findsOneWidget);
     expect(find.text('虾仁云吞'), findsOneWidget);
     expect(
@@ -55,28 +58,22 @@ void main() {
     await expectAccessible(tester);
   });
 
-  testWidgets('等级胶囊标着待接入，点了只提示，不请求等级接口', (tester) async {
+  testWidgets('资料没有返回等级时不显示等级胶囊', (tester) async {
     final env = TestEnv();
     env.adapter
       ..on('GET /user/userInfo', [
         FakeAdapter.ok({'id': 42, 'displayName': '天凉被破王'}),
       ])
       ..on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
-    final (container, router) = await pumpApp(
+    final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.me,
     );
 
-    final badge = find.bySemanticsLabel('等级，待接入');
-    expect(badge, findsOneWidget);
-    await tester.tap(badge);
-    await tester.pumpAndSettle();
-    expect(find.text('该功能即将上线'), findsOneWidget);
-    expect(locationOf(router), Paths.me);
-    expect(env.adapter.sent('GET /user/growth'), isEmpty);
-    await tester.pump(const Duration(seconds: 3));
+    expect(find.bySemanticsLabel(RegExp('^等级')), findsNothing);
+    expect(find.textContaining('Lv.'), findsNothing);
     await unmountApp(tester, container);
   });
 

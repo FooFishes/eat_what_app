@@ -14,16 +14,15 @@ class GrowthRepository {
 
   Future<GrowthProgress> progress({CancelToken? cancelToken}) async {
     final dto = await _api.progress(cancelToken: cancelToken);
-    final total = dto.totalExperience ?? 0;
+    final total = dto.experience ?? 0;
     final next = dto.maxLevel == true ? null : dto.nextLevelExperience;
     return GrowthProgress(
       level: dto.level ?? 1,
       totalExperience: total,
-      levelStartAt: dto.levelStartExperience ?? 0,
+      levelStartAt: dto.levelExperience ?? 0,
       nextLevelAt: next,
-      toNextLevel:
-          dto.experienceToNextLevel ?? (next == null ? 0 : next - total),
-      dailyExperience: dto.dailyExperience ?? 0,
+      toNextLevel: dto.toNextLevel ?? (next == null ? 0 : next - total),
+      dailyExperience: dto.dailyUseExperience ?? 0,
     );
   }
 
@@ -41,13 +40,16 @@ class GrowthRepository {
   }
 
   static ExperienceEntry? _entry(ExperienceEntryDto dto) {
-    final id = dto.entryId;
-    final date = DateTime.tryParse(dto.businessDate ?? '');
+    final id = dto.id;
+    final date = DateTime.tryParse(dto.day ?? '');
     if (id == null || date == null) return null;
+    final source = ExperienceSource.fromApi(dto.source);
+    final name = dto.sourceName?.trim();
     return ExperienceEntry(
-      id: id,
-      source: ExperienceSource.fromApi(dto.sourceType),
-      amount: dto.experience ?? 0,
+      id: '$id',
+      source: source,
+      label: name == null || name.isEmpty ? source.label : name,
+      amount: dto.amount ?? 0,
       date: DateTime(date.year, date.month, date.day),
     );
   }

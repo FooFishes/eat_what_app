@@ -35,7 +35,7 @@ import 'package:go_router/go_router.dart';
 
 /// "我的" 页面.
 ///
-/// - 舞台: 我获赞最多的菜, 头像, 昵称, 签名和三项统计.
+/// - 舞台: 我获赞最多的菜, 头像, 昵称和等级, 签名和四项统计.
 /// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 评论三个分栏.
 /// - 右上角: 编辑资料和设置.
 ///
@@ -121,7 +121,12 @@ class _MePageState extends ConsumerState<MePage> {
         uploads: uploads.value?.pages.total,
         top: top,
         loading: uploads.isLoading,
-        onLevelTap: () => showPending(context, PendingFeature.growth),
+        onLevelTap: () async {
+          if (await guardAction(context, ref, Capability.viewGrowth) &&
+              context.mounted) {
+            await context.push(Paths.growth);
+          }
+        },
       ),
       sheetSlivers: [
         const SliverToBoxAdapter(child: _StatusNotice()),

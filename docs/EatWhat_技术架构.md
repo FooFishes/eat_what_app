@@ -75,7 +75,7 @@ lib/
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）。
                             place/ 是校区、商圈和餐厅（含编辑、修改记录、评价）；recommend/ 是推荐店铺和不想去这家（10.6）；
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
-                            topic/、growth/、cancellation/ 的后端接口已删除，代码保留、没有调用方（8.5）
+                            topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
                             当前位置、地点饭点和堂食外卖、菜的赞和收藏、未读数、网络状态；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
@@ -90,7 +90,7 @@ lib/
     shop/                   餐厅详情、店铺评价面板、编辑店铺、修改记录、信息有误面板
     nearby/                 附近、地图、筛选面板
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
-    profile/                我的、他人主页、编辑资料、足迹、粉丝和关注；我的标签、标签下的菜、等级（待接入，页面保留）
+    profile/                我的、他人主页、编辑资料、足迹、粉丝和关注；等级；我的标签、标签下的菜（待接入，页面保留）
     inbox/                  消息
     settings/               设置、账号与安全、登录设备、隐私、屏蔽的人、通知、关于、反馈；注销（待接入，页面保留）
     system/                 强制更新、维护、公告、建议更新、拦截对话框、人机验证、轻提示、没找到页面；
@@ -244,7 +244,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 我的标签（待接入） | `/me/tags` | 根 | 否 | `G-MyTags` |
 | 标签下的菜（待接入） | `/me/tags/:tagId?name=`（标签名放在地址里，刷新后标题还在） | 根 | 否 | `G-TagDishes` |
 | 足迹 | `/me/history` | 根 | 否 | `G-History` |
-| 等级（待接入） | `/me/growth` | 根 | 否 | 无画板，按白底页规则 |
+| 等级 | `/me/growth` | 根 | 否 | 无画板，按白底页规则 |
 | 设置 | `/settings` | 根 | 游客 | `G-Settings` |
 | 账号与安全 | `/settings/account` | 根 | 否 | `G-SettingsAccount` |
 | 设置用户名、换绑手机、设置或修改密码 | `/settings/account/username`、`/settings/account/phone`、`/settings/account/password` | 根 | 否 | 无画板，按白底页规则 |
@@ -478,7 +478,7 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 
 - `AccountStatus`：`signedOut`（含游客）、`unverified`、`verified`。游客能不能进某页由路由的 `guest` 标记决定（5.3），这里不区分。由 `GET /user/info` 的 `verified` 算出。
 - 封禁（2026-11-14 起，产品 4.10）：封禁的账号照常登录，拿到受限会话。`GET /user/info` 的 `banned`、`banReason`、`banUntil`（毫秒，null 为永久）算出 `BannedStatus`，优先于认证状态。受限会话默认放行读取、拒绝写入（后端 `WhenBanned`），例外：放行消息已读、反馈、信息有误、举报、屏蔽、登录设备、退出、注销、使用统计、推送登记、同意政策；拒绝足迹、粉丝和关注列表、收藏的菜、经验明细。被拒绝时返回 30002，`data` 带原因，网络层按没权限处理（7.4 的码表）。还没拉到用户信息时按未认证处理，被拒绝后刷新用户信息即得到封禁状态。
-- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签（`tasteTag`，待接入）、写我的标签（`myTag`，待接入）、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑菜品（`editDish`）、编辑店铺（`editShop`，含恢复修改记录）、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、看等级（`viewGrowth`，待接入）、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出对所有已登录状态都开放，不进这张表。
+- `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签（`tasteTag`，待接入）、写我的标签（`myTag`，待接入）、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑菜品（`editDish`）、编辑店铺（`editShop`，含恢复修改记录）、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、看等级（`viewGrowth`）、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出对所有已登录状态都开放，不进这张表。
 - 游客能点到、要登录才能做的也进这张表，好让游客看到「登录后才能看消息」的面板，而不是被守卫直接带去登录页（产品 7.3）：看消息（`viewInbox`）、看他人主页（`viewProfile`）、意见反馈（`feedback`）、只看我收藏的店（`viewFavorites`）、不想去这家（`dismissShop`）。这几项对所有已登录状态开放，只拦未登录。守卫第 3 条兜住地址栏和深链直接进的情况。
 - 未登录时 `checkPermission` 对所有能力都返回 `NeedsSignIn`，面板主按钮「去登录」，带 `from=<当前地址>` 进 `/login`。
 - 每个能力带一个开关 `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、看等级、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误，以及上一条只拦未登录的几项。其余要求已认证。
@@ -528,7 +528,6 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
   | `topics` | 发现页分类栏的「专题」 | `data/topic/`、`features/topic/`、`/topics*` 路由 |
   | `myTags` | 「我的」的快捷入口「我的标签」、加菜页的「自己写」 | `my_tags_page.dart`、`tag_dishes_page.dart`、`/me/tags*` 路由 |
   | `tasteVote` | 菜品详情「大家怎么说」的点词和「＋ 加标签」 | `tag_panel.dart`、`tasteVocabularyProvider` |
-  | `growth` | 「我的」和他人主页的等级胶囊 | `data/growth/`、`growth_page.dart`、`/me/growth` 路由 |
   | `deleteAccount` | 账号与安全的「注销账号」 | `data/cancellation/`、注销页和撤销注销页、两条路由 |
 
 - 审核没有入口要保留：`moderationStatus`、「已提交审核」和待审核的分支都已删除（产品 9.10）。

@@ -9,13 +9,14 @@ part 'growth_api.g.dart';
 
 /// GrowthApi 调用的接口路径, 相对于业务接口地址.
 abstract final class GrowthEndpoints {
-  static const progress = '/user/growth';
-  static const ledger = '/user/growth/ledger';
+  static const progress = '/user/level';
+  static const ledger = '/user/level/logs';
 }
 
-/// 接口分组 Growth: 本人的等级和经验.
+/// 接口分组 User 中的等级和经验, 只有本人能看.
 ///
-/// 每日经验由服务端在当天第一个业务请求中自动发放, 客户端不调用 `POST /user/activity`.
+/// 每日经验由服务端在当天第一个带会话的请求中自动发放, 客户端不用上报.
+/// 封禁中能看等级, 不能看经验明细.
 class GrowthApi {
   GrowthApi(this._client);
 
@@ -27,7 +28,7 @@ class GrowthApi {
         GrowthProgressDto.fromJson,
       );
 
-  /// 经验明细, 按入账时间倒序.
+  /// 经验明细, 最新的在前.
   Future<Paged<ExperienceEntryDto>> ledger({
     int page = 1,
     int pageSize = 20,
@@ -42,30 +43,34 @@ class GrowthApi {
   );
 }
 
-/// `/user/growth` 的 `data`. 门槛都是累计经验, [nextLevelExperience] 满级时为 null.
+/// `/user/level` 的 `data` (`UserDtos.Level`). 门槛都是累计经验.
+///
+/// [nextLevel], [nextLevelExperience], [toNextLevel] 满级时为 null.
 @JsonSerializable(createToJson: false)
 class const GrowthProgressDto({
-  final int? totalExperience,
   final int? level,
-  final int? levelStartExperience,
+  final int? experience,
+  final int? levelExperience,
+  final int? nextLevel,
   final int? nextLevelExperience,
-  final int? experienceToNextLevel,
+  final int? toNextLevel,
   final bool? maxLevel,
-  final int? dailyExperience,
+  final int? dailyUseExperience,
 }) {
   factory GrowthProgressDto.fromJson(Map<String, dynamic> json) =>
       _$GrowthProgressDtoFromJson(json);
 }
 
-/// 经验明细的一笔.
+/// 经验明细的一笔 (`UserDtos.ExperienceLog`).
 ///
-/// [businessDate] 是所属日期 (北京时间), 格式 `yyyy-MM-dd`. [sourceType] 目前只有 `DAILY_USE`.
+/// [day] 是所属日期 (北京时间), 格式 `yyyy-MM-dd`. [source] 目前只有 `daily_use`, [sourceName] 是显示名.
 @JsonSerializable(createToJson: false)
 class const ExperienceEntryDto({
-  final String? entryId,
-  final String? businessDate,
-  final String? sourceType,
-  final int? experience,
+  final int? id,
+  final String? source,
+  final String? sourceName,
+  final int? amount,
+  final String? day,
 }) {
   factory ExperienceEntryDto.fromJson(Map<String, dynamic> json) =>
       _$ExperienceEntryDtoFromJson(json);

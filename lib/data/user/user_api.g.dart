@@ -25,6 +25,8 @@ UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
       displayName: json['displayName'] as String?,
       avatar: json['avatar'] as String?,
       signature: json['signature'] as String?,
+      level: (json['level'] as num?)?.toInt(),
+      earnedLikes: (json['earnedLikes'] as num?)?.toInt(),
       fansCount: (json['fansCount'] as num?)?.toInt(),
       followingsCount: (json['followingsCount'] as num?)?.toInt(),
       fansVisible: json['fansVisible'] as bool?,

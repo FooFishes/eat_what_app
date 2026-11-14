@@ -226,6 +226,12 @@ class const UserProfileDto({
   final String? avatar,
   final String? signature,
 
+  /// 等级, 1 到 10. 所有人可见, 经验只有本人能看.
+  final int? level,
+
+  /// 获赞: 首次发布的菜收到的赞, 加上评论和回复收到的赞. 所有人可见.
+  final int? earnedLikes,
+
   /// 对方未公开粉丝列表时为 null. 查看自己时总有值.
   final int? fansCount,
 

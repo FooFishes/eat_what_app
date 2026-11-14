@@ -194,7 +194,7 @@ class _Ledger extends ConsumerWidget {
           itemBuilder: (context, i) {
             final entry = entries[i];
             return EatListRow(
-              title: Text(entry.source.label),
+              title: Text(entry.label),
               lines: [Text(TimeFormat.date(entry.date, now))],
               trailing: Text(
                 '+${entry.amount}',

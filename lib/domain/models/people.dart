@@ -9,6 +9,12 @@ class const UserProfile({
   required final String nickname,
   final String? avatarUrl,
   final String? signature,
+
+  /// 等级, 1 到 10. 服务端没有返回时为 null.
+  final int? level,
+
+  /// 获赞: 上传的菜收到的赞, 加上评论和回复收到的赞.
+  final int? earnedLikes,
   final int? fans,
   final int? followings,
   final bool fansVisible = true,
