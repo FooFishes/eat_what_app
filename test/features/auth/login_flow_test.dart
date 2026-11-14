@@ -422,7 +422,7 @@ void main() {
       expect(container.read(sessionProvider), isA<SignedOut>());
     });
 
-    testWidgets('已登录时收到 30002：回登录页提示账号已被封禁，不记原页面', (tester) async {
+    testWidgets('已登录时收到不带原因的 30002 (账号已不存在)：按登录过期回登录页', (tester) async {
       env.adapter.on('GET /anything', [FakeAdapter.fail(30002)]);
       final (container, router) = await pumpApp(
         tester,
@@ -442,14 +442,12 @@ void main() {
       expect((failure! as AppFailure).kind, FailureKind.sessionExpired);
       expect(
         (container.read(sessionProvider) as SignedOut).reason,
-        SignOutReason.banned,
+        SignOutReason.expired,
       );
       expect(find.byType(LoginPage), findsOneWidget);
-      expect(find.text('账号已被封禁'), findsOneWidget);
-      expect(find.text('登录已过期，请重新登录'), findsNothing);
+      expect(find.text('登录已过期，请重新登录'), findsOneWidget);
       final query = Uri.parse(locationOf(router)).queryParameters;
-      expect(query['banned'], '1');
-      expect(query.containsKey('from'), isFalse);
+      expect(query['expired'], '1');
       expect(env.secure.values['auth.tokenValue'], isNull);
 
       // 离开 "我的" 后, 页面 Provider 的缓存计时器仍未到期. 推进 10 分钟使这些计时器到期.

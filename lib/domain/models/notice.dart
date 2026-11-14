@@ -25,6 +25,15 @@ enum NoticeKind {
   caseResult('case_result'),
   announcement('announcement'),
 
+  /// 账号被封禁. 写明原因和期限.
+  accountBanned('account_banned'),
+
+  /// 账号在新设备上登录. 点击进入登录设备, 不是本人时可以让它下线.
+  newDeviceLogin('new_device_login'),
+
+  /// 管理员删除了我发布的菜, 评论或回复.
+  contentRemoved('content_removed'),
+
   /// 客户端不认识的类型. 显示为普通消息, 不跳转.
   other('');
 
@@ -108,6 +117,40 @@ final class CaseResultDetail extends NoticeDetail {
 
 /// 处理结果对应的提交类型.
 enum CaseKind { feedback, catalogError, report }
+
+/// 封禁消息的原因和期限.
+final class BanDetail extends NoticeDetail {
+  const BanDetail({this.reason, this.until});
+
+  final String? reason;
+
+  /// 封禁截止时间. null 表示永久封禁.
+  final DateTime? until;
+}
+
+/// 新设备登录消息里的设备. [deviceName] 是设备上报或服务端推断的名称, 如 "Pixel 8", 可能没有.
+final class NewDeviceDetail extends NoticeDetail {
+  const NewDeviceDetail({this.deviceName, this.platform});
+
+  final String? deviceName;
+
+  /// 设备类型: `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`.
+  final String? platform;
+}
+
+/// 被删除的内容. [title] 是菜名或评论的前 20 个字.
+final class ContentRemovedDetail extends NoticeDetail {
+  const ContentRemovedDetail({
+    required this.comment,
+    this.title = '',
+    this.reason,
+  });
+
+  /// 为 true 时是评论或回复, 否则是菜.
+  final bool comment;
+  final String title;
+  final String? reason;
+}
 
 /// 运营发布的公告. 只显示, 不跳转.
 final class AnnouncementDetail extends NoticeDetail {

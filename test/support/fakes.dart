@@ -97,12 +97,11 @@ class FakeAdapter implements HttpClientAdapter {
   };
 
   /// 业务失败的响应外壳: HTTP 200, `code` 非零.
-  static Map<String, Object?> fail(Object code, [String msg = 'error']) => {
-    'code': code,
-    'msg': msg,
-    'data': null,
-    'timestamp': 0,
-  };
+  static Map<String, Object?> fail(
+    Object code, [
+    String msg = 'error',
+    Object? data,
+  ]) => {'code': code, 'msg': msg, 'data': data, 'timestamp': 0};
 
   Iterable<SentRequest> sent(String route) =>
       requests.where((r) => r.route == route);

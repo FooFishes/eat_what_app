@@ -202,6 +202,17 @@ class UserRepository {
       _ => null,
     },
     verifiedEmail: dto.verifiedEmail,
+    level: dto.level,
+    banned: dto.banned ?? false,
+    banReason: dto.banReason?.trim().isNotEmpty == true
+        ? dto.banReason!.trim()
+        : null,
+    banUntil: switch (dto.banUntil) {
+      final ms? when dto.banned == true => DateTime.fromMillisecondsSinceEpoch(
+        ms,
+      ),
+      _ => null,
+    },
   );
 }
 

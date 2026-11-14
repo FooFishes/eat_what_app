@@ -263,6 +263,12 @@ class const UserInfoDto({
   final String? verifiedEmail,
   final bool? hasPassword,
   final String? signature,
+  final int? level,
+  final bool? banned,
+  final String? banReason,
+
+  /// 封禁截止时间, Unix 毫秒. null 表示永久封禁.
+  final int? banUntil,
 }) {
   factory UserInfoDto.fromJson(Map<String, dynamic> json) =>
       _$UserInfoDtoFromJson(json);

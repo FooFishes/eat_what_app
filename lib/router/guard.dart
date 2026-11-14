@@ -64,17 +64,14 @@ String? resolveRedirect({
 
 /// 未登录时访问 [location] 被导向的登录页地址.
 String _login(Uri location, SignOutReason reason) {
-  // 用户主动退出和账号被封禁时不记录原地址. 目标是发现页时也不记录, 因为登录后默认进入发现页.
+  // 用户主动退出时不记录原地址. 目标是发现页时也不记录, 因为登录后默认进入发现页.
   final remember =
-      reason != SignOutReason.loggedOut &&
-      reason != SignOutReason.banned &&
-      location.path != Paths.discover;
+      reason != SignOutReason.loggedOut && location.path != Paths.discover;
   return Uri(
     path: Paths.login,
     queryParameters: {
       if (remember) 'from': location.toString(),
       if (reason == SignOutReason.expired) 'expired': '1',
-      if (reason == SignOutReason.banned) 'banned': '1',
     }.nullIfEmpty,
   ).toString();
 }

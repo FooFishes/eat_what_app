@@ -345,6 +345,8 @@ class _NoticeRow extends ConsumerWidget {
       lines: [
         if (reply != null) Text('回复：$reply'),
         if (content != null) Text(content),
+        if (notice.detail case BanDetail(:final until))
+          Text(banTerm(until, now)),
         Text(TimeFormat.relative(notice.latestAt, now)),
       ],
       action: followBack == null ? null : _FollowBack(userId: followBack),
@@ -386,6 +388,8 @@ class _NoticeRow extends ConsumerWidget {
         if (next is! NoTarget && context.mounted) {
           await _open(context, ref, next);
         }
+      case DevicesTarget():
+        await context.push(Paths.settingsDevices);
       case MyFansTarget():
         final me = ref.read(sessionProvider);
         if (me case SignedIn(user: final user?)) {
@@ -410,6 +414,9 @@ class _SystemIcon extends StatelessWidget {
       (NoticeKind.announcement, _) => EatIcons.announce,
       (_, CaseResultDetail(kind: CaseKind.report)) => EatIcons.report,
       (NoticeKind.caseResult, _) => EatIcons.feedback,
+      (NoticeKind.accountBanned, _) => EatIcons.block,
+      (NoticeKind.newDeviceLogin, _) => EatIcons.shield,
+      (NoticeKind.contentRemoved, _) => EatIcons.delete,
       _ => EatIcons.bell,
     };
     return Container(

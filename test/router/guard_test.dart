@@ -64,13 +64,6 @@ void main() {
       expect(target.queryParameters, {'from': '/me', 'expired': '1'});
     });
 
-    test('账号被封禁时带 banned=1，不记原地址', () {
-      expect(
-        _redirect('/me', const SignedOut(SignOutReason.banned)),
-        '${Paths.login}?banned=1',
-      );
-    });
-
     test('自己退出的不记原地址', () {
       expect(
         _redirect('/settings', const SignedOut(SignOutReason.loggedOut)),

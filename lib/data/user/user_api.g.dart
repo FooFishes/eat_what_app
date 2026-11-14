@@ -46,6 +46,10 @@ UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   verifiedEmail: json['verifiedEmail'] as String?,
   hasPassword: json['hasPassword'] as bool?,
   signature: json['signature'] as String?,
+  level: (json['level'] as num?)?.toInt(),
+  banned: json['banned'] as bool?,
+  banReason: json['banReason'] as String?,
+  banUntil: (json['banUntil'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
@@ -61,6 +65,10 @@ Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
       'verifiedEmail': ?instance.verifiedEmail,
       'hasPassword': ?instance.hasPassword,
       'signature': ?instance.signature,
+      'level': ?instance.level,
+      'banned': ?instance.banned,
+      'banReason': ?instance.banReason,
+      'banUntil': ?instance.banUntil,
     };
 
 // **************************************************************************

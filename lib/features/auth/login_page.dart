@@ -36,7 +36,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
 ///
-/// [query] 包含地址中的 `from`, `expired` 和 `banned`, 原样传给手机号登录页和密码登录页.
+/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页和密码登录页.
 /// 登录成功后, 守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
   const new({
@@ -112,10 +112,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: EatSpace.s10,
             children: [
-              if (query['banned'] == '1')
-                const _Notice('账号已被封禁')
-              else if (query['expired'] == '1')
-                const _Notice('登录已过期，请重新登录'),
+              if (query['expired'] == '1') const _Notice('登录已过期，请重新登录'),
               EatButton.solid(
                 '验证码登录',
                 icon: EatIcons.phone,

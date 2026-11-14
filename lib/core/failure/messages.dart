@@ -42,9 +42,10 @@ abstract final class BizCodes {
 
   static const userNotFound = 30001;
 
-  /// 账号已被封禁. 封禁不能登录, 已登录的会话同时被下线.
+  /// 账号不可用, 或封禁中的受限会话执行了不允许的操作.
   ///
-  /// 登录请求不带凭证, 按码表提示封禁. 带凭证的请求收到该码时, 网络层通知登录态回到登录页.
+  /// 封禁的账号仍能登录. 受限会话被拒绝时 `data` 带 `reason` 和 `banUntil`, 网络层按无权限处理.
+  /// `data` 为空表示账号已不存在, 服务端已让会话下线, 网络层按登录过期处理.
   static const userDisabled = 30002;
   static const usernameTaken = 30003;
 
@@ -70,6 +71,11 @@ abstract final class BizCodes {
 
   /// 人机验证票据无效, 已过期或被判定有风险. 需要重新进行人机验证.
   static const captchaInvalid = 30016;
+
+  /// 账号在注销冷静期内. 登录时 `data.deleteAt` 是彻底删除的时间 (Unix 毫秒).
+  ///
+  /// 冷静期内服务端让账号的所有会话下线, 带凭证的请求收到该码时按登录过期处理.
+  static const accountDeletionPending = 30017;
 
   static const captchaUnavailable = 50004;
 

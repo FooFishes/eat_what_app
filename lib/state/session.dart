@@ -26,9 +26,6 @@ enum SignOutReason {
 
   /// 登录过期. 登录页显示过期提示, 登录后返回原页面.
   expired,
-
-  /// 账号被封禁, 服务端已让会话下线. 登录页显示封禁提示, 不记录原页面.
-  banned,
 }
 
 final class SignedOut extends SessionState {
@@ -140,12 +137,10 @@ class Session extends _$Session {
   }
 
   /// 网络层发现登录过期时调用. 守卫随后带上当前地址跳转登录页.
-  ///
-  /// [banned] 为 true 表示账号被封禁, 登录页显示封禁提示.
-  void expire({bool banned = false}) {
+  void expire() {
     if (state is! SignedIn) return;
     unawaited(_clearLocal());
-    state = SignedOut(banned ? SignOutReason.banned : SignOutReason.expired);
+    state = const SignedOut(SignOutReason.expired);
   }
 
   /// 退出登录: 先通知服务端, 再清除本机的凭证和账号数据.

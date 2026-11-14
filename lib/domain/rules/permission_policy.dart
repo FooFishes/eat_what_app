@@ -4,7 +4,9 @@ import 'package:eat/domain/models/account_status.dart';
 ///
 /// 未登录 (含游客) 时所有操作都要先登录. 浏览, 屏蔽和退出对所有已登录账号开放, 不在本枚举中.
 ///
-/// [Capability.openToUnverified] 中的操作对所有已登录账号开放. 列入本枚举是为了让游客点入口时弹出登录拦截.
+/// [Capability.openToUnverified] 中的操作对未认证账号开放. 其中部分只读的操作列入本枚举, 是为了让游客点入口时弹出登录拦截.
+///
+/// 封禁中的账号拿到的是受限会话: 后端默认放行读取, 拒绝写入, 少数接口例外 ([Capability.openToBanned]).
 enum Capability {
   like,
   favorite,
@@ -28,10 +30,10 @@ enum Capability {
   editProfile,
   viewHistory,
 
-  /// 查看粉丝和关注列表.
+  /// 查看粉丝和关注列表. 封禁中不能查看, 后端拒绝这两个列表.
   viewFollows,
 
-  /// 查看等级和经验明细.
+  /// 查看等级和经验明细. 封禁中不能查看, 后端拒绝经验明细.
   viewGrowth,
   unfollow,
 
@@ -92,6 +94,19 @@ enum Capability {
     _ => false,
   };
 
+  /// 封禁中的账号也能执行的操作. 后端的受限会话放行读取, 以及消息已读, 反馈, 信息有误和举报.
+  ///
+  /// 足迹, 粉丝和关注列表, 经验明细虽然是读取, 后端也拒绝, 因此不在其中.
+  bool get openToBanned => switch (this) {
+    report ||
+    reportShopError ||
+    viewInbox ||
+    viewProfile ||
+    viewFavorites ||
+    feedback => true,
+    _ => false,
+  };
+
   /// 拦截对话框中的动作词, 如 "认证后才能点赞" 和 "登录后才能点赞" 中的 "点赞".
   String get verb => switch (this) {
     like => '点赞',
@@ -146,6 +161,13 @@ final class NeedsVerification extends PermissionResult {
   const NeedsVerification();
 }
 
+/// 账号封禁中. 拦截对话框显示封禁原因和期限, 不提供 "去认证".
+final class BlockedByBan extends PermissionResult {
+  const BlockedByBan(this.status);
+
+  final BannedStatus status;
+}
+
 /// [status] 的账号能否执行 [capability].
 PermissionResult checkPermission(AccountStatus status, Capability capability) =>
     switch (status) {
@@ -153,4 +175,6 @@ PermissionResult checkPermission(AccountStatus status, Capability capability) =>
       VerifiedStatus() => const Allowed(),
       UnverifiedStatus() when capability.openToUnverified => const Allowed(),
       UnverifiedStatus() => const NeedsVerification(),
+      BannedStatus() when capability.openToBanned => const Allowed(),
+      final BannedStatus banned => BlockedByBan(banned),
     };

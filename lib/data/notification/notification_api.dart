@@ -179,6 +179,19 @@ class NotificationRepository {
         title: text('title'),
         content: text('content'),
       ),
+      'account_banned' => BanDetail(
+        reason: text('reason').isEmpty ? null : text('reason'),
+        until: dateFromMillis((json['banUntil'] as num?)?.toInt()),
+      ),
+      'new_device_login' => NewDeviceDetail(
+        deviceName: text('deviceName').isEmpty ? null : text('deviceName'),
+        platform: json['device'] as String?,
+      ),
+      'content_removed' => ContentRemovedDetail(
+        comment: json['contentType'] == 'comment',
+        title: text('title'),
+        reason: text('reason').isEmpty ? null : text('reason'),
+      ),
       _ => null,
     };
   }

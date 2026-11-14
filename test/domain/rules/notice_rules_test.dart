@@ -152,6 +152,60 @@ void main() {
     expect(NoticeRules.targetOf(notice), isA<NoTarget>());
   });
 
+  test('封禁消息写原因，不跳转', () {
+    final banned = _notice(
+      NoticeKind.accountBanned,
+      domain: 'bans',
+      actors: const [],
+      detail: BanDetail(reason: '刷赞', until: DateTime(2026, 11, 30)),
+    );
+    expect(NoticeRules.sentenceOf(banned), '你的账号已被封禁');
+    expect(NoticeRules.contentOf(banned), '原因：刷赞');
+    expect(NoticeRules.targetOf(banned), isA<NoTarget>());
+  });
+
+  test('新设备登录写设备名，没有名称时写设备类型，点了去登录设备', () {
+    final named = _notice(
+      NoticeKind.newDeviceLogin,
+      domain: 'sessions',
+      actors: const [],
+      detail: const NewDeviceDetail(deviceName: 'Pixel 8', platform: 'ANDROID'),
+    );
+    expect(NoticeRules.sentenceOf(named), '你的账号已在新设备上登录');
+    expect(NoticeRules.contentOf(named), startsWith('Pixel 8，'));
+    expect(NoticeRules.targetOf(named), isA<DevicesTarget>());
+    final unnamed = _notice(
+      NoticeKind.newDeviceLogin,
+      domain: 'sessions',
+      actors: const [],
+      detail: const NewDeviceDetail(platform: 'IOS'),
+    );
+    expect(NoticeRules.contentOf(unnamed), startsWith('iPhone，'));
+  });
+
+  test('内容被删除写菜名或评论摘要和原因，不跳转', () {
+    final dish = _notice(
+      NoticeKind.contentRemoved,
+      actors: const [],
+      detail: const ContentRemovedDetail(
+        comment: false,
+        title: '番茄牛腩饭',
+        reason: '不是实拍',
+      ),
+    );
+    expect(NoticeRules.sentenceOf(dish), '你上传的「番茄牛腩饭」已被删除');
+    expect(NoticeRules.contentOf(dish), '原因：不是实拍');
+    expect(NoticeRules.targetOf(dish), isA<NoTarget>());
+    final comment = _notice(
+      NoticeKind.contentRemoved,
+      domain: 'comments',
+      actors: const [],
+      detail: const ContentRemovedDetail(comment: true, title: '汤很鲜'),
+    );
+    expect(NoticeRules.sentenceOf(comment), '你的评论「汤很鲜」已被删除');
+    expect(NoticeRules.contentOf(comment), isNull);
+  });
+
   test('认不出的类型不跳转', () {
     final other = _notice(NoticeKind.fromApi('dinner'));
     expect(other.kind, NoticeKind.other);

@@ -7,7 +7,7 @@ abstract final class Paths {
   static const nearby = '/nearby';
   static const me = '/me';
 
-  /// 登录. 可带 `from` (登录后返回的地址), `expired=1` (因登录过期而进入) 和 `banned=1` (因账号被封禁而进入).
+  /// 登录. 可带 `from` (登录后返回的地址) 和 `expired=1` (因登录过期而进入).
   static const login = '/login';
 
   /// 登录后回到 [from]. [from] 是发现页时不带, 因为登录后默认进入发现页.

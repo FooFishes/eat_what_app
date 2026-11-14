@@ -138,30 +138,66 @@ void main() {
     expect(container.read(accountStatusProvider), isA<VerifiedStatus>());
   });
 
-  test('带凭证的请求收到封禁码：清掉登录态和缓存，原因记为封禁', () async {
-    env.kv.values[UserRepository.cacheKey] = '{}';
-    env.kv.values['prefs.installed'] = '1';
-    env.adapter.on('GET /anything', [FakeAdapter.fail(30002)]);
+  test('账号不存在或在注销冷静期 (不带原因的 30002, 30017)：清掉登录态和缓存，按登录过期处理', () async {
+    for (final code in [30002, 30017]) {
+      env = TestEnv();
+      env.kv.values[UserRepository.cacheKey] = '{}';
+      env.kv.values['prefs.installed'] = '1';
+      env.adapter.on('GET /anything', [FakeAdapter.fail(code)]);
+      final container = await env.container(
+        session: const SignedIn(user: testUser),
+        token: _token,
+      );
+
+      await expectLater(
+        container.read(apiClientProvider).get('/anything'),
+        throwsA(
+          isA<AppFailure>().having(
+            (f) => f.kind,
+            'kind',
+            FailureKind.sessionExpired,
+          ),
+        ),
+      );
+      await pumpEventQueue();
+      final state = container.read(sessionProvider) as SignedOut;
+      expect(state.reason, SignOutReason.expired, reason: '$code');
+      expect(env.secure.values, isEmpty);
+      expect(env.kv.values.keys, ['prefs.installed']);
+    }
+  });
+
+  test('受限会话被拒绝：保留登录，刷新后按封禁中处理', () async {
+    env.adapter.on('POST /foods/like', [
+      FakeAdapter.fail(30002, '账号封禁中', {'reason': '刷赞', 'banUntil': null}),
+    ]);
+    env.adapter.on('GET /user/info', [
+      FakeAdapter.ok({
+        ...userInfoJson(verified: true),
+        'banned': true,
+        'banReason': '刷赞',
+        'banUntil': DateTime(2026, 11, 30).millisecondsSinceEpoch,
+      }),
+    ]);
     final container = await env.container(
-      session: const SignedIn(user: testUser),
+      session: const SignedIn(user: verifiedUser),
       token: _token,
     );
 
     await expectLater(
-      container.read(apiClientProvider).get('/anything'),
+      container.read(apiClientProvider).post('/foods/like'),
       throwsA(
-        isA<AppFailure>().having(
-          (f) => f.kind,
-          'kind',
-          FailureKind.sessionExpired,
-        ),
+        isA<AppFailure>().having((f) => f.kind, 'kind', FailureKind.forbidden),
       ),
     );
     await pumpEventQueue();
-    final state = container.read(sessionProvider) as SignedOut;
-    expect(state.reason, SignOutReason.banned);
-    expect(env.secure.values, isEmpty);
-    expect(env.kv.values.keys, ['prefs.installed']);
+    expect(container.read(sessionProvider), isA<SignedIn>());
+    final status = container.read(accountStatusProvider);
+    expect(status, isA<BannedStatus>());
+    status as BannedStatus;
+    expect(status.reason, '刷赞');
+    expect(status.until, DateTime(2026, 11, 30));
+    expect(env.secure.values, isNotEmpty);
   });
 
   group('游客', () {

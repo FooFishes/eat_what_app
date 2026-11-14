@@ -172,8 +172,8 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 | Provider | 内容 | 谁改 |
 | --- | --- | --- |
-| `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期或被封禁时带上原因（`SignOutReason.expired`、`banned`）和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
-| `accountStatusProvider` | 未登录（含游客）、未认证、已认证。封禁的账号不能登录，没有封禁状态（8.1） | 由 `sessionProvider` 派生 |
+| `sessionProvider` | 未登录 / 游客 / 已登录（token、当前用户）；过期时带上原因（`SignOutReason.expired`）和原地址。游客只在内存里，不落盘，冷启动总是未登录（产品 7.4） | 登录、「先逛逛」、退出、过期、刷新用户信息 |
+| `accountStatusProvider` | 未登录（含游客）、未认证、已认证、封禁中（带原因和期限，8.1） | 由 `sessionProvider` 派生 |
 | `consentProvider` | 本机同意隐私政策、用户协议和数据存放在境外的记录（版本和时间），只决定能不能启动 SDK（9.4） | 登录页（登录成功或「先逛逛」时） |
 | `crossBorderConsentProvider` | 读服务端当前的政策版本（登录时带上）；已登录时弹同意对话框、提交同意（9.5） | 登录流程、`ApiHooks.requestConsent` |
 | `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
@@ -292,7 +292,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | 1 | 当前版本低于强制更新线 | `/update` |
 | 2 | 停服维护中 | `/maintenance` |
-| 3 | 未登录，且目标是「否」，或目标是「游客」而这次打开没点过「先逛逛」 | `/login?from=<原地址>`；过期时再带 `expired=1`；被封禁时带 `banned=1`，不记原地址 |
+| 3 | 未登录，且目标是「否」，或目标是「游客」而这次打开没点过「先逛逛」 | `/login?from=<原地址>`；过期时再带 `expired=1` |
 | 4 | 已登录还去 `/login*` | `from` 指的原地址（校验见 5.4），没有就 `/discover`；新号码刚注册先去 `/verify?onboarding=1`（登录响应要有 `newUser`，见 5.4） |
 
 `resolveRedirect` 有完整的单元测试，覆盖上面每一条和它们的组合。路由的 `metadata` 标记「未登录可进」（`router/guard.dart` 的 `RouteAccess`：`public`、`guest`、`signedIn`，不标的是 `signedIn`），不在守卫里写死路径列表。go_router 的 `metadata` 会被子路由继承，所以「设置」标了 `guest` 后，账号与安全、隐私、通知要标回 `signedIn`。
@@ -306,7 +306,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 自己退出登录时守卫不记原地址，登录后回发现页；要去的本来就是 `/discover` 时也不带 `from`。
 - 新号码注册后（`/auth/phone/login` 返回 `newUser: true`）进认证引导（`/verify?onboarding=1`），「先逛逛」再去 `from`。v2 的登录响应只有令牌，没有 `newUser`，已请后端补上（`docs/EatWhat_后端反馈.md`）；补上之前新号码不进认证引导。
 - 设置用户名后本机会话不变，刷新用户信息后返回；同时设了密码时其他设备要重新登录。
-- 封禁：带登录态的请求返回 30002 时，`ApiHooks.onBanned` 让 `sessionProvider.expire(banned: true)` 清登录态，守卫带 `banned=1` 回登录页，页面显示「账号已被封禁」；不记原地址，登录页照常能「先逛逛」。
+- 封禁不清登录态，按封禁中处理（8.1）。带登录态的请求收到不带原因的 30002（账号已不存在）或 30017（注销冷静期）时，服务端已让会话下线，按登录过期处理。
 - 登录过期：网络层发现过期 → `sessionProvider.expire()` 清登录态并记下当前地址 → 守卫跳到 `/login?from=...&expired=1` → 登录页显示「登录已过期，请重新登录」。同时有多个请求过期时只处理一次。
 
 ### 5.5 发布流程的导航
@@ -413,7 +413,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 20004 | 权限不足：没有认证、删别人的评论、对方未公开粉丝或关注列表 | 重新拉用户信息，按新的账号状态弹拦截对话框（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」。粉丝和关注列表在页面上认成「对方未公开」 |
 | 20005、20009 | 没带同意、同意的政策版本不是当前版本 | 9.5 |
 | 30001 | 用户不存在 | 他人主页、粉丝列表「该用户不存在」 |
-| 30002 | 账号被封禁：登录时；带登录态的请求（服务端同时让会话下线）；统一认证确认、邮箱确认 | 登录时「账号已被封禁」；带登录态时走封禁流程（5.4） |
+| 30002 | 受限会话做了封禁中不允许的事（`data` 带 `reason`、`banUntil`）；账号已不存在（`data` 为空，服务端同时让会话下线） | 带原因时按没权限处理：刷新用户信息，弹封禁对话框（8.1）；不带原因时走登录过期流程（5.4）；登录时「账号已被封禁」 |
+| 30017 | 账号在注销冷静期（登录时 `data.deleteAt`；带登录态的请求时服务端同时让会话下线） | 登录时进撤销注销（18.4）；带登录态时走登录过期流程（5.4） |
 | 30003 | 用户名已被占用 | 设置用户名页就地提示 |
 | 30004 | 密码登录的所有失败（账号不存在、没设过密码、密码错）；改密码时旧密码错 | 「账号或密码错误」；密码登录页常驻「没设过密码的用验证码登录」 |
 | 30005 | 验证码错；换绑第二步时表示旧手机的验证码错 | 输入框就地提示，换绑按步骤显示在对应的输入框下 |
@@ -476,13 +477,14 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 ### 8.1 建模
 
 - `AccountStatus`：`signedOut`（含游客）、`unverified`、`verified`。游客能不能进某页由路由的 `guest` 标记决定（5.3），这里不区分。由 `GET /user/info` 的 `verified` 算出。
-- 封禁：v2 封禁账号不能登录，登录返回 30002；已登录的请求返回 30002 时服务端已经让会话下线，客户端按封禁处理，回登录页提示「账号已被封禁」（5.4）。没有受限会话，也没有封禁原因和期限，客户端不再有「封禁中」的状态。
+- 封禁（2026-11-14 起，产品 4.10）：封禁的账号照常登录，拿到受限会话。`GET /user/info` 的 `banned`、`banReason`、`banUntil`（毫秒，null 为永久）算出 `BannedStatus`，优先于认证状态。受限会话默认放行读取、拒绝写入（后端 `WhenBanned`），例外：放行消息已读、反馈、信息有误、举报、屏蔽、登录设备、退出、注销、使用统计、推送登记、同意政策；拒绝足迹、粉丝和关注列表、收藏的菜、经验明细。被拒绝时返回 30002，`data` 带原因，网络层按没权限处理（7.4 的码表）。还没拉到用户信息时按未认证处理，被拒绝后刷新用户信息即得到封禁状态。
 - `Capability`：需要拦截的动作，按产品 7.2 的表列：赞、收藏、打口味标签（`tasteTag`，待接入）、写我的标签（`myTag`，待接入）、评论、回复、评价店、关注、取消关注、发布菜、新建店、编辑菜品（`editDish`）、编辑店铺（`editShop`，含恢复修改记录）、删除自己的评论和回复（`deleteComment`）、编辑资料、看足迹、看粉丝和关注列表、看等级（`viewGrowth`，待接入）、改隐私、改密码、设用户名、去认证、举报菜和评论和用户（`report`）、店铺信息有误（`reportShopError`）。浏览类、屏蔽、登录设备、退出对所有已登录状态都开放，不进这张表。
 - 游客能点到、要登录才能做的也进这张表，好让游客看到「登录后才能看消息」的面板，而不是被守卫直接带去登录页（产品 7.3）：看消息（`viewInbox`）、看他人主页（`viewProfile`）、意见反馈（`feedback`）、只看我收藏的店（`viewFavorites`）、不想去这家（`dismissShop`）。这几项对所有已登录状态开放，只拦未登录。守卫第 3 条兜住地址栏和深链直接进的情况。
 - 未登录时 `checkPermission` 对所有能力都返回 `NeedsSignIn`，面板主按钮「去登录」，带 `from=<当前地址>` 进 `/login`。
 - 每个能力带一个开关 `openToUnverified`：未认证也能做。编辑资料、删除评论、看足迹、看粉丝和关注、看等级、取消关注、改隐私、改密码、设用户名、去认证、举报、信息有误，以及上一条只拦未登录的几项。其余要求已认证。
+- 另一个开关 `openToBanned`：封禁中也能做。举报、信息有误、看消息、看他人主页、只看我收藏的店、反馈，和后端受限会话放行的范围一致。其余返回 `BlockedByBan`，对话框「账号封禁中，暂时不能评论」，列出原因和期限，只有「知道了」。
 - 举报和信息有误对所有已登录状态都开放，仍然进这张表：为了复用拦截入口和失败反馈，服务端拒绝时按刷新后的账号状态弹对话框。
-- `domain/rules/permission_policy.dart` 一个纯函数：`checkPermission(账号状态, 能力) → Allowed | NeedsSignIn | NeedsVerification`，拦截对话框的动作词取 `Capability.verb`。产品 7.2 的表一格一格写成单元测试。
+- `domain/rules/permission_policy.dart` 一个纯函数：`checkPermission(账号状态, 能力) → Allowed | NeedsSignIn | NeedsVerification | BlockedByBan`，拦截对话框的动作词取 `Capability.verb`。产品 7.2 的表一格一格写成单元测试。
 
 ### 8.2 功能状态
 
@@ -594,7 +596,7 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 - **登录时收到 20005 或 20009**（没带版本，或勾选后政策刚好更新）：重新读版本，弹同意对话框，同意后用同一个验证码或同一组账号密码直接重试一次。服务端在核销验证码之前校验同意，不用重新获取验证码；账号密码只为这一次留在内存里。不同意就停在登录页，提示「需要同意隐私政策后才能继续」。
 - **已登录时**：服务端对没同意当前版本的账号，每个请求都返回 20009，只放行查看政策、查看状态、同意和退出登录。`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请用户确认：`grantForSession` 弹对话框，同意后提交 `grant`，再把原请求重发一次；不同意、对话框弹不出来或提交失败时，原请求按失败处理。几个请求同时遇到时只弹一次对话框。未登录时不弹，交给登录流程。
 - **对话框**：`features/system/consent_dialog.dart` 的 `showConsentDialog`。标题「隐私政策已更新」，一句话说明服务器在境外、账号信息和使用记录会传到境外，附「查看隐私政策」（打开 `PRIVACY_URL`），按钮「不同意」「同意」。登录页和已登录时用同一个对话框。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹；没有挂上时按不同意处理。
-- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，封禁 → `expire(banned: true)`，没权限 → 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
+- 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限（含受限会话被拒绝）→ 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
 - 已知不足：会话中用户不同意以后，后面每个请求还会再弹一次（产品 7.5「下一次操作再问」）。
 
 ## 10. 离线与缓存

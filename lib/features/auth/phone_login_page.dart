@@ -28,7 +28,7 @@ import 'package:go_router/go_router.dart';
 class PhoneLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
-  /// 登录页传入的 `from`, `expired` 和 `banned`, 原样向下传递.
+  /// 登录页传入的 `from` 和 `expired`, 原样向下传递.
   final Map<String, String> query;
 
   @override

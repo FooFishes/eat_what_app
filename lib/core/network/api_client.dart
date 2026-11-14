@@ -19,9 +19,6 @@ part 'api_client.g.dart';
 /// `core` 不能导入 `state`, 因此由 `state` 构造回调并注入.
 class const ApiHooks({
   final VoidCallback? onSessionExpired,
-
-  /// 带凭证的请求收到 [BizCodes.userDisabled] 后调用. 服务端已让该会话下线.
-  final VoidCallback? onBanned,
   final VoidCallback? onForbidden,
 
   /// 已登录时收到要求同意的业务码 ([BizCodes.consentCodes]) 后调用: 请用户同意, 并提交同意.
@@ -160,11 +157,19 @@ class ApiClient {
         );
       }
       final failure = switch (e.code) {
-        // 服务端在封禁时让会话下线, 因此带凭证的请求按登录过期处理, 由 [_notify] 通知封禁.
-        // 登录请求不带凭证, 仍按码表提示封禁.
-        BizCodes.userDisabled when token != null => AppFailure(
-          FailureKind.sessionExpired,
+        // 受限会话被拒绝时 `data` 带封禁原因, 按无权限处理, 页面刷新账号状态后弹出封禁的拦截对话框.
+        // 没有 `data` 表示账号已不存在, 和注销冷静期一样, 服务端已让会话下线, 按登录过期处理.
+        // 登录请求不带凭证, 仍按码表提示.
+        BizCodes.userDisabled when token != null && e.data is Map => AppFailure(
+          FailureKind.forbidden,
           code: BizCodes.userDisabled,
+          serverMessage: e.msg,
+          data: e.data,
+        ),
+        BizCodes.userDisabled ||
+        BizCodes.accountDeletionPending when token != null => AppFailure(
+          FailureKind.sessionExpired,
+          code: e.code,
           serverMessage: e.msg,
         ),
         final Object code => AppFailure.fromCode(
@@ -211,11 +216,7 @@ class ApiClient {
       // 第一次通知会清除凭证, 并发过期的其余请求据此跳过, 避免重复处理.
       case FailureKind.sessionExpired
           when sent != null && identical(_tokens.current, sent):
-        if (failure.code == BizCodes.userDisabled) {
-          _hooks.onBanned?.call();
-        } else {
-          _hooks.onSessionExpired?.call();
-        }
+        _hooks.onSessionExpired?.call();
       case FailureKind.forbidden:
         _hooks.onForbidden?.call();
       default:

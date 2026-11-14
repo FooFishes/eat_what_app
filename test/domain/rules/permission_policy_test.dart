@@ -33,6 +33,26 @@ void main() {
     test('登录了但还没拉到用户信息时按没认证处理，宁可多拦一次', () {
       expect(AccountStatus.of(signedIn: true), isA<UnverifiedStatus>());
     });
+
+    test('封禁中优先于认证状态，带上原因和期限', () {
+      final until = DateTime(2026, 11, 30);
+      final banned = AccountStatus.of(
+        signedIn: true,
+        user: CurrentUser(
+          id: 1,
+          nickname: '同学',
+          hasPassword: false,
+          verified: true,
+          banned: true,
+          banReason: '刷赞',
+          banUntil: until,
+        ),
+      );
+      expect(banned, isA<BannedStatus>());
+      banned as BannedStatus;
+      expect(banned.reason, '刷赞');
+      expect(banned.until, until);
+    });
   });
 
   group('产品 7.2 的权限表', () {
@@ -120,6 +140,27 @@ void main() {
           isA<Allowed>(),
           reason: '$capability',
         );
+      }
+    });
+
+    test('封禁中只能浏览、看消息、看主页和收藏的店、举报和反馈，其余弹出封禁说明', () {
+      const openToBanned = {
+        Capability.report,
+        Capability.reportShopError,
+        Capability.viewInbox,
+        Capability.viewProfile,
+        Capability.viewFavorites,
+        Capability.feedback,
+      };
+      const banned = BannedStatus(reason: '刷赞');
+      for (final capability in Capability.values) {
+        final result = checkPermission(banned, capability);
+        if (openToBanned.contains(capability)) {
+          expect(result, isA<Allowed>(), reason: '$capability');
+        } else {
+          expect(result, isA<BlockedByBan>(), reason: '$capability');
+          expect((result as BlockedByBan).status.reason, '刷赞');
+        }
       }
     });
 

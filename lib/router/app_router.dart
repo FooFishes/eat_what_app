@@ -434,6 +434,6 @@ int? _idOf(GoRouterState state, String name) =>
 
 /// 登录各页之间原样传递的查询参数.
 Map<String, String> _loginQuery(GoRouterState state) => {
-  for (final key in const ['from', 'expired', 'banned'])
+  for (final key in const ['from', 'expired'])
     key: ?state.uri.queryParameters[key],
 };

@@ -6,12 +6,14 @@ sealed class AccountStatus {
 
   /// 未登录时为 [SignedOutStatus]. 已登录但尚未获取用户信息时按 [UnverifiedStatus] 处理.
   ///
-  /// 没有封禁状态: 服务端不让封禁的账号登录, 已登录的会话在封禁时被下线.
+  /// 封禁的账号仍能登录, 拿到只能浏览的受限会话. 是否封禁以 [user] 的 `banned` 为准.
   factory AccountStatus.of({required bool signedIn, CurrentUser? user}) {
     if (!signedIn) return const SignedOutStatus();
-    return user?.verified ?? false
-        ? const VerifiedStatus()
-        : const UnverifiedStatus();
+    if (user == null) return const UnverifiedStatus();
+    if (user.banned) {
+      return BannedStatus(reason: user.banReason, until: user.banUntil);
+    }
+    return user.verified ? const VerifiedStatus() : const UnverifiedStatus();
   }
 }
 
@@ -26,4 +28,16 @@ final class UnverifiedStatus extends AccountStatus {
 
 final class VerifiedStatus extends AccountStatus {
   const VerifiedStatus();
+}
+
+/// 封禁中. 可以浏览, 不能发布和互动.
+final class BannedStatus extends AccountStatus {
+  const BannedStatus({this.reason, this.until});
+
+  final String? reason;
+
+  /// 封禁截止时间. null 表示永久封禁.
+  ///
+  /// 只用于展示. 是否已解封以服务端为准, 到期后客户端不自行放行.
+  final DateTime? until;
 }

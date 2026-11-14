@@ -101,6 +101,84 @@ void main() {
     expect(unknown.kind, NoticeKind.other);
   });
 
+  test('解析封禁、新设备登录和内容被删除的系统消息', () async {
+    final env = TestEnv();
+    final until = DateTime(2026, 11, 30);
+    env.adapter.on('GET /notification/cards', [
+      FakeAdapter.ok(
+        pageJson([
+          noticeCardJson(
+            id: 1,
+            column: 'SYSTEM',
+            kind: 'account_banned',
+            domain: 'bans',
+            actors: const [],
+            data: {
+              'type': 'account_banned',
+              'reason': '刷赞',
+              'banUntil': until.millisecondsSinceEpoch,
+            },
+          ),
+          noticeCardJson(
+            id: 2,
+            column: 'SYSTEM',
+            kind: 'new_device_login',
+            domain: 'sessions',
+            actors: const [],
+            data: {
+              'type': 'new_device_login',
+              'device': 'ANDROID',
+              'deviceName': 'Pixel 8',
+              'loginAt': 1,
+            },
+          ),
+          noticeCardJson(
+            id: 3,
+            column: 'SYSTEM',
+            kind: 'content_removed',
+            domain: 'comments',
+            actors: const [],
+            data: {
+              'type': 'content_removed',
+              'contentType': 'comment',
+              'contentId': 7,
+              'title': '汤很鲜',
+              'reason': null,
+            },
+          ),
+        ]),
+      ),
+    ]);
+    final container = await env.container();
+
+    final page = await container
+        .read(notificationRepositoryProvider)
+        .list(NoticeColumn.system);
+    final [banned, device, removed] = page.items;
+    expect(banned.kind, NoticeKind.accountBanned);
+    expect(
+      banned.detail,
+      isA<BanDetail>()
+          .having((d) => d.reason, 'reason', '刷赞')
+          .having((d) => d.until, 'until', until),
+    );
+    expect(device.kind, NoticeKind.newDeviceLogin);
+    expect(
+      device.detail,
+      isA<NewDeviceDetail>()
+          .having((d) => d.deviceName, 'deviceName', 'Pixel 8')
+          .having((d) => d.platform, 'platform', 'ANDROID'),
+    );
+    expect(removed.kind, NoticeKind.contentRemoved);
+    expect(
+      removed.detail,
+      isA<ContentRemovedDetail>()
+          .having((d) => d.comment, 'comment', isTrue)
+          .having((d) => d.title, 'title', '汤很鲜')
+          .having((d) => d.reason, 'reason', isNull),
+    );
+  });
+
   test('未读数取有未读的行数；标记已读用数字卡片 id', () async {
     final env = TestEnv();
     env.adapter

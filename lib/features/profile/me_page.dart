@@ -82,6 +82,7 @@ class _MePageState extends ConsumerState<MePage> {
         ? null
         : ref.watch(userProfileProvider(user.id)).value;
     final uploads = ref.watch(myUploadsProvider);
+    final banned = ref.watch(accountStatusProvider) is BannedStatus;
     final top = DishRules.mostLiked(
       uploads.value?.pages.items ?? const <Dish>[],
       count: 1,
@@ -189,6 +190,15 @@ class _MePageState extends ConsumerState<MePage> {
                 const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s10)),
                 if (_favoriteShops)
                   const _FavoriteShops()
+                // 受限会话不能调用 `/foods/favorites`, 封禁中不请求.
+                else if (banned)
+                  const SliverToBoxAdapter(
+                    child: EmptyState(
+                      icon: EatIcons.block,
+                      title: '账号封禁中',
+                      message: '封禁期间暂时不能查看收藏的菜。',
+                    ),
+                  )
                 else
                   DishGridSliver(
                     value: ref.watch(myFavoritesProvider),
@@ -357,6 +367,14 @@ class _StatusNotice extends ConsumerWidget {
           height: 36,
           onPressed: () => context.push(Paths.verify),
         ),
+      ),
+      final BannedStatus banned => StageNotice(
+        icon: EatIcons.block,
+        text: [
+          '账号封禁中',
+          banTerm(banned.until, DateTime.now()),
+          if (banned.reason case final reason?) '原因：$reason',
+        ].join('，'),
       ),
       _ => const SizedBox(),
     };

@@ -31,6 +31,11 @@ final class CaseTarget extends NoticeTarget {
   final int caseId;
 }
 
+/// 设置里的登录设备. 新设备登录消息跳到这里.
+final class DevicesTarget extends NoticeTarget {
+  const DevicesTarget();
+}
+
 /// 我的粉丝列表. 多人合并的关注消息跳到这里.
 final class MyFansTarget extends NoticeTarget {
   const MyFansTarget();
@@ -74,7 +79,12 @@ abstract final class NoticeRules {
       // TODO: 回复和评论赞的卡片只带评论 id, 不带菜 id, 后端也没有按 id 读取评论的接口, 因此无法跳到菜品详情. 卡片带上菜 id 后跳到菜品详情并滚动到该评论.
       case NoticeKind.reply || NoticeKind.commentLike:
         return const NoTarget();
-      case NoticeKind.announcement || NoticeKind.other:
+      case NoticeKind.newDeviceLogin:
+        return const DevicesTarget();
+      case NoticeKind.announcement ||
+          NoticeKind.accountBanned ||
+          NoticeKind.contentRemoved ||
+          NoticeKind.other:
         return const NoTarget();
     }
   }
@@ -119,6 +129,16 @@ abstract final class NoticeRules {
         title.trim(),
       _ => '系统公告',
     },
+    NoticeKind.accountBanned => '你的账号已被封禁',
+    NoticeKind.newDeviceLogin => '你的账号已在新设备上登录',
+    NoticeKind.contentRemoved => switch (notice.detail) {
+      ContentRemovedDetail(comment: true, :final title) when title.isNotEmpty =>
+        '你的评论「$title」已被删除',
+      ContentRemovedDetail(comment: true) => '你的一条评论已被删除',
+      ContentRemovedDetail(:final title) when title.isNotEmpty =>
+        '你上传的「$title」已被删除',
+      _ => '你上传的一道菜已被删除',
+    },
     NoticeKind.other => '你有一条新消息',
   };
 
@@ -128,11 +148,24 @@ abstract final class NoticeRules {
     _ => null,
   };
 
-  /// 公告的内容. 不是公告或没有内容时返回 null.
+  /// 正文下面的说明: 公告的内容, 封禁和删除的原因, 新设备的名称. 没有时返回 null.
+  ///
+  /// 封禁期限要按当前日期格式化, 由页面另起一行显示.
   static String? contentOf(Notice notice) => switch (notice.detail) {
     AnnouncementDetail(:final content) when content.trim().isNotEmpty =>
       content.trim(),
+    BanDetail(:final reason?) ||
+    ContentRemovedDetail(:final reason?) => '原因：$reason',
+    NewDeviceDetail(:final deviceName, :final platform) =>
+      '${deviceName ?? _platformOf(platform)}，不是你本人登录时，可以在登录设备里让它下线',
     _ => null,
+  };
+
+  static String _platformOf(String? platform) => switch (platform) {
+    'IOS' => 'iPhone',
+    'ANDROID' => '安卓设备',
+    'WEB' => '网页版',
+    _ => '其他设备',
   };
 
   static String _caseSentence(NoticeDetail? detail) {

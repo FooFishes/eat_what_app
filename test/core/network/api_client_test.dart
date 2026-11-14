@@ -193,27 +193,42 @@ void main() {
       expect(expired, 1);
     });
 
-    test('带凭证的请求收到封禁码时按会话失效处理，只通知封禁；登录请求不带凭证时提示封禁', () async {
+    test('受限会话被拒绝时按无权限处理，通知刷新账号状态，不清除登录态', () async {
       var expired = 0;
-      var banned = 0;
+      var forbidden = 0;
       final hooks = ApiHooks(
         onSessionExpired: () => expired++,
-        onBanned: () => banned++,
+        onForbidden: () => forbidden++,
       );
       final (client, adapter, _) = await _client(hooks: hooks);
-      adapter.on('GET /user/info', [FakeAdapter.fail(30002)]);
+      adapter.on('POST /foods/like', [
+        FakeAdapter.fail(30002, '账号封禁中', {'reason': '刷赞', 'banUntil': null}),
+      ]);
 
-      final failure = await _failure(client.get('/user/info'));
-      expect(failure.kind, FailureKind.sessionExpired);
+      final failure = await _failure(client.post('/foods/like'));
+      expect(failure.kind, FailureKind.forbidden);
       expect(failure.code, BizCodes.userDisabled);
-      expect((expired, banned), (0, 1));
+      expect((expired, forbidden), (0, 1));
+    });
+
+    test('带凭证的请求收到不带原因的 30002 或 30017 时按会话失效处理；登录请求不带凭证时按码表提示', () async {
+      var expired = 0;
+      final hooks = ApiHooks(onSessionExpired: () => expired++);
+      for (final code in [30002, 30017]) {
+        final (client, adapter, _) = await _client(hooks: hooks);
+        adapter.on('GET /user/info', [FakeAdapter.fail(code)]);
+        final failure = await _failure(client.get('/user/info'));
+        expect(failure.kind, FailureKind.sessionExpired, reason: '$code');
+        expect(failure.code, code);
+      }
+      expect(expired, 2);
 
       final (login, loginAdapter, _) = await _client(token: null, hooks: hooks);
       loginAdapter.on('POST /auth/login', [FakeAdapter.fail(30002)]);
       final rejected = await _failure(login.post('/auth/login'));
       expect(rejected.kind, FailureKind.business);
       expect(rejected.message, '账号已被封禁');
-      expect((expired, banned), (0, 1));
+      expect(expired, 2);
     });
 
     test('没登录时遇到 2000x 不当作过期', () async {

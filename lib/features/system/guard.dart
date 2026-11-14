@@ -1,10 +1,13 @@
 import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/fact_list.dart';
+import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -57,8 +60,42 @@ Future<bool> guardAction(
         ),
       );
       return false;
+    case BlockedByBan(:final status):
+      await _showBanned(context, capability, status);
+      return false;
   }
 }
+
+Future<void> _showBanned(
+  BuildContext context,
+  Capability capability,
+  BannedStatus status,
+) => showEatDialog<void>(
+  context,
+  builder: (dialog) => EatDialog(
+    icon: EatIcons.block,
+    title: '账号封禁中，暂时不能${capability.verb}',
+    actions: EatButton.solid(
+      '知道了',
+      onPressed: () => Navigator.of(dialog).pop(),
+    ),
+    child: FactList([
+      if (status.reason case final reason?)
+        (label: '原因', value: reason, strong: false),
+      (
+        label: '期限',
+        value: banTerm(status.until, DateTime.now()),
+        strong: false,
+      ),
+    ]),
+  ),
+);
+
+/// 封禁期限, 如 "封禁至 11 月 30 日". 没有截止时间 [until] 时为 "永久封禁".
+String banTerm(DateTime? until, DateTime now) => switch (until) {
+  final until? => '封禁至 ${TimeFormat.date(until, now)}',
+  null => '永久封禁',
+};
 
 /// 游客的拦截对话框. "去登录" 带上当前地址进登录页, 登录后回到这里, 不替用户完成刚才的动作.
 Future<void> _showSignIn(BuildContext context, Capability capability) {
