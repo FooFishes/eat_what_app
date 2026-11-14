@@ -1,16 +1,13 @@
 import 'dart:async';
 
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/crop_viewport.dart';
-import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/stage_color_picker.dart';
 import 'package:eat/domain/models/dish.dart';
-import 'package:eat/features/system/guard.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -220,8 +217,6 @@ class _CropPageState extends State<CropPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _RemoveBackground(),
-                      const SizedBox(height: EatSpace.s14),
                       StageColorPicker(
                         candidates: _candidates,
                         selected: _selected,
@@ -288,73 +283,6 @@ class _TopBar extends StatelessWidget {
         ),
         action('完成', onDone, strong: true),
       ],
-    );
-  }
-}
-
-// TODO: 后端不生成去背景的图片, 也不保存 "自动去掉背景" 开关. 后端支持后接入开关并去掉 "待接入".
-/// "自动去掉背景" 开关.
-class _RemoveBackground extends StatelessWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    final paper = eat.colors.paper;
-    return EatTappable(
-      onTap: () => showPending(context, PendingFeature.removeBackground),
-      button: false,
-      toggled: false,
-      label: '自动去掉背景，待接入',
-      focusShape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(EatRadius.thumb),
-      ),
-      builder: (context, _) => Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [
-                Row(
-                  spacing: EatSpace.s8,
-                  children: [
-                    Text(
-                      '自动去掉背景',
-                      style: eat.text.body.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: paper,
-                      ),
-                    ),
-                    const PendingTag(),
-                  ],
-                ),
-                Text(
-                  '仅保留碗盘，效果不理想可关闭',
-                  style: eat.text.caption.copyWith(
-                    color: paper.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 44,
-            height: 26,
-            padding: const EdgeInsets.all(3),
-            alignment: Alignment.centerLeft,
-            decoration: ShapeDecoration(
-              shape: const StadiumBorder(),
-              color: paper.withValues(alpha: 0.25),
-            ),
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: paper),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

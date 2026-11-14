@@ -313,7 +313,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 `url_launcher` 同时用来打开协议页、商店页（`LaunchMode.inAppBrowserView`，iOS 是 SFSafariViewController，安卓是 Custom Tabs），以及 Web 上整页跳转到学校统一认证页。App 上的统一认证页用 `flutter_web_auth_2`（第 10 节）。
 
-## 8. 图片选择、压缩、裁切、取色与去背景
+## 8. 图片选择、压缩、裁切和取色
 
 | 环节 | 选 | 说明 |
 | --- | --- | --- |
@@ -321,9 +321,9 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | 压缩 | `flutter_image_compress ^2.5.1` | 三端统一用 `compressWithList`（Web 不支持按文件压缩）。输出 JPEG；默认 `keepExif: false`，**去掉 EXIF**，照片里的 GPS 位置不会传上去；方向统一校正。Web 上靠浏览器 Canvas 编码。`minWidth`、`minHeight` 实际是按短边缩的上限，要先读原图尺寸、按长边 2048 换算（`core/platform/photo_picker.dart`） |
 | 裁切 | 自己写 | 「调整照片」只产出裁切参数（圆心和缩放），随菜品保存，不生成裁好的图。头像需要真的裁：用 `PictureRecorder` 画出圆形区域，`toByteData` 拿 PNG，再交给压缩转 JPEG |
 | 取色 | 自己写 | 只看圆内像素、按饱和度加权、吸附到 9 个 `stage-*`。用 `ui.instantiateImageCodec` 按小尺寸解码拿像素，纯 Dart 计算，三端一致 |
-| 去背景 | 不在客户端做（待确认 D8） | 见下 |
+| 去背景 | 不做（D8） | 见下 |
 
-**去背景为什么不在客户端**：设备端抠图三端没有统一方案。Google ML Kit 的主体分割依赖 Google Play 服务（国产机没有），iOS 的 Vision 前景分割要 iOS 17，Web 没有原生能力。推荐由后端在上传完成后生成去背景版本，客户端只负责开关和显示。开关本身在远程配置里能单独关。
+**去背景**：2026-11-14 定为不做，客户端和后端都不做。当初也不打算放在客户端：设备端抠图三端没有统一方案，Google ML Kit 的主体分割依赖 Google Play 服务（国产机没有），iOS 的 Vision 前景分割要 iOS 17，Web 没有原生能力。
 
 **不选**：`image` 4.12.0（纯 Dart 编解码，大图在 Web 主线程上会卡，没有 isolate）；`image_cropper` 13.0.0；`extended_image` 10.1.0（图片加载和编辑一体，和 `cached_network_image` 同类）；`palette_generator`（已 discontinued）。
 
@@ -521,4 +521,4 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | D5 | 统计埋点自建还是用第三方 | 已定（2026-11-02）：自建，上报到后端 `/telemetry`；崩溃仍用 Sentry | — |
 | D6 | 人机验证服务商 | 已定：腾讯云验证码国际站，后端已接（第 15 节）。还要实测国际站 JS 在大陆网络下的表现，确认验证数据的存放地写进隐私政策 | 产品负责人、后端 |
 | D7 | 中文字体怎么内置 | 已定（2026-11-11）：不内置，安卓、iOS 用系统字体，Web 用自托管的回落字体；数字仍内置 Inter（第 9.1 节） | — |
-| D8 | 自动去背景放哪做 | 放后端：上传完成后生成去背景版本，客户端只管开关和显示。客户端三端没有统一的抠图能力 | 产品负责人、后端 |
+| D8 | 自动去背景放哪做 | 已定（2026-11-14）：不做 | — |
