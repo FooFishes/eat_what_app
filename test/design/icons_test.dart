@@ -61,7 +61,8 @@ void main() {
     test('Emoji 和 assets/emoji/ 里的图片一一对应，每个都有动图和静态图', () {
       final images = Directory('assets/emoji')
           .listSync()
-          .map((f) => f.path)
+          .whereType<File>()
+          .map((f) => 'assets/emoji/${f.uri.pathSegments.last}')
           .where((path) => path.endsWith('.webp'))
           .toSet();
       expect({
