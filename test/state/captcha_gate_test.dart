@@ -21,8 +21,9 @@ void main() {
   late CaptchaGate gate;
   final presented = <CaptchaParams>[];
 
-  Future<CaptchaOutcome> present(CaptchaParams params) {
-    presented.add(params);
+  Future<CaptchaOutcome> present(Future<CaptchaParams?> params) async {
+    final resolved = await params;
+    if (resolved != null) presented.add(resolved);
     return env.verifier.verify(_NoContext(), params);
   }
 
@@ -43,7 +44,7 @@ void main() {
     expect(tickets.map((t) => t?.ticket), ['t-1', 't-1']);
   });
 
-  test('服务端关掉了人机验证时直接发', () async {
+  test('服务端关掉了人机验证时不带票据直接发', () async {
     env.adapter.on('GET /auth/captcha/config', [
       FakeAdapter.ok({'enabled': false, 'provider': 'tencent-cloud-intl'}),
     ]);
@@ -52,6 +53,7 @@ void main() {
     expect(await gate.run(present, (t) async => sent = t), isTrue);
     expect(sent, isNull);
     expect(presented, isEmpty);
+    expect(env.verifier.calls, 0);
   });
 
   test('用户关掉验证就什么都不发', () async {
@@ -97,6 +99,16 @@ void main() {
       isTrue,
     );
     expect(sends, 2);
+  });
+
+  test('页面已关闭、没有等参数时，参数出错也不会成为未处理的错误', () async {
+    env.adapter.on('GET /auth/captcha/config', [FakeAdapter.fail(50004)]);
+
+    expect(
+      await gate.run((_) async => const CaptchaCancelled(), (_) async {}),
+      isFalse,
+    );
+    await pumpEventQueue();
   });
 
   test('人机验证服务不可用时不重来', () async {

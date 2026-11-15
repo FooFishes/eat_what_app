@@ -246,8 +246,9 @@ class FakeHumanVerifier implements HumanVerifier {
   @override
   Future<CaptchaOutcome> verify(
     BuildContext context,
-    CaptchaParams params,
+    Future<CaptchaParams?> params,
   ) async {
+    if (await params == null) return const CaptchaSkipped();
     calls++;
     return outcome;
   }

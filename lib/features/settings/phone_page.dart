@@ -58,7 +58,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
 
   PhoneChange get _change => ref.read(phoneChangeProvider.notifier);
 
-  Future<CaptchaOutcome> _presentCaptcha(CaptchaParams params) async {
+  Future<CaptchaOutcome> _presentCaptcha(Future<CaptchaParams?> params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);
   }

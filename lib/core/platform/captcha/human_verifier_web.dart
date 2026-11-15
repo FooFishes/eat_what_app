@@ -14,6 +14,10 @@ HumanVerifier createHumanVerifier(AppConfig config) => _JsHumanVerifier();
 /// Flutter 的画布占满整页, 因此在画布上方添加带遮罩的浮层, 容器居中放在浮层内.
 /// 点击遮罩空白处视为用户关闭.
 ///
+/// 浮层一开始就插入, 但完全透明, 只拦截点击. 容器有了实际尺寸 (组件渲染出来) 后遮罩才淡入,
+/// 时长与对话框进出一致. 无风险时腾讯不渲染任何内容, 容器始终为 0×0, 而 `ready` 回调照常触发,
+/// 因此不以 `ready` 为准. 加载期间和无感通过时用户看到的是原页面和按钮的加载状态.
+///
 /// 有风险时腾讯另外弹出滑块拼图, 挂在 `body` 下, 遮罩层级为 2000000000, 弹窗层级为 2000000002.
 /// 浮层层级必须低于二者, 否则拼图会被本站的遮罩压暗, 勾选框也会盖住拼图.
 class _JsHumanVerifier implements HumanVerifier {
@@ -22,11 +26,13 @@ class _JsHumanVerifier implements HumanVerifier {
   @override
   Future<CaptchaOutcome> verify(
     BuildContext context,
-    CaptchaParams params,
+    Future<CaptchaParams?> pendingParams,
   ) async {
-    if (!await _load(params.scriptUrl)) return const CaptchaFailed();
     final completer = Completer<CaptchaOutcome>();
     final overlay = web.HTMLDivElement();
+    final reduceMotion = web.window
+        .matchMedia('(prefers-reduced-motion: reduce)')
+        .matches;
     overlay.style
       ..position = 'fixed'
       ..inset = '0'
@@ -34,15 +40,45 @@ class _JsHumanVerifier implements HumanVerifier {
       ..display = 'flex'
       ..alignItems = 'center'
       ..justifyContent = 'center'
-      ..background = 'rgba(35, 28, 24, 0.45)';
+      ..background = 'rgba(35, 28, 24, 0)'
+      ..transition = reduceMotion ? 'none' : 'background-color 200ms ease-out';
     final container = web.HTMLDivElement();
     overlay.append(container);
 
+    final observer = web.ResizeObserver(
+      (JSArray<web.ResizeObserverEntry> entries, web.ResizeObserver _) {
+        final box = entries.toDart.first.contentRect;
+        if (box.width > 0 && box.height > 0) {
+          overlay.style.background = 'rgba(35, 28, 24, 0.45)';
+        }
+      }.toJS,
+    )..observe(container);
+
     void finish(CaptchaOutcome outcome) {
       if (completer.isCompleted) return;
+      observer.disconnect();
       overlay.remove();
       completer.complete(outcome);
     }
+
+    web.document.body!.append(overlay);
+    final CaptchaParams? params;
+    try {
+      params = await pendingParams;
+    } on Object {
+      observer.disconnect();
+      overlay.remove();
+      rethrow;
+    }
+    if (params == null) {
+      finish(const CaptchaSkipped());
+      return completer.future;
+    }
+    if (!await _load(params.scriptUrl)) {
+      finish(const CaptchaFailed());
+      return completer.future;
+    }
+    if (completer.isCompleted) return completer.future;
 
     overlay.onclick = (web.MouseEvent e) {
       if (e.target == overlay) finish(const CaptchaCancelled());
@@ -55,7 +91,6 @@ class _JsHumanVerifier implements HumanVerifier {
       ),
     );
 
-    web.document.body!.append(overlay);
     try {
       final options = _TencentOptions(
         aidEncrypted: params.aidEncrypted.toJS,

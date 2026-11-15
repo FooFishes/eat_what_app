@@ -63,7 +63,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
   }
 
   /// 在本页弹出人机验证. 页面已关闭时按用户取消处理.
-  Future<CaptchaOutcome> _presentCaptcha(CaptchaParams params) async {
+  Future<CaptchaOutcome> _presentCaptcha(Future<CaptchaParams?> params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);
   }

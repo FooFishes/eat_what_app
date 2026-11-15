@@ -10,7 +10,7 @@ part 'captcha_gate.g.dart';
 ///
 /// 由页面用自身的 `BuildContext` 包装 `HumanVerifier.verify` 后传入, Provider 不持有 `BuildContext`.
 typedef CaptchaPresenter = Future<CaptchaOutcome> Function(
-  CaptchaParams params,
+  Future<CaptchaParams?> params,
 );
 
 /// 发送验证码和认证邮件前的人机验证. 票据只随本次请求发送.
@@ -32,17 +32,18 @@ class CaptchaGate {
     Future<void> Function(CaptchaTicket? ticket) send,
   ) async {
     for (var attempt = 1; ; attempt++) {
-      final params = await _auth.captchaParams();
-      CaptchaTicket? ticket;
-      if (params != null) {
-        switch (await present(params)) {
-          case CaptchaPassed(ticket: final passed):
-            ticket = passed;
-          case CaptchaCancelled():
-            return false;
-          case CaptchaFailed():
-            throw AppFailure.fromCode(BizCodes.captchaInvalid);
-        }
+      // 页面已关闭时 present 不等待参数, 这里吞掉未处理的错误. 等待它的一方照常收到错误.
+      final params = _auth.captchaParams()..ignore();
+      final CaptchaTicket? ticket;
+      switch (await present(params)) {
+        case CaptchaPassed(ticket: final passed):
+          ticket = passed;
+        case CaptchaSkipped():
+          ticket = null;
+        case CaptchaCancelled():
+          return false;
+        case CaptchaFailed():
+          throw AppFailure.fromCode(BizCodes.captchaInvalid);
       }
       try {
         await send(ticket);
