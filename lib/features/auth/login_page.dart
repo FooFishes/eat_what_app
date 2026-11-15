@@ -31,7 +31,7 @@ import 'package:go_router/go_router.dart';
 /// 登录页.
 ///
 /// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
-/// - 抽屉: "验证码登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
+/// - 抽屉: "手机注册 / 登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
 ///   勾选同时同意隐私政策, 用户协议和个人信息出境说明.
 ///
 /// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
@@ -114,7 +114,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             children: [
               if (query['expired'] == '1') const _Notice('登录已过期，请重新登录'),
               EatButton.solid(
-                '验证码登录',
+                '手机注册 / 登录',
                 icon: EatIcons.phone,
                 onPressed: () => _start(Paths.loginPhone),
               ),
