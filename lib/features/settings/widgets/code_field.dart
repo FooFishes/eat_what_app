@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
+import 'package:eat/design/widgets/send_code_action.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -92,28 +92,11 @@ class _CodeFieldState extends State<CodeField> {
             LengthLimitingTextInputFormatter(6),
           ],
           errorText: widget.errorText,
-          trailing: secondsLeft > 0
-              ? Semantics(
-                  liveRegion: true,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$secondsLeft',
-                          style: eat.text.count.copyWith(color: c.inkMuted),
-                        ),
-                        const TextSpan(text: ' 秒后重发'),
-                      ],
-                    ),
-                    style: eat.text.body.copyWith(color: c.inkMuted),
-                  ),
-                )
-              : EatButton.mist(
-                  '获取验证码',
-                  height: 36,
-                  loading: _sending,
-                  onPressed: widget.enabled ? _send : null,
-                ),
+          trailing: SendCodeAction(
+            secondsLeft: secondsLeft,
+            sending: _sending,
+            onPressed: widget.enabled ? _send : null,
+          ),
         ),
         if (widget.note case final note?)
           Text(note, style: eat.text.caption.copyWith(color: c.inkMuted)),

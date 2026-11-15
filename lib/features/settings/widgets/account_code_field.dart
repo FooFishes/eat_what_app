@@ -5,9 +5,9 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/design/theme/eat_theme.dart';
-import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/send_code_action.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/settings/settings_providers.dart';
 import 'package:flutter/services.dart';
@@ -113,28 +113,11 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
           ],
           errorText: widget.errorText,
           onSubmitted: widget.onSubmitted,
-          trailing: secondsLeft > 0
-              ? Semantics(
-                  liveRegion: true,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$secondsLeft',
-                          style: eat.text.count.copyWith(color: c.inkMuted),
-                        ),
-                        const TextSpan(text: ' 秒后重发'),
-                      ],
-                    ),
-                    style: eat.text.body.copyWith(color: c.inkMuted),
-                  ),
-                )
-              : EatButton.mist(
-                  '获取验证码',
-                  height: 36,
-                  loading: code.sending,
-                  onPressed: _send,
-                ),
+          trailing: SendCodeAction(
+            secondsLeft: secondsLeft,
+            sending: code.sending,
+            onPressed: _send,
+          ),
         ),
         if (phone != null)
           Text.rich(

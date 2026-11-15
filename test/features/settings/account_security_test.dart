@@ -3,6 +3,7 @@ import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
+import 'package:eat/design/widgets/send_code_action.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/settings/phone_page.dart';
 import 'package:eat/router/paths.dart';
@@ -47,7 +48,7 @@ Future<void> _sendCode(WidgetTester tester, String label) async {
   await tester.tap(
     find.descendant(
       of: find.widgetWithText(EatFormField, label),
-      matching: _button('获取验证码'),
+      matching: find.byType(SendCodeAction),
     ),
   );
   await tester.pumpAndSettle();
