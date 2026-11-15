@@ -56,7 +56,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
                 invalidate: [provider],
                 wait: () => ref.read(provider.future),
               ),
-              subtitle: dish == null
+              titleNote: dish == null
                   ? null
                   : [dish.name, ?dish.shopName].join('  '),
               slivers: [

@@ -143,14 +143,12 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
         _username.text.isNotEmpty && _code.text.length == 6 && !_submitting;
     return PlainScaffold(
       title: '设置用户名',
-      subtitle: '用于密码登录，只能设一次',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: EatSpace.s14),
                 EatFormField(
                   label: '用户名',
                   controller: _username,
@@ -165,7 +163,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
                   errorText: _usernameError,
                 ),
                 const SizedBox(height: 6),
-                Text('区分大小写，设置后无法修改', style: note),
+                Text('用于密码登录，区分大小写，设置后无法修改', style: note),
                 const SizedBox(height: 26),
                 AccountCodeField(
                   controller: _code,

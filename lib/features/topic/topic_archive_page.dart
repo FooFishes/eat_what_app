@@ -30,7 +30,7 @@ class TopicArchivePage extends ConsumerWidget {
     final data = value.value;
     return PlainScaffold(
       title: '往期专题',
-      subtitle: campus?.name,
+      titleNote: campus?.name,
       onRefresh: () => pullToRefresh(
         context,
         ref,

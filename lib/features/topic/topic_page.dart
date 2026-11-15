@@ -64,7 +64,6 @@ class TopicPage extends ConsumerWidget {
     final topic = detail.topic;
     return PlainScaffold(
       title: topic.name,
-      subtitle: topic.introduction.isEmpty ? null : topic.introduction,
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -84,6 +83,18 @@ class TopicPage extends ConsumerWidget {
         ),
       ],
       slivers: [
+        if (topic.introduction.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: EatSpace.s10),
+              child: Text(
+                topic.introduction,
+                style: context.eat.text.body.copyWith(
+                  color: context.eat.colors.ink,
+                ),
+              ),
+            ),
+          ),
         SliverToBoxAdapter(child: _TopicMeta(topic: topic)),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s24)),
         if (detail.dishes.isEmpty)

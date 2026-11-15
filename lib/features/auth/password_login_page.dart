@@ -118,14 +118,12 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
 
     return PlainScaffold(
       title: '密码登录',
-      subtitle: '仅限已设置密码的账号',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: EatSpace.s14),
                 EatFormField(
                   label: '账号',
                   controller: _account,

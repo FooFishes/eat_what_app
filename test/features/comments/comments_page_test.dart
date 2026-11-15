@@ -62,7 +62,7 @@ void main() {
       location: Paths.comments(1),
     );
 
-    expect(find.text('吃过的人说'), findsOneWidget);
+    expect(find.textContaining('吃过的人说'), findsOneWidget);
     expect(find.text('酸笋给得很大方'), findsOneWidget);
     expect(find.text('中辣已经很够了'), findsOneWidget);
     expect(find.textContaining('同意，加个炸蛋更香'), findsOneWidget);

@@ -131,7 +131,6 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
         _repeat.text.isNotEmpty;
     return PlainScaffold(
       title: hasPassword ? '修改密码' : '设置密码',
-      subtitle: '设置后可使用手机号或用户名配合密码登录',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
@@ -155,8 +154,7 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
                     ],
                   ),
                   const SizedBox(height: EatSpace.s20),
-                ] else
-                  const SizedBox(height: EatSpace.s14),
+                ],
                 if (byCode)
                   AccountCodeField(
                     controller: _code,
@@ -195,15 +193,11 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
                   },
                 ),
                 const SizedBox(height: 40),
-                if (hasPassword) ...[
-                  Text(
-                    '修改后，其他设备需要重新登录。',
-                    style: eat.text.caption.copyWith(
-                      color: eat.colors.inkMuted,
-                    ),
-                  ),
-                  const SizedBox(height: EatSpace.s14),
-                ],
+                Text(
+                  hasPassword ? '修改后，其他设备需要重新登录。' : '设置后可使用手机号或用户名配合密码登录。',
+                  style: eat.text.caption.copyWith(color: eat.colors.inkMuted),
+                ),
+                const SizedBox(height: EatSpace.s14),
                 EatButton.solid(
                   hasPassword ? '修改密码' : '设置密码',
                   loading: _submitting,

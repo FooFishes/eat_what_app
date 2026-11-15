@@ -21,7 +21,7 @@ class GrowthPage extends ConsumerWidget {
     final eat = context.eat;
     return PlainScaffold(
       title: '等级',
-      subtitle: '经验只有你自己看得见',
+      titleNote: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,

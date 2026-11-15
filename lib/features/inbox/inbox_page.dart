@@ -148,7 +148,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
     final page = inbox.value?.pages;
     return PlainScaffold(
       title: '消息',
-      subtitle: unread > 0 ? '$unread 条未读' : null,
+      titleNote: unread > 0 ? '$unread 条未读' : null,
       onRefresh: () {
         ref.read(unreadCountProvider.notifier).refresh();
         return pullToRefresh(

@@ -145,7 +145,6 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
 
     return PlainScaffold(
       title: '学生认证',
-      subtitle: '认证后可以发布、点赞、评论和关注。认证仅用于确认学生身份，我们无法获取你的统一认证密码。',
       showBack: !widget.onboarding,
       actions: [
         if (widget.onboarding && !verified) _TextAction('先逛逛', onTap: _leave),
@@ -175,6 +174,8 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
                       .refresh(userAsked: true),
                 ),
               const SizedBox(height: 28),
+              Text('认证仅用于确认学生身份，我们无法获取你的统一认证密码。', style: small),
+              const SizedBox(height: EatSpace.s8),
               Text('每个统一认证身份、每个邮箱只能认证一个账号。校外用户可以注册和浏览，但无法认证。', style: small),
             ],
           ),
@@ -226,6 +227,11 @@ class _Unverified extends StatelessWidget {
               ),
             ],
           ),
+          style: eat.text.meta.copyWith(color: c.inkMuted),
+        ),
+        const SizedBox(height: EatSpace.s4),
+        Text(
+          '认证后可以发布、点赞、评论和关注。',
           style: eat.text.meta.copyWith(color: c.inkMuted),
         ),
         const SizedBox(height: EatSpace.s14),

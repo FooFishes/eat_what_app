@@ -11,6 +11,7 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/design/widgets/send_code_action.dart';
 import 'package:eat/domain/rules/account_rules.dart';
 import 'package:eat/features/auth/auth_providers.dart';
 import 'package:eat/features/auth/widgets/auth_form.dart';
@@ -172,18 +173,15 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     final ready =
         AccountRules.isMobile(_mobile.text) &&
         AccountRules.isSmsCode(_code.text);
-    final numberStyle = eat.text.count.copyWith(color: c.inkMuted);
 
     return PlainScaffold(
-      title: '手机号登录',
-      subtitle: '未注册的号码验证后自动注册',
+      title: '手机注册 / 登录',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: EatSpace.s14),
                 EatFormField(
                   label: '手机号',
                   controller: _mobile,
@@ -196,6 +194,11 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                   autofocus: true,
                   inputFormatters: const [MobileInputFormatter()],
                   errorText: _mobileError,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '未注册的号码验证后自动注册',
+                  style: eat.text.caption.copyWith(color: c.inkMuted),
                 ),
                 const SizedBox(height: 26),
                 EatFormField(
@@ -215,28 +218,11 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                     if (ready && !login.submitting) _submit();
                   },
                   errorText: codeError,
-                  trailing: secondsLeft > 0
-                      ? Semantics(
-                          liveRegion: true,
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '$secondsLeft',
-                                  style: numberStyle,
-                                ),
-                                const TextSpan(text: ' 秒后重发'),
-                              ],
-                            ),
-                            style: eat.text.body.copyWith(color: c.inkMuted),
-                          ),
-                        )
-                      : EatButton.mist(
-                          '获取验证码',
-                          height: 36,
-                          loading: login.sending,
-                          onPressed: _sendCode,
-                        ),
+                  trailing: SendCodeAction(
+                    secondsLeft: secondsLeft,
+                    sending: login.sending,
+                    onPressed: _sendCode,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(

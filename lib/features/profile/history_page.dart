@@ -42,7 +42,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     final empty = value.value?.pages.items.isEmpty ?? true;
     return PlainScaffold(
       title: '足迹',
-      subtitle: '仅自己可见',
+      titleNote: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,

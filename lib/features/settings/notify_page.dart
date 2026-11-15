@@ -23,11 +23,12 @@ class NotifyPage extends ConsumerWidget {
     final settings = value.value;
     return PlainScaffold(
       title: '通知',
-      subtitle: '只告诉你和你有关的事，不推饭点提醒和活动',
       slivers: [
         SliverList.list(
           children: [
             const ListGroupTitle('推送哪些'),
+            Text('只告诉你和你有关的事，不推饭点提醒和活动', style: note),
+            const SizedBox(height: EatSpace.s8),
             if (settings == null)
               value.hasError && !value.isLoading
                   ? FailureState(

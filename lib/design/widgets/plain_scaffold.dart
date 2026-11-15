@@ -12,13 +12,15 @@ import 'package:flutter/widgets.dart';
 /// - 标题行固定在顶部, 不随内容滚动. 内容滚动到标题行下方时, 标题行底边显示 `hairline`.
 /// - 宽屏时整页收窄为居中的一栏.
 /// - 分组靠小标题和留白分隔, 不加卡片. [slivers] 已包含左右边距.
+/// - 标题下面不放副标题. 说明写在内容里它所说明的输入框或列表旁边,
+///   标题旁只放 [titleNote] 这类简短的状态.
 /// - 键盘弹出时页面避让到键盘上方, 获得焦点的输入框会滚动到可见位置.
 /// - 拖动页面或点击空白处时收起键盘.
 class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
     required this.title,
-    this.subtitle,
+    this.titleNote,
     this.slivers = const [],
     this.actions = const [],
     this.showBack = true,
@@ -30,8 +32,9 @@ class PlainScaffold extends StatefulWidget {
 
   final String title;
 
-  /// 标题下方一两行的说明, 使用 `ink-muted`. 随内容滚动.
-  final String? subtitle;
+  /// 紧跟在标题后面的简短状态, 如 "3 条未读" "仅自己可见", 使用 `meta` 和 `ink-muted`.
+  /// 和标题同属一段文字, 放不下时接着标题换行.
+  final String? titleNote;
 
   final List<Widget> slivers;
 
@@ -110,8 +113,23 @@ class _PlainScaffoldState extends State<PlainScaffold>
                     header: true,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        widget.title,
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: widget.title),
+                            if (widget.titleNote case final note?) ...[
+                              const WidgetSpan(
+                                child: SizedBox(width: EatSpace.s8),
+                              ),
+                              TextSpan(
+                                text: note,
+                                style: eat.text.meta.copyWith(
+                                  color: eat.colors.inkMuted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                         textScaler: TextScaler.noScaling,
                         style: eat.text.heading.copyWith(color: eat.colors.ink),
                       ),
@@ -139,19 +157,7 @@ class _PlainScaffoldState extends State<PlainScaffold>
       },
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        SliverToBoxAdapter(
-          child: SizedBox(height: widget.subtitle == null ? 20 : 4),
-        ),
-        if (widget.subtitle case final subtitle?)
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(padding, 0, padding, 24),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                subtitle,
-                style: eat.text.body.copyWith(color: eat.colors.inkMuted),
-              ),
-            ),
-          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
         SliverPadding(
           padding: EdgeInsets.symmetric(horizontal: padding),
           sliver: SliverMainAxisGroup(slivers: widget.slivers),

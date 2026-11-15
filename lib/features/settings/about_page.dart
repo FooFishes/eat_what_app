@@ -37,7 +37,6 @@ class AboutPage extends ConsumerWidget {
 
     return PlainScaffold(
       title: '关于',
-      subtitle: '沙软今天吃什么由学生独立开发，与学校无隶属关系。',
       slivers: [
         SliverList.list(
           children: [
@@ -85,6 +84,11 @@ class AboutPage extends ConsumerWidget {
             const SizedBox(height: EatSpace.s16),
             Text(
               '反馈问题时请附上版本号，便于排查。',
+              style: eat.text.caption.copyWith(color: c.inkMuted),
+            ),
+            const SizedBox(height: EatSpace.s8),
+            Text(
+              '沙软今天吃什么由学生独立开发，与学校无隶属关系。',
               style: eat.text.caption.copyWith(color: c.inkMuted),
             ),
           ],

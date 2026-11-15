@@ -204,10 +204,8 @@ class _PhonePageState extends ConsumerState<PhonePage> {
           ),
         ),
         const SizedBox(height: 40),
-        if (!binding) ...[
-          Text('换绑后用新号码登录，其他设备要重新登录。', style: note),
-          const SizedBox(height: EatSpace.s14),
-        ],
+        Text(binding ? '绑定后可以用手机号登录。' : '换绑后用新号码登录，其他设备要重新登录。', style: note),
+        const SizedBox(height: EatSpace.s14),
         EatButton.solid(
           binding ? '绑定' : '换绑',
           loading: _submitting,
@@ -217,16 +215,12 @@ class _PhonePageState extends ConsumerState<PhonePage> {
     }
     return PlainScaffold(
       title: binding ? '绑定手机' : '换绑手机',
-      subtitle: binding
-          ? '绑定后可以用手机号登录'
-          : '现在绑定的是 ${AccountRules.maskMobile(current)}',
       slivers: [
         SliverToBoxAdapter(
           child: AutofillGroup(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: EatSpace.s14),
                 ...fields,
                 const SizedBox(height: EatSpace.s24),
               ],

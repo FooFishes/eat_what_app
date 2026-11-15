@@ -165,6 +165,26 @@ void main() {
   });
 
   group('PlainScaffold', () {
+    testWidgets('titleNote 紧跟在标题后面，内容从标题行下方开始', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(
+        tester,
+        const PlainScaffold(
+          title: '消息',
+          titleNote: '3 条未读',
+          slivers: [SliverToBoxAdapter(child: Text('内容'))],
+        ),
+      );
+
+      final title = find.textContaining('消息', findRichText: true).first;
+      final titleRect = tester.getRect(title);
+      expect(find.textContaining('3 条未读', findRichText: true), findsWidgets);
+      expect(
+        tester.getTopLeft(find.text('内容')).dy,
+        greaterThan(titleRect.bottom),
+      );
+    });
+
     testWidgets('返回和大标题在同一行，点返回回调 onBack', (tester) async {
       useScreen(tester, const Size(390, 844));
       var backs = 0;

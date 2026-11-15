@@ -80,7 +80,7 @@ void main() {
     final (container, _) = await open(tester, '袁记');
 
     expect(map.searched, ['袁记']);
-    expect(find.text('先在地图上找找这家店'), findsOneWidget);
+    expect(find.text('新建一家店'), findsOneWidget);
     await expectAccessible(tester);
     await tester.tap(find.text('袁记云饺(舜泰店)'));
     // 地图建好后报一次中心, 查重的防抖重新计时, 因此等两轮.

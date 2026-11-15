@@ -56,7 +56,7 @@ void main() {
     env.adapter.on('POST /foods/1/comments', [FakeAdapter.ok(createdJson())]);
     final (container, _) = await open(tester, Paths.writeComment(1));
 
-    expect(find.text('写一条'), findsWidgets);
+    expect(find.textContaining('写一条'), findsWidgets);
     expect(find.text('吃过的话，说两句'), findsOneWidget);
     await expectAccessible(tester);
     await tester.tap(find.text('发送'));
@@ -125,7 +125,8 @@ void main() {
       Paths.writeComment(1, reply: 11, to: 21, name: '阿哲'),
     );
 
-    expect(find.text('回复'), findsOneWidget);
+    // 标题和菜名同属一段文字, 中间隔着占位符 U+FFFC.
+    expect(find.textContaining(RegExp('^回复￼')), findsOneWidget);
     expect(find.text('回复 阿哲'), findsOneWidget);
     expect(find.bySemanticsLabel('加照片'), findsNothing);
     await expectAccessible(tester);

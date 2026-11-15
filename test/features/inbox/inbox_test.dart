@@ -89,7 +89,7 @@ void main() {
       location: Paths.inbox,
     );
 
-    expect(find.text('2 条未读'), findsOneWidget);
+    expect(find.textContaining('2 条未读', findRichText: true), findsOneWidget);
     expect(find.text('今天'), findsOneWidget);
     expect(find.text('更早'), findsOneWidget);
     expect(
@@ -363,7 +363,7 @@ void main() {
     expect(sent.single.query, {'column': 'ALL'});
     expect(env.adapter.sent('POST /notification/cards/$_likeId/read'), isEmpty);
     expect(find.byType(UnreadDot), findsNothing);
-    expect(find.text('2 条未读'), findsNothing);
+    expect(find.textContaining('2 条未读', findRichText: true), findsNothing);
     await unmountApp(tester, container);
   });
 }

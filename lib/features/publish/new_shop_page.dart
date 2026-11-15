@@ -300,7 +300,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     if (!_editing) {
       return PlainScaffold(
         title: '新建一家店',
-        subtitle: '先在地图上找找这家店',
         slivers: [
           MapPlaceList(
             search: _search,

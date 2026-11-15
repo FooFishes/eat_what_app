@@ -51,7 +51,7 @@ class MapPlaceList extends ConsumerWidget {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         if (keyword.isEmpty)
-          SliverToBoxAdapter(child: note('输入店名，从地图上的店里选'))
+          SliverToBoxAdapter(child: note('输入店名，先在地图上找找这家店'))
         else
           switch (places) {
             AsyncData(:final value) when value.isEmpty => SliverToBoxAdapter(

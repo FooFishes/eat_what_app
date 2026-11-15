@@ -30,7 +30,6 @@ class DevicesPage extends ConsumerWidget {
     final others = devices?.where((d) => !d.current).length ?? 0;
     return PlainScaffold(
       title: '登录设备',
-      subtitle: '发现陌生设备，建议先将其下线，再修改密码。',
       onRefresh: () => pullToRefresh(
         context,
         ref,
@@ -65,6 +64,14 @@ class DevicesPage extends ConsumerWidget {
                 )
               else
                 const _RevokeOthersButton(),
+              const SizedBox(height: EatSpace.s16),
+              Text(
+                '发现陌生设备，建议先将其下线，再修改密码。',
+                textAlign: TextAlign.center,
+                style: context.eat.text.caption.copyWith(
+                  color: context.eat.colors.inkMuted,
+                ),
+              ),
               const SizedBox(height: EatSpace.s24),
             ],
           ),

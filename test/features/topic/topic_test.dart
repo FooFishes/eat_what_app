@@ -76,7 +76,7 @@ void main() {
       location: Paths.topics,
     );
 
-    expect(find.text('往期专题'), findsOneWidget);
+    expect(find.textContaining('往期专题'), findsOneWidget);
     expect(find.text('「期末续命餐」'), findsOneWidget);
     expect(find.textContaining('10 月 13 日–'), findsOneWidget);
     expect(

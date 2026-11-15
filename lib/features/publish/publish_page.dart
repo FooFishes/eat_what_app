@@ -87,11 +87,6 @@ class _PublishPageState extends ConsumerState<PublishPage> {
         Expanded(
           child: PlainScaffold(
             title: '在哪家吃的？',
-            subtitle: !located
-                ? null
-                : hub == null
-                ? '离你近的排在前面'
-                : '你在${hub.name}附近，离你近的排在前面',
             actions: [if (!widget.changing) const _Step()],
             slivers: [
               SliverToBoxAdapter(
@@ -101,6 +96,16 @@ class _PublishPageState extends ConsumerState<PublishPage> {
                   onChanged: (value) => setState(() => _keyword = value),
                 ),
               ),
+              if (located)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: EatSpace.s10),
+                    child: Text(
+                      hub == null ? '离你近的排在前面' : '你在${hub.name}附近，离你近的排在前面',
+                      style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+                    ),
+                  ),
+                ),
               const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
               switch (shops) {
                 AsyncData(:final value) when value.isEmpty =>

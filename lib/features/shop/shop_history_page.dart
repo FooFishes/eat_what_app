@@ -42,7 +42,7 @@ class ShopHistoryPage extends ConsumerWidget {
     final revisions = data?.pages.items ?? const <ShopRevision>[];
     return PlainScaffold(
       title: '修改记录',
-      subtitle: name,
+      titleNote: name,
       onRefresh: () async {
         ref.invalidate(provider);
         try {

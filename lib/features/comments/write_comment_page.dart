@@ -234,7 +234,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
       },
       child: PlainScaffold(
         title: _reply ? '回复' : '写一条',
-        subtitle: dish == null ? null : [dish.name, ?dish.shopName].join('  '),
+        titleNote: dish == null ? null : [dish.name, ?dish.shopName].join('  '),
         onBack: _leave,
         actions: [
           EatButton.solid(

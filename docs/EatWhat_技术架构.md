@@ -854,7 +854,7 @@ extension RefCache on Ref {
   - `pinnedBottom` 是抽屉第一行内容的副本（发现页的分类栏）。这一行滚到顶栏下面时，副本接在顶栏下方，看起来像停在那里；往下翻推荐流时随时能换分类。传了它，`sheetSlivers` 的第一项必须是同一行内容。
   - 宽屏不变：顶栏在左侧面板顶部，舞台不滚走。
 - 下拉刷新：`StageScaffold`、`PlainScaffold` 传 `onRefresh` 就能下拉（`EatRefresh`，`paper` 底 `ink` 线的圆圈，从顶栏下方出来）。页面用 `features/system/refresh.dart` 的 `pullToRefresh` 把相关 Provider 标记为过期并等主请求回来；刷新期间保留旧内容，不换回占位，失败时轻提示原因。发现页下拉只刷新抽屉里当前这一栏和未读数，转盘上有店时不动（换店用「换一个」）。
-- 白底页面用 `PlainScaffold`：52×52 返回与 `heading` 标题同一行（标题不跟系统字号）、`space-20` 边距。标题行固定在顶部不随内容滚走，内容滚到它下面时底边出现一条 `hairline`；`subtitle` 随内容滚动。`header` 可以代替标题放别的内容，搜索页把搜索框放在这里，和返回按钮同一行。
+- 白底页面用 `PlainScaffold`：52×52 返回与 `heading` 标题同一行（标题不跟系统字号）、`space-20` 边距。标题行固定在顶部不随内容滚走，内容滚到它下面时底边出现一条 `hairline`。标题下面不放副标题：说明写在内容里它所说明的输入框或列表旁边，标题旁只用 `titleNote` 放「3 条未读」「仅自己可见」这类简短状态，和标题同属一段文字。`header` 可以代替标题放别的内容，搜索页把搜索框放在这里，和返回按钮同一行。
 - 实现：`CustomScrollView(paintOrder: SliverPaintOrder.lastIsTop)`，后面的 sliver 画在上面、先接点击，抽屉才能盖住舞台底部。抽屉的白底用 `DecoratedSliver` 的子类画，白底本身也接住点击，压住舞台的那 32px 和抽屉里的空白都不会点穿到舞台上。舞台后面另垫一块舞台色，只在 iOS 顶部回弹时露出来。
 - `StageScaffold.map` 给附近页这类用地图当舞台的页面：抽屉在手机上加 `shadow-sheet`，宽屏面板加 `shadow-float`。附近页可拖动的抽屉在阶段三再换。
 - App 根部（`app.dart` 的 `builder`）给了默认文字样式（`body`、`ink`）：页面不用 Material 的 `Scaffold`，没有这一层时没写样式的文字会显示成 Flutter 的兜底样子（红字加黄色下划线）。

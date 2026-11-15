@@ -21,7 +21,7 @@ class TagDishesPage extends ConsumerWidget {
     final provider = tagDishesProvider(tagId);
     return PlainScaffold(
       title: name.isEmpty ? '我的标签' : name,
-      subtitle: '仅自己可见',
+      titleNote: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,

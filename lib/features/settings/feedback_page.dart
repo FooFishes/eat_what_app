@@ -117,7 +117,6 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
     final sending = ref.watch(feedbackSenderProvider);
     return PlainScaffold(
       title: '反馈',
-      subtitle: '遇到问题、有改进建议，或对处理结果有疑问，都可以反馈',
       slivers: [
         SliverList.list(
           children: [
@@ -139,7 +138,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
             EatFormField.multiline(
               label: '反馈内容',
               controller: _text,
-              hintText: '请描述遇到的问题，或希望如何改进',
+              hintText: '遇到的问题、改进建议，或对处理结果的疑问',
               inputFormatters: [LengthLimitingTextInputFormatter(_maxLength)],
             ),
             const SizedBox(height: 6),

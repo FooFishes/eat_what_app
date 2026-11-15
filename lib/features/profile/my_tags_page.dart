@@ -46,7 +46,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
     final tags = value.value;
     return PlainScaffold(
       title: '我的标签',
-      subtitle: '仅自己可见，删除标签不影响菜品',
+      titleNote: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,
         ref,
