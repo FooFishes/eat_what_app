@@ -31,7 +31,7 @@ class const TurntableItem({
 /// 状态:
 /// - [items] 是向后增长的队列, [index] 是当前菜品.
 /// - 转到其他位置时通过 [onIndexChanged] 通知页面, 页面更新 [index] 后传回.
-/// - [spinning] 为 false 时不绘制转盘, 只显示当前菜品.
+/// - [spinning] 为 false 时不绘制转盘, 只显示当前菜品, 仍可拖动换菜.
 class Turntable extends StatefulWidget {
   const new({
     super.key,
@@ -145,7 +145,7 @@ class _TurntableState extends State<Turntable>
     final tableRadius = radius + plate * 170 / EatSize.plate;
     final ringRadius = radius + plate * 130 / EatSize.plate;
 
-    Widget table = ExcludeSemantics(
+    final table = ExcludeSemantics(
       child: AnimatedBuilder(
         animation: _position,
         builder: (context, _) => Stack(
@@ -161,23 +161,20 @@ class _TurntableState extends State<Turntable>
         ),
       ),
     );
-    if (widget.spinning) {
-      table = GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragUpdate: widget.wide
-            ? null
-            : (details) => _onUpdate(details.delta.dx),
-        onHorizontalDragEnd: widget.wide ? null : (_) => _onEnd(),
-        onHorizontalDragCancel: widget.wide ? null : _onEnd,
-        onVerticalDragUpdate: widget.wide
-            ? (details) => _onUpdate(-details.delta.dy)
-            : null,
-        onVerticalDragEnd: widget.wide ? (_) => _onEnd() : null,
-        onVerticalDragCancel: widget.wide ? _onEnd : null,
-        child: table,
-      );
-    }
-    return table;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragUpdate: widget.wide
+          ? null
+          : (details) => _onUpdate(details.delta.dx),
+      onHorizontalDragEnd: widget.wide ? null : (_) => _onEnd(),
+      onHorizontalDragCancel: widget.wide ? null : _onEnd,
+      onVerticalDragUpdate: widget.wide
+          ? (details) => _onUpdate(-details.delta.dy)
+          : null,
+      onVerticalDragEnd: widget.wide ? (_) => _onEnd() : null,
+      onVerticalDragCancel: widget.wide ? _onEnd : null,
+      child: table,
+    );
   }
 
   Widget? _plate(

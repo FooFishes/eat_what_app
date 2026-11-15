@@ -27,6 +27,7 @@ enum EatIcons {
   copy,
   delete,
   discover,
+  dismiss,
   district,
   document,
   download,

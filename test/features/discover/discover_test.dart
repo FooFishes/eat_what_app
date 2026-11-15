@@ -1,3 +1,8 @@
+import 'dart:math' as math;
+
+import 'package:eat/design/widgets/dish_plate.dart';
+import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -7,6 +12,7 @@ import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 import '../../support/recommend_json.dart';
+import '../../support/screen.dart';
 
 const _names = ['袁记云饺', '一碗面', '老王烧烤', '粥铺', '饺子馆'];
 
@@ -77,7 +83,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「不想去这家」：标记后这家从转盘和列表里去掉', (tester) async {
+  testWidgets('「不想去这家」：确认后标记，这家从转盘和列表里去掉；「算了」不发请求', (tester) async {
     env.adapter.on('POST /recommend/dismiss/1', [FakeAdapter.ok()]);
     final (container, _) = await pumpApp(
       tester,
@@ -85,9 +91,20 @@ void main() {
       session: const SignedIn(user: verifiedUser),
     );
 
-    await tester.tap(find.bySemanticsLabel('更多'));
+    await tester.tap(find.bySemanticsLabel('不想去这家'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('不想去这家'));
+    expect(find.text('不喜欢这家店？'), findsOneWidget);
+    expect(
+      find.text('袁记云饺 30 天内不会再出现在推荐里。', findRichText: true),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('算了'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('POST /recommend/dismiss/1'), isEmpty);
+
+    await tester.tap(find.bySemanticsLabel('不想去这家'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不喜欢'));
     await tester.pumpAndSettle();
 
     expect(env.adapter.sent('POST /recommend/dismiss/1'), hasLength(1));
@@ -101,9 +118,7 @@ void main() {
   testWidgets('游客点「不想去这家」弹出登录拦截，不发请求', (tester) async {
     final (container, _) = await pumpApp(tester, env, session: const Guest());
 
-    await tester.tap(find.bySemanticsLabel('更多'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('不想去这家'));
+    await tester.tap(find.bySemanticsLabel('不想去这家'));
     await tester.pumpAndSettle();
 
     expect(find.text('登录后才能标记不想去'), findsOneWidget);
@@ -201,6 +216,43 @@ void main() {
     );
     await unmountApp(tester, container);
   });
+
+  for (final (size, top) in [
+    (const Size(390, 844), 47.0),
+    (const Size(360, 640), 24.0),
+  ]) {
+    testWidgets(
+      '${size.width.toInt()}×${size.height.toInt()}：盘子连盘沿不压到顶栏和「就它了」「不想去这家」',
+      (tester) async {
+        final (container, _) = await pumpApp(
+          tester,
+          env,
+          session: const SignedIn(user: verifiedUser),
+          size: size,
+        );
+        useScreen(tester, size, padding: EdgeInsets.only(top: top));
+        await tester.pumpAndSettle();
+
+        final photo = tester.getRect(
+          find
+              .descendant(
+                of: find.byType(Turntable),
+                matching: find.byType(DishPlate),
+              )
+              .first,
+        );
+        final plate = photo.inflate(DishPlate.rimFor(photo.width));
+        final button = tester.getRect(
+          find.ancestor(of: find.text('就它了'), matching: find.byType(EatButton)),
+        );
+        final more = tester.getRect(find.bySemanticsLabel('不想去这家'));
+        final search = tester.getRect(find.bySemanticsLabel('搜索'));
+        expect(plate.bottom, lessThanOrEqualTo(math.min(button.top, more.top)));
+        expect(plate.top, greaterThanOrEqualTo(search.bottom));
+        await unmountApp(tester, container);
+      },
+    );
+  }
 
   testWidgets('转到这一批的末尾前请求下一页', (tester) async {
     env.adapter.on('GET /recommend', [_feed(hasNext: true)]);

@@ -157,6 +157,35 @@ void main() {
     });
   });
 
+  testWidgets('不足 5 家不画转盘时照样能拖动换店', (tester) async {
+    var index = 0;
+    await pumpEat(
+      tester,
+      StatefulBuilder(
+        builder: (context, setState) => SizedBox(
+          width: 390,
+          height: 520,
+          child: Turntable(
+            items: [
+              for (var i = 0; i < 3; i++) const TurntableItem(image: null),
+            ],
+            index: index,
+            onIndexChanged: (i) => setState(() => index = i),
+            plateSize: 296,
+            plateCenter: const Offset(330, 300),
+            spinning: false,
+          ),
+        ),
+      ),
+      stage: StageColor.broth,
+      disableAnimations: true,
+    );
+
+    await tester.drag(find.byType(Turntable), const Offset(-120, 0));
+    await tester.pump();
+    expect(index, 1);
+  });
+
   testWidgets('手机上转走的上一道菜不留在左下角，不压住价格和按钮', (tester) async {
     Widget table(int index) => SizedBox(
       width: 390,

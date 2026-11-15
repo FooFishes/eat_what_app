@@ -18,6 +18,7 @@
 | `edit` `delete` | 编辑、删除 | edit、delete-2 |
 | `settings` `shield` `lock` `key` | 设置、账号与安全、只有自己看得见、密码 | settings-3、shield、lock、key-2 |
 | `eye` `eye-off` | 显示和隐藏密码 | eye、eye-close |
+| `dismiss` | 不想去这家 | sad |
 | `camera` `image` | 拍照、照片 | camera、pic |
 | `tag` `history` `topic` `hot` | 标签、足迹、专题、热门 | tag、history、bookmarks、fire |
 | `verify` `idcard` `school` | 认证、身份信息、校区和统一认证 | safety-certificate、idcard、school |

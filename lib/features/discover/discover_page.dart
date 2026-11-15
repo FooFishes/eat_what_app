@@ -467,6 +467,12 @@ class _TurntableStage extends ConsumerWidget {
   /// 手机上店名一行的最大宽度: 四个字的 40px 字号. 更宽时文字右端压到盘沿上.
   static const _nameMaxWidth = 160.0;
 
+  /// 舞台下方文字和按钮这一栏底边离抽屉顶边的距离.
+  static double _columnGap(bool wide) => wide ? 40 : 22;
+
+  /// 手机上盘子 (连盘沿) 与顶栏和按钮之间至少留出的距离.
+  static const _plateGap = EatSpace.s10;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final layout = EatLayout.of(context);
@@ -501,12 +507,29 @@ class _TurntableStage extends ConsumerWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
-        final plate = layout.isWide
-            ? (height * 440 / 800).clamp(260.0, 520.0)
-            : 296 * scale;
-        final plateCenter = layout.isWide
-            ? Offset(width - plate * 0.3, height / 2)
-            : Offset(width - 58 * scale, 300 * scale);
+        final double plate;
+        final Offset plateCenter;
+        if (layout.isWide) {
+          plate = (height * 440 / 800).clamp(260.0, 520.0);
+          plateCenter = Offset(width - plate * 0.3, height / 2);
+        } else {
+          // 盘子右半边和 "就它了", "更多" 上下相邻, 不能压到按钮上.
+          // 放不下时先上移, 上移到顶栏下方仍放不下再缩小.
+          final preferred = 296 * scale;
+          final rim = DishPlate.rimFor(preferred);
+          final top = StageScaffold.barBottomOf(context) + _plateGap;
+          final bottom =
+              height -
+              EatSize.sheetOverlap -
+              _columnGap(false) -
+              EatSize.button -
+              _plateGap;
+          plate = math.min(preferred, bottom - top - rim * 2);
+          plateCenter = Offset(
+            width - 58 * scale,
+            math.min(300 * scale, bottom - rim - plate / 2),
+          );
+        }
         final textWidth = layout.isWide ? 260.0 : 200.0 * textScale;
         // 招牌菜和距离所在的高度接近盘子的圆心, 此处盘子最宽.
         // 宽度限制在盘子左边缘以内, 文字过长时换行, 不与照片重叠.
@@ -545,7 +568,7 @@ class _TurntableStage extends ConsumerWidget {
             Positioned(
               left: EatSpace.s20,
               right: EatSpace.s20,
-              bottom: EatSize.sheetOverlap + (layout.isWide ? 40 : 22),
+              bottom: EatSize.sheetOverlap + _columnGap(layout.isWide),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -677,10 +700,10 @@ class _TurntableStage extends ConsumerWidget {
                           ),
                         ),
                         EatIconButton(
-                          EatIcons.more,
-                          label: '更多',
+                          EatIcons.dismiss,
+                          label: '不想去这家',
                           color: palette.foreground,
-                          onPressed: () => _showShopMore(context, ref, shop),
+                          onPressed: () => _dismissShop(context, ref, shop),
                         ),
                       ],
                     ),
@@ -695,27 +718,62 @@ class _TurntableStage extends ConsumerWidget {
   }
 }
 
-/// 舞台上这家店的 "更多" 面板: "不想去这家".
+/// 舞台上的 "不想去这家" 按钮: 确认后标记, 不弹菜单.
 ///
-/// 游客点 "不想去这家" 时弹出登录拦截. 标记成功后这家店从转盘和抽屉列表里去掉, 30 天内不再推荐.
-Future<void> _showShopMore(
+/// 游客点了弹出登录拦截. 标记暂时不能撤销, 所以先确认. 标记成功后这家店从转盘和抽屉列表里去掉, 30 天内不再推荐.
+Future<void> _dismissShop(
   BuildContext context,
   WidgetRef ref,
   Shop shop,
 ) async {
-  final dismiss = await showPanel<bool>(
+  if (!await guardAction(context, ref, Capability.dismissShop) ||
+      !context.mounted) {
+    return;
+  }
+  final confirmed = await showEatDialog<bool>(
     context,
-    builder: (panel) => EatPanel(
-      title: shop.name,
-      child: EatPanelAction(
-        icon: EatIcons.eyeOff,
-        label: '不想去这家',
-        onTap: () => Navigator.of(panel).pop(true),
+    builder: (dialog) => EatDialog(
+      title: '不喜欢这家店？',
+      subtitleSpan: TextSpan(
+        children: [
+          TextSpan(
+            text: shop.name,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: context.eat.colors.ink,
+            ),
+          ),
+          const TextSpan(text: ' 30 天内'),
+          TextSpan(
+            text: '不会',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: context.eat.colors.warn,
+            ),
+          ),
+          const TextSpan(text: '再出现在推荐里。'),
+        ],
+      ),
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.mist(
+              '算了',
+              onPressed: () => Navigator.of(dialog).pop(false),
+            ),
+          ),
+          Expanded(
+            child: EatButton.solid(
+              '不喜欢',
+              onPressed: () => Navigator.of(dialog).pop(true),
+            ),
+          ),
+        ],
       ),
     ),
   );
-  if (dismiss != true || !context.mounted) return;
-  if (!await guardAction(context, ref, Capability.dismissShop)) return;
+  if (confirmed != true || !context.mounted) return;
   try {
     await dismissShop(ref, shop.id);
     if (context.mounted) showToast(context, '30 天内不再推荐这家店');

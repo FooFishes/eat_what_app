@@ -56,6 +56,7 @@ class EatDialog extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleSpan,
     this.icon,
     this.child,
     this.actions,
@@ -68,6 +69,9 @@ class EatDialog extends StatelessWidget {
 
   /// 标题下的一两句说明.
   final String? subtitle;
+
+  /// 带格式的说明, 如加粗的名字. 与 [subtitle] 二选一, 未指定样式的部分同 [subtitle].
+  final InlineSpan? subtitleSpan;
   final EatIcons? icon;
   final Widget? child;
 
@@ -126,9 +130,14 @@ class EatDialog extends StatelessWidget {
                         style: eat.text.heading.copyWith(color: c.ink),
                       ),
                     ),
-                    if (subtitle case final subtitle?) ...[
+                    if (subtitleSpan ??
+                            switch (subtitle) {
+                              final text? => TextSpan(text: text),
+                              null => null,
+                            }
+                        case final subtitle?) ...[
                       const SizedBox(height: EatSpace.s8),
-                      Text(
+                      Text.rich(
                         subtitle,
                         style: eat.text.body.copyWith(color: c.inkMuted),
                       ),

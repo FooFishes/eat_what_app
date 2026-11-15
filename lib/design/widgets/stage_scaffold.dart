@@ -62,6 +62,10 @@ class StageScaffold extends StatefulWidget {
   /// 下拉刷新. 不传时页面不能下拉刷新.
   final Future<void> Function()? onRefresh;
 
+  /// 手机布局下固定顶栏底边的纵坐标, 舞台内容不要排到这条线以上.
+  static double barBottomOf(BuildContext context) =>
+      MediaQuery.paddingOf(context).top + 4 + _StageScaffoldState._barHeight;
+
   @override
   State<StageScaffold> createState() => _StageScaffoldState();
 }
