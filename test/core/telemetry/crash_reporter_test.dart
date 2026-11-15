@@ -19,6 +19,7 @@ void main() {
       baiduMapAkWeb: '',
       privacyUrl: '',
       termsUrl: '',
+      crossBorderUrl: '',
     );
     final reporter = CrashReporter(config);
 

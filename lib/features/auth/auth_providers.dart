@@ -16,7 +16,7 @@ part 'auth_providers.g.dart';
 
 /// 登录页的协议勾选状态.
 ///
-/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
 /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 @Riverpod(keepAlive: true)
 class LoginAgreement extends _$LoginAgreement {

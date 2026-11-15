@@ -32,7 +32,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
 /// - 抽屉: "验证码登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
-///   勾选同时同意隐私政策, 用户协议和数据存放在境外.
+///   勾选同时同意隐私政策, 用户协议和个人信息出境说明.
 ///
 /// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
 ///
@@ -443,7 +443,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
       children: [
         EatTappable(
           onTap: toggle,
-          label: '同意隐私政策、用户协议和数据存放在境外',
+          label: '同意隐私政策、用户协议和个人信息出境说明',
           checked: agreed,
           button: false,
           focusShape: const CircleBorder(),
@@ -466,7 +466,6 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
                     children: [
                       const TextSpan(text: '我已阅读并同意'),
                       ..._links.spans(c.inkSoft),
-                      const TextSpan(text: '，同意数据存放在境外'),
                     ],
                   ),
                   style: style,
@@ -482,7 +481,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
   }
 }
 
-/// 《隐私政策》和《用户协议》两个链接, 点击用浏览器打开. 用完调用 [dispose].
+/// 《隐私政策》《用户协议》《个人信息出境说明》三个链接, 点击用浏览器打开. 用完调用 [dispose].
 class _AgreementLinks {
   _AgreementLinks(this._ref);
 
@@ -492,16 +491,19 @@ class _AgreementLinks {
     ..onTap = () => _open(_ref.read(appConfigProvider).privacyUrl);
   late final _terms = TapGestureRecognizer()
     ..onTap = () => _open(_ref.read(appConfigProvider).termsUrl);
+  late final _crossBorder = TapGestureRecognizer()
+    ..onTap = () => _open(_ref.read(appConfigProvider).crossBorderUrl);
 
   void _open(String url) {
     if (url.isNotEmpty) _ref.read(browserProvider).open(Uri.parse(url));
   }
 
-  /// "《隐私政策》和《用户协议》". 协议名加粗, 下划线用 [underline] 色.
+  /// "《隐私政策》《用户协议》和《个人信息出境说明》". 协议名加粗, 下划线用 [underline] 色.
   List<InlineSpan> spans(Color underline) => [
     _link('隐私政策', _privacy, underline),
-    const TextSpan(text: '和'),
     _link('用户协议', _terms, underline),
+    const TextSpan(text: '和'),
+    _link('个人信息出境说明', _crossBorder, underline),
   ];
 
   /// 下划线只画在协议名下, 书名号不画, 否则线两端会悬空.
@@ -528,6 +530,7 @@ class _AgreementLinks {
   void dispose() {
     _privacy.dispose();
     _terms.dispose();
+    _crossBorder.dispose();
   }
 }
 
@@ -584,7 +587,7 @@ class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
       child: Text.rich(
         TextSpan(
           children: [
-            const TextSpan(text: '使用时会用到设备信息和使用记录，这些数据存放在境外服务器。详见'),
+            const TextSpan(text: '使用时会收集设备信息和使用记录，传到境外服务器存储和处理。继续前请阅读并同意'),
             ..._links.spans(c.ink),
             const TextSpan(text: '。'),
           ],

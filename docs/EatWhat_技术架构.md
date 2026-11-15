@@ -382,7 +382,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
-| `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页、同意对话框和关于里打开。服务端 `/auth/consent/policy` 返回的 `privacyText`、`crossBorderText` 不用（9.5） | `https://<域名>/legal/privacy.html` |
+| `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页、同意对话框和关于里打开。服务端 `/auth/consent/policy` 返回的 `privacyText`、`crossBorderText` 不用（9.5） | `https://<域名>/legal/privacy-policy.html` |
+| `CROSS_BORDER_URL` | 《个人信息出境说明》的网页地址，登录页和同意对话框里打开（9.5） | `https://<域名>/legal/cross-border.html` |
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
 - 这些值会编进安装包，只放公开的值。
@@ -592,12 +593,12 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 
 数据存放在境外，要用户同意数据跨境。由用户自己勾选或点同意，客户端不代用户同意。不做单独的同意页面，账号与安全里的「数据存放」和关于里的《数据存放说明》也不放。产品规则见产品文档 7.5。
 
-- 接口：`GET /auth/consent/policy` 读当前政策（未登录也能调），只用 `version`。服务端还没发布过政策时 `version` 为 null，这时登录不带版本，也不弹对话框。返回的 `privacyText`、`crossBorderText` 不用，政策正文看托管的网页（`PRIVACY_URL`、`TERMS_URL`），后端发新版本时要和网页一起更新。`POST /auth/consent/grant {policyVersion}` 提交同意，必须登录。`GET /auth/consent` 不接。代码在 `data/consent/` 的 `ConsentApi`；读版本、请用户确认、提交同意在 `state/cross_border_consent.dart` 的 `CrossBorderConsent`（`currentVersion`、`confirm`、`grantForSession`）。
+- 接口：`GET /auth/consent/policy` 读当前政策（未登录也能调），只用 `version`。服务端还没发布过政策时 `version` 为 null，这时登录不带版本，也不弹对话框。返回的 `privacyText`、`crossBorderText` 不用，政策正文看托管的网页（`PRIVACY_URL`、`TERMS_URL`、`CROSS_BORDER_URL`），后端发新版本时要和网页一起更新。`POST /auth/consent/grant {policyVersion}` 提交同意，必须登录。`GET /auth/consent` 不接。代码在 `data/consent/` 的 `ConsentApi`；读版本、请用户确认、提交同意在 `state/cross_border_consent.dart` 的 `CrossBorderConsent`（`currentVersion`、`confirm`、`grantForSession`）。
 - 隐私政策和数据跨境说明共用一个版本号，登录页的勾选框一次同意两者和用户协议。
 - **登录**：勾选后（或提交登录前）读当前版本，验证码登录和密码登录都带 `policyVersion`。政策发布后验证码登录必须带（新号码注册时服务端一并记下同意），密码登录可以带，登录成功才记录。
 - **登录时收到 20005 或 20009**（没带版本，或勾选后政策刚好更新）：重新读版本，弹同意对话框，同意后用同一个验证码或同一组账号密码直接重试一次。服务端在核销验证码之前校验同意，不用重新获取验证码；账号密码只为这一次留在内存里。不同意就停在登录页，提示「需要同意隐私政策后才能继续」。
 - **已登录时**：服务端对没同意当前版本的账号，每个请求都返回 20009，只放行查看政策、查看状态、同意和退出登录。`ApiClient` 通过构造时传入的 `ApiHooks.requestConsent` 回调（和登录过期一样，`core/network` 不导入 `data/`）请用户确认：`grantForSession` 弹对话框，同意后提交 `grant`，再把原请求重发一次；不同意、对话框弹不出来或提交失败时，原请求按失败处理。几个请求同时遇到时只弹一次对话框。未登录时不弹，交给登录流程。
-- **对话框**：`features/system/consent_dialog.dart` 的 `showConsentDialog`。标题「隐私政策已更新」，一句话说明服务器在境外、账号信息和使用记录会传到境外，附「查看隐私政策」（打开 `PRIVACY_URL`），按钮「不同意」「同意」。登录页和已登录时用同一个对话框。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹；没有挂上时按不同意处理。
+- **对话框**：`features/system/consent_dialog.dart` 的 `showConsentDialog`。标题「隐私政策已更新」，一句话说明服务器在境外、账号信息和使用记录会传到境外，附「查看隐私政策」「查看个人信息出境说明」（打开 `PRIVACY_URL`、`CROSS_BORDER_URL`），按钮「不同意」「同意」。登录页和已登录时用同一个对话框。`lib/app.dart` 在根部挂 `ConsentHost`，在路由的 navigator overlay 上弹出，所以已登录时任何页面都能弹；没有挂上时按不同意处理。
 - 回调的接法：`core/network` 里的 `apiHooksProvider` 默认什么都不做，`state/api_hooks.dart` 的 `stateOverrides` 把它覆盖成真正的处理（过期 → `sessionProvider.expire()`，没权限（含受限会话被拒绝）→ 刷新用户信息，要求同意 → `crossBorderConsentProvider`），`bootstrap` 和测试都带上这组覆盖。回调里经 `ref.container` 读别的 Provider：登录态和同意接口都依赖网络层，用 `ref.read` 会被 Riverpod 判成循环依赖。
 - 已知不足：会话中用户不同意以后，后面每个请求还会再弹一次（产品 7.5「下一次操作再问」）。
 

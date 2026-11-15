@@ -10,7 +10,7 @@ part of 'auth_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// 登录页的协议勾选状态.
 ///
-/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
 /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 
 @ProviderFor(LoginAgreement)
@@ -18,13 +18,13 @@ final loginAgreementProvider = LoginAgreementProvider._();
 
 /// 登录页的协议勾选状态.
 ///
-/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
 /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 final class LoginAgreementProvider
     extends $NotifierProvider<LoginAgreement, bool> {
   /// 登录页的协议勾选状态.
   ///
-  /// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+  /// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
   /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
   LoginAgreementProvider._()
     : super(
@@ -57,7 +57,7 @@ String _$loginAgreementHash() => r'7cc20187bd7bdd547dd4ef1c5856be844ee14ef8';
 
 /// 登录页的协议勾选状态.
 ///
-/// 勾选同时同意隐私政策, 用户协议和数据存放在境外. 手机号登录和密码登录都要求先勾选.
+/// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
 /// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
 
 abstract class _$LoginAgreement extends $Notifier<bool> {

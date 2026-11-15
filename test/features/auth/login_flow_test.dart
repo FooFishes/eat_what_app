@@ -57,7 +57,7 @@ Future<void> _enter(WidgetTester tester, String label, String text) async {
 }
 
 Future<void> _agreeAndOpenPhoneLogin(WidgetTester tester) async {
-  await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+  await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
   await tester.pump();
   await tester.tap(find.text('验证码登录'));
   await tester.pumpAndSettle();
@@ -108,7 +108,7 @@ void main() {
 
   testWidgets('登录页点「账号密码登录」直接进密码登录页，「用验证码登录」换到手机号登录页', (tester) async {
     await pumpApp(tester, env);
-    await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+    await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
     await tester.pump();
 
     await tester.tap(find.text('账号密码登录'));
@@ -697,9 +697,9 @@ void main() {
     final intro = tester.getRect(find.textContaining('是啊'));
     final button = find.widgetWithText(EatButton, '验证码登录');
     expect(intro.bottom, lessThan(tester.getRect(button).top));
-    await tester.ensureVisible(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+    await tester.ensureVisible(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
     await tester.pump();
-    await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+    await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
     await tester.pump();
     await tester.ensureVisible(button);
     await tester.pump();

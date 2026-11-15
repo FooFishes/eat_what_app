@@ -36,7 +36,7 @@ class ConsentApi {
 
 /// `/auth/consent/policy` 的 `data`.
 ///
-/// 隐私政策和用户协议使用托管的网页, 因此不读取接口返回的正文 `privacyText` 和 `crossBorderText`.
+/// 隐私政策, 用户协议和个人信息出境说明使用托管的网页, 因此不读取接口返回的正文 `privacyText` 和 `crossBorderText`.
 @JsonSerializable(createToJson: false)
 class const ConsentPolicyDto({final String? version}) {
   factory ConsentPolicyDto.fromJson(Map<String, dynamic> json) =>

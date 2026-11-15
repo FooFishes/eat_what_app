@@ -16,6 +16,7 @@ class const AppConfig({
   required final String baiduMapAkWeb,
   required final String privacyUrl,
   required final String termsUrl,
+  required final String crossBorderUrl,
 }) {
   const AppConfig.fromEnvironment()
     : this(
@@ -28,6 +29,7 @@ class const AppConfig({
         baiduMapAkWeb: const String.fromEnvironment('BAIDU_MAP_AK_WEB'),
         privacyUrl: const String.fromEnvironment('PRIVACY_URL'),
         termsUrl: const String.fromEnvironment('TERMS_URL'),
+        crossBorderUrl: const String.fromEnvironment('CROSS_BORDER_URL'),
       );
 }
 

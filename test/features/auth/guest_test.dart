@@ -120,7 +120,7 @@ void main() {
       );
       expect(Uri.parse(locationOf(router)).path, Paths.login);
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
@@ -135,7 +135,7 @@ void main() {
       final (_, router) = await pumpApp(tester, env, location: Paths.inbox);
       expect(Uri.parse(locationOf(router)).queryParameters['from'], '/inbox');
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();
@@ -162,7 +162,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(locationOf(router), Paths.login);
 
-      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和数据存放在境外'));
+      await tester.tap(find.bySemanticsLabel('同意隐私政策、用户协议和个人信息出境说明'));
       await tester.pump();
       await tester.tap(find.text('先逛逛？'));
       await tester.pumpAndSettle();

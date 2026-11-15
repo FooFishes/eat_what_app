@@ -196,6 +196,7 @@ const testConfig = AppConfig(
   baiduMapAkWeb: '',
   privacyUrl: 'https://eat.test/privacy.html',
   termsUrl: 'https://eat.test/terms.html',
+  crossBorderUrl: 'https://eat.test/cross-border.html',
 );
 
 /// `/user/info` 的响应数据样例. [phone] 为 null 表示还没有绑定手机.

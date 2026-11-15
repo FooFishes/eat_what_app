@@ -49,7 +49,7 @@
 | 27 | `APP_OAUTH_APP_SUCCESS_REDIRECT` | 必须是 `you.v50to.eat://auth/callback`。`deploy/.env.example` 现在写的是 `https://eat.v50to.you/app/auth/callback`。如果对这个配置做了 http(s) 校验，要放开自定义 Scheme | App 用系统认证会话（iOS `ASWebAuthenticationSession`、安卓 Auth Tab）等回跳，收不到自定义 Scheme 就永远完成不了统一认证 |
 | 28 | `APP_OAUTH_SUCCESS_REDIRECT` | 改成 `/app/auth/callback`；Web 和 API 不在同一个域名时写完整地址 `https://<Web 域名>/app/auth/callback`（相对路径按 API 的域名解析） | 默认值 `/home` 在 Flutter Web 里不存在，Web 认证完显示「页面不存在」，`ticket` 也确认不了 |
 | 29 | `APP_EMAIL_VERIFY_URL` | `https://<Web 域名>/verify/email`。客户端只做了 Web 落地页，登录后提交 `token` | 邮件里的链接打不开落地页，邮箱认证完成不了 |
-| 30 | 隐私政策版本 | 上线前先发布第一个版本。客户端的政策正文用托管网页（`PRIVACY_URL`、`TERMS_URL`），不读 `privacyText`、`crossBorderText`；发布新版本时同步更新托管网页 | 没发布时登录不要求同意；版本和网页对不上时，用户同意的不是他看到的文本 |
+| 30 | 隐私政策版本 | 上线前先发布第一个版本。客户端的政策正文用托管网页（`PRIVACY_URL`、`TERMS_URL`、`CROSS_BORDER_URL`），不读 `privacyText`、`crossBorderText`；发布新版本时同步更新托管网页 | 没发布时登录不要求同意；版本和网页对不上时，用户同意的不是他看到的文本 |
 | 31 | 对象存储 | 允许 Web 域名跨域 `PUT`（照片直传），图片返回长缓存头 | Web 上传不了照片；图片每次重新下载 |
 
 ## 4. 文档问题

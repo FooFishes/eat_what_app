@@ -26,8 +26,7 @@ class _ConsentDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
-    final c = eat.colors;
-    final privacyUrl = ref.watch(appConfigProvider).privacyUrl;
+    final config = ref.watch(appConfigProvider);
     return EatDialog(
       icon: EatIcons.earth,
       title: '隐私政策已更新',
@@ -55,27 +54,41 @@ class _ConsentDialog extends ConsumerWidget {
             '服务器位于境外，账号信息和使用记录会传到境外存储和处理。同意新版隐私政策后才能继续使用。',
             style: eat.text.body,
           ),
-          if (privacyUrl.isNotEmpty)
-            EatTappable(
-              onTap: () =>
-                  ref.read(browserProvider).open(Uri.parse(privacyUrl)),
-              label: '查看隐私政策',
-              builder: (context, _) => SizedBox(
-                height: EatSize.touch,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '查看隐私政策',
-                    style: eat.text.body.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: c.ink,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          _ConsentLink('查看隐私政策', config.privacyUrl),
+          _ConsentLink('查看个人信息出境说明', config.crossBorderUrl),
         ],
+      ),
+    );
+  }
+}
+
+/// 对话框里打开托管网页的链接. [url] 为空时不显示.
+class _ConsentLink extends ConsumerWidget {
+  const new(this.label, this.url);
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (url.isEmpty) return const SizedBox.shrink();
+    final eat = context.eat;
+    return EatTappable(
+      onTap: () => ref.read(browserProvider).open(Uri.parse(url)),
+      label: label,
+      builder: (context, _) => SizedBox(
+        height: EatSize.touch,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            label,
+            style: eat.text.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: eat.colors.ink,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ),
       ),
     );
   }
