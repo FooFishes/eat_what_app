@@ -464,7 +464,7 @@ class _TurntableStage extends ConsumerWidget {
 
   final TurntableFeed feed;
 
-  /// 手机上店名一行的最大宽度: 四个字的 40px 字号. 更宽时文字右端压到盘沿上.
+  /// 手机上舞台大字 (菜名或店名) 一行的最大宽度: 四个字的 40px 字号. 更宽时文字右端压到盘沿上.
   static const _nameMaxWidth = 160.0;
 
   /// 舞台下方文字和按钮这一栏底边离抽屉顶边的距离.
@@ -488,7 +488,11 @@ class _TurntableStage extends ConsumerWidget {
     final textScale = layout.stageTextScale;
     final batch = feed.batch;
     final queue = ref.read(turntableQueueProvider.notifier);
-    final lines = ShopRules.stageLines(shop.name);
+    // 有招牌菜时菜是主角, 店名排在菜名下方. 没有招牌菜时店名是主角.
+    final hero = signature?.name ?? shop.name;
+    final lines = signature != null
+        ? DishRules.stageLines(hero)
+        : ShopRules.stageLines(hero);
     final longest = lines.fold(0, (m, l) => math.max(m, l.runes.length));
     final nameWidth = layout.isWide ? 260.0 : _nameMaxWidth * textScale;
     final nameSize = math.min(
@@ -568,103 +572,117 @@ class _TurntableStage extends ConsumerWidget {
             Positioned(
               left: EatSpace.s20,
               right: EatSpace.s20,
+              top: layout.isWide
+                  ? EatSpace.s24
+                  : StageScaffold.barBottomOf(context) + _plateGap,
               bottom: EatSize.sheetOverlap + _columnGap(layout.isWide),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IgnorePointer(
-                    child: SizedBox(
-                      width: textWidth,
-                      child: Semantics(
-                        liveRegion: true,
-                        // 换店时文字交叉淡入淡出, 与盘子转动和舞台换色同时过渡.
-                        // 两家店的行数可能不同. 按左下角对齐时, 最后一行的位置保持不变.
-                        child: AnimatedSwitcher(
-                          duration: context.motion(EatMotion.select),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          layoutBuilder: (current, previous) => Stack(
-                            alignment: AlignmentDirectional.bottomStart,
-                            children: [...previous, ?current],
-                          ),
-                          child: Column(
-                            key: ValueKey(shop.id),
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lines.join('\n'),
-                                semanticsLabel: shop.name,
-                                textScaler: TextScaler.noScaling,
-                                style: eat.text.stage.copyWith(
-                                  fontSize: nameSize,
-                                  height: (nameSize + 4) / nameSize,
-                                  color: palette.foreground,
-                                ),
+                  // 矮屏或菜名三行时整段文字等比缩小, 不顶到顶栏.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.bottomStart,
+                      child: IgnorePointer(
+                        child: SizedBox(
+                          width: textWidth,
+                          child: Semantics(
+                            liveRegion: true,
+                            // 换店时文字交叉淡入淡出, 与盘子转动和舞台换色同时过渡.
+                            // 两家店的行数可能不同. 按左下角对齐时, 最后一行的位置保持不变.
+                            child: AnimatedSwitcher(
+                              duration: context.motion(EatMotion.select),
+                              switchInCurve: Curves.easeOut,
+                              switchOutCurve: Curves.easeIn,
+                              layoutBuilder: (current, previous) => Stack(
+                                alignment: AlignmentDirectional.bottomStart,
+                                children: [...previous, ?current],
                               ),
-                              if (signature != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: lineWidth,
+                              child: Column(
+                                key: ValueKey(shop.id),
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    lines.join('\n'),
+                                    semanticsLabel: hero,
+                                    textScaler: TextScaler.noScaling,
+                                    style: eat.text.stage.copyWith(
+                                      fontSize: nameSize,
+                                      height: (nameSize + 4) / nameSize,
+                                      color: palette.foreground,
                                     ),
-                                    child: Text.rich(
-                                      TextSpan(
-                                        style: metaStyle,
-                                        children: [
-                                          TextSpan(
-                                            text: '招牌 ${signature.name}',
+                                  ),
+                                  if (signature != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 10),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: lineWidth,
+                                        ),
+                                        child: Text(
+                                          shop.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: eat.text.meta.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: palette.foreground,
                                           ),
-                                          if (price != null)
-                                            TextSpan(
-                                              text: '  $price',
-                                              style: eat.text.priceInline
-                                                  .copyWith(
-                                                    color: palette.foreground,
-                                                  ),
-                                            ),
-                                        ],
+                                        ),
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ),
-                              if (where != null || rate != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: lineWidth,
+                                  if (where != null || rate != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth: lineWidth,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.baseline,
+                                          textBaseline: TextBaseline.alphabetic,
+                                          spacing: EatSpace.s16,
+                                          children: [
+                                            if (distance != null)
+                                              Text(distance, style: numberStyle)
+                                            else if (shop.hubName
+                                                case final hub?)
+                                              Flexible(
+                                                child: Text(
+                                                  hub,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: metaStyle,
+                                                ),
+                                              ),
+                                            if (rate != null)
+                                              Text(
+                                                ShopRules.rateText(rate),
+                                                style: numberStyle,
+                                              ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.baseline,
-                                      textBaseline: TextBaseline.alphabetic,
-                                      spacing: EatSpace.s16,
-                                      children: [
-                                        if (distance != null)
-                                          Text(distance, style: numberStyle)
-                                        else if (shop.hubName case final hub?)
-                                          Flexible(
-                                            child: Text(
-                                              hub,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: metaStyle,
-                                            ),
-                                          ),
-                                        if (rate != null)
-                                          Text(
-                                            ShopRules.rateText(rate),
-                                            style: numberStyle,
-                                          ),
-                                      ],
+                                  if (price != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        price,
+                                        textScaler: TextScaler.noScaling,
+                                        style: eat.text.priceHero.copyWith(
+                                          fontSize: 56 * textScale,
+                                          color: palette.foreground,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                            ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),

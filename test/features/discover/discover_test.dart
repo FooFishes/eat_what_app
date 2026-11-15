@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/turntable.dart';
+import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -51,9 +52,13 @@ void main() {
       session: const SignedIn(user: verifiedUser),
     );
 
-    // 店名同时出现在舞台和抽屉的店铺行中.
+    // 有招牌菜时菜名是舞台大字, 店名排在下面, 同时出现在抽屉的店铺行中.
+    expect(
+      find.text(DishRules.stageLines('鲜虾蟹籽云吞').join('\n')),
+      findsOneWidget,
+    );
     expect(find.text('袁记云饺'), findsNWidgets(2));
-    expect(find.text('招牌 鲜虾蟹籽云吞  ¥18'), findsOneWidget);
+    expect(find.text('¥18'), findsOneWidget);
     expect(find.text('86% 推荐'), findsOneWidget, reason: '舞台上的推荐率');
     expect(find.text('招牌：鲜虾蟹籽云吞'), findsOneWidget, reason: '店铺行的第三行');
     expect(find.text('万达金街'), findsWidgets, reason: '没有定位时写商圈名');
@@ -74,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('一碗面'), findsNWidgets(2));
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.text('招牌 鲜虾蟹籽云吞  ¥18'), findsNothing, reason: '没有招牌菜的店不写招牌');
+    expect(find.text('¥18'), findsNothing, reason: '没有招牌菜的店名是大字，不写价格');
     expect(find.text('50% 推荐'), findsNothing, reason: '评价不满 3 条不显示推荐率');
 
     await tester.tap(find.text('就它了'));
@@ -222,7 +227,7 @@ void main() {
     (const Size(360, 640), 24.0),
   ]) {
     testWidgets(
-      '${size.width.toInt()}×${size.height.toInt()}：盘子连盘沿不压到顶栏和「就它了」「不想去这家」',
+      '${size.width.toInt()}×${size.height.toInt()}：盘子和文字不压到顶栏，盘子不压「就它了」「不想去这家」',
       (tester) async {
         final (container, _) = await pumpApp(
           tester,
@@ -249,6 +254,14 @@ void main() {
         final search = tester.getRect(find.bySemanticsLabel('搜索'));
         expect(plate.bottom, lessThanOrEqualTo(math.min(button.top, more.top)));
         expect(plate.top, greaterThanOrEqualTo(search.bottom));
+        final hero = tester.getRect(
+          find.text(DishRules.stageLines('鲜虾蟹籽云吞').join('\n')),
+        );
+        expect(
+          hero.top,
+          greaterThanOrEqualTo(search.bottom),
+          reason: '菜名不顶到顶栏',
+        );
         await unmountApp(tester, container);
       },
     );
