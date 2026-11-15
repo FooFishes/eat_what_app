@@ -202,6 +202,18 @@ void main() {
     expect(find.byType(PasswordLoginPage), findsOneWidget);
   });
 
+  testWidgets('短信服务出错时提示服务暂不可用，不开始倒计时', (tester) async {
+    env.adapter.on('POST /auth/phone/code', [FakeAdapter.fail(50003)]);
+    await pumpApp(tester, env);
+    await _agreeAndOpenPhoneLogin(tester);
+
+    await _enter(tester, '手机号', '13812345678');
+    await tester.tap(find.text('获取验证码'));
+    await tester.pumpAndSettle();
+    expect(find.text('服务暂不可用，请稍后再试'), findsOneWidget);
+    expect(find.text('获取验证码'), findsOneWidget);
+  });
+
   testWidgets('限流带等待秒数时，对话框按秒数提示', (tester) async {
     env.adapter.on('POST /auth/phone/code', [
       {

@@ -78,6 +78,11 @@ abstract final class BizCodes {
   /// 冷静期内服务端让账号的所有会话下线, 带凭证的请求收到该码时按登录过期处理.
   static const accountDeletionPending = 30017;
 
+  /// 第三方服务不可用, 超时, 返回异常, 例如短信服务拒绝发送, 一键登录的运营商接口出错.
+  static const thirdPartyUnavailable = 50001;
+  static const thirdPartyTimeout = 50002;
+  static const thirdPartyBadResponse = 50003;
+
   static const captchaUnavailable = 50004;
 
   /// 操作失败. 含义随接口而定, 由页面就地说明, 不进入码表.
@@ -128,6 +133,9 @@ const failureMessages = <Object, String>{
   BizCodes.mobileNotBound: '请先绑定手机号',
   BizCodes.captchaMissing: '人机验证未通过，请重试',
   BizCodes.captchaInvalid: '人机验证未通过，请重试',
+  BizCodes.thirdPartyUnavailable: '服务暂不可用，请稍后再试',
+  BizCodes.thirdPartyTimeout: '服务暂不可用，请稍后再试',
+  BizCodes.thirdPartyBadResponse: '服务暂不可用，请稍后再试',
   BizCodes.captchaUnavailable: '人机验证暂不可用，请稍后再试',
   BizCodes.consentRequired: '同意隐私政策后才能继续',
   BizCodes.consentPolicyChanged: '隐私政策已更新，请重新确认',
