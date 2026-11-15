@@ -596,9 +596,9 @@ class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
 }
 
 /// 登录页右上角的 "先逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "先逛逛".
-/// 卷起的页角后面探出一双眼睛 ([Emoji.eyes]), 像有人掀着页角往外偷看.
+/// 纸色三角里 "先逛逛" 下方, 一双眼睛 ([Emoji.eyes]) 从屏幕右边探进来, 像有人躲在屏幕外偷看.
 ///
-/// 进页面时页角减速卷起, 不回弹, 快卷好时眼睛从页角后面探出来. 按下时再多卷一点.
+/// 进页面时页角减速卷起, 不回弹, 快卷好时眼睛从屏幕右边探出来. 按下时再多卷一点.
 /// 之后每隔 [_idlePeriod] 把页角缓缓多掀起一点再放回去, 眼睛跟着多探出来一些.
 /// 系统开启减少动态效果时直接显示卷好的样子, 眼睛不动.
 /// 这是登录页特有的入口, 不用胶囊按钮.
@@ -624,7 +624,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
     curve: Curves.easeOutCubic,
   );
 
-  /// 眼睛探出来的进度. 页角卷到大半才开始, 从页角后面升起.
+  /// 眼睛探出来的进度. 页角卷到大半才开始, 从屏幕右边伸进来.
   late final _peek = CurvedAnimation(
     parent: _curl,
     curve: const Interval(0.55, 1, curve: Curves.easeOutCubic),
@@ -653,15 +653,15 @@ class _BrowseCornerState extends State<_BrowseCorner>
   /// 眼睛图片的边长. 图里两只眼睛约占宽的八成, 高的六成.
   static const _eyesSize = 44.0;
 
-  /// 眼睛中心越过卷起的边的距离, 和掀页角时多探出的距离. 平时下面小半截被页角挡住.
-  static const _eyesOut = 3.0;
+  /// 眼睛露在屏幕里的宽度, 和掀页角时多探出的宽度. 右边一小截留在屏幕外.
+  static const _eyesShown = 34.0;
   static const _eyesPeek = 5.0;
 
-  /// 眼睛探出来之前藏在页角后面的深度.
-  static const _eyesHidden = _eyesSize * 0.6;
+  /// 眼睛图片上边与状态栏的距离, 在 "先逛逛" 下面. 图片上方本身有一圈透明边.
+  static const _eyesTop = 30.0;
 
-  /// 眼睛顺着卷起的边往左上挪的距离, 避开 "先逛逛".
-  static const _eyesAlong = 6.0;
+  /// 眼睛向左歪一点, 像歪着头从屏幕边上探出来.
+  static const _eyesTilt = -12 * math.pi / 180;
 
   /// "先逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
   static const _maxTextScale = 1.2;
@@ -730,13 +730,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
               0.0,
               rest * _curve.value + _pressExtra * press + _liftExtra * lift,
             );
-            final out =
-                _eyesOut + _eyesPeek * lift - _eyesHidden * (1 - _peek.value);
-            final eyes =
-                _CurlPainter.edgePoint(extent) +
-                _CurlPainter.towardCorner * out +
-                _CurlPainter.alongEdge * _eyesAlong;
-            const eyesSize = _eyesSize;
+            final shown = (_eyesShown + _eyesPeek * lift) * _peek.value;
             return SizedBox(
               width: extent * _CurlPainter.aspect,
               height: extent,
@@ -749,20 +743,19 @@ class _BrowseCornerState extends State<_BrowseCorner>
                 child: ClipPath(
                   clipper: const _RevealClipper(),
                   child: Stack(
-                    clipBehavior: Clip.none,
                     children: [
-                      Positioned(
-                        left: eyes.dx - eyesSize / 2,
-                        top: eyes.dy - eyesSize / 2,
-                        child: Transform.rotate(
-                          angle: _CurlPainter.edgeAngle,
-                          child: const EmojiImage(Emoji.eyes, size: eyesSize),
-                        ),
-                      ),
                       Positioned(
                         top: top + _labelTop,
                         right: _labelInset,
                         child: label,
+                      ),
+                      Positioned(
+                        top: top + _eyesTop,
+                        right: shown - _eyesSize,
+                        child: Transform.rotate(
+                          angle: _eyesTilt,
+                          child: const EmojiImage(Emoji.eyes, size: _eyesSize),
+                        ),
                       ),
                     ],
                   ),
@@ -821,21 +814,6 @@ class _CurlPainter extends CustomPainter {
 
   /// 画布的宽高比.
   static final double aspect = math.tan(_lean);
-
-  /// 卷起的边在屏幕上的倾角. 这条边是画布的对角线, 从左上到右下.
-  static const edgeAngle = math.pi / 2 - _lean;
-
-  /// 从卷起的边指向页角的单位向量.
-  static final Offset towardCorner = Offset(math.cos(_lean), -math.sin(_lean));
-
-  /// 顺着卷起的边指向左上的单位向量.
-  static final Offset alongEdge = Offset(-math.sin(_lean), -math.cos(_lean));
-
-  /// 画布高为 [extent] 时, 页角到卷起的边的垂足.
-  static Offset edgePoint(double extent) {
-    final reach = extent * math.sin(_lean);
-    return Offset(extent * aspect, 0) - towardCorner * reach;
-  }
 
   /// 圆柱半径与纸色三角高度之比.
   static const _radiusRatio = 0.16;
