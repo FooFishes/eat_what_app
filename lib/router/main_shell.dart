@@ -5,6 +5,7 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/appearance.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     final navBar = EatNavBar(
       currentIndex: shell.currentIndex,
       onSelected: _select,
+      transparency: ref.watch(navGlassTransparencyProvider),
       onPublish: () async {
         // 未认证或封禁中的账号在入口处拦截, 不进入发布流程.
         if (await guardAction(context, ref, Capability.publishDish) &&

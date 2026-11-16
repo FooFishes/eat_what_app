@@ -308,6 +308,7 @@ void main() {
             currentIndex: 0,
             onSelected: picked.add,
             onPublish: () => published++,
+            transparency: 0.6,
           ),
         ),
       );
@@ -337,6 +338,7 @@ void main() {
             currentIndex: 0,
             onSelected: picked.add,
             onPublish: () {},
+            transparency: 0.6,
           ),
         ),
       );

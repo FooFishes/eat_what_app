@@ -62,7 +62,7 @@ lib/
     icons/                  图标名表、EatIcon；菜品插画（Illustration，只用于空状态、引导和演示）
     widgets/                设计规范里的组件。和 Flutter 同名的（Chip、Switch、FormField……）一律加 Eat 前缀：
                             EatButton、EatIconButton、EatChip、PendingTag（待接入）、EatTabs、EatListRow、
-                            EatRadioRow、EatSwitch、EatSearchField、EatFormField、EatSheet、EatStage、
+                            EatRadioRow、EatSwitch、EatSlider、EatSearchField、EatFormField、EatSheet、EatStage、
                             EatPanel（showPanel）、EatNavBar、DishPlate、DishTile、Skeleton、EmptyState、
                             FailureState；以后的 StageScaffold、PlainScaffold、Turntable、TasteCloud、
                             StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳。
@@ -81,7 +81,7 @@ lib/
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
                             topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点饭点和堂食外卖、菜的赞和收藏、未读数、网络状态；
+                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
@@ -96,7 +96,7 @@ lib/
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
     profile/                我的、他人主页、编辑资料、足迹、粉丝和关注；等级；我的标签、标签下的菜（待接入，页面保留）
     inbox/                  消息
-    settings/               设置、账号与安全、登录设备、隐私、屏蔽的人、通知、关于、反馈、注销账号
+    settings/               设置、账号与安全、登录设备、隐私、屏蔽的人、通知、个性化、关于、反馈、注销账号
     system/                 强制更新、维护、公告、建议更新、拦截对话框、人机验证、轻提示、没找到页面；
                             各功能共用的评论卡片、举报和信息有误的原因面板、隐私政策的同意对话框（见 2.2）
     kit/                    组件页，只在 debug 构建里有
@@ -186,6 +186,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束；堂食还是外卖（`scene`，`RatingScene`，存 `prefs.scene`，没选过按堂食，退出登录不清）。`currentPlaceProvider` 由它和校区列表派生，本机的选择读出来之前标为未就绪 | 在哪吃面板 |
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
 | `unreadCountProvider` | 有未读的消息行数（`/notification/cards/unread/count` 的 `cards`，不是未读条数），发现页铃铛和消息页「N 条未读」共用 | 回到前台、回到发现页时重新拉；点一行减 1；全部已读后重新拉（15.5） |
+| `navGlassTransparencyProvider` | 底部导航液态玻璃的透明度（存 `prefs.appearance.navGlass`，退出登录不清）；`MainShell` 读它传给 `EatNavBar` | 设置 → 个性化 |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表。后端 v2 没有词表接口，本地返回五个口味；只有待接入的加标签面板在用，发布直接用 `Taste` | 只读 |
 | `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次写入同意记录时 |
@@ -552,6 +553,7 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 | 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
 | 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | `prefs.*` | 设备 | 留 |
 | 热更新分组号（1–100） | `prefs.*` | 设备 | 留 |
+| 底部导航液态玻璃的透明度（`prefs.appearance.navGlass`） | `prefs.*` | 设备 | 留 |
 | 最近搜过的词（最多 10 个；游客不存） | `prefs.*`，键带用户 id | 账号 | 删 |
 | 接口缓存（第 10 节） | `cache.*`，键带用户 id | 账号 | `cache.*` 全部删掉 |
 | 远程配置快照 | `config.remote`（不在 `cache.*` 下） | 设备 | 留 |

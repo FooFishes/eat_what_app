@@ -23,6 +23,7 @@ import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/fact_list.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/state/appearance.dart';
 import 'package:flutter/widgets.dart';
 
 /// 组件页: 集中展示设计规范中的组件及其各种状态, 用于检查组件实现. 只在 debug 构建中存在.
@@ -549,6 +550,7 @@ class _KitPageState extends State<KitPage> {
             currentIndex: _nav,
             onSelected: (index) => setState(() => _nav = index),
             onPublish: () {},
+            transparency: NavGlassTransparency.fallback,
           ),
         ]),
         section('加载、失败、空', [

@@ -8,6 +8,8 @@ import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 /// 三个主页面底部的悬浮导航.
 ///
 /// - 左侧: "发现" "附近" "我的" 三个标签组成的液态玻璃胶囊, 选中指示可以拖动.
+///   选中的标签用实心图标和加粗的文字. 拖动时指示块经过哪个标签, 哪个标签就显示为选中的样子,
+///   松手后才真正切换, 与 iOS 的标签栏一致.
 /// - 右侧: 紧邻胶囊的圆形发布按钮, 同为液态玻璃.
 ///
 /// 本组件只绘制导航本身, 与屏幕边缘的距离和安全区由主页面外壳负责.
@@ -18,6 +20,7 @@ class EatNavBar extends StatelessWidget {
     required this.currentIndex,
     required this.onSelected,
     required this.onPublish,
+    required this.transparency,
   });
 
   /// 当前标签的序号: 0 为发现, 1 为附近, 2 为我的.
@@ -27,10 +30,13 @@ class EatNavBar extends StatelessWidget {
   /// 点击发布按钮的回调. 发布流程从选店开始.
   final VoidCallback onPublish;
 
+  /// 玻璃的透明度, 0 为不透明, 1 为完全透明. 由用户在设置中调整, 见 [_barGlass].
+  final double transparency;
+
   static const _tabs = [
-    (icon: EatIcons.discover, label: '发现'),
-    (icon: EatIcons.nearby, label: '附近'),
-    (icon: EatIcons.me, label: '我的'),
+    (icon: EatIcons.discover, activeIcon: EatIcons.discoverOn, label: '发现'),
+    (icon: EatIcons.nearby, activeIcon: EatIcons.nearbyOn, label: '附近'),
+    (icon: EatIcons.me, activeIcon: EatIcons.meOn, label: '我的'),
   ];
 
   @override
@@ -56,15 +62,21 @@ class EatNavBar extends StatelessWidget {
                 child: GlassTabBar.bottom(
                   tabs: [
                     for (final tab in _tabs)
+                      // 组件把选中样式单独画一层, 只露出指示块盖住的部分. 指示块移动时,
+                      // 经过的标签就露出这一层的实心图标和加粗文字.
                       GlassTab(
-                        icon: EatIcon(tab.icon, size: 22, color: c.inkMuted),
-                        activeIcon: EatIcon(tab.icon, size: 22, color: c.ink),
+                        icon: EatIcon(tab.icon, size: 22, color: c.ink),
+                        activeIcon: EatIcon(
+                          tab.activeIcon,
+                          size: 22,
+                          color: c.ink,
+                        ),
                         label: tab.label,
                       ),
                   ],
                   selectedIndex: currentIndex,
                   onTabSelected: onSelected,
-                  settings: _barGlass(c.paper),
+                  settings: _barGlass(c.paper, transparency),
                   indicatorSettings: _indicatorGlass(c.ink),
                   indicatorColor: c.ink.withValues(alpha: 0.07),
                   glowDuration: const Duration(milliseconds: 150),
@@ -73,8 +85,9 @@ class EatNavBar extends StatelessWidget {
                   barHeight: EatSize.nav,
                   iconLabelSpacing: 1,
                   textStyle: eat.text.caption,
+                  // 选中态靠指示块和字重区分. 未选中也用 ink, 玻璃才能保持通透, 见 [_barGlass].
                   selectedLabelColor: c.ink,
-                  unselectedLabelColor: c.inkMuted,
+                  unselectedLabelColor: c.ink,
                   selectedLabelStyle: const TextStyle(
                     fontWeight: FontWeight.w600,
                   ),
@@ -84,7 +97,7 @@ class EatNavBar extends StatelessWidget {
                 ),
               ),
             ),
-            _PublishButton(onPressed: onPublish),
+            _PublishButton(onPressed: onPublish, transparency: transparency),
           ],
         ),
       ),
@@ -92,20 +105,26 @@ class EatNavBar extends StatelessWidget {
   }
 }
 
-/// 胶囊和发布按钮的玻璃: `paper` 着色 78%, 模糊半径 14.
+/// 胶囊和发布按钮的玻璃: 透明度同时决定 `paper` 着色和模糊.
 ///
-/// 导航悬浮在照片和舞台色上方. 着色低于该值时, 下方内容的颜色透过玻璃,
-/// 未选中标签的 `ink-muted` 文字与背景的对比度不足 4.5:1.
-/// 边缘的折射和高光不受着色影响, 轮廓保持玻璃质感.
-LiquidGlassSettings _barGlass(Color tint) => LiquidGlassSettings(
-  bodyMode: GlassBodyMode.clear,
-  glassColor: tint.withValues(alpha: 0.78),
-  thickness: 30,
-  blur: 14,
-  lightIntensity: 0.9,
-  fresnelStrength: 1.4,
-  refractiveIndex: 1.3,
-);
+/// 看起来是否通透主要取决于模糊: 模糊稍大, 下方的内容就糊成一片, 着色再淡也像磨砂.
+/// 因此模糊按透明度的平方衰减, 透明度 70% 时只剩 1 左右, 下方的轮廓清晰可辨; 100% 时不着色也不模糊,
+/// 只剩边缘的折射和高光勾出玻璃的形状.
+///
+/// 导航文字的对比度随之下降: 文字和图标都用 `ink`, 透明度不高于 35% 时压在纯黑上也不低于 4.5:1.
+/// 更高的透明度是用户在设置里自己选的.
+LiquidGlassSettings _barGlass(Color tint, double transparency) {
+  final opacity = 1 - transparency;
+  return LiquidGlassSettings(
+    bodyMode: GlassBodyMode.clear,
+    glassColor: tint.withValues(alpha: 0.85 * opacity),
+    thickness: 30,
+    blur: 12 * opacity * opacity,
+    lightIntensity: 0.9,
+    fresnelStrength: 1.4,
+    refractiveIndex: 1.3,
+  );
+}
 
 /// 选中指示块的玻璃: `ink` 着色 7%, 在偏白的胶囊中显示为略深的色块.
 LiquidGlassSettings _indicatorGlass(Color tint) => LiquidGlassSettings(
@@ -119,9 +138,10 @@ LiquidGlassSettings _indicatorGlass(Color tint) => LiquidGlassSettings(
 );
 
 class _PublishButton extends StatelessWidget {
-  const new({required this.onPressed});
+  const new({required this.onPressed, required this.transparency});
 
   final VoidCallback onPressed;
+  final double transparency;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +154,7 @@ class _PublishButton extends StatelessWidget {
       height: EatSize.nav,
       stretch: 0.15,
       useOwnLayer: true,
-      settings: _barGlass(c.paper),
+      settings: _barGlass(c.paper, transparency),
       child: EatIcon(EatIcons.add, size: 26, color: c.ink),
     );
   }

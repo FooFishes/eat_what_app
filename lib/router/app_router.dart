@@ -35,6 +35,7 @@ import 'package:eat/features/settings/devices_page.dart';
 import 'package:eat/features/settings/feedback_page.dart';
 import 'package:eat/features/settings/notify_page.dart';
 import 'package:eat/features/settings/password_page.dart';
+import 'package:eat/features/settings/personalize_page.dart';
 import 'package:eat/features/settings/phone_page.dart';
 import 'package:eat/features/settings/privacy_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
@@ -161,7 +162,7 @@ GoRouter appRouter(Ref ref) {
         redirect: (_, state) =>
             DeepLinks.ssoLocation(state.uri.queryParameters),
       ),
-      // 游客的设置页只有 "关于". 子页面继承设置页的标记, 只给登录用户的子页面要标回 signedIn.
+      // 游客的设置页只有 "个性化" 和 "关于". 子页面继承设置页的标记, 只给登录用户的子页面要标回 signedIn.
       GoRoute(
         path: Paths.settings,
         metadata: guestRoute,
@@ -209,6 +210,10 @@ GoRouter appRouter(Ref ref) {
             path: _child(Paths.settingsNotify, Paths.settings),
             metadata: signedInRoute,
             builder: (_, _) => const NotifyPage(),
+          ),
+          GoRoute(
+            path: _child(Paths.settingsPersonalize, Paths.settings),
+            builder: (_, _) => const PersonalizePage(),
           ),
           GoRoute(
             path: _child(Paths.settingsAbout, Paths.settings),

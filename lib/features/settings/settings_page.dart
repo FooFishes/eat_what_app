@@ -22,7 +22,7 @@ import 'package:go_router/go_router.dart';
 
 /// 设置页面: 头像和昵称 (点击进入编辑资料), 各子页面入口, 底部的 "退出登录".
 ///
-/// 游客只有 "关于" 一项.
+/// 游客只有 "个性化" 和 "关于" 两项.
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
@@ -30,6 +30,11 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final version = ref.watch(appVersionProvider).value;
+    final personalize = SettingsRow(
+      icon: EatIcons.eye,
+      label: '个性化',
+      onTap: () => context.push(Paths.settingsPersonalize),
+    );
     final about = SettingsRow(
       icon: EatIcons.info,
       label: '关于与反馈',
@@ -45,7 +50,7 @@ class SettingsPage extends ConsumerWidget {
       return PlainScaffold(
         title: '设置',
         slivers: [
-          SliverList.list(children: [about]),
+          SliverList.list(children: [personalize, about]),
         ],
       );
     }
@@ -81,6 +86,7 @@ class SettingsPage extends ConsumerWidget {
               label: '通知',
               onTap: () => context.push(Paths.settingsNotify),
             ),
+            personalize,
             about,
           ],
         ),

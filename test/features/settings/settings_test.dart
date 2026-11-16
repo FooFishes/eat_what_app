@@ -4,12 +4,15 @@ import 'package:eat/features/auth/login_page.dart';
 import 'package:eat/features/settings/about_page.dart';
 import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/features/settings/delete_account_page.dart';
+import 'package:eat/features/settings/personalize_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/appearance.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/services.dart';
+import 'package:eat/design/widgets/eat_slider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
@@ -143,6 +146,31 @@ void main() {
 
     expect(find.byType(AboutPage), findsOneWidget);
     expect(find.text('版本 0.1.0（1）补丁 2'), findsOneWidget);
+    await expectAccessible(tester);
+  });
+
+  testWidgets('游客的设置里有个性化，拖动滑条改透明度并记在本机', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const Guest(),
+      location: Paths.settings,
+    );
+
+    expect(find.text('关于与反馈'), findsOneWidget);
+    await tester.tap(find.text('个性化'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PersonalizePage), findsOneWidget);
+    expect(find.text('70%'), findsOneWidget);
+
+    await tester.drag(find.byType(EatSlider), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(navGlassTransparencyProvider),
+      NavGlassTransparency.min,
+    );
+    expect(find.text('20%'), findsOneWidget);
+    expect(env.kv.values[NavGlassTransparency.key], '0.2');
     await expectAccessible(tester);
   });
 }

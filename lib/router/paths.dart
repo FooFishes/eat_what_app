@@ -68,6 +68,7 @@ abstract final class Paths {
   static const settingsPrivacy = '/settings/privacy';
   static const settingsBlocked = '/settings/privacy/blocked';
   static const settingsNotify = '/settings/notify';
+  static const settingsPersonalize = '/settings/personalize';
   static const settingsAbout = '/settings/about';
 
   /// 反馈. 从菜品或店铺进入时传入 [dishId] 或 [shopId], 页面显示 "关于 某某".
