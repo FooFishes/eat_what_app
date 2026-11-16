@@ -35,6 +35,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/notices.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
@@ -198,6 +199,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       pinnedBottom: tabs,
       onRefresh: _refresh,
       sheetSlivers: [
+        const SliverToBoxAdapter(child: DiscoverNotices()),
         SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         SliverPadding(

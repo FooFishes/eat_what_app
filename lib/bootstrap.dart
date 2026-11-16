@@ -3,6 +3,7 @@ import 'package:eat/core/network/api_client.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/api_hooks.dart';
 import 'package:eat/state/consented_services.dart';
+import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,8 @@ Future<void> bootstrap() async {
     retry: retryOnNetworkFailure,
   );
   await container.read(sessionProvider.notifier).restore();
+  // 首帧的路由守卫需要强制更新和停服维护状态, 因此先读出本机的远程配置快照. 最新配置由下方的服务启动后获取.
+  await container.read(remoteConfigProvider.notifier).restore();
   // 崩溃上报需在首帧前启动, 才能捕获启动过程中的错误. 若本机尚无同意记录则不启动.
   await container.read(consentedServicesProvider.notifier).start();
   // 记录冷启动, 并在回到前台和退到后台时记录与上报使用统计. 未同意隐私政策时不采集.

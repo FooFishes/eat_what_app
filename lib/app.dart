@@ -1,6 +1,7 @@
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/features/system/consent_dialog.dart';
+import 'package:eat/features/system/notices.dart';
 import 'package:eat/router/app_router.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,9 +33,13 @@ class EatApp extends ConsumerWidget {
             style: eat.text.body.copyWith(color: eat.colors.ink),
             child: ConsentHost(
               navigatorKey: router.routerDelegate.navigatorKey,
-              child: BackFallback(
-                fallback: () => router.go(Paths.discover),
-                child: child!,
+              child: RemoteConfigHost(
+                navigatorKey: router.routerDelegate.navigatorKey,
+                openPath: (location) => router.push(location),
+                child: BackFallback(
+                  fallback: () => router.go(Paths.discover),
+                  child: child!,
+                ),
               ),
             ),
           ),

@@ -6,7 +6,9 @@ import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/domain/models/client_config.dart';
 import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/system/remote_gate.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -43,6 +45,13 @@ class NotifyPage extends ConsumerWidget {
                   description: setting.category.description,
                   value: setting.enabled,
                   onChanged: (on) async {
+                    if (!guardRemote(
+                      context,
+                      ref,
+                      feature: RemoteFeature.push,
+                    )) {
+                      return;
+                    }
                     final failure = await ref
                         .read(pushSettingsProvider.notifier)
                         .set(setting.category, enabled: on);

@@ -9,6 +9,8 @@ import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/fact_list.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/domain/rules/remote_config_rules.dart';
+import 'package:eat/features/system/remote_gate.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -18,11 +20,20 @@ import 'package:go_router/go_router.dart';
 /// 执行受限操作前的权限校验. 允许时返回 true, 否则弹出对应的拦截对话框并返回 false.
 ///
 /// 受限操作按钮在界面上正常显示而不隐藏或置灰, 由点击后的拦截对话框向用户说明原因及后续引导.
+/// 先按远程配置检查全站只读和功能开关, 再按账号状态检查 (技术架构 8.2).
 Future<bool> guardAction(
   BuildContext context,
   WidgetRef ref,
   Capability capability,
 ) async {
+  if (!guardRemote(
+    context,
+    ref,
+    feature: remoteFeatureOf(capability),
+    write: isWriteCapability(capability),
+  )) {
+    return false;
+  }
   final result = checkPermission(ref.read(accountStatusProvider), capability);
   switch (result) {
     case Allowed():

@@ -1,0 +1,14 @@
+{
+  "configVersion": 0,
+  "flags": {
+    "publish": { "on": true },
+    "newShop": { "on": true },
+    "comment": { "on": true },
+    "push": { "on": true },
+    "topic": { "on": true }
+  },
+  "params": {},
+  "announcements": [],
+  "maintenance": { "mode": "NONE" },
+  "versions": {}
+}

@@ -165,7 +165,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 单例服务 | `@Riverpod(keepAlive: true)` 函数 | `apiClientProvider`、`kvStoreProvider`、`appConfigProvider`、`clockProvider`；`linkSourceProvider`（`router/deep_links.dart`，外部链接的来源，测试里换成假的） |
 | 跨页面状态 | `@Riverpod(keepAlive: true)` 类（`extends _$Xxx`） | `sessionProvider`、`remoteConfigProvider`、`placeAndMealProvider` |
 | 页面数据 | `@riverpod` 类，`build` 带参数（默认自动释放，参数即 family） | `dishDetailProvider(dishId)`、`shopDetailProvider(shopId)`；分页列表也写成类，`build` 拉第一页，`loadMore` 追加下一页，如往期专题 `topicArchiveProvider` |
-| 派生值 | `@riverpod` 函数 | `accountStatusProvider`、`featureStateProvider(feature)` |
+| 派生值 | `@riverpod` 函数 | `accountStatusProvider`、`appGateProvider` |
 | 一次性异步 | 返回 `Future` 的 `@riverpod` 函数 | 专题详情 `topicDetailProvider(topicId)` |
 
 `StateProvider`、`StateNotifierProvider` 在 3.x 已移到 `legacy.dart`，不用。实验性的 `Mutation` 和离线持久化也不用。
@@ -184,8 +184,9 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `accountStatusProvider` | 未登录（含游客）、未认证、已认证、封禁中（带原因和期限，8.1） | 由 `sessionProvider` 派生 |
 | `consentProvider` | 本机同意隐私政策、用户协议和数据存放在境外的记录（版本和时间），只决定能不能启动 SDK（9.4） | 登录页（登录成功或「先逛逛」时） |
 | `crossBorderConsentProvider` | 读服务端当前的政策版本（登录时带上）；已登录时弹同意对话框、提交同意（9.5） | 登录流程、`ApiHooks.requestConsent` |
-| `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、回到前台 |
-| `featureStateProvider(feature)` | 某个功能当前是：可用、待接入、已关闭、只读维护 | 派生 |
+| `remoteConfigProvider` | 远程配置快照（第 17 节） | 启动、同意隐私政策后、回到前台、切换校区 |
+| `appGateProvider` | 路由守卫要的强制更新和停服维护状态；`appUpdateProvider` 是本机构建号和版本线比较的结果 | 由 `remoteConfigProvider` 和构建号派生 |
+| `noticesProvider` | 本机关掉的普通公告、看过的重要公告、提示过建议更新的构建号（`prefs.notice.*`、`prefs.update.prompted`）；`bannerNoticeProvider`、`importantNoticeProvider`、`updatePromptProvider` 由它和配置派生 | 公告条、公告弹窗、建议更新 |
 | `locationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
 | `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束；堂食还是外卖（`scene`，`RatingScene`，存 `prefs.scene`，没选过按堂食，退出登录不清）。`currentPlaceProvider` 由它和校区列表派生，本机的选择读出来之前标为未就绪 | 在哪吃面板 |
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
@@ -518,10 +519,11 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 
 - 「待接入」是编译期常量而不是远程开关：接口没好时客户端代码也没写，只能随新版本上线。接口上线后改常量、删掉现状差距里对应的一行。
 - 远程开关只能把已经做好的功能关掉，不能打开新功能（产品 12.2）。
+- 第 3、4 行由 `domain/rules/remote_config_rules.dart` 的 `remoteGate` 判断：只读拦所有写操作（`isWriteCapability`，只有查看类的 `view*` 放行）；功能开关对应的操作见 `remoteFeatureOf`：`publish` 管发布和编辑菜，`newShop` 管新建店，`comment` 管评论和回复，`push` 管通知设置页的开关；`topic` 的入口还是待接入，待接入优先，暂时没有对应操作。停服维护时写操作也按只读拦。
 
 ### 8.3 统一拦截入口
 
-- 所有受限的按钮都先调同一个函数 `guardAction(context, ref, Capability.like)`（`features/system/guard.dart`）：按账号状态调 `checkPermission`，被拦就弹拦截对话框并返回 false，否则返回 true，按钮再执行动作。8.2 里远程配置的几种状态，等远程配置接上后也在这里判断。动作失败时调 `reportActionFailure`：服务端判定没权限就刷新账号状态再弹对话框，其余给轻提示。
+- 所有受限的按钮都先调同一个函数 `guardAction(context, ref, Capability.like)`（`features/system/guard.dart`）：先按远程配置判断 8.2 的第 3、4 行（`guardRemote`，`features/system/remote_gate.dart`，被拦给轻提示），再按账号状态调 `checkPermission`，被拦就弹拦截对话框并返回 false，否则返回 true，按钮再执行动作。不是受限操作的入口（推送开关）直接调 `guardRemote`。动作失败时调 `reportActionFailure`：服务端判定没权限就刷新账号状态再弹对话框，其余给轻提示。
 - 按钮永远照常显示，不隐藏、不置灰（产品 7.3）。
 - 拦截对话框文案按动作换词：未认证「认证后才能点赞」，主按钮「去认证」（到 `/verify`），次按钮「先逛逛」。动作词取 `Capability.verb`。
 - 服务端和客户端判断不一致时（客户端以为能做，服务端返回没权限）：重新拉用户信息，按新状态弹对话框。回到前台时也刷新一次用户信息（产品 7.3「账号状态在别处变了，下一次操作时按新状态处理」）。
@@ -1274,7 +1276,7 @@ class PushNotice({
 
 ### 17.1 接口
 
-后端 v2 已有 `GET /remote-config?platform=&build=&campusId=`，客户端还没接（现状差距 P1）。接的时候按后端的实际契约（`configVersion`；`flags` 里 `publish`、`newShop`、`comment`、`push`、`topic` 各 `{on, reason}`；`params`；`announcements[{id, level: NORMAL|IMPORTANT, title, content, linkUrl, startsAt, endsAt}]`；`maintenance{mode: NONE|READ_ONLY|DOWN, message, until}`；`versions{<平台>: {minBuild, latestBuild, latestVersionName, storeUrl, releaseNotes}}`；`update`），时间是毫秒。它带 `ETag` 和 60 秒公共缓存，`If-None-Match` 命中时返回 HTTP 304、没有响应体，Dio 默认把 304 当错误，接入时要处理。补丁放量、实验分组、校区、隐私政策版本 v2 里没有。下面是最初建议的形状，留作对照：
+后端 v2 已有 `GET /remote-config?platform=&build=&campusId=`，客户端已接入（`data/remote_config/`、`state/remote_config.dart`），按后端的实际契约（`configVersion`；`flags` 里 `publish`、`newShop`、`comment`、`push`、`topic` 各 `{on, reason}`；`params`；`announcements[{id, level: NORMAL|IMPORTANT, title, content, linkUrl, startsAt, endsAt}]`；`maintenance{mode: NONE|READ_ONLY|DOWN, message, until}`；`versions{<平台>: {minBuild, latestBuild, latestVersionName, storeUrl, releaseNotes}}`；`update`），时间是毫秒。它带 `ETag` 和 60 秒公共缓存，`If-None-Match` 命中时返回 HTTP 304、没有响应体，Dio 默认把 304 当错误，接入时要处理。补丁放量、实验分组、校区、隐私政策版本 v2 里没有。下面是最初建议的形状，留作对照：
 
 ```json
 {
@@ -1310,9 +1312,11 @@ class PushNotice({
 }
 ```
 
-- 请求带平台、构建号、当前校区，服务端按这些筛公告。
+- 请求带平台、构建号、当前校区，服务端按这些筛公告。切换校区后重新请求。
 - 风控阈值也是运营参数（产品 12.2），但只在服务端用，不下发。
 
+- 快照和它的 `ETag` 一起存在 `config.remote`，下次请求带 `If-None-Match`。`ApiClient.getConditional` 放行 304，返回 `notModified`。Web 上读不到 `ETag` 时不带（服务端要在 CORS 里暴露 `ETag` 才读得到），浏览器自己的 HTTP 缓存照样生效。
+- 响应里的 `update`（服务端算好的 FORCE、SUGGEST、NONE）不用：客户端用 `versions` 里本平台的版本线和本机构建号自己比较，离线用快照时结果一样。
 ### 17.2 兜底
 
 - 内置默认值 `assets/config/remote_defaults.json`，和上面的形状一样。
@@ -1326,7 +1330,7 @@ class PushNotice({
 
 | 内容 | 用在哪 |
 | --- | --- |
-| 功能开关 | `featureStateProvider`，入口照常显示，点了提示「该功能暂时关闭」（第 8 节） |
+| 功能开关 | `guardAction` / `guardRemote`，入口照常显示，点了提示「该功能暂时关闭」（第 8 节） |
 | 饭点时间段 | `domain/rules/meal_time.dart` 按当前时间算饭点；手动选择保持到当前时间段结束（产品 4.5） |
 | 推荐每批几道 | 转盘圆点数量 |
 | 推荐率显示门槛 | 默认 3 条，和搜店的「口碑好」门槛一致；不满门槛写「N 条评价」（产品 9.7） |

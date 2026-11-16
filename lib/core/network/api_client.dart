@@ -75,6 +75,36 @@ class ApiClient {
     CancelToken? cancelToken,
   }) => _send('GET', path, query: query, headers: headers, cancel: cancelToken);
 
+  /// 带 ETag 的条件 GET. [etag] 非空时附带 `If-None-Match`, 服务端返回 HTTP 304 时结果的 `notModified` 为 true.
+  ///
+  /// Dio 默认把 304 视为失败, 本方法单独放行该状态码. 304 没有响应体, 不经过业务外壳的解析.
+  Future<ConditionalData> getConditional(
+    String path, {
+    Map<String, Object?>? query,
+    String? etag,
+    CancelToken? cancelToken,
+  }) async {
+    Response<Object?>? raw;
+    final data = await _send(
+      'GET',
+      path,
+      query: query,
+      headers: {'If-None-Match': ?etag},
+      cancel: cancelToken,
+      onResponse: (response) => raw = response,
+    );
+    return ConditionalData(
+      data: data,
+      etag: raw?.headers.value('etag'),
+      notModified: raw?.statusCode == _notModified,
+    );
+  }
+
+  static const _notModified = 304;
+
+  static bool _successOrNotModified(int? status) =>
+      status != null && (status >= 200 && status < 300 || status == 304);
+
   /// 当 [consentRetry] 为 false 时, 收到协议确认业务码不再触发确认流程, 供提交确认的接口自身使用.
   Future<Object?> post(
     String path, {
@@ -121,6 +151,7 @@ class ApiClient {
     Map<String, String>? headers,
     CancelToken? cancel,
     bool consentRetry = true,
+    void Function(Response<Object?> response)? onResponse,
   }) async {
     final token = _tokens.current;
     final grants = _grants;
@@ -136,8 +167,11 @@ class ApiClient {
             ...?headers,
             if (token != null) token.name: token.headerValue,
           },
+          validateStatus: onResponse == null ? null : _successOrNotModified,
         ),
       );
+      onResponse?.call(response);
+      if (response.statusCode == _notModified) return null;
       return _unwrap(response.data);
     } on _BizError catch (e) {
       _log(method, path, e.code);
@@ -154,6 +188,7 @@ class ApiClient {
           headers: headers,
           cancel: cancel,
           consentRetry: false,
+          onResponse: onResponse,
         );
       }
       final failure = switch (e.code) {
@@ -344,6 +379,18 @@ class const _DebugBodyLogger() extends Interceptor {
     }
   }
 }
+
+/// 条件 GET ([ApiClient.getConditional]) 的结果.
+class const ConditionalData({
+  /// 响应外壳中的 `data`. [notModified] 为 true 时为 null.
+  final Object? data,
+
+  /// 响应头中的 `ETag`. Web 端在服务端未通过 CORS 暴露该响应头时读不到, 为 null.
+  final String? etag,
+
+  /// 服务端返回 HTTP 304, 表示本地副本仍是最新.
+  final bool notModified = false,
+});
 
 /// 响应外壳中 `code` 非零时抛出的内部业务异常.
 class const _BizError(

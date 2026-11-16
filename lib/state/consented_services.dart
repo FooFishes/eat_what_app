@@ -5,13 +5,14 @@ import 'package:eat/core/telemetry/crash_reporter.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/device.dart';
 import 'package:eat/state/privacy_consent.dart';
+import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'consented_services.g.dart';
 
-/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
 ///
 /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 @Riverpod(keepAlive: true)
@@ -39,6 +40,7 @@ class ConsentedServices extends _$ConsentedServices {
       (_, session) => unawaited(reporter.setUser(_userId(session))),
       fireImmediately: true,
     );
+    unawaited(ref.read(remoteConfigProvider.notifier).refresh());
     unawaited(ref.read(hotUpdateProvider).downloadIfAvailable());
     unawaited(ref.read(deviceRegistrationProvider).register());
     // 等待使用统计读出本机开关, 首帧前记录的冷启动事件才不会被丢弃. 之后每次登录时同步服务端的开关.

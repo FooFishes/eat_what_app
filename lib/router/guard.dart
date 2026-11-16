@@ -30,10 +30,13 @@ const guestRoute = <String, dynamic>{RouteAccess._key: RouteAccess.guest};
 /// 仅限已登录用户的路由 `metadata` 标记, 仅用于覆盖父路由继承的权限, 其余默认页面无需标注.
 const signedInRoute = <String, dynamic>{RouteAccess._key: RouteAccess.signedIn};
 
-// TODO: 强制更新和停服维护的跳转未实现. 远程配置接口上线后在此加入对应规则.
-/// 顶层路由守卫, 根据当前登录态与页面权限返回访问 [location] 时的重定向地址, 无需重定向时返回 null.
+/// 顶层路由守卫, 根据远程配置, 当前登录态与页面权限返回访问 [location] 时的重定向地址, 无需重定向时返回 null.
 ///
 /// [access] 为目标页面的访问权限, [canMatch] 用于判断站内地址能否匹配路由表.
+/// [forceUpdate] 表示本机版本低于强制更新线, [down] 表示停服维护中, 两者都来自远程配置.
+///
+/// 按顺序判断: 强制更新, 停服维护, 登录态 (技术架构 5.3).
+/// 不需要更新或不在维护时访问更新页和维护页会被导回发现页, 维护结束后停在维护页的用户随之离开.
 ///
 /// 游客停留在登录页时不执行重定向, 以便随时返回登录操作; 点击 "先逛逛" 后的跳转由登录页自行处理, 见 [browseTarget].
 String? resolveRedirect({
@@ -41,7 +44,13 @@ String? resolveRedirect({
   required RouteAccess access,
   required SessionState session,
   required bool Function(Uri location) canMatch,
+  bool forceUpdate = false,
+  bool down = false,
 }) {
+  final path = location.path;
+  if (forceUpdate) return path == Paths.update ? null : Paths.update;
+  if (down) return path == Paths.maintenance ? null : Paths.maintenance;
+  if (path == Paths.update || path == Paths.maintenance) return Paths.discover;
   switch (session) {
     case SignedOut(:final reason):
       if (access == RouteAccess.public) return null;

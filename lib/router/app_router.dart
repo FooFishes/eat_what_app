@@ -41,6 +41,7 @@ import 'package:eat/features/settings/phone_page.dart';
 import 'package:eat/features/settings/privacy_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/settings/username_page.dart';
+import 'package:eat/features/system/blocking_pages.dart';
 import 'package:eat/features/system/not_found_page.dart';
 import 'package:eat/features/topic/topic_archive_page.dart';
 import 'package:eat/features/topic/topic_page.dart';
@@ -50,6 +51,7 @@ import 'package:eat/router/deep_links.dart';
 import 'package:eat/router/guard.dart';
 import 'package:eat/router/main_shell.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
@@ -71,16 +73,21 @@ GoRouter appRouter(Ref ref) {
   // 登录态变化时让守卫重新判断当前地址: 登录后离开登录页, 过期或退出后进入登录页.
   final refresh = ValueNotifier<SessionState>(ref.read(sessionProvider));
   ref.listen(sessionProvider, (_, next) => refresh.value = next);
+  // 远程配置的强制更新和停服维护变化时同样重新判断: 进入或离开更新页和维护页.
+  final gate = ValueNotifier<AppGate>(ref.read(appGateProvider));
+  ref.listen(appGateProvider, (_, next) => gate.value = next);
   late final GoRouter router;
   router = GoRouter(
     initialLocation: Paths.discover,
-    refreshListenable: refresh,
+    refreshListenable: Listenable.merge([refresh, gate]),
     observers: [CrashReporter.navigatorObserver()],
     redirect: (context, state) => resolveRedirect(
       location: state.uri,
       access: RouteAccess.of(state.metadata),
       session: ref.read(sessionProvider),
       canMatch: (uri) => router.configuration.findMatch(uri).isNotEmpty,
+      forceUpdate: gate.value.forceUpdate,
+      down: gate.value.down,
     ),
     errorBuilder: (context, state) => const NotFoundPage(),
     routes: [
@@ -414,6 +421,16 @@ GoRouter appRouter(Ref ref) {
           null => const NotFoundPage(),
         },
       ),
+      GoRoute(
+        path: Paths.update,
+        metadata: publicRoute,
+        builder: (_, _) => const ForceUpdatePage(),
+      ),
+      GoRoute(
+        path: Paths.maintenance,
+        metadata: publicRoute,
+        builder: (_, _) => const MaintenancePage(),
+      ),
       if (kDebugMode)
         GoRoute(path: Paths.kit, builder: (_, _) => const KitPage()),
     ],
@@ -424,6 +441,7 @@ GoRouter appRouter(Ref ref) {
     links.dispose();
     router.dispose();
     refresh.dispose();
+    gate.dispose();
   });
   return router;
 }

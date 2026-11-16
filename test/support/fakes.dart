@@ -132,14 +132,26 @@ class FakeAdapter implements HttpClientAdapter {
       return ResponseBody.fromString('{}', 404, headers: _json);
     }
     final next = queue.length > 1 ? queue.removeAt(0) : queue.first;
-    if (next case FakeResponse(:final status, :final body, :final offline)) {
+    if (next case FakeResponse(
+      :final status,
+      :final body,
+      :final offline,
+      :final headers,
+    )) {
       if (offline) {
         throw DioException.connectionError(
           requestOptions: options,
           reason: 'offline',
         );
       }
-      return ResponseBody.fromString(jsonEncode(body), status, headers: _json);
+      return ResponseBody.fromString(
+        jsonEncode(body),
+        status,
+        headers: {
+          ..._json,
+          for (final MapEntry(:key, :value) in headers.entries) key: [value],
+        },
+      );
     }
     return ResponseBody.fromString(jsonEncode(next), 200, headers: _json);
   }
@@ -152,11 +164,14 @@ class FakeAdapter implements HttpClientAdapter {
   };
 }
 
-/// 指定状态码或模拟网络不可达的响应.
+/// 指定状态码, 响应头或模拟网络不可达的响应.
 class const FakeResponse({
   final int status = 200,
   final Object? body,
   final bool offline = false,
+
+  /// 额外的响应头, 如 `etag`. 键用小写.
+  final Map<String, String> headers = const {},
 }) {
   const FakeResponse.offline() : this(offline: true);
 }

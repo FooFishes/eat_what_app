@@ -185,6 +185,12 @@ abstract final class Paths {
   /// 消息中心页路径, 入口位于发现页右上角的铃铛.
   static const inbox = '/inbox';
 
+  /// 强制更新页路径. 只由路由守卫导向, 不需要更新时访问会被导回发现页.
+  static const update = '/update';
+
+  /// 停服维护页路径. 只由路由守卫导向, 不在维护时访问会被导回发现页.
+  static const maintenance = '/maintenance';
+
   /// 组件预览页路径, 仅在 debug 构建中存在.
   static const kit = '/kit';
 }

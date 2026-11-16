@@ -31,11 +31,15 @@ String? _redirect(
   String location,
   SessionState session, {
   RouteAccess access = RouteAccess.signedIn,
+  bool forceUpdate = false,
+  bool down = false,
 }) => resolveRedirect(
   location: Uri.parse(location),
   access: access,
   session: session,
   canMatch: _known,
+  forceUpdate: forceUpdate,
+  down: down,
 );
 
 void main() {
@@ -185,6 +189,87 @@ void main() {
 
     test('站内路径原样返回', () {
       expect(safeReturnPath('/me?tab=1', _known), '/me?tab=1');
+    });
+  });
+
+  group('强制更新和停服维护', () {
+    const signedIn = SignedIn();
+
+    test('低于强制更新线时任何页面都去更新页', () {
+      for (final session in const [SignedOut(), Guest(), signedIn]) {
+        expect(
+          _redirect('/me', session, forceUpdate: true),
+          Paths.update,
+          reason: '$session',
+        );
+      }
+      expect(
+        _redirect(
+          Paths.login,
+          const SignedOut(),
+          access: RouteAccess.public,
+          forceUpdate: true,
+        ),
+        Paths.update,
+      );
+    });
+
+    test('已在更新页时不再跳转，未登录也能停留', () {
+      expect(
+        _redirect(
+          Paths.update,
+          const SignedOut(),
+          access: RouteAccess.public,
+          forceUpdate: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('停服维护时任何页面都去维护页', () {
+      expect(_redirect('/settings', signedIn, down: true), Paths.maintenance);
+      expect(
+        _redirect(
+          Paths.maintenance,
+          const SignedOut(),
+          access: RouteAccess.public,
+          down: true,
+        ),
+        isNull,
+      );
+    });
+
+    test('强制更新先于停服维护', () {
+      expect(
+        _redirect('/me', signedIn, forceUpdate: true, down: true),
+        Paths.update,
+      );
+      expect(
+        _redirect(
+          Paths.maintenance,
+          signedIn,
+          access: RouteAccess.public,
+          forceUpdate: true,
+          down: true,
+        ),
+        Paths.update,
+      );
+    });
+
+    test('不需要更新或维护结束后离开更新页和维护页，回到发现页', () {
+      for (final path in [Paths.update, Paths.maintenance]) {
+        expect(
+          _redirect(path, signedIn, access: RouteAccess.public),
+          Paths.discover,
+        );
+      }
+    });
+
+    test('配置正常时按登录态判断', () {
+      expect(
+        _redirect('/settings/account', const SignedOut()),
+        '/login?from=%2Fsettings%2Faccount',
+      );
     });
   });
 }

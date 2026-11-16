@@ -8,19 +8,19 @@ part of 'consented_services.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
 ///
 /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 
 @ProviderFor(ConsentedServices)
 final consentedServicesProvider = ConsentedServicesProvider._();
 
-/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
 ///
 /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 final class ConsentedServicesProvider
     extends $NotifierProvider<ConsentedServices, bool> {
-  /// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
+  /// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
   ///
   /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
   ConsentedServicesProvider._()
@@ -50,9 +50,9 @@ final class ConsentedServicesProvider
   }
 }
 
-String _$consentedServicesHash() => r'52741758df9b3ba93844f8ad030aefecda4b8a1c';
+String _$consentedServicesHash() => r'1fc02926b0cdd8bbf87fe58662e66a3d75e9c1bd';
 
-/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
 ///
 /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 
