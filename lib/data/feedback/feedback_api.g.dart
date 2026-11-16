@@ -10,9 +10,21 @@ FeedbackCaseDto _$FeedbackCaseDtoFromJson(Map<String, dynamic> json) =>
     FeedbackCaseDto(
       id: (json['id'] as num?)?.toInt(),
       kind: json['kind'] as String?,
+      status: json['status'] as String?,
       target: json['target'] == null
           ? null
           : FeedbackTargetDto.fromJson(json['target'] as Map<String, dynamic>),
+      reason: json['reason'] as String?,
+      text: json['text'] as String?,
+      screenshots: (json['screenshots'] as List<dynamic>?)
+          ?.map(
+            (e) => FeedbackScreenshotDto.fromJson(e as Map<String, dynamic>),
+          )
+          .toList(),
+      outcome: json['outcome'] as String?,
+      reply: json['reply'] as String?,
+      createdAt: (json['createdAt'] as num?)?.toInt(),
+      closedAt: (json['closedAt'] as num?)?.toInt(),
     );
 
 FeedbackTargetDto _$FeedbackTargetDtoFromJson(Map<String, dynamic> json) =>
@@ -20,6 +32,13 @@ FeedbackTargetDto _$FeedbackTargetDtoFromJson(Map<String, dynamic> json) =>
       type: json['type'] as String?,
       id: (json['id'] as num?)?.toInt(),
     );
+
+FeedbackScreenshotDto _$FeedbackScreenshotDtoFromJson(
+  Map<String, dynamic> json,
+) => FeedbackScreenshotDto(
+  slot: (json['slot'] as num?)?.toInt(),
+  url: json['url'] as String?,
+);
 
 Map<String, dynamic> _$CatalogErrorDtoToJson(CatalogErrorDto instance) =>
     <String, dynamic>{

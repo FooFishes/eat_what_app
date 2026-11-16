@@ -71,6 +71,13 @@ abstract final class Paths {
   static const settingsPersonalize = '/settings/personalize';
   static const settingsAbout = '/settings/about';
 
+  /// 我的反馈列表页路径, 列出本人提交的意见反馈, 信息有误和举报.
+  static const myFeedback = '/settings/about/feedback';
+
+  /// 我的反馈中单条记录的详情页路径, 展示提交内容和处理结果.
+  static const myFeedbackCasePattern = '/settings/about/feedback/:caseId';
+  static String myFeedbackCase(int id) => '/settings/about/feedback/$id';
+
   /// 反馈页路径. 从菜品或店铺入口进入时传入 [dishId] 或 [shopId], 页面显示 "关于 某某".
   static const feedbackPattern = '/feedback';
   static String feedback({int? dishId, int? shopId}) {

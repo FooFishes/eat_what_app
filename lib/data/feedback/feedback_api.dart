@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:eat/core/network/api_client.dart';
+import 'package:eat/data/common/convert.dart';
+import 'package:eat/domain/models/paged.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -10,6 +12,7 @@ abstract final class FeedbackEndpoints {
   static const catalogErrors = '/feedback/catalog-errors';
   static const reports = '/feedback/reports';
   static const messages = '/feedback/messages';
+  static const mineList = '/feedback/mine';
   static String mine(int id) => '/feedback/mine/$id';
 }
 
@@ -31,6 +34,21 @@ class FeedbackApi {
   Future<void> submitFeedback(FeedbackMessageDto body) =>
       _client.post(FeedbackEndpoints.messages, body: body.toJson());
 
+  /// 分页查询本人提交过的记录, 新提交的在前. [kind] 为 `FEEDBACK`, `CATALOG_ERROR` 或 `REPORT`, 为 null 时不筛选.
+  Future<Paged<FeedbackCaseDto>> mineList({
+    String? kind,
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      FeedbackEndpoints.mineList,
+      query: {'kind': ?kind, 'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    FeedbackCaseDto.fromJson,
+  );
+
   /// 查询本人提交过的一条记录. 若记录不存在或非本人提交, 服务端返回业务码 10001.
   Future<FeedbackCaseDto> mine(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
@@ -39,7 +57,7 @@ class FeedbackApi {
       );
 }
 
-/// 本人提交过的反馈, 纠错或举报记录 (`FeedbackDtos.CaseView`), 仅读取消息页跳转所需的字段.
+/// 本人提交过的反馈, 纠错或举报记录 (`FeedbackDtos.CaseView`). 时间为毫秒时间戳.
 @JsonSerializable(createToJson: false)
 class const FeedbackCaseDto({
   final int? id,
@@ -47,8 +65,26 @@ class const FeedbackCaseDto({
   /// `FEEDBACK`, `CATALOG_ERROR` 或 `REPORT`.
   final String? kind,
 
+  /// `OPEN` 或 `CLOSED`.
+  final String? status,
+
   /// 记录关联的目标对象, 无关联对象的意见反馈为 null.
   final FeedbackTargetDto? target,
+
+  /// 信息有误的错误类型或举报原因, 意见反馈为 null.
+  final String? reason,
+
+  /// 意见反馈的正文, 或信息有误和举报的补充说明.
+  final String? text,
+  final List<FeedbackScreenshotDto>? screenshots,
+
+  /// `ACCEPTED`, `REJECTED` 或 `RESOLVED` (仅意见反馈), 未处理时为 null.
+  final String? outcome,
+
+  /// 管理员的公开回复, 没有回复时为空字符串.
+  final String? reply,
+  final int? createdAt,
+  final int? closedAt,
 }) {
   factory FeedbackCaseDto.fromJson(Map<String, dynamic> json) =>
       _$FeedbackCaseDtoFromJson(json);
@@ -59,6 +95,13 @@ class const FeedbackCaseDto({
 class const FeedbackTargetDto({final String? type, final int? id}) {
   factory FeedbackTargetDto.fromJson(Map<String, dynamic> json) =>
       _$FeedbackTargetDtoFromJson(json);
+}
+
+/// 反馈记录中的一张截图 (`FeedbackDtos.Screenshot`), [url] 为可直接展示的地址.
+@JsonSerializable(createToJson: false)
+class const FeedbackScreenshotDto({final int? slot, final String? url}) {
+  factory FeedbackScreenshotDto.fromJson(Map<String, dynamic> json) =>
+      _$FeedbackScreenshotDtoFromJson(json);
 }
 
 /// 店铺 "信息有误" 的请求体 (`CatalogErrorInput`). [note] 最多 200 字.

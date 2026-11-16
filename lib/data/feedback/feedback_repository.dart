@@ -1,11 +1,16 @@
 import 'package:dio/dio.dart';
+import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/feedback/feedback_api.dart';
+import 'package:eat/domain/models/feedback_case.dart';
+import 'package:eat/domain/models/notice.dart';
+import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/report.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'feedback_repository.g.dart';
 
-/// 负责提交意见反馈, 店铺 "信息有误" 纠错和内容举报, 并查询反馈关联对象.
+/// 负责提交意见反馈, 店铺 "信息有误" 纠错和内容举报, 并查询本人的提交记录.
 ///
 /// 补充说明会自动去除首尾空白, 为空时不随请求发送.
 class FeedbackRepository {
@@ -60,8 +65,61 @@ class FeedbackRepository {
   Future<CaseSubject?> caseSubject(
     int caseId, {
     CancelToken? cancelToken,
+  }) async =>
+      _subject((await _api.mine(caseId, cancelToken: cancelToken)).target);
+
+  /// 分页获取本人提交过的记录, 新提交的在前. 类型无法识别的记录将被过滤.
+  Future<Paged<FeedbackCase>> mine({
+    int page = 1,
+    CancelToken? cancelToken,
   }) async {
-    final target = (await _api.mine(caseId, cancelToken: cancelToken)).target;
+    final result = await _api.mineList(page: page, cancelToken: cancelToken);
+    return Paged(
+      items: [for (final dto in result.items) ?_toCase(dto)],
+      page: result.page,
+      hasNext: result.hasNext,
+      total: result.total,
+    );
+  }
+
+  /// 获取本人提交过的一条记录及其处理结果. 若记录不存在或非本人提交, 服务端返回业务码 10001.
+  Future<FeedbackCase> mineDetail(int id, {CancelToken? cancelToken}) async {
+    final c = _toCase(await _api.mine(id, cancelToken: cancelToken));
+    if (c == null) {
+      throw const AppFailure(FailureKind.unknown, serverMessage: 'bad case');
+    }
+    return c;
+  }
+
+  static FeedbackCase? _toCase(FeedbackCaseDto dto) {
+    final id = dto.id;
+    final kind = switch (dto.kind) {
+      'FEEDBACK' => CaseKind.feedback,
+      'CATALOG_ERROR' => CaseKind.catalogError,
+      'REPORT' => CaseKind.report,
+      _ => null,
+    };
+    final createdAt = dateFromMillis(dto.createdAt);
+    if (id == null || kind == null || createdAt == null) return null;
+    return FeedbackCase(
+      id: id,
+      kind: kind,
+      closed: dto.status == 'CLOSED',
+      subject: _subject(dto.target),
+      reasonCode: dto.reason,
+      text: dto.text?.trim() ?? '',
+      screenshots: [
+        for (final shot in dto.screenshots ?? const <FeedbackScreenshotDto>[])
+          ?imageUrl(shot.url),
+      ],
+      outcome: CaseOutcome.fromApi(dto.outcome),
+      reply: dto.reply?.trim() ?? '',
+      createdAt: createdAt,
+      closedAt: dateFromMillis(dto.closedAt),
+    );
+  }
+
+  static CaseSubject? _subject(FeedbackTargetDto? target) {
     final id = target?.id;
     if (id == null) return null;
     final kind = switch (target?.type) {

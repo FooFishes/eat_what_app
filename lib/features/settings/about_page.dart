@@ -14,9 +14,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 关于页面, 展示应用说明, 版本信息, 反馈入口及隐私政策与用户协议.
+/// 关于页面, 展示应用说明, 版本信息, 反馈与我的反馈入口及隐私政策与用户协议.
 ///
-/// 允许游客访问, 游客点击 "反馈" 时会弹出登录拦截对话框.
+/// 允许游客访问, 游客点击 "反馈" 或 "我的反馈" 时会弹出登录拦截对话框.
 /// 版本信息格式为 "版本 0.3.0 (30) 补丁 2", 依次对应版本名, 构建号与热更新补丁号; 无补丁时省略补丁号.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
@@ -67,6 +67,17 @@ class AboutPage extends ConsumerWidget {
                 if (await guardAction(context, ref, Capability.feedback) &&
                     context.mounted) {
                   await context.push(Paths.feedback());
+                }
+              },
+            ),
+            SettingsRow(
+              icon: EatIcons.history,
+              label: '我的反馈',
+              value: '提交记录与处理结果',
+              onTap: () async {
+                if (await guardAction(context, ref, Capability.feedback) &&
+                    context.mounted) {
+                  await context.push(Paths.myFeedback);
                 }
               },
             ),

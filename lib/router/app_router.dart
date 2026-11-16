@@ -33,6 +33,7 @@ import 'package:eat/features/settings/blocked_page.dart';
 import 'package:eat/features/settings/delete_account_page.dart';
 import 'package:eat/features/settings/devices_page.dart';
 import 'package:eat/features/settings/feedback_page.dart';
+import 'package:eat/features/settings/my_feedback_page.dart';
 import 'package:eat/features/settings/notify_page.dart';
 import 'package:eat/features/settings/password_page.dart';
 import 'package:eat/features/settings/personalize_page.dart';
@@ -221,6 +222,22 @@ GoRouter appRouter(Ref ref) {
           GoRoute(
             path: _child(Paths.settingsAbout, Paths.settings),
             builder: (_, _) => const AboutPage(),
+            routes: [
+              GoRoute(
+                path: _child(Paths.myFeedback, Paths.settingsAbout),
+                metadata: signedInRoute,
+                builder: (_, _) => const MyFeedbackPage(),
+                routes: [
+                  GoRoute(
+                    path: _child(Paths.myFeedbackCasePattern, Paths.myFeedback),
+                    builder: (_, state) => switch (_idOf(state, 'caseId')) {
+                      final id? => FeedbackCasePage(caseId: id),
+                      null => const NotFoundPage(),
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
