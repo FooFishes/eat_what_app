@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/ref_extensions.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/recommend/recommend_repository.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -168,12 +170,16 @@ class TurntableQueue extends _$TurntableQueue {
   /// 转到第 [index] 家. 拖动松手和点击 "换一个" 都调用此方法.
   ///
   /// [index] 超过最后一家时回到第一家.
+  /// 换到另一家时记一次 `dish_shuffle`.
   void select(int index) {
     final feed = state.value;
     if (feed == null || feed.shops.isEmpty) return;
     final wrapped = index >= feed.shops.length
         ? 0
         : index.clamp(0, feed.shops.length - 1);
+    if (wrapped != feed.index) {
+      ref.read(analyticsProvider).track(const DishShuffleEvent());
+    }
     final next = TurntableFeed(
       shops: feed.shops,
       index: wrapped,

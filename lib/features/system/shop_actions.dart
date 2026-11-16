@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -11,6 +12,7 @@ import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/report.dart';
 import 'package:eat/features/system/report_panel.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,21 +20,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// 仅有一个可用地图应用时立即唤起, 存在多个可用应用时弹出选择面板.
 /// 未安装本地地图应用或处于 Web 环境时仅提供高德网页版.
+/// 成功打开地图后记一次 `navigate_shop`.
 Future<void> navigateToShop(
   BuildContext context,
   WidgetRef ref, {
+  required int shopId,
   required String name,
   required GcjPoint point,
 }) async {
   final maps = ref.read(externalMapsProvider);
-  final apps = await maps.available(lat: point.lat, lng: point.lng, name: name);
-  if (!context.mounted) return;
-  if (apps.length == 1) {
-    if (!await maps.open(apps.single) && context.mounted) {
+  final analytics = ref.read(analyticsProvider);
+  Future<void> open(MapApp app) async {
+    if (await maps.open(app)) {
+      analytics.track(NavigateShopEvent(shopId));
+    } else if (context.mounted) {
       showToast(context, '无法打开地图，请重试');
     }
-    return;
   }
+
+  final apps = await maps.available(lat: point.lat, lng: point.lng, name: name);
+  if (!context.mounted) return;
+  if (apps.length == 1) return open(apps.single);
   final picked = await showPanel<MapApp>(
     context,
     builder: (panel) => EatPanel(
@@ -53,9 +61,7 @@ Future<void> navigateToShop(
     ),
   );
   if (picked == null) return;
-  if (!await maps.open(picked) && context.mounted) {
-    showToast(context, '无法打开地图，请重试');
-  }
+  await open(picked);
 }
 
 /// 加菜前校验店铺是否处于营业状态, 若已关门则弹出提示并返回 false.
@@ -70,17 +76,23 @@ bool ensureShopOpen(BuildContext context, Shop shop) {
 /// 打开分享面板, 提供系统分享与 "复制链接" 操作, 传入 [reportTarget] 时在末尾追加 "举报" 入口.
 ///
 /// 选择 "举报" 时先关闭分享面板再打开举报面板, 避免双层面板叠加.
+/// 传入 [target] 时, 拉起系统分享或复制链接成功后记一次 `share`.
 Future<void> showSharePanel(
   BuildContext context,
   WidgetRef ref, {
   required String path,
   required String title,
+  ({AnalyticsTarget type, int id})? target,
   ReportTarget? reportTarget,
 }) async {
   final base = ref.read(appConfigProvider).webBaseUrl;
   final link = Uri.parse(base.isEmpty ? path : '$base$path');
   final sharer = ref.read(linkSharerProvider);
+  final analytics = ref.read(analyticsProvider);
   void report(ShareOutcome outcome) {
+    if (target != null && outcome != ShareOutcome.failed) {
+      analytics.track(ShareEvent(target.type, target.id));
+    }
     if (!context.mounted) return;
     switch (outcome) {
       case ShareOutcome.copied:

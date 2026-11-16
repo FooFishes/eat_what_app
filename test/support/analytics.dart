@@ -1,3 +1,5 @@
+import 'package:eat/core/platform/external_maps.dart';
+import 'package:eat/core/platform/share.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/telemetry/telemetry_api.dart';
 import 'package:eat/state/analytics.dart';
@@ -34,3 +36,41 @@ final Override recordAnalytics = analyticsProvider.overrideWith(
 /// 容器里的 [RecordingAnalytics].
 RecordingAnalytics recordedIn(ProviderContainer container) =>
     container.read(analyticsProvider) as RecordingAnalytics;
+
+/// 固定列出 [apps] 的地图. [opens] 为 false 时打开失败.
+class FakeExternalMaps implements ExternalMaps {
+  FakeExternalMaps({List<MapApp>? apps, this.opens = true})
+    : apps = apps ?? [MapApp('高德地图', Uri.parse('amap://route'))];
+
+  final List<MapApp> apps;
+  final bool opens;
+  final opened = <MapApp>[];
+
+  @override
+  Future<List<MapApp>> available({
+    required double lat,
+    required double lng,
+    required String name,
+  }) async => apps;
+
+  @override
+  Future<bool> open(MapApp app) async {
+    opened.add(app);
+    return opens;
+  }
+}
+
+/// 分享总是返回 [outcome], 不拉起系统分享.
+class FakeLinkSharer implements LinkSharer {
+  FakeLinkSharer([this.outcome = ShareOutcome.shared]);
+
+  final ShareOutcome outcome;
+
+  @override
+  Future<ShareOutcome> share(Uri link, {required String title}) async =>
+      outcome;
+
+  @override
+  Future<ShareOutcome> copy(Uri link) async =>
+      outcome == ShareOutcome.failed ? outcome : ShareOutcome.copied;
+}

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/turntable.dart';
@@ -9,6 +10,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
@@ -85,6 +87,42 @@ void main() {
     await tester.tap(find.text('就它了'));
     await tester.pumpAndSettle();
     expect(tester.widget<ShopPage>(find.byType(ShopPage)).shopId, 2);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('「就它了」记店和招牌菜；「换一个」和拖动转盘各记一次换菜', (tester) async {
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      overrides: [recordAnalytics],
+    );
+
+    await tester.tap(find.text('就它了'));
+    await tester.pumpAndSettle();
+    router.pop();
+    await tester.pumpAndSettle();
+    final recorded = recordedIn(container);
+    expect(recorded.propertiesOf<DishDecideEvent>(), [
+      {'event': 'dish_decide', 'restaurantId': 1, 'foodId': 101},
+    ]);
+    expect(recorded.propertiesOf<DishShuffleEvent>(), isEmpty);
+
+    await tester.tap(find.text('换一个'));
+    await tester.pumpAndSettle();
+    final plate = find
+        .descendant(
+          of: find.byType(Turntable),
+          matching: find.byType(DishPlate),
+        )
+        .first;
+    await tester.dragFrom(tester.getCenter(plate), const Offset(-120, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('老王烧烤'), findsNWidgets(2), reason: '拖到了第三家');
+    await tester.dragFrom(tester.getCenter(plate), const Offset(-2, 0));
+    await tester.pumpAndSettle();
+
+    expect(recorded.propertiesOf<DishShuffleEvent>(), hasLength(2));
     await unmountApp(tester, container);
   });
 

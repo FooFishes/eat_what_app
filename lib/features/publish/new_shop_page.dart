@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
 import 'package:eat/data/upload/uploader.dart';
@@ -35,6 +36,7 @@ import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/published.dart';
@@ -218,6 +220,9 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
           );
       if (!mounted) return;
       ref.read(publishedCountProvider.notifier).published();
+      ref
+          .read(analyticsProvider)
+          .track(const PublishSuccessEvent(AnalyticsTarget.restaurant));
       final shop = Shop(
         id: id,
         name: name,

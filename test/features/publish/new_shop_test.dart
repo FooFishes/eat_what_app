@@ -1,3 +1,4 @@
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
@@ -37,6 +39,7 @@ void main() {
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.search,
+      overrides: [recordAnalytics],
     );
     router.push(Paths.publishShop(name: '麻辣烫'));
     await tester.pumpAndSettle();
@@ -91,6 +94,9 @@ void main() {
     expect(sent, hasLength(2));
     expect(sent.last.body, containsPair('kind', 'food'));
     expect(sent.last.headers.containsKey('Idempotency-Key'), isFalse);
+    expect(recordedIn(container).propertiesOf<PublishSuccessEvent>(), [
+      {'event': 'publish_success', 'kind': 'RESTAURANT'},
+    ], reason: '失败的那次不记');
     await unmountApp(tester, container);
   });
 

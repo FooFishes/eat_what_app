@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/features/comments/write_comment_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/router/paths.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/comment_fixtures.dart';
 import '../../support/eat_test_app.dart';
@@ -58,6 +60,7 @@ void main() {
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.dish(1),
+      overrides: [recordAnalytics],
     );
     unawaited(router.push(location));
     await tester.pumpAndSettle();
@@ -155,6 +158,9 @@ void main() {
 
     final sent = env.adapter.sent('POST /foods/1/comments/11/replies').single;
     expect(sent.body, {'text': '同意', 'replyToId': 21});
+    expect(recordedIn(container).propertiesOf<CommentSuccessEvent>(), [
+      {'event': 'comment_success'},
+    ]);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
@@ -165,6 +171,7 @@ void main() {
       FakeAdapter.ok(createdJson()),
     ]);
     final (container, _) = await open(tester, Paths.writeComment(1));
+    final recorded = recordedIn(container);
 
     await tester.enterText(find.byType(EditableText), '汤很鲜');
     await tester.pump();
@@ -172,12 +179,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     expect(find.text('汤很鲜'), findsOneWidget);
+    expect(recorded.propertiesOf<CommentSuccessEvent>(), isEmpty);
     await tester.pump(const Duration(seconds: 3));
 
     await tester.tap(find.text('发送'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('POST /foods/1/comments'), hasLength(2));
     expect(find.byType(WriteCommentPage), findsNothing);
+    expect(recorded.propertiesOf<CommentSuccessEvent>(), hasLength(1));
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

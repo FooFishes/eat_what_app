@@ -1,5 +1,6 @@
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/platform/browser.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
@@ -212,7 +214,7 @@ void main() {
           FakeAdapter.ok(userInfoJson()),
           FakeAdapter.ok(userInfoJson(verified: true, method: 'sso')),
         ]);
-      final (_, router) = await pumpAppWithBrowser(
+      final (container, router) = await pumpAppWithBrowser(
         tester,
         env,
         browser,
@@ -230,6 +232,9 @@ void main() {
       expect(location.queryParameters, {'onboarding': '1', 'from': '/me'});
       expect(find.text('已认证'), findsOneWidget);
       expect(find.text('去看看今天吃什么'), findsOneWidget);
+      expect(recordedIn(container).propertiesOf<VerifySuccessEvent>(), [
+        {'event': 'verify_success', 'method': 'sso'},
+      ]);
     });
 
     testWidgets('确认成功但账号还没认证：提示稍后刷新', (tester) async {
@@ -248,9 +253,10 @@ void main() {
       env.adapter
         ..on('POST /auth/sdu/confirm', [FakeAdapter.fail(40001)])
         ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())]);
-      await pumpAppWithBrowser(tester, env, browser);
+      final (container, _) = await pumpAppWithBrowser(tester, env, browser);
 
       await startSso(tester, _returned('result=success&code=0&ticket=tk-1'));
+      expect(recordedIn(container).propertiesOf<VerifySuccessEvent>(), isEmpty);
 
       expect(find.text('这次认证不是当前账号发起的，请重新认证'), findsOneWidget);
       expect(find.textContaining('40001'), findsNothing);
@@ -308,7 +314,7 @@ void main() {
         ..on('GET /user/info', [
           FakeAdapter.ok(userInfoJson(verified: true, method: 'email')),
         ]);
-      final (_, router) = await pumpAppWithBrowser(
+      final (container, router) = await pumpAppWithBrowser(
         tester,
         env,
         browser,
@@ -319,6 +325,9 @@ void main() {
         'token': 'em-1',
       });
       expect(find.text('邮箱认证成功'), findsOneWidget);
+      expect(recordedIn(container).propertiesOf<VerifySuccessEvent>(), [
+        {'event': 'verify_success', 'method': 'email'},
+      ]);
       await expectAccessible(tester);
 
       await tester.tap(find.text('完成'));
@@ -401,5 +410,5 @@ Future<(ProviderContainer, GoRouter)> pumpAppWithBrowser(
   session: const SignedIn(user: testUser),
   token: _token,
   location: location,
-  overrides: [browserProvider.overrideWithValue(browser)],
+  overrides: [browserProvider.overrideWithValue(browser), recordAnalytics],
 );

@@ -1,4 +1,7 @@
 import 'package:clock/clock.dart';
+import 'package:eat/core/platform/external_maps.dart';
+import 'package:eat/core/platform/share.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/features/shop/shop_edit_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -6,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
@@ -53,6 +57,53 @@ void main() {
 
   Future<void> scrollTo(WidgetTester tester, String text) =>
       tester.scrollUntilVisible(find.text(text), 200, scrollable: downward);
+
+  testWidgets('选了地图导航去店里、复制了链接后各记一次统计，关掉选择面板不记', (tester) async {
+    final env = shopEnv();
+    final maps = FakeExternalMaps(
+      apps: [
+        MapApp('高德地图', Uri.parse('amap://route')),
+        MapApp('百度地图', Uri.parse('baidumap://route')),
+      ],
+    );
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.shop(7),
+      overrides: [
+        recordAnalytics,
+        externalMapsProvider.overrideWithValue(maps),
+        linkSharerProvider.overrideWithValue(FakeLinkSharer()),
+      ],
+    );
+    final recorded = recordedIn(container);
+
+    await tester.tap(find.text('导航去店里'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    expect(recorded.propertiesOf<NavigateShopEvent>(), isEmpty);
+
+    await tester.tap(find.text('导航去店里'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('百度地图'));
+    await tester.pumpAndSettle();
+    expect(maps.opened.single.name, '百度地图');
+    expect(recorded.propertiesOf<NavigateShopEvent>(), [
+      {'event': 'navigate_shop', 'restaurantId': 7},
+    ]);
+
+    await tester.tap(find.bySemanticsLabel('分享'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('复制链接'));
+    await tester.pumpAndSettle();
+    expect(recorded.propertiesOf<ShareEvent>(), [
+      {'event': 'share', 'targetType': 'RESTAURANT', 'targetId': 7},
+    ]);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
 
   testWidgets('舞台写店名、商圈、菜数和堂食推荐率；招牌单独请求，菜单按菜单顺序', (tester) async {
     final env = shopEnv();

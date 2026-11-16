@@ -2,8 +2,10 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/browser.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -163,8 +165,10 @@ class Verify extends _$Verify {
   Future<void> showSsoResult(SsoResult result) async {
     String? failure;
     if (result case SsoResult(success: true, :final ticket?)) {
+      final analytics = ref.read(analyticsProvider);
       try {
         await ref.read(authRepositoryProvider).confirmSso(ticket);
+        analytics.track(const VerifySuccessEvent(AnalyticsVerifyMethod.sso));
       } on AppFailure catch (e) {
         failure = switch (e.kind) {
           FailureKind.cancelled => null,
@@ -242,8 +246,10 @@ class EmailVerification extends _$EmailVerification {
   Future<void> submit(String token) async {
     if (state != null) return;
     state = const AsyncLoading();
+    final analytics = ref.read(analyticsProvider);
     try {
       await ref.read(authRepositoryProvider).verifyEmail(token);
+      analytics.track(const VerifySuccessEvent(AnalyticsVerifyMethod.email));
       await ref.read(sessionProvider.notifier).refreshUser();
       if (ref.mounted) state = const AsyncData(null);
     } on AppFailure catch (e, stack) {

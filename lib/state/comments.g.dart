@@ -255,7 +255,7 @@ final class CommentWriterProvider
   }
 }
 
-String _$commentWriterHash() => r'bb4ed516ccf84b9f76dc6cc4d4b98a7105e790f5';
+String _$commentWriterHash() => r'779e4f1000a80b4a9e717a50d1eed4c84a865b56';
 
 /// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 

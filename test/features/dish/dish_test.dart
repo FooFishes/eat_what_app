@@ -1,3 +1,6 @@
+import 'package:eat/core/platform/external_maps.dart';
+import 'package:eat/core/platform/share.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/features/dish/dish_history_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/dish/tag_panel.dart';
@@ -8,6 +11,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
@@ -347,6 +351,38 @@ void main() {
     expect(find.text('分享给朋友'), findsOneWidget);
     expect(find.text('复制链接'), findsOneWidget);
     expect(find.text('举报'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('分享和导航去店里成功后各记一次统计，打不开地图不记', (tester) async {
+    final maps = FakeExternalMaps(opens: false);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+      overrides: [
+        recordAnalytics,
+        externalMapsProvider.overrideWithValue(maps),
+        linkSharerProvider.overrideWithValue(FakeLinkSharer()),
+      ],
+    );
+
+    await tester.tap(find.bySemanticsLabel('分享'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('分享给朋友'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('导航去店里'));
+    await tester.pumpAndSettle();
+    expect(maps.opened, hasLength(1));
+    expect(find.text('无法打开地图，请重试'), findsOneWidget);
+
+    final recorded = recordedIn(container);
+    expect(recorded.propertiesOf<ShareEvent>(), [
+      {'event': 'share', 'targetType': 'FOOD', 'targetId': 1},
+    ]);
+    expect(recorded.propertiesOf<NavigateShopEvent>(), isEmpty);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 

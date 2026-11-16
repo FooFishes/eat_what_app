@@ -1,4 +1,5 @@
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/features/publish/add_dish_page.dart';
@@ -7,6 +8,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/fakes.dart';
 
@@ -83,6 +85,7 @@ void main() {
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.dish(1),
+      overrides: [recordAnalytics],
     );
     await tester.scrollUntilVisible(
       find.text('修改记录'),
@@ -123,6 +126,11 @@ void main() {
       env.adapter.sent('GET /foods/detail/1'),
       hasLength(2),
       reason: '保存后详情重新读取',
+    );
+    expect(
+      recordedIn(container).propertiesOf<PublishSuccessEvent>(),
+      isEmpty,
+      reason: '编辑不算发布',
     );
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);

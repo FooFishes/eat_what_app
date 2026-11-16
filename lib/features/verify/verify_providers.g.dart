@@ -40,7 +40,7 @@ final class VerifyProvider extends $NotifierProvider<Verify, VerifyState> {
   }
 }
 
-String _$verifyHash() => r'6d5cac3b40bbd3ca670a4c2a12df2c40badfb577';
+String _$verifyHash() => r'9b52746639dae885cce22734340989b2bd06d3c5';
 
 abstract class _$Verify extends $Notifier<VerifyState> {
   VerifyState build();
@@ -96,7 +96,7 @@ final class EmailVerificationProvider
   }
 }
 
-String _$emailVerificationHash() => r'cc642af8ebd837ec2a326c188ce3e7988477d60c';
+String _$emailVerificationHash() => r'96d53ae6fce379870e0b1faa33348bafa1c6864b';
 
 /// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
 

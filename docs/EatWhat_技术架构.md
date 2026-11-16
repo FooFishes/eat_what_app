@@ -1475,6 +1475,7 @@ class PushNotice({
   - `app_open`：`bootstrap` 调 `observeLifecycle`，冷启动记一次，之后每次回到前台记一次。
   - `page_view`：路由层统一记（`router/page_analytics.dart` 的 `PageAnalytics`，`EatApp` 创建），页面里不各自记。监听路由变化，地址（不含查询参数，push 的页面取最上面一层）变了就给上一个页面记一条，带停留时长；退到后台时结束当前页面的计时，回到前台重新开始。底部面板和对话框不算换页。页面按路由模板分类：发现 `HOME`，专题 `RECOMMEND`，搜索 `SEARCH`，店铺及其子页面 `RESTAURANT`，菜品及其评论、修改记录、编辑 `FOOD`，消息 `MESSAGE`，我的及其子页面和他人主页 `PROFILE`，其余（附近、设置、发布、登录等）`OTHER`。
   - `load_failed`：`FailureState` 和其他「加载失败」状态包一层 `LoadFailureReport`（design 层），插入界面后通知 `EatApp` 根部的 `LoadFailureObserver` 一次，由 `PageAnalytics` 记。页面取失败状态所在路由，在底部面板里时取当前页面；业务码取 `AppFailure.code`（业务码或 HTTP 状态码）。分页加载更多失败不记。
+  - 业务动作都在成功之后记，失败不记：`dish_shuffle` 在转盘换到另一家时（`TurntableQueue.select`，按钮和拖动共用）；`dish_decide` 在发现页点「就它了」，带店和舞台上的代表菜；`navigate_shop` 在 `navigateToShop` 打开地图成功后（菜品详情和店铺详情两个入口）；`share` 在 `showSharePanel` 拉起系统分享或复制链接成功后，只有菜品和店铺传对象，专题不记；`publish_success` 在发布新菜、新建店成功后，编辑不记；`comment_success` 在 `CommentWriter.post`（评论和回复共用）；`verify_success` 在统一认证确认票据成功、邮箱链接验证成功后。
 
 ### 19.2 崩溃上报
 

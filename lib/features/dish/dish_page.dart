@@ -5,6 +5,7 @@ import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
@@ -214,6 +215,7 @@ class _TopBar extends ConsumerWidget {
               ref,
               path: Paths.dish(dish.id),
               title: dish.name,
+              target: (type: AnalyticsTarget.food, id: dish.id),
               reportTarget: dish.uploaderId == me
                   ? null
                   : ReportTarget.dish(dish.id),
@@ -454,6 +456,7 @@ class _Actions extends ConsumerWidget {
                 : () => navigateToShop(
                     context,
                     ref,
+                    shopId: dish.shopId,
                     name: shop?.name ?? dish.shopName ?? dish.name,
                     point: point,
                   ),

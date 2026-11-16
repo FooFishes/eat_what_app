@@ -1,4 +1,5 @@
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/domain/models/dish.dart';
@@ -7,6 +8,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../support/analytics.dart';
 import '../../support/app.dart';
 import '../../support/fakes.dart';
 
@@ -104,6 +106,7 @@ void main() {
       env,
       session: const SignedIn(user: verifiedUser),
       location: Paths.publishDish(7),
+      overrides: [recordAnalytics],
     );
 
     expect(find.text('请添加照片并填写菜名、价格和分类'), findsOneWidget);
@@ -133,6 +136,9 @@ void main() {
     });
     expect(locationOf(router), Paths.dish(99));
     expect(find.text('发布成功'), findsOneWidget);
+    expect(recordedIn(container).propertiesOf<PublishSuccessEvent>(), [
+      {'event': 'publish_success', 'kind': 'FOOD'},
+    ]);
     await tester.pump(const Duration(seconds: 2));
     await unmountApp(tester, container);
   });

@@ -42,7 +42,7 @@ final class TurntableQueueProvider
   TurntableQueue create() => TurntableQueue();
 }
 
-String _$turntableQueueHash() => r'951c403f84bb5cffe4f95694c5add52924c4012b';
+String _$turntableQueueHash() => r'273a649a510dc6f2da4a90c037d4646905307968';
 
 /// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
 ///

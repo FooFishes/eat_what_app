@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
@@ -386,6 +387,7 @@ class _TopBar extends ConsumerWidget {
               ref,
               path: Paths.shop(shop.id),
               title: shop.name,
+              target: (type: AnalyticsTarget.restaurant, id: shop.id),
             ),
           ),
         ],
@@ -633,6 +635,7 @@ class _Actions extends ConsumerWidget {
                 : () => navigateToShop(
                     context,
                     ref,
+                    shopId: shop.id,
                     name: shop.name,
                     point: shop.point,
                   ),

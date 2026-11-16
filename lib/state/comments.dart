@@ -7,11 +7,13 @@ library;
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/comment/comment_repository.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -158,6 +160,7 @@ class CommentWriter extends _$CommentWriter {
             text: text,
             replyToId: replyToId,
           );
+    ref.read(analyticsProvider).track(const CommentSuccessEvent());
     ref.invalidate(myCommentsProvider);
     if (rootId != null) {
       ref.invalidate(commentRepliesProvider(rootId));

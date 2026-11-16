@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -40,6 +41,7 @@ import 'package:eat/features/publish/widgets/photo_source.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/published.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/shops.dart';
@@ -376,8 +378,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
       mealTimes: draft.mealList,
       deliveryEnabled: draft.deliveryEnabled,
     );
+    final analytics = ref.read(analyticsProvider);
     try {
       final id = await ref.read(foodRepositoryProvider).publish(dish);
+      analytics.track(const PublishSuccessEvent(AnalyticsTarget.food));
       ref.read(publishedCountProvider.notifier).published();
       if (mounted) _finish(id);
     } on AppFailure catch (e) {

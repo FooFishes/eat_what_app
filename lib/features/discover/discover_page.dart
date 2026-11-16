@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
+import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
@@ -38,6 +39,7 @@ import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/notices.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/shops.dart';
@@ -727,7 +729,17 @@ class _TurntableStage extends ConsumerWidget {
                         Expanded(
                           child: EatButton.stageSolid(
                             '就它了',
-                            onPressed: () => context.push(Paths.shop(shop.id)),
+                            onPressed: () {
+                              ref
+                                  .read(analyticsProvider)
+                                  .track(
+                                    DishDecideEvent(
+                                      restaurantId: shop.id,
+                                      foodId: signature?.id,
+                                    ),
+                                  );
+                              unawaited(context.push(Paths.shop(shop.id)));
+                            },
                           ),
                         ),
                         EatIconButton(
