@@ -18,3 +18,13 @@ class const RecommendFeedDto({
   factory RecommendFeedDto.fromJson(Map<String, dynamic> json) =>
       _$RecommendFeedDtoFromJson(json);
 }
+
+/// 摇一摇响应 (`RecommendDtos.Pick`): 本次生效的饭点 [mealTime] 和挑中的一张推荐卡片, 没有候选时 [restaurant] 为 null.
+@JsonSerializable(createToJson: false)
+class const RecommendPickDto({
+  final String? mealTime,
+  final Map<String, dynamic>? restaurant,
+}) {
+  factory RecommendPickDto.fromJson(Map<String, dynamic> json) =>
+      _$RecommendPickDtoFromJson(json);
+}

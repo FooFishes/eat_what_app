@@ -195,4 +195,66 @@ void main() {
       ),
     );
   });
+
+  test('摇一摇：请求带上场景、饭点、类型、校区和坐标，挑中的卡片按店铺解析', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /recommend/pick', [
+      FakeAdapter.ok({
+        'mealTime': 'dinner',
+        'restaurant': cardJson(distance: 321.6),
+      }),
+    ]);
+    final container = await env.container();
+
+    final shop = await container
+        .read(recommendRepositoryProvider)
+        .pick(
+          scene: RatingScene.delivery,
+          meal: MealTime.dinner,
+          kind: ShopKind.drink,
+          campusId: 2,
+          near: here,
+        );
+
+    expect(shop?.id, 7);
+    expect(shop?.name, '袁记云饺');
+    expect(env.adapter.sent('GET /recommend/pick').single.query, {
+      'scene': 'delivery',
+      'mealTime': 'dinner',
+      'kind': 'drink',
+      'campusId': 2,
+      'gcjLat': here.lat,
+      'gcjLng': here.lng,
+    });
+  });
+
+  test('摇一摇：没有候选或卡片缺坐标时返回 null，不写上一批', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /recommend/pick', [
+      FakeAdapter.ok({'mealTime': 'lunch', 'restaurant': null}),
+      FakeAdapter.ok({
+        'mealTime': 'lunch',
+        'restaurant': {...cardJson(), 'gcjLat': null},
+      }),
+    ]);
+    final container = await env.container();
+    final repository = container.read(recommendRepositoryProvider);
+
+    Future<Object?> pick() =>
+        repository.pick(scene: RatingScene.dineIn, meal: MealTime.lunch);
+
+    expect(await pick(), isNull);
+    expect(await pick(), isNull);
+    expect(
+      env.adapter.sent('GET /recommend/pick').first.query.containsKey('gcjLat'),
+      isFalse,
+    );
+    expect(
+      await repository.lastBatch(
+        scene: RatingScene.dineIn,
+        meal: MealTime.lunch,
+      ),
+      isEmpty,
+    );
+  });
 }

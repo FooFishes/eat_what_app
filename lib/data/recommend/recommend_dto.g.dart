@@ -16,3 +16,9 @@ RecommendFeedDto _$RecommendFeedDtoFromJson(Map<String, dynamic> json) =>
       hasNext: json['hasNext'] as bool?,
       totalItems: (json['totalItems'] as num?)?.toInt(),
     );
+
+RecommendPickDto _$RecommendPickDtoFromJson(Map<String, dynamic> json) =>
+    RecommendPickDto(
+      mealTime: json['mealTime'] as String?,
+      restaurant: json['restaurant'] as Map<String, dynamic>?,
+    );

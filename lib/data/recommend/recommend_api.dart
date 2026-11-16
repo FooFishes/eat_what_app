@@ -8,6 +8,7 @@ part 'recommend_api.g.dart';
 /// RecommendApi 调用的接口路径, 相对于业务接口地址.
 abstract final class RecommendEndpoints {
   static const feed = '/recommend';
+  static const pick = '/recommend/pick';
   static String dismiss(int id) => '/recommend/dismiss/$id';
 }
 
@@ -50,6 +51,34 @@ class RecommendApi {
       cancelToken: cancelToken,
     ),
     RecommendFeedDto.fromJson,
+  );
+
+  // TODO: 后端应返回数组供首页转盘使用, 目前只返回一家店. 后端修正后改为返回一批店铺并接到发现页转盘.
+  /// 摇一摇: 从排名最前的几家里随机挑一家店, 参数含义同 [feed]; 没有候选时 `restaurant` 为 null.
+  ///
+  /// 登录且开启个性化推荐时, 挑中的店计入当日已推荐, 与 [feed] 共用去重池.
+  Future<RecommendPickDto> pick({
+    String? scene,
+    double? gcjLat,
+    double? gcjLng,
+    int? campusId,
+    String? mealTime,
+    String? kind,
+    CancelToken? cancelToken,
+  }) async => decodeJson(
+    await _client.get(
+      RecommendEndpoints.pick,
+      query: {
+        'scene': ?scene,
+        'gcjLat': ?gcjLat,
+        'gcjLng': ?gcjLng,
+        'campusId': ?campusId,
+        'mealTime': ?mealTime,
+        'kind': ?kind,
+      },
+      cancelToken: cancelToken,
+    ),
+    RecommendPickDto.fromJson,
   );
 
   /// 标记指定店铺 30 天内不再推荐, 重复标记会重新计时; 该操作需登录且每日上限为 50 次.

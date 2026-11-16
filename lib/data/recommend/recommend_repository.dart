@@ -94,6 +94,35 @@ class RecommendRepository {
     }
   }
 
+  /// 摇一摇: 随机推荐一家店, 参数含义同 [recommend]; 没有候选或卡片缺少 id, 坐标时返回 null.
+  ///
+  /// 结果不写入 "上一批" 缓存.
+  Future<Shop?> pick({
+    required RatingScene scene,
+    required MealTime meal,
+    ShopKind kind = ShopKind.food,
+    int? campusId,
+    GcjPoint? near,
+    CancelToken? cancelToken,
+  }) async {
+    final picked = await _api.pick(
+      scene: scene.api,
+      gcjLat: near?.lat,
+      gcjLng: near?.lng,
+      campusId: campusId,
+      mealTime: meal.api,
+      kind: kind.api,
+      cancelToken: cancelToken,
+    );
+    final json = picked.restaurant;
+    if (json == null) return null;
+    try {
+      return PlaceRepository.shopFromJson(json);
+    } on Object catch (e) {
+      throw AppFailure(FailureKind.unknown, serverMessage: '$e');
+    }
+  }
+
   /// 标记该店铺 30 天内不再推荐, 需登录账号.
   Future<void> dismiss(int shopId) => _api.dismiss(shopId);
 
