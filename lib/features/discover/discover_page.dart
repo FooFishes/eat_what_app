@@ -499,9 +499,11 @@ class _TurntableStage extends ConsumerWidget {
       layout.stageNameSize(lines),
       nameWidth / math.max(longest, 1),
     );
+    // 价格加粗并用前景色, 距离和推荐率用次级色, 字号相同.
+    final priceStyle = eat.text.priceInline.copyWith(color: palette.foreground);
     final numberStyle = eat.text.count.copyWith(
-      fontSize: 16,
-      color: palette.foreground,
+      fontSize: priceStyle.fontSize,
+      color: palette.secondaryForeground,
     );
     final metaStyle = eat.text.meta.copyWith(
       color: palette.secondaryForeground,
@@ -614,19 +616,32 @@ class _TurntableStage extends ConsumerWidget {
                                       color: palette.foreground,
                                     ),
                                   ),
+                                  // 价格属于招牌菜, 紧跟菜名. 店名和店的距离, 推荐率另起一组, 用前置图标标明各是什么.
+                                  if (price != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        top: EatSpace.s4,
+                                      ),
+                                      child: _StageFact(
+                                        EatIcons.price,
+                                        price,
+                                        style: priceStyle,
+                                      ),
+                                    ),
                                   if (signature != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 10),
+                                      padding: const EdgeInsets.only(
+                                        top: EatSpace.s14,
+                                      ),
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
                                           maxWidth: lineWidth,
                                         ),
-                                        child: Text(
+                                        child: _StageFact(
+                                          EatIcons.store,
                                           shop.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: eat.text.meta.copyWith(
-                                            fontWeight: FontWeight.w600,
+                                          maxLines: 2,
+                                          style: eat.text.subhead.copyWith(
                                             color: palette.foreground,
                                           ),
                                         ),
@@ -634,30 +649,32 @@ class _TurntableStage extends ConsumerWidget {
                                     ),
                                   if (where != null || rate != null)
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 6),
+                                      padding: const EdgeInsets.only(
+                                        top: EatSpace.s4,
+                                      ),
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
                                           maxWidth: lineWidth,
                                         ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                        // 盘子左边放不下时折成两行.
+                                        child: Wrap(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.baseline,
-                                          textBaseline: TextBaseline.alphabetic,
-                                          spacing: EatSpace.s16,
+                                              WrapCrossAlignment.center,
+                                          spacing: EatSpace.s14,
+                                          runSpacing: EatSpace.s4,
                                           children: [
                                             if (distance != null)
-                                              Text(distance, style: numberStyle)
+                                              _StageFact(
+                                                EatIcons.pin,
+                                                distance,
+                                                style: numberStyle,
+                                              )
                                             else if (shop.hubName
                                                 case final hub?)
-                                              Flexible(
-                                                child: Text(
-                                                  hub,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: metaStyle,
-                                                ),
+                                              _StageFact(
+                                                EatIcons.district,
+                                                hub,
+                                                style: metaStyle,
                                               ),
                                             if (rate != null)
                                               Text(
@@ -665,18 +682,6 @@ class _TurntableStage extends ConsumerWidget {
                                                 style: numberStyle,
                                               ),
                                           ],
-                                        ),
-                                      ),
-                                    ),
-                                  if (price != null)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Text(
-                                        price,
-                                        textScaler: TextScaler.noScaling,
-                                        style: eat.text.priceHero.copyWith(
-                                          fontSize: 56 * textScale,
-                                          color: palette.foreground,
                                         ),
                                       ),
                                     ),
@@ -957,6 +962,44 @@ class _ShopList extends ConsumerWidget {
               onVisible: () => ref.read(provider.notifier).loadMore(),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// 舞台上带前置图标的一项信息, 图标颜色和大小跟着文字.
+///
+/// 文字换行时图标对齐第一行.
+class _StageFact extends StatelessWidget {
+  const new(this.icon, this.text, {required this.style, this.maxLines = 1});
+
+  final EatIcons icon;
+  final String text;
+  final TextStyle style;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final fontSize = scaler.scale(style.fontSize ?? 16);
+    final lineHeight = fontSize * (style.height ?? 1);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: EatSpace.s4,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: math.max(0, lineHeight - fontSize) / 2),
+          child: EatIcon(icon, size: fontSize, color: style.color),
+        ),
+        Flexible(
+          child: Text(
+            text,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
       ],
     );
   }
