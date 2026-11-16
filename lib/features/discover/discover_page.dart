@@ -473,6 +473,9 @@ class _TurntableStage extends ConsumerWidget {
   /// 手机上盘子 (连盘沿) 与顶栏和按钮之间至少留出的距离.
   static const _plateGap = EatSpace.s10;
 
+  /// 价格离菜名的距离. 菜名的行高很紧, 这里比各行之间留得大, 才不显得贴在一起.
+  static const _priceGap = EatSpace.s14;
+
   /// 菜名下方价格, 店名, 距离和推荐率各行之间的距离, 各行一致.
   static const _factGap = EatSpace.s8;
 
@@ -502,13 +505,17 @@ class _TurntableStage extends ConsumerWidget {
       layout.stageNameSize(lines),
       nameWidth / math.max(longest, 1),
     );
-    // 价格加粗并用前景色, 距离和推荐率用次级色, 字号相同.
-    final priceStyle = eat.text.priceInline.copyWith(color: palette.foreground);
+    // 菜名下方的价格, 店名, 距离和推荐率比各自的预设稍大. 价格, 距离和推荐率用同一种样式.
+    final shopStyle = eat.text.subhead.copyWith(
+      fontSize: 17,
+      color: palette.foreground,
+    );
     final numberStyle = eat.text.count.copyWith(
-      fontSize: priceStyle.fontSize,
+      fontSize: 17,
       color: palette.secondaryForeground,
     );
     final metaStyle = eat.text.meta.copyWith(
+      fontSize: 14,
       color: palette.secondaryForeground,
     );
 
@@ -623,12 +630,12 @@ class _TurntableStage extends ConsumerWidget {
                                   if (price != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                        top: _factGap,
+                                        top: _priceGap,
                                       ),
                                       child: _StageFact(
                                         EatIcons.price,
                                         price,
-                                        style: priceStyle,
+                                        style: numberStyle,
                                       ),
                                     ),
                                   if (signature != null)
@@ -644,9 +651,7 @@ class _TurntableStage extends ConsumerWidget {
                                           EatIcons.store,
                                           shop.name,
                                           maxLines: 2,
-                                          style: eat.text.subhead.copyWith(
-                                            color: palette.foreground,
-                                          ),
+                                          style: shopStyle,
                                         ),
                                       ),
                                     ),
@@ -973,7 +978,7 @@ class _ShopList extends ConsumerWidget {
 /// 舞台上带前置图标的一项信息, 图标颜色和大小跟着文字.
 ///
 /// 文字换行时图标对齐第一行.
-/// 允许两行时, 第二行不超过 [_shortTail] 个字就不换行, 在第一行末尾省略, 免得第二行大片留白.
+/// 允许两行时, 第二行不到第一行的三分之一就不换行, 在第一行末尾省略, 免得第二行大片留白.
 class _StageFact extends StatelessWidget {
   const new(this.icon, this.text, {required this.style, this.maxLines = 1});
 
@@ -981,8 +986,6 @@ class _StageFact extends StatelessWidget {
   final String text;
   final TextStyle style;
   final int maxLines;
-
-  static const _shortTail = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -1019,7 +1022,7 @@ class _StageFact extends StatelessWidget {
     );
   }
 
-  /// 文字正好排成两行, 且第二行不超过 [_shortTail] 个字.
+  /// 文字正好排成两行, 且第二行不到第一行的三分之一宽.
   bool _wrapsShort(BuildContext context, TextScaler scaler, double width) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),
@@ -1027,9 +1030,8 @@ class _StageFact extends StatelessWidget {
       textScaler: scaler,
     )..layout(maxWidth: width);
     try {
-      if (painter.computeLineMetrics().length != 2) return false;
-      final last = painter.getLineBoundary(TextPosition(offset: text.length));
-      return last.textInside(text).trim().characters.length <= _shortTail;
+      final lines = painter.computeLineMetrics();
+      return lines.length == 2 && lines[1].width < lines[0].width / 3;
     } finally {
       painter.dispose();
     }
