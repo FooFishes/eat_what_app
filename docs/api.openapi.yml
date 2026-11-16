@@ -403,7 +403,6 @@ paths:
     get:
       tags:
         - telemetry · Telemetry
-      summary: 【需登录】获取本人使用统计开关
       operationId: consent
       responses:
         '200':
@@ -412,12 +411,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultConsent'
-      security:
-        - satoken: []
+      summary: 获取使用统计开关
     put:
       tags:
         - telemetry · Telemetry
-      summary: 【需登录】开启使用统计
       operationId: enable
       responses:
         '200':
@@ -426,13 +423,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultConsent'
-      security:
-        - satoken: []
+      summary: 开启使用统计
     delete:
       tags:
         - telemetry · Telemetry
-      summary: 【需登录】关闭使用统计并删除已收集的事件
       operationId: disable
+      parameters:
+        - name: installId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: OK
@@ -440,8 +442,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultConsent'
-      security:
-        - satoken: []
+      summary: 关闭使用统计并删除已收集的事件
   /restaurant/{id}/rating:
     put:
       tags:
@@ -556,7 +557,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EditRequest'
+              $ref: '#/components/schemas/RestaurantEditRequest'
         required: true
       responses:
         '200':
@@ -595,6 +596,55 @@ paths:
                 $ref: '#/components/schemas/ResultVoid'
       security:
         - satoken: []
+  /foods/{id}/rating:
+    put:
+      tags:
+        - food · Food
+      summary: 【需角色：verified 或 admin】给菜品评分（1–5 分）
+      operationId: rate_1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultRated'
+      security:
+        - satoken: []
+    delete:
+      tags:
+        - food · Food
+      summary: 【需登录】撤销菜品评分
+      operationId: unrate_1
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultRated'
+      security:
+        - satoken: []
   /foods/edit/{id}:
     put:
       tags:
@@ -612,7 +662,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EditRequest'
+              $ref: '#/components/schemas/FoodEditRequest'
         required: true
       responses:
         '200':
@@ -1118,7 +1168,6 @@ paths:
     post:
       tags:
         - telemetry · Telemetry
-      summary: 【需登录】上报使用统计事件
       operationId: events
       requestBody:
         content:
@@ -1133,8 +1182,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultAccepted'
-      security:
-        - satoken: []
+      summary: 上报使用统计事件（游客带安装 ID）
   /restaurant/{id}/history/{revisionId}/restore:
     post:
       tags:
@@ -1173,7 +1221,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddRequest'
+              $ref: '#/components/schemas/RestaurantAddRequest'
         required: true
       responses:
         '200':
@@ -1605,7 +1653,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UploadRequest'
+              $ref: '#/components/schemas/FoodUploadRequest'
         required: true
       responses:
         '200':
@@ -1700,6 +1748,25 @@ paths:
                 $ref: '#/components/schemas/ResultAccepted'
       security:
         - satoken: []
+  /device/register:
+    post:
+      tags:
+        - device · Device
+      operationId: register_1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
+      summary: 登记设备（同意隐私政策后，游客也可以）
   /auth/verifyEmail:
     post:
       tags:
@@ -1814,7 +1881,7 @@ paths:
     post:
       tags:
         - 账号 · Auth
-      operationId: register_1
+      operationId: register_2
       requestBody:
         content:
           application/json:
@@ -1829,6 +1896,63 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultSaTokenInfo'
       summary: 用户名注册（默认关闭，返回 30014）
+  /auth/phone/web-one-click/token:
+    post:
+      tags:
+        - 账号 · WebOneClickAuth
+      operationId: webOneClickToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebOneClickTokenRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultWebOneClickToken'
+      summary: 获取网页一键登录的鉴权 Token
+  /auth/phone/web-one-click/login:
+    post:
+      tags:
+        - 账号 · WebOneClickAuth
+      operationId: webOneClickLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebOneClickLogin'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultSaTokenInfo'
+      summary: 网页一键登录（未注册自动建号）
+  /auth/phone/one-click/login:
+    post:
+      tags:
+        - 账号 · OneClickAuth
+      operationId: oneClickLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OneClickLogin'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultSaTokenInfo'
+      summary: 阿里云 App 一键登录（未注册自动建号）
   /auth/phone/login:
     post:
       tags:
@@ -3308,7 +3432,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultOptions'
+                $ref: '#/components/schemas/ResultFoodOptions'
       summary: 获取菜品可选的分类和口味
   /foods/my:
     get:
@@ -3335,7 +3459,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultPageResultFood'
+                $ref: '#/components/schemas/ResultPageResultFoodView'
       security:
         - satoken: []
   /foods/list:
@@ -3370,6 +3494,22 @@ paths:
           required: false
           schema:
             type: string
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: campusId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: mealTime
+          in: query
+          required: false
+          schema:
+            type: string
         - name: page
           in: query
           required: false
@@ -3388,7 +3528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultPageResultFood'
+                $ref: '#/components/schemas/ResultPageResultFoodView'
       summary: 菜品列表（指定店铺时按菜单顺序）
   /foods/favorites:
     get:
@@ -3415,9 +3555,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultPageResultFood'
+                $ref: '#/components/schemas/ResultPageResultFoodView'
       security:
         - satoken: []
+  /foods/duplicates:
+    get:
+      tags:
+        - food · Food
+      operationId: duplicates_1
+      parameters:
+        - name: restaurantId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListDishDuplicate'
+      summary: 上传前查重（这家店是否已有这道菜）
   /foods/detail/{id}:
     get:
       tags:
@@ -3436,7 +3601,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultFood'
+                $ref: '#/components/schemas/ResultFoodView'
       summary: 获取菜品详情
   /foods/by-user/{userId}:
     get:
@@ -3469,7 +3634,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultPageResultFood'
+                $ref: '#/components/schemas/ResultPageResultFoodView'
       security:
         - satoken: []
   /feedback/mine:
@@ -3644,6 +3809,32 @@ paths:
                 $ref: '#/components/schemas/ResultDeviceSessionPage'
       security:
         - satoken: []
+  /auth/phone/web-one-click/config:
+    get:
+      tags:
+        - 账号 · WebOneClickAuth
+      operationId: webOneClickConfig
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultWebOneClickConfig'
+      summary: 查询网页一键登录开关
+  /auth/phone/one-click/config:
+    get:
+      tags:
+        - 账号 · OneClickAuth
+      operationId: oneClickConfig
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOneClickConfig'
+      summary: 查询 App 一键登录开关
   /auth/consent:
     get:
       tags:
@@ -4136,7 +4327,7 @@ components:
         timestamp:
           type: integer
           format: int64
-    EditRequest:
+    RestaurantEditRequest:
       type: object
       properties:
         name:
@@ -4171,8 +4362,6 @@ components:
           type: array
           items:
             type: string
-        deliveryEnabled:
-          type: boolean
     Edited:
       type: object
       properties:
@@ -4211,6 +4400,36 @@ components:
         campusId:
           type: integer
           format: int64
+    Rated:
+      type: object
+      properties:
+        myRating:
+          type: integer
+          format: int32
+        rating:
+          $ref: '#/components/schemas/Rating'
+    Rating:
+      type: object
+      properties:
+        score:
+          type: number
+          format: double
+        count:
+          type: integer
+          format: int64
+    ResultRated:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/Rated'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     CoverCrop:
       type: object
       properties:
@@ -4220,6 +4439,41 @@ components:
           type: number
         diameter:
           type: number
+    FoodEditRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        pictures:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        signature:
+          type: boolean
+        stageColor:
+          type: string
+        stageAlternates:
+          type: array
+          items:
+            type: string
+        coverCrop:
+          $ref: '#/components/schemas/CoverCrop'
+        mealTimes:
+          type: array
+          items:
+            type: string
+        deliveryEnabled:
+          type: boolean
     VersionRequest:
       type: object
       properties:
@@ -4588,6 +4842,9 @@ components:
     Batch:
       type: object
       properties:
+        installId:
+          type: string
+          format: uuid
         events:
           type: array
           items:
@@ -4624,7 +4881,7 @@ components:
         timestamp:
           type: integer
           format: int64
-    AddRequest:
+    RestaurantAddRequest:
       type: object
       properties:
         name:
@@ -4657,8 +4914,6 @@ components:
           type: array
           items:
             type: string
-        deliveryEnabled:
-          type: boolean
         force:
           type: boolean
     Created:
@@ -4732,7 +4987,7 @@ components:
         replyToId:
           type: integer
           format: int64
-    UploadRequest:
+    FoodUploadRequest:
       type: object
       properties:
         restaurantId:
@@ -4764,6 +5019,12 @@ components:
             type: string
         coverCrop:
           $ref: '#/components/schemas/CoverCrop'
+        mealTimes:
+          type: array
+          items:
+            type: string
+        deliveryEnabled:
+          type: boolean
     SuggestRequest:
       type: object
       properties:
@@ -4844,6 +5105,33 @@ components:
           type: string
         note:
           type: string
+    Register:
+      type: object
+      properties:
+        installId:
+          type: string
+          format: uuid
+        platform:
+          type: string
+        hardwareId:
+          type: string
+        model:
+          type: string
+        osVersion:
+          type: string
+        appVersion:
+          type: string
+        appBuild:
+          type: string
+        screenWidth:
+          type: integer
+          format: int32
+        screenHeight:
+          type: integer
+          format: int32
+        pixelRatio:
+          type: number
+          format: double
     EmailToken:
       type: object
       properties:
@@ -4883,27 +5171,6 @@ components:
           minLength: 1
       required:
         - ticket
-    Register:
-      type: object
-      properties:
-        userName:
-          type: string
-        password:
-          type: string
-          maxLength: 64
-          minLength: 6
-        device:
-          type: string
-          enum:
-            - WEB
-            - APP
-        policyVersion:
-          type: string
-        deviceName:
-          type: string
-      required:
-        - device
-        - password
     ResultSaTokenInfo:
       type: object
       properties:
@@ -4945,6 +5212,67 @@ components:
           type: string
         tag:
           type: string
+    WebOneClickTokenRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          maxLength: 1024
+          minLength: 0
+      required:
+        - url
+    ResultWebOneClickToken:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/WebOneClickToken'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    WebOneClickToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        jwtToken:
+          type: string
+    WebOneClickLogin:
+      type: object
+      properties:
+        spToken:
+          type: string
+          maxLength: 8192
+          minLength: 0
+        policyVersion:
+          type: string
+        deviceName:
+          type: string
+        installId:
+          type: string
+          format: uuid
+      required:
+        - spToken
+    OneClickLogin:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          maxLength: 8192
+          minLength: 0
+        policyVersion:
+          type: string
+        deviceName:
+          type: string
+        installId:
+          type: string
+          format: uuid
+      required:
+        - accessToken
     PhoneLogin:
       type: object
       properties:
@@ -4967,6 +5295,9 @@ components:
           type: string
         deviceName:
           type: string
+        installId:
+          type: string
+          format: uuid
       required:
         - code
         - device
@@ -5013,6 +5344,9 @@ components:
           type: string
         deviceName:
           type: string
+        installId:
+          type: string
+          format: uuid
       required:
         - device
         - password
@@ -5210,6 +5544,8 @@ components:
         level:
           type: integer
           format: int32
+        title:
+          type: string
         gender:
           type: string
         signature:
@@ -5353,6 +5689,19 @@ components:
         createdAt:
           type: integer
           format: int64
+    ExperienceRule:
+      type: object
+      properties:
+        source:
+          type: string
+        name:
+          type: string
+        amount:
+          type: integer
+          format: int32
+        dailyCap:
+          type: integer
+          format: int32
     Level:
       type: object
       properties:
@@ -5379,6 +5728,12 @@ components:
         dailyUseExperience:
           type: integer
           format: int32
+        title:
+          type: string
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperienceRule'
     ResultLevel:
       type: object
       properties:
@@ -5476,6 +5831,8 @@ components:
         level:
           type: integer
           format: int32
+        title:
+          type: string
         banned:
           type: boolean
         banReason:
@@ -5539,6 +5896,8 @@ components:
         displayName:
           type: string
         avatar:
+          type: string
+        title:
           type: string
         createdAt:
           type: integer
@@ -5997,6 +6356,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SignatureFood'
+    DishRating:
+      type: object
+      properties:
+        score:
+          type: number
+          format: double
+        count:
+          type: integer
+          format: int64
     Feed:
       type: object
       properties:
@@ -6046,6 +6414,10 @@ components:
           type: string
         coverCrop:
           $ref: '#/components/schemas/CoverCrop'
+        signature:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/DishRating'
     Options:
       type: object
       properties:
@@ -6299,6 +6671,8 @@ components:
           type: string
         avatar:
           type: string
+        title:
+          type: string
     PageResultPicture:
       type: object
       properties:
@@ -6410,7 +6784,119 @@ components:
         timestamp:
           type: integer
           format: int64
-    PageResultFood:
+    FoodOptions:
+      type: object
+      properties:
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        stageColors:
+          type: array
+          items:
+            type: string
+        maxPictures:
+          type: integer
+          format: int32
+        maxTags:
+          type: integer
+          format: int32
+        maxSignatures:
+          type: integer
+          format: int32
+        mealTimes:
+          type: array
+          items:
+            type: string
+    ResultFoodOptions:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/FoodOptions'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    FoodView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        restaurantId:
+          type: integer
+          format: int64
+        restaurantName:
+          type: string
+        accountId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        pictureUrls:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        signature:
+          type: boolean
+        stageColor:
+          type: string
+        stageAlternates:
+          type: array
+          items:
+            type: string
+        coverCrop:
+          $ref: '#/components/schemas/CoverCrop'
+        likeCount:
+          type: integer
+          format: int64
+        favoriteCount:
+          type: integer
+          format: int64
+        isLiked:
+          type: boolean
+        isFavorite:
+          type: boolean
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        mealTimes:
+          type: array
+          items:
+            type: string
+        effectiveMealTimes:
+          type: array
+          items:
+            type: string
+        deliveryEnabled:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/Rating'
+        myRating:
+          type: integer
+          format: int32
+    PageResultFoodView:
       type: object
       properties:
         currentPage:
@@ -6419,7 +6905,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Food'
+            $ref: '#/components/schemas/FoodView'
         totalPages:
           type: integer
           format: int64
@@ -6428,27 +6914,58 @@ components:
           format: int64
         hasNext:
           type: boolean
-    ResultPageResultFood:
+    ResultPageResultFoodView:
       type: object
       properties:
         code:
           type: integer
           format: int32
         data:
-          $ref: '#/components/schemas/PageResultFood'
+          $ref: '#/components/schemas/PageResultFoodView'
         msg:
           type: string
         timestamp:
           type: integer
           format: int64
-    ResultFood:
+    DishDuplicate:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        pictureUrl:
+          type: string
+        sameName:
+          type: boolean
+    ResultListDishDuplicate:
       type: object
       properties:
         code:
           type: integer
           format: int32
         data:
-          $ref: '#/components/schemas/Food'
+          type: array
+          items:
+            $ref: '#/components/schemas/DishDuplicate'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    ResultFoodView:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/FoodView'
         msg:
           type: string
         timestamp:
@@ -6635,6 +7152,42 @@ components:
           format: int32
         data:
           $ref: '#/components/schemas/DeviceSessionPage'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    ResultWebOneClickConfig:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/WebOneClickConfig'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    WebOneClickConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+    OneClickConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+    ResultOneClickConfig:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/OneClickConfig'
         msg:
           type: string
         timestamp:
