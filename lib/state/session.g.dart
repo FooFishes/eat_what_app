@@ -49,7 +49,7 @@ final class SessionProvider extends $NotifierProvider<Session, SessionState> {
   }
 }
 
-String _$sessionHash() => r'6b36f62c2803375e79dd9efebbb4f642ad4b251f';
+String _$sessionHash() => r'0e5f83dca2086f62ee892a82011d2f74cd4c485d';
 
 /// 全局登录态管理, 路由守卫据此决定页面跳转.
 ///

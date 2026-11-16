@@ -55,7 +55,7 @@ lib/
     format/                 价格「¥18」、时间「12 分钟前」、计数
     platform/               平台能力的接口和各端实现：定位、地图（map/：EatMap 和 App、Web 两套引擎、BD-09 换算，14.4）、选图压缩、分享、
                             外部地图、推送、设备（device/：安装 ID 和设备档案，9.4）、版本、热更新、浏览器（仅 Web）、运营商一键登录（number_auth/，18.4）
-    telemetry/              埋点 Analytics、崩溃上报 CrashReporter
+    telemetry/              埋点事件 AnalyticsEvent、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
     tokens/                 tokens.json 里只用 dart:ui 就能表达的部分：颜色原值、间距、圆角、尺寸、StageColor
     theme/                  EatTheme（ThemeExtension：颜色、文字样式、阴影）、EatMotion、ThemeData、StageTheme（舞台色过渡）
@@ -83,7 +83,7 @@ lib/
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
                             topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关；device/ 是设备注册（9.4）
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态、设备注册；
+                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态、设备注册、埋点上报；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
@@ -193,7 +193,8 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `navGlassTransparencyProvider` | 底部导航液态玻璃的透明度（存 `prefs.appearance.navGlass`，退出登录不清）；`MainShell` 读它传给 `EatNavBar` | 设置 → 个性化 |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表。后端 v2 没有词表接口，本地返回五个口味；只有待接入的加标签面板在用，发布直接用 `Taste` | 只读 |
-| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查、设备注册）是否已启动 | 启动时、首次写入同意记录时 |
+| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查、设备注册、埋点上报）是否已启动 | 启动时、首次写入同意记录时 |
+| `analyticsProvider` | 埋点的采集、攒批和上报，本机的使用统计开关（19.1） | 各页面记事件；隐私页开关；登录时同步服务端开关 |
 | `publishedCountProvider` | 这次打开以来发布、编辑、恢复了几次；「我的」的统计和上传、餐厅详情的菜单、还开着的菜品详情监听它，变了就重新拉 | 加菜页、编辑菜品、新建店页、修改记录页 |
 | `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
@@ -568,6 +569,7 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 | 接口缓存（第 10 节） | `cache.*`，键带用户 id | 账号 | `cache.*` 全部删掉 |
 | 远程配置快照 | `config.remote`（不在 `cache.*` 下） | 设备 | 留 |
 | 埋点队列 | `analytics.queue` | 设备 | 先尝试上报，再清空 |
+| 使用统计开关（`prefs.telemetry.enabled`，关闭时为 `false`，19.1） | `prefs.*` | 设备 | 留 |
 | 图片磁盘缓存 | `cached_network_image` | 设备 | 留（都是公开内容） |
 
 - 设备级的数据不算「个人数据」：校区选择、问过权限没有、公告看过没有。
@@ -587,8 +589,8 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 
 退出确认后按顺序：
 
-1. `POST /auth/logout`（失败也继续）。
-2. 解绑推送（设备登记接口上线后），清 Sentry、埋点的用户 id。
+1. 用当前凭证补发埋点队列（最多等 3 秒），然后 `POST /auth/logout`（失败也继续）。
+2. 解绑推送（设备登记接口上线后），清 Sentry 的用户 id。
 3. 删 token；删掉 `cache.*` 的键；删账号作用域的偏好。
 4. 清内存：`ProviderContainer` 里依赖账号的 Provider 全部 `invalidate`，`dishInteractionsProvider` 等清空。
 5. `go('/login')`。
@@ -610,7 +612,7 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 - **档案与硬件标识**：`deviceProfileProvider`（`core/platform/device/device_profile.dart`，平台相关部分用条件导入拆 `_io` / `_web`）。型号、系统版本、IDFV 用 `device_info_plus`，ANDROID_ID 用 `android_id`；App 版本、构建号来自 `pubspec.yaml`，有 Shorebird 补丁时构建号写成 `构建号+补丁号`；屏幕是逻辑像素和像素比。Web 取不到的项为 null，不编。
 - **注册**：`POST /device/register`（`data/device/`），游客和登录用户都调，同一安装 ID 重复提交按更新处理。同意记录写入后（启动流程第 8 步，和 Sentry、埋点并列）由 `consentedServicesProvider` 触发 `state/device.dart` 的 `DeviceRegistration`。上次成功注册的档案摘要存 `prefs.device.registered`，档案（App 版本、系统版本等）没变就不重发；失败静默，下次冷启动重试。首帧不等它。退出登录不注销设备，设备级数据留着。
 - **登录**：验证码、密码和一键登录的请求体都带 `installId`，服务端把它记在这次登录的会话里，把设备和账号关联起来。游客登录后客户端不做迁移。
-- 不加任何自定义请求头，不在设备注册和登录以外的请求里带设备信息。客户端不判断设备可信与否，不发 IDFA，不接 OAID。
+- 不加任何自定义请求头，不在设备注册、登录和埋点批次以外的请求里带设备信息。客户端不判断设备可信与否，不发 IDFA，不接 OAID。
 
 ### 9.5 隐私政策和数据跨境同意
 
@@ -1436,30 +1438,34 @@ class PushNotice({
 
 ### 19.1 埋点
 
-自建，批量上报到业务后端的 `POST /telemetry/events`（依赖选型第 14 节 D5）。同意隐私政策即开启，可以单独关闭（产品 7.5）：`GET/PUT/DELETE /telemetry/consent` 读、开、关，返回 `{enabled, retentionDays}`，关闭时服务端删除本人已收集的事件，之后上报的直接丢弃（`/telemetry/events` 的响应 `enabled=false`）。开关在隐私页（`data/telemetry/telemetry_api.dart`、`usageStatsSettingProvider`），对封禁中的账号也开放。请求不带 `consentRevision`。接口要登录，`{events: [{eventId: UUID, properties: {event, …}}]}`，每批最多 50 条，每人每分钟 120 条；只收下表除 `experiment_exposure` 以外的 10 种事件和各自固定的属性，一条不合法整批返回 10001。客户端还没接，先只在调试日志输出。崩溃不走这里，走 Sentry（19.2）。
+自建，批量上报到业务后端的 `POST /telemetry/events`（依赖选型第 14 节 D5）。同意隐私政策即开启，可以单独关闭（产品 7.5）：`GET/PUT/DELETE /telemetry/consent` 读、开、关，返回 `{enabled, retentionDays}`，关闭时服务端删除本人已收集的事件，之后上报的直接丢弃（`/telemetry/events` 的响应 `enabled=false`）。开关在隐私页（`usageStatsSettingProvider`），对封禁中的账号也开放。请求不带 `consentRevision`。接口不要求登录，`{installId, events: [{eventId: UUID, properties: {event, …}}]}`，每批最多 50 条，每人（游客按安装 ID）每分钟 120 条；只收下表除 `experiment_exposure` 以外的 10 种事件和各自固定的属性，一条不合法整批返回 10001。游客的开关只存在客户端，服务端对未登录的查询总是返回开启。崩溃不走这里，走 Sentry（19.2）。
 
-- 接口：`Analytics.track(事件)`。事件是一组固定的类型（`sealed class`），属性只有枚举、id、数字、时长，**没有自由文本**，从类型上保证不采集输入框内容（产品 12.5）。
+代码：事件类型在 `core/telemetry/analytics_event.dart`，采集和上报在 `state/analytics.dart`（`Analytics`、`analyticsProvider`），接口在 `data/telemetry/telemetry_api.dart`。
+
+- 接口：`ref.read(analyticsProvider).track(事件)`。事件是一组固定的类型（`sealed class` `AnalyticsEvent`，如 `AppOpenEvent`、`PageViewEvent`），属性只有枚举、id、数字、时长，**没有自由文本**，从类型上保证不采集输入框内容（产品 12.5）。
 
 | 事件 | 什么时候 | 主要属性 |
 | --- | --- | --- |
-| `app_open` | 冷启动、回到前台 | 来源：图标、推送、链接 |
-| `page_view` | 页面离开时 | 页面名、停留毫秒 |
-| `dish_shuffle` | 换一个（按钮或拖动） | 方式、批次内序号 |
-| `dish_decide` | 就它了 | 菜 id、这次换了几次、从打开发现页到现在的毫秒 |
-| `navigate_shop` | 导航去店里 | 店 id、选的地图 App |
-| `publish_success` | 发布成功 | 照片数、是否新建店、用时 |
-| `comment_success` | 写评论成功 | 是否带照片 |
-| `verify_success` | 认证成功 | 方式 |
-| `share` | 分享 | 对象类型、渠道 |
-| `experiment_exposure` | 实验组件第一次显示 | 实验名、组 |
-| `load_failed` | 显示了「加载失败」 | 页面名、失败类型 |
+| `app_open` | 冷启动、回到前台 | 无 |
+| `page_view` | 页面离开时 | 页面（`HOME`、`RECOMMEND`、`SEARCH`、`RESTAURANT`、`FOOD`、`MESSAGE`、`PROFILE`、`OTHER`）、停留毫秒 |
+| `dish_shuffle` | 换一个（按钮或拖动） | 无 |
+| `dish_decide` | 就它了 | 店 id、菜 id |
+| `navigate_shop` | 导航去店里 | 店 id |
+| `publish_success` | 发布成功 | 发布的是菜还是店（`FOOD`、`RESTAURANT`） |
+| `comment_success` | 写评论成功 | 无 |
+| `verify_success` | 认证成功 | 方式（`sso`、`email`） |
+| `share` | 分享 | 对象类型、对象 id |
+| `experiment_exposure` | 实验组件第一次显示 | 实验名、组（后端还不收） |
+| `load_failed` | 显示了「加载失败」 | 页面、业务码 |
 
-- 公共属性：安装 ID、用户 id、平台、系统版本、设备型号、App 版本 + 构建号 + 补丁号、当前校区、会话 id。
+- 属性以后端 `TelemetryService` 的白名单为准，多一个属性整批被拒。事件不带公共属性：身份和时间由服务端从会话和时钟取，安装 ID 随批次发送，平台、版本、型号在设备注册的档案里（9.4）。
 - 产品 12.5 的指标怎么算：定下来的人数看 `dish_decide` 或 `navigate_shop` 的去重用户；换菜次数、定下来用时看 `dish_decide` 的属性；加载失败率看 `load_failed` / `page_view`；认证率、留存、内容供给用服务端数据。
-- 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；回到前台、退出登录前尝试补发。
-- 客户端接上之前：只在调试日志里打印，不上报（现状差距 2.1）。
-- 只在同意隐私政策、且使用统计开着时采集；上报的响应 `enabled=false` 时停止上报。
-- 游客不采集：`/telemetry` 要求登录，游客期间的事件不记、不进队列。游客转化（点「先逛逛」后登录的比例）以后需要时再和后端定一个不要求登录的上报口。
+- 上报：内存攒批，每 30 秒或满 20 条发一次；发不出去存进本地的 `analytics.queue`，最多 500 条，满了丢最旧的；退到后台、回到前台、冷启动时上报，退出登录前用当前凭证补发（最多等 3 秒）后清空。重发时 `eventId` 不变，服务端据此去重。网络、服务端、限流和登录过期的失败留着下次再发，其他失败（如 10001）丢掉这一批。
+- 调试构建同时在日志里打印每个事件。
+- 只在同意隐私政策（`consentedServicesProvider` 启动时）、且使用统计开着时采集；上报的响应 `enabled=false` 时停止采集、清空待发事件。
+- 开关：本机记在 `prefs.telemetry.enabled`。关闭时先停止采集、清空待发事件，再 `DELETE /telemetry/consent?installId=…`（游客据此删掉这台设备未登录时上报的事件），失败就恢复。登录用户以服务端为准：打开隐私页和每次登录时同步到本机。
+- 游客照常采集并带安装 ID。游客登录后客户端不做迁移。
+- 现在接上的事件只有 `app_open`（`bootstrap` 调 `observeLifecycle`：冷启动记一次，之后每次回到前台记一次），其余事件随各页面补上调用点。
 
 ### 19.2 崩溃上报
 

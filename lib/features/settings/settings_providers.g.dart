@@ -214,15 +214,15 @@ abstract class _$Personalized extends $AsyncNotifier<bool> {
   }
 }
 
-/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
 
 @ProviderFor(UsageStatsSetting)
 final usageStatsSettingProvider = UsageStatsSettingProvider._();
 
-/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
 final class UsageStatsSettingProvider
     extends $AsyncNotifierProvider<UsageStatsSetting, UsageStats> {
-  /// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
+  /// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
   UsageStatsSettingProvider._()
     : super(
         from: null,
@@ -242,9 +242,9 @@ final class UsageStatsSettingProvider
   UsageStatsSetting create() => UsageStatsSetting();
 }
 
-String _$usageStatsSettingHash() => r'2f1eab7149ac02be3904b247dcb91b76e6e83b73';
+String _$usageStatsSettingHash() => r'a5a61a1513c375c0b0b1af6531a8a2003a3e866e';
 
-/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
 
 abstract class _$UsageStatsSetting extends $AsyncNotifier<UsageStats> {
   FutureOr<UsageStats> build();

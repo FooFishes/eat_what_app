@@ -1,5 +1,6 @@
 import 'package:eat/app.dart';
 import 'package:eat/core/network/api_client.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/api_hooks.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/session.dart';
@@ -27,6 +28,8 @@ Future<void> bootstrap() async {
   await container.read(sessionProvider.notifier).restore();
   // 崩溃上报需在首帧前启动, 才能捕获启动过程中的错误. 若本机尚无同意记录则不启动.
   await container.read(consentedServicesProvider.notifier).start();
+  // 记录冷启动, 并在回到前台和退到后台时记录与上报使用统计. 未同意隐私政策时不采集.
+  container.read(analyticsProvider).observeLifecycle();
   // 导航的液态玻璃采用自定义着色器绘制. 首帧前预载着色器, 避免导航栏出现白屏闪烁.
   await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   runApp(

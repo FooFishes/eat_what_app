@@ -7,6 +7,7 @@ import 'package:eat/features/settings/feedback_page.dart';
 import 'package:eat/features/settings/password_page.dart';
 import 'package:eat/features/settings/privacy_page.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -108,7 +109,10 @@ void main() {
     await tester.tap(usage);
     await tester.pumpAndSettle();
     expect(tester.widget<EatSwitch>(usage).value, isFalse);
-    expect(env.adapter.sent('DELETE /telemetry/consent'), hasLength(1));
+    expect(env.adapter.sent('DELETE /telemetry/consent').single.query, {
+      'installId': testInstallId,
+    });
+    expect(env.kv.values[Analytics.enabledKey], 'false');
     await tester.pump(const Duration(seconds: 2));
   });
 

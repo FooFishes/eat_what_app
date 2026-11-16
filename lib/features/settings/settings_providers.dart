@@ -13,13 +13,13 @@ import 'package:eat/data/push/push_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
 import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/data/sessions/sessions_repository.dart';
-import 'package:eat/data/telemetry/telemetry_api.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/device_session.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
 import 'package:eat/domain/models/push.dart';
 import 'package:eat/domain/models/usage_stats.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -134,12 +134,16 @@ class Personalized extends _$Personalized {
   }
 }
 
-/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
 @riverpod
 class UsageStatsSetting extends _$UsageStatsSetting {
   @override
-  Future<UsageStats> build() =>
-      ref.watch(telemetryApiProvider).consent(cancelToken: ref.cancelToken());
+  Future<UsageStats> build() => ref
+      .watch(analyticsProvider)
+      .loadConsent(
+        signedIn: ref.read(sessionProvider) is SignedIn,
+        cancelToken: ref.cancelToken(),
+      );
 
   /// 成功时返回 null 并采用服务端返回的开关状态, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set({required bool enabled}) async {
@@ -149,7 +153,9 @@ class UsageStatsSetting extends _$UsageStatsSetting {
       UsageStats(enabled: enabled, retentionDays: before.retentionDays),
     );
     try {
-      final saved = await ref.read(telemetryApiProvider).set(enabled: enabled);
+      final saved = await ref
+          .read(analyticsProvider)
+          .changeConsent(enabled: enabled);
       if (ref.mounted) state = AsyncData(saved);
       return null;
     } on AppFailure catch (e) {

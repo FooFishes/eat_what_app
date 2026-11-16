@@ -7,6 +7,7 @@ import 'package:eat/data/auth/auth_repository.dart';
 import 'package:eat/data/user/user_repository.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/current_user.dart';
+import 'package:eat/state/analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -143,10 +144,11 @@ class Session extends _$Session {
     state = const SignedOut(SignOutReason.expired);
   }
 
-  /// 退出登录: 先通知服务端, 再清除本机的凭证和账号数据.
+  /// 退出登录: 先用当前凭证补发使用统计, 再通知服务端, 最后清除本机的凭证和账号数据.
   ///
-  /// 通知服务端失败不影响退出.
+  /// 补发或通知服务端失败不影响退出.
   Future<void> logout() async {
+    await ref.read(analyticsProvider).flushBeforeSignOut();
     await ref.read(authRepositoryProvider).logout();
     await _clearLocal();
     state = const SignedOut(SignOutReason.loggedOut);
