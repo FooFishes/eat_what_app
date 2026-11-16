@@ -9,6 +9,8 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/crop_viewport.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/dish_revision.dart';
+import 'package:eat/domain/models/meal_time.dart';
+import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -51,8 +53,39 @@ void main() {
       'stageColor': 'broth',
       'stageAlternates': ['mango', 'bamboo'],
       'coverCrop': {'centerX': 0.5, 'centerY': 0.5, 'diameter': 1.0},
+      'deliveryEnabled': false,
     });
     expect(request.headers.containsKey('Idempotency-Key'), isFalse);
+  });
+
+  test('发布：选了饭点和外卖时带上；没选饭点时不带，沿用店铺', () async {
+    final env = TestEnv();
+    env.adapter.on('POST /foods/upload', [
+      FakeAdapter.ok({'id': 9}),
+    ]);
+    final container = await env.container();
+
+    await container
+        .read(foodRepositoryProvider)
+        .publish(
+          const NewDish(
+            shopId: 7,
+            name: '云吞',
+            imageKeys: ['k'],
+            price: 18,
+            category: DishCategory.staple,
+            stage: StageColor.broth,
+            stageAlternates: [],
+            mealTimes: [MealTime.breakfast, MealTime.night],
+            deliveryEnabled: true,
+          ),
+        );
+
+    final body =
+        env.adapter.sent('POST /foods/upload').single.body!
+            as Map<String, dynamic>;
+    expect(body['mealTimes'], ['breakfast', 'night']);
+    expect(body['deliveryEnabled'], isTrue);
   });
 
   test('发布撞名时失败原因带上已有那道菜的 id', () async {
@@ -143,6 +176,23 @@ void main() {
       });
     });
 
+    test('饭点传空数组表示改回沿用店铺；外卖照改动发出', () async {
+      final env = TestEnv();
+      env.adapter.on('PUT /foods/edit/1', [
+        FakeAdapter.ok({'id': 1, 'revisionId': 33}),
+      ]);
+      final container = await env.container();
+
+      await container
+          .read(foodRepositoryProvider)
+          .edit(1, const DishChange(mealTimes: [], deliveryEnabled: false));
+
+      expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
+        'mealTimes': <String>[],
+        'deliveryEnabled': false,
+      });
+    });
+
     test('改了分类、口味、舞台色和取景时按 v2 字段发出', () async {
       final env = TestEnv();
       env.adapter.on('PUT /foods/edit/1', [
@@ -208,6 +258,12 @@ void main() {
                 'to': <String>[],
               },
               {'field': 'spiciness', 'from': 1, 'to': 2},
+              {
+                'field': 'mealTimes',
+                'from': <String>[],
+                'to': ['lunch'],
+              },
+              {'field': 'deliveryEnabled', 'from': false, 'to': true},
             ],
             'createdAt': 1792763739329,
           },
@@ -238,7 +294,12 @@ void main() {
     expect(restored.restoredFrom, 30);
     expect((restored.editorId, restored.editorName), (9, '小林'));
     expect(restored.editorAvatar, isNull);
-    expect(restored.fields, [DishField.price, DishField.pictures]);
+    expect(restored.fields, [
+      DishField.price,
+      DishField.pictures,
+      DishField.mealTimes,
+      DishField.deliveryEnabled,
+    ]);
     expect(created.action, RevisionAction.create);
     expect((created.editorId, created.editorName), (null, null));
     expect(env.adapter.sent('GET /foods/1/history').single.query, {
@@ -377,6 +438,50 @@ void main() {
     expect(dish.price, 18);
   });
 
+  test('DTO 转成菜：饭点、外卖、评分和我的评分，不认识的饭点跳过', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /foods/detail/1', [
+      FakeAdapter.ok({
+        ...foodJson(),
+        'mealTimes': <String>[],
+        'effectiveMealTimes': ['lunch', 'brunch', 'dinner'],
+        'deliveryEnabled': true,
+        'rating': {'score': 4.5, 'count': 12},
+        'myRating': 5,
+      }),
+    ]);
+    final container = await env.container();
+    final repo = container.read(foodRepositoryProvider);
+
+    final dish = await repo.detail(1);
+
+    expect(dish.mealTimes, isEmpty);
+    expect(dish.effectiveMealTimes, [MealTime.lunch, MealTime.dinner]);
+    expect(dish.deliveryEnabled, isTrue);
+    expect((dish.rating.score, dish.rating.count), (4.5, 12));
+    expect(dish.myRating, 5);
+    final cached = await repo.cachedDetail(1);
+    expect((cached?.rating.score, cached?.myRating), (4.5, 5));
+  });
+
+  test('DTO 转成菜：没人评分、游客时评分为空', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /foods/detail/1', [
+      FakeAdapter.ok({
+        ...foodJson(),
+        'rating': {'score': null, 'count': 0},
+        'myRating': null,
+      }),
+    ]);
+    final container = await env.container();
+
+    final dish = await container.read(foodRepositoryProvider).detail(1);
+
+    expect((dish.rating.score, dish.rating.count), (null, 0));
+    expect(dish.myRating, isNull);
+    expect(dish.deliveryEnabled, isFalse);
+  });
+
   group('舞台色和取景', () {
     Future<Dish> dishOf(Map<String, Object?> json) async {
       final container = await TestEnv().container();
@@ -427,6 +532,30 @@ void main() {
     });
   });
 
+  test('按场景、校区和饭点查菜', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /foods/list', [FakeAdapter.ok(pageJson([]))]);
+    final container = await env.container();
+
+    await container
+        .read(foodRepositoryProvider)
+        .list(
+          keyword: '云吞',
+          scene: RatingScene.delivery,
+          campusId: 1,
+          mealTime: MealTime.night,
+        );
+
+    expect(env.adapter.sent('GET /foods/list').single.query, {
+      'keyword': '云吞',
+      'scene': 'delivery',
+      'campusId': 1,
+      'mealTime': 'night',
+      'page': 1,
+      'pageSize': 20,
+    });
+  });
+
   test('按店、分类、招牌和菜单顺序查菜，分页带总数', () async {
     final env = TestEnv();
     env.adapter.on('GET /foods/list', [
@@ -467,18 +596,110 @@ void main() {
     });
   });
 
-  test('同名判断忽略空白和大小写', () async {
+  test('查重：按店和输入的菜名问服务端，同名标记和封面照用', () async {
     final env = TestEnv();
-    env.adapter.on('GET /foods/list', [
-      FakeAdapter.ok(pageJson([foodJson(id: 3, name: 'Coco 奶茶')])),
+    env.adapter.on('GET /foods/duplicates', [
+      FakeAdapter.ok([
+        {
+          'id': 3,
+          'name': 'Coco 奶茶',
+          'category': '饮品甜品',
+          'price': 12,
+          'pictureUrl': 'https://img.test/foods/3.jpg',
+          'sameName': true,
+        },
+        {
+          'id': 4,
+          'name': 'coco 奶茶大杯',
+          'category': '饮品甜品',
+          'price': null,
+          'pictureUrl': null,
+          'sameName': false,
+        },
+        {'id': 5, 'name': ' ', 'sameName': false},
+      ]),
     ]);
     final container = await env.container();
 
-    final same = await container
+    final found = await container
         .read(foodRepositoryProvider)
-        .sameName(7, 'coco奶茶');
+        .duplicates(7, ' coco奶茶 ');
 
-    expect(same?.id, 3);
+    expect(env.adapter.sent('GET /foods/duplicates').single.query, {
+      'restaurantId': 7,
+      'keyword': 'coco奶茶',
+    });
+    expect(
+      [for (final d in found) (d.id, d.sameName)],
+      [(3, true), (4, false)],
+    );
+    expect(found.first.category, DishCategory.drinkDessert);
+    expect(found.first.photo, 'https://img.test/foods/3.jpg');
+    expect(found.last.photo, isNull);
+  });
+
+  test('查重：菜名只有空白时不请求', () async {
+    final env = TestEnv();
+    final container = await env.container();
+
+    final found = await container
+        .read(foodRepositoryProvider)
+        .duplicates(7, '  ');
+
+    expect(found, isEmpty);
+    expect(env.adapter.sent('GET /foods/duplicates'), isEmpty);
+  });
+
+  group('发布选项', () {
+    test('按服务端的顺序和上限，不认识的取值跳过', () async {
+      final env = TestEnv();
+      env.adapter.on('GET /foods/options', [
+        FakeAdapter.ok({
+          'categories': ['菜', '主食', '盖饭'],
+          'tags': ['清淡', '辣', '咸'],
+          'stageColors': ['broth', 'soy'],
+          'maxPictures': 9,
+          'maxTags': 2,
+          'maxSignatures': 4,
+          'mealTimes': ['lunch', 'dinner', 'brunch'],
+        }),
+      ]);
+      final container = await env.container();
+
+      final options = await container.read(foodRepositoryProvider).options();
+
+      expect(options.categories, [DishCategory.dish, DishCategory.staple]);
+      expect(options.tastes, [Taste.light, Taste.spicy]);
+      expect(options.mealTimes, [MealTime.lunch, MealTime.dinner]);
+      expect(
+        (options.photosMax, options.tagsMax, options.signaturesMax),
+        (9, 2, 4),
+      );
+    });
+
+    test('某一项缺失或无效时用内置值', () async {
+      final env = TestEnv();
+      env.adapter.on('GET /foods/options', [
+        FakeAdapter.ok({
+          'categories': ['盖饭'],
+          'tags': <String>[],
+          'maxPictures': 0,
+          'maxTags': null,
+        }),
+      ]);
+      final container = await env.container();
+
+      final options = await container.read(foodRepositoryProvider).options();
+
+      const fallback = DishOptions();
+      expect(options.categories, DishCategory.values);
+      expect(options.tastes, Taste.values);
+      expect(options.mealTimes, MealTime.values);
+      expect(
+        (options.photosMax, options.tagsMax, options.signaturesMax),
+        (fallback.photosMax, fallback.tagsMax, fallback.signaturesMax),
+      );
+    });
   });
 
   test('看过的菜品详情断网时从缓存读', () async {

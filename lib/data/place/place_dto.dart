@@ -107,7 +107,9 @@ class const MyRatingsDto({final String? dineIn, final String? delivery}) {
       _$MyRatingsDtoFromJson(json);
 }
 
-/// 推荐卡片中的招牌菜摘要, [pictureUrl] 为其首张照片地址.
+/// 推荐卡片中的代表菜摘要 (后端 `RecommendDtos.SignatureFood`), [pictureUrl] 为其首张照片地址.
+///
+/// 代表菜是当前场景和饭点供应的菜里评分最高的几道, 不一定是招牌菜, 字段名沿用旧的. [signature] 表示被标为招牌菜.
 @JsonSerializable(createToJson: false)
 class const SignatureFoodDto({
   final int? id,
@@ -119,6 +121,8 @@ class const SignatureFoodDto({
   ///
   /// 店铺舞台色由店铺类型与品类决定, 不受招牌菜影响, 因此不读取菜品的 `stageColor`.
   final CoverCropDto? coverCrop,
+  final bool? signature,
+  final DishRatingDto? rating,
 }) {
   factory SignatureFoodDto.fromJson(Map<String, dynamic> json) =>
       _$SignatureFoodDtoFromJson(json);

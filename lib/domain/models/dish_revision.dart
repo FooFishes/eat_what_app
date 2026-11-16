@@ -26,7 +26,9 @@ enum DishField {
   description('description', '描述'),
   pictures('pictures', '照片'),
   tags('tags', '口味'),
-  signature('signature', '招牌菜');
+  signature('signature', '招牌菜'),
+  mealTimes('mealTimes', '饭点'),
+  deliveryEnabled('deliveryEnabled', '外卖');
 
   const new(this.api, this.label);
 

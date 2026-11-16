@@ -8,12 +8,16 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+///
+/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+///
+/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
 
 final class DishSearchProvider
     extends
@@ -23,7 +27,9 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  ///
+  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
   DishSearchProvider._({
     required DishSearchFamily super.from,
     required String super.argument,
@@ -67,9 +73,11 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'045f33a57a41ccb825ba3d3923458c2f84abb21c';
+String _$dishSearchHash() => r'ad43a2f99a5874c678ab5fba808c883edfc6a530';
 
-/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+///
+/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
 
 final class DishSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
@@ -82,7 +90,9 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  ///
+  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
 
   DishSearchProvider call(String keyword) =>
       DishSearchProvider._(argument: keyword, from: this);

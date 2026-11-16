@@ -138,7 +138,7 @@ void main() {
     expect(page.total, 2);
   });
 
-  test('推荐卡片的 JSON 也能转成店铺，带招牌菜和距离', () {
+  test('推荐卡片的 JSON 也能转成店铺，带代表菜、招牌标记、评分和距离', () {
     final shop = PlaceRepository.shopFromJson({
       'id': 7,
       'name': '袁记云饺',
@@ -155,6 +155,8 @@ void main() {
           'pictureUrl': 'https://img.test/foods/5.jpg',
           'stageColor': 'chili',
           'coverCrop': {'centerX': 0.4, 'centerY': 0.6, 'diameter': 0.8},
+          'signature': true,
+          'rating': {'score': 4.6, 'count': 23},
         },
         {'id': 6, 'name': '紫菜汤', 'price': null, 'pictureUrl': null},
       ],
@@ -168,6 +170,15 @@ void main() {
     final crop = shop!.signatures.first.crop;
     expect((crop.centerX, crop.centerY, crop.diameter), (0.4, 0.6, 0.8));
     expect(shop.signatures.last.crop.diameter, 1, reason: '没有照片时按居中');
+    final [first, last] = shop.signatures;
+    expect(
+      (first.signature, first.rating.score, first.rating.count),
+      (true, 4.6, 23),
+    );
+    expect(
+      (last.signature, last.rating.score, last.rating.count),
+      (false, null, 0),
+    );
     expect(shop.matchedDish, isNull);
   });
 

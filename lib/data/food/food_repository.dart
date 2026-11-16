@@ -9,7 +9,9 @@ import 'package:eat/data/food/food_dto.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/dish_revision.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
@@ -54,16 +56,21 @@ class FoodRepository {
     }
   }
 
-  /// 按条件查询菜品, 返回的分页带 [Paged.total]. 不按校区过滤.
+  /// 按条件查询菜品, 返回的分页带 [Paged.total].
   ///
   /// - [keyword] 只匹配菜名.
   /// - 不传 [sort] 时, 指定 [restaurantId] 按菜单顺序, 否则按最新排列.
+  /// - [scene] 为外卖时只返回能点外卖的菜. 带 [scene] 或 [campusId] 时排除已关门的店.
+  /// - 不传 [restaurantId] 也不传 [mealTime] 时, 服务端按北京时间的当前饭点筛选.
   Future<Paged<Dish>> list({
     int? restaurantId,
     String? keyword,
     DishCategory? category,
     bool? signatureOnly,
     FoodSort? sort,
+    RatingScene? scene,
+    int? campusId,
+    MealTime? mealTime,
     int page = 1,
     int pageSize = 20,
     CancelToken? cancelToken,
@@ -74,6 +81,9 @@ class FoodRepository {
       category: category?.api,
       signatureOnly: signatureOnly,
       sort: sort,
+      scene: scene?.api,
+      campusId: campusId,
+      mealTime: mealTime?.api,
       page: page,
       pageSize: pageSize,
       cancelToken: cancelToken,
@@ -108,6 +118,10 @@ class FoodRepository {
       stageColor: dish.stage.name,
       stageAlternates: [for (final c in dish.stageAlternates) c.name],
       coverCrop: _cropDto(roundCrop(dish.crop)),
+      mealTimes: dish.mealTimes.isEmpty
+          ? null
+          : [for (final m in dish.mealTimes) m.api],
+      deliveryEnabled: dish.deliveryEnabled,
     ),
   );
 
@@ -131,8 +145,73 @@ class FoodRepository {
         final crop? => _cropDto(roundCrop(crop)),
         null => null,
       },
+      mealTimes: change.mealTimes?.map((m) => m.api).toList(),
+      deliveryEnabled: change.deliveryEnabled,
     ),
   );
+
+  /// 获取发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
+  ///
+  /// 客户端不认识的取值会被忽略. 某一项为空或无效时使用 [DishOptions] 的内置值.
+  Future<DishOptions> options({CancelToken? cancelToken}) async {
+    final dto = await _api.options(cancelToken: cancelToken);
+    const fallback = DishOptions();
+    List<T> known<T>(
+      List<String>? values,
+      T? Function(String?) parse,
+      List<T> fallback,
+    ) {
+      final parsed = [
+        for (final value in values ?? const <String>[]) ?parse(value),
+      ];
+      return parsed.isEmpty ? fallback : parsed.toSet().toList();
+    }
+
+    int positive(int? value, int fallback) =>
+        value != null && value > 0 ? value : fallback;
+    return DishOptions(
+      categories: known(
+        dto.categories,
+        DishCategory.fromApi,
+        fallback.categories,
+      ),
+      tastes: known(dto.tags, Taste.fromApi, fallback.tastes),
+      mealTimes: known(dto.mealTimes, MealTime.fromApi, fallback.mealTimes),
+      photosMax: positive(dto.maxPictures, fallback.photosMax),
+      tagsMax: positive(dto.maxTags, fallback.tagsMax),
+      signaturesMax: positive(dto.maxSignatures, fallback.signaturesMax),
+    );
+  }
+
+  /// 发布前查重: 店铺 [shopId] 里菜名包含 [name] 的菜, 同名的在前.
+  ///
+  /// 菜名去掉空白后为空时不请求, 返回空列表.
+  Future<List<DishDuplicate>> duplicates(
+    int shopId,
+    String name, {
+    CancelToken? cancelToken,
+  }) async {
+    final keyword = name.trim();
+    if (PublishRules.compactName(keyword).isEmpty) return const [];
+    final dtos = await _api.duplicates(
+      shopId,
+      keyword,
+      cancelToken: cancelToken,
+    );
+    return [
+      for (final dto in dtos)
+        if ((dto.id, dto.name?.trim()) case (final id?, final name?)
+            when name.isNotEmpty)
+          DishDuplicate(
+            id: id,
+            name: name,
+            category: DishCategory.fromApi(dto.category),
+            price: dto.price,
+            photo: imageUrl(dto.pictureUrl),
+            sameName: dto.sameName ?? false,
+          ),
+    ];
+  }
 
   /// 获取菜品的修改记录, 按时间倒序排列, 无需登录.
   Future<Paged<DishRevision>> history(
@@ -216,26 +295,6 @@ class FoodRepository {
     var n = (value * scale).floor();
     if (n / scale > value) n--;
     return n / scale;
-  }
-
-  /// 查找指定店铺中与 [name] 同名 (忽略空白和大小写) 的菜品, 不存在时返回 null.
-  Future<Dish?> sameName(
-    int shopId,
-    String name, {
-    CancelToken? cancelToken,
-  }) async {
-    final key = PublishRules.dishNameKey(name);
-    if (key.isEmpty) return null;
-    final page = await list(
-      restaurantId: shopId,
-      keyword: key,
-      pageSize: 50,
-      cancelToken: cancelToken,
-    );
-    for (final dish in page.items) {
-      if (PublishRules.dishNameKey(dish.name) == key) return dish;
-    }
-    return null;
   }
 
   Future<void> setLiked(int id, {required bool liked}) =>
@@ -346,8 +405,20 @@ class FoodRepository {
       uploaderId: dto.accountId,
       description: _text(dto.description),
       createdAt: dateFromMillis(dto.createdAt),
+      mealTimes: _meals(dto.mealTimes),
+      effectiveMealTimes: _meals(dto.effectiveMealTimes),
+      deliveryEnabled: dto.deliveryEnabled ?? false,
+      rating: DishRating(
+        score: dto.rating?.score,
+        count: dto.rating?.count ?? 0,
+      ),
+      myRating: dto.myRating,
     );
   }
+
+  static List<MealTime> _meals(List<String>? values) => [
+    for (final value in values ?? const <String>[]) ?MealTime.fromApi(value),
+  ];
 
   static List<Taste> _tastes(List<String>? values) => [
     for (final value in values ?? const <String>[]) ?Taste.fromApi(value),

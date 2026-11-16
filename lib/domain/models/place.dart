@@ -151,7 +151,7 @@ class const MyShopRatings({
   int get hashCode => Object.hash(dineIn, delivery);
 }
 
-/// 店铺内的菜品摘要, 用于推荐卡片展示招牌菜.
+/// 店铺内的菜品摘要, 用于推荐卡片展示代表菜.
 ///
 /// [crop] 为封面的圆形取景区域, 服务端未保存时默认居中.
 class const ShopDish({
@@ -162,6 +162,10 @@ class const ShopDish({
   /// 第一张照片. 没有照片时为 null.
   final String? photo,
   final CoverCrop crop = const CoverCrop(),
+
+  /// 是否被编辑者标为招牌菜. 推荐卡片的代表菜按评分挑选, 不一定是招牌菜.
+  final bool signature = false,
+  final DishRating rating = const DishRating(),
 });
 
 /// 新建店铺时检测到的潜在重复店铺, [distance] 为其与新店位置的距离 (单位为米).

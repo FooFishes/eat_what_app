@@ -2,11 +2,10 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'food_dto.g.dart';
 
-/// 菜品接口返回的菜品 (后端 `FoodDtos.Food`).
+/// 菜品接口返回的菜品 (后端 `FoodDtos.FoodView`).
 ///
 /// 推荐的上一批和菜品详情会原样存入本地缓存, 因此需要支持转回 JSON.
-/// 接口文档中同名的 `Food` 结构属于足迹模块, 字段以后端源码为准.
-@JsonSerializable(includeIfNull: false)
+@JsonSerializable(includeIfNull: false, explicitToJson: true)
 class const FoodDto({
   final int? id,
   final int? restaurantId,
@@ -40,6 +39,15 @@ class const FoodDto({
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
+
+  /// 菜品自己设置的饭点, 空数组表示沿用店铺的饭点. [effectiveMealTimes] 是实际供应的饭点.
+  final List<String>? mealTimes,
+  final List<String>? effectiveMealTimes,
+  final bool? deliveryEnabled,
+  final DishRatingDto? rating,
+
+  /// 当前用户打的分 (1–5), 游客或没打过分时为 null.
+  final int? myRating,
 }) {
   factory FoodDto.fromJson(Map<String, dynamic> json) =>
       _$FoodDtoFromJson(json);
@@ -66,6 +74,17 @@ class const FoodTagDto({
   Map<String, dynamic> toJson() => _$FoodTagDtoToJson(this);
 }
 
+/// 菜品的评分统计 (后端 `FoodDtos.Rating` 和 `RecommendDtos.DishRating`, 两者字段相同).
+///
+/// [score] 是 1–5 分的平均分, 保留一位小数, 没有人评分时为 null. [count] 是评分人数.
+@JsonSerializable(includeIfNull: false)
+class const DishRatingDto({final double? score, final int? count}) {
+  factory DishRatingDto.fromJson(Map<String, dynamic> json) =>
+      _$DishRatingDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$DishRatingDtoToJson(this);
+}
+
 @JsonSerializable(includeIfNull: false)
 class const CoverCropDto({
   final double? centerX,
@@ -88,11 +107,12 @@ class const FoodTagsDto({
       _$FoodTagsDtoFromJson(json);
 }
 
-/// 发布菜品的请求体 (后端 `FoodDtos.UploadRequest`).
+/// 发布菜品的请求体 (后端 `FoodDtos.FoodUploadRequest`).
 ///
 /// - [pictures] 是上传后获得的存储 key, 第一张为封面.
 /// - [category] 和 [tags] 是中文原值.
 /// - [stageColor] 和 [stageAlternates] 要么都传, 要么都不传. [coverCrop] 是封面的圆形取景, 有照片时才传.
+/// - [mealTimes] 省略或为空数组时沿用店铺的饭点. [deliveryEnabled] 省略时为 false.
 @JsonSerializable(
   createFactory: false,
   includeIfNull: false,
@@ -110,16 +130,17 @@ class const CreateFoodDto({
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
+  final List<String>? mealTimes,
+  final bool? deliveryEnabled,
 }) {
   Map<String, dynamic> toJson() => _$CreateFoodDtoToJson(this);
 }
 
-/// 编辑菜品的请求体 (后端 `FoodDtos.EditRequest`). 值为 null 的字段不发送, 表示不修改.
+/// 编辑菜品的请求体 (后端 `FoodDtos.FoodEditRequest`). 值为 null 的字段不发送, 表示不修改.
 ///
 /// - [description] 为空字符串表示清除.
 /// - [pictures] 和 [tags] 为空数组表示清除.
-///
-/// 接口文档中同名的 `EditRequest` 结构属于店铺模块, 字段以后端源码为准.
+/// - [mealTimes] 为空数组表示改回沿用店铺的饭点.
 @JsonSerializable(
   createFactory: false,
   includeIfNull: false,
@@ -138,8 +159,43 @@ class const EditFoodDto({
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
+  final List<String>? mealTimes,
+  final bool? deliveryEnabled,
 }) {
   Map<String, dynamic> toJson() => _$EditFoodDtoToJson(this);
+}
+
+/// `/foods/options` 的 `data` (后端 `FoodDtos.FoodOptions`).
+///
+/// 分类按菜单顺序排列, 都是中文原值. [stageColors] 是 `stage-*` 去掉前缀.
+@JsonSerializable(createToJson: false)
+class const FoodOptionsDto({
+  final List<String>? categories,
+  final List<String>? tags,
+  final List<String>? stageColors,
+  final int? maxPictures,
+  final int? maxTags,
+  final int? maxSignatures,
+  final List<String>? mealTimes,
+}) {
+  factory FoodOptionsDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodOptionsDtoFromJson(json);
+}
+
+/// 发布前查重的一项 (后端 `FoodDtos.DishDuplicate`).
+///
+/// [sameName] 表示与输入的菜名相同 (忽略空白和大小写), 这时发布会返回 `BizCodes.duplicateDish`. [pictureUrl] 是封面.
+@JsonSerializable(createToJson: false)
+class const DishDuplicateDto({
+  final int? id,
+  final String? name,
+  final String? category,
+  final double? price,
+  final String? pictureUrl,
+  final bool? sameName,
+}) {
+  factory DishDuplicateDto.fromJson(Map<String, dynamic> json) =>
+      _$DishDuplicateDtoFromJson(json);
 }
 
 /// 请求识别分类和口味的请求体 (后端 `FoodDtos.SuggestRequest`).

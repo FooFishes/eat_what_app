@@ -94,6 +94,10 @@ SignatureFoodDto _$SignatureFoodDtoFromJson(Map<String, dynamic> json) =>
       coverCrop: json['coverCrop'] == null
           ? null
           : CoverCropDto.fromJson(json['coverCrop'] as Map<String, dynamic>),
+      signature: json['signature'] as bool?,
+      rating: json['rating'] == null
+          ? null
+          : DishRatingDto.fromJson(json['rating'] as Map<String, dynamic>),
     );
 
 MatchedFoodDto _$MatchedFoodDtoFromJson(Map<String, dynamic> json) =>

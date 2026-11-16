@@ -1,14 +1,11 @@
 /// 发布菜品和新建店铺时的字段规则.
+///
+/// 菜品的照片, 口味和招牌菜上限由服务端下发, 见 `DishOptions`.
 abstract final class PublishRules {
   static const dishNameMax = 12;
   static const shopNameMax = 20;
   static const addressMax = 30;
   static const noteMax = 200;
-  static const photosMax = 6;
-
-  /// 一道菜的口味数量上限.
-  static const tagsMax = 3;
-
   static const priceMax = 999.0;
 
   /// 去除名称中的所有空白字符.

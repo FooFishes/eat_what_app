@@ -27,6 +27,7 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
@@ -49,7 +50,8 @@ import 'package:material_ui/material_ui.dart';
 /// 发布流程第 2 步的加菜页, 同时承担编辑已有菜品的功能.
 ///
 /// - 舞台区域展示菜品封面及其对应的舞台色.
-/// - 抽屉区域包含照片, 店铺, 菜名, 价格, 分类, 口味, 招牌菜开关与 "说两句" 表单项.
+/// - 抽屉区域包含照片, 店铺, 菜名, 价格, 分类, 口味, 饭点, 外卖与招牌菜开关, "说两句" 表单项.
+/// - 可选的分类, 口味, 饭点和各项上限取自服务端, 取不到时用内置值.
 ///
 /// 发布新菜流程:
 /// - 添加照片后立即在后台上传, 添加首张照片后自动打开 "调整照片" 页面.
@@ -133,7 +135,7 @@ String _priceInput(double? price) => price == null
     : price.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
 /// 店铺招牌菜数量已达上限时的就地提示文案.
-const _signatureFullText = '这家店已有 3 道招牌菜，先取消一道';
+String _signatureFullText(int max) => '这家店已有 $max 道招牌菜，先取消一道';
 
 class _DishForm extends ConsumerStatefulWidget {
   const new({required this.shopId, this.original});
@@ -256,9 +258,12 @@ class _DishFormState extends ConsumerState<_DishForm> {
       ) ??
       false;
 
+  DishOptions get _options =>
+      ref.read(dishOptionsProvider).value ?? const DishOptions();
+
   Future<void> _addPhotos() async {
     final draft = ref.read(_draft);
-    final room = PublishRules.photosMax - draft.photos.length;
+    final room = _options.photosMax - draft.photos.length;
     if (room <= 0) return;
     final photos = await pickPhotos(context, ref, limit: room);
     if (!mounted || photos.isEmpty) return;
@@ -371,6 +376,8 @@ class _DishFormState extends ConsumerState<_DishForm> {
       tags: draft.tasteList,
       signature: draft.signature,
       description: _note.text.trim().isEmpty ? null : _note.text.trim(),
+      mealTimes: draft.mealList,
+      deliveryEnabled: draft.deliveryEnabled,
     );
     try {
       final id = await ref.read(foodRepositoryProvider).publish(dish);
@@ -472,7 +479,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
 
   void _toggleTaste(Taste taste) {
     if (!ref.read(_draft.notifier).toggleTaste(taste)) {
-      showToast(context, '口味最多选 ${PublishRules.tagsMax} 个');
+      showToast(context, '口味最多选 ${_options.tagsMax} 个');
     }
   }
 
@@ -506,14 +513,19 @@ class _DishFormState extends ConsumerState<_DishForm> {
   @override
   Widget build(BuildContext context) {
     final draft = ref.watch(_draft);
+    final options = ref.watch(dishOptionsProvider).value ?? const DishOptions();
     ref.listen(_draft.select((d) => d.photos.firstOrNull?.key), (_, key) {
       if (key != null) _scheduleSuggest();
     });
     final original = widget.original;
-    final shopName = switch (original?.shopName) {
-      final name? => name,
-      null => (_changedShop ?? ref.watch(shopProvider(_shopId)).value)?.name,
-    };
+    final shop = _changedShop ?? ref.watch(shopProvider(_shopId)).value;
+    final shopName = original?.shopName ?? shop?.name;
+    // 店铺资料没读到时, 沿用店铺饭点的菜的实际饭点就是店铺的饭点.
+    final shopMeals =
+        shop?.mealTimes ??
+        (original != null && original.mealTimes.isEmpty
+            ? original.effectiveMealTimes
+            : const <MealTime>[]);
     final name = _name.text.trim();
     final price = _priceUnchanged
         ? original?.price
@@ -556,7 +568,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
       note = original == null ? '这家店已有这道菜，去看看再说两句' : '这家店已有同名的菜，换个菜名';
       onPressed = null;
     } else if (signatureFull) {
-      note = _signatureFullText;
+      note = _signatureFullText(options.signaturesMax);
       onPressed = null;
     } else if (draft.hasFailedUpload) {
       note = '有照片未上传成功，点照片重试或删除';
@@ -626,6 +638,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
                             else
                               _PhotoStrip(
                                 photos: draft.photos,
+                                max: options.photosMax,
                                 onAdd: _addPhotos,
                                 onTap: _photoActions,
                               ),
@@ -679,7 +692,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
                               child: Wrap(
                                 spacing: EatSpace.s8,
                                 children: [
-                                  for (final c in DishCategory.values)
+                                  for (final c in options.categories)
                                     EatChip.choice(
                                       c.label,
                                       selected: draft.category == c,
@@ -691,14 +704,40 @@ class _DishFormState extends ConsumerState<_DishForm> {
                               ),
                             ),
                             _Group(
-                              title: '口味，最多 ${PublishRules.tagsMax} 个',
+                              title: '口味，最多 ${options.tagsMax} 个',
                               child: _Tastes(
+                                tastes: options.tastes,
                                 selected: draft.tastes,
                                 onToggle: _toggleTaste,
                               ),
                             ),
+                            _Group(
+                              title: '适合哪顿，选填',
+                              note: draft.mealTimes.isEmpty
+                                  ? _followShopText(shopMeals)
+                                  : null,
+                              child: Wrap(
+                                spacing: EatSpace.s8,
+                                children: [
+                                  for (final meal in options.mealTimes)
+                                    EatChip.tag(
+                                      meal.label,
+                                      selected: draft.mealTimes.contains(meal),
+                                      onTap: () => ref
+                                          .read(_draft.notifier)
+                                          .toggleMeal(meal),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            EatSwitch(
+                              label: '能点外卖',
+                              value: draft.deliveryEnabled,
+                              onChanged: ref.read(_draft.notifier).setDelivery,
+                            ),
                             _Signature(
                               value: draft.signature,
+                              max: options.signaturesMax,
                               full: signatureFull,
                               onChanged: _setSignature,
                             ),
@@ -731,6 +770,16 @@ class _DishFormState extends ConsumerState<_DishForm> {
       ),
     );
   }
+}
+
+/// 没选饭点时的说明, 如 "跟店里一样，午饭、晚饭". 不知道店铺的饭点时只说跟店里一样.
+String _followShopText(List<MealTime> shopMeals) {
+  if (shopMeals.isEmpty) return '不选就跟店里一样';
+  final labels = [
+    for (final meal in MealTime.values)
+      if (shopMeals.contains(meal)) meal.label,
+  ];
+  return '跟店里一样，${labels.join('、')}';
 }
 
 /// 顶部导航栏, 包含返回按钮并在发布新菜时于右侧显示步骤 "2 / 2".
@@ -939,9 +988,17 @@ class _AddPlate extends StatelessWidget {
 
 /// 横向照片缩略图列表, 展示已添加照片的上传进度, 添加按钮及当前张数; 第一张默认作为封面.
 class _PhotoStrip extends StatelessWidget {
-  const new({required this.photos, required this.onAdd, required this.onTap});
+  const new({
+    required this.photos,
+    required this.max,
+    required this.onAdd,
+    required this.onTap,
+  });
 
   final List<DraftPhoto> photos;
+
+  /// 最多几张照片.
+  final int max;
   final VoidCallback onAdd;
   final void Function(DraftPhoto photo, {required bool cover}) onTap;
 
@@ -951,7 +1008,7 @@ class _PhotoStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final full = photos.length >= PublishRules.photosMax;
+    final full = photos.length >= max;
     return SizedBox(
       height: _size + 4,
       child: Row(
@@ -1002,13 +1059,12 @@ class _PhotoStrip extends StatelessWidget {
                   style: eat.text.priceInline.copyWith(color: c.ink),
                 ),
                 TextSpan(
-                  text: ' / ${PublishRules.photosMax}',
+                  text: ' / $max',
                   style: eat.text.meta.copyWith(color: c.inkMuted),
                 ),
               ],
             ),
-            semanticsLabel:
-                '已加 ${photos.length} 张，最多 ${PublishRules.photosMax} 张',
+            semanticsLabel: '已加 ${photos.length} 张，最多 $max 张',
           ),
         ],
       ),
@@ -1323,12 +1379,18 @@ class _Group extends StatelessWidget {
 }
 
 // TODO: 后端 v2 暂未提供自定义标签接口, "自己写" 目前仅保留入口. 接口上线后恢复自定义标签输入并随发布提交, 同时移除 "待接入" 标记.
-/// 口味多选组件, 最多可选 [PublishRules.tagsMax] 个口味.
+/// 口味多选组件, 最多可选 [DishOptions.tagsMax] 个口味.
 ///
 /// "自己写" 为自定义标签入口, 当前标注为 "待接入" 且点击不发起请求.
 class _Tastes extends StatelessWidget {
-  const new({required this.selected, required this.onToggle});
+  const new({
+    required this.tastes,
+    required this.selected,
+    required this.onToggle,
+  });
 
+  /// 可选的口味, 按服务端给的顺序.
+  final List<Taste> tastes;
   final Set<Taste> selected;
   final ValueChanged<Taste> onToggle;
 
@@ -1337,7 +1399,7 @@ class _Tastes extends StatelessWidget {
     spacing: EatSpace.s8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      for (final taste in Taste.values)
+      for (final taste in tastes)
         EatChip.tag(
           taste.label,
           selected: selected.contains(taste),
@@ -1354,9 +1416,17 @@ class _Tastes extends StatelessWidget {
 
 /// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 为 true) 时在开关下方显示提示.
 class _Signature extends StatelessWidget {
-  const new({required this.value, required this.full, required this.onChanged});
+  const new({
+    required this.value,
+    required this.max,
+    required this.full,
+    required this.onChanged,
+  });
 
   final bool value;
+
+  /// 每家店最多几道招牌菜.
+  final int max;
   final bool full;
   final ValueChanged<bool> onChanged;
 
@@ -1368,7 +1438,7 @@ class _Signature extends StatelessWidget {
       children: [
         EatSwitch(
           label: '招牌菜',
-          description: '每家店最多 3 道招牌菜',
+          description: '每家店最多 $max 道招牌菜',
           value: value,
           onChanged: onChanged,
         ),
@@ -1376,7 +1446,7 @@ class _Signature extends StatelessWidget {
           Semantics(
             liveRegion: true,
             child: Text(
-              _signatureFullText,
+              _signatureFullText(max),
               style: eat.text.meta.copyWith(color: eat.colors.warn),
             ),
           ),

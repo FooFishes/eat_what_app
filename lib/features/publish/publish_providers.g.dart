@@ -417,16 +417,27 @@ final class MapPlacesFamily extends $Family
 }
 
 /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+///
+/// 查重接口还会返回菜名相近的菜, 这里只取同名的.
 
 @ProviderFor(sameNameDish)
 final sameNameDishProvider = SameNameDishFamily._();
 
 /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+///
+/// 查重接口还会返回菜名相近的菜, 这里只取同名的.
 
 final class SameNameDishProvider
-    extends $FunctionalProvider<AsyncValue<Dish?>, Dish?, FutureOr<Dish?>>
-    with $FutureModifier<Dish?>, $FutureProvider<Dish?> {
+    extends
+        $FunctionalProvider<
+          AsyncValue<DishDuplicate?>,
+          DishDuplicate?,
+          FutureOr<DishDuplicate?>
+        >
+    with $FutureModifier<DishDuplicate?>, $FutureProvider<DishDuplicate?> {
   /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+  ///
+  /// 查重接口还会返回菜名相近的菜, 这里只取同名的.
   SameNameDishProvider._({
     required SameNameDishFamily super.from,
     required (int, String) super.argument,
@@ -450,11 +461,12 @@ final class SameNameDishProvider
 
   @$internal
   @override
-  $FutureProviderElement<Dish?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+  $FutureProviderElement<DishDuplicate?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<Dish?> create(Ref ref) {
+  FutureOr<DishDuplicate?> create(Ref ref) {
     final argument = this.argument as (int, String);
     return sameNameDish(ref, argument.$1, argument.$2);
   }
@@ -470,12 +482,14 @@ final class SameNameDishProvider
   }
 }
 
-String _$sameNameDishHash() => r'dcc1779df716a0b10b6230f13a5eed45d9e997a3';
+String _$sameNameDishHash() => r'8258439a326da26a9c47d2a274b59059dc2350fb';
 
 /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+///
+/// 查重接口还会返回菜名相近的菜, 这里只取同名的.
 
 final class SameNameDishFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<Dish?>, (int, String)> {
+    with $FunctionalFamilyOverride<FutureOr<DishDuplicate?>, (int, String)> {
   SameNameDishFamily._()
     : super(
         retry: null,
@@ -486,6 +500,8 @@ final class SameNameDishFamily extends $Family
       );
 
   /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+  ///
+  /// 查重接口还会返回菜名相近的菜, 这里只取同名的.
 
   SameNameDishProvider call(int shopId, String name) =>
       SameNameDishProvider._(argument: (shopId, name), from: this);
@@ -493,6 +509,56 @@ final class SameNameDishFamily extends $Family
   @override
   String toString() => r'sameNameDishProvider';
 }
+
+/// 发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
+///
+/// 请求失败时使用内置值, 不打断填写. 每次打开加菜页重新请求.
+
+@ProviderFor(dishOptions)
+final dishOptionsProvider = DishOptionsProvider._();
+
+/// 发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
+///
+/// 请求失败时使用内置值, 不打断填写. 每次打开加菜页重新请求.
+
+final class DishOptionsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<DishOptions>,
+          DishOptions,
+          FutureOr<DishOptions>
+        >
+    with $FutureModifier<DishOptions>, $FutureProvider<DishOptions> {
+  /// 发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
+  ///
+  /// 请求失败时使用内置值, 不打断填写. 每次打开加菜页重新请求.
+  DishOptionsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dishOptionsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dishOptionsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<DishOptions> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<DishOptions> create(Ref ref) {
+    return dishOptions(ref);
+  }
+}
+
+String _$dishOptionsHash() => r'0baf6f7b3c3705c9cce30e2fb6b117ff90e3ec83';
 
 /// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 
@@ -574,7 +640,8 @@ final class DishToEditFamily extends $Family
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
@@ -583,13 +650,15 @@ final draftProvider = DraftFamily._();
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
   ///
-  /// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+  /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+  /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
   DraftProvider._({
@@ -636,11 +705,12 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   }
 }
 
-String _$draftHash() => r'fd0968064ec6865ead8e59e39844433df1fe3a01';
+String _$draftHash() => r'6b189ebd1343eced54f2133089d5d91bcb4c1f30';
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
@@ -664,7 +734,8 @@ final class DraftFamily extends $Family
 
   /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
   ///
-  /// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+  /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+  /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
@@ -677,7 +748,8 @@ final class DraftFamily extends $Family
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 

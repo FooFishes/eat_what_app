@@ -372,6 +372,11 @@ class PlaceRepository {
                 ),
                 _ => const CoverCrop(),
               },
+              signature: f.signature ?? false,
+              rating: DishRating(
+                score: f.rating?.score,
+                count: f.rating?.count ?? 0,
+              ),
             ),
       ],
       matchedDish: switch (dto.matchedFood) {

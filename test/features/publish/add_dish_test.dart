@@ -19,7 +19,7 @@ void _routes(
   env.photos.next = [PickedPhoto(bytes: transparentImage, width: 1, height: 1)];
   env.adapter
     ..on('GET /restaurant/detail/7', [FakeAdapter.ok(shop ?? restaurantJson())])
-    ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
+    ..on('GET /foods/duplicates', [FakeAdapter.ok(<Object?>[])])
     ..on('POST /upload/presign', [
       FakeAdapter.ok({
         'putUrl': 'https://oss.test/put/a',
@@ -107,7 +107,6 @@ void main() {
     );
 
     expect(find.text('请添加照片并填写菜名、价格和分类'), findsOneWidget);
-    expect(find.textContaining('适合哪顿'), findsNothing);
 
     await _fillAndPublish(tester);
     await tester.pumpAndSettle();
@@ -125,6 +124,7 @@ void main() {
     expect(body['stageAlternates'], hasLength(2));
     expect(body['coverCrop'], isA<Map<String, dynamic>>());
     expect(body.containsKey('mealTimes'), isFalse);
+    expect(body['deliveryEnabled'], isFalse);
     expect(request.headers.containsKey('Idempotency-Key'), isFalse);
     expect(env.adapter.sent('GET /foods/tags/system'), isEmpty);
     expect(env.adapter.sent('PUT https://oss.test/put/a').single.headers, {
@@ -158,6 +158,150 @@ void main() {
     expect(env.adapter.sent('POST /foods/upload'), isEmpty);
     expect(locationOf(router), Paths.publishDish(7));
     await tester.pump(const Duration(seconds: 2));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('饭点不选就跟店里一样；选了饭点和外卖照选的提交', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    await _seeText(tester, '跟店里一样，午饭、晚饭');
+    await _tapText(tester, '夜宵');
+    expect(find.text('跟店里一样，午饭、晚饭'), findsNothing);
+    await _tapText(tester, '早饭');
+    await _tapText(tester, '能点外卖');
+
+    await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
+    await tester.enterText(_field('菜名'), '鲜虾云吞');
+    await _enterPrice(tester, '18');
+    await _tapText(tester, '小吃');
+    await tester.tap(find.text('发布'));
+    await tester.pumpAndSettle();
+
+    expect(_published(env)['mealTimes'], ['breakfast', 'night']);
+    expect(_published(env)['deliveryEnabled'], isTrue);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('分类、口味、饭点和上限按服务端给的选项', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    env.adapter.on('GET /foods/options', [
+      FakeAdapter.ok({
+        'categories': ['菜', '主食'],
+        'tags': ['辣', '甜'],
+        'stageColors': ['broth'],
+        'maxPictures': 9,
+        'maxTags': 1,
+        'maxSignatures': 2,
+        'mealTimes': ['lunch', 'dinner'],
+      }),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    expect(find.bySemanticsLabel('已加 1 张，最多 9 张'), findsOneWidget);
+    await _seeText(tester, '口味，最多 1 个');
+    for (final hidden in ['小吃', '汤', '麻', '早饭', '夜宵']) {
+      expect(find.text(hidden), findsNothing, reason: hidden);
+    }
+    await _seeText(tester, '能点外卖');
+    await _tapText(tester, '辣');
+    await _tapText(tester, '甜');
+    expect(find.text('口味最多选 1 个'), findsOneWidget);
+    await _seeText(tester, '每家店最多 2 道招牌菜');
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('选项取不到时用内置的分类、口味和上限', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    env.adapter.on('GET /foods/options', [const FakeResponse.offline()]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    expect(find.bySemanticsLabel('已加 1 张，最多 6 张'), findsOneWidget);
+    await _seeText(tester, '口味，最多 3 个');
+    await _seeText(tester, '特色');
+    await _seeText(tester, '清淡');
+    await _seeText(tester, '夜宵');
+    await _seeText(tester, '每家店最多 3 道招牌菜');
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('查重：这家店已有同名的菜时提示并拦下发布，相近的菜不拦', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    env.adapter.on('GET /foods/duplicates', [
+      FakeAdapter.ok([
+        {
+          'id': 5,
+          'name': '鲜虾云吞面',
+          'category': '主食',
+          'price': 22,
+          'pictureUrl': null,
+          'sameName': false,
+        },
+      ]),
+      FakeAdapter.ok([
+        {
+          'id': 3,
+          'name': '鲜虾云吞',
+          'category': '主食',
+          'price': 18,
+          'pictureUrl': null,
+          'sameName': true,
+        },
+      ]),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    await _enterName(tester, '鲜虾');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('GET /foods/duplicates').last.query, {
+      'restaurantId': 7,
+      'keyword': '鲜虾',
+    });
+    expect(find.textContaining('这家店已有'), findsNothing);
+
+    await _enterName(tester, '鲜虾云吞');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('这家店已有「鲜虾云吞」'), findsOneWidget);
+    await _enterPrice(tester, '18');
+    await _tapText(tester, '小吃');
+    expect(find.text('这家店已有这道菜，去看看再说两句'), findsOneWidget);
+    final publish = find.widgetWithText(EatButton, '发布');
+    expect(tester.widget<EatButton>(publish).onPressed, isNull);
+    expect(env.adapter.sent('GET /foods/list'), isEmpty);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 

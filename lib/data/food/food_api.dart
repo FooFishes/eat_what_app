@@ -21,6 +21,8 @@ enum FoodSort {
 /// FoodApi 调用的接口路径, 相对于业务接口地址.
 abstract final class FoodEndpoints {
   static String detail(int id) => '/foods/detail/$id';
+  static const options = '/foods/options';
+  static const duplicates = '/foods/duplicates';
   static const list = '/foods/list';
   static const favorites = '/foods/favorites';
   static const my = '/foods/my';
@@ -59,10 +61,37 @@ class FoodApi {
         FoodDto.fromJson,
       );
 
-  /// 按条件查询菜品, 多个条件之间为 "与" 关系, 且不按校区过滤.
+  /// 获取发布和编辑菜品时可选的分类, 口味, 舞台色, 饭点和数量上限, 无需登录.
+  Future<FoodOptionsDto> options({CancelToken? cancelToken}) async =>
+      decodeJson(
+        await _client.get(FoodEndpoints.options, cancelToken: cancelToken),
+        FoodOptionsDto.fromJson,
+      );
+
+  /// 发布前查重: 店铺 [restaurantId] 里菜名包含 [keyword] 的菜 (忽略空白和大小写), 同名的在前, 最多 5 条.
+  ///
+  /// 只是提示, 不阻止发布. [keyword] 为空或超过菜名长度上限时返回业务码 `BizCodes.paramInvalid`.
+  Future<List<DishDuplicateDto>> duplicates(
+    int restaurantId,
+    String keyword, {
+    CancelToken? cancelToken,
+  }) async => decodeList(
+    await _client.get(
+      FoodEndpoints.duplicates,
+      query: {'restaurantId': restaurantId, 'keyword': keyword},
+      cancelToken: cancelToken,
+    ),
+    DishDuplicateDto.fromJson,
+  );
+
+  /// 按条件查询菜品, 多个条件之间为 "与" 关系.
   ///
   /// - [keyword] 只匹配菜名, 最多 64 字.
   /// - [category] 是分类的中文原值.
+  /// - [scene] 为 `delivery` 时只返回能点外卖的菜, `dine_in` 不限外卖.
+  /// - [campusId] 限定校区. 带 [scene] 或 [campusId] 时排除已关门的店.
+  /// - [mealTime] 是 `breakfast` 等饭点. 不指定店铺时省略 [mealTime], 服务端按北京时间的当前饭点筛选;
+  ///   指定店铺时省略则不按饭点筛选.
   /// - [pageSize] 后端上限为 100.
   Future<Paged<FoodDto>> list({
     int? restaurantId,
@@ -70,6 +99,9 @@ class FoodApi {
     String? category,
     bool? signatureOnly,
     FoodSort? sort,
+    String? scene,
+    int? campusId,
+    String? mealTime,
     int page = 1,
     int pageSize = 20,
     CancelToken? cancelToken,
@@ -82,6 +114,9 @@ class FoodApi {
         'category': ?category,
         'signatureOnly': ?signatureOnly,
         'sort': ?sort?.api,
+        'scene': ?scene,
+        'campusId': ?campusId,
+        'mealTime': ?mealTime,
         'page': page,
         'pageSize': pageSize,
       },

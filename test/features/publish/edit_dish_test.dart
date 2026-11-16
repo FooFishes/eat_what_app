@@ -21,7 +21,7 @@ TestEnv _env() {
       FakeAdapter.ok({'id': 9, 'displayName': '小林'}),
     ])
     ..on('GET /restaurant/detail/7', [FakeAdapter.ok(restaurantJson())])
-    ..on('GET /foods/list', [FakeAdapter.ok(pageJson([]))])
+    ..on('GET /foods/duplicates', [FakeAdapter.ok(<Object?>[])])
     ..on('POST /upload/presign', [
       FakeAdapter.ok({
         'putUrl': 'https://oss.test/put/a',
@@ -153,6 +153,47 @@ void main() {
     expect(env.adapter.sent('PUT /foods/edit/1').single.body, {'name': '鲜虾云吞'});
     expect(env.adapter.sent('POST /foods/suggest-tags'), isEmpty);
     expect(locationOf(router), Paths.dish(1));
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('预填自己的饭点和外卖；全部取消改回跟店里一样，关掉外卖', (tester) async {
+    final env = _env();
+    env.adapter
+      ..on('GET /foods/detail/1', [
+        FakeAdapter.ok({
+          ...foodJson(),
+          'mealTimes': ['breakfast'],
+          'effectiveMealTimes': ['breakfast'],
+          'deliveryEnabled': true,
+        }),
+      ])
+      ..on('PUT /foods/edit/1', [
+        FakeAdapter.ok({'id': 1, 'revisionId': 5}),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dishEdit(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('能点外卖'),
+      200,
+      scrollable: _page(),
+    );
+    expect(find.text('跟店里一样，午饭、晚饭'), findsNothing);
+    await _tapText(tester, '早饭');
+    expect(find.text('跟店里一样，午饭、晚饭'), findsOneWidget);
+    await _tapText(tester, '能点外卖');
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
+      'mealTimes': <String>[],
+      'deliveryEnabled': false,
+    });
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

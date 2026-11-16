@@ -1,4 +1,5 @@
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/taste.dart';
 
 /// 菜品分类, 声明顺序即菜单顺序.
@@ -38,6 +39,11 @@ class const CoverCrop({
   final double centerY = 0.5,
   final double diameter = 1,
 });
+
+/// 菜品的评分统计.
+///
+/// [score] 是 1–5 分的平均分, 保留一位小数, 没有人评分时为 null. [count] 是评分人数.
+class const DishRating({final double? score, final int count = 0});
 
 /// 菜品上的投票口味标签. [count] 为标注该标签的人数, [mine] 表示当前用户是否已标注.
 ///
@@ -89,6 +95,19 @@ class const Dish({
   final int? uploaderId,
   final String? description,
   final DateTime? createdAt,
+
+  /// 这道菜自己设置的饭点. 为空表示沿用店铺的饭点.
+  final List<MealTime> mealTimes = const [],
+
+  /// 实际供应的饭点: 设置了 [mealTimes] 时就是它, 否则是店铺的饭点.
+  final List<MealTime> effectiveMealTimes = const [],
+
+  /// 这道菜能不能点外卖.
+  final bool deliveryEnabled = false,
+  final DishRating rating = const DishRating(),
+
+  /// 当前用户打的分 (1–5). 游客或没打过分时为 null.
+  final int? myRating,
 }) {
   String? get cover => images.isEmpty ? null : images.first;
 }
@@ -109,12 +128,17 @@ class const NewDish({
   final List<Taste> tags = const [],
   final bool signature = false,
   final String? description,
+
+  /// 这道菜自己的饭点. 为空表示沿用店铺的饭点.
+  final List<MealTime> mealTimes = const [],
+  final bool deliveryEnabled = false,
 });
 
 /// 编辑菜品时提交的改动. 值为 null 的字段不修改.
 ///
 /// - [description] 为空字符串表示清除.
 /// - [imageKeys] 和 [tags] 为空列表表示清除.
+/// - [mealTimes] 为空列表表示改回沿用店铺的饭点.
 /// - 菜品不能换店, 因此没有店铺字段.
 ///
 /// [imageKeys] 为完整的新图片列表, 保留的原图仍需传入其原有的存储 key, 第一张将作为封面.
@@ -129,6 +153,38 @@ class const DishChange({
   final StageColor? stage,
   final List<StageColor>? stageAlternates,
   final CoverCrop? crop,
+  final List<MealTime>? mealTimes,
+  final bool? deliveryEnabled,
+});
+
+/// 发布前查重得到的已有菜品, 是这家店里菜名包含输入的菜.
+///
+/// [sameName] 为 true 表示与输入的菜名相同 (忽略空白和大小写), 这时不能发布. [photo] 是封面.
+class const DishDuplicate({
+  required final int id,
+  required final String name,
+  final DishCategory? category,
+  final double? price,
+  final String? photo,
+  final bool sameName = false,
+});
+
+/// 发布和编辑菜品时可选的分类, 口味, 饭点和数量上限, 由服务端下发.
+///
+/// 各列表只包含客户端认识的取值, 顺序按服务端返回. 默认值是服务端不可用时使用的内置值.
+class const DishOptions({
+  final List<DishCategory> categories = DishCategory.values,
+  final List<Taste> tastes = Taste.values,
+  final List<MealTime> mealTimes = MealTime.values,
+
+  /// 一道菜最多几张照片.
+  final int photosMax = 6,
+
+  /// 一道菜最多几个口味.
+  final int tagsMax = 3,
+
+  /// 一家店最多几道招牌菜.
+  final int signaturesMax = 3,
 });
 
 /// 根据菜名, 说明与照片识别出的分类及口味建议, 需经用户确认后再提交.

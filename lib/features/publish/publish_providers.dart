@@ -12,6 +12,7 @@ import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:eat/domain/rules/publish_rules.dart';
@@ -107,14 +108,31 @@ Future<List<MapPlace>> mapPlaces(Ref ref, String keyword) async {
 }
 
 /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
+///
+/// 查重接口还会返回菜名相近的菜, 这里只取同名的.
 @riverpod
-Future<Dish?> sameNameDish(Ref ref, int shopId, String name) async {
+Future<DishDuplicate?> sameNameDish(Ref ref, int shopId, String name) async {
   if (PublishRules.compactName(name).isEmpty) return null;
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return null;
-  return ref
+  final found = await ref
       .watch(foodRepositoryProvider)
-      .sameName(shopId, name, cancelToken: ref.cancelToken());
+      .duplicates(shopId, name, cancelToken: ref.cancelToken());
+  return found.where((d) => d.sameName).firstOrNull;
+}
+
+/// 发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
+///
+/// 请求失败时使用内置值, 不打断填写. 每次打开加菜页重新请求.
+@riverpod
+Future<DishOptions> dishOptions(Ref ref) async {
+  try {
+    return await ref
+        .watch(foodRepositoryProvider)
+        .options(cancelToken: ref.cancelToken());
+  } on AppFailure {
+    return const DishOptions();
+  }
 }
 
 /// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
@@ -173,9 +191,13 @@ class const PublishDraft({
   final StageColor? pickedStage,
   final DishCategory? category,
 
-  /// 选中的口味, 最多 [PublishRules.tagsMax] 个.
+  /// 选中的口味, 最多 [DishOptions.tagsMax] 个.
   final Set<Taste> tastes = const {},
   final bool signature = false,
+
+  /// 这道菜自己的饭点. 为空表示沿用店铺的饭点.
+  final Set<MealTime> mealTimes = const {},
+  final bool deliveryEnabled = false,
 
   /// 标记当前分类或口味是否来自自动识别预选且尚未被用户手动修改.
   final bool preselected = false,
@@ -184,6 +206,12 @@ class const PublishDraft({
   List<Taste> get tasteList => [
     for (final taste in Taste.values)
       if (tastes.contains(taste)) taste,
+  ];
+
+  /// 按枚举顺序排列的饭点, 用于提交.
+  List<MealTime> get mealList => [
+    for (final meal in MealTime.values)
+      if (mealTimes.contains(meal)) meal,
   ];
 
   /// 供 "调整照片" 使用的推荐舞台色列表; 取色可靠时按色距排序, 不可靠时首位回退为分类默认色.
@@ -238,6 +266,9 @@ class const PublishDraft({
         tags.length != original.tags.toSet().length ||
         !tags.every(original.tags.contains);
     final replacing = photos.isNotEmpty;
+    final mealsChanged =
+        mealTimes.length != original.mealTimes.toSet().length ||
+        !mealTimes.every(original.mealTimes.contains);
     final change = DishChange(
       name: name != original.name ? name : null,
       category: category != original.category ? category : null,
@@ -251,6 +282,10 @@ class const PublishDraft({
       stage: replacing ? stage : null,
       stageAlternates: replacing ? alternates : null,
       crop: replacing ? crop : null,
+      mealTimes: mealsChanged ? mealList : null,
+      deliveryEnabled: deliveryEnabled != original.deliveryEnabled
+          ? deliveryEnabled
+          : null,
     );
     final empty =
         change.name == null &&
@@ -259,7 +294,9 @@ class const PublishDraft({
         change.description == null &&
         change.tags == null &&
         change.signature == null &&
-        change.imageKeys == null;
+        change.imageKeys == null &&
+        change.mealTimes == null &&
+        change.deliveryEnabled == null;
     return empty ? null : change;
   }
 
@@ -273,6 +310,8 @@ class const PublishDraft({
     DishCategory? category,
     Set<Taste>? tastes,
     bool? signature,
+    Set<MealTime>? mealTimes,
+    bool? deliveryEnabled,
     bool? preselected,
   }) => PublishDraft(
     photos: photos ?? this.photos,
@@ -282,13 +321,16 @@ class const PublishDraft({
     category: category ?? this.category,
     tastes: tastes ?? this.tastes,
     signature: signature ?? this.signature,
+    mealTimes: mealTimes ?? this.mealTimes,
+    deliveryEnabled: deliveryEnabled ?? this.deliveryEnabled,
     preselected: preselected ?? this.preselected,
   );
 }
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 @riverpod
@@ -319,16 +361,21 @@ class Draft extends _$Draft {
     if (original == null) return const PublishDraft();
     return PublishDraft(
       category: original.category,
-      tastes: original.tags.take(PublishRules.tagsMax).toSet(),
+      tastes: original.tags.toSet(),
       signature: original.signature,
+      mealTimes: original.mealTimes.toSet(),
+      deliveryEnabled: original.deliveryEnabled,
     );
   }
+
+  DishOptions get _options =>
+      ref.read(dishOptionsProvider).value ?? const DishOptions();
 
   /// 向草稿追加照片并丢弃超出张数上限的部分.
   ///
   /// 返回添加前草稿是否为空, 当返回 true 时调用方需紧接着打开 "调整照片" 页面.
   bool addPhotos(List<PickedPhoto> picked) {
-    final room = PublishRules.photosMax - state.photos.length;
+    final room = _options.photosMax - state.photos.length;
     if (room <= 0 || picked.isEmpty) return false;
     final first = state.photos.isEmpty;
     state = state.copy(
@@ -418,11 +465,11 @@ class Draft extends _$Draft {
     state = state.copy(category: category, preselected: false);
   }
 
-  /// 切换指定口味的选中状态; 若已达到 [PublishRules.tagsMax] 上限而无法继续选中, 则返回 false.
+  /// 切换指定口味的选中状态; 若已达到 [DishOptions.tagsMax] 上限而无法继续选中, 则返回 false.
   bool toggleTaste(Taste taste) {
     final tastes = {...state.tastes};
     if (!tastes.remove(taste)) {
-      if (tastes.length >= PublishRules.tagsMax) return false;
+      if (tastes.length >= _options.tagsMax) return false;
       tastes.add(taste);
     }
     _tastesTouched = true;
@@ -431,6 +478,16 @@ class Draft extends _$Draft {
   }
 
   void setSignature(bool signature) => state = state.copy(signature: signature);
+
+  /// 切换饭点. 全部取消表示沿用店铺的饭点.
+  void toggleMeal(MealTime meal) {
+    final meals = {...state.mealTimes};
+    if (!meals.remove(meal)) meals.add(meal);
+    state = state.copy(mealTimes: meals);
+  }
+
+  void setDelivery(bool enabled) =>
+      state = state.copy(deliveryEnabled: enabled);
 
   /// 撤销更换照片操作, 取消未完成的上传任务并清空所有新照片, 编辑模式下恢复展示原有照片.
   void clearPhotos() {
@@ -474,7 +531,7 @@ class Draft extends _$Draft {
           : suggestion.category;
       final tastes = _tastesTouched || suggestion.tags.isEmpty
           ? null
-          : suggestion.tags.take(PublishRules.tagsMax).toSet();
+          : suggestion.tags.take(_options.tagsMax).toSet();
       if (category == null && tastes == null) return;
       state = state.copy(category: category, tastes: tastes, preselected: true);
     } on AppFailure {

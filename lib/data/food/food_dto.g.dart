@@ -33,6 +33,17 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   coverCrop: json['coverCrop'] == null
       ? null
       : CoverCropDto.fromJson(json['coverCrop'] as Map<String, dynamic>),
+  mealTimes: (json['mealTimes'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  effectiveMealTimes: (json['effectiveMealTimes'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
+  deliveryEnabled: json['deliveryEnabled'] as bool?,
+  rating: json['rating'] == null
+      ? null
+      : DishRatingDto.fromJson(json['rating'] as Map<String, dynamic>),
+  myRating: (json['myRating'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
@@ -55,7 +66,12 @@ Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'updatedAt': ?instance.updatedAt,
   'stageColor': ?instance.stageColor,
   'stageAlternates': ?instance.stageAlternates,
-  'coverCrop': ?instance.coverCrop,
+  'coverCrop': ?instance.coverCrop?.toJson(),
+  'mealTimes': ?instance.mealTimes,
+  'effectiveMealTimes': ?instance.effectiveMealTimes,
+  'deliveryEnabled': ?instance.deliveryEnabled,
+  'rating': ?instance.rating?.toJson(),
+  'myRating': ?instance.myRating,
 };
 
 FoodTagDto _$FoodTagDtoFromJson(Map<String, dynamic> json) => FoodTagDto(
@@ -74,6 +90,15 @@ Map<String, dynamic> _$FoodTagDtoToJson(FoodTagDto instance) =>
       'taggedByMe': ?instance.taggedByMe,
       'usageCount': ?instance.usageCount,
     };
+
+DishRatingDto _$DishRatingDtoFromJson(Map<String, dynamic> json) =>
+    DishRatingDto(
+      score: (json['score'] as num?)?.toDouble(),
+      count: (json['count'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$DishRatingDtoToJson(DishRatingDto instance) =>
+    <String, dynamic>{'score': ?instance.score, 'count': ?instance.count};
 
 CoverCropDto _$CoverCropDtoFromJson(Map<String, dynamic> json) => CoverCropDto(
   centerX: (json['centerX'] as num?)?.toDouble(),
@@ -110,6 +135,8 @@ Map<String, dynamic> _$CreateFoodDtoToJson(CreateFoodDto instance) =>
       'stageColor': ?instance.stageColor,
       'stageAlternates': ?instance.stageAlternates,
       'coverCrop': ?instance.coverCrop?.toJson(),
+      'mealTimes': ?instance.mealTimes,
+      'deliveryEnabled': ?instance.deliveryEnabled,
     };
 
 Map<String, dynamic> _$EditFoodDtoToJson(EditFoodDto instance) =>
@@ -124,7 +151,36 @@ Map<String, dynamic> _$EditFoodDtoToJson(EditFoodDto instance) =>
       'stageColor': ?instance.stageColor,
       'stageAlternates': ?instance.stageAlternates,
       'coverCrop': ?instance.coverCrop?.toJson(),
+      'mealTimes': ?instance.mealTimes,
+      'deliveryEnabled': ?instance.deliveryEnabled,
     };
+
+FoodOptionsDto _$FoodOptionsDtoFromJson(Map<String, dynamic> json) =>
+    FoodOptionsDto(
+      categories: (json['categories'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      stageColors: (json['stageColors'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      maxPictures: (json['maxPictures'] as num?)?.toInt(),
+      maxTags: (json['maxTags'] as num?)?.toInt(),
+      maxSignatures: (json['maxSignatures'] as num?)?.toInt(),
+      mealTimes: (json['mealTimes'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+    );
+
+DishDuplicateDto _$DishDuplicateDtoFromJson(Map<String, dynamic> json) =>
+    DishDuplicateDto(
+      id: (json['id'] as num?)?.toInt(),
+      name: json['name'] as String?,
+      category: json['category'] as String?,
+      price: (json['price'] as num?)?.toDouble(),
+      pictureUrl: json['pictureUrl'] as String?,
+      sameName: json['sameName'] as bool?,
+    );
 
 Map<String, dynamic> _$SuggestFoodDtoToJson(SuggestFoodDto instance) =>
     <String, dynamic>{

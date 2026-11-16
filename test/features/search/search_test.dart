@@ -35,10 +35,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
 
-    expect(
-      env.adapter.sent('GET /foods/list').single.query,
-      containsPair('keyword', '袁记'),
-    );
+    final dishQuery = env.adapter.sent('GET /foods/list').single.query;
+    expect(dishQuery, containsPair('keyword', '袁记'));
+    expect(dishQuery, containsPair('campusId', 1), reason: '搜菜限当前校区');
+    expect(dishQuery.containsKey('mealTime'), isFalse);
     expect(find.text('袁记云饺'), findsOneWidget);
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
@@ -147,6 +147,10 @@ void main() {
     expect(query, containsPair('keyword', '袁记'));
     expect(query.containsKey('gcjLat'), isFalse);
     expect(query.containsKey('campusId'), isFalse);
+    expect(
+      env.adapter.sent('GET /foods/list').single.query.containsKey('campusId'),
+      isFalse,
+    );
     expect(find.text('袁记云饺'), findsWidgets);
     // 校区列表请求离线失败后按退避间隔重试. 卸载前推进 3 秒, 等待重试结束.
     await tester.pump(const Duration(seconds: 3));
