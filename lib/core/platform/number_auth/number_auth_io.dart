@@ -107,7 +107,7 @@ class _SdkNumberAuth implements NumberAuth {
     switchText: '其他号码登录',
     closeLabel: '关闭',
     privacyPrefix: '我已阅读并同意',
-    alertTitle: '请先同意协议',
+    alertTitle: '请先阅读并同意协议',
     alertPrefix: '登录前请阅读并同意',
     alertButtonText: '同意并继续',
   );

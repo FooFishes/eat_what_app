@@ -137,10 +137,10 @@ func authPageModel(
       width: width, height: Layout.alertHeight)
   }
   model.privacyAlertTitleFrameBlock = { _, superViewSize, frame in
-    CGRect(x: 0, y: 28, width: superViewSize.width, height: frame.height)
+    CGRect(x: 0, y: 26, width: superViewSize.width, height: frame.height)
   }
   model.privacyAlertPrivacyContentFrameBlock = { _, superViewSize, frame in
-    CGRect(x: margin, y: 68, width: superViewSize.width - margin * 2, height: frame.height)
+    CGRect(x: margin, y: 70, width: superViewSize.width - margin * 2, height: frame.height)
   }
   model.privacyAlertButtonFrameBlock = { _, superViewSize, _ in
     CGRect(
@@ -164,7 +164,7 @@ private enum Layout {
   static let closeTouch: CGFloat = 44
   static let closeIcon: CGFloat = 18
   static let alertMargin: CGFloat = 32
-  static let alertHeight: CGFloat = 196
+  static let alertHeight: CGFloat = 184
   static let alertButtonHeight: CGFloat = 48
 }
 

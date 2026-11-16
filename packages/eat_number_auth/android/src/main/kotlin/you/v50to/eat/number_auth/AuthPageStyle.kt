@@ -145,6 +145,7 @@ internal fun applyAuthPageStyle(
             .setPrivacyAlertContentColor(secondary)
             .setPrivacyAlertContentTextSize(14)
             .setPrivacyAlertContentAlignment(Gravity.CENTER)
+            .setPrivacyAlertContentMarginTop(ALERT_CONTENT_TOP)
             .setPrivacyAlertContentHorizontalMargin(margin)
             .setPrivacyAlertBtnContent(style.alertButtonText)
             .setPrivacyAlertBtnTextColor(onPrimary)
@@ -173,11 +174,15 @@ private const val SWITCH_TOP = 168
 private const val PRIVACY_BOTTOM = 28
 private const val CHECK_SIZE = 20
 
-/** 二次确认弹窗, 单位 dp. */
+/**
+ * 二次确认弹窗, 单位 dp. SDK 的排法: 顶上 50dp 是标题区, 正文紧跟在下面, 按钮在剩下的高度里上下居中.
+ * 标题往下挪, 正文上面加间距, 四段留白才接近相等.
+ */
 private const val ALERT_MARGIN = 32
-private const val ALERT_HEIGHT = 196
+private const val ALERT_HEIGHT = 180
+private const val ALERT_TITLE_TOP = 14
+private const val ALERT_CONTENT_TOP = 12
 private const val ALERT_BUTTON_HEIGHT = 48
-private const val ALERT_TITLE_TOP = 8
 
 /** 关闭按钮的点击区域和图标大小, 单位 dp. */
 private const val CLOSE_TOUCH = 44
