@@ -17,6 +17,7 @@ abstract final class AuthEndpoints {
   static const sduConfirm = '/auth/sdu/confirm';
   static const sendEmail = '/auth/sendEmail';
   static const verifyEmail = '/auth/verifyEmail';
+  static const verifyStatus = '/auth/verify';
   static const checkUsername = '/auth/checkUsername';
   static const passwordCode = '/auth/password/code';
   static const passwordReset = '/auth/password/reset';
@@ -105,6 +106,12 @@ class AuthApi {
   /// 提交认证邮件链接中的 [token] 完成邮箱验证, 该 token 必须属于当前登录账号.
   Future<void> verifyEmail(String token) =>
       _client.post(AuthEndpoints.verifyEmail, body: {'token': token});
+
+  /// 查询当前账号已完成的认证.
+  Future<VerifyStatusDto> verifyStatus() async => decodeJson(
+    await _client.get(AuthEndpoints.verifyStatus),
+    VerifyStatusDto.fromJson,
+  );
 
   /// 检查用户名是否可用. 若已被占用则返回失败, 业务码为 `BizCodes.usernameTaken`.
   Future<void> checkUsername(String userName) =>

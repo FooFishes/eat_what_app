@@ -2,6 +2,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/state/cross_border_consent.dart';
+import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +83,72 @@ void main() {
     expect(await Future.wait([client.get('/a'), client.get('/b')]), ['A', 'B']);
     expect(shown, 1);
     expect(env.adapter.sent('POST /auth/consent/grant'), hasLength(1));
+  });
+
+  group('核对同意状态', () {
+    Map<String, Object?> status({required bool pending}) => {
+      'agreedVersion': 'v2',
+      'agreedAt': 1792763739329,
+      'currentVersion': 'v3',
+      'required': pending,
+    };
+
+    test('服务端要求重新同意：弹对话框，同意后提交并写本机记录', () async {
+      env.adapter
+        ..on('GET /auth/consent', [FakeAdapter.ok(status(pending: true))])
+        ..on('POST /auth/consent/grant', [FakeAdapter.ok()]);
+
+      await container.read(crossBorderConsentProvider).checkSession();
+
+      expect(shown, 1);
+      expect(env.adapter.sent('POST /auth/consent/grant').single.body, {
+        'policyVersion': 'v3',
+      });
+      expect(
+        await container.read(privacyConsentStoreProvider).agreedVersion(),
+        isNotNull,
+      );
+    });
+
+    test('已同意当前版本：不弹对话框', () async {
+      env.adapter.on('GET /auth/consent', [
+        FakeAdapter.ok(status(pending: false)),
+      ]);
+
+      await container.read(crossBorderConsentProvider).checkSession();
+
+      expect(shown, 0);
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+    });
+
+    test('核对和请求遇到 20009 同时发生时只弹一次对话框', () async {
+      env.adapter
+        ..on('GET /auth/consent', [FakeAdapter.ok(status(pending: true))])
+        ..on('POST /auth/consent/grant', [FakeAdapter.ok()])
+        ..on('GET /a', [FakeAdapter.fail(20009), FakeAdapter.ok('A')]);
+
+      final results = await Future.wait([
+        container.read(crossBorderConsentProvider).checkSession(),
+        container.read(apiClientProvider).get('/a'),
+      ]);
+
+      expect(results.last, 'A');
+      expect(shown, 1);
+      expect(env.adapter.sent('POST /auth/consent/grant'), hasLength(1));
+    });
+
+    test('用户不同意：抛出需要同意，不提交', () async {
+      answer = false;
+      env.adapter.on('GET /auth/consent', [
+        FakeAdapter.ok(status(pending: true)),
+      ]);
+
+      final failure = await _result(
+        container.read(crossBorderConsentProvider).checkSession(),
+      );
+      expect(failure, isA<AppFailure>());
+      expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);
+    });
   });
 
   test('没有注册对话框时按不同意处理', () async {

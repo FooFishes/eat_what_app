@@ -8,6 +8,12 @@ enum VerifyMethod {
   final String label;
 }
 
+/// 账号已完成的学生认证, 来自 `GET /auth/verify`. 未认证时 [method] 为 null.
+class const VerifyStatus({
+  required final bool verified,
+  final VerifyMethod? method,
+});
+
 /// 当前登录的账号, 来自 `GET /user/info`.
 ///
 /// - 昵称是对外展示的名字, 允许重复.

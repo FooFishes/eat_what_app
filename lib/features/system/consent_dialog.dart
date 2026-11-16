@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:eat/core/config/app_config.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
@@ -7,6 +10,7 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/state/cross_border_consent.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -97,6 +101,7 @@ class _ConsentLink extends ConsumerWidget {
 /// 在应用根部挂载的协议确认宿主组件, 为已登录状态下网络层触发的政策更新请求提供弹窗能力.
 ///
 /// 由于网络请求独立于具体页面之外, 弹窗需通过 [navigatorKey] 在根导航器上呈现.
+/// 启动时已登录和每次登录成功后, 还会向服务端核对本人的同意状态 ([CrossBorderConsent.checkSession]).
 class ConsentHost extends ConsumerStatefulWidget {
   const new({super.key, required this.navigatorKey, required this.child});
 
@@ -115,7 +120,21 @@ class _ConsentHostState extends ConsumerState<ConsentHost> {
     super.initState();
     _consent = ref.read(crossBorderConsentProvider)
       ..sessionPresenter = _present;
+    ref.listenManual(sessionProvider, (previous, next) {
+      if (next is SignedIn && previous is! SignedIn) _check();
+    }, fireImmediately: true);
   }
+
+  /// 首帧之后再核对, 此时根导航器已经可以弹出对话框.
+  void _check() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    unawaited(
+      _consent.checkSession().catchError(
+        (Object _) {},
+        test: (e) => e is AppFailure,
+      ),
+    );
+  });
 
   @override
   void dispose() {

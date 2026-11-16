@@ -56,6 +56,12 @@ CaptchaConfigDto _$CaptchaConfigDtoFromJson(Map<String, dynamic> json) =>
       expiresAt: (json['expiresAt'] as num?)?.toInt(),
     );
 
+VerifyStatusDto _$VerifyStatusDtoFromJson(Map<String, dynamic> json) =>
+    VerifyStatusDto(
+      verified: json['verified'] as bool?,
+      method: json['method'] as String?,
+    );
+
 SsoStartDto _$SsoStartDtoFromJson(Map<String, dynamic> json) => SsoStartDto(
   url: json['url'] as String?,
   expiresIn: (json['expiresIn'] as num?)?.toInt(),

@@ -84,6 +84,15 @@ class const CaptchaConfigDto({
       _$CaptchaConfigDtoFromJson(json);
 }
 
+/// `/auth/verify` 的 `data`, 当前账号已完成的认证. [method] 为 `sso` 或 `email`, 未认证时为 null.
+///
+/// 接口还返回 `phoneBound`, `usernameSet` 和 `passwordSet`, 这些由 `/user/info` 提供, 此处不读取.
+@JsonSerializable(createToJson: false)
+class const VerifyStatusDto({final bool? verified, final String? method}) {
+  factory VerifyStatusDto.fromJson(Map<String, dynamic> json) =>
+      _$VerifyStatusDtoFromJson(json);
+}
+
 /// `/auth/sdu` 的 `data`, 包含带一次性 state 的统一认证地址, 在 [expiresIn] 秒内有效且仅能使用一次.
 @JsonSerializable(createToJson: false)
 class const SsoStartDto({final String? url, final int? expiresIn}) {

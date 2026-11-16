@@ -140,7 +140,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
       SignedOut() || Guest() => null,
     };
     final verify = ref.watch(verifyProvider);
-    final verified = user?.verified ?? false;
+    final verified = verify.status?.verified ?? user?.verified ?? false;
     final small = eat.text.meta.copyWith(color: c.inkMuted);
 
     return PlainScaffold(
@@ -156,7 +156,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
             children: [
               if (verified)
                 _Verified(
-                  method: user!.verifyMethod,
+                  method: verify.status?.method ?? user?.verifyMethod,
                   onboarding: widget.onboarding,
                   onLeave: _leave,
                 )

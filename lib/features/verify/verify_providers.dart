@@ -3,6 +3,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/data/auth/auth_repository.dart';
+import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/state/captcha_gate.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -15,12 +16,14 @@ part 'verify_providers.g.dart';
 /// - [resendAt]: 允许重发的时间.
 /// - [ssoStarted]: 是否已跳转过统一认证页.
 /// - [notice]: 最近一次提示.
+/// - [status]: 最近一次从 `/auth/verify` 查到的认证状态, 还没查到时为 null, 页面先按账号信息显示.
 class const VerifyState({
   final String? emailSentTo,
   final DateTime? resendAt,
   final bool busy = false,
   final bool ssoStarted = false,
   final String? notice,
+  final VerifyStatus? status,
 });
 
 /// 认证邮件的重发间隔, 与短信验证码一致.
@@ -124,6 +127,7 @@ class Verify extends _$Verify {
               emailSentTo: email,
               resendAt: clock.now().add(emailResendInterval),
               ssoStarted: state.ssoStarted,
+              status: state.status,
             )
           : _copy(busy: false, notice: null);
     } on AppFailure catch (e) {
@@ -136,13 +140,14 @@ class Verify extends _$Verify {
   }
 
   /// 清除已发送状态以返回邮箱输入界面.
-  void editEmail() => state = VerifyState(ssoStarted: state.ssoStarted);
+  void editEmail() =>
+      state = VerifyState(ssoStarted: state.ssoStarted, status: state.status);
 
   /// 重新请求账号认证状态, 在打开页面, 回到前台或点击 "已完成, 刷新状态" 时调用.
   ///
   /// 若已发起过统一认证或由用户主动刷新而账号仍未认证, 则提示重新认证. 自动刷新不会覆盖已有提示, 以保留回跳链接携带的具体失败原因.
   Future<void> refresh({bool userAsked = false}) async {
-    await ref.read(sessionProvider.notifier).refreshUser();
+    await _reload();
     if (!ref.mounted) return;
     if (_verified) {
       state = _copy(notice: null);
@@ -171,7 +176,7 @@ class Verify extends _$Verify {
       }
       if (!ref.mounted) return;
     }
-    await ref.read(sessionProvider.notifier).refreshUser();
+    await _reload();
     if (!ref.mounted) return;
     if (_verified) {
       state = _copy(notice: null);
@@ -184,19 +189,42 @@ class Verify extends _$Verify {
     }
   }
 
-  bool get _verified => switch (ref.read(sessionProvider)) {
-    SignedIn(:final user) => user?.verified ?? false,
-    SignedOut() || Guest() => false,
-  };
+  /// 同时刷新账号信息和 `/auth/verify` 的认证状态. 认证状态查询失败时保留上一次的结果.
+  Future<void> _reload() async {
+    final user = ref.read(sessionProvider.notifier).refreshUser();
+    VerifyStatus? status;
+    try {
+      status = await ref.read(authRepositoryProvider).verifyStatus();
+    } on AppFailure {
+      // 查询失败 (如网络不可达) 时沿用上一次的结果, 等下次刷新.
+    }
+    await user;
+    if (ref.mounted && status != null) {
+      state = _copy(notice: state.notice, status: status);
+    }
+  }
 
-  VerifyState _copy({bool? busy, bool? ssoStarted, required String? notice}) =>
-      VerifyState(
-        emailSentTo: state.emailSentTo,
-        resendAt: state.resendAt,
-        busy: busy ?? state.busy,
-        ssoStarted: ssoStarted ?? state.ssoStarted,
-        notice: notice,
-      );
+  /// 认证状态以 `/auth/verify` 为准, 还没查到时看账号信息.
+  bool get _verified =>
+      state.status?.verified ??
+      switch (ref.read(sessionProvider)) {
+        SignedIn(:final user) => user?.verified ?? false,
+        SignedOut() || Guest() => false,
+      };
+
+  VerifyState _copy({
+    bool? busy,
+    bool? ssoStarted,
+    required String? notice,
+    VerifyStatus? status,
+  }) => VerifyState(
+    emailSentTo: state.emailSentTo,
+    resendAt: state.resendAt,
+    busy: busy ?? state.busy,
+    ssoStarted: ssoStarted ?? state.ssoStarted,
+    notice: notice,
+    status: status ?? state.status,
+  );
 
   static String? _noticeOf(AppFailure failure) =>
       failure.kind == FailureKind.cancelled ? null : failure.message;

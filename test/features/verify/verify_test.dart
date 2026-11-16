@@ -105,6 +105,26 @@ void main() {
     expect(find.textContaining('认证链接已发送至'), findsNothing);
   });
 
+  testWidgets('打开页面时查询已完成的认证，账号信息还没跟上时也显示已认证和方式', (tester) async {
+    env.adapter
+      ..on('GET /user/info', [FakeAdapter.ok(userInfoJson())])
+      ..on('GET /auth/verify', [
+        FakeAdapter.ok({
+          'verified': true,
+          'method': 'sso',
+          'phoneBound': true,
+          'usernameSet': false,
+          'passwordSet': false,
+        }),
+      ]);
+    await pumpAppWithBrowser(tester, env, browser);
+
+    expect(env.adapter.sent('GET /auth/verify'), isNotEmpty);
+    expect(find.text('已认证'), findsOneWidget);
+    expect(find.text('山大统一认证'), findsOneWidget);
+    expect(find.text('当前状态：未认证', findRichText: true), findsNothing);
+  });
+
   testWidgets('统一认证：每次重新拿一次性地址，没回到 App 就关掉时提示未完成', (tester) async {
     env.adapter
       ..on('GET /auth/sdu', [

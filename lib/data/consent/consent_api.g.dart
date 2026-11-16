@@ -9,6 +9,14 @@ part of 'consent_api.dart';
 ConsentPolicyDto _$ConsentPolicyDtoFromJson(Map<String, dynamic> json) =>
     ConsentPolicyDto(version: json['version'] as String?);
 
+ConsentStatusDto _$ConsentStatusDtoFromJson(Map<String, dynamic> json) =>
+    ConsentStatusDto(
+      agreedVersion: json['agreedVersion'] as String?,
+      agreedAt: (json['agreedAt'] as num?)?.toInt(),
+      currentVersion: json['currentVersion'] as String?,
+      pending: json['required'] as bool?,
+    );
+
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************

@@ -4,6 +4,7 @@ import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/core/platform/device/device_identity.dart';
 import 'package:eat/data/auth/auth_api.dart';
 import 'package:eat/data/auth/auth_dto.dart';
+import 'package:eat/domain/models/current_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -151,6 +152,19 @@ class AuthRepository {
 
   /// 用认证邮件链接中的 [token] 完成邮箱认证.
   Future<void> verifyEmail(String token) => _auth.verifyEmail(token);
+
+  /// 查询当前账号已完成的认证. 认证方式无法识别时 [VerifyStatus.method] 为 null.
+  Future<VerifyStatus> verifyStatus() async {
+    final dto = await _auth.verifyStatus();
+    return VerifyStatus(
+      verified: dto.verified ?? false,
+      method: switch (dto.method) {
+        'sso' => VerifyMethod.sso,
+        'email' => VerifyMethod.schoolEmail,
+        _ => null,
+      },
+    );
+  }
 
   Future<void> checkUsername(String userName) => _auth.checkUsername(userName);
 
