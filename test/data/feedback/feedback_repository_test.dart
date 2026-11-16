@@ -48,27 +48,6 @@ void main() {
     expect(sent.body, {'restaurantId': 7, 'errorType': 'DUPLICATE'});
   });
 
-  test('取提交记录关于的对象：菜和店认得出，没有对象时为空', () async {
-    final env = TestEnv();
-    env.adapter
-      ..on('GET /feedback/mine/5', [
-        FakeAdapter.ok({
-          'id': 5,
-          'kind': 'CATALOG_ERROR',
-          'target': {'type': 'RESTAURANT', 'id': 7},
-        }),
-      ])
-      ..on('GET /feedback/mine/6', [
-        FakeAdapter.ok({'id': 6, 'kind': 'FEEDBACK', 'target': null}),
-      ]);
-    final container = await env.container();
-    final repository = container.read(feedbackRepositoryProvider);
-
-    final shop = await repository.caseSubject(5);
-    expect((shop?.kind, shop?.id), (CaseSubjectKind.shop, 7));
-    expect(await repository.caseSubject(6), isNull);
-  });
-
   test('举报用户不能选「不是这道菜的实拍」', () {
     expect(
       const ReportTarget.user(9).reasons,

@@ -5,7 +5,6 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/core/network/ref_extensions.dart';
-import 'package:eat/data/feedback/feedback_repository.dart';
 import 'package:eat/data/notification/notification_api.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -23,7 +22,6 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/notice.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
-import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/notice_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
@@ -369,21 +367,7 @@ class _NoticeRow extends ConsumerWidget {
       case ShopTarget(:final shopId):
         await context.push(Paths.shop(shopId));
       case CaseTarget(:final caseId):
-        final CaseSubject? subject;
-        try {
-          subject = await ref
-              .read(feedbackRepositoryProvider)
-              .caseSubject(caseId);
-        } on AppFailure catch (e) {
-          if (context.mounted && e.kind != FailureKind.cancelled) {
-            showToast(context, e.message);
-          }
-          return;
-        }
-        final next = NoticeRules.targetOfCase(subject);
-        if (next is! NoTarget && context.mounted) {
-          await _open(context, ref, next);
-        }
+        await context.push(Paths.myFeedbackCase(caseId));
       case DevicesTarget():
         await context.push(Paths.settingsDevices);
       case MyFansTarget():

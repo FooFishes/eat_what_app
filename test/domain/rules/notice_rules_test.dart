@@ -1,5 +1,4 @@
 import 'package:eat/domain/models/notice.dart';
-import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/notice_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -115,28 +114,6 @@ void main() {
     expect(NoticeRules.sentenceOf(report), '你举报的内容已处理');
     expect(NoticeRules.replyOf(report), isNull);
     expect(NoticeRules.targetOf(report), isA<NoTarget>());
-  });
-
-  test('提交记录关于菜或店时跳过去，其余不跳转', () {
-    expect(
-      NoticeRules.targetOfCase(
-        const CaseSubject(kind: CaseSubjectKind.dish, id: 3),
-      ),
-      isA<DishTarget>().having((t) => t.dishId, 'dishId', 3),
-    );
-    expect(
-      NoticeRules.targetOfCase(
-        const CaseSubject(kind: CaseSubjectKind.shop, id: 7),
-      ),
-      isA<ShopTarget>().having((t) => t.shopId, 'shopId', 7),
-    );
-    expect(
-      NoticeRules.targetOfCase(
-        const CaseSubject(kind: CaseSubjectKind.comment, id: 9),
-      ),
-      isA<NoTarget>(),
-    );
-    expect(NoticeRules.targetOfCase(null), isA<NoTarget>());
   });
 
   test('公告用标题做正文，内容另起一行，不跳转', () {

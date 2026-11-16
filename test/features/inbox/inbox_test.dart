@@ -184,7 +184,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「系统」分栏：公告显示标题和内容，点了只标已读；处理结果先取记录再进对应的菜', (tester) async {
+  testWidgets('「系统」分栏：公告显示标题和内容，点了只标已读；处理结果进我的反馈详情', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(
@@ -224,7 +224,7 @@ void main() {
           'closedAt': 0,
         }),
       ]);
-    final (container, _) = await pumpApp(
+    final (container, router) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
@@ -267,12 +267,12 @@ void main() {
       env.adapter.sent('POST /notification/cards/$_caseId/read'),
       hasLength(1),
     );
+    expect(router.state.uri.toString(), Paths.myFeedbackCase(5));
     expect(env.adapter.sent('GET /feedback/mine/5'), hasLength(1));
-    expect(tester.widget<DishPage>(find.byType(DishPage)).dishId, 1);
     await unmountApp(tester, container);
   });
 
-  testWidgets('处理结果关于评论时，取到记录后不跳转', (tester) async {
+  testWidgets('处理结果关于评论时也进我的反馈详情', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(pageJson([_caseCard()])),
@@ -294,8 +294,7 @@ void main() {
 
     await tester.tap(find.text('你举报的内容已处理'));
     await tester.pumpAndSettle();
-    expect(env.adapter.sent('GET /feedback/mine/5'), hasLength(1));
-    expect(locationOf(router), Paths.inbox);
+    expect(router.state.uri.toString(), Paths.myFeedbackCase(5));
     await unmountApp(tester, container);
   });
 

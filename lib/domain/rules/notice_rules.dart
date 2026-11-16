@@ -1,5 +1,4 @@
 import 'package:eat/domain/models/notice.dart';
-import 'package:eat/domain/models/report.dart';
 
 /// 点击消息后的跳转目标.
 sealed class NoticeTarget {
@@ -24,7 +23,7 @@ final class ShopTarget extends NoticeTarget {
   final int shopId;
 }
 
-/// 处理结果关联的目标占位. 因卡片仅包含提交记录 id, 点击后需先获取详情记录, 再按 [NoticeRules.targetOfCase] 跳转.
+/// 处理结果消息的目标: 我的反馈中这条提交记录的详情页.
 final class CaseTarget extends NoticeTarget {
   const CaseTarget(this.caseId);
 
@@ -88,13 +87,6 @@ abstract final class NoticeRules {
         return const NoTarget();
     }
   }
-
-  /// 解析处理结果关联对象的跳转目标. 仅支持跳转至菜品或店铺, 无关联对象或对象为评论与用户时不跳转.
-  static NoticeTarget targetOfCase(CaseSubject? subject) => switch (subject) {
-    CaseSubject(kind: CaseSubjectKind.dish, :final id) => DishTarget(id),
-    CaseSubject(kind: CaseSubjectKind.shop, :final id) => ShopTarget(id),
-    _ => const NoTarget(),
-  };
 
   /// 仅单人关注消息支持快捷回关并直接返回对方 id, 多人合并或非关注消息返回 null.
   static int? followBackUserOf(Notice notice) =>

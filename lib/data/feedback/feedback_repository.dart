@@ -61,13 +61,6 @@ class FeedbackRepository {
     ),
   );
 
-  /// 查询本人提交记录 [caseId] 关联的目标对象. 若该意见反馈无关联对象或类型无法识别, 则返回 null.
-  Future<CaseSubject?> caseSubject(
-    int caseId, {
-    CancelToken? cancelToken,
-  }) async =>
-      _subject((await _api.mine(caseId, cancelToken: cancelToken)).target);
-
   /// 分页获取本人提交过的记录, 新提交的在前. 类型无法识别的记录将被过滤.
   Future<Paged<FeedbackCase>> mine({
     int page = 1,
