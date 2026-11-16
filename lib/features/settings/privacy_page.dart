@@ -16,7 +16,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 隐私设置页面, 包含关注与粉丝列表公开控制, 个性化推荐开关, 使用统计开关及屏蔽列表入口.
+/// 隐私设置页面, 包含关注与粉丝列表公开控制, 个性化推荐开关和推荐偏好入口, 使用统计开关及屏蔽列表入口.
 ///
 /// 切换开关后立即更新界面状态, 若保存失败则回滚至原值并弹出提示; 其中使用统计开关对封禁中账号同样开放, 不经过权限拦截.
 class PrivacyPage extends ConsumerWidget {
@@ -105,6 +105,11 @@ class PrivacyPage extends ConsumerWidget {
               )
             else
               loading(personalized, () => ref.invalidate(personalizedProvider)),
+            SettingsRow(
+              icon: EatIcons.filter,
+              label: '推荐偏好',
+              onTap: () => context.push(Paths.settingsPreferences),
+            ),
             const SizedBox(height: 18),
             const ListGroupTitle('使用统计'),
             if (usage.value case final stats?)

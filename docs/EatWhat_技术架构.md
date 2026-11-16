@@ -729,8 +729,8 @@ extension RefCache on Ref {
 - **地点就绪再拉**：本机的校区和场景读出来之前不请求（14.3），避免按默认值发出去的请求在后端被记成推荐过。
 - **不想去这家**：`POST /recommend/dismiss/{id}`，要登录（`Capability.dismissShop`，游客弹登录面板），成功后从转盘去掉这家，提示「30 天内不再推荐这家店」。后端没有撤销和查询接口。
 - **撞色**：相邻两家的舞台色相同时，后一家换用它其余品类映射的颜色，都撞色就保持原色（`turntableColors`）。后端以后给店铺备选色时改用备选色。
+- **推荐偏好**：`GET/PUT/DELETE /user/recommendation-profile/preferences`、`GET /user/recommendation-profile/taste`、`GET /recommend/tags`，数据层在 `data/recommend/`（`PreferenceApi`、`PreferenceRepository`），页面在设置的隐私页「个性化推荐」开关下方（`Paths.settingsPreferences`）。品类和口味仍转成客户端枚举 `ShopCategory`、`Taste`，不认识的值忽略；`/recommend/tags` 只决定页面上列出哪些、哪些能设为忌口，取不到时用客户端枚举和 `Taste.dislikable`。PUT 是整体覆盖，省略的字段即清除，页面改完点「保存」一次提交（每人每天最多 50 次）。隐式口味只读展示推断出的喜欢（`inferredTags`、`inferredCategories`）；个性化推荐关闭时后端不用偏好和隐式口味，页面提示暂不生效、不显示隐式口味。
 - **摇一摇**：`GET /recommend/pick` 只在数据层接入（`RecommendApi.pick`、`RecommendRepository.pick`），页面还没用。这个接口是给首页转盘的，后端应返回一批店，目前只返回一家（`restaurant`）；修正后接到发现页转盘，在那之前转盘照旧用 `GET /recommend`。
-- **不接**：`GET /recommend/tags`（品类和口味写成客户端枚举 `ShopCategory`、`Taste`，和后端约定只在末尾追加，不认识的值忽略）；推荐偏好和隐式口味（`/user/recommendation-profile/*`，产品还没有设置页）。
 - 游客的推荐不再按设备去重，安装 ID（`core/storage/device_id.dart`）随旧推荐接口删除。
 
 ## 11. 设计令牌落地

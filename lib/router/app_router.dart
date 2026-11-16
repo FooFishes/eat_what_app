@@ -38,6 +38,7 @@ import 'package:eat/features/settings/notify_page.dart';
 import 'package:eat/features/settings/password_page.dart';
 import 'package:eat/features/settings/personalize_page.dart';
 import 'package:eat/features/settings/phone_page.dart';
+import 'package:eat/features/settings/preferences_page.dart';
 import 'package:eat/features/settings/privacy_page.dart';
 import 'package:eat/features/settings/settings_page.dart';
 import 'package:eat/features/settings/username_page.dart';
@@ -214,6 +215,10 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: _child(Paths.settingsBlocked, Paths.settingsPrivacy),
                 builder: (_, _) => const BlockedPage(),
+              ),
+              GoRoute(
+                path: _child(Paths.settingsPreferences, Paths.settingsPrivacy),
+                builder: (_, _) => const PreferencesPage(),
               ),
             ],
           ),

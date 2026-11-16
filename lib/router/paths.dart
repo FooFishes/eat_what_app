@@ -67,6 +67,9 @@ abstract final class Paths {
   static const settingsDelete = '/settings/account/delete';
   static const settingsPrivacy = '/settings/privacy';
   static const settingsBlocked = '/settings/privacy/blocked';
+
+  /// 推荐偏好页路径, 入口在隐私页 "个性化推荐" 开关下方.
+  static const settingsPreferences = '/settings/privacy/preferences';
   static const settingsNotify = '/settings/notify';
   static const settingsPersonalize = '/settings/personalize';
   static const settingsAbout = '/settings/about';
