@@ -8,6 +8,9 @@ class const CommentAuthorDto({
   final int? id,
   final String? displayName,
   final String? avatar,
+
+  /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
+  final String? title,
 }) {
   factory CommentAuthorDto.fromJson(Map<String, dynamic> json) =>
       _$CommentAuthorDtoFromJson(json);

@@ -9,10 +9,16 @@ int commentTime([int minutes = 0]) =>
     commentEpoch.subtract(Duration(minutes: minutes)).millisecondsSinceEpoch;
 
 /// 评论的作者或被回复的人 (`CommentDtos.Author`). 作者 id 由昵称确定, 同一昵称 id 相同.
-Map<String, Object?> authorJson(String name, {int? id, String? avatar}) => {
+Map<String, Object?> authorJson(
+  String name, {
+  int? id,
+  String? avatar,
+  String? title,
+}) => {
   'id': id ?? authorIdOf(name),
   'displayName': name,
   'avatar': avatar,
+  'title': title,
 };
 
 /// [authorJson] 为昵称 [name] 分配的用户 id.

@@ -33,6 +33,9 @@ class const CurrentUser({
 
   /// 用户等级, 取值 1 到 10, 服务端未返回时为 null.
   final int? level,
+
+  /// 等级称号, 目前只有满级有, 其余为 null.
+  final String? title,
   final bool banned = false,
   final String? banReason,
 

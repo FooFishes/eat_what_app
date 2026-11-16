@@ -145,7 +145,11 @@ class ProfileStage extends ConsumerWidget {
                     ),
                   ),
                   if (profile?.level case final level?)
-                    LevelBadge(level: level, onTap: onLevelTap),
+                    LevelBadge(
+                      level: level,
+                      title: profile?.title,
+                      onTap: onLevelTap,
+                    ),
                 ],
               ),
               if (username case final username?)
@@ -189,11 +193,12 @@ class ProfileStage extends ConsumerWidget {
   }
 }
 
-/// 展示在舞台昵称旁的等级胶囊 (如 "Lv.3"); 可点击时确保触控区域不小于 44px, 而胶囊视觉尺寸保持小号.
+/// 展示在舞台昵称旁的等级胶囊 (如 "Lv.3", 有称号时为 "Lv.10 老吃家"); 可点击时确保触控区域不小于 44px, 而胶囊视觉尺寸保持小号.
 class LevelBadge extends StatelessWidget {
-  const new({super.key, required this.level, this.onTap});
+  const new({super.key, required this.level, this.title, this.onTap});
 
   final int level;
+  final String? title;
   final VoidCallback? onTap;
 
   @override
@@ -207,14 +212,27 @@ class LevelBadge extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        child: Text(
-          'Lv.$level',
+        child: Text.rich(
+          TextSpan(
+            text: 'Lv.$level',
+            style: eat.text.count,
+            children: [
+              if (title case final title?)
+                TextSpan(
+                  text: ' $title',
+                  style: eat.text.meta.copyWith(fontWeight: FontWeight.w600),
+                ),
+            ],
+          ),
           textScaler: TextScaler.noScaling,
-          style: eat.text.count.copyWith(color: palette.foreground),
+          style: TextStyle(color: palette.foreground),
         ),
       ),
     );
-    final label = '等级 $level';
+    final label = switch (title) {
+      final title? => '等级 $level，$title',
+      null => '等级 $level',
+    };
     if (onTap == null) {
       return Semantics(
         label: label,

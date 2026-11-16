@@ -13,6 +13,9 @@ class const UserProfile({
   /// 用户等级, 取值 1 到 10, 服务端未返回时为 null.
   final int? level,
 
+  /// 等级称号, 目前只有满级有, 其余为 null.
+  final String? title,
+
   /// 累计获赞数, 包括上传菜品, 评论及回复收到的点赞.
   final int? earnedLikes,
   final int? fans,
@@ -31,6 +34,9 @@ class const UserBrief({
   required final int id,
   final String? nickname,
   final String? avatarUrl,
+
+  /// 等级称号, 目前只有满级有, 其余为 null. 屏蔽列表不带.
+  final String? title,
   final DateTime? since,
 });
 

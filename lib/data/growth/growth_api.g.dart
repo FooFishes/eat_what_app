@@ -16,6 +16,18 @@ GrowthProgressDto _$GrowthProgressDtoFromJson(Map<String, dynamic> json) =>
       toNextLevel: (json['toNextLevel'] as num?)?.toInt(),
       maxLevel: json['maxLevel'] as bool?,
       dailyUseExperience: (json['dailyUseExperience'] as num?)?.toInt(),
+      title: json['title'] as String?,
+      rules: (json['rules'] as List<dynamic>?)
+          ?.map((e) => ExperienceRuleDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+
+ExperienceRuleDto _$ExperienceRuleDtoFromJson(Map<String, dynamic> json) =>
+    ExperienceRuleDto(
+      source: json['source'] as String?,
+      name: json['name'] as String?,
+      amount: (json['amount'] as num?)?.toInt(),
+      dailyCap: (json['dailyCap'] as num?)?.toInt(),
     );
 
 ExperienceEntryDto _$ExperienceEntryDtoFromJson(Map<String, dynamic> json) =>

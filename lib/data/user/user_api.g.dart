@@ -10,6 +10,7 @@ FansDto _$FansDtoFromJson(Map<String, dynamic> json) => FansDto(
   id: (json['id'] as num?)?.toInt(),
   displayName: json['displayName'] as String?,
   avatar: json['avatar'] as String?,
+  title: json['title'] as String?,
   createdAt: (json['createdAt'] as num?)?.toInt(),
 );
 
@@ -26,6 +27,7 @@ UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
       avatar: json['avatar'] as String?,
       signature: json['signature'] as String?,
       level: (json['level'] as num?)?.toInt(),
+      title: json['title'] as String?,
       earnedLikes: (json['earnedLikes'] as num?)?.toInt(),
       fansCount: (json['fansCount'] as num?)?.toInt(),
       followingsCount: (json['followingsCount'] as num?)?.toInt(),
@@ -49,6 +51,7 @@ UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   hasPassword: json['hasPassword'] as bool?,
   signature: json['signature'] as String?,
   level: (json['level'] as num?)?.toInt(),
+  title: json['title'] as String?,
   banned: json['banned'] as bool?,
   banReason: json['banReason'] as String?,
   banUntil: (json['banUntil'] as num?)?.toInt(),
@@ -68,6 +71,7 @@ Map<String, dynamic> _$UserInfoDtoToJson(UserInfoDto instance) =>
       'hasPassword': ?instance.hasPassword,
       'signature': ?instance.signature,
       'level': ?instance.level,
+      'title': ?instance.title,
       'banned': ?instance.banned,
       'banReason': ?instance.banReason,
       'banUntil': ?instance.banUntil,

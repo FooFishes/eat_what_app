@@ -11,6 +11,7 @@ CommentAuthorDto _$CommentAuthorDtoFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num?)?.toInt(),
       displayName: json['displayName'] as String?,
       avatar: json['avatar'] as String?,
+      title: json['title'] as String?,
     );
 
 CommentDto _$CommentDtoFromJson(Map<String, dynamic> json) => CommentDto(

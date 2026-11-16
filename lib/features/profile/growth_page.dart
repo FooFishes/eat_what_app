@@ -12,7 +12,7 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 个人等级页, 展示当前等级, 累计经验, 升级进度与经验明细, 仅自己可见.
+/// 个人等级页, 展示当前等级和称号, 累计经验, 升级进度, 经验规则与经验明细, 仅自己可见.
 class GrowthPage extends ConsumerWidget {
   const new({super.key});
 
@@ -30,6 +30,7 @@ class GrowthPage extends ConsumerWidget {
       ),
       slivers: [
         const SliverToBoxAdapter(child: _Progress()),
+        const SliverToBoxAdapter(child: _Rules()),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s24)),
         SliverToBoxAdapter(
           child: Semantics(
@@ -78,10 +79,26 @@ class _Progress extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Lv.${progress.level}',
-          textScaler: TextScaler.noScaling,
-          style: eat.text.stat.copyWith(color: eat.colors.ink),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          spacing: EatSpace.s10,
+          children: [
+            Text(
+              'Lv.${progress.level}',
+              textScaler: TextScaler.noScaling,
+              style: eat.text.stat.copyWith(color: eat.colors.ink),
+            ),
+            if (progress.title case final title?)
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: eat.text.heading.copyWith(color: eat.colors.ink),
+                ),
+              ),
+          ],
         ),
         Text('累计 ${progress.totalExperience} 经验', style: muted),
         if (!progress.isMaxLevel) ...[
@@ -90,7 +107,7 @@ class _Progress extends ConsumerWidget {
         ],
         const SizedBox(height: EatSpace.s10),
         Text(next, style: eat.text.body.copyWith(fontWeight: FontWeight.w600)),
-        if (progress.dailyExperience > 0)
+        if (progress.rules.isEmpty && progress.dailyExperience > 0)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
@@ -98,6 +115,37 @@ class _Progress extends ConsumerWidget {
               style: muted,
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// 各经验来源每次得多少经验, 每天最多几次. 服务端没给规则时不显示, 由进度下方的一句话说明每日经验.
+class _Rules extends ConsumerWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final rules = ref.watch(growthProgressProvider).value?.rules ?? const [];
+    if (rules.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: EatSpace.s24),
+        Semantics(header: true, child: Text('经验规则', style: eat.text.heading)),
+        const SizedBox(height: EatSpace.s14),
+        for (final (i, rule) in rules.indexed) ...[
+          if (i > 0) const SizedBox(height: EatSpace.s16),
+          EatListRow(
+            title: Text(rule.name),
+            lines: [if (rule.dailyCap case final cap?) Text('每天最多 $cap 次')],
+            trailing: Text(
+              '+${rule.amount}',
+              style: eat.text.count.copyWith(color: eat.colors.ink),
+            ),
+          ),
+        ],
       ],
     );
   }

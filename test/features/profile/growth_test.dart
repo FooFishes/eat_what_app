@@ -49,6 +49,47 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('有经验规则时列出每项的经验和每日上限，不再单独写每日经验；满级显示称号', (tester) async {
+    final env = meEnv()
+      ..adapter.on('GET /user/level', [
+        FakeAdapter.ok(
+          growthJson(
+            level: 10,
+            total: 16020,
+            start: 16000,
+            next: null,
+            title: '老吃家',
+            rules: [
+              ruleJson('每日使用'),
+              ruleJson(
+                '发布菜品',
+                source: 'food_published',
+                amount: 15,
+                dailyCap: 3,
+              ),
+            ],
+          ),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.growth,
+    );
+
+    expect(find.text('Lv.10'), findsOneWidget);
+    expect(find.text('老吃家'), findsOneWidget);
+    expect(find.text('经验规则'), findsOneWidget);
+    expect(find.text('发布菜品'), findsOneWidget);
+    expect(find.text('每天最多 3 次'), findsOneWidget);
+    expect(find.text('每天最多 1 次'), findsOneWidget);
+    expect(find.text('+15'), findsOneWidget);
+    expect(find.text('每天第一次使用得 5 经验'), findsNothing);
+    await expectAccessible(tester);
+    await unmountApp(tester, container);
+  });
+
   testWidgets('满级时写「已满级」，没有进度条', (tester) async {
     final env = meEnv()
       ..adapter.on('GET /user/level', [
@@ -146,6 +187,25 @@ void main() {
     expect(find.byType(GrowthPage), findsNothing);
     expect(env.adapter.sent('GET /user/level'), isEmpty);
     expect(find.text('7'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('有称号时等级胶囊里跟着称号', (tester) async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({'displayName': '阿哲', 'level': 10, 'title': '老吃家'}),
+      ])
+      ..on('GET /foods/by-user/9', [FakeAdapter.ok(pageJson([]))]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.user(9),
+    );
+
+    expect(find.text('Lv.10 老吃家'), findsOneWidget);
+    expect(find.bySemanticsLabel('等级 10，老吃家'), findsOneWidget);
     await unmountApp(tester, container);
   });
 }

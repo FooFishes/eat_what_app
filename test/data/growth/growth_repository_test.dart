@@ -76,4 +76,44 @@ void main() {
     expect(page.items[1].amount, 10);
     expect(page.items[2].label, '获得经验');
   });
+
+  test('称号和经验规则：规则按服务端顺序，缺名称或经验的不列，上限不是正数时不写', () async {
+    env.adapter.on('GET /user/level', [
+      FakeAdapter.ok(
+        growthJson(
+          level: 10,
+          total: 16020,
+          start: 16000,
+          next: null,
+          title: ' 老吃家 ',
+          rules: [
+            ruleJson('每日使用'),
+            ruleJson('发布菜品', source: 'food_published', amount: 15, dailyCap: 3),
+            ruleJson('不限次数', source: 'x', amount: 1, dailyCap: 0),
+            {...ruleJson('缺名称'), 'name': ' '},
+            {...ruleJson('缺经验'), 'amount': null},
+          ],
+        ),
+      ),
+    ]);
+
+    final progress = await repo.progress();
+
+    expect(progress.title, '老吃家');
+    expect(
+      [for (final r in progress.rules) (r.name, r.amount, r.dailyCap)],
+      [('每日使用', 5, 1), ('发布菜品', 15, 3), ('不限次数', 1, null)],
+    );
+  });
+
+  test('没有称号和规则时为空', () async {
+    env.adapter.on('GET /user/level', [
+      FakeAdapter.ok({...growthJson(), 'title': '', 'rules': null}),
+    ]);
+
+    final progress = await repo.progress();
+
+    expect(progress.title, isNull);
+    expect(progress.rules, isEmpty);
+  });
 }

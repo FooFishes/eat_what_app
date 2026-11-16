@@ -56,14 +56,34 @@ class const GrowthProgressDto({
   final int? toNextLevel,
   final bool? maxLevel,
   final int? dailyUseExperience,
+
+  /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
+  final String? title,
+
+  /// 各经验来源的规则, 按服务端给定的顺序展示.
+  final List<ExperienceRuleDto>? rules,
 }) {
   factory GrowthProgressDto.fromJson(Map<String, dynamic> json) =>
       _$GrowthProgressDtoFromJson(json);
 }
 
+/// 一个经验来源的规则 (`UserDtos.ExperienceRule`).
+///
+/// [source] 是来源代码, [name] 是显示名 ("发布菜品"), [amount] 是每次得到的经验, [dailyCap] 是每天最多几次.
+@JsonSerializable(createToJson: false)
+class const ExperienceRuleDto({
+  final String? source,
+  final String? name,
+  final int? amount,
+  final int? dailyCap,
+}) {
+  factory ExperienceRuleDto.fromJson(Map<String, dynamic> json) =>
+      _$ExperienceRuleDtoFromJson(json);
+}
+
 /// 经验明细的一笔 (`UserDtos.ExperienceLog`).
 ///
-/// [day] 是所属日期 (北京时间), 格式 `yyyy-MM-dd`. [source] 目前只有 `daily_use`, [sourceName] 是显示名.
+/// [day] 是所属日期 (北京时间), 格式 `yyyy-MM-dd`. [source] 是来源代码, [sourceName] 是显示名.
 @JsonSerializable(createToJson: false)
 class const ExperienceEntryDto({
   final int? id,

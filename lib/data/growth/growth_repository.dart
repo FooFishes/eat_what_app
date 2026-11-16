@@ -23,6 +23,8 @@ class GrowthRepository {
       nextLevelAt: next,
       toNextLevel: dto.toNextLevel ?? (next == null ? 0 : next - total),
       dailyExperience: dto.dailyUseExperience ?? 0,
+      title: _text(dto.title),
+      rules: [for (final rule in dto.rules ?? const []) ?_rule(rule)],
     );
   }
 
@@ -38,6 +40,23 @@ class GrowthRepository {
       hasNext: result.hasNext,
     );
   }
+
+  static ExperienceRule? _rule(ExperienceRuleDto dto) {
+    final name = _text(dto.name);
+    final amount = dto.amount;
+    if (name == null || amount == null) return null;
+    final cap = dto.dailyCap;
+    return ExperienceRule(
+      name: name,
+      amount: amount,
+      dailyCap: cap != null && cap > 0 ? cap : null,
+    );
+  }
+
+  static String? _text(String? value) => switch (value?.trim()) {
+    final text? when text.isNotEmpty => text,
+    _ => null,
+  };
 
   static ExperienceEntry? _entry(ExperienceEntryDto dto) {
     final id = dto.id;

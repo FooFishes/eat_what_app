@@ -197,12 +197,15 @@ class UserApi {
       );
 }
 
-/// `/user/followers` 和 `/user/followings` 的列表项, [createdAt] 为关注时间.
+/// `/user/followers` 和 `/user/followings` 的列表项 (`UserDtos.Person`), [createdAt] 为关注时间.
 @JsonSerializable(createToJson: false)
 class const FansDto({
   final int? id,
   final String? displayName,
   final String? avatar,
+
+  /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
+  final String? title,
   final int? createdAt,
 }) {
   factory FansDto.fromJson(Map<String, dynamic> json) =>
@@ -228,6 +231,9 @@ class const UserProfileDto({
 
   /// 用户等级 (1–10), 对所有人可见; 经验值仅本人可见.
   final int? level,
+
+  /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
+  final String? title,
 
   /// 累计获赞数 (包含首次发布菜品, 评论及回复收到的点赞), 对所有人可见.
   final int? earnedLikes,
@@ -268,6 +274,9 @@ class const UserInfoDto({
   final bool? hasPassword,
   final String? signature,
   final int? level,
+
+  /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
+  final String? title,
   final bool? banned,
   final String? banReason,
 

@@ -145,6 +145,10 @@ class CommentRepository {
       authorId: authorId,
       authorName: _name(dto.author?.displayName),
       authorAvatar: imageUrl(dto.author?.avatar),
+      authorTitle: switch (dto.author?.title?.trim()) {
+        final title? when title.isNotEmpty => title,
+        _ => null,
+      },
       replyToName: switch (dto.replyTo?.displayName) {
         final name? when name.isNotEmpty => name,
         _ => null,

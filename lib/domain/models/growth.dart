@@ -10,6 +10,12 @@ class const GrowthProgress({
 
   /// 每日首次使用可获得的经验值.
   required final int dailyExperience,
+
+  /// 等级称号, 目前只有满级有, 其余为 null.
+  final String? title,
+
+  /// 各经验来源的规则, 按服务端给定的顺序排列.
+  final List<ExperienceRule> rules = const [],
 }) {
   bool get isMaxLevel => nextLevelAt == null;
 
@@ -24,6 +30,13 @@ class const GrowthProgress({
       ),
   };
 }
+
+/// 一个经验来源的规则: 每次得到 [amount] 经验, 每天最多 [dailyCap] 次; [dailyCap] 为 null 表示服务端没给上限.
+class const ExperienceRule({
+  required final String name,
+  required final int amount,
+  final int? dailyCap,
+});
 
 /// 经验获取来源. [label] 为服务端未提供显示名称时的兜底名称.
 enum ExperienceSource {

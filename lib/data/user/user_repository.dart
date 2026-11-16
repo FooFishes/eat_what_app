@@ -58,6 +58,7 @@ class UserRepository {
         _ => null,
       },
       level: dto.level,
+      title: _text(dto.title),
       earnedLikes: dto.earnedLikes,
       fans: dto.fansCount,
       followings: dto.followingsCount,
@@ -177,6 +178,7 @@ class UserRepository {
             id: id,
             nickname: _text(dto.displayName) ?? '同学',
             avatarUrl: imageUrl(dto.avatar),
+            title: _text(dto.title),
             since: dateFromMillis(dto.createdAt),
           ),
     ],
@@ -205,6 +207,7 @@ class UserRepository {
     },
     verifiedEmail: dto.verifiedEmail,
     level: dto.level,
+    title: _text(dto.title),
     banned: dto.banned ?? false,
     banReason: dto.banReason?.trim().isNotEmpty == true
         ? dto.banReason!.trim()

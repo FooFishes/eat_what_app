@@ -29,6 +29,10 @@ void main() {
               images: ['https://img.test/a.jpg', ''],
             ),
             {...commentJson(id: 12), 'author': null},
+            {
+              ...commentJson(id: 13),
+              'author': authorJson('老饕', id: 8, title: '老吃家'),
+            },
           ],
           total: 23,
           hasNext: true,
@@ -42,9 +46,12 @@ void main() {
     expect(query, {'sort': 'NEWEST', 'page': 2, 'pageSize': 20});
     expect(page.total, 23);
     expect(page.page.hasNext, isTrue);
-    final comment = page.page.items.single;
+    expect(page.page.items.map((c) => c.id), [11, 13]);
+    final comment = page.page.items.first;
     expect(comment.id, 11);
     expect((comment.authorId, comment.authorName), (7, '安安'));
+    expect(comment.authorTitle, isNull);
+    expect(page.page.items.last.authorTitle, '老吃家');
     expect(comment.isReply, isFalse);
     expect(comment.liked, isTrue);
     expect(comment.replyCount, 4);

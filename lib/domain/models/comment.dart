@@ -22,6 +22,9 @@ class const Comment({
   required final int authorId,
   required final String authorName,
   final String? authorAvatar,
+
+  /// 作者的等级称号, 目前只有满级有, 其余为 null.
+  final String? authorTitle,
   final String? replyToName,
   final String text = '',
   final int likes = 0,
@@ -45,6 +48,7 @@ class const Comment({
     authorId: authorId,
     authorName: authorName,
     authorAvatar: authorAvatar,
+    authorTitle: authorTitle,
     replyToName: replyToName,
     text: text,
     likes: likes,

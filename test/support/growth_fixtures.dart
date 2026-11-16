@@ -1,12 +1,14 @@
 /// 等级接口的响应样例.
 library;
 
-/// `/user/level` 的 `data`. 默认 Lv.3, 累计 125, 下一级门槛 250.
+/// `/user/level` 的 `data`. 默认 Lv.3, 累计 125, 下一级门槛 250, 没有称号和经验规则.
 Map<String, Object?> growthJson({
   int level = 3,
   int total = 125,
   int start = 100,
   int? next = 250,
+  String? title,
+  List<Map<String, Object?>> rules = const [],
 }) => {
   'level': level,
   'experience': total,
@@ -16,7 +18,17 @@ Map<String, Object?> growthJson({
   'toNextLevel': next == null ? null : next - total,
   'maxLevel': next == null,
   'dailyUseExperience': 5,
+  'title': title,
+  'rules': rules,
 };
+
+/// `/user/level` 里的一条经验规则 (`UserDtos.ExperienceRule`).
+Map<String, Object?> ruleJson(
+  String name, {
+  String source = 'daily_use',
+  int amount = 5,
+  int dailyCap = 1,
+}) => {'source': source, 'name': name, 'amount': amount, 'dailyCap': dailyCap};
 
 /// `/user/level/logs` 的一笔.
 Map<String, Object?> experienceJson({
