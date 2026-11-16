@@ -103,8 +103,14 @@ void main() {
 
     final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
     expect(body['mealTimes'], ['lunch', 'dinner']);
-    expect(body['deliveryEnabled'], false);
-    for (final key in ['categories', 'tags', 'priceBand', 'picture', 'poi']) {
+    for (final key in [
+      'categories',
+      'tags',
+      'priceBand',
+      'picture',
+      'poi',
+      'deliveryEnabled',
+    ]) {
       expect(body.containsKey(key), isFalse, reason: key);
     }
     expect(find.text('新建一家店'), findsNothing);
@@ -133,7 +139,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('选填项：品类最多 2 个，口味、饭点、价位、外卖照选的提交', (tester) async {
+  testWidgets('选填项：品类最多 2 个，口味、饭点、价位照选的提交；外卖不在店上设置', (tester) async {
     env.adapter.on('POST /restaurant/add', [
       FakeAdapter.ok({'id': 9}),
     ]);
@@ -147,7 +153,7 @@ void main() {
     await tap(tester, '辣');
     await tap(tester, '早饭');
     await tap(tester, '¥15 以下');
-    await tap(tester, '能点外卖');
+    expect(find.text('能点外卖'), findsNothing);
     await submit(tester);
 
     final body = env.adapter.sent('POST /restaurant/add').single.body as Map;
@@ -155,7 +161,7 @@ void main() {
     expect(body['tags'], ['辣']);
     expect(body['mealTimes'], ['breakfast', 'lunch', 'dinner']);
     expect(body, containsPair('priceBand', 'UNDER_15'));
-    expect(body, containsPair('deliveryEnabled', true));
+    expect(body.containsKey('deliveryEnabled'), isFalse);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

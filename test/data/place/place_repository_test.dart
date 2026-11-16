@@ -251,7 +251,6 @@ void main() {
           mealTimes: [MealTime.lunch],
           categories: [ShopCategory.hotPot],
           tastes: [Taste.spicy, Taste.numbing],
-          deliveryEnabled: true,
         );
 
     expect(id, 9);
@@ -267,7 +266,6 @@ void main() {
       'mealTimes': ['lunch'],
       'categories': ['火锅麻辣烫'],
       'tags': ['辣', '麻'],
-      'deliveryEnabled': true,
     });
     expect(sent.headers.containsKey('Idempotency-Key'), isFalse);
   });

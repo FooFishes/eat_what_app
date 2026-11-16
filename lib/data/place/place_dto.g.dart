@@ -120,7 +120,6 @@ Map<String, dynamic> _$CreateRestaurantDtoToJson(
   'priceBand': ?instance.priceBand,
   'categories': ?instance.categories,
   'tags': ?instance.tags,
-  'deliveryEnabled': ?instance.deliveryEnabled,
   'force': ?instance.force,
 };
 
@@ -148,7 +147,6 @@ Map<String, dynamic> _$EditRestaurantDtoToJson(EditRestaurantDto instance) =>
       'priceBand': ?instance.priceBand,
       'categories': ?instance.categories,
       'tags': ?instance.tags,
-      'deliveryEnabled': ?instance.deliveryEnabled,
     };
 
 EditedRestaurantDto _$EditedRestaurantDtoFromJson(Map<String, dynamic> json) =>

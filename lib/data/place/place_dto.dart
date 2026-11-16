@@ -65,6 +65,8 @@ class const RestaurantDto({
 
   /// 游客状态下为 null.
   final bool? isFavorite,
+
+  /// 是否有可外卖的菜品 (不限饭点), 由服务端按菜品汇总, 只读. 外卖在菜品上设置.
   final bool? deliveryEnabled,
 
   /// `food` 或 `drink`.
@@ -161,7 +163,6 @@ class const CreateRestaurantDto({
   final String? priceBand,
   final List<String>? categories,
   final List<String>? tags,
-  final bool? deliveryEnabled,
 
   /// 用户确认与查重结果并非同一店铺后置为 true, 以跳过重复校验.
   final bool? force,
@@ -202,7 +203,6 @@ class const EditRestaurantDto({
   final String? priceBand,
   final List<String>? categories,
   final List<String>? tags,
-  final bool? deliveryEnabled,
 }) {
   Map<String, dynamic> toJson() => _$EditRestaurantDtoToJson(this);
 }

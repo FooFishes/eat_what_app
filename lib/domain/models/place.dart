@@ -217,7 +217,7 @@ class const Shop({
   /// 店铺口味标签列表, 至多 3 个.
   final List<Taste> tastes = const [],
 
-  /// 是否支持外卖.
+  /// 是否有能点外卖的菜, 由服务端按菜品汇总, 不能直接修改.
   final bool deliveryEnabled = false,
   final ShopStat dineIn = const ShopStat(),
   final ShopStat delivery = const ShopStat(),

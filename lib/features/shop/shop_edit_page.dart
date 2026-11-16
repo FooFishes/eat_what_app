@@ -39,7 +39,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Source { camera, gallery }
 
-/// 编辑店铺资料页, 支持修改店名, 地址描述, 门头照片, 类型, 品类, 口味, 饭点, 价位及外卖与营业状态.
+/// 编辑店铺资料页, 支持修改店名, 地址描述, 门头照片, 类型, 品类, 口味, 饭点, 价位及营业状态. 能不能点外卖在菜品上设置.
 ///
 /// - 所有已认证用户均可编辑任意店铺, 保存时校验操作权限.
 /// - 仅提交发生变更的字段, 若无改动则在保存时返回上一页.
@@ -99,7 +99,6 @@ class _FormState extends ConsumerState<_Form> {
   late var _tastes = {...widget.shop.tastes};
   late var _meals = {...widget.shop.mealTimes};
   late var _priceBand = widget.shop.priceBand;
-  late var _delivery = widget.shop.deliveryEnabled;
   late var _closed = widget.shop.closed;
 
   var _busy = false;
@@ -150,7 +149,6 @@ class _FormState extends ConsumerState<_Form> {
       tastes: setEquals(_tastes, shop.tastes.toSet())
           ? null
           : [...Taste.values.where(_tastes.contains)],
-      deliveryEnabled: _delivery == shop.deliveryEnabled ? null : _delivery,
       closed: _closed == shop.closed ? null : _closed,
     );
   }
@@ -482,11 +480,6 @@ class _FormState extends ConsumerState<_Form> {
                 ),
               ),
               const SizedBox(height: EatSpace.s16),
-              EatSwitch(
-                label: '能点外卖',
-                value: _delivery,
-                onChanged: (value) => setState(() => _delivery = value),
-              ),
               EatSwitch(
                 label: '这家店已关门',
                 description: '关门的店不出现在附近和推荐里，也不能再加菜',

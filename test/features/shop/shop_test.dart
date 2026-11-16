@@ -423,12 +423,11 @@ void main() {
       await tester.tap(find.text('火锅麻辣烫'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('能点外卖'),
+        find.text('这家店已关门'),
         200,
         scrollable: downward,
       );
-      await tester.tap(find.text('能点外卖'));
-      await tester.pumpAndSettle();
+      expect(find.text('能点外卖'), findsNothing);
       await expectAccessible(tester);
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
@@ -436,7 +435,6 @@ void main() {
       expect(env.adapter.sent('PUT /restaurant/edit/7').single.body, {
         'name': '袁记云饺万达店',
         'categories': ['粉面', '火锅麻辣烫'],
-        'deliveryEnabled': true,
       });
       expect(find.text('已保存'), findsOneWidget);
       expect(find.byType(ShopEditPage), findsNothing);

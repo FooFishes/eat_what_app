@@ -30,7 +30,6 @@ class const ShopChange({
   final ({PriceBand? band})? priceBand,
   final List<ShopCategory>? categories,
   final List<Taste>? tastes,
-  final bool? deliveryEnabled,
   final bool? closed,
 }) {
   bool get isEmpty =>
@@ -42,7 +41,6 @@ class const ShopChange({
       priceBand == null &&
       categories == null &&
       tastes == null &&
-      deliveryEnabled == null &&
       closed == null;
 }
 
@@ -159,7 +157,6 @@ class PlaceRepository {
     PriceBand? priceBand,
     List<ShopCategory>? categories,
     List<Taste>? tastes,
-    bool? deliveryEnabled,
     bool force = false,
   }) => _api.createRestaurant(
     CreateRestaurantDto(
@@ -176,7 +173,6 @@ class PlaceRepository {
           ? null
           : [for (final c in categories) c.api],
       tags: tastes == null ? null : [for (final t in tastes) t.api],
-      deliveryEnabled: deliveryEnabled,
       force: force ? true : null,
     ),
   );
@@ -208,7 +204,6 @@ class PlaceRepository {
         tags: change.tastes == null
             ? null
             : [for (final t in change.tastes!) t.api],
-        deliveryEnabled: change.deliveryEnabled,
         permanentlyClosed: change.closed,
       ),
     );

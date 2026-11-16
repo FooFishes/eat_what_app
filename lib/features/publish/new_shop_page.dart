@@ -15,7 +15,6 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
-import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
@@ -51,7 +50,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// 表单字段说明:
 /// - 必填项包括店名, 类型 (美食或甜点饮品), 地图选点与地址描述, 所属商圈根据地图中心位置自动判定.
-/// - 选填项包括门头照片, 品类, 口味, 适合饭点 (默认午饭和晚饭), 价位与外卖支持状态, 保持默认即可提交.
+/// - 选填项包括门头照片, 品类, 口味, 适合饭点 (默认午饭和晚饭) 与价位, 保持默认即可提交. 能不能点外卖在菜品上设置.
 ///
 /// 重复店铺提示机制: 当选定地点已建店或 200 m 内存在同名店铺 (忽略空白与大小写) 时, 由服务端返回提示;
 /// 该提示不强制拦截, 用户可选择已有店铺或继续新建 (同一地点允许存在多家店铺, 如食堂窗口, 继续新建时仍保留地点 uid).
@@ -93,7 +92,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   var _tastes = <Taste>{};
   var _meals = {MealTime.lunch, MealTime.dinner};
   PriceBand? _priceBand;
-  var _delivery = false;
 
   /// 标记用户是否在重复店铺提示中选择了 "不是同一家, 继续新建", 为 true 时提交携带 `force` 参数.
   var _keepNew = false;
@@ -192,7 +190,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     final categories = [...ShopCategory.values.where(_categories.contains)];
     final tastes = [...Taste.values.where(_tastes.contains)];
     final priceBand = _priceBand;
-    final delivery = _delivery;
     try {
       final hub = ref.read(hubAtProvider(point)).value;
       String? photoKey;
@@ -217,7 +214,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
             priceBand: priceBand,
             categories: categories.isEmpty ? null : categories,
             tastes: tastes.isEmpty ? null : tastes,
-            deliveryEnabled: delivery,
             force: force,
           );
       if (!mounted) return;
@@ -235,7 +231,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         priceBand: priceBand,
         categories: categories,
         tastes: tastes,
-        deliveryEnabled: delivery,
       );
       if (widget.returnShop) {
         context.pop(shop);
@@ -567,12 +562,6 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                           ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: EatSpace.s16),
-                  EatSwitch(
-                    label: '能点外卖',
-                    value: _delivery,
-                    onChanged: (value) => setState(() => _delivery = value),
                   ),
                   const SizedBox(height: EatSpace.s16),
                 ],
