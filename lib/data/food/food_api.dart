@@ -36,6 +36,7 @@ abstract final class FoodEndpoints {
   static String unlike(int id) => '/foods/$id/unlike';
   static String favorite(int id) => '/foods/$id/favorite';
   static String unfavorite(int id) => '/foods/$id/unfavorite';
+  static String rating(int id) => '/foods/$id/rating';
   static const systemTags = '/foods/tags/system';
   static String addSystemTags(int id) => '/foods/$id/tags/system';
   static String addCustomTags(int id) => '/foods/$id/tags/custom';
@@ -212,6 +213,23 @@ class FoodApi {
   Future<void> favorite(int id) => _client.post(FoodEndpoints.favorite(id));
 
   Future<void> unfavorite(int id) => _client.post(FoodEndpoints.unfavorite(id));
+
+  /// 给菜品打 [score] 分 (1–5), 同一个人只保留最近一次. 需完成身份认证.
+  ///
+  /// 返回当前用户的分数和这道菜最新的评分统计.
+  Future<FoodRatedDto> rate(int id, int score) async => decodeJson(
+    await _client.put(
+      FoodEndpoints.rating(id),
+      body: RateFoodDto(score: score).toJson(),
+    ),
+    FoodRatedDto.fromJson,
+  );
+
+  /// 撤销对菜品的评分, 只需登录. 没打过分也不报错.
+  Future<FoodRatedDto> unrate(int id) async => decodeJson(
+    await _client.delete(FoodEndpoints.rating(id)),
+    FoodRatedDto.fromJson,
+  );
 
   /// 获取由运营维护的口味词表.
   Future<List<FoodTagDto>> systemTags({CancelToken? cancelToken}) async =>

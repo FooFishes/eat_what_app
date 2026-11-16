@@ -57,6 +57,26 @@ abstract final class DishRules {
     return result;
   }
 
+  /// 评分的可选分值, 从低到高.
+  static const scores = [1, 2, 3, 4, 5];
+
+  /// 平均分的显示门槛: 评分满该人数才显示平均分, 与店铺推荐率的门槛相同, 免得一两个人的分数代表一道菜.
+  static const ratingMinCount = 3;
+
+  /// 平均分的文字, 如 "4.3 分". 人数不足 [ratingMinCount] 或没有平均分时返回 null.
+  static String? scoreText(DishRating rating) {
+    final score = rating.score;
+    if (score == null || rating.count < ratingMinCount) return null;
+    return '${score.toStringAsFixed(1)} 分';
+  }
+
+  /// 菜品评分统计的说明, 如 "4.3 分 · 12 人评过"; 人数不足门槛时只写人数, 没人评过时写 "还没人评分".
+  static String ratingSummary(DishRating rating) => switch (scoreText(rating)) {
+    final score? => '$score · ${rating.count} 人评过',
+    null when rating.count == 0 => '还没人评分',
+    null => '${rating.count} 人评过',
+  };
+
   /// 菜品未保存舞台色时的兜底颜色, 优先取分类默认色, 无分类时使用 `broth`.
   static StageColor defaultStage(DishCategory? category) =>
       category?.stage ?? StageColor.broth;

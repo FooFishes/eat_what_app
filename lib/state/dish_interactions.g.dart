@@ -8,7 +8,7 @@ part of 'dish_interactions.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 赞和收藏的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
+/// 赞, 收藏和评分的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
 ///
 /// - 点击后先修改覆盖值, 转盘, 方块和详情中的同一道菜同步变化.
 /// - 请求失败时恢复原值, 由页面显示提示.
@@ -18,7 +18,7 @@ part of 'dish_interactions.dart';
 @ProviderFor(DishInteractions)
 final dishInteractionsProvider = DishInteractionsProvider._();
 
-/// 赞和收藏的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
+/// 赞, 收藏和评分的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
 ///
 /// - 点击后先修改覆盖值, 转盘, 方块和详情中的同一道菜同步变化.
 /// - 请求失败时恢复原值, 由页面显示提示.
@@ -26,7 +26,7 @@ final dishInteractionsProvider = DishInteractionsProvider._();
 /// - 切换账号时全部清空.
 final class DishInteractionsProvider
     extends $NotifierProvider<DishInteractions, Map<int, DishInteraction>> {
-  /// 赞和收藏的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
+  /// 赞, 收藏和评分的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
   ///
   /// - 点击后先修改覆盖值, 转盘, 方块和详情中的同一道菜同步变化.
   /// - 请求失败时恢复原值, 由页面显示提示.
@@ -59,9 +59,9 @@ final class DishInteractionsProvider
   }
 }
 
-String _$dishInteractionsHash() => r'514954e436a7ac2b13f25c105a24ac7cb574d80f';
+String _$dishInteractionsHash() => r'01ec55c7bcf242091576922140ee8f2022b44ea5';
 
-/// 赞和收藏的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
+/// 赞, 收藏和评分的本地覆盖值, 以菜品 id 为键, 用于乐观更新.
 ///
 /// - 点击后先修改覆盖值, 转盘, 方块和详情中的同一道菜同步变化.
 /// - 请求失败时恢复原值, 由页面显示提示.

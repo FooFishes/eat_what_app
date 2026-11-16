@@ -32,7 +32,7 @@ void main() {
     (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
   );
 
-  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是店卡、赞、口味和上传者', (tester) async {
+  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是店卡、赞、评分、口味和上传者', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -47,6 +47,12 @@ void main() {
     expect(find.text('12'), findsOneWidget);
     expect(find.text('辣'), findsOneWidget);
     expect(find.text('麻'), findsOneWidget);
+    expect(find.text('还没人评分'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('小林'),
+      200,
+      scrollable: scrollable(),
+    );
     expect(find.text('小林'), findsOneWidget);
     expect(find.text('汤很鲜，虾仁很多'), findsOneWidget);
     expect(
@@ -156,6 +162,107 @@ void main() {
     expect(find.text('13'), findsOneWidget);
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('评分：写平均分和人数；打分立即提交，再点一次撤销', (tester) async {
+    env.adapter
+      ..on('GET /foods/detail/1', [
+        FakeAdapter.ok({
+          ...foodJson(),
+          'rating': {'score': 4.3, 'count': 12},
+        }),
+      ])
+      ..on('PUT /foods/1/rating', [
+        FakeAdapter.ok({
+          'myRating': 4,
+          'rating': {'score': 4.3, 'count': 13},
+        }),
+      ])
+      ..on('DELETE /foods/1/rating', [
+        FakeAdapter.ok({
+          'myRating': null,
+          'rating': {'score': 4.3, 'count': 12},
+        }),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('吃过的话，打个分'),
+      200,
+      scrollable: scrollable(),
+    );
+    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
+    await tester.tap(find.text('评分'));
+    await tester.pumpAndSettle();
+    expect(find.text('给这道菜打分'), findsOneWidget);
+    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
+    await expectAccessible(tester);
+
+    await tester.tap(find.text('4 分'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('PUT /foods/1/rating').single.body, {'score': 4});
+    expect(find.text('已选「4 分」，再点一次取消'), findsOneWidget);
+    expect(find.text('4.3 分 · 13 人评过'), findsWidgets);
+    expect(find.text('你打了 4 分'), findsOneWidget);
+
+    await tester.tap(find.text('4 分'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('DELETE /foods/1/rating'), hasLength(1));
+    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
+    expect(find.text('吃过的话，打个分'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('评分不满 3 人只写人数；打过分时按钮是「改评分」，面板里选中原来的分数', (tester) async {
+    env.adapter.on('GET /foods/detail/1', [
+      FakeAdapter.ok({
+        ...foodJson(),
+        'rating': {'score': 5.0, 'count': 2},
+        'myRating': 5,
+      }),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('你打了 5 分'),
+      200,
+      scrollable: scrollable(),
+    );
+    expect(find.text('2 人评过'), findsOneWidget);
+    await tester.tap(find.text('改评分'));
+    await tester.pumpAndSettle();
+    expect(find.text('已选「5 分」，再点一次取消'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('没认证时点「评分」弹拦截，不打开面板', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: testUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('还没人评分'),
+      200,
+      scrollable: scrollable(),
+    );
+    await tester.tap(find.text('评分'));
+    await tester.pumpAndSettle();
+    expect(find.text('认证后才能评分'), findsOneWidget);
+    expect(find.text('给这道菜打分'), findsNothing);
     await unmountApp(tester, container);
   });
 

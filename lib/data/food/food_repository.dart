@@ -29,6 +29,7 @@ class FoodRepository {
   final CacheStore _cache;
 
   static const _detailGroup = 'dish';
+  static const _detailMaxAge = Duration(days: 7);
 
   Future<Dish> detail(int id, {CancelToken? cancelToken}) async {
     final dto = await _api.detail(id, cancelToken: cancelToken);
@@ -43,11 +44,7 @@ class FoodRepository {
 
   /// 读取本地缓存的菜品详情, 用于离线展示或请求返回前先行渲染, 已过期的缓存不返回.
   Future<Dish?> cachedDetail(int id) async {
-    final raw = await _cache.read(
-      _detailGroup,
-      '$id',
-      maxAge: const Duration(days: 7),
-    );
+    final raw = await _cache.read(_detailGroup, '$id', maxAge: _detailMaxAge);
     if (raw == null) return null;
     try {
       return toDish(FoodDto.fromJson(jsonDecode(raw) as Map<String, dynamic>));
@@ -302,6 +299,47 @@ class FoodRepository {
 
   Future<void> setFavorite(int id, {required bool favorite}) =>
       favorite ? _api.favorite(id) : _api.unfavorite(id);
+
+  /// 给菜品打 [score] 分 (1–5), [score] 为 null 时撤销评分.
+  ///
+  /// 返回服务端的结果, 并写回本地缓存的菜品详情, 离线打开时显示的是打分后的统计.
+  Future<DishRated> rate(int id, int? score) async {
+    final dto = score == null
+        ? await _api.unrate(id)
+        : await _api.rate(id, score);
+    final rated = DishRated(
+      myRating: dto.myRating,
+      rating: DishRating(
+        score: dto.rating?.score,
+        count: dto.rating?.count ?? 0,
+      ),
+    );
+    await _patchCachedDetail(id, {
+      'rating': dto.rating?.toJson(),
+      'myRating': dto.myRating,
+    });
+    return rated;
+  }
+
+  /// 修改本地缓存的菜品详情中的字段, 值为 null 的字段从缓存中去掉. 没有未过期的缓存或缓存无法解析时不修改.
+  Future<void> _patchCachedDetail(int id, Map<String, Object?> fields) async {
+    final raw = await _cache.read(_detailGroup, '$id', maxAge: _detailMaxAge);
+    if (raw == null) return;
+    final Map<String, dynamic> json;
+    try {
+      json = jsonDecode(raw) as Map<String, dynamic>;
+    } on Object {
+      return;
+    }
+    for (final MapEntry(:key, :value) in fields.entries) {
+      if (value == null) {
+        json.remove(key);
+      } else {
+        json[key] = value;
+      }
+    }
+    await _cache.write(_detailGroup, '$id', jsonEncode(json), maxEntries: 50);
+  }
 
   Future<List<TasteTag>> tasteVocabulary({CancelToken? cancelToken}) async => [
     for (final dto in await _api.systemTags(cancelToken: cancelToken))

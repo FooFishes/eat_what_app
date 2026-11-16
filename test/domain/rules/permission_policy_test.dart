@@ -64,6 +64,7 @@ void main() {
       Capability.comment,
       Capability.reply,
       Capability.rateShop,
+      Capability.rateDish,
       Capability.follow,
       Capability.publishDish,
       Capability.createShop,

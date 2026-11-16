@@ -15,6 +15,9 @@ enum Capability {
   comment,
   reply,
   rateShop,
+
+  /// 给菜品打 1–5 分. 后端撤销评分只要求登录, 但撤销和打分在同一个面板里, 入口统一按评分拦截.
+  rateDish,
   follow,
   publishDish,
   createShop,
@@ -115,6 +118,7 @@ enum Capability {
     comment => '评论',
     reply => '回复',
     rateShop => '评价',
+    rateDish => '评分',
     follow => '关注',
     publishDish => '发布',
     createShop => '新建店',

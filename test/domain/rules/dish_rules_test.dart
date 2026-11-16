@@ -90,4 +90,30 @@ void main() {
     expect(DishCategory.fromApi('staple'), isNull);
     expect(DishCategory.fromApi(null), isNull);
   });
+  group('评分', () {
+    test('满 3 人才显示平均分，保留一位小数', () {
+      expect(
+        DishRules.scoreText(const DishRating(score: 4.25, count: 3)),
+        '4.3 分',
+      );
+      expect(
+        DishRules.scoreText(const DishRating(score: 5, count: 3)),
+        '5.0 分',
+      );
+      expect(DishRules.scoreText(const DishRating(score: 5, count: 2)), isNull);
+      expect(DishRules.scoreText(const DishRating()), isNull);
+    });
+
+    test('统计说明：够人数写平均分和人数，不够只写人数，没人评过单独说', () {
+      expect(
+        DishRules.ratingSummary(const DishRating(score: 4.3, count: 12)),
+        '4.3 分 · 12 人评过',
+      );
+      expect(
+        DishRules.ratingSummary(const DishRating(score: 4, count: 2)),
+        '2 人评过',
+      );
+      expect(DishRules.ratingSummary(const DishRating()), '还没人评分');
+    });
+  });
 }

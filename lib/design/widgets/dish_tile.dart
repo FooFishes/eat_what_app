@@ -37,7 +37,7 @@ class SliverTileGrid extends StatelessWidget {
 /// 推荐流和 "我的" 页面中的菜品方块, 上方为原图裁成的圆角方图, 文字位于图片下方.
 ///
 /// - 第一行: 菜名在左, 价格在右. 菜名过长时截断, 价格始终完整显示.
-/// - 第二行: 店名和距离在左, 赞数在右; 均无数据时不占这一行.
+/// - 第二行: 店名和距离在左, 评分和赞数在右; 均无数据时不占这一行.
 /// - 文字不叠加在图片上.
 /// - 方块不加底色, 边框, 阴影和盘沿.
 /// - 整个方块作为整体可点击链接.
@@ -52,6 +52,7 @@ class DishTile extends StatelessWidget {
     this.shop,
     this.distance,
     this.likes,
+    this.score,
     this.compact = false,
     required this.onTap,
   });
@@ -71,6 +72,9 @@ class DishTile extends StatelessWidget {
   /// 赞数, 用于 "我的" 和餐厅详情.
   final int? likes;
 
+  /// 平均分文字 (如 "4.3 分"), 用于餐厅详情, 排在赞数前面. 窄版式不显示.
+  final String? score;
+
   /// 三列排列时使用的窄版式: 图片为正方形, 菜名独占第一行, 价格移到第二行, 且不显示店名和距离.
   ///
   /// 窄版式宽度约为 108px, 若价格与菜名同一行, 菜名只能显示三个字.
@@ -88,6 +92,7 @@ class DishTile extends StatelessWidget {
         shop != null ||
         distance != null ||
         likes != null ||
+        (score != null && !compact) ||
         (compact && price != null);
     return EatTappable(
       onTap: onTap,
@@ -158,9 +163,13 @@ class DishTile extends StatelessWidget {
                       if (shop != null) const SizedBox(width: EatSpace.s8),
                       Text(distance, style: count),
                     ],
+                    if (!compact && (shop != null || distance != null))
+                      if (score != null || likes != null) const Spacer(),
+                    if (score case final score? when !compact) ...[
+                      Text(score, semanticsLabel: '评分 $score', style: count),
+                      if (likes != null) const SizedBox(width: EatSpace.s10),
+                    ],
                     if (likes case final likes?) ...[
-                      if (!compact && (shop != null || distance != null))
-                        const Spacer(),
                       EatIcon(EatIcons.heart, size: 14, color: c.inkMuted),
                       const SizedBox(width: EatSpace.s4),
                       Text('$likes', semanticsLabel: '$likes 个赞', style: count),

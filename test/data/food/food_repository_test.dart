@@ -713,4 +713,61 @@ void main() {
     expect((await repo.cachedDetail(1))?.name, '鲜虾蟹籽云吞');
     expect(await repo.cachedDetail(2), isNull);
   });
+  group('评分', () {
+    test('打分发 PUT 带 score，撤销发 DELETE；结果写回缓存的详情', () async {
+      final env = TestEnv();
+      env.adapter
+        ..on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())])
+        ..on('PUT /foods/1/rating', [
+          FakeAdapter.ok({
+            'myRating': 4,
+            'rating': {'score': 4.3, 'count': 12},
+          }),
+        ])
+        ..on('DELETE /foods/1/rating', [
+          FakeAdapter.ok({
+            'myRating': null,
+            'rating': {'score': 4.2, 'count': 11},
+          }),
+        ]);
+      final container = await env.container();
+      final repo = container.read(foodRepositoryProvider);
+      await repo.detail(1);
+
+      final rated = await repo.rate(1, 4);
+
+      expect(env.adapter.sent('PUT /foods/1/rating').single.body, {'score': 4});
+      expect(rated.myRating, 4);
+      expect(rated.rating.score, 4.3);
+      expect(rated.rating.count, 12);
+      var cached = await repo.cachedDetail(1);
+      expect(cached?.myRating, 4);
+      expect(cached?.rating.count, 12);
+
+      final undone = await repo.rate(1, null);
+
+      expect(env.adapter.sent('DELETE /foods/1/rating'), hasLength(1));
+      expect(undone.myRating, isNull);
+      expect(undone.rating.count, 11);
+      cached = await repo.cachedDetail(1);
+      expect(cached?.myRating, isNull);
+      expect(cached?.rating.score, 4.2);
+    });
+
+    test('没看过详情时不写缓存', () async {
+      final env = TestEnv();
+      env.adapter.on('PUT /foods/1/rating', [
+        FakeAdapter.ok({
+          'myRating': 5,
+          'rating': {'score': 5.0, 'count': 1},
+        }),
+      ]);
+      final container = await env.container();
+      final repo = container.read(foodRepositoryProvider);
+
+      await repo.rate(1, 5);
+
+      expect(await repo.cachedDetail(1), isNull);
+    });
+  });
 }

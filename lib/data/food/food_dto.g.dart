@@ -100,6 +100,16 @@ DishRatingDto _$DishRatingDtoFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$DishRatingDtoToJson(DishRatingDto instance) =>
     <String, dynamic>{'score': ?instance.score, 'count': ?instance.count};
 
+Map<String, dynamic> _$RateFoodDtoToJson(RateFoodDto instance) =>
+    <String, dynamic>{'score': instance.score};
+
+FoodRatedDto _$FoodRatedDtoFromJson(Map<String, dynamic> json) => FoodRatedDto(
+  myRating: (json['myRating'] as num?)?.toInt(),
+  rating: json['rating'] == null
+      ? null
+      : DishRatingDto.fromJson(json['rating'] as Map<String, dynamic>),
+);
+
 CoverCropDto _$CoverCropDtoFromJson(Map<String, dynamic> json) => CoverCropDto(
   centerX: (json['centerX'] as num?)?.toDouble(),
   centerY: (json['centerY'] as num?)?.toDouble(),

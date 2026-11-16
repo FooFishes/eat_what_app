@@ -135,6 +135,36 @@ void main() {
     });
   }
 
+  testWidgets('菜单方块上写平均分，评分不满 3 人的不写', (tester) async {
+    final env = shopEnv();
+    env.adapter.on('GET /foods/list', [
+      FakeAdapter.ok(
+        pageJson([
+          {
+            ...foodJson(id: 1, name: '虾仁云吞', likes: 30),
+            'rating': {'score': 4.6, 'count': 8},
+          },
+          {
+            ...foodJson(id: 2, name: '牛肉饺子', likes: 20),
+            'rating': {'score': 5.0, 'count': 2},
+          },
+        ]),
+      ),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.shop(7),
+    );
+
+    await scrollTo(tester, '全部菜品');
+    await scrollTo(tester, '4.6 分');
+    expect(find.text('4.6 分'), findsOneWidget);
+    expect(find.text('5.0 分'), findsNothing);
+    await unmountApp(tester, container);
+  });
+
   testWidgets('评价：先选堂食或外卖，再选推荐或不推荐；再点一次撤回', (tester) async {
     final env = shopEnv(
       details: [

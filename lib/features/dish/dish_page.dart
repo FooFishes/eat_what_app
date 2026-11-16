@@ -33,6 +33,7 @@ import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/dish/dish_providers.dart';
+import 'package:eat/features/dish/rating_panel.dart';
 import 'package:eat/features/system/comment_card.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
@@ -49,7 +50,7 @@ import 'package:go_router/go_router.dart';
 /// 菜品详情页.
 ///
 /// - 舞台: 封面, 招牌标记和分类, 菜名, 价格.
-/// - 抽屉: 依次为店卡, 赞和导航, "大家怎么说", 上传者, 编辑和修改记录, "吃过的人说".
+/// - 抽屉: 依次为店卡, 赞和导航, 评分, "大家怎么说", 上传者, 编辑和修改记录, "吃过的人说".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -106,6 +107,8 @@ class DishPage extends ConsumerWidget {
               _ShopCard(dish: dish),
               const SizedBox(height: EatSpace.s16),
               _Actions(dish: dish),
+              const SizedBox(height: 28),
+              _Rating(dish: dish),
               const SizedBox(height: 28),
               if (loaded)
                 _TasteSection(dish: dish)
@@ -475,6 +478,60 @@ class _Actions extends ConsumerWidget {
         fallback: '点赞失败，请重试',
       );
     }
+  }
+}
+
+/// 评分区: 平均分和评分人数, 当前用户打的分, 以及打开评分面板的按钮.
+///
+/// 平均分满 [DishRules.ratingMinCount] 人才显示, 不足时只写人数. 打分后的结果来自 [dishInteractionsProvider].
+class _Rating extends ConsumerWidget {
+  const new({required this.dish});
+
+  final Dish dish;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final interaction =
+        ref.watch(dishInteractionsProvider.select((m) => m[dish.id])) ??
+        DishInteraction.of(dish);
+    final mine = interaction.myRating;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: EatSpace.s8,
+      children: [
+        Semantics(
+          header: true,
+          child: Text('吃过觉得怎么样', style: eat.text.heading),
+        ),
+        Row(
+          spacing: EatSpace.s14,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DishRules.ratingSummary(interaction.rating),
+                    style: eat.text.body.copyWith(color: eat.colors.ink),
+                  ),
+                  Text(
+                    mine == null ? '吃过的话，打个分' : '你打了 $mine 分',
+                    style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
+                  ),
+                ],
+              ),
+            ),
+            EatButton.outline(
+              mine == null ? '评分' : '改评分',
+              icon: EatIcons.edit,
+              height: 36,
+              onPressed: () => showDishRatingPanel(context, ref, dish),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

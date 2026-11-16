@@ -85,6 +85,23 @@ class const DishRatingDto({final double? score, final int? count}) {
   Map<String, dynamic> toJson() => _$DishRatingDtoToJson(this);
 }
 
+/// 给菜品评分的请求体 (后端 `FoodDtos.RatingRequest`). [score] 是 1–5 的整数.
+///
+/// openapi 中的同名结构被店铺评价的 `{scene, rating}` 覆盖, 字段以后端源码为准.
+@JsonSerializable(createFactory: false)
+class const RateFoodDto({required final int score}) {
+  Map<String, dynamic> toJson() => _$RateFoodDtoToJson(this);
+}
+
+/// 评分或撤销评分的结果 (后端 `FoodDtos.Rated`).
+///
+/// [myRating] 是当前用户的分数, 撤销后为 null. [rating] 是这道菜最新的评分统计.
+@JsonSerializable(createToJson: false)
+class const FoodRatedDto({final int? myRating, final DishRatingDto? rating}) {
+  factory FoodRatedDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodRatedDtoFromJson(json);
+}
+
 @JsonSerializable(includeIfNull: false)
 class const CoverCropDto({
   final double? centerX,

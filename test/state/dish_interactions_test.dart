@@ -60,4 +60,53 @@ void main() {
 
     expect(notifier.of(_dish).liked, isFalse);
   });
+  test('打分先改我的分数，成功后用服务端的统计；赞和收藏不受影响', () async {
+    final env = TestEnv();
+    env.adapter
+      ..on('POST /foods/1/like', [FakeAdapter.ok()])
+      ..on('PUT /foods/1/rating', [
+        FakeAdapter.ok({
+          'myRating': 5,
+          'rating': {'score': 4.5, 'count': 4},
+        }),
+      ]);
+    final container = await env.container(
+      session: const SignedIn(user: testUser),
+    );
+    final notifier = container.read(dishInteractionsProvider.notifier);
+    await notifier.toggleLike(_dish);
+
+    final failure = await notifier.rate(_dish, 5);
+
+    expect(failure, isNull);
+    final now = notifier.of(_dish);
+    expect(now.myRating, 5);
+    expect(now.rating.score, 4.5);
+    expect(now.rating.count, 4);
+    expect(now.liked, isTrue);
+    expect(now.likes, 13);
+  });
+
+  test('打分失败退回原来的分数和统计', () async {
+    final env = TestEnv();
+    env.adapter.on('DELETE /foods/1/rating', [const FakeResponse.offline()]);
+    final container = await env.container(
+      session: const SignedIn(user: testUser),
+    );
+    final notifier = container.read(dishInteractionsProvider.notifier);
+    const rated = Dish(
+      id: 1,
+      name: '鲜虾蟹籽云吞',
+      shopId: 7,
+      stage: StageColor.broth,
+      rating: DishRating(score: 4, count: 3),
+      myRating: 3,
+    );
+
+    final failure = await notifier.rate(rated, null);
+
+    expect(failure?.kind, FailureKind.network);
+    expect(notifier.of(rated).myRating, 3);
+    expect(notifier.of(rated).rating.count, 3);
+  });
 }

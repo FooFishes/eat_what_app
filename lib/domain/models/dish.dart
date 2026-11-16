@@ -45,6 +45,14 @@ class const CoverCrop({
 /// [score] 是 1–5 分的平均分, 保留一位小数, 没有人评分时为 null. [count] 是评分人数.
 class const DishRating({final double? score, final int count = 0});
 
+/// 打分或撤销后服务端返回的结果.
+///
+/// [myRating] 是当前用户的分数, 撤销后为 null. [rating] 是这道菜最新的评分统计.
+class const DishRated({
+  final int? myRating,
+  final DishRating rating = const DishRating(),
+});
+
 /// 菜品上的投票口味标签. [count] 为标注该标签的人数, [mine] 表示当前用户是否已标注.
 ///
 /// 后端 v2 暂未提供口味投票接口, 仅由保留的加标签面板使用.

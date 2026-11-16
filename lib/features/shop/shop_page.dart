@@ -32,6 +32,7 @@ import 'package:eat/features/shop/shop_providers.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/dish_interactions.dart';
 import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,6 +276,8 @@ class _Rating extends ConsumerWidget {
 }
 
 /// 全部菜品列表区, 按菜单顺序分页展示, 标题右侧附带菜品总数.
+///
+/// 方块上的平均分优先取本地打分后的结果, 从菜品详情打分回来不用刷新菜单.
 class _Menu extends ConsumerWidget {
   const new({required this.shopId});
 
@@ -289,6 +292,7 @@ class _Menu extends ConsumerWidget {
     final dishes = data?.pages.items ?? const <Dish>[];
     final total = data?.pages.total;
     final tileWidth = (MediaQuery.sizeOf(context).width - 54) / 2;
+    final interactions = ref.watch(dishInteractionsProvider);
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
       sliver: SliverMainAxisGroup(
@@ -332,6 +336,9 @@ class _Menu extends ConsumerWidget {
                     name: dishes[i].name,
                     price: DishRules.priceText(dishes[i].price),
                     likes: dishes[i].likes,
+                    score: DishRules.scoreText(
+                      interactions[dishes[i].id]?.rating ?? dishes[i].rating,
+                    ),
                     onTap: () => context.push(
                       Paths.dish(dishes[i].id),
                       extra: dishes[i],
