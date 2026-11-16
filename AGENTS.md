@@ -38,7 +38,7 @@ lib/
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的 Inter 和许可证）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图，署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
   eat_number_auth/   本地插件：运营商一键登录的原生桥（Kotlin、Swift），包着阿里云号码认证 SDK，SDK 的二进制随插件入库，见技术架构 18.4
@@ -169,11 +169,11 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 
 1. `check`（ubuntu）：读取 `.fvmrc` 版本，按 tag 定出构建类型、版本名和构建号；生成文件检查（`build_runner build --only-check` 和 Pigeon 重新生成比对）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
 2. 通过后并行构建，GitHub 上的产物只保留 1 天，用来在 job 之间传递：
-   - `android`（ubuntu，JDK 17）：release APK 与 AAB。配了上传密钥用它签名，否则 debug 签名。
+   - `android`（ubuntu，JDK 17）：release APK 与 AAB，只含 arm64-v8a 和 armeabi-v7a（`--target-platform`），不打 x86_64；再从通用 APK 拆出这两种架构各一个 APK（`tool/split_apk.sh`，Shorebird 不支持 `--split-per-abi`）。配了上传密钥用它签名，否则 debug 签名。
    - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存），再出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
 3. Release 构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`。
-4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（APK、AAB、未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
+4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
 
 `.github/workflows/patch.yml` 给已发布的 Android 版本推 Shorebird 补丁。补丁 tag 触发时直接推送；手动触发时默认只试跑。正式推送后把构建出的 AAB 和符号表上传到 R2。
 

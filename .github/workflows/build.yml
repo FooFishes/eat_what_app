@@ -185,7 +185,9 @@ jobs:
             printf '%s' "$APP_CONFIG" > config/ci.json
             defines="--dart-define-from-file=config/ci.json"
           fi
-          flags="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER"
+          # 只打 arm64-v8a 和 armeabi-v7a, AAB 也一样. x86_64 只有模拟器用, 去掉能省下约三分之一的包体.
+          # Shorebird 打补丁时会跳过发版里没有的架构.
+          flags="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER --target-platform=android-arm,android-arm64"
           # 发版构建混淆 Dart 代码, 符号表留给 Sentry 还原堆栈.
           if [ "$IS_RELEASE" = true ]; then
             flags="$flags --obfuscate --split-debug-info=build/symbols"
@@ -245,6 +247,11 @@ jobs:
             --flutter-version=${{ needs.check.outputs.flutter-version }} \
             $RELEASE_FLAGS -- $DEFINES
 
+      # 从通用 APK 再拆出两个单架构 APK, 只带一种架构的原生库. 通用 APK 照常保留.
+      # shorebird release 不支持 --split-per-abi, 所以两条路径都在构建后拆, 见脚本说明.
+      - name: Split APK per ABI
+        run: tool/split_apk.sh build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk app arm64-v8a armeabi-v7a
+
       - name: Upload symbols to Sentry
         if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
         run: |
@@ -264,6 +271,8 @@ jobs:
           name: android
           path: |
             build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a.apk
             build/app/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 1
@@ -452,7 +461,9 @@ jobs:
           out=upload
           mkdir -p "$out"
           if [ -d dist/android ]; then
-            cp dist/android/flutter-apk/app-release.apk "$out/eat-$BUILD_NAME.apk"
+            cp dist/android/flutter-apk/app-release.apk "$out/eat-$BUILD_NAME-universal.apk"
+            cp dist/android/flutter-apk/app-arm64-v8a.apk "$out/eat-$BUILD_NAME-arm64-v8a.apk"
+            cp dist/android/flutter-apk/app-armeabi-v7a.apk "$out/eat-$BUILD_NAME-armeabi-v7a.apk"
             cp dist/android/bundle/release/app-release.aab "$out/eat-$BUILD_NAME.aab"
           fi
           if [ -d dist/ios ]; then
