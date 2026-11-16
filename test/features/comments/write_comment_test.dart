@@ -32,6 +32,18 @@ void main() {
           'expireAt': 0,
         }),
       ])
+      ..on('POST /upload/presign/batch', [
+        FakeAdapter.ok({
+          'files': [
+            for (final name in ['c1', 'c2', 'c3'])
+              {
+                'putUrl': 'https://oss.test/put/c',
+                'key': 'comments/$name.jpg',
+                'expireAt': DateTime(2100).millisecondsSinceEpoch,
+              },
+          ],
+        }),
+      ])
       ..on('PUT https://oss.test/put/c', [<String, Object?>{}])
       ..on('POST /upload/complete', [FakeAdapter.ok()]);
   });
@@ -89,7 +101,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('最多加 3 张照片；只有照片也能发，照片按评论用途上传', (tester) async {
+  testWidgets('最多加 3 张照片；只有照片也能发，照片按评论用途一次申请地址上传', (tester) async {
     env.photos.next = [
       for (var i = 0; i < 4; i++)
         PickedPhoto(bytes: transparentImage, width: 1, height: 1),
@@ -106,11 +118,16 @@ void main() {
 
     await tester.tap(find.text('发送'));
     await tester.pumpAndSettle();
-    final presigns = env.adapter.sent('POST /upload/presign');
-    expect(presigns, hasLength(3));
-    expect((presigns.first.body as Map)['biz'], 'comments');
+    expect(env.adapter.sent('POST /upload/presign'), isEmpty);
+    final presign = env.adapter.sent('POST /upload/presign/batch').single;
+    expect((presign.body as Map)['biz'], 'comments');
+    expect((presign.body as Map)['files'], hasLength(3));
     final sent = env.adapter.sent('POST /foods/1/comments').single;
-    expect((sent.body as Map)['pictureKeys'], hasLength(3));
+    expect((sent.body as Map)['pictureKeys'], [
+      'comments/c1.jpg',
+      'comments/c2.jpg',
+      'comments/c3.jpg',
+    ]);
     expect((sent.body as Map)['text'], '');
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);

@@ -77,4 +77,46 @@ void main() {
     expect(result.crop, isNotNull);
     expect(result.tags, isNull);
   });
+
+  test('一次加多张照片时一次申请地址，再按并发上限逐张上传', () async {
+    final env = TestEnv();
+    final later = DateTime(2100).millisecondsSinceEpoch;
+    env.adapter
+      ..on('POST /upload/presign/batch', [
+        FakeAdapter.ok({
+          'files': [
+            for (final name in ['a', 'b', 'c'])
+              {
+                'putUrl': 'https://oss.test/put/$name',
+                'key': 'foods/$name.jpg',
+                'expireAt': later,
+              },
+          ],
+        }),
+      ])
+      ..onPattern(RegExp(r'^PUT https://oss\.test/put/'), [<String, Object?>{}])
+      ..on('POST /upload/complete', [FakeAdapter.ok()]);
+    final container = await env.container();
+    final provider = draftProvider();
+    final sub = container.listen(provider, (_, _) {});
+    addTearDown(sub.close);
+
+    container.read(provider.notifier).addPhotos([
+      for (var i = 0; i < 3; i++)
+        PickedPhoto(bytes: transparentImage, width: 1, height: 1),
+    ]);
+    while (container
+        .read(provider)
+        .photos
+        .any((p) => p.status != UploadStatus.done)) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    expect(env.adapter.sent('POST /upload/presign/batch'), hasLength(1));
+    expect(env.adapter.sent('POST /upload/presign'), isEmpty);
+    expect(
+      [for (final p in container.read(provider).photos) p.key],
+      ['foods/a.jpg', 'foods/b.jpg', 'foods/c.jpg'],
+    );
+  });
 }

@@ -7,6 +7,7 @@ import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/upload/upload_api.dart';
+import 'package:eat/data/upload/upload_dto.dart';
 import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -332,12 +333,16 @@ class const PublishDraft({
 /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 @riverpod
 class Draft extends _$Draft {
   static const _parallel = 2;
 
   final _tokens = <int, CancelToken>{};
+
+  /// 按照片 id 存放一次添加多张时预先申请的上传地址, 每个地址只在首次上传时使用.
+  final _presigned = <int, Future<PresignDto>>{};
   var _nextId = 0;
 
   /// 封面图片解码后的取色缩略图缓存, 供 "调整照片" 拖动时快速重算推荐色.
@@ -378,24 +383,24 @@ class Draft extends _$Draft {
     final room = _options.photosMax - state.photos.length;
     if (room <= 0 || picked.isEmpty) return false;
     final first = state.photos.isEmpty;
-    state = state.copy(
-      photos: [
-        ...state.photos,
-        for (final photo in picked.take(room))
-          DraftPhoto(
-            id: _nextId++,
-            photo: photo,
-            image: ResizeImage(MemoryImage(photo.bytes), width: 1080),
-          ),
-      ],
-    );
+    final added = [
+      for (final photo in picked.take(room))
+        DraftPhoto(
+          id: _nextId++,
+          photo: photo,
+          image: ResizeImage(MemoryImage(photo.bytes), width: 1080),
+        ),
+    ];
+    state = state.copy(photos: [...state.photos, ...added]);
     if (first) unawaited(_suggestForCover());
+    if (added.length > 1) _presign(added);
     _pump();
     return first;
   }
 
   void remove(int id) {
     _tokens.remove(id)?.cancel();
+    _presigned.remove(id);
     final wasCover = state.photos.firstOrNull?.id == id;
     state = state.copy(photos: [...state.photos.where((p) => p.id != id)]);
     if (wasCover) _resetCover();
@@ -573,6 +578,15 @@ class Draft extends _$Draft {
     );
   }
 
+  void _presign(List<DraftPhoto> photos) {
+    final batch = ref.read(uploaderProvider).presignAll([
+      for (final p in photos) p.photo.bytes,
+    ], biz: UploadBiz.foods);
+    for (final (i, photo) in photos.indexed) {
+      _presigned[photo.id] = batch.then((list) => list[i])..ignore();
+    }
+  }
+
   void _pump() {
     var free =
         _parallel -
@@ -590,11 +604,13 @@ class Draft extends _$Draft {
     _tokens[photo.id] = token;
     _update(photo.id, (p) => p.copy(status: UploadStatus.uploading));
     try {
+      final presigned = await _presigned.remove(photo.id);
       final key = await ref
           .read(uploaderProvider)
           .upload(
             photo.photo.bytes,
             biz: UploadBiz.foods,
+            presigned: presigned,
             cancelToken: token,
             onProgress: (value) {
               if (ref.mounted) {

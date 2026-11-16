@@ -394,7 +394,7 @@ class PhoneChange extends _$PhoneChange {
   }
 }
 
-/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
+/// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
 @riverpod
 class FeedbackSender extends _$FeedbackSender {
   @override
@@ -413,16 +413,17 @@ class FeedbackSender extends _$FeedbackSender {
     if (state) return;
     state = true;
     try {
-      final uploader = ref.read(uploaderProvider);
-      final keys = <String>[];
-      for (final shot in screenshots) {
-        keys.add(
-          uploaded[shot] ??= await uploader.upload(
-            shot,
+      final pending = [
+        ...{...screenshots.where((s) => uploaded[s] == null)},
+      ];
+      await ref
+          .read(uploaderProvider)
+          .uploadAll(
+            pending,
             biz: UploadBiz.feedback,
-          ),
-        );
-      }
+            onEach: (i, key) => uploaded[pending[i]] = key,
+          );
+      final keys = [for (final shot in screenshots) uploaded[shot]!];
       await ref
           .read(feedbackRepositoryProvider)
           .sendFeedback(

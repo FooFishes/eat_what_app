@@ -12,6 +12,7 @@ enum UploadBiz { avatar, foods, restaurants, comments, feedback }
 /// UploadApi 调用的接口路径, 相对于业务接口地址.
 abstract final class UploadEndpoints {
   static const presign = '/upload/presign';
+  static const presignBatch = '/upload/presign/batch';
   static const complete = '/upload/complete';
 }
 
@@ -22,6 +23,9 @@ class UploadApi {
   UploadApi(this._client);
 
   final ApiClient _client;
+
+  /// 批量申请时一次最多的文件数, 与后端 `UploadService.MAX_BATCH` 一致.
+  static const batchMax = 9;
 
   Future<PresignDto> presign({
     required String fileName,
@@ -39,6 +43,28 @@ class UploadApi {
       },
     ),
     PresignDto.fromJson,
+  );
+
+  /// 一次申请多个上传地址, [files] 不超过 [UploadApi.batchMax] 个.
+  Future<PresignBatchDto> presignBatch({
+    required List<({String fileName, String contentType, int fileSize})> files,
+    required UploadBiz biz,
+  }) async => decodeJson(
+    await _client.post(
+      UploadEndpoints.presignBatch,
+      body: {
+        'biz': biz.name,
+        'files': [
+          for (final f in files)
+            {
+              'fileName': f.fileName,
+              'contentType': f.contentType,
+              'fileSize': f.fileSize,
+            },
+        ],
+      },
+    ),
+    PresignBatchDto.fromJson,
   );
 
   Future<void> complete(String key) =>

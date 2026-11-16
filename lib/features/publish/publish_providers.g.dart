@@ -643,6 +643,7 @@ final class DishToEditFamily extends $Family
 /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 @ProviderFor(Draft)
@@ -653,6 +654,7 @@ final draftProvider = DraftFamily._();
 /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
@@ -660,6 +662,7 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
   /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+  /// - 一次添加多张照片时一次申请这些照片的上传地址.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
   DraftProvider._({
     required DraftFamily super.from,
@@ -705,13 +708,14 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   }
 }
 
-String _$draftHash() => r'6b189ebd1343eced54f2133089d5d91bcb4c1f30';
+String _$draftHash() => r'bcf2907d404070802b71c1b4a568eb38aa696469';
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
 /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 final class DraftFamily extends $Family
@@ -737,6 +741,7 @@ final class DraftFamily extends $Family
   /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
   /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+  /// - 一次添加多张照片时一次申请这些照片的上传地址.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
   DraftProvider call({Dish? original}) =>
@@ -751,6 +756,7 @@ final class DraftFamily extends $Family
 /// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 abstract class _$Draft extends $Notifier<PublishDraft> {

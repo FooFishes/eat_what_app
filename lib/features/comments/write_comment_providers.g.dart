@@ -61,7 +61,7 @@ final class CommentComposerProvider
   }
 }
 
-String _$commentComposerHash() => r'bb43fc1e898221696f9100bcb4cc88bf0f3b7ba4';
+String _$commentComposerHash() => r'afb9f1c58c2bf6cf24f81575a5c9c9381d736580';
 
 /// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 

@@ -60,15 +60,20 @@ class CommentComposer extends _$CommentComposer {
     try {
       final keys = <String>[];
       if (rootId == null) {
-        for (final photo in state.photos) {
-          final key =
-              photo.key ??
-              await ref
-                  .read(uploaderProvider)
-                  .upload(photo.photo.bytes, biz: UploadBiz.comments);
-          keys.add(key);
-          if (ref.mounted && photo.key == null) _keep(photo.id, key);
-        }
+        final photos = state.photos;
+        final uploaded = {for (final p in photos) p.id: ?p.key};
+        final pending = [...photos.where((p) => p.key == null)];
+        await ref
+            .read(uploaderProvider)
+            .uploadAll(
+              [for (final p in pending) p.photo.bytes],
+              biz: UploadBiz.comments,
+              onEach: (i, key) {
+                uploaded[pending[i].id] = key;
+                if (ref.mounted) _keep(pending[i].id, key);
+              },
+            );
+        keys.addAll([for (final p in photos) uploaded[p.id]!]);
       }
       return await ref
           .read(commentWriterProvider.notifier)

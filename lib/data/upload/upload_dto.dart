@@ -12,3 +12,10 @@ class const PresignDto({
   factory PresignDto.fromJson(Map<String, dynamic> json) =>
       _$PresignDtoFromJson(json);
 }
+
+/// `/upload/presign/batch` 接口响应, [files] 与请求中的文件一一对应且顺序一致.
+@JsonSerializable(createToJson: false)
+class const PresignBatchDto({final List<PresignDto>? files}) {
+  factory PresignBatchDto.fromJson(Map<String, dynamic> json) =>
+      _$PresignBatchDtoFromJson(json);
+}

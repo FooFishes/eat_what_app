@@ -557,15 +557,15 @@ abstract class _$PhoneChange extends $Notifier<PhoneChangeState> {
   }
 }
 
-/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
+/// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
 
 @ProviderFor(FeedbackSender)
 final feedbackSenderProvider = FeedbackSenderProvider._();
 
-/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
+/// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
 final class FeedbackSenderProvider
     extends $NotifierProvider<FeedbackSender, bool> {
-  /// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
+  /// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
   FeedbackSenderProvider._()
     : super(
         from: null,
@@ -593,9 +593,9 @@ final class FeedbackSenderProvider
   }
 }
 
-String _$feedbackSenderHash() => r'77b7a869fcd8973521b613a67fcf670f1165b433';
+String _$feedbackSenderHash() => r'e372742605b93e0047d927da422e90bc79c95108';
 
-/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
+/// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
 
 abstract class _$FeedbackSender extends $Notifier<bool> {
   bool build();

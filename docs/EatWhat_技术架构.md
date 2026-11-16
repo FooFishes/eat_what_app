@@ -932,6 +932,7 @@ extension RefCache on Ref {
 
 - 每张照片一个条目，状态：等待 → 上传中（进度）→ 完成（得到 key）/ 失败。
 - 单张上传三步（接口 Upload 分组）：`POST /upload/presign`（`biz` 为 `foods`、`avatar`、`restaurants`、`comments` 或 `feedback`，带 `contentType`、`fileSize`；`foods`、`restaurants`、`comments` 要认证）→ 用 `UploadClient` 向 `putUrl` `PUT` 原始字节 → `POST /upload/complete`。拿到的 `key` 发布菜时写进 `pictures`，新建店时写进 `picture`。
+- 多张图（一次选了多张菜品照片、评论配图、反馈截图）用 `POST /upload/presign/batch` 一次申请所有地址（返回的 `files` 与请求顺序一致，一次最多 9 个，超出分批），再逐张 `PUT` 和 `complete`（`Uploader.uploadAll`、`Uploader.presignAll`）。预先申请的地址离 `expireAt`（后端默认 5 分钟）不足 30 秒时改为单张重新申请。
 - 同时最多传 2 张。失败的单张显示「重试」，重试从申请签名开始（签名可能已过 `expireAt`）。
 - 「后台上传」指在发布页填表时并行上传。App 切到后台时 iOS 可能挂起请求，回到前台后失败的条目自动重试一次。范围待确认 A13。
 - 发布按钮在照片没传完时显示进度（产品 6.9），全部完成才真正提交。
