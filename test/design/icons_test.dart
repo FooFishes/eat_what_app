@@ -10,8 +10,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
-const _strokeBySize = {14: '2.6', 16: '2.4', 18: '2.13'};
-
 Set<String> _svgNames(String dir) =>
     Directory(dir)
         .listSync()
@@ -29,26 +27,18 @@ void main() {
       );
     });
 
-    test('描边图标有三套加粗变体，填充图标没有', () {
+    test('图标都跟随文字颜色，没有别的子目录', () {
       for (final icon in EatIcons.values) {
-        final base = File('assets/icons/${icon.file}.svg').readAsStringSync();
         expect(
-          base.contains('stroke-width="2"'),
-          icon.stroked,
-          reason: '${icon.name} 的 stroked 和文件对不上',
+          File(icon.asset).readAsStringSync(),
+          contains('currentColor'),
+          reason: icon.name,
         );
-        for (final MapEntry(key: size, value: stroke)
-            in _strokeBySize.entries) {
-          final variant = File('assets/icons/$size/${icon.file}.svg');
-          expect(variant.existsSync(), icon.stroked, reason: variant.path);
-          if (icon.stroked) {
-            expect(
-              variant.readAsStringSync(),
-              base.replaceAll('stroke-width="2"', 'stroke-width="$stroke"'),
-            );
-          }
-        }
       }
+      expect(
+        Directory('assets/icons').listSync().whereType<Directory>(),
+        isEmpty,
+      );
     });
 
     test('Illustration 和 assets/illustrations/ 一一对应', () {
@@ -71,20 +61,6 @@ void main() {
     });
   });
 
-  test('20px 以下换成加粗变体，填充图标始终用原图', () {
-    expect(EatIcons.search.assetFor(24), 'assets/icons/search.svg');
-    expect(EatIcons.search.assetFor(20), 'assets/icons/search.svg');
-    expect(EatIcons.search.assetFor(18), 'assets/icons/18/search.svg');
-    expect(EatIcons.search.assetFor(16), 'assets/icons/16/search.svg');
-    expect(EatIcons.search.assetFor(14), 'assets/icons/14/search.svg');
-    expect(EatIcons.search.assetFor(12), 'assets/icons/14/search.svg');
-    expect(
-      EatIcons.chevronRight.assetFor(16),
-      'assets/icons/16/chevron-right.svg',
-    );
-    expect(EatIcons.heartOn.assetFor(14), 'assets/icons/heart-on.svg');
-  });
-
   group('EatIcon', () {
     SvgPicture picture(WidgetTester tester) =>
         tester.widget<SvgPicture>(find.byType(SvgPicture));
@@ -99,13 +75,13 @@ void main() {
       ),
     );
 
-    testWidgets('颜色跟着所在文字，按尺寸取资源', (tester) async {
+    testWidgets('颜色跟着所在文字，任何尺寸都用同一个资源', (tester) async {
       await pump(tester, const EatIcon(EatIcons.search, size: 16));
 
       final svg = picture(tester);
       expect(
         (svg.bytesLoader as AssetBytesLoader).assetName,
-        'assets/icons/16/search.svg',
+        'assets/icons/search.svg',
       );
       expect(
         svg.colorFilter,

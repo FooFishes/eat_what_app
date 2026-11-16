@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
-/// MingCute Line 图标. 未指定颜色时使用所在文字的颜色.
+/// MingCute 图标. 未指定颜色时使用所在文字的颜色.
 class EatIcon extends StatelessWidget {
   const new(
     this.icon, {
@@ -18,7 +18,6 @@ class EatIcon extends StatelessWidget {
 
   final EatIcons icon;
 
-  /// 边长. 描边图标小于 20 时换用加粗变体, 见 [EatIcons.assetFor].
   final double size;
 
   /// 未指定时使用 `DefaultTextStyle` 的颜色. [EatIcons.heartOn] 默认使用 `stage-tomato`.
@@ -38,7 +37,7 @@ class EatIcon extends StatelessWidget {
         DefaultTextStyle.of(context).style.color ??
         context.eat.colors.ink;
     return SvgPicture(
-      AssetBytesLoader(icon.assetFor(size)),
+      AssetBytesLoader(icon.asset),
       width: size,
       height: size,
       colorFilter: ColorFilter.mode(color, BlendMode.srcIn),

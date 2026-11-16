@@ -1,96 +1,103 @@
 /// 界面使用的全部图标, 按用途命名.
 ///
+/// 图标全部取自 MingCute 官方的 `@mingcute/svg` (版本见 `tool/icons.dart`), 本枚举同时是用途名与官方名的对照表.
 /// 枚举名与 `assets/icons/` 的文件名一一对应, 如 `chevronRight` 对应 `chevron-right.svg`.
-/// 图标取自 MingCute Line, 用途名与原名的对照见 `prototype/design-system/assets/Icons/README.md`.
 ///
-/// 新增图标时先在对照表中登记, 再运行 `tool/icons.dart`, 最后在本枚举中添加对应值.
+/// 默认用空心 (Regular). 只有切换状态用实心 (Filled): 赞过, 收藏过, 底部导航选中的标签.
+///
+/// 新增图标时在本枚举中添加一项, 写明官方名, 再运行 `tool/icons.dart` 生成资源.
 enum EatIcons {
-  add,
-  addCircle,
-  announce,
-  back,
-  bell,
-  block,
-  bookmark,
-  bookmarkOn(stroked: false),
-  bowl,
-  calendar(stroked: false),
-  camera,
-  check,
-  checkCircle(stroked: false),
-  chevronDown,
-  chevronRight,
-  close,
-  closeCircle,
-  comment,
-  computer,
-  copy,
-  delete,
-  discover,
-  dismiss,
-  district,
-  document,
-  download,
-  earth,
-  edit,
-  external,
-  eye,
-  eyeOff,
-  feedback,
-  filter,
-  follow,
-  followed(stroked: false),
-  heart,
-  heartOn(stroked: false),
-  history,
-  hot,
-  idcard,
-  image(stroked: false),
-  info,
-  key,
-  link,
-  locate,
-  lock,
-  logout,
-  mail,
-  mailSend,
-  map,
-  me,
-  moon(stroked: false),
-  more,
-  navigate,
-  nearby,
-  notifyOff,
-  pause,
-  phone,
-  pin,
-  question,
-  report,
-  school,
-  search,
-  send,
-  settings,
-  share,
-  shield,
-  shuffle,
-  sort,
-  store,
-  tag,
-  time,
-  tool,
-  topic,
-  unfollow,
-  utensils,
-  verify,
-  warning,
-  wifiOff(stroked: false);
+  add('add'),
+  addCircle('add-circle'),
+  announce('announcement'),
+  back('left'),
+  bell('notification'),
+  block('forbid-circle'),
+  bookmark('bookmark'),
+  bookmarkOn('bookmark', filled: true),
+  bowl('bowl'),
+  calendar('calendar'),
+  camera('camera'),
+  check('check'),
+  checkCircle('check-circle'),
+  chevronDown('down'),
+  chevronRight('right'),
+  close('close'),
+  closeCircle('close-circle'),
+  comment('chat-1'),
+  computer('computer'),
+  copy('copy-2'),
+  delete('delete-2'),
+  discover('compass'),
+  discoverOn('compass', filled: true),
+  dismiss('sad'),
+  district('building-2'),
+  document('file'),
+  download('download-2'),
+  earth('earth'),
+  edit('edit'),
+  external('external-link'),
+  eye('eye'),
+  eyeOff('eye-close'),
+  feedback('message-4'),
+  filter('settings-6'),
+  follow('user-add'),
+  followed('user-follow'),
+  heart('heart'),
+  heartOn('heart', filled: true),
+  history('history'),
+  hot('fire'),
+  idcard('idcard'),
+  image('pic'),
+  info('information'),
+  key('key-2'),
+  link('link'),
+  locate('aiming-2'),
+  lock('lock'),
+  logout('exit'),
+  mail('mail'),
+  mailSend('mail-send'),
+  map('map'),
+  me('user-3'),
+  meOn('user-3', filled: true),
+  moon('moon'),
+  more('more-1'),
+  navigate('navigation'),
+  nearby('location'),
+  nearbyOn('location', filled: true),
+  notifyOff('notification-off'),
+  pause('pause-circle'),
+  phone('cellphone'),
+  pin('map-pin'),
+  price('wallet'),
+  question('question'),
+  report('flag-1'),
+  school('school'),
+  search('search'),
+  send('send-plane'),
+  settings('settings-3'),
+  share('share-forward'),
+  shield('shield'),
+  shuffle('refresh-2'),
+  sort('sort-descending'),
+  store('store-2'),
+  tag('tag'),
+  time('time'),
+  tool('tool'),
+  topic('bookmarks'),
+  unfollow('user-remove'),
+  utensils('fork-spoon'),
+  verify('safety-certificate'),
+  warning('warning'),
+  wifiOff('wifi-off');
 
-  const new({this.stroked = true});
+  const new(this.mingcute, {this.filled = false});
 
-  /// 是否以 2px 描边绘制.
-  ///
-  /// 只有描边图标生成了 14, 16, 18 三档加粗变体. 实心图标和填充轮廓图标没有变体.
-  final bool stroked;
+  /// 官方名, 如 `compass`. 对应 `@mingcute/svg` 中的 `core-regular/compass.svg`, 实心对应 `core-filled/compass.svg`.
+  final String mingcute;
+
+  /// 是否用实心.
+  final bool filled;
 
   /// 不含扩展名的文件名.
   String get file => name.replaceAllMapped(
@@ -98,16 +105,5 @@ enum EatIcons {
     (match) => '-${match[0]!.toLowerCase()}',
   );
 
-  /// 按显示尺寸选择资源. 描边图标小于 20px 时换用加粗变体, 使实际线宽保持在 1.5–1.6px.
-  String assetFor(double size) {
-    final variant = switch (size) {
-      _ when !stroked || size >= 20 => null,
-      < 15 => 14,
-      < 17 => 16,
-      _ => 18,
-    };
-    return variant == null
-        ? 'assets/icons/$file.svg'
-        : 'assets/icons/$variant/$file.svg';
-  }
+  String get asset => 'assets/icons/$file.svg';
 }

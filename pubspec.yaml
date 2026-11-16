@@ -58,20 +58,12 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # 图标在构建时预编译为二进制, 运行时由 AssetBytesLoader 读取. 14, 16, 18 为小尺寸的加粗描边变体.
+  # 图标在构建时预编译为二进制, 运行时由 AssetBytesLoader 读取. 由 tool/icons.dart 从 MingCute 官方包生成.
   assets:
     - path: assets/icons/
       transformers:
         - package: vector_graphics_compiler
-    - path: assets/icons/14/
-      transformers:
-        - package: vector_graphics_compiler
-    - path: assets/icons/16/
-      transformers:
-        - package: vector_graphics_compiler
-    - path: assets/icons/18/
-      transformers:
-        - package: vector_graphics_compiler
+    - assets/LICENSE-MingCute.txt
     - path: assets/illustrations/
       transformers:
         - package: vector_graphics_compiler

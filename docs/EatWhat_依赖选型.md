@@ -348,11 +348,11 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 ### 9.2 图标：`flutter_svg ^2.3.0` + `vector_graphics ^1.2.4` + `vector_graphics_compiler ^1.3.2`
 
-- 图标是 MingCute Line 的 SVG（设计规范 `Icon`）。从 `prototype/assets/icons/` 复制到项目 `assets/icons/`，按文件名引用。
+- 图标是 MingCute 官方 `@mingcute/svg` 的 SVG（设计规范 `Icon`），版本锁在 `tool/icons.dart`（当前 3.1.0）。`EatIcons` 每一项写明官方名和空心或实心，`tool/icons.dart` 按它从 npm 下载这个版本，原样复制到 `assets/icons/`，只按用途改名；官方许可证（Apache-2.0）复制到 `assets/LICENSE-MingCute.txt`，启动时登记到系统的许可证页。升级只改版本号再运行。
 - `pubspec.yaml` 里给 `assets/icons/` 配 `vector_graphics_compiler` 资源转换器，构建时把 SVG 预编译成二进制，运行时不解析 XML。预编译的资源要用 `vector_graphics` 的 `AssetBytesLoader` 读（`SvgPicture(AssetBytesLoader(...))`），`flutter_svg` 没有导出它，所以 `vector_graphics` 也写进直接依赖；它本来就是 `flutter_svg` 的依赖，版本跟着走。
 - 颜色：图标都是单色，用 `colorFilter: ColorFilter.mode(颜色, BlendMode.srcIn)` 跟着所在文字变色；赞过的心形是 `stage-tomato`。
-- 小尺寸加粗描边（14px 用 2.6、16px 用 2.4、18px 用 2.13）：运行时不能改预编译图标的描边，用 `tool/icons.dart` 为描边类图标预先生成 14、16、18 三套变体，放在 `assets/icons/14/` 这样的子目录里。少数图标本身是填充轮廓（如 `image`、`followed`），不参与加粗。
-- 不用图标字体：描边类图标转字体要先轮廓化，小尺寸加粗也做不了。
+- 官方图标是填充轮廓，不是描边，小尺寸没法单独加粗；各尺寸用同一个文件。
+- 不用图标字体包：官方只发 WOFF2 字体，社区的 Flutter 字体包（如 `flutter_mingcute`）图形同样来自官方，但每次发版都把 Flutter 最低版本提到最新的稳定补丁，会把我们的 SDK 升级绑在它的节奏上；生成的 Dart 文件也有 6.8 MB。只用到 80 多个图标，自己生成 SVG 更轻。
 
 ## 10. 系统分享与深链
 

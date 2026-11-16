@@ -765,8 +765,8 @@ extension RefCache on Ref {
 
 ### 11.6 图标
 
-- `EatIcons` 是按用途命名的常量表（`search`、`chevron-right`、`heart-on`……），和 `assets/icons/` 的文件名一致。
-- `EatIcon(EatIcons.search, size: 22)`：颜色默认取 `DefaultTextStyle` 的颜色，用 `ColorFilter` 上色；尺寸是 14、16、18 时自动换成加粗描边的变体文件。
+- `EatIcons` 是按用途命名的常量表（`search`、`chevron-right`、`heart-on`……），和 `assets/icons/` 的文件名一致；每一项写明 MingCute 官方名和是否实心，如 `discover('compass')`、`discoverOn('compass', filled: true)`，`tool/icons.dart` 按它生成资源（依赖选型 9.2）。
+- `EatIcon(EatIcons.search, size: 22)`：颜色默认取 `DefaultTextStyle` 的颜色，用 `ColorFilter` 上色。
 - 只有图标的按钮至少 44×44，并带 `Semantics(label: '返回')` 这类说明。
 
 ### 11.7 Material 的使用范围
