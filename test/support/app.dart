@@ -8,12 +8,17 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'analytics.dart';
 import 'fakes.dart';
 import 'screen.dart';
 
 /// 在 [env] 的模拟环境中启动完整 App, 并导航到 [location].
 ///
 /// 启动前关闭动画. 登录页的转盘持续旋转, 开启动画时 `pumpAndSettle` 无法结束.
+///
+/// 使用统计默认换成只记在内存里的 [RecordingAnalytics]: 真实实现攒批时会起 30 秒的定时器,
+/// 测试中途同意隐私政策后开始采集, 没有调用 [unmountApp] 的测试结束时定时器仍未触发.
+/// 上报本身由 `test/state/analytics_test.dart` 覆盖.
 Future<(ProviderContainer, GoRouter)> pumpApp(
   WidgetTester tester,
   TestEnv env, {
@@ -30,7 +35,9 @@ Future<(ProviderContainer, GoRouter)> pumpApp(
   final container = await env.container(
     session: session,
     token: token,
-    overrides: overrides,
+    overrides: overrides.contains(recordAnalytics)
+        ? overrides
+        : [...overrides, recordAnalytics],
   );
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const EatApp()),

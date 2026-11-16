@@ -1,5 +1,6 @@
 import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
+import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/data/telemetry/telemetry_api.dart';
 import 'package:eat/state/analytics.dart';
@@ -8,12 +9,12 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import 'fakes.dart';
 
-/// 只把事件记在内存里的 [Analytics], 不检查同意记录, 不上报.
+/// 只把事件记在内存里的 [Analytics], 不检查同意记录, 不上报. 使用统计开关照常读写 [kvStoreProvider].
 class RecordingAnalytics extends Analytics {
   RecordingAnalytics(Ref ref)
     : super(
         ref.watch(telemetryApiProvider),
-        MemoryKvStore(),
+        ref.watch(kvStoreProvider),
         () async => testInstallId,
       );
 
