@@ -21,18 +21,12 @@ Future<Shop> shop(Ref ref, int shopId) {
       .shop(shopId, cancelToken: ref.cancelToken());
 }
 
-/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+/// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
 ///
-/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
 @riverpod
-String? hubName(Ref ref, int? hubId) {
-  if (hubId == null) return null;
-  final hubs = ref.watch(hubsProvider).value ?? const <Hub>[];
-  for (final hub in hubs) {
-    if (hub.id == hubId) return hub.name;
-  }
-  return null;
-}
+String? hubName(Ref ref, int? hubId) =>
+    hubId == null ? null : ref.watch(hubProvider(hubId)).value?.name;
 
 /// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
 @riverpod

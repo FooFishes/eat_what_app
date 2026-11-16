@@ -8,9 +8,11 @@ void main() {
 
   setUp(() {
     env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [
-      FakeAdapter.ok(pageJson([restaurantJson()])),
-    ]);
+    for (final route in ['GET /restaurant/browse', 'GET /restaurant/search']) {
+      env.adapter.on(route, [
+        FakeAdapter.ok(pageJson([restaurantJson()])),
+      ]);
+    }
   });
 
   test('没有定位时等校区加载出来，按校区中心搜附近的店', () async {
@@ -22,7 +24,8 @@ void main() {
     final shops = await container.read(provider.future);
 
     expect(shops.single.id, 7);
-    final query = env.adapter.sent('GET /restaurant/search').single.query;
+    expect(env.adapter.sent('GET /restaurant/search'), isEmpty);
+    final query = env.adapter.sent('GET /restaurant/browse').single.query;
     expect(query, containsPair('gcjLat', 36.667382));
     expect(query, containsPair('gcjLng', 117.140109));
     expect(query, containsPair('campusId', 1));
@@ -46,7 +49,7 @@ void main() {
   test('已关门的店不出现在选店列表里', () async {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(
           pageJson([
             {...restaurantJson(id: 8, name: '老店'), 'permanentlyClosed': true},

@@ -13,7 +13,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(
           pageJson([
             restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
@@ -28,7 +28,7 @@ void main() {
       location: Paths.nearby,
     );
 
-    final query = env.adapter.sent('GET /restaurant/search').last.query;
+    final query = env.adapter.sent('GET /restaurant/browse').last.query;
     expect(query['gcjLat'], 36.667382);
     expect(query['radius'], 3000);
     expect(query['campusId'], 1);
@@ -45,7 +45,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(
           pageJson([
             {
@@ -76,7 +76,7 @@ void main() {
     expect(find.text('推荐'), findsOneWidget, reason: '不满 3 条评价的店不写推荐率');
     expect(find.bySemanticsLabel(RegExp('^排序')), findsNothing);
     expect(
-      env.adapter.sent('GET /restaurant/search').last.query,
+      env.adapter.sent('GET /restaurant/browse').last.query,
       containsPair('sort', 'DISTANCE'),
     );
     await unmountApp(tester, container);
@@ -103,7 +103,7 @@ void main() {
           ]),
         ),
       ])
-      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+      ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -123,7 +123,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(
           pageJson([
             restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
@@ -156,7 +156,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(
           pageJson([
             restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
@@ -170,7 +170,7 @@ void main() {
       session: const SignedIn(user: verifiedUser),
       location: Paths.nearby,
     );
-    env.adapter.on('GET /restaurant/search', [
+    env.adapter.on('GET /restaurant/browse', [
       FakeAdapter.ok(pageJson([restaurantJson(id: 2, name: '近一点的店')])),
     ]);
 
@@ -190,7 +190,7 @@ void main() {
     await tap('¥15–30');
     expect(find.text('至少 3 条评价，推荐率不低于 70%'), findsOneWidget);
     await tap('只看口碑好的');
-    final query = env.adapter.sent('GET /restaurant/search').last.query;
+    final query = env.adapter.sent('GET /restaurant/browse').last.query;
     expect(query, containsPair('kind', 'drink'));
     expect(query['categories'], ['粉面']);
     expect(query, containsPair('priceBand', 'FROM_15_TO_30'));
@@ -198,11 +198,11 @@ void main() {
     expect(query, containsPair('sort', 'DISTANCE'));
     expect(find.text('看 1 家'), findsOneWidget);
 
-    final requests = env.adapter.sent('GET /restaurant/search').length;
+    final requests = env.adapter.sent('GET /restaurant/browse').length;
     await tester.tap(find.text('看 1 家'));
     await _settle(tester);
     expect(
-      env.adapter.sent('GET /restaurant/search'),
+      env.adapter.sent('GET /restaurant/browse'),
       hasLength(requests),
       reason: '面板里查过的条件生效时用缓存，不再请求',
     );
@@ -223,7 +223,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(pageJson([restaurantJson(id: 2, name: '收藏的店')])),
       ]);
     final (container, _) = await pumpApp(
@@ -241,7 +241,7 @@ void main() {
 
     expect(find.textContaining('认证后才能'), findsNothing);
     expect(
-      env.adapter.sent('GET /restaurant/search').last.query,
+      env.adapter.sent('GET /restaurant/browse').last.query,
       containsPair('favoritesOnly', true),
     );
     await expectAccessible(tester);
@@ -256,7 +256,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
-      ..on('GET /restaurant/search', [
+      ..on('GET /restaurant/browse', [
         FakeAdapter.ok(pageJson([restaurantJson(id: 2, name: '近一点的店')])),
       ]);
     final (container, _) = await pumpApp(
@@ -278,7 +278,7 @@ void main() {
     await _settle(tester);
     expect(
       env.adapter
-          .sent('GET /restaurant/search')
+          .sent('GET /restaurant/browse')
           .where((r) => r.query.containsKey('favoritesOnly')),
       isEmpty,
     );

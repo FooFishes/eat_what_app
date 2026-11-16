@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/place/place_repository.dart';
@@ -24,6 +25,21 @@ Future<List<Campus>> campuses(Ref ref) =>
 @Riverpod(keepAlive: true)
 Future<List<Hub>> hubs(Ref ref) =>
     ref.watch(placeRepositoryProvider).hubs(cancelToken: ref.cancelToken());
+
+/// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+@Riverpod(keepAlive: true)
+Future<Hub?> hub(Ref ref, int id) async {
+  try {
+    for (final hub in await ref.watch(hubsProvider.future)) {
+      if (hub.id == id) return hub;
+    }
+  } on AppFailure {
+    // 列表失败时退回到按 id 查询.
+  }
+  return ref
+      .watch(placeRepositoryProvider)
+      .hub(id, cancelToken: ref.cancelToken());
+}
 
 /// 用户在 "在哪吃" 面板中的选择: 校区, 手动选择的饭点及其失效时间, 堂食还是外卖.
 class const PlaceChoice({

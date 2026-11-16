@@ -24,12 +24,14 @@ enum ShopSort {
 abstract final class PlaceEndpoints {
   static const campuses = '/campus/list';
   static const hubs = '/hub/list';
+  static String hub(int id) => '/hub/detail/$id';
   static const locateHub = '/hub/locate';
   static const addRestaurant = '/restaurant/add';
   static const duplicates = '/restaurant/duplicates';
   static String editRestaurant(int id) => '/restaurant/edit/$id';
   static String restaurant(int id) => '/restaurant/detail/$id';
   static const searchRestaurants = '/restaurant/search';
+  static const browseRestaurants = '/restaurant/browse';
   static String restaurantRating(int id) => '/restaurant/$id/rating';
   static String restaurantFavorite(int id) => '/restaurant/$id/favorite';
   static const favoriteRestaurants = '/restaurant/favorites';
@@ -60,6 +62,11 @@ class PlaceApi {
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),
+    HubDto.fromJson,
+  );
+
+  Future<HubDto> hub(int id, {CancelToken? cancelToken}) async => decodeJson(
+    await _client.get(PlaceEndpoints.hub(id), cancelToken: cancelToken),
     HubDto.fromJson,
   );
 
@@ -114,6 +121,7 @@ class PlaceApi {
 
   /// 搜索店铺 (包含已关门店铺), 各筛选条件之间为 "与" 关系.
   ///
+  /// 没有 [keyword] 时请求 `/restaurant/browse`, 否则请求 `/restaurant/search`. 两者是服务端的同一个查询, 参数和返回相同.
   /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 `matchedFood`.
   /// - 坐标可选但必须成对传入; 未指定 [sort] 时, 传坐标按距离升序排列, 否则按创建时间倒序.
   /// - [radius] 和 [ShopSort.distance] 均需配合坐标使用.
@@ -142,7 +150,9 @@ class PlaceApi {
     CancelToken? cancelToken,
   }) async => decodePage(
     await _client.get(
-      PlaceEndpoints.searchRestaurants,
+      keyword == null || keyword.isEmpty
+          ? PlaceEndpoints.browseRestaurants
+          : PlaceEndpoints.searchRestaurants,
       query: {
         'campusId': ?campusId,
         'keyword': ?keyword,

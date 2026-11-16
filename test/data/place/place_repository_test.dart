@@ -30,7 +30,7 @@ void main() {
 
   test('搜店带上类型、品类、口味、价位、外卖、口碑好、收藏和排序', () async {
     final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+    env.adapter.on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
     final container = await env.container();
 
     await container
@@ -47,7 +47,7 @@ void main() {
           sort: ShopSort.newest,
         );
 
-    final query = env.adapter.sent('GET /restaurant/search').single.query;
+    final query = env.adapter.sent('GET /restaurant/browse').single.query;
     expect(query, containsPair('kind', 'drink'));
     expect(query['categories'], unorderedEquals(['粉面', '火锅麻辣烫']));
     expect(query, containsPair('tags', ['辣']));
@@ -60,14 +60,14 @@ void main() {
 
   test('不筛选时不带筛选参数；没有坐标时不带距离排序和半径', () async {
     final env = TestEnv();
-    env.adapter.on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+    env.adapter.on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
     final container = await env.container();
 
     await container
         .read(placeRepositoryProvider)
         .searchShops(radius: 500, sort: ShopSort.distance);
 
-    final query = env.adapter.sent('GET /restaurant/search').single.query;
+    final query = env.adapter.sent('GET /restaurant/browse').single.query;
     for (final key in [
       'sort',
       'gcjLat',
@@ -191,6 +191,49 @@ void main() {
     expect(shop?.matchedDish?.id, 5);
     expect(shop?.matchedDish?.name, '鲜虾云吞');
     expect(shop?.matchedDish?.price, 18);
+  });
+
+  test('有关键词时走搜索，没有关键词 (含空串) 时走浏览，参数相同', () async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
+    final container = await env.container();
+    final repository = container.read(placeRepositoryProvider);
+
+    await repository.searchShops(keyword: '云吞', hubId: 3);
+    await repository.searchShops(keyword: '', hubId: 3);
+    await repository.searchShops(hubId: 3);
+
+    expect(
+      env.adapter.sent('GET /restaurant/search').single.query,
+      containsPair('keyword', '云吞'),
+    );
+    final browsed = env.adapter.sent('GET /restaurant/browse').toList();
+    expect(browsed, hasLength(2));
+    for (final request in browsed) {
+      expect(request.query, containsPair('hubId', 3));
+    }
+  });
+
+  test('按 id 取商圈详情', () async {
+    final env = TestEnv();
+    env.adapter.on('GET /hub/detail/5', [
+      FakeAdapter.ok({
+        'id': 5,
+        'name': '舜泰广场',
+        'gcjLng': 117.13,
+        'gcjLat': 36.66,
+        'campusId': 1,
+        'boundary': null,
+      }),
+    ]);
+    final container = await env.container();
+
+    final hub = await container.read(placeRepositoryProvider).hub(5);
+
+    expect((hub?.id, hub?.name), (5, '舜泰广场'));
+    expect(hub?.boundary, isEmpty);
   });
 
   test('商圈边界原样按 GCJ-02 解析，只取外环', () async {

@@ -136,6 +136,10 @@ class PlaceRepository {
     return [for (final dto in page.items) ?_hub(dto)];
   }
 
+  /// 按 id 获取单个商圈. 商圈缺少坐标时返回 null.
+  Future<Hub?> hub(int id, {CancelToken? cancelToken}) async =>
+      _hub(await _api.hub(id, cancelToken: cancelToken));
+
   Future<Hub?> locateHub(GcjPoint point) async {
     final dto = await _api.locateHub(point.lat, point.lng);
     return dto == null ? null : _hub(dto);

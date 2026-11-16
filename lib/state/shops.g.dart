@@ -93,23 +93,23 @@ final class ShopFamily extends $Family
   String toString() => r'shopProvider';
 }
 
-/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+/// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
 ///
-/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
 
 @ProviderFor(hubName)
 final hubNameProvider = HubNameFamily._();
 
-/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+/// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
 ///
-/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
 
 final class HubNameProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
-  /// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+  /// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
   ///
-  /// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+  /// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
   HubNameProvider._({
     required HubNameFamily super.from,
     required int? super.argument,
@@ -161,11 +161,11 @@ final class HubNameProvider
   }
 }
 
-String _$hubNameHash() => r'24cae425bbe142010ccb4c13702d1d992cb4a913';
+String _$hubNameHash() => r'cb35b3f585c430df0726ee64e08ba8719e7e7415';
 
-/// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+/// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
 ///
-/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+/// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
 
 final class HubNameFamily extends $Family
     with $FunctionalFamilyOverride<String?, int?> {
@@ -178,9 +178,9 @@ final class HubNameFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 商圈 id 对应的名称. 商圈列表尚未获取或没有对应商圈时为 null.
+  /// 商圈 id 对应的名称. 商圈尚未获取或不存在时为 null.
   ///
-  /// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找.
+  /// 店铺自带商圈名 (`Shop.hubName`). 只有不带商圈名的数据 (如菜品) 需要按 id 查找, 见 [hubProvider].
 
   HubNameProvider call(int? hubId) =>
       HubNameProvider._(argument: hubId, from: this);

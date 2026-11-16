@@ -1,6 +1,7 @@
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/state/place.dart';
+import 'package:eat/state/shops.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -68,5 +69,39 @@ void main() {
     final place = (await start(env)).read(currentPlaceProvider);
 
     expect(place.scene, RatingScene.dineIn);
+  });
+
+  group('商圈', () {
+    Map<String, Object?> hub(int id, String name) => {
+      'id': id,
+      'name': name,
+      'gcjLng': 117.14,
+      'gcjLat': 36.66,
+    };
+
+    test('列表里有的商圈直接用，不查详情', () async {
+      env.adapter.on('GET /hub/list', [
+        FakeAdapter.ok(pageJson([hub(3, '万达金街')])),
+      ]);
+      final container = await env.container();
+      addTearDown(container.dispose);
+
+      expect((await container.read(hubProvider(3).future))?.name, '万达金街');
+      expect(env.adapter.sent('GET /hub/detail/3'), isEmpty);
+    });
+
+    test('列表里没有或列表加载失败时按 id 查详情，菜品页的商圈名跟着有', () async {
+      env.adapter
+        ..on('GET /hub/list', [FakeAdapter.fail(50000)])
+        ..on('GET /hub/detail/9', [FakeAdapter.ok(hub(9, '舜泰广场'))]);
+      final container = await env.container();
+      addTearDown(container.dispose);
+      container.listen(hubNameProvider(9), (_, _) {});
+
+      await container.read(hubProvider(9).future);
+
+      expect(container.read(hubNameProvider(9)), '舜泰广场');
+      expect(env.adapter.sent('GET /hub/detail/9'), hasLength(1));
+    });
   });
 }

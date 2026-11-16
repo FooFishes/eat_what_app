@@ -95,6 +95,81 @@ final class HubsProvider
 
 String _$hubsHash() => r'7e1161c0dcdfe6ae86ce142d60b40922118c5305';
 
+/// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+
+@ProviderFor(hub)
+final hubProvider = HubFamily._();
+
+/// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+
+final class HubProvider
+    extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
+    with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
+  /// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+  HubProvider._({required HubFamily super.from, required int super.argument})
+    : super(
+        retry: null,
+        name: r'hubProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$hubHash();
+
+  @override
+  String toString() {
+    return r'hubProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<Hub?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Hub?> create(Ref ref) {
+    final argument = this.argument as int;
+    return hub(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is HubProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$hubHash() => r'a191dad745688e370144a71fe666a482b971a73b';
+
+/// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+
+final class HubFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<Hub?>, int> {
+  HubFamily._()
+    : super(
+        retry: null,
+        name: r'hubProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: false,
+      );
+
+  /// 单个商圈. 先在 [hubs] 里找; 列表里没有 (列表只取了第一页) 或列表加载失败时, 按 id 查商圈详情.
+
+  HubProvider call(int id) => HubProvider._(argument: id, from: this);
+
+  @override
+  String toString() => r'hubProvider';
+}
+
 /// 管理持久化在本机的校区, 饭点与用餐场景选择.
 ///
 /// 属于设备级偏好, 退出登录时不清除; 场景与校区一样长期保留, 手动选择的饭点仅保持到当前时间段结束.

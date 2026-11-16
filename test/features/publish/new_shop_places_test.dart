@@ -27,6 +27,7 @@ void main() {
     env.adapter
       ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
       ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))])
       ..on('GET /restaurant/duplicates', [FakeAdapter.ok([])]);
   });
 
