@@ -473,6 +473,9 @@ class _TurntableStage extends ConsumerWidget {
   /// 手机上盘子 (连盘沿) 与顶栏和按钮之间至少留出的距离.
   static const _plateGap = EatSpace.s10;
 
+  /// 菜名下方价格, 店名, 距离和推荐率各行之间的距离, 各行一致.
+  static const _factGap = EatSpace.s8;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final layout = EatLayout.of(context);
@@ -620,7 +623,7 @@ class _TurntableStage extends ConsumerWidget {
                                   if (price != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                        top: EatSpace.s4,
+                                        top: _factGap,
                                       ),
                                       child: _StageFact(
                                         EatIcons.price,
@@ -631,7 +634,7 @@ class _TurntableStage extends ConsumerWidget {
                                   if (signature != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                        top: EatSpace.s14,
+                                        top: _factGap,
                                       ),
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
@@ -650,7 +653,7 @@ class _TurntableStage extends ConsumerWidget {
                                   if (where != null || rate != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                        top: EatSpace.s4,
+                                        top: _factGap,
                                       ),
                                       child: ConstrainedBox(
                                         constraints: BoxConstraints(
@@ -661,7 +664,7 @@ class _TurntableStage extends ConsumerWidget {
                                           crossAxisAlignment:
                                               WrapCrossAlignment.center,
                                           spacing: EatSpace.s14,
-                                          runSpacing: EatSpace.s4,
+                                          runSpacing: _factGap,
                                           children: [
                                             if (distance != null)
                                               _StageFact(
@@ -970,6 +973,7 @@ class _ShopList extends ConsumerWidget {
 /// 舞台上带前置图标的一项信息, 图标颜色和大小跟着文字.
 ///
 /// 文字换行时图标对齐第一行.
+/// 允许两行时, 第二行不超过 [_shortTail] 个字就不换行, 在第一行末尾省略, 免得第二行大片留白.
 class _StageFact extends StatelessWidget {
   const new(this.icon, this.text, {required this.style, this.maxLines = 1});
 
@@ -978,11 +982,19 @@ class _StageFact extends StatelessWidget {
   final TextStyle style;
   final int maxLines;
 
+  static const _shortTail = 3;
+
   @override
   Widget build(BuildContext context) {
     final scaler = MediaQuery.textScalerOf(context);
     final fontSize = scaler.scale(style.fontSize ?? 16);
     final lineHeight = fontSize * (style.height ?? 1);
+    Widget label(int lines) => Text(
+      text,
+      maxLines: lines,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -993,14 +1005,33 @@ class _StageFact extends StatelessWidget {
           child: EatIcon(icon, size: fontSize, color: style.color),
         ),
         Flexible(
-          child: Text(
-            text,
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
-            style: style,
-          ),
+          child: maxLines == 1
+              ? label(1)
+              : LayoutBuilder(
+                  builder: (context, constraints) => label(
+                    _wrapsShort(context, scaler, constraints.maxWidth)
+                        ? 1
+                        : maxLines,
+                  ),
+                ),
         ),
       ],
     );
+  }
+
+  /// 文字正好排成两行, 且第二行不超过 [_shortTail] 个字.
+  bool _wrapsShort(BuildContext context, TextScaler scaler, double width) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+    )..layout(maxWidth: width);
+    try {
+      if (painter.computeLineMetrics().length != 2) return false;
+      final last = painter.getLineBoundary(TextPosition(offset: text.length));
+      return last.textInside(text).trim().characters.length <= _shortTail;
+    } finally {
+      painter.dispose();
+    }
   }
 }
