@@ -479,7 +479,7 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 - DTO 只在 `data/` 内部用；`XxxRepository` 把 DTO 转成 `domain/models` 里的领域模型。接口字段几乎全是可空的，DTO 照实写成可空，在 repository 里补默认值，UI 拿到的模型尽量不为空。领域模型不做 JSON，不标注解。
 - 时间字段是 Unix 毫秒，统一转 `DateTime`。
 - 坐标字段用带 GCJ 的那组（`gcjLng`、`gcjLat`），见第 14 节。
-- v2 的 openapi 由 springdoc 按类名给结构取名，不同模块里同名的结构互相覆盖：`Food`、`EditRequest`、`Options`、`Settings`、`Card`、`Accepted`、`Target`、`Restaurant`、`ConsentPolicy` 在文档里都是别的模块的结构。这些 DTO 照后端 Java 源码（`src/main/java/you/v50to/eatwhat/<模块>/dto/`）写，不照文档抄（已反馈后端）。
+- v2 的 openapi 由 springdoc 按类名给结构取名，不同模块里同名的结构互相覆盖：`Food`、`RatingRequest`、`Options`、`Settings`、`Card`、`Accepted`、`Target`、`Restaurant`、`ConsentPolicy` 在文档里都是别的模块的结构。这些 DTO 照后端 Java 源码（`src/main/java/you/v50to/eatwhat/<模块>/dto/`）写，不照文档抄（已反馈后端）。
 - 同步新版 `docs/api.openapi.yml` 后看 `git diff`，按变化改 `XxxEndpoints` 和受影响的 DTO。不做契约测试：手写的路径清单和实际调用是两份，测试只能证明清单在文档里，证明不了实际调用的路径在文档里。
 
 ### 7.7 分页、防重复
@@ -1315,9 +1315,9 @@ class PushNotice({
 
 - 请求带平台、构建号、当前校区，服务端按这些筛公告。切换校区后重新请求。
 - 风控阈值也是运营参数（产品 12.2），但只在服务端用，不下发。
-
 - 快照和它的 `ETag` 一起存在 `config.remote`，下次请求带 `If-None-Match`。`ApiClient.getConditional` 放行 304，返回 `notModified`。Web 上读不到 `ETag` 时不带（服务端要在 CORS 里暴露 `ETag` 才读得到），浏览器自己的 HTTP 缓存照样生效。
 - 响应里的 `update`（服务端算好的 FORCE、SUGGEST、NONE）不用：客户端用 `versions` 里本平台的版本线和本机构建号自己比较，离线用快照时结果一样。
+
 ### 17.2 兜底
 
 - 内置默认值 `assets/config/remote_defaults.json`，和上面的形状一样。
