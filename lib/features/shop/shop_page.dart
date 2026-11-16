@@ -76,7 +76,7 @@ class ShopPage extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(EatSpace.s24),
               child: FailureState(
-                message: (failure as AppFailure?)?.message,
+                error: failure,
                 onRetry: () => ref.invalidate(shopProvider(shopId)),
               ),
             ),
@@ -313,7 +313,7 @@ class _Menu extends ConsumerWidget {
           switch (data) {
             null when menu.hasError && !menu.isLoading => SliverToBoxAdapter(
               child: FailureState(
-                message: (menu.error as AppFailure?)?.message,
+                error: menu.error,
                 onRetry: () => ref.invalidate(provider),
               ),
             ),

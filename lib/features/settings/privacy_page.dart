@@ -39,10 +39,7 @@ class PrivacyPage extends ConsumerWidget {
 
     Widget loading(AsyncValue<Object> value, VoidCallback retry) =>
         value.hasError && !value.isLoading
-        ? FailureState(
-            message: (value.error as AppFailure?)?.message,
-            onRetry: retry,
-          )
+        ? FailureState(error: value.error, onRetry: retry)
         : const RowListPlaceholder(count: 2);
 
     return PlainScaffold(

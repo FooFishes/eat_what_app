@@ -97,7 +97,7 @@ class _MyTagsPageState extends ConsumerState<MyTagsPage> {
           SliverToBoxAdapter(
             child: value.hasError && !value.isLoading
                 ? FailureState(
-                    message: (value.error as AppFailure?)?.message,
+                    error: value.error,
                     onRetry: () => ref.invalidate(myTagsProvider),
                   )
                 : const RowListPlaceholder(count: 6),

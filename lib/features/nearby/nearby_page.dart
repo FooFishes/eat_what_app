@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/design/icons/eat_icon.dart';
@@ -498,7 +497,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       if (shops.hasError && !shops.isLoading) {
         return SliverToBoxAdapter(
           child: FailureState(
-            message: (shops.error as AppFailure?)?.message,
+            error: shops.error,
             onRetry: () => ref.invalidate(nearbyShopsProvider),
           ),
         );

@@ -188,7 +188,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
       body = [
         const SizedBox(height: EatSpace.s24),
         FailureState(
-          message: (data.error as AppFailure?)?.message,
+          error: data.error,
           onRetry: () => ref.invalidate(recommendPreferencesSettingProvider),
         ),
       ];
@@ -397,16 +397,19 @@ class _TasteSection extends ConsumerWidget {
               ],
             );
     } else if (taste.hasError && !taste.isLoading) {
-      content = Row(
-        spacing: EatSpace.s8,
-        children: [
-          Text('加载失败', style: note),
-          EatButton.mist(
-            '重试',
-            height: 36,
-            onPressed: () => ref.invalidate(tasteProfileProvider),
-          ),
-        ],
+      content = LoadFailureReport(
+        error: taste.error,
+        child: Row(
+          spacing: EatSpace.s8,
+          children: [
+            Text('加载失败', style: note),
+            EatButton.mist(
+              '重试',
+              height: 36,
+              onPressed: () => ref.invalidate(tasteProfileProvider),
+            ),
+          ],
+        ),
       );
     } else {
       content = const LoadingArea(child: Skeleton.line(width: 160));

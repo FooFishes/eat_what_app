@@ -68,7 +68,7 @@ class UserPage extends ConsumerWidget {
               child: isMissingUser(error)
                   ? const EmptyState(icon: EatIcons.me, title: '该用户不存在')
                   : FailureState(
-                      message: (error as AppFailure?)?.message,
+                      error: error,
                       onRetry: () =>
                           ref.invalidate(userProfileProvider(userId)),
                     ),

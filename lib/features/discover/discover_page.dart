@@ -169,6 +169,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent = const _EmptyStage();
     } else if (queue.hasError && !queue.isLoading) {
       stageContent = _StageFailure(
+        error: queue.error,
         onRetry: () => ref.invalidate(turntableQueueProvider),
       );
     } else {
@@ -875,36 +876,40 @@ class _EmptyStage extends ConsumerWidget {
 
 /// 推荐请求失败且没有上一批数据时的舞台, 显示 "加载失败" 和 "重试".
 class _StageFailure extends StatelessWidget {
-  const new({required this.onRetry});
+  const new({required this.error, required this.onRetry});
 
+  final Object? error;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        EatSpace.s20,
-        0,
-        EatSpace.s20,
-        EatSize.sheetOverlap + 22,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: EatSpace.s16,
-        children: [
-          Text(
-            '加载失败',
-            style: eat.text.title.copyWith(color: palette.foreground),
-          ),
-          EatButton.stageGhost(
-            '重试',
-            icon: EatIcons.shuffle,
-            onPressed: onRetry,
-          ),
-        ],
+    return LoadFailureReport(
+      error: error,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          EatSpace.s20,
+          0,
+          EatSpace.s20,
+          EatSize.sheetOverlap + 22,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: EatSpace.s16,
+          children: [
+            Text(
+              '加载失败',
+              style: eat.text.title.copyWith(color: palette.foreground),
+            ),
+            EatButton.stageGhost(
+              '重试',
+              icon: EatIcons.shuffle,
+              onPressed: onRetry,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -927,7 +932,7 @@ class _ShopList extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
             child: FailureState(
-              message: (list.error as AppFailure?)?.message,
+              error: list.error,
               onRetry: () => ref.invalidate(provider),
             ),
           ),

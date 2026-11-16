@@ -105,10 +105,7 @@ class AddDishPage extends ConsumerWidget {
                 ? Padding(
                     padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
                     child: FailureState(
-                      message: switch (detail.error) {
-                        AppFailure(:final message) => message,
-                        _ => null,
-                      },
+                      error: detail.error,
                       onRetry: () => ref.invalidate(dishToEditProvider(dishId)),
                     ),
                   )

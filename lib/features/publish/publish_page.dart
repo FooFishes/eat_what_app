@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
@@ -135,7 +134,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
                 ),
                 AsyncError(:final error) => SliverToBoxAdapter(
                   child: FailureState(
-                    message: (error as AppFailure?)?.message,
+                    error: error,
                     onRetry: () =>
                         ref.invalidate(pickableShopsProvider(_keyword.trim())),
                   ),

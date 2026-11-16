@@ -1,4 +1,3 @@
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -92,7 +91,7 @@ class _FollowsPageState extends ConsumerState<FollowsPage> {
                   when isMissingUser(error) =>
                 const _Missing(),
               AsyncValue(:final error?, isLoading: false) => FailureState(
-                message: (error as AppFailure?)?.message,
+                error: error,
                 onRetry: () =>
                     ref.invalidate(userProfileProvider(widget.userId)),
               ),
@@ -138,7 +137,7 @@ class _UserList extends ConsumerWidget {
         }
         return SliverToBoxAdapter(
           child: FailureState(
-            message: (value.error as AppFailure?)?.message,
+            error: value.error,
             onRetry: () => ref.invalidate(provider),
           ),
         );

@@ -63,8 +63,9 @@ class MapPlaceList extends ConsumerWidget {
               itemBuilder: (context, i) =>
                   _PlaceRow(place: value[i], onTap: () => onSelected(value[i])),
             ),
-            AsyncError() => SliverToBoxAdapter(
+            AsyncError(:final error) => SliverToBoxAdapter(
               child: FailureState(
+                error: error,
                 message: '搜索失败',
                 onRetry: () => ref.invalidate(mapPlacesProvider(keyword)),
               ),

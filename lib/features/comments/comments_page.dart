@@ -1,4 +1,3 @@
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
@@ -91,7 +90,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
                   SliverToBoxAdapter(
                     child: comments.hasError && !comments.isLoading
                         ? FailureState(
-                            message: (comments.error as AppFailure?)?.message,
+                            error: comments.error,
                             onRetry: () => ref.invalidate(provider),
                           )
                         : const RowListPlaceholder(count: 4, thumbSize: 36),

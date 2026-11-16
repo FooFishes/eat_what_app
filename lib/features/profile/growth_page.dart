@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
@@ -56,7 +55,7 @@ class _Progress extends ConsumerWidget {
     if (progress == null) {
       if (value.hasError && !value.isLoading) {
         return FailureState(
-          message: (value.error as AppFailure?)?.message,
+          error: value.error,
           onRetry: () => ref.invalidate(growthProgressProvider),
         );
       }
@@ -198,7 +197,7 @@ class _Ledger extends ConsumerWidget {
       return SliverToBoxAdapter(
         child: value.hasError && !value.isLoading
             ? FailureState(
-                message: (value.error as AppFailure?)?.message,
+                error: value.error,
                 onRetry: () => ref.invalidate(experienceLedgerProvider),
               )
             : LoadingArea(

@@ -48,7 +48,7 @@ class DishHistoryPage extends ConsumerWidget {
           SliverToBoxAdapter(
             child: value.hasError && !value.isLoading
                 ? FailureState(
-                    message: (value.error as AppFailure?)?.message,
+                    error: value.error,
                     onRetry: () => ref.invalidate(provider),
                   )
                 : const RowListPlaceholder(count: 4, thumbSize: EatSize.avatar),

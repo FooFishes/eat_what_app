@@ -143,7 +143,7 @@ class _FootprintList extends ConsumerWidget {
       return SliverToBoxAdapter(
         child: value.hasError && !value.isLoading
             ? FailureState(
-                message: (value.error as AppFailure?)?.message,
+                error: value.error,
                 onRetry: () => ref.invalidate(provider),
               )
             : const RowListPlaceholder(count: 6),

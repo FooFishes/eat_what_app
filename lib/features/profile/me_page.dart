@@ -310,7 +310,7 @@ class _FavoriteShops extends ConsumerWidget {
       if (value.hasError && !value.isLoading) {
         return SliverToBoxAdapter(
           child: FailureState(
-            message: (value.error as AppFailure?)?.message,
+            error: value.error,
             onRetry: () => ref.invalidate(myFavoriteShopsProvider),
           ),
         );

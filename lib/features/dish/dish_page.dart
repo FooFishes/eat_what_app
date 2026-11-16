@@ -82,7 +82,7 @@ class DishPage extends ConsumerWidget {
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: FailureState(
-                        message: (detail.error as AppFailure?)?.message,
+                        error: detail.error,
                         onRetry: () =>
                             ref.invalidate(dishDetailProvider(dishId)),
                       ),
@@ -114,7 +114,7 @@ class DishPage extends ConsumerWidget {
                 _TasteSection(dish: dish)
               else if (detail.hasError)
                 FailureState(
-                  message: (detail.error as AppFailure?)?.message,
+                  error: detail.error,
                   onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
                 )
               else
@@ -784,7 +784,7 @@ class _CommentsState extends ConsumerState<_Comments> {
         if (list == null)
           comments.hasError && !comments.isLoading
               ? FailureState(
-                  message: (comments.error as AppFailure?)?.message,
+                  error: comments.error,
                   onRetry: () => ref.invalidate(provider),
                 )
               : const RowListPlaceholder(count: 2, thumbSize: 36)

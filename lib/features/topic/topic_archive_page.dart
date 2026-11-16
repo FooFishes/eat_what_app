@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -42,7 +41,7 @@ class TopicArchivePage extends ConsumerWidget {
           SliverToBoxAdapter(
             child: value.hasError && !value.isLoading
                 ? FailureState(
-                    message: (value.error as AppFailure?)?.message,
+                    error: value.error,
                     onRetry: () => ref.invalidate(topicArchiveProvider),
                   )
                 : const RowListPlaceholder(count: 5, thumbSize: EatSize.avatar),

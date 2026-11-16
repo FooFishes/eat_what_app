@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -47,7 +46,7 @@ class MyFeedbackPage extends ConsumerWidget {
           SliverToBoxAdapter(
             child: value.hasError && !value.isLoading
                 ? FailureState(
-                    message: (value.error as AppFailure?)?.message,
+                    error: value.error,
                     onRetry: () => ref.invalidate(myFeedbackCasesProvider),
                   )
                 : const RowListPlaceholder(count: 4, thumbSize: EatSize.avatar),
@@ -161,7 +160,7 @@ class FeedbackCasePage extends ConsumerWidget {
           child: switch (item) {
             final item? => _CaseDetail(item: item),
             null when value.hasError && !value.isLoading => FailureState(
-              message: (value.error as AppFailure?)?.message,
+              error: value.error,
               onRetry: () => ref.invalidate(provider),
             ),
             null => const LoadingArea(

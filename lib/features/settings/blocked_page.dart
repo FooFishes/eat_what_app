@@ -48,7 +48,7 @@ class BlockedPage extends ConsumerWidget {
           SliverToBoxAdapter(
             child: value.hasError && !value.isLoading
                 ? FailureState(
-                    message: (value.error as AppFailure?)?.message,
+                    error: value.error,
                     onRetry: () => ref.invalidate(blockedUsersProvider),
                   )
                 : const RowListPlaceholder(count: 3, thumbSize: EatSize.avatar),

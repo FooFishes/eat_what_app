@@ -1,8 +1,10 @@
 import 'package:eat/design/theme/eat_theme.dart';
+import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/features/system/notices.dart';
 import 'package:eat/router/app_router.dart';
+import 'package:eat/router/page_analytics.dart';
 import 'package:eat/router/paths.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -14,6 +16,7 @@ class EatApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final pages = ref.watch(pageAnalyticsProvider);
     return MaterialApp.router(
       title: '沙软今天吃什么',
       debugShowCheckedModeBanner: false,
@@ -38,7 +41,10 @@ class EatApp extends ConsumerWidget {
                 openPath: (location) => router.push(location),
                 child: BackFallback(
                   fallback: () => router.go(Paths.discover),
-                  child: child!,
+                  child: LoadFailureObserver(
+                    onShown: pages.loadFailed,
+                    child: child!,
+                  ),
                 ),
               ),
             ),

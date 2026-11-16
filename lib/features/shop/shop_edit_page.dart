@@ -64,7 +64,7 @@ class ShopEditPage extends ConsumerWidget {
               title: '这家店已删除',
             ),
             final AppFailure failure when !shop.isLoading => FailureState(
-              message: failure.message,
+              error: failure,
               onRetry: () => ref.invalidate(shopProvider(shopId)),
             ),
             _ => const RowListPlaceholder(count: 4),

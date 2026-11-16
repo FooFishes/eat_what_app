@@ -29,7 +29,7 @@ class MyCommentsSliver extends ConsumerWidget {
       return SliverToBoxAdapter(
         child: value.hasError && !value.isLoading
             ? FailureState(
-                message: (value.error as AppFailure?)?.message,
+                error: value.error,
                 onRetry: () => ref.invalidate(myCommentsProvider),
               )
             : const RowListPlaceholder(count: 3, thumbSize: 48),

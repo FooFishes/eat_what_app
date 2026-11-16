@@ -1,4 +1,3 @@
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
@@ -338,10 +337,7 @@ class DishGridSliver extends StatelessWidget {
     if (data == null) {
       if (value.hasError && !value.isLoading) {
         return SliverToBoxAdapter(
-          child: FailureState(
-            message: (value.error as AppFailure?)?.message,
-            onRetry: onRetry,
-          ),
+          child: FailureState(error: value.error, onRetry: onRetry),
         );
       }
       return const SliverToBoxAdapter(child: TileGridPlaceholder(count: 4));

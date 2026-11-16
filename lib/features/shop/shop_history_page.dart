@@ -59,7 +59,7 @@ class ShopHistoryPage extends ConsumerWidget {
                 AppFailure(code: BizCodes.restaurantNotFound) =>
                   const EmptyState(icon: EatIcons.store, title: '这家店已删除'),
                 final error => FailureState(
-                  message: (error as AppFailure?)?.message,
+                  error: error,
                   onRetry: () => ref.invalidate(provider),
                 ),
               },

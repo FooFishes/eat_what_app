@@ -168,7 +168,8 @@ class _TagPanelState extends ConsumerState<_TagPanel> {
                   ),
               ],
             ),
-            AsyncError() => FailureState(
+            AsyncError(:final error) => FailureState(
+              error: error,
               onRetry: () => ref.invalidate(tasteVocabularyProvider),
             ),
             _ => const RowListPlaceholder(count: 2, thumbSize: 36),

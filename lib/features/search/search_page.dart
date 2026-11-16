@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -173,10 +172,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     if (items == null) {
       if (result.hasError && !result.isLoading) {
         return SliverToBoxAdapter(
-          child: FailureState(
-            message: (result.error as AppFailure?)?.message,
-            onRetry: retry,
-          ),
+          child: FailureState(error: result.error, onRetry: retry),
         );
       }
       return const SliverToBoxAdapter(child: RowListPlaceholder(count: 4));

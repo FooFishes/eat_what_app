@@ -200,7 +200,7 @@ class _InboxPageState extends ConsumerState<InboxPage> {
           SliverToBoxAdapter(
             child: inbox.hasError && !inbox.isLoading
                 ? FailureState(
-                    message: (inbox.error as AppFailure?)?.message,
+                    error: inbox.error,
                     onRetry: () => ref.invalidate(provider),
                   )
                 : const RowListPlaceholder(count: 6, thumbSize: EatSize.avatar),

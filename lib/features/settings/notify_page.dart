@@ -34,7 +34,7 @@ class NotifyPage extends ConsumerWidget {
             if (settings == null)
               value.hasError && !value.isLoading
                   ? FailureState(
-                      message: (value.error as AppFailure?)?.message,
+                      error: value.error,
                       onRetry: () => ref.invalidate(pushSettingsProvider),
                     )
                   : const RowListPlaceholder(count: 4)

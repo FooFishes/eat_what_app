@@ -1,3 +1,4 @@
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
@@ -126,26 +127,82 @@ class EmptyState extends StatelessWidget {
 /// 无旧数据且请求失败时的兜底状态, 展示 "加载失败" 文案与 "重试" 按钮.
 ///
 /// 若页面已有旧数据则不应使用本组件, 而应保留旧内容并给出不打断操作的轻量提示.
+/// 显示时通过 [LoadFailureReport] 通知 [LoadFailureObserver].
 class FailureState extends StatelessWidget {
-  const new({super.key, required this.onRetry, this.message});
+  const new({super.key, required this.onRetry, this.error, this.message});
 
   final VoidCallback onRetry;
 
-  /// 失败原因描述, 如 "网络连接失败".
+  /// 导致失败的错误. 为 [AppFailure] 时用它的提示作为默认的 [message].
+  final Object? error;
+
+  /// 失败原因描述, 如 "网络连接失败". 为 null 时取 [error] 的提示.
   final String? message;
 
   @override
-  Widget build(BuildContext context) => EmptyState(
-    icon: EatIcons.wifiOff,
-    title: '加载失败',
-    message: message,
-    action: EatButton.mist(
-      '重试',
-      icon: EatIcons.shuffle,
-      height: 48,
-      onPressed: onRetry,
+  Widget build(BuildContext context) => LoadFailureReport(
+    error: error,
+    child: EmptyState(
+      icon: EatIcons.wifiOff,
+      title: '加载失败',
+      message:
+          message ??
+          switch (error) {
+            AppFailure(:final message) => message,
+            _ => null,
+          },
+      action: EatButton.mist(
+        '重试',
+        icon: EatIcons.shuffle,
+        height: 48,
+        onPressed: onRetry,
+      ),
     ),
   );
+}
+
+/// 页面显示 "加载失败" 时的回调, 由 App 根部提供, 用于记录使用统计.
+///
+/// design 层不依赖统计, 因此只定义回调, 由上层决定记到哪个页面.
+class LoadFailureObserver extends InheritedWidget {
+  const new({super.key, required this.onShown, required super.child});
+
+  /// [context] 是显示失败状态的位置, [error] 是导致失败的错误.
+  final void Function(BuildContext context, Object? error) onShown;
+
+  @override
+  bool updateShouldNotify(LoadFailureObserver oldWidget) => false;
+}
+
+/// 包住一处 "加载失败" 状态, 插入界面后通知 [LoadFailureObserver] 一次.
+///
+/// 重建不重复通知. 重试后再次失败时失败状态重新插入, 会再通知一次.
+class LoadFailureReport extends StatefulWidget {
+  const new({super.key, this.error, required this.child});
+
+  final Object? error;
+  final Widget child;
+
+  @override
+  State<LoadFailureReport> createState() => _LoadFailureReportState();
+}
+
+class _LoadFailureReportState extends State<LoadFailureReport> {
+  @override
+  void initState() {
+    super.initState();
+    // 回调里可能查询路由等依赖, 在 initState 里查询会触发断言, 因此推迟到首帧之后.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.getInheritedWidgetOfExactType<LoadFailureObserver>()?.onShown(
+        context,
+        widget.error,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// 舞台区域的加载占位, 右侧为盘子形状, 左下为多行文字形状, 使用舞台次按钮色绘制并随舞台色同步变化.

@@ -104,7 +104,7 @@ lib/
     kit/                    组件页，只在 debug 构建里有
   router/                   路由表（app_router.dart）、路径常量（paths.dart）、守卫、
                             深链处理（deep_links.dart：DeepLinks、DeepLinkHandler、linkSourceProvider，6.3）、
-                            MainShell（NavBar 外壳）
+                            MainShell（NavBar 外壳）、页面统计（page_analytics.dart：page_view 和 load_failed，19.1）
 assets/
   fonts/  icons/  illustrations/（从 prototype/assets/dishes 复制）  config/remote_defaults.json
 config/
@@ -1471,7 +1471,10 @@ class PushNotice({
 - 只在同意隐私政策（`consentedServicesProvider` 启动时）、且使用统计开着时采集；上报的响应 `enabled=false` 时停止采集、清空待发事件。
 - 开关：本机记在 `prefs.telemetry.enabled`。关闭时先停止采集、清空待发事件，再 `DELETE /telemetry/consent?installId=…`（游客据此删掉这台设备未登录时上报的事件），失败就恢复。登录用户以服务端为准：打开隐私页和每次登录时同步到本机。
 - 游客照常采集并带安装 ID。游客登录后客户端不做迁移。
-- 现在接上的事件只有 `app_open`（`bootstrap` 调 `observeLifecycle`：冷启动记一次，之后每次回到前台记一次），其余事件随各页面补上调用点。
+- 在哪里记：
+  - `app_open`：`bootstrap` 调 `observeLifecycle`，冷启动记一次，之后每次回到前台记一次。
+  - `page_view`：路由层统一记（`router/page_analytics.dart` 的 `PageAnalytics`，`EatApp` 创建），页面里不各自记。监听路由变化，地址（不含查询参数，push 的页面取最上面一层）变了就给上一个页面记一条，带停留时长；退到后台时结束当前页面的计时，回到前台重新开始。底部面板和对话框不算换页。页面按路由模板分类：发现 `HOME`，专题 `RECOMMEND`，搜索 `SEARCH`，店铺及其子页面 `RESTAURANT`，菜品及其评论、修改记录、编辑 `FOOD`，消息 `MESSAGE`，我的及其子页面和他人主页 `PROFILE`，其余（附近、设置、发布、登录等）`OTHER`。
+  - `load_failed`：`FailureState` 和其他「加载失败」状态包一层 `LoadFailureReport`（design 层），插入界面后通知 `EatApp` 根部的 `LoadFailureObserver` 一次，由 `PageAnalytics` 记。页面取失败状态所在路由，在底部面板里时取当前页面；业务码取 `AppFailure.code`（业务码或 HTTP 状态码）。分页加载更多失败不记。
 
 ### 19.2 崩溃上报
 
