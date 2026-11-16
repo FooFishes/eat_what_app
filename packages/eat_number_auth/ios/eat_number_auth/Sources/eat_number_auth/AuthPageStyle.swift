@@ -38,7 +38,7 @@ func authPageModel(
     button.setImage(closeImage(muted), for: .normal)
     button.accessibilityLabel = style.closeLabel
     button.frame = CGRect(
-      x: superview.bounds.width - Layout.closeTouch - 8, y: 4,
+      x: superview.bounds.width - Layout.closeTouch - 8, y: Layout.closeTop,
       width: Layout.closeTouch, height: Layout.closeTouch)
     button.autoresizingMask = [.flexibleLeftMargin]
     superview.addSubview(button)
@@ -87,7 +87,7 @@ func authPageModel(
   model.checkBoxWH = Layout.checkSize
   model.expandAuthPageCheckedScope = true
   model.privacyColors = [muted, secondary]
-  model.privacyFont = .systemFont(ofSize: 12)
+  model.privacyFont = .systemFont(ofSize: 13)
   model.privacyAlignment = .center
   model.privacyPreText = style.privacyPrefix
   model.privacySufText = ""
@@ -152,19 +152,20 @@ func authPageModel(
 
 /// 面板的高度和各个控件的位置, 从面板顶部算起. 面板实际还要加上底部安全区.
 private enum Layout {
-  static let panelHeight: CGFloat = 320
-  static let numberTop: CGFloat = 44
-  static let sloganTop: CGFloat = 88
-  static let buttonTop: CGFloat = 124
-  static let switchTop: CGFloat = 184
+  static let panelHeight: CGFloat = 324
+  static let closeTop: CGFloat = 3
+  static let numberTop: CGFloat = 60
+  static let sloganTop: CGFloat = 106
+  static let buttonTop: CGFloat = 146
+  static let switchTop: CGFloat = 206
   static let switchHeight: CGFloat = 44
-  static let privacyTop: CGFloat = 240
-  static let checkSize: CGFloat = 18
+  static let privacyTop: CGFloat = 274
+  static let checkSize: CGFloat = 20
   static let closeTouch: CGFloat = 44
   static let closeIcon: CGFloat = 18
   static let alertMargin: CGFloat = 32
-  static let alertHeight: CGFloat = 208
-  static let alertButtonHeight: CGFloat = 44
+  static let alertHeight: CGFloat = 196
+  static let alertButtonHeight: CGFloat = 48
 }
 
 /// 胶囊形的按钮底, 可以横向拉伸.

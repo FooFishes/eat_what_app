@@ -101,7 +101,7 @@ class EatNumberAuthPlugin : FlutterPlugin, ActivityAware, NumberAuthHostApi {
                         main.post { onAuthFailure(result) }
                     }
                 })
-                applyAuthPageStyle(context, helper, style) {
+                applyAuthPageStyle(activity, helper, style) {
                     main.post {
                         close()
                         finish(LoginTokenMessage(LoginTokenStatus.CANCELLED))

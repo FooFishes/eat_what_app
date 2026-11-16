@@ -1,5 +1,6 @@
 package you.v50to.eat.number_auth
 
+import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Canvas
@@ -11,13 +12,16 @@ import android.graphics.PixelFormat
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.view.Gravity
 import android.view.View
+import android.view.WindowInsets
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import com.mobile.auth.gatewayauth.AuthRegisterViewConfig
 import com.mobile.auth.gatewayauth.AuthUIConfig
 import com.mobile.auth.gatewayauth.PhoneNumberAuthHelper
+import kotlin.math.ceil
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -25,15 +29,17 @@ import kotlin.math.roundToInt
  * 把授权页配成从底部升起的面板: 号码, 运营商标语, 登录按钮, 切换按钮, 运营商协议, 右上角一个关闭按钮.
  *
  * SDK 的尺寸参数都是 dp. 图片一律现画, 不放资源文件, 颜色才能跟着 App 的令牌走.
- * [onClose] 在用户点关闭按钮时调用.
+ * [activity] 是拉起授权页的页面, 用来量底部导航栏的高度. [onClose] 在用户点关闭按钮时调用.
  */
 internal fun applyAuthPageStyle(
-    context: Context,
+    activity: Activity,
     helper: PhoneNumberAuthHelper,
     style: AuthPageStyleMessage,
     onClose: () -> Unit,
 ) {
+    val context: Context = activity
     val metrics = context.resources.displayMetrics
+    val bottomInset = navigationBarInset(activity)
     val screenWidth = (metrics.widthPixels / metrics.density).toInt()
     val margin = style.margin.roundToInt()
     val radius = style.cornerRadius.roundToInt()
@@ -44,6 +50,7 @@ internal fun applyAuthPageStyle(
     val muted = style.muted.toInt()
     val scrim = Color.alpha(style.scrim.toInt()) / 255f
     val checkSize = (CHECK_SIZE * metrics.density).roundToInt()
+    val alertWidth = screenWidth - ALERT_MARGIN * 2
 
     helper.removeAuthRegisterXmlConfig()
     helper.removeAuthRegisterViewConfig()
@@ -53,7 +60,7 @@ internal fun applyAuthPageStyle(
         CLOSE_VIEW,
         AuthRegisterViewConfig.Builder()
             .setView(closeButton(context, style))
-            .setRootViewId(AuthRegisterViewConfig.RootViewId.ROOT_VIEW_ID_BODY)
+            .setRootViewId(AuthRegisterViewConfig.RootViewId.ROOT_VIEW_ID_TITLE_BAR)
             .setCustomInterface { onClose() }
             .build(),
     )
@@ -64,7 +71,7 @@ internal fun applyAuthPageStyle(
             // 窗口: 贴底, 和屏幕等宽, 点面板外面关闭.
             .setDialogBottom(true)
             .setDialogWidth(screenWidth)
-            .setDialogHeight(PANEL_HEIGHT)
+            .setDialogHeight(PANEL_HEIGHT + bottomInset)
             .setDialogAlpha(scrim)
             .setTapAuthPageMaskClosePage(true)
             .setPageBackgroundDrawable(panel(background, style.cornerRadius * metrics.density))
@@ -73,7 +80,11 @@ internal fun applyAuthPageStyle(
             .setScreenOrientation(ActivityInfo.SCREEN_ORIENTATION_BEHIND)
             .setLightColor(true)
             .setStatusBarColor(Color.TRANSPARENT)
-            .setNavHidden(true)
+            // 标题栏隐藏后 SDK 仍然留着它的 50dp, 面板顶上会空一截. 所以留着它, 做成透明的, 只放关闭按钮.
+            .setNavHidden(false)
+            .setNavColor(Color.TRANSPARENT)
+            .setNavText("")
+            .setNavReturnHidden(true)
             .setLogoHidden(true)
             // 号码和运营商标语, 内容由 SDK 填.
             .setNumberColor(primary)
@@ -104,13 +115,13 @@ internal fun applyAuthPageStyle(
             .setCheckBoxWidth(CHECK_SIZE)
             .setCheckBoxHeight(CHECK_SIZE)
             .setAppPrivacyColor(muted, secondary)
-            .setPrivacyTextSizeDp(12)
+            .setPrivacyTextSizeDp(13)
             .setPrivacyBefore(style.privacyPrefix)
             .setPrivacyEnd("")
             .setVendorPrivacyPrefix("《")
             .setVendorPrivacySuffix("》")
             .setPrivacyMargin(margin)
-            .setPrivacyOffsetY_B(PRIVACY_BOTTOM)
+            .setPrivacyOffsetY_B(PRIVACY_BOTTOM + bottomInset)
             // 没勾协议就点登录时的二次确认弹窗, 同意后直接登录.
             .setPrivacyAlertIsNeedShow(true)
             .setPrivacyAlertIsNeedAutoLogin(true)
@@ -119,13 +130,15 @@ internal fun applyAuthPageStyle(
             .setTapPrivacyAlertMaskCloseAlert(true)
             .setPrivacyAlertCloseBtnShow(false)
             .setPrivacyAlertAlignment(Gravity.CENTER)
-            .setPrivacyAlertWidth(screenWidth - ALERT_MARGIN * 2)
+            .setPrivacyAlertWidth(alertWidth)
             .setPrivacyAlertHeight(ALERT_HEIGHT)
             .setPrivacyAlertCornerRadiusArray(intArrayOf(radius, radius, radius, radius))
             .setPrivacyAlertBackgroundColor(background)
             .setPrivacyAlertTitleContent(style.alertTitle)
             .setPrivacyAlertTitleColor(primary)
             .setPrivacyAlertTitleTextSize(17)
+            .setPrivacyAlertTitleTypeface(Typeface.DEFAULT_BOLD)
+            .setPrivacyAlertTitleOffsetY(ALERT_TITLE_TOP)
             .setPrivacyAlertBefore(style.alertPrefix)
             .setPrivacyAlertEnd("")
             .setPrivacyAlertContentBaseColor(muted)
@@ -136,7 +149,10 @@ internal fun applyAuthPageStyle(
             .setPrivacyAlertBtnContent(style.alertButtonText)
             .setPrivacyAlertBtnTextColor(onPrimary)
             .setPrivacyAlertBtnTextSize(15)
+            .setPrivacyAlertBtnTypeface(Typeface.DEFAULT_BOLD)
             .setPrivacyAlertBtnBackgroundImgDrawable(pill(primary))
+            // 不给宽度时按钮只有文字那么宽.
+            .setPrivacyAlertBtnWidth(alertWidth - margin * 2)
             .setPrivacyAlertBtnHeigth(ALERT_BUTTON_HEIGHT)
             .setPrivacyAlertBtnHorizontalMargin(margin)
             .create(),
@@ -145,19 +161,23 @@ internal fun applyAuthPageStyle(
 
 private const val CLOSE_VIEW = "eat_close"
 
-/** 面板的高度和各个控件的位置, 单位 dp, 从面板顶部算起. 协议栏从面板底部算起. */
-private const val PANEL_HEIGHT = 320
-private const val NUMBER_TOP = 44
-private const val SLOGAN_TOP = 88
-private const val BUTTON_TOP = 124
-private const val SWITCH_TOP = 188
-private const val PRIVACY_BOTTOM = 24
-private const val CHECK_SIZE = 18
+/**
+ * 面板的高度和各个控件的位置, 单位 dp. 面板顶上 50dp 是 SDK 的标题栏, 控件的位置从标题栏下沿算起,
+ * 协议栏从面板底部算起. 面板的高度和协议栏的位置还要加上底部导航栏的高度.
+ */
+private const val PANEL_HEIGHT = 324
+private const val NUMBER_TOP = 10
+private const val SLOGAN_TOP = 56
+private const val BUTTON_TOP = 96
+private const val SWITCH_TOP = 168
+private const val PRIVACY_BOTTOM = 28
+private const val CHECK_SIZE = 20
 
 /** 二次确认弹窗, 单位 dp. */
 private const val ALERT_MARGIN = 32
-private const val ALERT_HEIGHT = 208
-private const val ALERT_BUTTON_HEIGHT = 44
+private const val ALERT_HEIGHT = 196
+private const val ALERT_BUTTON_HEIGHT = 48
+private const val ALERT_TITLE_TOP = 8
 
 /** 关闭按钮的点击区域和图标大小, 单位 dp. */
 private const val CLOSE_TOUCH = 44
@@ -169,7 +189,7 @@ private fun closeButton(context: Context, style: AuthPageStyleMessage): View {
     return ImageView(context).apply {
         layoutParams = RelativeLayout.LayoutParams(touch, touch).apply {
             addRule(RelativeLayout.ALIGN_PARENT_END)
-            topMargin = (4 * density).roundToInt()
+            addRule(RelativeLayout.CENTER_VERTICAL)
             marginEnd = (8 * density).roundToInt()
         }
         scaleType = ImageView.ScaleType.CENTER
@@ -178,6 +198,19 @@ private fun closeButton(context: Context, style: AuthPageStyleMessage): View {
         )
         contentDescription = style.closeLabel
     }
+}
+
+/**
+ * 底部导航栏 (手势条或三个按键) 的高度, 单位 dp.
+ *
+ * 目标版本 35 起, 在 Android 15 及以上窗口强制铺到屏幕边缘, 面板的最下面一段压在导航栏底下,
+ * 协议栏要让出这一段. 更早的系统上面板本来就在导航栏上方, 不用让.
+ */
+private fun navigationBarInset(activity: Activity): Int {
+    if (Build.VERSION.SDK_INT < 35 || activity.applicationInfo.targetSdkVersion < 35) return 0
+    val insets = activity.window.decorView.rootWindowInsets ?: return 0
+    val bottom = insets.getInsets(WindowInsets.Type.navigationBars()).bottom
+    return ceil(bottom / activity.resources.displayMetrics.density).toInt()
 }
 
 /** 面板的底: 只有顶部两个角是圆角. */
