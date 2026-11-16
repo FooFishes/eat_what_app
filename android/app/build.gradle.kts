@@ -38,6 +38,15 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // Flutter 插件把 abiFilters 固定成三种架构, 不看 --target-platform; 只有 libflutter.so 和 libapp.so 按它打.
+        // 结果是 CI 只打 ARM 时, 百度地图、Sentry 等插件的 x86_64 库仍然进包, 而那个架构上没有 Flutter 引擎, 根本跑不起来.
+        // 这里让 abiFilters 跟着 --target-platform 走. flutter run 和 flutter build 都会传这个属性.
+        (findProperty("target-platform") as String?)?.let { platforms ->
+            val abis = mapOf("android-arm" to "armeabi-v7a", "android-arm64" to "arm64-v8a", "android-x64" to "x86_64")
+            ndk.abiFilters.clear()
+            ndk.abiFilters += platforms.split(",").map { abis.getValue(it) }
+        }
     }
 
     signingConfigs {
