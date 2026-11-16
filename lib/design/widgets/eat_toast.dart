@@ -7,17 +7,16 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 
-// TODO: 轻提示的样式尚未经设计确认 (技术架构 A6). 确认后按结论调整位置, 颜色和停留时长.
-/// 显示一条轻提示, 如 "发布成功" "点赞失败, 请重试".
+// TODO: 轻提示的样式尚未经设计确认. 确认后按结论调整位置, 颜色和停留时长.
+/// 在页面底部且位于导航栏上方显示一条轻提示 (如 "发布成功" "点赞失败, 请重试"), 采用 `ink` 底胶囊且不阻挡页面操作.
 ///
-/// - 显示在页面底部, 导航上方, 为 `ink` 底胶囊, 不阻挡操作.
-/// - 出现时淡入并上移, 停留 2 秒后淡出. 系统开启减少动态效果时不播放进出动画.
-/// - 同一时刻只显示一条, 新提示替换旧提示.
-/// - 读屏会朗读提示内容.
+/// - 出现时淡入并上移, 停留 2 秒后淡出; 若系统开启减少动态效果则跳过进出动画.
+/// - 同一时刻只显示一条, 触发新提示时会立即替换旧提示.
+/// - 弹出时自动通过读屏播报提示内容.
 void showToast(BuildContext context, String message) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return;
-  // 旧提示不播放退场动画, 立即移除. 否则新旧两条提示在同一位置重叠.
+  // 立即移除旧提示并跳过其退场动画, 避免新旧两条提示在同一位置重叠.
   _current?.remove();
   final bottom =
       NavBarInset.of(context) + MediaQuery.paddingOf(context).bottom + 24;
@@ -41,7 +40,7 @@ void showToast(BuildContext context, String message) {
   });
 }
 
-/// 提示停留的时长, 不含进出动画.
+/// 提示停留的时长, 不含进出动画时间.
 const _stay = Duration(seconds: 2);
 
 _ToastEntry? _current;
@@ -62,7 +61,7 @@ class _ToastEntry {
   }
 }
 
-/// 提示的胶囊. 出现时淡入并上移, [leave] 播放淡出.
+/// 轻提示的胶囊视图, 进场时淡入并上移, 调用 [leave] 播放退场淡出.
 class _Toast extends StatefulWidget {
   const new({super.key, required this.message, required this.bottom});
 
@@ -92,13 +91,13 @@ class _ToastState extends State<_Toast> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  /// 播放退场动画. 组件已卸载时立即完成.
+  /// 播放退场动画, 若组件已卸载则立即返回.
   Future<void> leave() async {
     if (!mounted) return;
     try {
       await _controller.reverse().orCancel;
     } on TickerCanceled {
-      // 退场动画播放期间被新提示替换, 组件已卸载, 无需处理.
+      // 退场动画播放期间被新提示替换导致组件卸载, 属于正常情况, 无需处理.
     }
   }
 

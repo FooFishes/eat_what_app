@@ -20,12 +20,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 发布流程第 1 步: 选店.
+/// 发布流程第 1 步的选店页面.
 ///
-/// - 列表按与我的距离升序排列. 已关门的店不出现.
-/// - 可以按店名或地址搜索. 找不到时可以新建店铺.
+/// - 店铺列表按与当前位置的距离升序排列, 已关门的店铺不予展示.
+/// - 支持按店名或地址搜索, 未找到目标店铺时可跳转新建店铺.
 ///
-/// [changing] 为 true 表示由加菜页的 "换一家" 打开. 此时选好后带着店返回加菜页, 不进入下一步.
+/// 当 [changing] 为 true 时表示由加菜页的 "换一家" 入口打开, 选定后直接携带店铺返回加菜页而不进入下一步.
 class PublishPage extends ConsumerStatefulWidget {
   const new({super.key, this.changing = false});
 
@@ -168,7 +168,7 @@ class _PublishPageState extends ConsumerState<PublishPage> {
   }
 }
 
-/// 顶栏右侧的步骤进度.
+/// 顶栏右侧展示的当前发布步骤进度 ("1 / 2").
 class _Step extends StatelessWidget {
   const new();
 
@@ -199,7 +199,7 @@ class _Step extends StatelessWidget {
   }
 }
 
-/// 可选的店铺行: 门头照片, 店名, 距离和商圈, 地址.
+/// 店铺单选列表行, 展示门头照片, 店名, 距离, 所属商圈及地址.
 class _ShopOption extends ConsumerWidget {
   const new({
     required this.shop,

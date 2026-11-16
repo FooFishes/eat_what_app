@@ -4,7 +4,7 @@ import 'package:eat/design/tokens/eat_palette.dart';
 
 /// 舞台可用的全部颜色.
 ///
-/// 每个值自带整套配色, 深浅固定写在枚举值上, 不在运行时按亮度推断.
+/// 每个枚举值自带整套配色, 深浅固定声明在枚举上, 不在运行时按亮度推断.
 enum StageColor {
   broth(EatPalette.stageBroth, '汤色', isDark: false),
   mango(EatPalette.stageMango, '芒果黄', isDark: false),
@@ -24,13 +24,13 @@ enum StageColor {
   /// 界面上显示的颜色名, 出现在 "调整照片" 的色圆下方.
   final String label;
 
-  /// 是否为深色舞台. 深色舞台上的文字用 `paper`, 浅色舞台上用 `ink`.
+  /// 是否为深色舞台. 深色舞台上的文字使用 `paper`, 浅色舞台上使用 `ink`.
   final bool isDark;
 
-  /// 令牌名, 如 `stage-broth`. 接口中的舞台色字段使用相同写法.
+  /// 令牌名 (如 `stage-broth`), 接口中的舞台色字段使用相同写法.
   String get token => 'stage-$name';
 
-  /// 按令牌名查找舞台色. 无法识别时返回 null.
+  /// 按令牌名查找舞台色, 无法识别时返回 null.
   static StageColor? fromToken(String token) {
     for (final value in values) {
       if (value.token == token) return value;
@@ -44,15 +44,15 @@ enum StageColor {
   /// 舞台上的次级文字色, 用于签名和说明.
   ///
   /// 次级文字通常比主文字淡一档: 浅色舞台用 `ink-soft`, 深色舞台用 85% 不透明度的 `paper`.
-  /// `chili` 和 `tomato` 例外, 次级文字与主文字同色.
-  /// 原因是 `ink-soft` 在 `chili` 上的对比度只有 2.9:1, 85% 的 `paper` 在 `tomato` 上只有 3.9:1, 都低于 4.5:1.
+  /// `chili` 和 `tomato` 例外, 次级文字与主文字同色, 因为 `ink-soft` 在 `chili` 上的对比度只有 2.9:1,
+  /// 85% 不透明度的 `paper` 在 `tomato` 上只有 3.9:1, 均低于 4.5:1.
   Color get secondaryForeground => switch (this) {
     chili || tomato => foreground,
     _ when isDark => _paper85,
     _ => EatPalette.inkSoft,
   };
 
-  /// 舞台上次按钮的底色, 如 "换一个" "编辑资料". 文字用 [foreground].
+  /// 舞台上次按钮的底色 (如 "换一个", "编辑资料"), 文字使用 [foreground].
   Color get ghost =>
       isDark ? EatPalette.stageGhostDark : EatPalette.stageGhostLight;
 
@@ -63,7 +63,7 @@ enum StageColor {
   Color get tableRing =>
       isDark ? EatPalette.tableRingDark : EatPalette.tableRingLight;
 
-  /// 实心按钮的底色. 按钮文字用舞台色 [color].
+  /// 实心按钮的底色, 按钮文字使用舞台色 [color].
   Color get solid => isDark ? EatPalette.paper : EatPalette.ink;
 }
 

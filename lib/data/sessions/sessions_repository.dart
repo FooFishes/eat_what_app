@@ -5,13 +5,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'sessions_repository.g.dart';
 
-/// 登录设备.
+/// 登录设备会话仓库.
 class SessionsRepository {
   SessionsRepository(this._api);
 
   final SessionsApi _api;
 
-  /// 已登录的全部设备, 本机排在最前. 设备数量少, 一次获取全部, 最多请求 4 页.
+  /// 获取当前账号的全部已登录设备, 并将本机置于首位; 因设备总数通常较少, 方法内连续翻页获取全部记录 (最多 4 页).
   Future<List<DeviceSession>> list({CancelToken? cancelToken}) async {
     final devices = <DeviceSession>[];
     String? cursor;
@@ -30,7 +30,7 @@ class SessionsRepository {
 
   Future<void> revoke(String sessionId) => _api.revoke(sessionId);
 
-  /// 下线本机以外的所有设备. 本机的会话不变.
+  /// 下线除本机以外的所有其他设备, 当前设备会话保持有效.
   Future<void> revokeOthers() => _api.revokeOthers();
 
   static DeviceSession? _toDevice(DeviceSessionDto dto) {

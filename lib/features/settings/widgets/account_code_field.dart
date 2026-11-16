@@ -14,10 +14,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 发到本账号绑定手机的验证码输入框. 右侧是 "获取验证码" 或重发倒计时.
+/// 用于向当前账号绑定手机发送验证码的输入框, 右侧显示 "获取验证码" 或重发倒计时.
 ///
-/// 发送前需完成人机验证. 发送失败时用轻提示说明原因.
-/// [phone] 是绑定的手机号, 打码后显示在输入框下方. [purpose] 决定发哪种验证码.
+/// 发送前需先完成人机验证, 失败时以轻提示展示原因.
+/// [phone] 为绑定的手机号, 脱敏后展示在输入框下方, [purpose] 决定验证码用途.
 class AccountCodeField extends ConsumerStatefulWidget {
   const new({
     super.key,

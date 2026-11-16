@@ -23,7 +23,7 @@ enum ReportReason {
   final String label;
 }
 
-/// 被举报的一道菜, 一条评论或回复, 或一个用户.
+/// 被举报的对象, 可为菜品, 评论, 回复或用户.
 class const ReportTarget({
   required final ReportKind kind,
   required final int id,
@@ -35,7 +35,7 @@ class const ReportTarget({
 
   const ReportTarget.user(int id) : this(kind: ReportKind.user, id: id);
 
-  /// 可选的原因. 服务端拒绝用 "不是这道菜的实拍" 举报用户.
+  /// 当前目标可选的举报原因列表, 服务端不支持使用 "不是这道菜的实拍" 举报用户.
   List<ReportReason> get reasons => switch (kind) {
     ReportKind.dish || ReportKind.comment => ReportReason.values,
     ReportKind.user => [
@@ -59,10 +59,10 @@ enum ShopErrorType {
   final String label;
 }
 
-/// 反馈, 信息有误或举报关于的对象的类型.
+/// 反馈, 信息有误或举报所关联的对象类型.
 enum CaseSubjectKind { dish, shop, comment, user }
 
-/// 我提交的反馈, 信息有误或举报关于的对象. 由消息页点击处理结果时获取.
+/// 用户提交的反馈, 信息有误或举报所关联的对象, 在消息页点击处理结果时获取.
 class const CaseSubject({
   required final CaseSubjectKind kind,
   required final int id,

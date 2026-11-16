@@ -20,21 +20,21 @@ enum NoticeKind {
   comment('comment'),
   reply('reply'),
 
-  /// 赞了我的评论或回复.
+  /// 当前用户的评论或回复收到点赞.
   commentLike('comment_like'),
   caseResult('case_result'),
   announcement('announcement'),
 
-  /// 账号被封禁. 写明原因和期限.
+  /// 账号被封禁通知, 包含封禁原因与期限.
   accountBanned('account_banned'),
 
-  /// 账号在新设备上登录. 点击进入登录设备, 不是本人时可以让它下线.
+  /// 账号在新设备登录通知, 点击可跳转至登录设备列表执行下线操作.
   newDeviceLogin('new_device_login'),
 
-  /// 管理员删除了我发布的菜, 评论或回复.
+  /// 管理员删除了当前用户发布的菜品, 评论或回复.
   contentRemoved('content_removed'),
 
-  /// 客户端不认识的类型. 显示为普通消息, 不跳转.
+  /// 客户端未识别的消息类型, 按普通消息展示且不可跳转.
   other('');
 
   const new(this.api);
@@ -49,19 +49,19 @@ enum NoticeKind {
   }
 }
 
-/// 消息里的一个互动者. 系统消息没有互动者.
+/// 消息中的互动者信息, 系统消息不包含互动者.
 class const NoticeActor({
   required final int id,
   required final String name,
   final String? avatar,
 });
 
-/// 消息页的一行, 来自 `/notification/cards`.
+/// 消息列表的一行卡片数据, 来自 `/notification/cards`.
 ///
 /// 同一对象, 同一类互动在同一天的消息由服务端合并为一行.
-/// - [memberCount] 是合并的条数. [actors] 是其中最近的至多 3 人, 最近的在前.
+/// - [memberCount] 为合并的消息条数, [actors] 为其中最近的至多 3 位互动者 (按时间倒序).
 /// - [targetDomain] 原样保留接口取值, 如 `foods`, `users`, `comments`, 由 `NoticeRules` 识别.
-/// - [read] 表示合并的各条都已读.
+/// - [read] 表示该合并组内的所有消息均已读.
 class const Notice({
   required final int id,
   required final NoticeKind kind,
@@ -91,7 +91,7 @@ sealed class NoticeDetail {
   const NoticeDetail();
 }
 
-/// 反馈, 信息有误和举报的处理结果.
+/// 反馈, 信息有误或举报的处理结果详情.
 final class CaseResultDetail extends NoticeDetail {
   const CaseResultDetail({
     this.caseId,
@@ -101,7 +101,7 @@ final class CaseResultDetail extends NoticeDetail {
     this.reply = '',
   });
 
-  /// 提交记录的 id. 用于获取记录关于的菜或店.
+  /// 提交记录 id, 用于查询该记录关联的菜品或店铺.
   final int? caseId;
   final CaseKind kind;
 
@@ -124,11 +124,11 @@ final class BanDetail extends NoticeDetail {
 
   final String? reason;
 
-  /// 封禁截止时间. null 表示永久封禁.
+  /// 封禁截止时间, 为 null 时表示永久封禁.
   final DateTime? until;
 }
 
-/// 新设备登录消息里的设备. [deviceName] 是设备上报或服务端推断的名称, 如 "Pixel 8", 可能没有.
+/// 新设备登录消息附带的设备信息. [deviceName] 为设备上报名或服务端推断的名称 (如 "Pixel 8"), 可能为 null.
 final class NewDeviceDetail extends NoticeDetail {
   const NewDeviceDetail({this.deviceName, this.platform});
 
@@ -138,7 +138,7 @@ final class NewDeviceDetail extends NoticeDetail {
   final String? platform;
 }
 
-/// 被删除的内容. [title] 是菜名或评论的前 20 个字.
+/// 被删除内容的信息, [title] 为菜名或评论正文的前 20 个字.
 final class ContentRemovedDetail extends NoticeDetail {
   const ContentRemovedDetail({
     required this.comment,
@@ -146,13 +146,13 @@ final class ContentRemovedDetail extends NoticeDetail {
     this.reason,
   });
 
-  /// 为 true 时是评论或回复, 否则是菜.
+  /// 为 true 时表示评论或回复, 否则表示菜品.
   final bool comment;
   final String title;
   final String? reason;
 }
 
-/// 运营发布的公告. 只显示, 不跳转.
+/// 运营发布的系统公告, 仅作展示, 不可跳转.
 final class AnnouncementDetail extends NoticeDetail {
   const AnnouncementDetail({required this.title, this.content = ''});
 

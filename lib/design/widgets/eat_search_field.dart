@@ -6,12 +6,10 @@ import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 无描边的胶囊搜索框.
+/// 无描边的胶囊搜索框, 在白底页面上使用 `mist` 底色, 当 [floating] 为 true 时使用 `paper` 底色并叠加 `shadow-float` 以浮于地图之上.
 ///
-/// 白底页面上为 `mist` 底. [floating] 为 true 时浮于地图之上, 使用 `paper` 底加 `shadow-float`.
-///
-/// - [hintText] 写明可搜索的内容, 如 "搜店名" "搜店名或菜名". 读屏同样朗读这段文字.
-/// - 输入框有内容时, 右端显示清空按钮. 点击后清空内容并以空串调用 [onChanged], 输入框保持焦点.
+/// - [hintText] 需写明可搜索的范围 (如 "搜店名" "搜店名或菜名"), 读屏同样朗读该文本.
+/// - 输入框非空时右端显示清空按钮, 点击后清空内容, 以空串回调 [onChanged] 并保持输入框焦点.
 class EatSearchField extends StatefulWidget {
   const new({
     super.key,
@@ -34,10 +32,10 @@ class EatSearchField extends StatefulWidget {
   final bool autofocus;
   final bool floating;
 
-  /// 筛选按钮的回调. 不为 null 时在胶囊右端显示圆形筛选按钮.
+  /// 筛选按钮的回调, 不为 null 时在胶囊右端显示圆形筛选按钮.
   final VoidCallback? onFilter;
 
-  /// 已选的筛选项数. 大于 0 时在筛选按钮右上角显示该数字.
+  /// 已选的筛选项数, 大于 0 时在筛选按钮右上角显示该数字.
   final int filterCount;
 
   @override
@@ -45,7 +43,7 @@ class EatSearchField extends StatefulWidget {
 }
 
 class _EatSearchFieldState extends State<EatSearchField> {
-  /// 调用方未传入控制器时创建的控制器. 清空按钮的显示依赖控制器中的文字.
+  /// 调用方未传入控制器时创建的内部控制器, 用于驱动清空按钮的显隐.
   TextEditingController? _own;
 
   TextEditingController get _controller =>
@@ -94,7 +92,7 @@ class _EatSearchFieldState extends State<EatSearchField> {
                 style: textStyle,
                 cursorColor: c.ink,
 
-                /// 文字行高 22px, 低于最小点击高度. 上下留白把输入区补足到胶囊的 48px.
+                // 文字行高为 22px, 低于最小点击高度, 因此通过上下留白将输入区撑满胶囊的 48px.
                 decoration: InputDecoration(
                   isCollapsed: true,
                   border: InputBorder.none,

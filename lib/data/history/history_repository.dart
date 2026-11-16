@@ -7,13 +7,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'history_repository.g.dart';
 
-/// 足迹. 只有本人可见.
+/// 提供浏览足迹的读取与清空能力, 仅限本人查看.
 class HistoryRepository {
   HistoryRepository(this._api);
 
   final HistoryApi _api;
 
-  /// 缺少名称或时间的条目 (如对象已被删除) 不显示.
+  /// 获取指定分栏的足迹列表, 缺少名称或浏览时间的条目 (如对象已删除) 将被过滤.
   Future<Paged<Footprint>> list(
     FootprintKind kind, {
     int page = 1,

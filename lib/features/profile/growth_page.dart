@@ -12,7 +12,7 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 等级: 当前等级, 累计经验, 本级进度和经验明细. 只有本人看得见.
+/// 个人等级页, 展示当前等级, 累计经验, 升级进度与经验明细, 仅自己可见.
 class GrowthPage extends ConsumerWidget {
   const new({super.key});
 

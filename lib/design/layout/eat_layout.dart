@@ -77,8 +77,8 @@ class const EatLayout({
   /// 舞台上菜名和店名的字号.
   ///
   /// - 三行时缩小, 使三行的总高度不超过舞台左下的文字区域.
-  /// - 某一行排满四个字时略小, 使文字右端不超出盘子的左边缘.
-  ///   深色舞台的文字为白色, 与白色盘沿重叠的部分无法辨认.
+  /// - 某一行排满四个字时略微缩小, 使文字右端不超出盘子左边缘,
+  ///   避免深色舞台上的白色文字与白色盘沿重叠后无法辨认.
   double stageNameSize(List<String> lines) {
     final longest = lines.fold(0, (m, l) => math.max(m, l.characters.length));
     final size = lines.length >= 3

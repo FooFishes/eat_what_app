@@ -8,16 +8,16 @@ part of 'topic_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 专题详情. 专题不存在或尚未开始时为 null.
+/// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
 ///
-/// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+/// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
 
 @ProviderFor(topicDetail)
 final topicDetailProvider = TopicDetailFamily._();
 
-/// 专题详情. 专题不存在或尚未开始时为 null.
+/// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
 ///
-/// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+/// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
 
 final class TopicDetailProvider
     extends
@@ -27,9 +27,9 @@ final class TopicDetailProvider
           FutureOr<TopicDetail?>
         >
     with $FutureModifier<TopicDetail?>, $FutureProvider<TopicDetail?> {
-  /// 专题详情. 专题不存在或尚未开始时为 null.
+  /// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
   ///
-  /// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+  /// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
   TopicDetailProvider._({
     required TopicDetailFamily super.from,
     required int super.argument,
@@ -76,9 +76,9 @@ final class TopicDetailProvider
 
 String _$topicDetailHash() => r'f9f157f304ffb4d256a131f8419c404ed9687362';
 
-/// 专题详情. 专题不存在或尚未开始时为 null.
+/// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
 ///
-/// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+/// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
 
 final class TopicDetailFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<TopicDetail?>, int> {
@@ -91,9 +91,9 @@ final class TopicDetailFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 专题详情. 专题不存在或尚未开始时为 null.
+  /// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
   ///
-  /// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+  /// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
 
   TopicDetailProvider call(int topicId) =>
       TopicDetailProvider._(argument: topicId, from: this);
@@ -102,15 +102,15 @@ final class TopicDetailFamily extends $Family
   String toString() => r'topicDetailProvider';
 }
 
-/// 当前校区的往期专题, 滚动到底部时加载下一页. 切换校区后重新请求.
+/// 当前校区的往期专题分页列表, 支持触底加载下一页, 切换校区时自动重新请求.
 
 @ProviderFor(TopicArchive)
 final topicArchiveProvider = TopicArchiveProvider._();
 
-/// 当前校区的往期专题, 滚动到底部时加载下一页. 切换校区后重新请求.
+/// 当前校区的往期专题分页列表, 支持触底加载下一页, 切换校区时自动重新请求.
 final class TopicArchiveProvider
     extends $AsyncNotifierProvider<TopicArchive, TopicArchivePages> {
-  /// 当前校区的往期专题, 滚动到底部时加载下一页. 切换校区后重新请求.
+  /// 当前校区的往期专题分页列表, 支持触底加载下一页, 切换校区时自动重新请求.
   TopicArchiveProvider._()
     : super(
         from: null,
@@ -132,7 +132,7 @@ final class TopicArchiveProvider
 
 String _$topicArchiveHash() => r'5ccd06c5485d5cf43eeac35b48b9084962b954de';
 
-/// 当前校区的往期专题, 滚动到底部时加载下一页. 切换校区后重新请求.
+/// 当前校区的往期专题分页列表, 支持触底加载下一页, 切换校区时自动重新请求.
 
 abstract class _$TopicArchive extends $AsyncNotifier<TopicArchivePages> {
   FutureOr<TopicArchivePages> build();

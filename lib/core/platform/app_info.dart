@@ -8,7 +8,7 @@ part 'app_info.g.dart';
 Future<String> appVersion(Ref ref) async =>
     (await PackageInfo.fromPlatform()).version;
 
-/// 构建号, CI 中取工作流的运行序号. 判断是否需要更新时比较它, 不比较版本名.
+/// 构建号, CI 中取工作流的运行序号. 更新检查基于该值比较, 而非版本名.
 @Riverpod(keepAlive: true)
 Future<String> appBuildNumber(Ref ref) async =>
     (await PackageInfo.fromPlatform()).buildNumber;

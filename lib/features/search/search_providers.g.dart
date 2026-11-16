@@ -8,12 +8,12 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 按菜名跨店搜索菜品, 最新的在前.
+/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 按菜名跨店搜索菜品, 最新的在前.
+/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
 
 final class DishSearchProvider
     extends
@@ -23,7 +23,7 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 按菜名跨店搜索菜品, 最新的在前.
+  /// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
   DishSearchProvider._({
     required DishSearchFamily super.from,
     required String super.argument,
@@ -69,7 +69,7 @@ final class DishSearchProvider
 
 String _$dishSearchHash() => r'045f33a57a41ccb825ba3d3923458c2f84abb21c';
 
-/// 按菜名跨店搜索菜品, 最新的在前.
+/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
 
 final class DishSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
@@ -82,7 +82,7 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按菜名跨店搜索菜品, 最新的在前.
+  /// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
 
   DishSearchProvider call(String keyword) =>
       DishSearchProvider._(argument: keyword, from: this);
@@ -91,16 +91,16 @@ final class DishSearchFamily extends $Family
   String toString() => r'dishSearchProvider';
 }
 
-/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
 
 @ProviderFor(shopSearch)
 final shopSearchProvider = ShopSearchFamily._();
 
-/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
 
 final class ShopSearchProvider
     extends
@@ -110,9 +110,9 @@ final class ShopSearchProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+  /// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
   ///
-  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+  /// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
   ShopSearchProvider._({
     required ShopSearchFamily super.from,
     required String super.argument,
@@ -158,9 +158,9 @@ final class ShopSearchProvider
 
 String _$shopSearchHash() => r'6ab0cb04d84fe7981012f04ab9fb602d94b030de';
 
-/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
 
 final class ShopSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -173,9 +173,9 @@ final class ShopSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+  /// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
   ///
-  /// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+  /// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
 
   ShopSearchProvider call(String keyword) =>
       ShopSearchProvider._(argument: keyword, from: this);
@@ -184,24 +184,21 @@ final class ShopSearchFamily extends $Family
   String toString() => r'shopSearchProvider';
 }
 
-/// 最近搜索的词, 按时间倒序, 数量有上限.
+/// 管理最近搜索关键词列表的控制器, 按搜索时间倒序排列并限制最大条数.
 ///
-/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
-/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
+/// 记录按账号隔离存储在 `cache.` 前缀下, 退出登录时随账号缓存一并清除; 游客状态既不持久化记录, 也不读取本机其他账号的历史.
 
 @ProviderFor(SearchHistory)
 final searchHistoryProvider = SearchHistoryProvider._();
 
-/// 最近搜索的词, 按时间倒序, 数量有上限.
+/// 管理最近搜索关键词列表的控制器, 按搜索时间倒序排列并限制最大条数.
 ///
-/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
-/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
+/// 记录按账号隔离存储在 `cache.` 前缀下, 退出登录时随账号缓存一并清除; 游客状态既不持久化记录, 也不读取本机其他账号的历史.
 final class SearchHistoryProvider
     extends $AsyncNotifierProvider<SearchHistory, List<String>> {
-  /// 最近搜索的词, 按时间倒序, 数量有上限.
+  /// 管理最近搜索关键词列表的控制器, 按搜索时间倒序排列并限制最大条数.
   ///
-  /// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
-  /// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
+  /// 记录按账号隔离存储在 `cache.` 前缀下, 退出登录时随账号缓存一并清除; 游客状态既不持久化记录, 也不读取本机其他账号的历史.
   SearchHistoryProvider._()
     : super(
         from: null,
@@ -223,10 +220,9 @@ final class SearchHistoryProvider
 
 String _$searchHistoryHash() => r'c37f31660f43efbfb663994673a5364fa2564db1';
 
-/// 最近搜索的词, 按时间倒序, 数量有上限.
+/// 管理最近搜索关键词列表的控制器, 按搜索时间倒序排列并限制最大条数.
 ///
-/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
-/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
+/// 记录按账号隔离存储在 `cache.` 前缀下, 退出登录时随账号缓存一并清除; 游客状态既不持久化记录, 也不读取本机其他账号的历史.
 
 abstract class _$SearchHistory extends $AsyncNotifier<List<String>> {
   FutureOr<List<String>> build();

@@ -9,13 +9,12 @@ import 'package:webview_flutter/webview_flutter.dart';
 HumanVerifier createHumanVerifier(AppConfig config) =>
     _WebViewHumanVerifier(config.webBaseUrl);
 
-/// App 中的人机验证. 推入一个全屏透明页面, 其中的 WebView 加载腾讯的 JS, 结果经 JS 通道返回.
+/// App 端人机验证实现, 通过推入全屏透明页中的 WebView 加载腾讯验证脚本并经 JS 通道回传结果.
 ///
-/// 页面内容为 [_page], 通过 `loadHtmlString` 加载, `baseUrl` 设为 Web 版地址.
-/// 腾讯按页面来源校验域名, 因此校验到的是本站域名, 且无需在 Web 版单独部署验证页.
+/// 页面 HTML 取自 [_page] 并以 Web 版地址作为 `baseUrl` 调用 `loadHtmlString`,
+/// 使腾讯按本站域名校验来源而无需在 Web 端单独部署验证页.
 ///
-/// 推入页面后同时加载验证页和等待参数, 两者都完成后再开始验证.
-/// 页面在验证组件渲染前完全透明, 只拦截点击.
+/// 页面推入后并行加载静态页与获取初始化参数, 两者就绪后启动验证; 组件渲染前页面保持透明且仅拦截点击.
 class _WebViewHumanVerifier implements HumanVerifier {
   _WebViewHumanVerifier(this._baseUrl);
 
@@ -46,7 +45,7 @@ class _WebViewHumanVerifier implements HumanVerifier {
   }
 }
 
-/// 获取参数失败. 先关闭验证页, 再由 [_WebViewHumanVerifier.verify] 抛出.
+/// 获取初始化参数失败, 先关闭验证页, 再由 [_WebViewHumanVerifier.verify] 向上抛出原异常.
 class const _ParamsError(final Object error, final StackTrace stackTrace);
 
 class _CaptchaView extends StatefulWidget {
@@ -86,7 +85,7 @@ class _CaptchaViewState extends State<_CaptchaView> {
     _start();
   }
 
-  /// 验证页已在 [initState] 中开始加载, 这里先等参数再等页面, 两者仍是同时进行的.
+  /// 验证页已在 [initState] 中开始加载, 此处先等待参数再等待页面完成, 两者实际并行推进.
   Future<void> _start() async {
     final CaptchaParams? params;
     try {
@@ -104,8 +103,7 @@ class _CaptchaViewState extends State<_CaptchaView> {
       'aidEncryptedType': params.aidEncryptedType,
     });
     await _controller.runJavaScript('window.eatStart($options);');
-    // 脚本加载超时按失败处理.
-    // 脚本加载完成 (收到 `ready`) 后停止计时, 因为用户可能正在手动验证.
+    // 脚本加载超时后按失败处理. 加载完成后 (收到 `ready`) 停止计时, 因为此时用户可能正在进行手动验证.
     if (!_done) {
       _timeout = Timer(
         const Duration(seconds: 20),
@@ -162,9 +160,9 @@ class _CaptchaViewState extends State<_CaptchaView> {
 /// - `TJNCaptcha-global.js` 的构造函数第一个参数必须是 DOM 容器, 只传 appId 会直接抛出异常.
 /// - 控制台配置的 "我是人类" 勾选框渲染在容器内且没有关闭按钮, 因此点击遮罩空白处视为用户关闭.
 /// - 接口要求每次验证使用新页面和新实例, 不复用上一次的实例.
-/// - 容器有了实际尺寸 (组件渲染出来) 后遮罩才淡入, 时长与对话框进出一致.
-///   无风险时腾讯不渲染任何内容, 容器始终为 0×0, `ready` 回调也照常触发, 因此不能以 `ready` 为准.
-///   加载期间和无感通过时页面一直透明, 用户看到的是原页面和按钮的加载状态.
+/// - 容器获得非零尺寸 (即组件实际渲染) 后遮罩才淡入, 时长与对话框进出一致.
+///   无风险时腾讯不渲染任何内容 (容器保持 0×0), 但 `ready` 回调仍会触发, 因此不能以 `ready` 为准,
+///   从而保证加载期间与无感通过时页面全程透明, 用户仅看到原页面与按钮的加载状态.
 const _page = '''
 <!doctype html>
 <html lang="zh-CN">

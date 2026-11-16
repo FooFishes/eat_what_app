@@ -13,7 +13,7 @@ abstract final class PushEndpoints {
   static const settings = '/push/settings';
 }
 
-/// 接口分组 Push: 各推送栏目的开关.
+/// 推送设置接口 (`Push` 分组), 用于查询和切换各推送栏目的开关状态.
 class PushApi {
   PushApi(this._client);
 
@@ -25,7 +25,7 @@ class PushApi {
         PushSettingsDto.fromJson,
       );
 
-  /// 开关一个栏目, 返回修改后的全部开关.
+  /// 切换指定推送栏目的开关状态, 并返回更新后的全部栏目开关.
   Future<PushSettingsDto> set({
     required String category,
     required bool enabled,
@@ -38,7 +38,7 @@ class PushApi {
   );
 }
 
-/// 推送开关 (`PushDtos.Settings`). [categories] 以栏目的接口取值为键, 默认都为 true.
+/// 推送开关配置 (`PushDtos.Settings`); [categories] 以栏目接口取值为键, 各栏目默认均为 true.
 @JsonSerializable(createToJson: false)
 class const PushSettingsDto({final Map<String, bool>? categories}) {
   factory PushSettingsDto.fromJson(Map<String, dynamic> json) =>

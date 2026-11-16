@@ -11,24 +11,24 @@ sealed class SsoOutcome {
   const SsoOutcome();
 }
 
-/// 后端重定向到了 App 的回跳地址, [link] 带 `result`, 成功时带一次性的 `ticket`, 失败时带 `code`.
+/// 后端已重定向至 App 回跳地址, [link] 携带 `result` (成功附带一次性 `ticket`, 失败附带 `code`).
 ///
-/// 回跳地址任何 App 都能构造, 结果只用于提示. 认证在提交 `ticket` 后才生效.
+/// 由于任何 App 均可构造该回跳地址, 此处结果仅用于提示, 认证在向服务端提交 `ticket` 后才正式生效.
 final class SsoReturned extends SsoOutcome {
   const SsoReturned(this.link);
 
   final Uri link;
 }
 
-/// 用户关闭了认证页, 或没有经回跳地址回到 App.
+/// 用户关闭了认证页, 或未通过回跳地址返回 App.
 ///
-/// 安卓上浏览器不支持 Auth Tab 时退回 Custom Tabs, 用户手动切回 App 也是这种结果.
-/// Web 跳转离开当前页面, 同样返回本值.
+/// 在 Android 上浏览器不支持 Auth Tab 而退回 Custom Tabs 时, 用户手动切回 App 也返回该结果;
+/// Web 端跳转离开当前页时同样返回该值.
 final class SsoClosed extends SsoOutcome {
   const SsoClosed();
 }
 
-/// 没有可用的浏览器, 认证页没有打开.
+/// 无可用浏览器, 未能打开认证页.
 final class SsoFailed extends SsoOutcome {
   const SsoFailed();
 }

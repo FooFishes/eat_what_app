@@ -37,14 +37,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 附近页. 以地图作为舞台, 下方可拖动的抽屉列出附近的店.
+/// 附近页, 以地图作为舞台并在下方可拖动抽屉中列出附近店铺.
 ///
-/// - 顶部: 搜索框, 筛选按钮, 商圈胶囊.
-/// - 地图: 每家店一个圆形标记, 右下角是 "回到我的位置".
-/// - 拖动地图停止后, 按新的地图中心重新查找店铺.
-/// - 店铺只按距离排列. 筛选同时作用于地图标记和抽屉列表.
+/// - 顶部: 搜索框, 筛选按钮和商圈胶囊.
+/// - 地图: 每家店对应一个圆形标记, 右下角提供 "回到我的位置" 按钮; 拖动地图停止后按新中心点重新查询店铺.
+/// - 排序与筛选: 店铺固定按距离升序排列, 筛选条件同时作用于地图标记与抽屉列表.
 ///
-/// 地图是百度地图. 当前平台没有 AK, 或地图加载失败时整页改为列表, 不留空白的地图区域.
+/// 地图由百度地图提供; 若当前平台未配置 AK 或地图加载失败, 整页回退为纯列表布局, 不保留空白地图区域.
 class NearbyPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -79,9 +78,9 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   /// 抽屉高度占屏幕高度的比例. "回到我的位置" 按钮随抽屉上沿移动.
   var _sheetExtent = _sheetInitial;
 
-  /// 抽屉停下后的高度比例, 用作地图的下内边距.
+  /// 抽屉静止后的高度比例, 用作地图的下内边距.
   ///
-  /// 拖动抽屉时不实时改: 每次改都要经过平台通道, 停下一会儿后才更新.
+  /// 拖动过程中不实时更新该值, 因为每次变更都会触发平台通道调用, 需等待停稳防抖后再同步.
   var _sheetRest = _sheetInitial;
   Timer? _sheetDebounce;
 
@@ -109,7 +108,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     showToast(context, '地图加载失败，已切换为列表');
   }
 
-  /// 只有手势移动才重新找店. 代码移动 (回到我的位置, 点商圈) 由调用方自己设中心.
+  /// 仅手势拖动地图时触发防抖重查; 程序触发的视角移动 (如回到定位, 切换商圈) 由调用方直接更新中心点.
   void _onMoved(MapCamera camera, bool byGesture) {
     if (!byGesture) return;
     _moveDebounce?.cancel();
@@ -589,11 +588,10 @@ class _ListHeader extends StatelessWidget {
   }
 }
 
-/// 筛选面板: 类型单选, 品类多选, 价位单选, 只看口碑好的, 只看我收藏的店.
+/// 附近店铺筛选面板, 支持类型单选, 品类多选, 价位单选及口碑和收藏开关.
 ///
-/// - 选项先作用于草稿, 点 "看 N 家" 后才生效. N 是按草稿查询的结果数, 随选项实时变化.
-///   草稿查询与生效后的查询条件相同, 因此生效时复用缓存的结果.
-/// - 游客打开 "只看我收藏的店" 时先弹登录拦截, 选项不打开, 也不发请求.
+/// - 面板内调整先写入草稿, 点击 "看 N 家" 后正式生效; N 为草稿条件实时查询的结果数, 生效时直接复用该次查询缓存.
+/// - 游客开启 "只看我收藏的店" 时先弹出登录拦截, 拦截期间不切换开关状态也不发起请求.
 class _FilterPanel extends ConsumerStatefulWidget {
   const new({required this.query});
 
@@ -611,7 +609,7 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
   late var _recommendedOnly = widget.query.filter.recommendedOnly;
   late var _favoritesOnly = widget.query.filter.favoritesOnly;
 
-  /// 最近一次查询到的结果数. 新的草稿查询进行中时沿用该值, 按钮文字不闪烁.
+  /// 最近一次完成查询的结果数; 新查询加载期间沿用该数值, 避免按钮文案闪烁.
   int? _count;
 
   NearbyFilter get _draft => NearbyFilter(

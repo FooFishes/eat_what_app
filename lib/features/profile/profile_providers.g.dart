@@ -8,27 +8,24 @@ part of 'profile_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 我上传的菜. 发布成功后重新请求.
+/// 当前用户上传的菜品列表, 发布成功后会自动刷新.
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果, 不重新请求.
-///
-/// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
+/// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
+/// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
 
 @ProviderFor(MyUploads)
 final myUploadsProvider = MyUploadsProvider._();
 
-/// 我上传的菜. 发布成功后重新请求.
+/// 当前用户上传的菜品列表, 发布成功后会自动刷新.
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果, 不重新请求.
-///
-/// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
+/// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
+/// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
 final class MyUploadsProvider
     extends $AsyncNotifierProvider<MyUploads, DishPages> {
-  /// 我上传的菜. 发布成功后重新请求.
+  /// 当前用户上传的菜品列表, 发布成功后会自动刷新.
   ///
-  /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果, 不重新请求.
-  ///
-  /// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
+  /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
+  /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
   MyUploadsProvider._()
     : super(
         from: null,
@@ -50,11 +47,10 @@ final class MyUploadsProvider
 
 String _$myUploadsHash() => r'e6438957c369fc385180727cea0b1512a712322a';
 
-/// 我上传的菜. 发布成功后重新请求.
+/// 当前用户上传的菜品列表, 发布成功后会自动刷新.
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果, 不重新请求.
-///
-/// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
+/// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
+/// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
 
 abstract class _$MyUploads extends $AsyncNotifier<DishPages> {
   FutureOr<DishPages> build();
@@ -74,15 +70,15 @@ abstract class _$MyUploads extends $AsyncNotifier<DishPages> {
   }
 }
 
-/// 我收藏的菜, 按收藏时间倒序.
+/// 当前用户收藏的菜品列表, 按收藏时间倒序排列.
 
 @ProviderFor(MyFavorites)
 final myFavoritesProvider = MyFavoritesProvider._();
 
-/// 我收藏的菜, 按收藏时间倒序.
+/// 当前用户收藏的菜品列表, 按收藏时间倒序排列.
 final class MyFavoritesProvider
     extends $AsyncNotifierProvider<MyFavorites, DishPages> {
-  /// 我收藏的菜, 按收藏时间倒序.
+  /// 当前用户收藏的菜品列表, 按收藏时间倒序排列.
   MyFavoritesProvider._()
     : super(
         from: null,
@@ -104,7 +100,7 @@ final class MyFavoritesProvider
 
 String _$myFavoritesHash() => r'9241a8eb5fc3737374f3e95c2046998440bea26a';
 
-/// 我收藏的菜, 按收藏时间倒序.
+/// 当前用户收藏的菜品列表, 按收藏时间倒序排列.
 
 abstract class _$MyFavorites extends $AsyncNotifier<DishPages> {
   FutureOr<DishPages> build();
@@ -124,15 +120,15 @@ abstract class _$MyFavorites extends $AsyncNotifier<DishPages> {
   }
 }
 
-/// 我收藏的店. 已关门的店排在最后.
+/// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 
 @ProviderFor(MyFavoriteShops)
 final myFavoriteShopsProvider = MyFavoriteShopsProvider._();
 
-/// 我收藏的店. 已关门的店排在最后.
+/// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 final class MyFavoriteShopsProvider
     extends $AsyncNotifierProvider<MyFavoriteShops, ListPages<Shop>> {
-  /// 我收藏的店. 已关门的店排在最后.
+  /// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
   MyFavoriteShopsProvider._()
     : super(
         from: null,
@@ -154,7 +150,7 @@ final class MyFavoriteShopsProvider
 
 String _$myFavoriteShopsHash() => r'af503c70caca042aa64df00a8203927f8ebc24e7';
 
-/// 我收藏的店. 已关门的店排在最后.
+/// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 
 abstract class _$MyFavoriteShops extends $AsyncNotifier<ListPages<Shop>> {
   FutureOr<ListPages<Shop>> build();
@@ -174,15 +170,15 @@ abstract class _$MyFavoriteShops extends $AsyncNotifier<ListPages<Shop>> {
   }
 }
 
-/// 他人主页的 "上传". 离开页面后保留 5 分钟.
+/// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 
 @ProviderFor(UserUploads)
 final userUploadsProvider = UserUploadsFamily._();
 
-/// 他人主页的 "上传". 离开页面后保留 5 分钟.
+/// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 final class UserUploadsProvider
     extends $AsyncNotifierProvider<UserUploads, DishPages> {
-  /// 他人主页的 "上传". 离开页面后保留 5 分钟.
+  /// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
   UserUploadsProvider._({
     required UserUploadsFamily super.from,
     required int super.argument,
@@ -221,7 +217,7 @@ final class UserUploadsProvider
 
 String _$userUploadsHash() => r'fb385cedc951c56d7ac03646402f022adbaab4a9';
 
-/// 他人主页的 "上传". 离开页面后保留 5 分钟.
+/// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 
 final class UserUploadsFamily extends $Family
     with
@@ -241,7 +237,7 @@ final class UserUploadsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 他人主页的 "上传". 离开页面后保留 5 分钟.
+  /// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 
   UserUploadsProvider call(int userId) =>
       UserUploadsProvider._(argument: userId, from: this);
@@ -250,7 +246,7 @@ final class UserUploadsFamily extends $Family
   String toString() => r'userUploadsProvider';
 }
 
-/// 他人主页的 "上传". 离开页面后保留 5 分钟.
+/// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 
 abstract class _$UserUploads extends $AsyncNotifier<DishPages> {
   late final _$args = ref.$arg as int;
@@ -275,19 +271,19 @@ abstract class _$UserUploads extends $AsyncNotifier<DishPages> {
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+/// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 
 @ProviderFor(FollowList)
 final followListProvider = FollowListFamily._();
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+/// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 final class FollowListProvider
     extends $AsyncNotifierProvider<FollowList, ListPages<UserBrief>> {
   /// [userId] 的粉丝或关注列表.
   ///
-  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+  /// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
   FollowListProvider._({
     required FollowListFamily super.from,
     required (int, FollowListKind) super.argument,
@@ -328,7 +324,7 @@ String _$followListHash() => r'2e6657246ee4dd4fe43e383cf0f3dbab96ec0f48';
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+/// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 
 final class FollowListFamily extends $Family
     with
@@ -350,7 +346,7 @@ final class FollowListFamily extends $Family
 
   /// [userId] 的粉丝或关注列表.
   ///
-  /// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+  /// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 
   FollowListProvider call(int userId, FollowListKind kind) =>
       FollowListProvider._(argument: (userId, kind), from: this);
@@ -361,7 +357,7 @@ final class FollowListFamily extends $Family
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+/// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 
 abstract class _$FollowList extends $AsyncNotifier<ListPages<UserBrief>> {
   late final _$args = ref.$arg as (int, FollowListKind);
@@ -390,21 +386,21 @@ abstract class _$FollowList extends $AsyncNotifier<ListPages<UserBrief>> {
   }
 }
 
-/// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+/// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
 ///
-/// 取自对方的资料, 不单独请求.
+/// 该状态直接取自对方用户资料, 不单独发起请求.
 
 @ProviderFor(BlockState)
 final blockStateProvider = BlockStateFamily._();
 
-/// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+/// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
 ///
-/// 取自对方的资料, 不单独请求.
+/// 该状态直接取自对方用户资料, 不单独发起请求.
 final class BlockStateProvider
     extends $AsyncNotifierProvider<BlockState, bool> {
-  /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+  /// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
   ///
-  /// 取自对方的资料, 不单独请求.
+  /// 该状态直接取自对方用户资料, 不单独发起请求.
   BlockStateProvider._({
     required BlockStateFamily super.from,
     required int super.argument,
@@ -443,9 +439,9 @@ final class BlockStateProvider
 
 String _$blockStateHash() => r'0082280f9599e14ee42b9b92b78b30127138d304';
 
-/// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+/// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
 ///
-/// 取自对方的资料, 不单独请求.
+/// 该状态直接取自对方用户资料, 不单独发起请求.
 
 final class BlockStateFamily extends $Family
     with
@@ -465,9 +461,9 @@ final class BlockStateFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+  /// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
   ///
-  /// 取自对方的资料, 不单独请求.
+  /// 该状态直接取自对方用户资料, 不单独发起请求.
 
   BlockStateProvider call(int userId) =>
       BlockStateProvider._(argument: userId, from: this);
@@ -476,9 +472,9 @@ final class BlockStateFamily extends $Family
   String toString() => r'blockStateProvider';
 }
 
-/// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+/// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
 ///
-/// 取自对方的资料, 不单独请求.
+/// 该状态直接取自对方用户资料, 不单独发起请求.
 
 abstract class _$BlockState extends $AsyncNotifier<bool> {
   late final _$args = ref.$arg as int;
@@ -501,14 +497,14 @@ abstract class _$BlockState extends $AsyncNotifier<bool> {
   }
 }
 
-/// 我的标签. 只有认证用户能写标签, 未认证时不请求, 返回空列表.
+/// 当前用户的自定义标签列表. 仅认证用户支持编写标签, 未认证时不发起请求而直接返回空列表.
 
 @ProviderFor(MyTags)
 final myTagsProvider = MyTagsProvider._();
 
-/// 我的标签. 只有认证用户能写标签, 未认证时不请求, 返回空列表.
+/// 当前用户的自定义标签列表. 仅认证用户支持编写标签, 未认证时不发起请求而直接返回空列表.
 final class MyTagsProvider extends $AsyncNotifierProvider<MyTags, List<MyTag>> {
-  /// 我的标签. 只有认证用户能写标签, 未认证时不请求, 返回空列表.
+  /// 当前用户的自定义标签列表. 仅认证用户支持编写标签, 未认证时不发起请求而直接返回空列表.
   MyTagsProvider._()
     : super(
         from: null,
@@ -530,7 +526,7 @@ final class MyTagsProvider extends $AsyncNotifierProvider<MyTags, List<MyTag>> {
 
 String _$myTagsHash() => r'37714cd052efc49aa7ff6f8d930f4088a30d07c1';
 
-/// 我的标签. 只有认证用户能写标签, 未认证时不请求, 返回空列表.
+/// 当前用户的自定义标签列表. 仅认证用户支持编写标签, 未认证时不发起请求而直接返回空列表.
 
 abstract class _$MyTags extends $AsyncNotifier<List<MyTag>> {
   FutureOr<List<MyTag>> build();
@@ -550,15 +546,15 @@ abstract class _$MyTags extends $AsyncNotifier<List<MyTag>> {
   }
 }
 
-/// 用我的标签 [tagId] 标过的菜.
+/// 使用当前用户标签 [tagId] 标记过的菜品列表.
 
 @ProviderFor(TagDishes)
 final tagDishesProvider = TagDishesFamily._();
 
-/// 用我的标签 [tagId] 标过的菜.
+/// 使用当前用户标签 [tagId] 标记过的菜品列表.
 final class TagDishesProvider
     extends $AsyncNotifierProvider<TagDishes, DishPages> {
-  /// 用我的标签 [tagId] 标过的菜.
+  /// 使用当前用户标签 [tagId] 标记过的菜品列表.
   TagDishesProvider._({
     required TagDishesFamily super.from,
     required int super.argument,
@@ -597,7 +593,7 @@ final class TagDishesProvider
 
 String _$tagDishesHash() => r'798bc285ced63e013aff2fbbf1b9a95d602a8b16';
 
-/// 用我的标签 [tagId] 标过的菜.
+/// 使用当前用户标签 [tagId] 标记过的菜品列表.
 
 final class TagDishesFamily extends $Family
     with
@@ -617,7 +613,7 @@ final class TagDishesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 用我的标签 [tagId] 标过的菜.
+  /// 使用当前用户标签 [tagId] 标记过的菜品列表.
 
   TagDishesProvider call(int tagId) =>
       TagDishesProvider._(argument: tagId, from: this);
@@ -626,7 +622,7 @@ final class TagDishesFamily extends $Family
   String toString() => r'tagDishesProvider';
 }
 
-/// 用我的标签 [tagId] 标过的菜.
+/// 使用当前用户标签 [tagId] 标记过的菜品列表.
 
 abstract class _$TagDishes extends $AsyncNotifier<DishPages> {
   late final _$args = ref.$arg as int;
@@ -649,15 +645,15 @@ abstract class _$TagDishes extends $AsyncNotifier<DishPages> {
   }
 }
 
-/// 足迹的一个分栏, 按最近看过排序.
+/// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 
 @ProviderFor(Footprints)
 final footprintsProvider = FootprintsFamily._();
 
-/// 足迹的一个分栏, 按最近看过排序.
+/// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 final class FootprintsProvider
     extends $AsyncNotifierProvider<Footprints, ListPages<Footprint>> {
-  /// 足迹的一个分栏, 按最近看过排序.
+  /// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
   FootprintsProvider._({
     required FootprintsFamily super.from,
     required FootprintKind super.argument,
@@ -696,7 +692,7 @@ final class FootprintsProvider
 
 String _$footprintsHash() => r'f3b3b145c08ffbe5c5592a7374d4afb919a10680';
 
-/// 足迹的一个分栏, 按最近看过排序.
+/// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 
 final class FootprintsFamily extends $Family
     with
@@ -716,7 +712,7 @@ final class FootprintsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 足迹的一个分栏, 按最近看过排序.
+  /// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 
   FootprintsProvider call(FootprintKind kind) =>
       FootprintsProvider._(argument: kind, from: this);
@@ -725,7 +721,7 @@ final class FootprintsFamily extends $Family
   String toString() => r'footprintsProvider';
 }
 
-/// 足迹的一个分栏, 按最近看过排序.
+/// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 
 abstract class _$Footprints extends $AsyncNotifier<ListPages<Footprint>> {
   late final _$args = ref.$arg as FootprintKind;
@@ -753,12 +749,12 @@ abstract class _$Footprints extends $AsyncNotifier<ListPages<Footprint>> {
   }
 }
 
-/// 本人的等级进度. 每次打开等级页重新请求.
+/// 当前用户的等级进度, 每次进入等级页时重新请求.
 
 @ProviderFor(growthProgress)
 final growthProgressProvider = GrowthProgressProvider._();
 
-/// 本人的等级进度. 每次打开等级页重新请求.
+/// 当前用户的等级进度, 每次进入等级页时重新请求.
 
 final class GrowthProgressProvider
     extends
@@ -768,7 +764,7 @@ final class GrowthProgressProvider
           FutureOr<GrowthProgress>
         >
     with $FutureModifier<GrowthProgress>, $FutureProvider<GrowthProgress> {
-  /// 本人的等级进度. 每次打开等级页重新请求.
+  /// 当前用户的等级进度, 每次进入等级页时重新请求.
   GrowthProgressProvider._()
     : super(
         from: null,
@@ -797,16 +793,16 @@ final class GrowthProgressProvider
 
 String _$growthProgressHash() => r'2a518e771adf0fa4b6300427bcabb661fbeed532';
 
-/// 本人的经验明细, 按入账时间倒序.
+/// 当前用户的经验值明细列表, 按入账时间倒序排列.
 
 @ProviderFor(ExperienceLedger)
 final experienceLedgerProvider = ExperienceLedgerProvider._();
 
-/// 本人的经验明细, 按入账时间倒序.
+/// 当前用户的经验值明细列表, 按入账时间倒序排列.
 final class ExperienceLedgerProvider
     extends
         $AsyncNotifierProvider<ExperienceLedger, ListPages<ExperienceEntry>> {
-  /// 本人的经验明细, 按入账时间倒序.
+  /// 当前用户的经验值明细列表, 按入账时间倒序排列.
   ExperienceLedgerProvider._()
     : super(
         from: null,
@@ -828,7 +824,7 @@ final class ExperienceLedgerProvider
 
 String _$experienceLedgerHash() => r'aceb0598009563ec59fd3ae3f6202138007c52eb';
 
-/// 本人的经验明细, 按入账时间倒序.
+/// 当前用户的经验值明细列表, 按入账时间倒序排列.
 
 abstract class _$ExperienceLedger
     extends $AsyncNotifier<ListPages<ExperienceEntry>> {
@@ -857,20 +853,20 @@ abstract class _$ExperienceLedger
   }
 }
 
-/// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
+/// 保存个人资料; 若更换了头像则先上传头像文件, 再提交昵称, 签名和头像信息.
 ///
-/// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].
+/// 保存成功后刷新当前用户及 "我的" 页面资料, 失败时抛出 [AppFailure].
 
 @ProviderFor(ProfileSaver)
 final profileSaverProvider = ProfileSaverProvider._();
 
-/// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
+/// 保存个人资料; 若更换了头像则先上传头像文件, 再提交昵称, 签名和头像信息.
 ///
-/// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].
+/// 保存成功后刷新当前用户及 "我的" 页面资料, 失败时抛出 [AppFailure].
 final class ProfileSaverProvider extends $NotifierProvider<ProfileSaver, bool> {
-  /// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
+  /// 保存个人资料; 若更换了头像则先上传头像文件, 再提交昵称, 签名和头像信息.
   ///
-  /// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].
+  /// 保存成功后刷新当前用户及 "我的" 页面资料, 失败时抛出 [AppFailure].
   ProfileSaverProvider._()
     : super(
         from: null,
@@ -900,9 +896,9 @@ final class ProfileSaverProvider extends $NotifierProvider<ProfileSaver, bool> {
 
 String _$profileSaverHash() => r'8cbdac00301ab28866f5d8d2fe223b9bfd9b657c';
 
-/// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
+/// 保存个人资料; 若更换了头像则先上传头像文件, 再提交昵称, 签名和头像信息.
 ///
-/// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].
+/// 保存成功后刷新当前用户及 "我的" 页面资料, 失败时抛出 [AppFailure].
 
 abstract class _$ProfileSaver extends $Notifier<bool> {
   bool build();

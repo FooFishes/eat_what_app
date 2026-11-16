@@ -6,9 +6,9 @@ import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// 设置页中的一行: 左侧图标和名称, 右侧当前值. 可点击时最右侧显示箭头.
+/// 设置页的列表行组件, 左侧展示图标与名称, 右侧展示当前值, 可点击时最右侧附带右箭头.
 ///
-/// 没有接口的功能仍然列出. [pending] 为 true 时名称旁显示 "待接入".
+/// 尚未接入接口的功能同样列出, 当 [pending] 为 true 时在名称旁显示 "待接入" 标签.
 class SettingsRow extends StatelessWidget {
   const new({
     super.key,
@@ -24,7 +24,7 @@ class SettingsRow extends StatelessWidget {
   final String label;
   final String? value;
 
-  /// 值为数字 (版本号, 打码的手机号) 时使用数字字体.
+  /// 当值为版本号或脱敏手机号等数字内容时, 设为 true 以使用数字字体.
   final bool numericValue;
   final bool pending;
   final VoidCallback? onTap;

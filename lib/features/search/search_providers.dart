@@ -18,8 +18,8 @@ part 'search_providers.g.dart';
 /// 防抖期间关键词变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-// TODO: `/foods/list` 不返回商圈和距离, 也不按校区过滤. 后端支持后补充商圈, 距离和校区.
-/// 按菜名跨店搜索菜品, 最新的在前.
+// TODO: `/foods/list` 接口暂不返回商圈和距离, 也不支持按校区过滤. 后端支持后补充商圈, 距离与校区过滤参数.
+/// 按菜名跨店搜索菜品列表, 按发布时间倒序排列.
 @riverpod
 Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -35,9 +35,9 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   return page.items;
 }
 
-/// 按店名或地址搜索当前校区的店铺, 包括已关门的店.
+/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
 ///
-/// 按与用户的距离升序排列, 没有定位时按与校区中心的距离排列. 已关门的店排在最后, 彼此之间保持距离顺序.
+/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
 @riverpod
 Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -61,15 +61,14 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
   ];
 }
 
-/// 最近搜索的词, 按时间倒序, 数量有上限.
+/// 管理最近搜索关键词列表的控制器, 按搜索时间倒序排列并限制最大条数.
 ///
-/// 按账号存储在 `cache.` 前缀下, 退出登录时随账号数据一起删除.
-/// 游客搜过的词不保存, 也不显示本机上其他账号的记录.
+/// 记录按账号隔离存储在 `cache.` 前缀下, 退出登录时随账号缓存一并清除; 游客状态既不持久化记录, 也不读取本机其他账号的历史.
 @riverpod
 class SearchHistory extends _$SearchHistory {
   static const _max = 10;
 
-  /// 存储的键. 未登录 (含游客) 时为 null, 不读也不写.
+  /// 本地缓存键名; 未登录或处于游客态时返回 null, 跳过所有读写操作.
   String? get _key => switch (ref.read(sessionProvider)) {
     SignedIn(:final user) => 'cache.search.${user?.id ?? 0}',
     SignedOut() || Guest() => null,

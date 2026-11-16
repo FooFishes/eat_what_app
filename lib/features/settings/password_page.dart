@@ -16,11 +16,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 设置或修改密码. 密码 6–64 位.
+/// 设置或修改登录密码的页面, 密码长度限制为 6–64 位.
 ///
-/// - 未设置密码: 用绑定手机的验证码设置.
-/// - 已设置密码: 用旧密码或手机验证码修改, 在顶部切换方式.
-/// - 成功后其他设备需要重新登录, 本机不受影响.
+/// - 尚未设置密码时需通过已绑定手机号的短信验证码完成设置.
+/// - 已设置密码时支持在顶部切换通过旧密码或手机验证码进行修改.
+/// - 操作成功后其他已登录设备需重新登录, 本机当前会话不受影响.
 class PasswordPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -34,7 +34,7 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
   final _password = TextEditingController();
   final _repeat = TextEditingController();
 
-  /// 已设置密码时是否用验证码修改. 为 false 时用旧密码.
+  /// 已设置密码模式下是否采用短信验证码验证, 为 false 时使用旧密码验证.
   var _byCode = false;
   String? _oldError;
   String? _codeError;

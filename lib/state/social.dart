@@ -13,11 +13,11 @@ part 'social.g.dart';
 int? _myId(Ref ref) =>
     ref.watch(sessionProvider.select((s) => s is SignedIn ? s.user?.id : null));
 
-/// 指定用户的公开资料和统计. "我的", 他人主页, 粉丝和关注列表的每一行共用.
+/// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
 ///
-/// - 他人的资料离开页面后保留 5 分钟, 从列表进入他人主页时不重新请求.
-/// - 自己的资料一直保留, 发布成功后重新请求. "我的" 是常驻的主页面, 切换回来不重新请求.
-/// - 关注和屏蔽成功后, [Follows] 重新请求双方的资料, 以更新统计.
+/// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
+/// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
+/// - 关注和屏蔽成功后, 由 [Follows] 触发重新请求双方的资料以更新统计.
 @riverpod
 Future<UserProfile> userProfile(Ref ref, int userId) {
   if (userId == _myId(ref)) {
@@ -46,7 +46,7 @@ class Follows extends _$Follows {
 
   final _pending = <int>{};
 
-  /// 我是否关注了 [profile] 对应的用户, 本地覆盖值优先.
+  /// 查询当前用户是否已关注 [profile] 对应的用户, 本地覆盖值优先.
   FollowState stateOf(UserProfile profile) => FollowState.of(
     followedByMe: state[profile.id] ?? profile.followedByMe,
     followsMe: profile.followsMe,

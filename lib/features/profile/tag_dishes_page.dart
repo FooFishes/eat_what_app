@@ -7,13 +7,13 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 标签下的菜: 我用某个标签标过的菜, 跨店列出, 两列方块.
+/// 展示当前用户使用指定标签标记过的菜品列表, 跨店以两列方块排列.
 class TagDishesPage extends ConsumerWidget {
   const new({super.key, required this.tagId, required this.name});
 
   final int tagId;
 
-  /// 标签名, 来自地址. 缺失时标题为 "我的标签".
+  /// 来自路由参数的标签名称, 缺失时页面标题回退为 "我的标签".
   final String name;
 
   @override

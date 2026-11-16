@@ -3,22 +3,22 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// "大家怎么说" 中的一个词.
+/// 表示 "大家怎么说" 词云中的单个口味词.
 class const TasteWord({
   required final String label,
   required final int count,
 
-  /// 是否选中. 菜品详情中表示我打过, 餐厅详情中表示正按此词筛选.
+  /// 是否处于选中态; 菜品详情页中表示当前用户打过该标签, 餐厅详情页中表示正在按此词筛选.
   ///
-  /// 选中靠字重和下划线区分, 不靠颜色.
+  /// 选中态仅通过字重和下划线区分, 不改变文字颜色.
   final bool selected = false,
 });
 
-/// "大家怎么说": 口味标签排成一行文字, 打的人越多, 字越大越重.
+/// "大家怎么说" 口味词云组件, 将标签排成文字流并根据人数梯度调整字号和字重.
 ///
-/// - [words] 须已按次数从高到低排序. 只显示前 6 个, 字号和颜色按排名分档.
-/// - 每个词是一个按钮, 点击区域高度不小于 44px.
-/// - [trailing] 通常为 "+ 加标签" 胶囊.
+/// - [words] 须已按次数降序排列, 组件仅截取前 6 个并按排名分档赋予字号和颜色.
+/// - 每个词均为可点击按钮, 点击区域高度不小于 44px.
+/// - [trailing] 通常用于放置 "+ 加标签" 胶囊按钮.
 class TasteCloud extends StatelessWidget {
   const new({
     super.key,
@@ -32,7 +32,7 @@ class TasteCloud extends StatelessWidget {
   final ValueChanged<int> onTap;
   final Widget? trailing;
 
-  /// 选中的词在读屏中追加的说明. 菜品详情为 "我打过", 餐厅详情为 "正在筛选".
+  /// 选中词在读屏中追加的状态说明, 菜品详情页传 "我打过", 餐厅详情页传 "正在筛选".
   final String selectedLabel;
 
   static const _tiers = [

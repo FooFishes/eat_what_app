@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 
 /// 菜品方块的两列网格.
 ///
-/// 逐行排列, 行高由该行内容决定. 系统字号放大使菜名变高时, 方块不会溢出.
+/// 按行排列且行高由该行内容决定, 避免系统字号放大使菜名变高时方块发生溢出.
 class SliverTileGrid extends StatelessWidget {
   const new({super.key, required this.count, required this.builder});
 
@@ -34,13 +34,13 @@ class SliverTileGrid extends StatelessWidget {
   );
 }
 
-/// 推荐流和 "我的" 中的菜品方块. 上方为原图裁成的圆角方图, 文字位于图片下方.
+/// 推荐流和 "我的" 页面中的菜品方块, 上方为原图裁成的圆角方图, 文字位于图片下方.
 ///
-/// - 第一行: 菜名在左, 价格在右. 菜名过长时截断, 价格始终完整.
-/// - 第二行: 店名和距离在左, 赞数在右. 都没有时不占这一行.
+/// - 第一行: 菜名在左, 价格在右. 菜名过长时截断, 价格始终完整显示.
+/// - 第二行: 店名和距离在左, 赞数在右; 均无数据时不占这一行.
 /// - 文字不叠加在图片上.
 /// - 方块不加底色, 边框, 阴影和盘沿.
-/// - 整个方块是一个链接.
+/// - 整个方块作为整体可点击链接.
 ///
 /// 方块之间的间距由 [SliverTileGrid] 提供.
 class DishTile extends StatelessWidget {
@@ -59,21 +59,21 @@ class DishTile extends StatelessWidget {
   final ImageProvider? image;
   final String name;
 
-  /// 价格文字, 如 "¥18". 为 null 时不显示.
+  /// 价格文字 (如 "¥18"), 为 null 时不显示.
   final String? price;
 
   /// 店名, 用于推荐流和搜索结果.
   final String? shop;
 
-  /// 距离文字, 如 "320 m". 跟在店名后面, 店名过长时只截断店名.
+  /// 距离文字 (如 "320 m"), 跟在店名后面; 店名过长时只截断店名.
   final String? distance;
 
   /// 赞数, 用于 "我的" 和餐厅详情.
   final int? likes;
 
-  /// 三列排列时使用的窄版式: 图片为正方形, 菜名独占第一行, 价格移到第二行. 不显示店名和距离.
+  /// 三列排列时使用的窄版式: 图片为正方形, 菜名独占第一行, 价格移到第二行, 且不显示店名和距离.
   ///
-  /// 窄版式的宽度约 108px. 价格与菜名同一行时, 菜名只能显示三个字.
+  /// 窄版式宽度约为 108px, 若价格与菜名同一行, 菜名只能显示三个字.
   final bool compact;
 
   final VoidCallback? onTap;

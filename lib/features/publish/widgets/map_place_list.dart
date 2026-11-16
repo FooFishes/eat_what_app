@@ -10,9 +10,9 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 新建店的第一步: 按关键词搜地图上的店, 从候选里选一家.
+/// 新建店铺第一步的地图地点检索列表, 支持按关键词搜索并从候选地点中选择.
 ///
-/// 搜不到时由 [onManual] 转到手动添加.
+/// 未检索到目标店铺时, 通过 [onManual] 回调进入手动添加流程.
 class MapPlaceList extends ConsumerWidget {
   const new({
     super.key,
@@ -101,7 +101,7 @@ class _PlaceRow extends ConsumerWidget {
   }
 }
 
-/// 检索中的占位: 几行店名和地址的灰条. 候选没有缩略图.
+/// 地点检索过程中的骨架屏占位, 仅渲染店名与地址占位条而不含缩略图.
 class _Placeholder extends StatelessWidget {
   const new();
 

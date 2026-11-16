@@ -10,9 +10,9 @@ import 'package:eat/state/cross_border_consent.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 隐私政策的同意对话框. 服务端要求同意新版政策时弹出, 返回 true 表示用户点了 "同意".
+/// 弹出隐私政策更新同意对话框. 当服务端要求重新确认政策时调用, 返回 true 表示用户点击了 "同意".
 ///
-/// 点击 "不同意", 点击遮罩和系统返回都视为不同意.
+/// 点击 "不同意", 点击遮罩层或触发系统返回均视为不同意.
 Future<bool> showConsentDialog(BuildContext context) async =>
     await showEatDialog<bool>(
       context,
@@ -62,7 +62,7 @@ class _ConsentDialog extends ConsumerWidget {
   }
 }
 
-/// 对话框里打开托管网页的链接. [url] 为空时不显示.
+/// 对话框内用于打开托管政策网页的文本链接, [url] 为空时隐藏.
 class _ConsentLink extends ConsumerWidget {
   const new(this.label, this.url);
 
@@ -94,9 +94,9 @@ class _ConsentLink extends ConsumerWidget {
   }
 }
 
-/// 为已登录时的同意请求提供同意对话框. 置于应用根部, 包裹路由的内容.
+/// 在应用根部挂载的协议确认宿主组件, 为已登录状态下网络层触发的政策更新请求提供弹窗能力.
 ///
-/// 网络层的请求不属于任何页面, 因此对话框在 [navigatorKey] 对应的根导航器上弹出.
+/// 由于网络请求独立于具体页面之外, 弹窗需通过 [navigatorKey] 在根导航器上呈现.
 class ConsentHost extends ConsumerStatefulWidget {
   const new({super.key, required this.navigatorKey, required this.child});
 

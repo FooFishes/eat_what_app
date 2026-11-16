@@ -2,11 +2,11 @@ import 'package:eat/domain/models/topic.dart';
 
 /// 专题的时间段文字和各处的说明文字.
 abstract final class TopicRules {
-  /// 专题是否正在进行. 开始时刻属于专题, 结束时刻不属于.
+  /// 判断专题当前是否正在进行 (时间区间为左闭右开, 不含结束时刻).
   static bool isCurrent(Topic topic, DateTime now) =>
       !now.isBefore(topic.startsAt) && now.isBefore(topic.endsAt);
 
-  /// 起止日期, 如 "10 月 20 日–10 月 26 日". 不在今年的日期带年份.
+  /// 起止日期, 如 "10 月 20 日–10 月 26 日". 非本年的日期附带年份.
   ///
   /// 结束日取结束时刻前一刻所在的日期. 结束时刻通常是次日零点, 直接取日期会多出一天.
   static String range(Topic topic, DateTime now) {

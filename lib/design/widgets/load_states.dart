@@ -7,11 +7,11 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:flutter/widgets.dart';
 
-/// 加载占位. `mist` 色块按内容的形状排列, 如舞台, 盘子, 方块和列表行, 不使用进度圈.
+/// 加载占位组件, 使用 `mist` 色块按目标内容形状排列 (如舞台, 盘子, 方块和列表行), 不使用进度圈.
 ///
-/// 一组占位外包 [LoadingArea], 读屏只报告一次 "加载中".
+/// 一组占位外需包裹 [LoadingArea], 使读屏仅报告一次 "加载中".
 class Skeleton extends StatelessWidget {
-  /// 圆角矩形占位, 用于方块和缩略图.
+  /// 创建圆角矩形占位, 用于方块和缩略图.
   const new({
     super.key,
     this.width,
@@ -19,20 +19,20 @@ class Skeleton extends StatelessWidget {
     this.radius = EatRadius.thumb,
   }) : circle = false;
 
-  /// 圆形占位, 用于盘子和头像.
+  /// 创建圆形占位, 用于盘子和头像.
   const new circle({super.key, required double size})
     : width = size,
       height = size,
       radius = Radius.zero,
       circle = true;
 
-  /// 单行文字占位. 高度等于字号, 四角略圆.
+  /// 创建单行文字占位, 高度等于字号且四角略带圆角.
   const new line({super.key, this.width, double fontSize = 15})
     : height = fontSize,
       radius = const Radius.circular(4),
       circle = false;
 
-  /// 宽度. 不传时撑满父组件提供的宽度.
+  /// 占位宽度, 未传入时撑满父组件提供的可用宽度.
   final double? width;
   final double height;
   final Radius radius;
@@ -52,7 +52,7 @@ class Skeleton extends StatelessWidget {
   );
 }
 
-/// 一组 [Skeleton] 的外壳. 读屏只报告一次 "加载中", 内部色块不朗读.
+/// 一组 [Skeleton] 的语义外壳, 使读屏仅报告一次 "加载中" 而忽略内部色块.
 class LoadingArea extends StatelessWidget {
   const new({super.key, required this.child});
 
@@ -66,9 +66,9 @@ class LoadingArea extends StatelessWidget {
   );
 }
 
-/// 空状态和其他整块说明: 圆底图标, 标题, 一两句正文和可选按钮.
+/// 空状态及整块说明组件, 依次包含圆底图标, 标题, 说明正文和可选按钮.
 ///
-/// 空状态须写明下一步操作. 例如搜索无结果时, 正文提示更换关键词, 按钮为 "新建一家店".
+/// 空状态须明确提示下一步操作; 例如搜索无结果时, 正文提示更换关键词并将按钮设为 "新建一家店".
 class EmptyState extends StatelessWidget {
   const new({
     super.key,
@@ -82,7 +82,7 @@ class EmptyState extends StatelessWidget {
   final String title;
   final String? message;
 
-  /// 可选按钮, 通常为 48px 高的 `EatButton.outline` 或 `EatButton.mist`.
+  /// 可选的操作按钮, 通常为 48px 高的 `EatButton.outline` 或 `EatButton.mist`.
   final Widget? action;
 
   @override
@@ -123,15 +123,15 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// 没有旧数据且请求失败时的状态, 显示 "加载失败" 和 "重试".
+/// 无旧数据且请求失败时的兜底状态, 展示 "加载失败" 文案与 "重试" 按钮.
 ///
-/// 有旧数据时不使用本组件, 而是保留旧内容, 并给出不打断操作的提示.
+/// 若页面已有旧数据则不应使用本组件, 而应保留旧内容并给出不打断操作的轻量提示.
 class FailureState extends StatelessWidget {
   const new({super.key, required this.onRetry, this.message});
 
   final VoidCallback onRetry;
 
-  /// 失败原因, 如 "网络连接失败".
+  /// 失败原因描述, 如 "网络连接失败".
   final String? message;
 
   @override
@@ -148,9 +148,9 @@ class FailureState extends StatelessWidget {
   );
 }
 
-/// 舞台上的加载占位: 右侧为盘子, 左下为几行文字的形状. 用舞台次按钮色绘制, 随舞台色变化.
+/// 舞台区域的加载占位, 右侧为盘子形状, 左下为多行文字形状, 使用舞台次按钮色绘制并随舞台色同步变化.
 ///
-/// 只能放在 `StageScaffold` 的舞台内容中. 文字形状与底部之间预留被抽屉遮挡的高度.
+/// 仅能放置于 `StageScaffold` 的舞台内容中, 文字形状底部已自动预留被抽屉遮挡的高度.
 class StagePlaceholder extends StatelessWidget {
   const new({super.key});
 
@@ -202,7 +202,7 @@ class StagePlaceholder extends StatelessWidget {
   }
 }
 
-/// 两列菜品方块的加载占位, 间距与 `SliverTileGrid` 相同.
+/// 两列菜品方块的加载占位, 间距与 `SliverTileGrid` 保持一致.
 class TileGridPlaceholder extends StatelessWidget {
   const new({super.key, this.count = 4});
 
@@ -238,12 +238,12 @@ class TileGridPlaceholder extends StatelessWidget {
   }
 }
 
-/// 放在列表末尾的分页触发器. 进入列表的预加载范围时调用一次 [onVisible] 加载下一页.
+/// 置于列表末尾的分页加载触发器, 进入预加载范围时回调一次 [onVisible] 以加载下一页.
 ///
-/// - [generation] 通常传当前条数. 加载后条数变化时会再次触发.
-/// - 没有更多数据时不放置本组件.
-/// - [failed] 为 true 时不自动加载, 改为显示 "加载失败" 和 "重试", 避免反复重试.
-/// - 加载期间显示一行 "正在加载". 列表末尾留空时, 无法区分正在加载和已经到底.
+/// - [generation] 通常传入当前列表条数, 加载后条数变化时会触发下一轮检查.
+/// - 已无更多数据时不应放置本组件.
+/// - 当 [failed] 为 true 时停止自动加载并展示 "加载失败" 与 "重试", 避免失败后死循环重试.
+/// - 加载期间显示一行 "正在加载", 以免列表末尾留空时无法区分加载中与已到底部.
 class LoadMoreTrigger extends StatefulWidget {
   const new({
     super.key,
@@ -306,7 +306,7 @@ class _LoadMoreTriggerState extends State<LoadMoreTrigger> {
   );
 }
 
-/// 列表行的加载占位: 左侧为缩略图, 右侧为两行文字.
+/// 列表行的加载占位, 左侧为缩略图形状, 右侧为两行文字形状.
 class RowListPlaceholder extends StatelessWidget {
   const new({super.key, this.count = 4, this.thumbSize = EatSize.thumb});
 

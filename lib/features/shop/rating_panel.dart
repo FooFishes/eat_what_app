@@ -9,7 +9,7 @@ import 'package:eat/features/system/guard.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 打开评价面板. 先检查评价权限, 不允许时弹出拦截对话框, 不打开面板.
+/// 打开店铺评价面板. 先校验评价权限, 若无权限则弹出拦截对话框而不再打开面板.
 Future<void> showRatingPanel(
   BuildContext context,
   WidgetRef ref,
@@ -25,7 +25,7 @@ Future<void> showRatingPanel(
   );
 }
 
-/// 我在两个场景的评价, 如 "堂食推荐，外卖不推荐". 都没评过时为 null.
+/// 格式化当前用户在两个就餐场景的评价摘要 (如 "堂食推荐, 外卖不推荐"), 若均未评价则返回 null.
 String? myRatingsText(MyShopRatings mine) {
   final parts = [
     for (final scene in RatingScene.values)
@@ -34,10 +34,10 @@ String? myRatingsText(MyShopRatings mine) {
   return parts.isEmpty ? null : parts.join('，');
 }
 
-/// 评价面板: 先选在店里吃还是点外卖, 再选推不推荐.
+/// 店铺评价面板, 依次选择就餐场景与是否推荐.
 ///
-/// - 点一个评价立即提交, 点已选的评价撤回. 面板保持打开, 可以接着评另一个场景.
-/// - 失败时恢复原来的选择并提示原因.
+/// - 点击选项后立即提交, 再次点击已选选项则撤回, 提交后面板保持打开以便继续评价另一场景.
+/// - 请求失败时恢复原有选择并提示失败原因.
 class RatingPanel extends ConsumerStatefulWidget {
   const new({super.key, required this.shopId, required this.shopName});
 

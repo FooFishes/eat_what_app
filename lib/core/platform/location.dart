@@ -16,18 +16,18 @@ enum LocationAccess {
   blocked,
 }
 
-/// 设备定位, 封装 `geolocator`. 只返回 WGS-84 坐标, 由上层转换为 GCJ-02.
+/// 设备定位服务, 基于 `geolocator` 封装, 仅返回 WGS-84 坐标并由上层转换为 GCJ-02.
 ///
-/// 只在需要时单次定位, 不持续监听, 不在后台定位, 位置不写入磁盘.
+/// 仅按需执行单次定位, 不持续监听或后台定位, 也不将位置信息写入磁盘.
 abstract interface class LocationService {
   Future<LocationAccess> access();
 
-  /// 弹出系统权限框. 已永久拒绝时不弹出, 直接返回 [LocationAccess.blocked].
+  /// 发起系统定位权限申请; 若已被永久拒绝或定位服务关闭, 则不弹窗并直接返回 [LocationAccess.blocked].
   Future<LocationAccess> request();
 
-  /// 当前位置的 WGS-84 坐标.
+  /// 获取当前位置的 WGS-84 坐标.
   ///
-  /// 定位失败时使用系统记录的上次位置. 两者都取不到时返回 null.
+  /// 实时定位失败时回退至系统缓存的上次位置, 两者均不可得时返回 null.
   Future<({double lat, double lng})?> current();
 }
 

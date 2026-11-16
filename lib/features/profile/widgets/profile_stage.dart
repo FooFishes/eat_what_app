@@ -24,15 +24,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 头像的底色. 没有头像时按用户 id 确定舞台色, 同一用户在各处颜色一致.
+/// 计算默认头像的舞台底色, 当用户无头像时依据用户 id 确定, 以保证同一用户在各处颜色一致.
 StageColor avatarColorOf(int userId) =>
     StageColor.values[userId % StageColor.values.length];
 
-/// "我的" 和他人主页的舞台内容.
+/// 渲染 "我的" 页面与他人主页共用的顶部舞台内容.
 ///
-/// - 右侧: 获赞最多的菜. 没有上传过菜时显示插画空盘, 上传列表加载中时留空.
-/// - 左下: 头像, 昵称和等级, 用户名, 签名和四项统计. 点击粉丝和关注进入对应列表.
-/// - 等级来自 [profile], 加载中或接口没有返回时不显示. [onLevelTap] 为 null 时等级不可点.
+/// - 右侧展示获赞最多的菜品; 若尚未上传过菜品则显示插画空盘, 上传列表加载中则留空.
+/// - 左下展示头像, 昵称与等级, 用户名, 签名及四项统计, 点击粉丝和关注可进入对应列表.
+/// - 等级取自 [profile], 在加载中或接口未返回时不显示; 当 [onLevelTap] 为 null 时等级不可点击.
 class ProfileStage extends ConsumerWidget {
   const new({
     super.key,
@@ -54,10 +54,10 @@ class ProfileStage extends ConsumerWidget {
   final String? username;
   final String? signature;
 
-  /// 等级, 获赞, 粉丝和关注数. 加载中为 null, 数字显示为 "–".
+  /// 包含等级, 获赞, 粉丝与关注数的用户资料; 加载中时为 null, 对应数字显示为 "–".
   final UserProfile? profile;
 
-  /// 上传的菜的总数, 取自上传列表. 加载中为 null.
+  /// 上传菜品的总数, 取自上传列表, 加载中时为 null.
   final int? uploads;
   final Dish? top;
   final bool loading;
@@ -80,7 +80,7 @@ class ProfileStage extends ConsumerWidget {
       }
     }
 
-    // 资料已加载而数字为 null 时, 对方未公开该项.
+    // 资料已加载完毕而数值仍为 null, 说明对方未公开该项.
     final missing = profile == null ? '加载中' : '未公开';
     final stats = <(String, int?, String, VoidCallback?)>[
       ('获赞', profile?.earnedLikes, '加载中', null),
@@ -189,7 +189,7 @@ class ProfileStage extends ConsumerWidget {
   }
 }
 
-/// 舞台上昵称旁的等级胶囊 "Lv.3". 可点时点击区域不小于 44px, 胶囊本身保持小号.
+/// 展示在舞台昵称旁的等级胶囊 (如 "Lv.3"); 可点击时确保触控区域不小于 44px, 而胶囊视觉尺寸保持小号.
 class LevelBadge extends StatelessWidget {
   const new({super.key, required this.level, this.onTap});
 
@@ -236,7 +236,7 @@ class LevelBadge extends StatelessWidget {
   }
 }
 
-/// 一项统计: 数字在上, 名称在下. 可点击的统计高度不小于 44px.
+/// 舞台上的单项统计展示组件, 采用数字在上, 名称在下的布局; 可点击时高度不小于 44px.
 class _Stat extends StatelessWidget {
   const new({
     required this.label,
@@ -248,7 +248,7 @@ class _Stat extends StatelessWidget {
   final String label;
   final int? value;
 
-  /// [value] 为 null 时读屏报告的状态, 如 "加载中", "未公开".
+  /// 当 [value] 为 null 时供读屏播报的状态文案, 如 "加载中" 或 "未公开".
   final String missing;
   final VoidCallback? onTap;
 
@@ -294,10 +294,10 @@ class _Stat extends StatelessWidget {
   }
 }
 
-/// 上传或收藏的菜. 两列方块, 滚动到底部时加载下一页.
+/// 以两列方块展示上传或收藏菜品的列表组件, 滚动到底部时自动加载下一页.
 ///
-/// - [showShop] 为 true 时菜名下显示店名 (收藏, 标签下的菜), 否则菜名右侧显示赞数 (上传).
-/// - [empty] 是列表为空时显示的内容.
+/// - 当 [showShop] 为 true 时在菜名下方显示店名 (用于收藏和标签下的菜), 否则在菜名右侧显示获赞数 (用于上传列表).
+/// - [empty] 指定列表为空时展示的占位内容.
 class DishGridSliver extends StatelessWidget {
   const new({
     super.key,
@@ -365,7 +365,7 @@ class DishGridSliver extends StatelessWidget {
   }
 }
 
-/// 舞台下方的提示条: 图标, 一句说明, 可选的按钮.
+/// 舞台下方的提示条组件, 包含图标, 一句说明文本及可选的操作按钮.
 class StageNotice extends StatelessWidget {
   const new({super.key, required this.icon, required this.text, this.action});
 

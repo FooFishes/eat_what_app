@@ -18,12 +18,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// TODO: 反馈接口不接收版本, 补丁号和设备型号, 页面只展示版本和补丁号, 由用户自行写入反馈. 后端增加这些字段后随反馈一起提交.
-/// 反馈: 文字必填, 最多 500 字. 截图选填, 最多 3 张.
+// TODO: 反馈接口暂不支持接收版本号, 补丁号与设备型号, 页面目前仅作展示以供用户自行填写. 后端补充对应字段后改为随反馈请求一并提交.
+/// 问题反馈与建议提交页面, 要求填写最多 500 字的反馈正文并支持选填最多 3 张截图.
 ///
-/// - 从菜品详情或餐厅详情进入时, 顶部显示 "关于 某某", 提交时附带该菜或店.
-/// - 提交成功后提示处理结果会通过消息通知, 并返回上一页.
-/// - 重试时已上传的截图不重复上传.
+/// - 从菜品详情或店铺详情进入时, 顶部显示对应主题名称并在提交时关联该菜品或店铺 id.
+/// - 提交成功后提示处理结果将通过消息通知并自动返回上一页; 失败重试时已上传的截图不会重复上传.
 class FeedbackPage extends ConsumerStatefulWidget {
   const new({super.key, this.dishId, this.shopId});
 
@@ -41,7 +40,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
   final _text = TextEditingController();
   final _shots = <PickedPhoto>[];
 
-  /// 已上传的截图的 key. 重试时不重复上传.
+  /// 缓存已上传截图对应的存储 key, 避免失败重试时重复上传.
   final _uploaded = <Uint8List, String>{};
 
   @override
@@ -224,7 +223,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
   }
 }
 
-/// 一张已选的截图, 右上角可以移除.
+/// 单张已选截图的缩略图预览组件, 右上角附带移除按钮.
 class _Shot extends StatelessWidget {
   const new({required this.image, required this.onRemove});
 

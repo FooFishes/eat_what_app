@@ -19,9 +19,9 @@ abstract final class MealRules {
     return MealTime.night;
   }
 
-  /// [time] 所在饭点时间段的结束时刻.
+  /// 计算 [time] 所在饭点时间段的结束时刻.
   ///
-  /// 手动选择的饭点保持到该时刻, 之后恢复为按当前时间判断.
+  /// 手动切换的饭点将保留至该时刻, 过期后恢复为按当前时间自动判断.
   static DateTime periodEnd(DateTime time) {
     final day = DateTime(time.year, time.month, time.day);
     DateTime atMinute(int minute, {int addDays = 0}) =>

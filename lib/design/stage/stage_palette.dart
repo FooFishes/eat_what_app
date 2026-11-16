@@ -20,7 +20,7 @@ class const StageSuggestion({
       : [fallback, ...ranked.where((c) => c != fallback).take(2)];
 }
 
-/// 解码后的取色小图: 长边不超过 [StagePalette.sampleSide] 的 RGBA 像素.
+/// 解码后的取色小图, 保存长边不超过 [StagePalette.sampleSide] 的 RGBA 像素数据.
 class const StageSample(
   final Uint8List rgba, {
   required final int width,
@@ -40,7 +40,7 @@ class const StageSample(
   );
 }
 
-/// 舞台取色: 只统计圆形取景内的像素, 按彩度加权求主色调, 再吸附到最近的舞台色.
+/// 从圆形取景内的像素提取主色调并吸附到最近的舞台色.
 ///
 /// 不使用平均色, 因为实拍中餐的平均色几乎都是发灰的褐色.
 ///
@@ -49,17 +49,17 @@ class const StageSample(
 /// 2. 取权重最大的一段及其两侧各两段, 共 50°.
 /// 3. 对这 5 段的像素按亮度系数求平均, 得到代表色.
 ///
-/// 第 3 步不再乘彩度. 乘彩度会使结果偏向面积很小的高彩度区域, 例如红烧肉的酱汁会使整盘被判为红油色.
+/// 第 3 步不再乘以彩度, 因为乘以彩度会使结果偏向面积很小的高彩度区域 (例如红烧肉的酱汁会使整盘菜被判为红油色).
 abstract final class StagePalette {
   /// 解码后的长边像素数. 该尺寸在三端主线程上的取色耗时都可以接受, 因此不使用 isolate.
   static const sampleSide = 256;
 
   static const _hueBins = 36;
 
-  /// 彩度阈值. 彩度超过该值的像素计为有颜色.
+  /// 彩度阈值, 超过该值的像素计为有颜色.
   static const _colorfulChroma = 0.045;
 
-  /// 有颜色像素在圆内的最低占比, 按亮度系数加权. 低于该比例判定为过灰.
+  /// 按亮度系数加权的有颜色像素在圆内的最低占比, 低于该比例时判定为过灰.
   static const _minColorfulShare = 0.12;
 
   /// 吸附时亮度差的权重.
@@ -70,7 +70,7 @@ abstract final class StagePalette {
 
   /// 把任意编码的图片 [bytes] 解码为长边不超过 [sampleSide] 的取色小图.
   ///
-  /// "调整照片" 中裁切每次变化都要重新取色. 解码只做一次, 之后调用 [StageSample.suggest].
+  /// "调整照片" 中每次调整裁切都会重新取色, 因此解码只执行一次, 后续仅调用 [StageSample.suggest] 重新计算.
   static Future<StageSample> sample(Uint8List bytes) async {
     final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
     final descriptor = await ui.ImageDescriptor.encoded(buffer);
@@ -99,9 +99,9 @@ abstract final class StagePalette {
     }
   }
 
-  /// [rgba] 是 [width] × [height] 的 RGBA 像素.
+  /// 根据 [width] × [height] 的 [rgba] 像素推荐舞台色.
   ///
-  /// 取景圆的参数与 `DishPlate` 的裁切参数一致.
+  /// 取景圆的参数与 `DishPlate` 的裁切参数一致:
   /// [centerX] 和 [centerY] 是圆心占宽高的比例, [diameter] 是直径占短边的比例.
   static StageSuggestion suggest(
     Uint8List rgba, {
@@ -179,7 +179,7 @@ abstract final class StagePalette {
     return StageSuggestion(ranked: ranked, reliable: reliable);
   }
 
-  /// 亮度系数. 过暗 (阴影, 碗沿) 和过亮 (反光, 桌布) 的像素降权, 亮度到达两端时系数为 0.
+  /// 计算亮度权重系数, 对过暗 (阴影, 碗沿) 和过亮 (反光, 桌布) 的像素降权, 亮度到达两端时系数为 0.
   static double _lightnessFactor(double l) =>
       _smoothstep(0.12, 0.32, l) * (1 - _smoothstep(0.86, 0.97, l));
 

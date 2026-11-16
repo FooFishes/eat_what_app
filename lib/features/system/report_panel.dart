@@ -15,10 +15,10 @@ import 'package:eat/state/comments.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 举报面板: 选一个原因, 补充说明选填. 提交成功后关闭面板并提示 "已提交, 我们会尽快处理".
+/// 弹出举报面板, 用户选择举报原因并填写可选补充说明后提交.
 ///
-/// [target] 决定标题和可选的原因. 从其他面板进入时, 关闭该面板后调用.
-/// 举报评论时服务端答复评论已删除, 面板关闭并提示, 再调用 [onGone].
+/// [target] 决定面板标题与可选原因列表. 若从其他面板跳转而来, 需在原面板关闭后调用.
+/// 举报评论时若服务端返回该评论已删除, 则关闭面板并弹出提示, 随后触发 [onGone].
 Future<void> showReportPanel(
   BuildContext context,
   WidgetRef ref,
@@ -53,12 +53,12 @@ Future<void> showReportPanel(
   }
 }
 
-/// 选一个原因并填写选填补充说明的面板, 用于举报和店铺 "信息有误".
+/// 单选原因并填写可选补充说明的通用面板, 用于内容举报及店铺 "信息有误" 反馈.
 ///
-/// 提交成功后以 true 关闭面板, 由调用方显示提示. 失败时面板保留, 显示失败提示.
-/// 失败原因符合 [gone] 时以 false 关闭面板, 由调用方提示对象已删除.
+/// 提交成功时以 true 关闭面板并交由调用方提示, 请求失败则保留面板并展示失败提示.
+/// 若失败符合 [gone] 条件, 则以 false 关闭面板以便调用方提示对象已删除.
 ///
-/// 不预选原因, 选好后 "提交" 才可用, 避免误提交第一项.
+/// 默认不预选任何原因且选定后才启用提交按钮, 以避免误提交首项.
 class ReasonPanel<T> extends ConsumerStatefulWidget {
   const new({
     super.key,
@@ -76,13 +76,13 @@ class ReasonPanel<T> extends ConsumerStatefulWidget {
   final List<T> options;
   final String Function(T option) label;
 
-  /// 服务端拒绝时按该操作弹拦截对话框.
+  /// 服务端拒绝操作时用于触发权限拦截对话框的能力标识.
   final Capability capability;
 
-  /// 判断失败原因是否为对象已删除.
+  /// 判断失败异常是否表示目标对象已被删除.
   final bool Function(AppFailure failure)? gone;
 
-  /// 提交. 失败时抛出 [AppFailure].
+  /// 提交表单的回调, 失败时应抛出 [AppFailure].
   final Future<void> Function(T option, String note) submit;
 
   @override

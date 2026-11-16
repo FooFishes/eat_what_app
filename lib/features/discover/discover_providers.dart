@@ -15,7 +15,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'discover_providers.g.dart';
 
-/// 转盘数据: 按批次追加的推荐店铺, 以及当前所在的位置.
+/// 转盘数据源, 维护按批次追加的推荐店铺列表及当前选中索引.
 class const TurntableFeed({
   required final List<Shop> shops,
   final int index = 0,
@@ -26,9 +26,9 @@ class const TurntableFeed({
   /// 最后一次请求的页码. 下一批请求下一页.
   final int page = 1,
 
-  /// 是否还有下一批. 后端说没有, 或下一批里都是已经拿到过的店, 即视为没有.
+  /// 是否还有更多批次可请求. 若服务端返回无下一页或新批次全为重复店铺, 则设为 false.
   ///
-  /// 没有下一批时, 在最后一家点击 "换一个" 回到第一家.
+  /// 无更多批次时, 在末位店铺点击 "换一个" 会循环回到首位.
   final bool hasMore = true,
 
   /// 推荐请求失败, 当前显示的是该校区, 场景和饭点上一次获取的批次.
@@ -49,9 +49,9 @@ class const TurntableFeed({
     return (start: start, length: end - start);
   }
 
-  /// 去掉 [shopId] 后的队列. 去掉的是当前这家时停在下一家, 它是最后一家时回到第一家.
+  /// 返回移除 [shopId] 后的新队列. 若移除当前选中店铺则顺延至下一家, 若为末位则回到首位.
   ///
-  /// 批次的起始下标随之前移, 变空的批次不再计入圆点.
+  /// 后续批次的起始下标同步前移, 变空的批次不再计入圆点指示.
   TurntableFeed without(int shopId) {
     final at = shops.indexWhere((s) => s.id == shopId);
     if (at < 0) return this;
@@ -102,11 +102,10 @@ List<StageColor> turntableColors(List<Shop> shops) {
   return colors;
 }
 
-/// 推荐请求带的位置: 我的定位. 没有定位, 或人离当前校区过远时不带.
+/// 获取推荐请求携带的定位坐标. 无定位或当前位置距离目标校区过远时返回 null.
 ///
-/// 带位置时堂食只推荐 3 km 内的店, 外卖只推荐 5 km 内的店. 人不在校区附近时, 按位置找只会是空的.
-///
-/// 只在请求时读取, 不监听. 定位晚于第一批推荐返回时, 不为此重排已经显示的转盘, 之后的批次再带上位置.
+/// 携带位置时堂食仅推荐 3 km 内店铺, 外卖仅推荐 5 km 内店铺, 因此远离校区时按位置筛选会返回空列表.
+/// 该值仅在发起请求时读取而不监听变化, 避免定位晚于首屏返回时重排已展示的转盘, 后续批次请求再自然带上定位.
 GcjPoint? _near(Ref ref, CurrentPlace place) {
   final me = ref.read(currentLocationProvider).point;
   final center = place.campus?.center;
@@ -118,9 +117,9 @@ GcjPoint? _near(Ref ref, CurrentPlace place) {
   return me;
 }
 
-/// 发现页的转盘队列: 推荐的美食店. 地点, 饭点或场景变化时重新请求.
+/// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
 ///
-/// 抽屉的分类栏不影响转盘, 转盘总是推荐美食 ([ShopKind.food]).
+/// 抽屉分类切换不影响转盘, 转盘固定推荐美食 ([ShopKind.food]).
 @Riverpod(keepAlive: true)
 class TurntableQueue extends _$TurntableQueue {
   /// 一批的家数, 即舞台左下角的圆点数.
@@ -129,7 +128,7 @@ class TurntableQueue extends _$TurntableQueue {
   /// 剩余店铺不多于该数量时预取下一批.
   static const _prefetch = 3;
 
-  /// 每次重新请求第一批时加一. 预取返回时队列已经换过, 结果丢弃.
+  /// 队列版本号, 每次重置首屏请求时递增; 若预取完成时版本号已变化, 则丢弃过期的预取结果.
   var _generation = 0;
 
   @override
@@ -192,7 +191,7 @@ class TurntableQueue extends _$TurntableQueue {
     if (feed != null) select(feed.index + 1);
   }
 
-  /// 从队列里去掉一家店, 用于 "不想去这家". 队列空了时重新请求第一批.
+  /// 从队列中移除指定店铺 (用于 "不想去这家" 操作), 若移除后队列为空则重新请求首屏批次.
   void remove(int shopId) {
     final feed = state.value;
     if (feed == null) return;
@@ -316,7 +315,7 @@ class DiscoverShops extends _$DiscoverShops {
             pageSize: _pageSize,
           );
       if (!ref.mounted) return;
-      // 等待期间可能去掉过店铺, 因此在当前列表上追加.
+      // 请求期间队列可能发生过移除操作, 因此基于当前最新列表追加.
       final shops = state.value?.shops ?? feed.shops;
       final known = {for (final s in shops) s.id};
       final fresh = [
@@ -342,7 +341,7 @@ class DiscoverShops extends _$DiscoverShops {
     }
   }
 
-  /// 从列表里去掉一家店, 用于 "不想去这家".
+  /// 从当前列表中移除指定店铺, 用于 "不想去这家" 操作.
   void remove(int shopId) {
     final feed = state.value;
     if (feed == null) return;
@@ -361,9 +360,9 @@ class DiscoverShops extends _$DiscoverShops {
   }
 }
 
-/// 不想去 [shopId]: 30 天内不再推荐, 成功后从转盘和抽屉列表里去掉这家.
+/// 标记屏蔽 [shopId], 30 天内不再推荐, 成功后将其从转盘与抽屉列表中移除.
 ///
-/// 失败时抛出 [AppFailure], 由页面反馈.
+/// 请求失败时抛出 [AppFailure], 由调用页面负责提示.
 Future<void> dismissShop(WidgetRef ref, int shopId) async {
   await ref.read(recommendRepositoryProvider).dismiss(shopId);
   ref.read(turntableQueueProvider.notifier).remove(shopId);

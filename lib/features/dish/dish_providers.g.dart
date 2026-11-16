@@ -8,32 +8,26 @@ part of 'dish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 菜品详情.
+/// 获取菜品详情.
 ///
-/// 获取到最新数据时清除赞和收藏的本地覆盖值.
-/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-///
-/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+/// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+/// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
 
 @ProviderFor(dishDetail)
 final dishDetailProvider = DishDetailFamily._();
 
-/// 菜品详情.
+/// 获取菜品详情.
 ///
-/// 获取到最新数据时清除赞和收藏的本地覆盖值.
-/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-///
-/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+/// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+/// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
 
 final class DishDetailProvider
     extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
     with $FutureModifier<Dish>, $FutureProvider<Dish> {
-  /// 菜品详情.
+  /// 获取菜品详情.
   ///
-  /// 获取到最新数据时清除赞和收藏的本地覆盖值.
-  /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-  ///
-  /// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+  /// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+  /// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
   DishDetailProvider._({
     required DishDetailFamily super.from,
     required int super.argument,
@@ -79,12 +73,10 @@ final class DishDetailProvider
 
 String _$dishDetailHash() => r'1e1bdb24474feb6d199038dbf08fc176da5d17f6';
 
-/// 菜品详情.
+/// 获取菜品详情.
 ///
-/// 获取到最新数据时清除赞和收藏的本地覆盖值.
-/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-///
-/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+/// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+/// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
 
 final class DishDetailFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
@@ -97,12 +89,10 @@ final class DishDetailFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 菜品详情.
+  /// 获取菜品详情.
   ///
-  /// 获取到最新数据时清除赞和收藏的本地覆盖值.
-  /// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-  ///
-  /// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+  /// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+  /// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
 
   DishDetailProvider call(int dishId) =>
       DishDetailProvider._(argument: dishId, from: this);

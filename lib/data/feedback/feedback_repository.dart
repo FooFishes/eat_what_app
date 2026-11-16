@@ -5,9 +5,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'feedback_repository.g.dart';
 
-/// 意见反馈, 店铺 "信息有误" 和举报.
+/// 负责提交意见反馈, 店铺 "信息有误" 纠错和内容举报, 并查询反馈关联对象.
 ///
-/// 补充说明去掉首尾空白, 为空时不发送.
+/// 补充说明会自动去除首尾空白, 为空时不随请求发送.
 class FeedbackRepository {
   FeedbackRepository(this._api);
 
@@ -38,7 +38,7 @@ class FeedbackRepository {
     ),
   );
 
-  /// 提交意见反馈. [screenshotKeys] 是已上传的截图. 从菜或店进入时传入 [dishId] 或 [shopId].
+  /// 提交意见反馈. [screenshotKeys] 为已上传截图的存储 key; 从菜品或店铺页进入时传入 [dishId] 或 [shopId].
   Future<void> sendFeedback({
     required String text,
     List<String> screenshotKeys = const [],
@@ -56,7 +56,7 @@ class FeedbackRepository {
     ),
   );
 
-  /// 我提交过的记录 [caseId] 关于的对象. 意见反馈没有关联对象, 或对象类型无法识别时返回 null.
+  /// 查询本人提交记录 [caseId] 关联的目标对象. 若该意见反馈无关联对象或类型无法识别, 则返回 null.
   Future<CaseSubject?> caseSubject(
     int caseId, {
     CancelToken? cancelToken,

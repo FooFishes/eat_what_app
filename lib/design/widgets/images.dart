@@ -12,21 +12,20 @@ import 'package:flutter/widgets.dart';
 ImageProvider Function(String url) networkImageFactory = (url) =>
     CachedNetworkImageProvider(url, cacheKey: imageCacheKey(url));
 
-/// 图片缓存的 key: 去掉查询串和片段后的地址.
+/// 提取图片缓存 key, 即去掉查询串和片段后的基础地址.
 ///
-/// 接口返回的图片地址是带有效期的预签名地址, 签名在查询串中, 每次请求都不同.
-/// 以完整地址作 key 时缓存无法命中, 缓存数据中的旧地址过期后也无法加载.
-/// 存储中的文件名含随机 id, 图片内容变化时路径随之变化, 因此路径足以区分图片.
+/// 接口返回的图片地址为带有效期的预签名 URL, 若以含签名的完整地址作 key, 每次请求都会导致缓存未命中且旧地址过期后无法加载.
+/// 由于存储文件名包含随机 ID, 图片内容更新时路径也会随之改变, 因此仅凭路径即可区分图片.
 String imageCacheKey(String url) {
   final end = url.indexOf(RegExp('[?#]'));
   return end < 0 ? url : url.substring(0, end);
 }
 
-/// 创建网络图片来源. 没有地址时返回 null, 组件显示 `mist` 底.
+/// 创建网络图片来源; 当地址为空时返回 null, 由组件显示 `mist` 占位底色.
 ///
-/// - Android 和 iOS 使用磁盘缓存, 浏览过的图片离线可见. Web 依赖浏览器的 HTTP 缓存.
-/// - 内存和磁盘缓存都按 [imageCacheKey] 查找, 签名不同的同一张图片也能命中缓存.
-/// - 按显示宽度 [width] (逻辑像素) 乘以屏幕密度解码, 不把原图完整解码到内存.
+/// - Android 与 iOS 启用磁盘缓存使已浏览图片离线可见, Web 则依赖浏览器的 HTTP 缓存.
+/// - 内存和磁盘缓存均按 [imageCacheKey] 索引, 即使签名变化也能命中同一张图片的缓存.
+/// - 指定 [width] (逻辑像素) 时按显示宽度乘以屏幕密度解码, 避免将原图完整解码到内存中.
 ImageProvider? networkImage(String? url, {double? width, double dpr = 3}) {
   if (url == null || url.isEmpty) return null;
   final provider = networkImageFactory(url);
@@ -38,19 +37,19 @@ ImageProvider? networkImage(String? url, {double? width, double dpr = 3}) {
   );
 }
 
-/// 铺满父组件的图片, 按 `cover` 裁切.
+/// 按 `cover` 方式裁切并铺满父容器的图片组件.
 ///
-/// - 加载中显示 `mist` 底, 下载完成后淡入.
-/// - 没有图片或加载失败时, 在 `mist` 底中央显示图片图标, 与加载中的状态区分. 不用插画替代.
-///   短边小于 40 时不显示图标, 只显示 `mist` 底.
+/// - 加载过程中显示 `mist` 底色, 下载完成后淡入图片.
+/// - 缺图或加载失败时在 `mist` 底中央显示图片图标以区分加载态 (不使用插画替代),
+///   若短边小于 40 则仅保留 `mist` 底.
 class CoverImage extends StatelessWidget {
   const new({super.key, required this.image, this.semanticLabel});
 
   final ImageProvider? image;
 
-  /// 读屏文字. 菜品图单独出现时填写.
+  /// 读屏朗读的描述文本; 仅当菜品图独立出现时填写.
   ///
-  /// 舞台主图和列表缩略图旁已有菜名, 此时留空, 图片标记为装饰.
+  /// 舞台主图和列表缩略图旁已有菜名说明, 此时应留空以将图片标记为纯装饰.
   final String? semanticLabel;
 
   @override
@@ -83,7 +82,7 @@ class CoverImage extends StatelessWidget {
       height: double.infinity,
       semanticLabel: semanticLabel,
       excludeFromSemantics: semanticLabel == null,
-      // 内存缓存中的图片同步显示. 异步加载的图片在 `mist` 底上淡入.
+      // 内存缓存中的图片直接同步显示, 异步加载的图片则在 `mist` 底上淡入.
       frameBuilder: (context, child, frame, synchronous) => synchronous
           ? child
           : Stack(

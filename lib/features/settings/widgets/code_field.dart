@@ -7,10 +7,10 @@ import 'package:eat/design/widgets/send_code_action.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 6 位验证码输入框. 右侧是 "获取验证码", 发出后变成 60 秒重发倒计时.
+/// 6 位数字验证码输入框, 右侧为 "获取验证码" 按钮, 发送成功后切换为 60 秒重发倒计时.
 ///
-/// [onSend] 返回 true 表示已发出, 开始倒计时. 返回 false 表示未发出 (用户关闭了人机验证或发送失败).
-/// 失败的提示由调用方显示. [note] 写在输入框下方, 如验证码的接收号码.
+/// [onSend] 返回 true 表示已发送并启动倒计时, 返回 false 表示未发送 (用户取消人机验证或发送失败).
+/// 发送失败的提示由调用方负责展示, [note] 展示在输入框下方 (如接收验证码的手机号).
 class CodeField extends StatefulWidget {
   const new({
     super.key,
@@ -28,7 +28,7 @@ class CodeField extends StatefulWidget {
   final String? note;
   final String? errorText;
 
-  /// 为 false 时 "获取验证码" 不可点, 如新手机号尚未填写完整.
+  /// 为 false 时禁用 "获取验证码" 按钮, 例如新手机号尚未填写完整.
   final bool enabled;
 
   @override

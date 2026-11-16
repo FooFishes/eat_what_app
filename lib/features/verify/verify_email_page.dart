@@ -11,14 +11,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 邮箱认证的落地页: 认证邮件里的链接打开本页, 提交链接中的 [token] 并显示结果.
+/// 邮箱认证落地页, 由认证邮件中的链接唤起, 负责提交链接携带的 [token] 并展示认证结果.
 ///
-/// 只给登录用户. 未登录时守卫先带去登录页, 登录后回到本页.
-/// token 必须由发起认证的账号提交, 其他账号打开时提示在发起认证的账号上打开.
+/// 仅限已登录用户访问, 未登录时由路由守卫先引导至登录页再返回本页.
+/// [token] 须由发起认证的原账号提交, 若在其他账号下打开则提示切换回原账号处理.
 class VerifyEmailPage extends ConsumerStatefulWidget {
   const new({super.key, required this.token});
 
-  /// 地址中的 `token`. 链接不完整时为 null.
+  /// 链接地址中的 `token` 参数, 链接不完整时为 null.
   final String? token;
 
   @override

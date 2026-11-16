@@ -7,12 +7,12 @@ import 'package:flutter/widgets.dart';
 import 'package:material_ui/material_ui.dart'
     show InteractiveViewer, MaterialPageRoute;
 
-/// 大图中的一张照片. [credit] 是拍摄者的昵称, 未知时为 null.
+/// 表示大图浏览器中的单张照片, [credit] 为拍摄者昵称 (未知时为 null).
 class const ViewerPhoto({required final String url, final String? credit});
 
-/// 大图浏览. 支持左右翻页和双指缩放, 每张照片标注拍摄者.
+/// 全屏大图浏览页面, 支持左右翻页, 双指缩放以及显示每张照片的拍摄者.
 ///
-/// 页面依赖内存中的图片地址, 刷新后无法恢复, 因此不注册路由地址.
+/// 页面依赖内存中的图片地址列表且刷新后无法恢复, 因此不注册路由路径.
 class PhotoViewer extends StatefulWidget {
   const new({super.key, required this.photos, this.initialIndex = 0});
 

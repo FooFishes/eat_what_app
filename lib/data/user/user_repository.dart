@@ -12,9 +12,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_repository.g.dart';
 
-/// 用户数据: 当前用户, 他人的公开资料, 关注, 隐私和屏蔽.
+/// 用户数据仓库, 负责管理当前用户信息, 他人公开资料, 关注关系, 隐私设置及屏蔽列表.
 ///
-/// 当前用户的信息保存到本地, 启动时使用本地副本显示.
+/// 当前用户信息会持久化至本地缓存, 以便应用启动时优先使用本地副本展示.
 class UserRepository {
   UserRepository(this._api, this._kv);
 
@@ -30,7 +30,7 @@ class UserRepository {
     return _toUser(dto);
   }
 
-  /// 上次获取的用户信息. 没有缓存或缓存损坏时返回 null, 损坏的缓存同时删除.
+  /// 读取本地缓存的当前用户信息; 若无缓存则返回 null, 若缓存损坏则在删除该记录后返回 null.
   Future<CurrentUser?> readCached() async {
     final raw = await _kv.read(cacheKey);
     if (raw == null) return null;
@@ -44,7 +44,7 @@ class UserRepository {
     }
   }
 
-  /// 指定用户的公开资料和统计. "我的" 页面也用它获取自己的统计.
+  /// 获取指定用户的公开资料与统计数据, "我的" 页面亦通过该接口获取个人统计信息.
   Future<UserProfile> profile(int userId, {CancelToken? cancelToken}) async {
     final dto = await _api.profile(userId, cancelToken: cancelToken);
     return UserProfile(
@@ -69,7 +69,7 @@ class UserRepository {
     );
   }
 
-  /// 保存昵称, 签名和头像. [avatarKey] 为 null 时不修改头像.
+  /// 保存昵称, 签名和头像; [avatarKey] 为 null 时保持原头像不变.
   Future<void> updateProfile({
     required String nickname,
     required String signature,
@@ -99,9 +99,9 @@ class UserRepository {
     await _api.followings(userId, page: page, cancelToken: cancelToken),
   );
 
-  /// 当前用户的隐私设置.
+  /// 读取当前用户的隐私设置.
   ///
-  /// 接口没有单独读取隐私设置的方法. 查看自己的公开资料时, 两项可见性即为自己的设置.
+  /// 后端未提供单独的隐私查询接口, 因此通过查询本人公开资料中的两项可见性字段获取当前设置.
   Future<PrivacySettings> privacy(int myId, {CancelToken? cancelToken}) async {
     final dto = await _api.profile(myId, cancelToken: cancelToken);
     return PrivacySettings(
@@ -143,11 +143,11 @@ class UserRepository {
   Future<void> setPersonalized({required bool personalized}) =>
       _api.setPersonalized(personalized: personalized);
 
-  /// 换绑第一步: 给当前绑定的号码发验证码.
+  /// 换绑手机第一步, 向当前绑定的手机号发送验证码.
   Future<void> sendOldMobileCode(CaptchaTicket? ticket) =>
       _api.sendOldMobileCode(captchaHeaders: ticket?.headers ?? const {});
 
-  /// 换绑第二步: 给新号码 [mobile] 发验证码. [oldCode] 是旧号码收到的验证码, 已验证过时为 null.
+  /// 换绑手机第二步, 向新号码 [mobile] 发送验证码; [oldCode] 为旧号码验证码, 若已完成校验则传 null.
   Future<void> sendNewMobileCode(
     String mobile, {
     String? oldCode,
@@ -158,11 +158,11 @@ class UserRepository {
     captchaHeaders: ticket?.headers ?? const {},
   );
 
-  /// 换绑第三步: 提交新号码和它的验证码. 本机的会话不变.
+  /// 换绑手机第三步, 提交新号码及其验证码; 成功后本机登录会话保持有效.
   Future<void> commitMobileChange(String mobile, String code) =>
       _api.commitMobileChange(mobile: mobile, code: code);
 
-  /// 补绑手机: 给 [mobile] 发验证码. 只用于还没有手机号的账号.
+  /// 补绑手机第一步, 向 [mobile] 发送验证码 (仅适用于尚未绑定手机号的账号).
   Future<void> sendBindCode(String mobile, CaptchaTicket? ticket) =>
       _api.sendBindCode(mobile, captchaHeaders: ticket?.headers ?? const {});
 

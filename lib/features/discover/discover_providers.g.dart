@@ -8,21 +8,21 @@ part of 'discover_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 发现页的转盘队列: 推荐的美食店. 地点, 饭点或场景变化时重新请求.
+/// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
 ///
-/// 抽屉的分类栏不影响转盘, 转盘总是推荐美食 ([ShopKind.food]).
+/// 抽屉分类切换不影响转盘, 转盘固定推荐美食 ([ShopKind.food]).
 
 @ProviderFor(TurntableQueue)
 final turntableQueueProvider = TurntableQueueProvider._();
 
-/// 发现页的转盘队列: 推荐的美食店. 地点, 饭点或场景变化时重新请求.
+/// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
 ///
-/// 抽屉的分类栏不影响转盘, 转盘总是推荐美食 ([ShopKind.food]).
+/// 抽屉分类切换不影响转盘, 转盘固定推荐美食 ([ShopKind.food]).
 final class TurntableQueueProvider
     extends $AsyncNotifierProvider<TurntableQueue, TurntableFeed> {
-  /// 发现页的转盘队列: 推荐的美食店. 地点, 饭点或场景变化时重新请求.
+  /// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
   ///
-  /// 抽屉的分类栏不影响转盘, 转盘总是推荐美食 ([ShopKind.food]).
+  /// 抽屉分类切换不影响转盘, 转盘固定推荐美食 ([ShopKind.food]).
   TurntableQueueProvider._()
     : super(
         from: null,
@@ -44,9 +44,9 @@ final class TurntableQueueProvider
 
 String _$turntableQueueHash() => r'951c403f84bb5cffe4f95694c5add52924c4012b';
 
-/// 发现页的转盘队列: 推荐的美食店. 地点, 饭点或场景变化时重新请求.
+/// 发现页转盘队列状态, 当地点, 饭点或场景变化时重新请求推荐美食店.
 ///
-/// 抽屉的分类栏不影响转盘, 转盘总是推荐美食 ([ShopKind.food]).
+/// 抽屉分类切换不影响转盘, 转盘固定推荐美食 ([ShopKind.food]).
 
 abstract class _$TurntableQueue extends $AsyncNotifier<TurntableFeed> {
   FutureOr<TurntableFeed> build();

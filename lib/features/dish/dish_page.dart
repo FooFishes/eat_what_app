@@ -130,7 +130,7 @@ class DishPage extends ConsumerWidget {
   }
 }
 
-/// 下拉刷新: 重新请求详情, 评论和店铺. 详情失败时保留页面上的旧内容并提示原因.
+/// 下拉刷新菜品详情, 评论与所属店铺信息; 若详情请求失败则保留现有内容并提示原因.
 Future<void> _refresh(BuildContext context, WidgetRef ref, Dish dish) async {
   ref.invalidate(dishCommentsProvider(dish.id, CommentSort.mostUseful));
   ref.invalidate(shopProvider(dish.shopId));
@@ -142,7 +142,7 @@ Future<void> _refresh(BuildContext context, WidgetRef ref, Dish dish) async {
   }
 }
 
-/// 详情请求返回菜品不存在. 此时从列表传入的 [DishPage.initial] 已过时, 不再显示.
+/// 判断菜品是否已不存在. 若服务端确认不存在, 则说明列表传入的 [DishPage.initial] 已过期, 不再展示.
 bool _isNotFound(AsyncValue<Dish> detail) =>
     !detail.isLoading &&
     detail.error is AppFailure &&
@@ -384,7 +384,7 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
   await Navigator.of(context).push(PhotoViewer.route(photos: photos));
 }
 
-/// 店卡: 店名, 距离, 商圈和地址. 点击进入餐厅详情.
+/// 所属店铺卡片, 展示店名, 距离, 商圈和地址, 点击进入餐厅详情.
 class _ShopCard extends ConsumerWidget {
   const new({required this.dish});
 
@@ -546,10 +546,9 @@ class _TasteSection extends StatelessWidget {
 }
 
 // TODO: 菜品响应没有上传者昵称, `/user/userInfo` 需要登录, 游客看到的上传者是 "同学". 后端在菜品响应中提供上传者摘要后改为读取接口字段.
-/// 上传者信息: 头像, 昵称, 上传日期, 以及上传者写的说明. 点击进入上传者主页.
+/// 上传者信息区, 展示头像, 昵称, 上传日期及上传者说明, 点击可进入上传者主页.
 ///
-/// 登录用户按 [Dish.uploaderId] 获取上传者资料. 游客不发请求, 资料未获取到时显示 "同学".
-/// 上传者账号已删除时显示 "已注销用户", 不能点.
+/// 登录用户按 [Dish.uploaderId] 请求上传者资料, 游客不发起请求; 资料未就绪时显示 "同学", 若账号已注销则显示 "已注销用户" 且不可点击.
 class _Uploader extends ConsumerWidget {
   const new({required this.dish});
 

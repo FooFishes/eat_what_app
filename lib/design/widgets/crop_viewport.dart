@@ -6,7 +6,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 照片上的圆形取景.
+/// 照片上的圆形取景区域.
 ///
 /// [centerX] 和 [centerY] 是圆心按照片宽高归一化到 0–1 的位置, [diameter] 是直径占照片短边的比例.
 typedef CircleCrop = ({double centerX, double centerY, double diameter});
@@ -14,7 +14,7 @@ typedef CircleCrop = ({double centerX, double centerY, double diameter});
 /// 取景圈直径占照片短边比例的下限, 决定最大放大倍数.
 const minCropDiameter = 0.25;
 
-/// 把取景限制在照片范围内: 直径限制在 [minCropDiameter] 到 1, 取景圈不超出照片边缘.
+/// 把取景限制在照片范围内, 将直径限制在 [minCropDiameter] 到 1 之间并确保取景圈不超出照片边缘.
 CircleCrop clampCircleCrop(
   CircleCrop crop, {
   required int width,
@@ -31,9 +31,9 @@ CircleCrop clampCircleCrop(
   );
 }
 
-/// 圆形取景区域. 照片位于取景圈下方, 圈外覆盖 `crop-scrim`. 拖动移动照片, 双指缩放.
+/// 圆形取景器组件, 支持拖动移动照片和双指缩放. 照片位于取景圈下方, 圈外覆盖 `crop-scrim`.
 ///
-/// 用在深色全屏的 "调整照片" 和换头像中. [onChanged] 收到的取景已经过 [clampCircleCrop].
+/// 用于深色全屏的 "调整照片" 和换头像页. [onChanged] 收到的取景结果已经过 [clampCircleCrop] 限制.
 class CropViewport extends StatefulWidget {
   const new({
     super.key,
@@ -46,7 +46,7 @@ class CropViewport extends StatefulWidget {
 
   final ImageProvider image;
 
-  /// 照片的像素宽度. [height] 为像素高度.
+  /// 照片的像素宽度; [height] 为像素高度.
   final int width;
   final int height;
   final CircleCrop crop;
@@ -173,11 +173,9 @@ class _ScrimPainter extends CustomPainter {
       old.ring != ring;
 }
 
-/// 取景的缩放滑条, 作为双指缩放的替代操作.
+/// 取景的缩放滑条, 作为双指缩放的非手势替代操作以满足无障碍要求.
 ///
-/// 无障碍要求每个手势操作都有非手势的替代.
-///
-/// 使用 Material 的 `Slider`, 需要 `Material` 祖先.
+/// 内部使用 Material 的 `Slider`, 需要祖先中存在 `Material`.
 class CropZoomSlider extends StatelessWidget {
   const new({
     super.key,

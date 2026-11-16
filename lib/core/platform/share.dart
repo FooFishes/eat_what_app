@@ -7,10 +7,10 @@ part 'share.g.dart';
 /// 分享的结果: 已弹出系统分享, 已退回复制链接, 或失败.
 enum ShareOutcome { shared, copied, failed }
 
-/// 分享链接.
+/// 链接分享能力封装.
 ///
-/// Android, iOS 和支持 Web Share 的浏览器弹出系统分享.
-/// 不支持时 (如微信内置浏览器) 复制链接, 由页面显示提示.
+/// 在 Android, iOS 及支持 Web Share 的浏览器中拉起系统分享.
+/// 不支持时 (如微信内置浏览器) 则退回复制链接并由页面提示用户.
 abstract interface class LinkSharer {
   Future<ShareOutcome> share(Uri link, {required String title});
 

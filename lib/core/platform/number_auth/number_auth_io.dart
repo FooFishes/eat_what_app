@@ -6,7 +6,7 @@ import 'package:eat_number_auth/eat_number_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// 方案密钥按平台分开: 阿里云的认证方案绑定包名和签名 (Android) 或 Bundle ID (iOS).
+/// 根据当前平台读取对应的阿里云号码认证方案密钥, 其分别绑定 Android 包名签名或 iOS Bundle ID.
 NumberAuth createNumberAuth(AppConfig config) {
   final secret = switch (defaultTargetPlatform) {
     TargetPlatform.android => config.numberAuthKeyAndroid,
@@ -18,10 +18,10 @@ NumberAuth createNumberAuth(AppConfig config) {
       : _SdkNumberAuth(secret);
 }
 
-/// Android 和 iOS 上的一键登录, 经本地插件 `eat_number_auth` 调用号码认证 SDK.
+/// Android 与 iOS 端的一键登录实现, 通过本地插件 `eat_number_auth` 调用号码认证 SDK.
 ///
-/// SDK 的返回码只打印出来供排查, 不区分处理. 常见的有 600007 没有 SIM 卡, 600008 没开蜂窝网络,
-/// 600017 方案密钥和包名签名对不上 (debug 签名的包就是这样), 600015 超时.
+/// SDK 返回码仅打印用于排查而不作分支区分, 常见码包括:
+/// 600007 (无 SIM 卡), 600008 (未开启蜂窝网络), 600017 (方案密钥与包名签名不匹配, 如 debug 签名包), 600015 (超时).
 class _SdkNumberAuth implements NumberAuth {
   _SdkNumberAuth(this._secret);
 
@@ -82,17 +82,17 @@ class _SdkNumberAuth implements NumberAuth {
     } on PlatformException catch (e) {
       debugPrint('number auth close failed: ${e.code}');
     } on MissingPluginException {
-      // 没有原生实现的平台上没有授权页可关.
+      // 未接入原生实现的平台上不存在已打开的授权页, 无需处理.
     }
   }
 
-  /// 预取号和取凭证各自的超时. 超时后改用验证码登录, 不让用户久等.
+  /// 预取号与获取登录凭证各自的超时上限, 超时后降级为验证码登录以避免长时间等待.
   static const _timeout = Duration(seconds: 5);
 
-  /// 授权页的外观: 白底面板, `ink` 实心胶囊按钮, 和 App 里的底部面板一致.
+  /// 授权页外观配置, 采用与 App 底部面板一致的白底与 `ink` 实心胶囊按钮风格.
   ///
-  /// 授权页在 Flutter 之外, 读不到主题, 所以直接取令牌的原始值.
-  /// 阿里云要求登录按钮的文字包含 "登录", 号码, 运营商标语和运营商协议不能隐藏.
+  /// 由于授权页运行在 Flutter 视图之外无法读取主题, 此处直接传入设计令牌的原始色值与尺寸.
+  /// 依据阿里云合规要求, 登录按钮文案须包含 "登录", 且掩码号码, 运营商标语与协议链接均不得隐藏.
   static final _style = AuthPageStyleMessage(
     background: EatPalette.paper.toARGB32(),
     scrim: EatPalette.scrim.toARGB32(),

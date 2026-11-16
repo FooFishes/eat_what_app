@@ -27,11 +27,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Source { camera, gallery }
 
-/// 编辑资料: 头像, 昵称 (2–12 个字) 和签名 (选填, 最多 30 个字).
+/// 编辑个人资料页, 包含头像, 昵称 (2–12 个字) 和签名 (选填, 最多 30 个字).
 ///
-/// - 换头像: 拍照或从相册选, 调整进圆圈后裁成 512×512 上传.
-/// - 改过内容后返回时确认是否放弃.
-/// - 封禁中不能保存, 入口和保存时都拦截.
+/// - 换头像: 支持拍照或从相册选择, 裁切取景后输出 512×512 图片上传.
+/// - 退出确认: 内容发生变更后返回时弹窗确认是否放弃.
+/// - 封禁限制: 封禁状态下禁止保存, 在进入页面和点击保存时均执行权限拦截.
 class EditProfilePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -174,7 +174,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
   }
 
-  /// 返回. 改过内容时需确认是否放弃, 保存中不能返回.
+  /// 处理返回操作: 保存过程中禁止返回, 内容有修改时需先确认是否放弃.
   Future<void> _back() async {
     if (ref.read(profileSaverProvider)) return;
     if (_dirty && !await _confirmDiscard()) return;

@@ -24,13 +24,13 @@ import 'package:eat/state/social.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 他人主页.
+/// 展示其他用户个人主页的页面.
 ///
-/// - 舞台: 对方获赞最多的菜, 头像, 昵称, 签名和三项统计.
-/// - 右上角: 关注按钮 ("关注" "回关" "已关注" "已互关") 和 "更多" (屏蔽, 举报).
-/// - 抽屉: 只有 "上传" 一栏. 收藏, 评论, 标签和足迹是私人的.
+/// - 舞台区域展示对方获赞最多的菜品, 头像, 昵称, 签名及三项统计.
+/// - 右上角提供关注按钮 ("关注", "回关", "已关注", "已互关") 和 "更多" 菜单 (屏蔽, 举报).
+/// - 抽屉区域仅包含 "上传" 一栏, 因为收藏, 评论, 标签和足迹属于私有内容.
 ///
-/// 打开当前用户自己的主页时不显示关注和 "更多".
+/// 打开当前用户自己的主页时不显示关注按钮和 "更多" 菜单.
 class UserPage extends ConsumerWidget {
   const new({super.key, required this.userId});
 

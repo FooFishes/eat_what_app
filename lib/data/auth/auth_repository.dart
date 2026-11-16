@@ -8,15 +8,15 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_repository.g.dart';
 
-/// 登录成功的结果: 会话凭证, 以及本次是否为新号码自动注册.
+/// 登录成功的结果, 包含会话凭证以及本次是否为新号码自动注册.
 class const SignInResult({
   required final AuthToken token,
   final bool newUser = false,
 });
 
-/// 登录, 发送验证码, 学生认证, 设置用户名和密码.
+/// 负责登录, 发送验证码, 学生认证以及设置用户名和密码.
 ///
-/// 隐私政策由用户确认, 本类不代替用户同意. 登录请求携带调用方给出的政策版本.
+/// 隐私政策需由用户亲自确认, 本类不代为同意, 登录请求仅携带调用方传入的政策版本.
 class AuthRepository {
   AuthRepository(this._auth);
 
@@ -24,7 +24,7 @@ class AuthRepository {
 
   static String get _device => kIsWeb ? 'WEB' : 'APP';
 
-  /// 本次人机验证的参数. 服务端关闭人机验证时返回 null, 调用方直接发送请求.
+  /// 获取本次人机验证参数. 若服务端关闭了人机验证则返回 null, 调用方无需验证即可发送请求.
   Future<CaptchaParams?> captchaParams() async {
     final config = await _auth.captchaConfig();
     if (config.enabled != true) return null;
@@ -51,12 +51,12 @@ class AuthRepository {
   Future<void> sendLoginCode(String mobile, CaptchaTicket? ticket) =>
       _auth.sendLoginCode(mobile, captchaHeaders: ticket?.headers ?? const {});
 
-  /// 验证码登录. 新号码在此步自动注册.
+  /// 使用手机验证码登录, 新号码在此步自动注册.
   ///
-  /// [policyVersion] 是用户同意的隐私政策版本, 服务端还没发布政策时为 null.
-  /// 服务端在核销验证码之前校验同意, 因此收到要求同意的业务码时可以用同一个验证码重试.
+  /// [policyVersion] 为用户确认的隐私政策版本, 服务端尚未发布政策时为 null.
+  /// 服务端会在核销验证码前校验协议确认状态, 因此收到要求确认协议的业务码时, 可用同一验证码重试.
   ///
-  /// [deletionKey] 是申请注销时保存在本机的撤销凭据, 账号在注销冷静期内时随登录撤销注销.
+  /// [deletionKey] 为申请注销时保存在本机的撤销凭据, 若账号处于注销冷静期内, 随登录一并撤销注销.
   Future<SignInResult> loginWithCode(
     String mobile,
     String code, {
@@ -74,16 +74,16 @@ class AuthRepository {
     ),
   );
 
-  /// 服务端是否开启了 App 的一键登录.
+  /// 查询服务端是否开启了 App 的一键登录.
   Future<bool> oneClickEnabled() async =>
       (await _auth.oneClickConfig()).enabled ?? false;
 
-  /// 一键登录. [accessToken] 是用户在运营商授权页确认后得到的取号凭证, 新号码在此步自动注册.
+  /// 使用运营商一键登录, 新号码在此步自动注册. [accessToken] 为用户在授权页确认后得到的取号凭证.
   ///
-  /// 服务端在核销凭证之前校验同意, 因此收到要求同意的业务码时可以用同一个凭证重试.
-  /// 其余失败之后凭证作废, 重试要重新拉起授权页.
+  /// 服务端会在核销凭证前校验协议确认状态, 因此收到要求确认协议的业务码时, 可用同一凭证重试;
+  /// 若因其他原因失败, 该凭证即作废, 重试时需重新唤起授权页.
   ///
-  /// 不能撤销注销: 账号在注销冷静期内时返回 `BizCodes.accountDeletionPending`, 要改用验证码或密码登录.
+  /// 该方式不支持撤销注销: 若账号处于注销冷静期内, 将返回 `BizCodes.accountDeletionPending`, 需改用验证码或密码登录.
   Future<SignInResult> loginWithOneClick(
     String accessToken, {
     String? policyVersion,
@@ -96,7 +96,8 @@ class AuthRepository {
     ),
   );
 
-  /// [account] 为手机号, 用户名或邮箱. [ticket] 是人机验证的票据, 服务端要求时才需要.
+  /// 使用账号密码登录. [account] 可为手机号, 用户名或邮箱; [ticket] 为人机验证票据, 仅在服务端要求时传入.
+  ///
   /// [deletionKey] 同 [loginWithCode].
   Future<SignInResult> loginWithPassword(
     String account,
@@ -126,7 +127,7 @@ class AuthRepository {
     }
   }
 
-  /// 学校统一认证页的地址. 地址有时效且只能使用一次, 因此每次点击都重新请求.
+  /// 获取学校统一认证页地址. 由于该地址具有时效且仅可使用一次, 每次点击均需重新请求.
   Future<Uri> ssoUrl() async {
     final url = (await _auth.startSso(client: kIsWeb ? 'web' : 'app')).url;
     final uri = url == null ? null : Uri.tryParse(url);
@@ -151,15 +152,15 @@ class AuthRepository {
   Future<void> sendAccountCode(CaptchaTicket? ticket) =>
       _auth.sendAccountCode(captchaHeaders: ticket?.headers ?? const {});
 
-  /// 用验证码设置或修改密码. 成功后其他设备要重新登录, 本机不受影响.
+  /// 用验证码设置或修改密码. 成功后其他设备需重新登录, 本机不受影响.
   Future<void> resetPassword(String code, String newPassword) =>
       _auth.resetPassword(code: code, newPassword: newPassword);
 
-  /// 用旧密码修改密码. 成功后其他设备要重新登录, 本机不受影响.
+  /// 用旧密码修改密码. 成功后其他设备需重新登录, 本机不受影响.
   Future<void> changePassword(String oldPassword, String newPassword) =>
       _auth.changePassword(oldPassword: oldPassword, newPassword: newPassword);
 
-  /// 首次设置用户名, 可同时设置初始密码. 本机保持登录, 同时设置密码时其他设备要重新登录.
+  /// 首次设置用户名, 并可同时设置初始密码. 本机保持登录状态; 若同时设置了密码, 则其他设备需重新登录.
   Future<void> setUsername(String userName, String code, {String? password}) =>
       _auth.setUsername(userName: userName, code: code, newPassword: password);
 

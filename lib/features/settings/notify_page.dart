@@ -10,8 +10,8 @@ import 'package:eat/features/settings/settings_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// TODO: 未接入推送 SDK, 设备未登记, 开关只保存到服务端, 设备收不到推送. 选定推送 SDK 后登记设备, 并在系统通知关闭时提示用户开启.
-/// 通知页面: 各类消息是否推送, 以及免打扰时段. 点击开关后立即更新显示, 保存失败时恢复原值并提示.
+// TODO: 尚未接入推送 SDK 且未登记设备, 当前开关状态仅保存至服务端而无法实际推送至设备. 选定推送 SDK 后完成设备登记, 并在系统通知权限关闭时引导用户开启.
+/// 通知设置页面, 用于配置各类消息的推送开关并展示免打扰时段; 切换开关后立即更新界面, 若保存失败则回滚状态并弹出提示.
 class NotifyPage extends ConsumerWidget {
   const new({super.key});
 

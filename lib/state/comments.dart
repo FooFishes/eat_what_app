@@ -1,7 +1,7 @@
-/// 评论的共享状态.
+/// 评论与回复的跨页面共享状态.
 ///
-/// 菜品详情, 全部评论, 写评论和 "我的" 都读写同一组评论数据. 删除, 赞和发表后各页面同步变化,
-/// 因此这些状态放在 `state` 而不是某个页面目录里.
+/// 菜品详情, 全部评论, 写评论及 "我的" 共用同一份评论数据, 发表, 删除或点赞后需在各页面间同步生效,
+/// 因此集中维护在 `state` 中.
 library;
 
 import 'package:eat/core/failure/app_failure.dart';
@@ -29,7 +29,7 @@ class const CommentList({
 int? _myId(Ref ref) =>
     ref.watch(sessionProvider.select((s) => s is SignedIn ? s.user?.id : null));
 
-/// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+/// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
 ///
 /// 离开页面后保留 5 分钟.
 @riverpod
@@ -89,7 +89,7 @@ class DishComments extends _$DishComments {
   }
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间正序.
+/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 @riverpod
 class CommentReplies extends _$CommentReplies {
   @override
@@ -133,7 +133,7 @@ class CommentReplies extends _$CommentReplies {
   }
 }
 
-/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
+/// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 @Riverpod(keepAlive: true)
 class CommentWriter extends _$CommentWriter {
   @override
@@ -206,7 +206,8 @@ class CommentWriter extends _$CommentWriter {
     ref.invalidate(myCommentsProvider);
   }
 
-  /// 回复评论时服务端答复评论不存在. 被删除的可能是评论 [rootId], 也可能是被回复的回复, 因此重新请求这两组列表.
+  /// 当回复目标已不存在时刷新对应评论线程. 由于被删除的可能是主评论 [rootId] 或被回复的子回复,
+  /// 因此同时失效评论列表与回复列表缓存.
   void refreshThread(int dishId, int rootId) {
     ref.invalidate(commentRepliesProvider(rootId));
     for (final sort in CommentSort.values) {
@@ -225,7 +226,7 @@ class CommentWriter extends _$CommentWriter {
 }
 
 // TODO: 评论不存在时服务端返回参数错误 10001, 与填写错误共用一个码. 后端提供单独的业务码后改为判断该码.
-/// 对一条已有评论的操作 (赞, 回复, 删除, 举报) 失败, 原因是评论已被删除.
+/// 判断对已有评论的操作 (赞, 回复, 删除, 举报) 失败的原因是否为评论已被删除.
 bool isCommentGone(AppFailure failure) => failure.code == BizCodes.paramInvalid;
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
@@ -265,9 +266,9 @@ class CommentLikes extends _$CommentLikes {
   void _set(int id, CommentLike value) => state = {...state, id: value};
 }
 
-/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
+/// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
+/// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.
 @Riverpod(keepAlive: true)
 class MyComments extends _$MyComments {
   @override
@@ -309,9 +310,9 @@ class const CommentFeed({
   final AppFailure? moreError,
 });
 
-/// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+/// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
 ///
-/// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+/// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
 @riverpod
 Future<Dish> commentedDish(Ref ref, int dishId) async {
   ref.cacheFor(const Duration(minutes: 5));

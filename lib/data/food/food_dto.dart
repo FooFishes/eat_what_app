@@ -12,7 +12,7 @@ class const FoodDto({
   final int? restaurantId,
   final String? restaurantName,
 
-  /// 首次发布者的账号. 账号已删除时为 null.
+  /// 首次发布者的账号 id, 账号已注销删除时为 null.
   final int? accountId,
   final String? name,
 
@@ -30,13 +30,13 @@ class const FoodDto({
   final int? likeCount,
   final int? favoriteCount,
 
-  /// 游客为 null.
+  /// 当前用户是否已点赞, 游客为 null.
   final bool? isLiked,
   final bool? isFavorite,
   final int? createdAt,
   final int? updatedAt,
 
-  /// 舞台色和两个备选色, 取值是 `stage-*` 去掉前缀. 没有保存时 [stageColor] 为 null, [stageAlternates] 为空.
+  /// 舞台色和两个备选色, 取值是 `stage-*` 去掉前缀. 若未保存过, [stageColor] 为 null 且 [stageAlternates] 为空.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
@@ -78,7 +78,7 @@ class const CoverCropDto({
   Map<String, dynamic> toJson() => _$CoverCropDtoToJson(this);
 }
 
-/// `/foods/{id}/tags` 的 `data`: 该菜品的系统标签和我的标签.
+/// `/foods/{id}/tags` 的 `data`, 包含该菜品的系统标签与我的个人标签.
 @JsonSerializable(createToJson: false)
 class const FoodTagsDto({
   final List<FoodTagDto>? systemTags,
@@ -134,7 +134,7 @@ class const EditFoodDto({
   final List<String>? tags,
   final bool? signature,
 
-  /// 舞台色和备选色要一起改. 换了封面而没传 [coverCrop] 时, 服务端把取景改回居中.
+  /// 舞台色与备选色需同步修改. 若更换了封面但未传 [coverCrop], 服务端会将取景重置为居中.
   final String? stageColor,
   final List<String>? stageAlternates,
   final CoverCropDto? coverCrop,
@@ -192,7 +192,7 @@ class const FoodEditorDto({
       _$FoodEditorDtoFromJson(json);
 }
 
-/// 修改记录中一个字段的改动. 只读取字段名, 改动前后的值不展示.
+/// 修改记录中单个字段的变更信息, 仅读取字段名, 不展示改动前后的具体值.
 @JsonSerializable(createToJson: false)
 class const FoodFieldChangeDto({final String? field}) {
   factory FoodFieldChangeDto.fromJson(Map<String, dynamic> json) =>

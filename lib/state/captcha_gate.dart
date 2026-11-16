@@ -13,10 +13,10 @@ typedef CaptchaPresenter = Future<CaptchaOutcome> Function(
   Future<CaptchaParams?> params,
 );
 
-/// 发送验证码和认证邮件前的人机验证. 票据只随本次请求发送.
+/// 负责发送验证码与认证邮件前的人机验证流程, 校验票据仅随本次请求发送.
 ///
-/// 每次验证都重新获取初始化参数并新建验证实例.
-/// 服务端返回票据缺失或无效时重新验证, 次数上限为 [_maxAttempts].
+/// 每次尝试均会重新获取初始化参数并新建验证实例; 若服务端返回票据缺失或无效则重新发起验证,
+/// 最多尝试 [_maxAttempts] 次.
 class CaptchaGate {
   CaptchaGate(this._auth);
 
@@ -24,7 +24,7 @@ class CaptchaGate {
 
   final AuthRepository _auth;
 
-  /// 返回 false 表示用户关闭了验证, 未发送请求.
+  /// 弹出人机验证并在通过后执行 [send]. 返回 false 表示用户取消验证且未发送请求.
   ///
   /// 验证不通过或发送失败时抛出 [AppFailure].
   Future<bool> run(
@@ -32,7 +32,7 @@ class CaptchaGate {
     Future<void> Function(CaptchaTicket? ticket) send,
   ) async {
     for (var attempt = 1; ; attempt++) {
-      // 页面已关闭时 present 不等待参数, 这里吞掉未处理的错误. 等待它的一方照常收到错误.
+      // 若页面已关闭则 present 不会等待 params, 此处调用 ignore() 避免未捕获异常; 正常等待 params 的一方仍会收到错误.
       final params = _auth.captchaParams()..ignore();
       final CaptchaTicket? ticket;
       switch (await present(params)) {

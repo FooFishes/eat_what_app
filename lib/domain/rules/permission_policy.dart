@@ -6,7 +6,7 @@ import 'package:eat/domain/models/account_status.dart';
 ///
 /// [Capability.openToUnverified] 中的操作对未认证账号开放. 其中部分只读的操作列入本枚举, 是为了让游客点入口时弹出登录拦截.
 ///
-/// 封禁中的账号拿到的是受限会话: 后端默认放行读取, 拒绝写入, 少数接口例外 ([Capability.openToBanned]).
+/// 封禁中的账号持有受限会话: 后端默认放行读取并拒绝写入, 少数接口例外 (见 [Capability.openToBanned]).
 enum Capability {
   like,
   favorite,
@@ -30,10 +30,10 @@ enum Capability {
   editProfile,
   viewHistory,
 
-  /// 查看粉丝和关注列表. 封禁中不能查看, 后端拒绝这两个列表.
+  /// 查看粉丝和关注列表. 封禁状态不可查看, 后端会拒绝这两个列表的请求.
   viewFollows,
 
-  /// 查看等级和经验明细. 封禁中不能查看, 后端拒绝经验明细.
+  /// 查看等级和经验明细. 封禁状态不可查看, 后端会拒绝经验明细请求.
   viewGrowth,
   unfollow,
 
@@ -55,12 +55,12 @@ enum Capability {
   /// 店铺 "信息有误". 所有已登录账号都能执行, 列入本枚举的原因同 [report].
   reportShopError,
 
-  /// 看消息. 所有已登录账号都能执行.
+  /// 查看消息列表, 所有已登录账号均可执行.
   ///
-  /// 游客能点到入口, 列入本枚举是为了让游客看到 "登录后才能看消息" 的面板, 而不是被守卫直接带去登录页.
+  /// 游客可点击该入口, 列入本枚举是为了向游客展示 "登录后才能看消息" 的拦截面板, 避免被路由守卫直接重定向至登录页.
   viewInbox,
 
-  /// 看他人主页 (含他上传的菜). 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
+  /// 查看他人主页 (含其上传的菜品), 所有已登录账号均可执行, 列入本枚举的原因同 [viewInbox].
   viewProfile,
 
   /// 附近页 "只看我收藏的店". 所有已登录账号都能执行, 列入本枚举的原因同 [viewInbox].
@@ -94,9 +94,9 @@ enum Capability {
     _ => false,
   };
 
-  /// 封禁中的账号也能执行的操作. 后端的受限会话放行读取, 以及消息已读, 反馈, 信息有误和举报.
+  /// 封禁账号仍可执行的操作, 后端受限会话放行常规读取以及消息已读, 反馈, 信息有误和举报.
   ///
-  /// 足迹, 粉丝和关注列表, 经验明细虽然是读取, 后端也拒绝, 因此不在其中.
+  /// 足迹, 粉丝和关注列表, 经验明细虽属读取操作但仍会被后端拒绝, 因此未列入其中.
   bool get openToBanned => switch (this) {
     report ||
     reportShopError ||
@@ -149,9 +149,9 @@ final class Allowed extends PermissionResult {
   const Allowed();
 }
 
-/// 未登录, 只出现在游客身上. 拦截对话框显示 "登录后才能...", 主按钮为 "去登录".
+/// 未登录拦截结果, 仅在游客状态下触发, 对话框提示 "登录后才能..." 并提供 "去登录" 主按钮.
 ///
-/// 没点 "先逛逛" 的未登录状态会被守卫带去登录页, 正常流程不会得到该结果.
+/// 未选择 "先逛逛" 的用户会被路由守卫直接拦截至登录页, 正常流程不会返回该结果.
 final class NeedsSignIn extends PermissionResult {
   const NeedsSignIn();
 }
@@ -168,7 +168,7 @@ final class BlockedByBan extends PermissionResult {
   final BannedStatus status;
 }
 
-/// [status] 的账号能否执行 [capability].
+/// 检查 [status] 对应的账号是否具备执行 [capability] 的权限.
 PermissionResult checkPermission(AccountStatus status, Capability capability) =>
     switch (status) {
       SignedOutStatus() => const NeedsSignIn(),

@@ -12,13 +12,13 @@ abstract final class HistoryEndpoints {
   static const browse = '/history/browse';
 }
 
-/// 接口分组 History: 足迹. 浏览记录由服务端在请求详情时写入, 客户端只读取和清空.
+/// 封装 History 接口分组的浏览足迹接口. 浏览记录由服务端在请求详情接口时自动写入, 客户端仅负责读取与清空.
 class HistoryApi {
   HistoryApi(this._client);
 
   final ApiClient _client;
 
-  /// [targetType] 为 `food` 或 `restaurant`, 按最近浏览时间倒序.
+  /// 获取浏览足迹列表, 按最近浏览时间倒序排列. [targetType] 取值为 `food` 或 `restaurant`.
   Future<Paged<BrowseItemDto>> list(
     String targetType, {
     int page = 1,
@@ -33,16 +33,14 @@ class HistoryApi {
     BrowseItemDto.fromJson,
   );
 
-  /// 清空 [targetType] 分栏的足迹. 为 null 时两栏都清空.
+  /// 清空指定 [targetType] 分栏的浏览足迹; 为 null 时清空全部两个分栏.
   Future<void> clear({String? targetType}) => _client.delete(
     HistoryEndpoints.browse,
     query: {'targetType': ?targetType},
   );
 }
 
-/// 足迹的一项 (`HistoryDtos.Item`). 按 [targetType] 只有 [food] 或 [restaurant] 其中之一.
-///
-/// 对象已删除时两者都为 null.
+/// 单条浏览足迹 (`HistoryDtos.Item`). 根据 [targetType] 仅填充 [food] 或 [restaurant] 其一, 若目标对象已删除则两者均为 null.
 @JsonSerializable(createToJson: false)
 class const BrowseItemDto({
   final String? targetType,
@@ -55,7 +53,7 @@ class const BrowseItemDto({
       _$BrowseItemDtoFromJson(json);
 }
 
-/// 足迹中菜的摘要 (`HistoryDtos.Food`).
+/// 足迹中菜品的摘要信息 (`HistoryDtos.Food`).
 @JsonSerializable(createToJson: false)
 class const BrowseFoodDto({
   final int? id,
@@ -68,7 +66,7 @@ class const BrowseFoodDto({
       _$BrowseFoodDtoFromJson(json);
 }
 
-/// 足迹中店的摘要 (`HistoryDtos.Restaurant`). [pictureUrl] 是门头照.
+/// 足迹中店铺的摘要信息 (`HistoryDtos.Restaurant`), [pictureUrl] 为门头照地址.
 @JsonSerializable(createToJson: false)
 class const BrowseShopDto({
   final int? id,

@@ -10,20 +10,20 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 有舞台的页面骨架: 上方为舞台, 下方为白色抽屉. 抽屉向上压住舞台, 随页面滚动.
+/// 带有顶部彩色舞台与下方白色抽屉的页面骨架, 抽屉向上压住舞台并随页面一起滚动.
 ///
-/// 页面只提供舞台色, 舞台内容和抽屉中的 sliver. 舞台高度, 抽屉起点和宽屏布局由本组件决定:
-/// - 手机: 舞台高度按屏幕高度计算. [stageContent] 获得整个舞台的高度,
-///   但底部 [EatSize.sheetOverlap] 会被抽屉遮挡, 菜名, 价格和按钮须排在这段之上.
-/// - 宽屏: 舞台铺满屏幕且不滚动, [stageContent] 排在左侧面板的右边.
-///   抽屉变为左侧的悬浮面板, 内容在面板内单独滚动, [topBar] 移到面板顶部并使用 `ink`.
+/// 调用方仅需传入舞台色, 舞台内容和抽屉 sliver, 舞台高度, 抽屉起点及宽屏适配均由本组件接管:
+/// - 手机布局: 舞台高度按屏幕高度计算, [stageContent] 占据完整舞台高度,
+///   但底部 [EatSize.sheetOverlap] 区域会被抽屉遮挡, 因此菜名, 价格和按钮需排在该区域之上.
+/// - 宽屏布局: 舞台铺满全屏且不滚动, [stageContent] 排布在左侧悬浮面板右侧,
+///   抽屉转变为独立滚动的左侧面板且 [topBar] 移至面板顶部并采用 `ink` 配色.
 ///
-/// 手机上 [topBar] 固定在屏幕顶部, 不随页面滚动. 页面滚动到任意位置时, 返回和右上角的操作都可点击:
-/// - 页面未滚动时顶栏没有底色, 图标使用舞台文字色.
-/// - 抽屉滚动到顶栏下方时, 顶栏变为 `paper` 底和 `ink` 图标, 并显示其中的 [StageBarTitle].
-/// - [pinnedBottom] 是抽屉第一行内容 (如分类栏) 的副本. 该行滚动到顶栏下方时, 副本显示在顶栏下方的同一位置.
+/// 手机布局下 [topBar] 固定在屏幕顶部以确保页面滚动到任意位置时返回与右上角操作始终可点:
+/// - 页面未滚动时顶栏透明无底色, 图标使用舞台文字色.
+/// - 当抽屉滚入顶栏下方时, 顶栏过渡为 `paper` 底色与 `ink` 图标并淡入其中的 [StageBarTitle].
+/// - [pinnedBottom] 为抽屉第一行内容 (如分类栏) 的副本, 该行滚至顶栏下方时副本会吸顶固定在顶栏正下方.
 ///
-/// 抽屉中的 sliver 自行留出左右 `space-20`. 底部自动留出悬浮导航或系统安全区的高度.
+/// 抽屉中的 sliver 需自行预留左右 `space-20` 边距, 底部则自动留出悬浮导航或系统安全区高度.
 class StageScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -35,7 +35,7 @@ class StageScaffold extends StatefulWidget {
     this.onRefresh,
   }) : map = null;
 
-  /// 以地图为舞台的页面, 如附近页. 地图铺在底层, 压在地图上的抽屉加阴影.
+  /// 构建以地图为舞台的页面骨架 (如附近页), 地图铺于底层而抽屉叠加阴影压在地图之上.
   const new map({
     super.key,
     required Widget this.map,
@@ -51,18 +51,18 @@ class StageScaffold extends StatefulWidget {
   final Widget? map;
   final List<Widget> sheetSlivers;
 
-  /// 舞台顶部的一行, 如返回, 收藏和分享, 或发现页的地点, 搜索和通知.
+  /// 舞台顶部操作栏, 如返回, 收藏与分享按钮, 或发现页的地点, 搜索与通知入口.
   final Widget? topBar;
 
-  /// 抽屉第一行内容的副本, 在该行滚动到顶栏下方后显示.
+  /// 抽屉第一行内容的吸顶副本, 在该行滚至顶栏下方后固定展示.
   ///
-  /// 传入时 [sheetSlivers] 的第一项必须是同一行内容. 副本出现的位置按第一项的位置计算.
+  /// 传入时须与 [sheetSlivers] 的第一项保持完全一致, 其显现时机也依据该首项位置计算.
   final Widget? pinnedBottom;
 
-  /// 下拉刷新. 不传时页面不能下拉刷新.
+  /// 下拉刷新回调, 未传入时禁用下拉刷新.
   final Future<void> Function()? onRefresh;
 
-  /// 手机布局下固定顶栏底边的纵坐标, 舞台内容不要排到这条线以上.
+  /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
   static double barBottomOf(BuildContext context) =>
       MediaQuery.paddingOf(context).top + 4 + _StageScaffoldState._barHeight;
 
@@ -72,22 +72,22 @@ class StageScaffold extends StatefulWidget {
 
 class _StageScaffoldState extends State<StageScaffold>
     with ScrollToTopOnReselect {
-  /// 顶栏一行的高度.
+  /// 顶栏单行高度.
   static const _barHeight = 52.0;
 
-  /// 抽屉顶部把手占的高度: 上留白 10, 把手 4, 下留白 14.
+  /// 抽屉顶部把手区域总高度: 上留白 10, 把手 4, 下留白 14.
   static const _handleExtent = 28.0;
 
-  /// 页面滚动超过该距离后, 顶栏以舞台色为底. 否则滚动到顶栏位置的盘子和文字会与顶栏图标重叠.
+  /// 舞台色顶栏背景生效的滚动阈值: 滚动超过该距离后顶栏铺设舞台底色, 避免上移的盘子和文字与顶栏图标重叠.
   static const _liftSpan = 16.0;
 
-  /// 抽屉顶边距顶栏底边 [_pinLead] 时, 顶栏开始过渡到白底样式. 再滚动 [_pinSpan] 后过渡完成.
+  /// 抽屉顶边距顶栏底边 [_pinLead] 时顶栏开始过渡到白底样式, 继续滚动 [_pinSpan] 后过渡完成.
   static const _pinLead = 8.0;
   static const _pinSpan = 24.0;
 
-  /// 顶栏的状态.
+  /// 顶栏的实时交互状态.
   ///
-  /// - `lift`: 0 为没有底色, 1 为铺满舞台色.
+  /// - `lift`: 0 为透明无底色, 1 为完全铺满舞台色.
   /// - `pin`: 0 为舞台样式, 1 为白底样式.
   /// - `row`: 抽屉第一行是否已滚动到顶栏下方.
   final _bar = ValueNotifier<({double lift, double pin, bool row})>((
@@ -96,7 +96,7 @@ class _StageScaffoldState extends State<StageScaffold>
     row: false,
   ));
 
-  /// 手机布局下舞台的高度和顶栏底边的纵坐标. 每次 build 时更新, 滚动时据此计算 [_bar].
+  /// 手机布局下舞台的高度和顶栏底边纵坐标, 每次 build 时更新供滚动监听计算 [_bar].
   double? _stageHeight;
   double _barBottom = 0;
 
@@ -161,7 +161,7 @@ class _StageScaffoldState extends State<StageScaffold>
           ),
           null => scroll,
         };
-    // 内容不足一屏时默认不能滚动, 下拉手势不会触发刷新.
+    // 当内容不足一屏时默认不可滚动, 需强制允许滚动以使下拉手势能够触发刷新.
     final physics = widget.onRefresh == null
         ? null
         : const AlwaysScrollableScrollPhysics();
@@ -235,7 +235,7 @@ class _StageScaffoldState extends State<StageScaffold>
       _barBottom = barTop + _barHeight;
       body = Stack(
         children: [
-          // 只在页面顶部回弹 (iOS) 时露出, 避免舞台上方出现白边.
+          // 仅在 iOS 等平台触发顶部弹性回弹时露出, 避免舞台上方出现白色空隙.
           if (palette != null)
             ListenableBuilder(
               listenable: scrollController,
@@ -289,7 +289,7 @@ class _StageScaffoldState extends State<StageScaffold>
                     ],
                   ),
                 ),
-                // 内容不满一屏时白底延伸到底部, 避免抽屉在页面中间断开.
+                // 内容不满一屏时将白底延伸至页面底部, 避免抽屉在页面中间提前断开.
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: ColoredBox(color: eat.colors.paper),
@@ -317,9 +317,9 @@ class _StageScaffoldState extends State<StageScaffold>
     );
   }
 
-  /// 固定在屏幕顶部的顶栏. 颜色随 [_bar] 在舞台样式和白底样式之间过渡.
+  /// 构建固定在屏幕顶部的顶栏, 其颜色随 [_bar] 状态在舞台样式和白底样式之间插值过渡.
   ///
-  /// [topBar] 中的图标和文字从 [StageTheme] 和默认文字色取色. 两者随过渡进度插值, 页面无需处理颜色.
+  /// [topBar] 内的图标和文字自动从 [StageTheme] 与默认文字色取色, 两者随进度同步插值, 页面无需单独处理配色.
   Widget _pinnedBar(
     BuildContext context,
     StagePalette? palette,
@@ -342,7 +342,7 @@ class _StageScaffoldState extends State<StageScaffold>
     return ValueListenableBuilder(
       valueListenable: _bar,
       builder: (context, bar, _) {
-        // 以地图为舞台时没有舞台色, 顶栏始终使用白底样式.
+        // 以地图为舞台时不存在舞台色, 顶栏始终保持白底样式.
         final pin = palette == null ? 1.0 : bar.pin;
         final colors = palette == null
             ? plain
@@ -360,7 +360,7 @@ class _StageScaffoldState extends State<StageScaffold>
               : SystemUiOverlayStyle.dark,
           child: Stack(
             children: [
-              // 顶栏有底色时拦截点击. 否则点击会传到被顶栏遮挡的舞台内容.
+              // 顶栏具有底色时拦截点击事件, 防止点击穿透至被遮挡的舞台内容.
               Positioned.fill(
                 child: IgnorePointer(
                   ignoring: fill.a == 0,
@@ -416,7 +416,7 @@ class _StageScaffoldState extends State<StageScaffold>
   }
 }
 
-/// 顶栏换成白底样式的进度, 由 [StageScaffold] 提供给顶栏里的 [StageBarTitle].
+/// 顶栏向白底样式过渡的进度值, 由 [StageScaffold] 注入给顶栏中的 [StageBarTitle].
 class _StageBarPin extends InheritedWidget {
   const new({required this.pin, required super.child});
 
@@ -426,11 +426,11 @@ class _StageBarPin extends InheritedWidget {
   bool updateShouldNotify(_StageBarPin oldWidget) => pin != oldWidget.pin;
 }
 
-/// 舞台页顶栏中的标题, 如菜名, 店名和昵称. 位于返回按钮和右侧按钮之间, 通常放在 `Expanded` 中.
+/// 舞台页顶栏中的标题组件 (如菜名, 店名和昵称), 位于返回按钮与右侧按钮之间, 通常包裹在 `Expanded` 中.
 ///
-/// - 顶栏为舞台样式时不显示, 因为舞台上已有同样的文字.
-/// - 顶栏过渡到白底样式时淡入. 此时舞台已滚出屏幕, 标题说明当前所在的页面.
-/// - 宽屏时舞台不滚动, 始终不显示.
+/// - 顶栏处于舞台样式时不显示, 以免与舞台上已有的相同文字重复.
+/// - 顶栏过渡为白底样式时随进度淡入, 在舞台滚出屏幕后标明当前所在页面.
+/// - 宽屏布局下舞台固定不滚动, 该标题始终保持隐藏.
 class StageBarTitle extends StatelessWidget {
   const new(this.text, {super.key});
 
@@ -458,10 +458,10 @@ class StageBarTitle extends StatelessWidget {
   }
 }
 
-/// 布局高度比内容少 [overlap] 的 sliver.
+/// 布局高度比实际内容少 [overlap] 的 sliver 容器.
 ///
-/// 后续 sliver 从其底部向上 [overlap] 处开始排列. 多出的部分绘制在自身范围之外,
-/// 配合 `SliverPaintOrder.lastIsTop` 被后续的抽屉覆盖, 形成抽屉压住舞台的效果.
+/// 后续 sliver 会从其底部向上 [overlap] 处开始排列,
+/// 配合 `SliverPaintOrder.lastIsTop` 使溢出部分被后续抽屉覆盖, 形成抽屉压住舞台的层叠效果.
 class _OverlappedSliver extends SingleChildRenderObjectWidget {
   const new({required this.overlap, required Widget super.child});
 
@@ -494,8 +494,8 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
     child.layout(constraints.asBoxConstraints(), parentUsesSize: true);
     final extent = child.size.height;
     final scrollExtent = (extent - _overlap).clamp(0.0, extent);
-    // 绘制范围报告为与布局范围相同, 多出的 [_overlap] 绘制在范围之外.
-    // 若报告更大的绘制范围, 视口会按重叠高度裁掉后续 sliver 的语义, 抽屉第一行按钮在读屏中不完整.
+    // 刻意将绘制范围报告为与布局范围相同, 多出的 [_overlap] 绘制在范围之外.
+    // 若如实报告更大的绘制范围, 视口会按重叠高度裁掉后续 sliver 的语义区域, 导致抽屉第一行按钮在读屏中不完整.
     final layoutExtent = calculatePaintOffset(
       constraints,
       from: 0,
@@ -512,9 +512,9 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
   }
 }
 
-/// 抽屉的白底. 绘制方式与 `DecoratedSliver` 相同, 但白底本身也拦截点击.
+/// 抽屉的白色背景 sliver; 绘制方式与 `DecoratedSliver` 相同, 但同时拦截自身区域的命中测试.
 ///
-/// 因此点击抽屉压住舞台的区域不会传到下方舞台的组件, 点击抽屉内的空白处也不会穿透.
+/// 借此阻止点击抽屉压住舞台的区域时事件穿透至下方舞台组件, 点击抽屉内空白处也不会穿透.
 class _SheetSliver extends DecoratedSliver {
   const new({required super.decoration, super.sliver});
 

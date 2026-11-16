@@ -4,12 +4,12 @@ import 'package:eat/design/widgets/painting.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 可点击组件共用的外壳. 提供点击和按下状态, 键盘操作, 焦点双环, 鼠标手型和读屏语义.
+/// 可点击组件共用的交互外壳, 统一提供按下状态, 键盘激活, 焦点双环, 鼠标手型和读屏语义.
 ///
-/// - 不绘制底色和水波纹, 外观由 [builder] 决定. `pressed` 用于实现按钮的下沉效果.
-/// - 按下时内容的不透明度降到 [pressedOpacity], 作为点击已被识别的反馈.
-///   [builder] 自行绘制按下效果的组件 (如按钮) 通过 [dimOnPress] 关闭.
-/// - [onTap] 为 null 时不可点击, 读屏报告 "不可用".
+/// - 不绘制底色和水波纹, 外观完全由 [builder] 决定 (其中的 `pressed` 参数可用于实现下沉效果).
+/// - 默认在按下时将内容不透明度降至 [pressedOpacity] 作为反馈;
+///   若 [builder] 自行绘制按下效果 (如按钮), 可通过 [dimOnPress] 关闭.
+/// - 当 [onTap] 为 null 时禁用点击, 且读屏将其报告为 "不可用".
 class EatTappable extends StatefulWidget {
   const new({
     super.key,
@@ -31,10 +31,10 @@ class EatTappable extends StatefulWidget {
 
   final Widget Function(BuildContext context, bool pressed) builder;
 
-  /// 焦点双环的轮廓, 应与组件自身的形状一致.
+  /// 焦点双环的轮廓形状, 应与组件自身轮廓保持一致.
   final ShapeBorder focusShape;
 
-  /// 读屏文字. 不传时朗读子组件中的文字.
+  /// 读屏朗读的标签文本, 未传入时朗读子组件中的文字.
   final String? label;
 
   final bool button;
@@ -44,10 +44,10 @@ class EatTappable extends StatefulWidget {
   final bool inMutuallyExclusiveGroup;
   final SemanticsRole? role;
 
-  /// 读屏朗读的点击结果, 如 "标为已读". 不传时使用平台默认的 "激活".
+  /// 读屏朗读的点击动作提示 (如 "标为已读"), 未传入时使用平台默认的 "激活".
   final String? tapHint;
 
-  /// 按下时是否降低内容的不透明度. [builder] 已根据 `pressed` 绘制按下效果时传 false, 避免两种反馈叠加.
+  /// 按下时是否降低内容不透明度; 当 [builder] 已根据 `pressed` 绘制按下效果时应传 false, 避免两种反馈叠加.
   final bool dimOnPress;
 
   /// 按下时内容的不透明度.

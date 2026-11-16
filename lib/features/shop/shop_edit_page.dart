@@ -39,11 +39,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Source { camera, gallery }
 
-/// 编辑店铺: 店名, 地址描述, 门头照片, 类型, 品类, 口味, 饭点, 价位, 能否点外卖, 是否已关门.
+/// 编辑店铺资料页, 支持修改店名, 地址描述, 门头照片, 类型, 品类, 口味, 饭点, 价位及外卖与营业状态.
 ///
-/// - 认证用户都能编辑任何一家店. 保存时检查权限.
-/// - 只提交改动的字段. 没有改动时保存直接返回.
-/// - 改过内容后返回时确认是否放弃.
+/// - 所有已认证用户均可编辑任意店铺, 保存时校验操作权限.
+/// - 仅提交发生变更的字段, 若无改动则在保存时返回上一页.
+/// - 存在未保存修改时返回会弹窗确认是否放弃.
 class ShopEditPage extends ConsumerWidget {
   const new({super.key, required this.shopId});
 
@@ -78,7 +78,7 @@ class ShopEditPage extends ConsumerWidget {
 class _Form extends ConsumerStatefulWidget {
   const new({required this.shop});
 
-  /// 打开页面时的店铺资料, 改动以它为基准.
+  /// 进入页面时的原始店铺资料, 用于比对字段变更.
   final Shop shop;
 
   @override
@@ -92,7 +92,7 @@ class _FormState extends ConsumerState<_Form> {
   /// 新选的门头照片.
   PickedPhoto? _photo;
 
-  /// 删掉了原来的门头照片.
+  /// 是否已移除原有的门头照片.
   var _photoRemoved = false;
   late var _kind = widget.shop.kind;
   late var _categories = {...widget.shop.categories};
@@ -104,10 +104,10 @@ class _FormState extends ConsumerState<_Form> {
 
   var _busy = false;
 
-  /// 已保存或已确认放弃, 返回时不再拦截.
+  /// 是否已保存或确认放弃修改, 为 true 时不再拦截返回操作.
   var _leaving = false;
 
-  /// 已上传的门头照片及其存储 key. 重试保存时不重复上传.
+  /// 缓存已上传的新门头照片及其存储 key, 保存失败重试时无需重复上传.
   ({PickedPhoto photo, String key})? _uploaded;
 
   @override
@@ -126,7 +126,7 @@ class _FormState extends ConsumerState<_Form> {
 
   void _onChanged() => setState(() {});
 
-  /// 和打开页面时相比的改动. [photoKey] 是新门头照片上传后的 key, 未上传时为空串.
+  /// 计算当前表单相对于初始店铺资料的变更内容. [photoKey] 为新门头照片上传后的存储 key, 未上传时传空字符串.
   ShopChange _change({String photoKey = ''}) {
     final shop = widget.shop;
     final name = _name.text.trim();
@@ -157,7 +157,7 @@ class _FormState extends ConsumerState<_Form> {
 
   bool get _dirty => !_change().isEmpty;
 
-  /// 保存按钮上方的提示. 能保存时为 null.
+  /// 表单校验未通过时的提示文案, 满足保存条件时为 null.
   String? get _problem {
     final name = _name.text.trim();
     final address = _address.text.trim();
@@ -217,14 +217,14 @@ class _FormState extends ConsumerState<_Form> {
     }
   }
 
-  /// 返回. 改过内容时需确认是否放弃, 保存中不能返回.
+  /// 处理返回操作, 保存过程中禁止离开, 若有未保存的改动则先确认是否放弃.
   Future<void> _back() async {
     if (_busy) return;
     if (_dirty && !await _confirmDiscard()) return;
     if (mounted) _leave();
   }
 
-  /// 解除返回拦截后离开页面. 拦截在下一帧重建后才解除, 因此在该帧结束后返回.
+  /// 标记允许离开并退出页面. 由于 PopScope 的拦截状态在下一帧重建后才解除, 需在该帧结束后执行返回.
   void _leave() {
     setState(() => _leaving = true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -311,7 +311,7 @@ class _FormState extends ConsumerState<_Form> {
     _photoRemoved = true;
   });
 
-  /// 多选项的切换. 已满 [max] 项时不再选中新项, 提示上限.
+  /// 切换多选标签的选中状态. 若已达到上限 [max] 项, 则阻止继续选中并弹出提示.
   Set<T> _toggle<T>(Set<T> current, T value, int max, String name) {
     if (current.contains(value)) return {...current}..remove(value);
     if (current.length >= max) {
@@ -510,7 +510,7 @@ class _FormState extends ConsumerState<_Form> {
   }
 }
 
-/// 顶栏右侧的 "保存".
+/// 顶栏右侧的 "保存" 按钮.
 class _SaveButton extends StatelessWidget {
   const new({required this.busy, required this.onTap});
 
@@ -544,7 +544,7 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// 输入框右侧的字数计数. 超出上限时变色.
+/// 输入框右侧的字数计数器, 超出上限时以警示色高亮.
 class _Counter extends StatelessWidget {
   const new(this.count, this.max);
 
@@ -565,7 +565,7 @@ class _Counter extends StatelessWidget {
   }
 }
 
-/// 门头照片. 有照片时显示照片和删除按钮, 没有时显示虚线框和选填说明.
+/// 门头照片编辑区, 已有照片时展示预览图与删除按钮, 未设置时展示虚线框与选填提示.
 class _PhotoField extends StatelessWidget {
   const new({
     required this.image,

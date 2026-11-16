@@ -17,9 +17,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 往期专题: 当前校区已结束的专题, 按时间倒序.
+/// 往期专题列表页, 按时间倒序展示当前校区已结束的专题.
 ///
-/// 每行是专题名, 起止时间和前三道菜的小圆图, 点击进入专题页.
+/// 每行展示专题名称, 起止时间及前三道菜品的圆形缩略图, 点击进入对应专题页.
 class TopicArchivePage extends ConsumerWidget {
   const new({super.key});
 

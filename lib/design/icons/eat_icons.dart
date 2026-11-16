@@ -3,9 +3,9 @@
 /// 图标全部取自 MingCute 官方的 `@mingcute/svg` (版本见 `tool/icons.dart`), 本枚举同时是用途名与官方名的对照表.
 /// 枚举名与 `assets/icons/` 的文件名一一对应, 如 `chevronRight` 对应 `chevron-right.svg`.
 ///
-/// 默认用空心 (Regular). 只有切换状态用实心 (Filled): 赞过, 收藏过, 底部导航选中的标签.
+/// 默认使用空心 (Regular), 仅切换状态使用实心 (Filled), 包括赞过, 收藏过及底部导航选中的标签.
 ///
-/// 新增图标时在本枚举中添加一项, 写明官方名, 再运行 `tool/icons.dart` 生成资源.
+/// 新增图标时在本枚举中添加一项并写明官方名, 再运行 `tool/icons.dart` 生成资源.
 enum EatIcons {
   add('add'),
   addCircle('add-circle'),
@@ -96,7 +96,7 @@ enum EatIcons {
   /// 官方名, 如 `compass`. 对应 `@mingcute/svg` 中的 `core-regular/compass.svg`, 实心对应 `core-filled/compass.svg`.
   final String mingcute;
 
-  /// 是否用实心.
+  /// 是否使用实心图标.
   final bool filled;
 
   /// 不含扩展名的文件名.

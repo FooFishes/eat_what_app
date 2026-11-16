@@ -2,7 +2,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'auth_dto.g.dart';
 
-/// 登录接口的 `data` (`SaTokenInfo`). `tokenName` 和 `tokenValue` 都有值才算登录成功.
+/// 登录接口的 `data` (`SaTokenInfo`). 仅当 `tokenName` 和 `tokenValue` 均有值时才视为登录成功.
 @JsonSerializable(createToJson: false)
 class const LoginReplyDto({
   final String? tokenName,
@@ -16,7 +16,7 @@ class const LoginReplyDto({
       _$LoginReplyDtoFromJson(json);
 }
 
-/// [policyVersion] 是用户同意的隐私政策版本. 服务端还没发布政策时为 null, 不带该字段.
+/// 手机验证码登录请求体. [policyVersion] 为用户同意的隐私政策版本, 服务端尚未发布政策时为 null 且不发送该字段.
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const PhoneLoginRequestDto({
   required final String mobile,
@@ -24,7 +24,7 @@ class const PhoneLoginRequestDto({
   required final String device,
   final String? policyVersion,
 
-  /// 申请注销时保存在本机的撤销凭据. 账号在冷静期内时, 验证码通过后撤销注销.
+  /// 申请注销时保存在本机的撤销凭据. 若账号处于冷静期内, 验证码校验通过后将撤销注销.
   final String? deletionKey,
 }) {
   Map<String, dynamic> toJson() => _$PhoneLoginRequestDtoToJson(this);
@@ -37,7 +37,8 @@ class const OneClickConfigDto({final bool? enabled}) {
       _$OneClickConfigDtoFromJson(json);
 }
 
-/// [accessToken] 是号码认证 SDK 在用户授权后给出的取号凭证, 服务端用它向阿里云换手机号.
+/// 一键登录请求体. [accessToken] 为号码认证 SDK 在用户授权后返回的取号凭证, 服务端凭其向阿里云换取手机号.
+///
 /// [policyVersion] 同 [PhoneLoginRequestDto.policyVersion].
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const OneClickLoginRequestDto({
@@ -60,7 +61,7 @@ class const PasswordLoginRequestDto({
   Map<String, dynamic> toJson() => _$PasswordLoginRequestDtoToJson(this);
 }
 
-/// `/auth/captcha/config` 的 `data`. [enabled] 为 false 时其余字段均为 null, 跳过人机验证.
+/// `/auth/captcha/config` 的 `data`. 当 [enabled] 为 false 时其余字段均为 null, 客户端跳过人机验证.
 @JsonSerializable(createToJson: false)
 class const CaptchaConfigDto({
   final bool? enabled,
@@ -74,7 +75,7 @@ class const CaptchaConfigDto({
       _$CaptchaConfigDtoFromJson(json);
 }
 
-/// `/auth/sdu` 的 `data`: 带一次性 state 的统一认证地址, 在 [expiresIn] 秒内有效且只能使用一次.
+/// `/auth/sdu` 的 `data`, 包含带一次性 state 的统一认证地址, 在 [expiresIn] 秒内有效且仅能使用一次.
 @JsonSerializable(createToJson: false)
 class const SsoStartDto({final String? url, final int? expiresIn}) {
   factory SsoStartDto.fromJson(Map<String, dynamic> json) =>

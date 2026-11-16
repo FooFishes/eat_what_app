@@ -19,13 +19,13 @@ abstract final class EatMotion {
     curve: Curves.ease,
   );
 
-  /// 选中态切换: 标签, 单选, 开关. 规范给出的范围是 160–200ms, 取中间值.
+  /// 用于标签, 单选与开关的选中态切换, 取规范 160–200ms 范围的中间值.
   static const EatTransition select = (
     duration: Duration(milliseconds: 180),
     curve: Curves.ease,
   );
 
-  /// 按钮按下: 整体下移 [pressOffset] 并换用按下的阴影, 松开后复原.
+  /// 用于按钮按下动效: 整体下移 [pressOffset] 并换用按下的阴影, 松开后复原.
   static const EatTransition press = (
     duration: Duration(milliseconds: 90),
     curve: Curves.easeOut,
@@ -33,7 +33,7 @@ abstract final class EatMotion {
 
   static const pressOffset = 1.0;
 
-  /// 对话框进出: 淡入的同时从 [dialogScale] 放大到原大小.
+  /// 用于对话框进出动效: 淡入的同时从 [dialogScale] 放大到原大小.
   static const EatTransition dialog = (
     duration: Duration(milliseconds: 200),
     curve: Curves.easeOutCubic,

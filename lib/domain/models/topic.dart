@@ -1,9 +1,9 @@
 import 'package:eat/domain/models/dish.dart';
 
-/// 专题: 运营为一个校区挑选的一组菜, 有名字, 介绍和起止时间.
+/// 运营为单个校区精选的菜品专题, 包含名称, 介绍与起止时间.
 ///
-/// - [endsAt] 不属于专题的时间段. 专题在 [endsAt] 前一刻结束.
-/// - [dishCount] 是当前仍可见的菜数.
+/// - 专题时间区间为左闭右开, 在 [endsAt] 前一刻结束.
+/// - [dishCount] 为当前仍处于可见状态的菜品数量.
 class const Topic({
   required final int id,
   required final String name,
@@ -13,7 +13,7 @@ class const Topic({
   final int dishCount = 0,
 });
 
-/// 专题和其中的菜, 菜按运营排定的顺序排列.
+/// 专题详情及其包含的菜品列表, 菜品按运营设定的顺序排列.
 class const TopicDetail({
   required final Topic topic,
   final List<Dish> dishes = const [],

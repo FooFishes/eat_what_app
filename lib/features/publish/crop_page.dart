@@ -11,19 +11,19 @@ import 'package:eat/domain/models/dish.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// "调整照片" 点击 "完成" 的结果. [picked] 是用户手动选择的颜色, 未选择时为 null.
+/// "调整照片" 页面确认返回的结果, 其中 [picked] 为用户手动选定的舞台色, 未手动选择时为 null.
 class const CropResult({
   required final CoverCrop crop,
   required final StageSuggestion suggestion,
   final StageColor? picked,
 });
 
-/// "调整照片" 页面.
+/// 调整菜品封面取景与舞台色的页面.
 ///
-/// - 上方: 通过拖动和双指缩放把主菜放进取景圈. 缩放滑条是双指缩放的替代操作.
-/// - 下方: 从取景圈内取色推荐的三个舞台色, 以及首页效果预览.
+/// - 上方区域支持拖动与双指缩放以将主菜移入取景圈, 并提供缩放滑条作为双指缩放的替代交互.
+/// - 下方区域展示从取景圈内提取的三个推荐舞台色及首页效果预览.
 ///
-/// 页面依赖内存中的照片, 无法用地址恢复, 因此不进路由表, 由加菜页通过 `Navigator.push` 打开.
+/// 因页面依赖内存中的照片数据且无法通过 URL 恢复状态, 故不纳入路由表, 而是由加菜页通过 `Navigator.push` 打开.
 class CropPage extends StatefulWidget {
   const new({
     super.key,
@@ -39,15 +39,15 @@ class CropPage extends StatefulWidget {
 
   final ImageProvider image;
 
-  /// 照片的像素宽度. [height] 为像素高度.
+  /// 照片原始像素宽度; [height] 为对应的像素高度.
   final int width;
   final int height;
 
-  /// 取色用的缩小图. 裁切变化时用它重算推荐色, 不重新解码原图.
+  /// 用于取色计算的缩略图样本; 裁切变化时直接复用该样本重算推荐色, 避免重复解码原图.
   final Future<StageSample> sample;
   final CoverCrop crop;
 
-  /// 分类默认色. 照片太灰导致取色不可靠时排在推荐色第一位.
+  /// 分类默认舞台色; 当照片整体偏灰导致取色不可靠时, 该颜色排在推荐色首位.
   final StageColor fallback;
   final String dishName;
   final StageColor? picked;
@@ -122,9 +122,9 @@ class _CropPageState extends State<CropPage> {
     });
   }
 
-  /// 更新裁切. 照片位置立即更新, 推荐色在裁切停止变化后经过防抖再重算.
+  /// 更新封面裁切范围: 照片位置立即响应变化, 而推荐色在拖动停止并经过防抖后重算.
   ///
-  /// 取色在主线程执行, 防抖避免拖动的每一帧都重算.
+  /// 因取色计算在主线程执行, 防抖可避免拖动过程中的每一帧都触发重算.
   void _setCrop(CircleCrop crop) {
     setState(
       () => _crop = CoverCrop(

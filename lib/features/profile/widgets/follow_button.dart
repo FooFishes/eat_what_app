@@ -9,11 +9,10 @@ import 'package:eat/state/social.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 关注按钮. 未关注时为实心 "关注" 或 "回关", 已关注时为次要样式的 "已关注" 或 "已互关", 点击取消关注.
+/// 展示并切换用户关注状态的按钮; 未关注时显示实心 "关注" 或 "回关", 已关注时显示次要样式的 "已关注" 或 "已互关", 点击可取消关注.
 ///
-/// 关注要求已认证, 取消关注不要求认证. [onStage] 为 true 时使用舞台上的按钮样式.
-///
-/// 任一方屏蔽了对方时服务端拒绝关注, 提示 "无法关注对方".
+/// 关注操作要求账号已认证, 取消关注则不要求认证; 当 [onStage] 为 true 时采用舞台专用按钮样式.
+/// 若任一方已屏蔽对方, 服务端会拒绝关注请求, 此时提示 "无法关注对方".
 class FollowButton extends ConsumerWidget {
   const new({super.key, required this.profile, this.onStage = false});
 

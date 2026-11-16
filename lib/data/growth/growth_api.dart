@@ -13,10 +13,10 @@ abstract final class GrowthEndpoints {
   static const ledger = '/user/level/logs';
 }
 
-/// 接口分组 User 中的等级和经验, 只有本人能看.
+/// 封装 User 分组中的等级与经验接口, 仅限本人查看.
 ///
-/// 每日经验由服务端在当天第一个带会话的请求中自动发放, 客户端不用上报.
-/// 封禁中能看等级, 不能看经验明细.
+/// 每日经验由服务端在当天首个携带会话的请求中自动发放, 客户端无需上报;
+/// 账号封禁期间仍可查看当前等级, 但无法查看经验明细.
 class GrowthApi {
   GrowthApi(this._client);
 
@@ -28,7 +28,7 @@ class GrowthApi {
         GrowthProgressDto.fromJson,
       );
 
-  /// 经验明细, 最新的在前.
+  /// 获取经验变更明细, 按时间倒序排列.
   Future<Paged<ExperienceEntryDto>> ledger({
     int page = 1,
     int pageSize = 20,
@@ -43,9 +43,9 @@ class GrowthApi {
   );
 }
 
-/// `/user/level` 的 `data` (`UserDtos.Level`). 门槛都是累计经验.
+/// `/user/level` 的 `data` (`UserDtos.Level`), 其中的升级门槛均以累计经验计算.
 ///
-/// [nextLevel], [nextLevelExperience], [toNextLevel] 满级时为 null.
+/// 达到满级时, [nextLevel], [nextLevelExperience] 与 [toNextLevel] 均为 null.
 @JsonSerializable(createToJson: false)
 class const GrowthProgressDto({
   final int? level,

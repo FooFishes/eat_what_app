@@ -7,12 +7,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_api.g.dart';
 
-/// 店铺列表的排序. [api] 是接口中的取值.
+/// 店铺列表的排序方式, [api] 为对应的接口参数值.
 enum ShopSort {
-  /// 距离升序, 需要坐标.
+  /// 按距离升序排列, 需传入坐标.
   distance('DISTANCE'),
 
-  /// 新建时间倒序.
+  /// 按创建时间倒序排列.
   newest('NEWEST');
 
   const new(this.api);
@@ -38,7 +38,7 @@ abstract final class PlaceEndpoints {
       '/restaurant/$id/history/$revisionId/restore';
 }
 
-/// 地点相关的三个接口分组: Campus (校区), Hub (商圈), Restaurant (店铺的浏览, 搜索, 新建和修改).
+/// 地点相关接口, 涵盖校区 (`Campus`), 商圈 (`Hub`) 以及店铺 (`Restaurant`) 的浏览, 搜索, 创建与编辑.
 class PlaceApi {
   PlaceApi(this._client);
 
@@ -63,7 +63,7 @@ class PlaceApi {
     HubDto.fromJson,
   );
 
-  /// 查询坐标所在的商圈. 不在任何商圈内时返回 null.
+  /// 查询指定坐标所在的商圈, 若不在任何商圈内则返回 null.
   Future<HubDto?> locateHub(double gcjLat, double gcjLng) async {
     final data = await _client.get(
       PlaceEndpoints.locateHub,
@@ -72,7 +72,7 @@ class PlaceApi {
     return data == null ? null : decodeJson(data, HubDto.fromJson);
   }
 
-  /// 新建店时可能重复的店: 同一个地图地点 [poi], 或 200 m 内与 [name] 同名. 同地点的在前, 其余按距离.
+  /// 查询可能重复的已有店铺, 匹配同一地图地点 [poi] 或 200 m 内与 [name] 同名的店铺; 同地点结果优先, 其余按距离排序.
   Future<List<ShopDuplicateDto>> duplicates({
     String? name,
     required double gcjLat,
@@ -88,13 +88,13 @@ class PlaceApi {
     ShopDuplicateDto.fromJson,
   );
 
-  /// 新建店铺, 返回店铺 id. 店铺发布即公开.
+  /// 新建店铺并返回其 id; 店铺发布后即公开可见.
   Future<int> createRestaurant(CreateRestaurantDto body) async =>
       decodeCreatedId(
         await _client.post(PlaceEndpoints.addRestaurant, body: body.toJson()),
       );
 
-  /// 修改店铺. 认证用户都能修改任何店铺.
+  /// 修改店铺信息, 所有已认证用户均可编辑任意店铺.
   Future<EditedRestaurantDto> editRestaurant(
     int id,
     EditRestaurantDto body,
@@ -112,16 +112,16 @@ class PlaceApi {
         RestaurantDto.fromJson,
       );
 
-  /// 搜店, 包含已关门的店. [keyword] 匹配店名, 地址和店里的菜名, 因菜名命中的店带 `matchedFood`.
+  /// 搜索店铺 (包含已关门店铺), 各筛选条件之间为 "与" 关系.
   ///
-  /// - 坐标可选, 必须成对传入. 不传 [sort] 时, 带坐标按距离升序排列, 不带按新建时间倒序.
-  /// - [radius] 和 [ShopSort.distance] 都需要坐标.
-  /// - 传入 [campusId] 时只查该校区. 默认校区还包括不属于任何商圈的店.
-  /// - [categories] 和 [tags] 各自命中任一即可.
-  /// - [delivery] 只保留开了外卖或有人评过外卖的店.
-  /// - [recommendedOnly] 只保留任一场景至少 3 条评价且推荐率不低于 70% 的店.
-  /// - [favoritesOnly] 只保留当前账号收藏的店, 游客传入时返回未登录.
-  /// - 不同筛选条件之间为 "与" 关系.
+  /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 `matchedFood`.
+  /// - 坐标可选但必须成对传入; 未指定 [sort] 时, 传坐标按距离升序排列, 否则按创建时间倒序.
+  /// - [radius] 和 [ShopSort.distance] 均需配合坐标使用.
+  /// - 传入 [campusId] 时仅检索该校区, 其中默认校区还包含不属于任何商圈的店铺.
+  /// - [categories] 和 [tags] 各自满足任一取值即可命中.
+  /// - [delivery] 为 true 时仅保留支持外卖或存在外卖评价的店铺.
+  /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
+  /// - [favoritesOnly] 为 true 时仅保留当前账号收藏的店铺, 游客传入将返回未登录错误.
   Future<Paged<RestaurantDto>> searchRestaurants({
     double? gcjLat,
     double? gcjLng,
@@ -166,9 +166,9 @@ class PlaceApi {
     RestaurantDto.fromJson,
   );
 
-  /// 评价店铺在 [scene] 场景下的体验, [rating] 为 null 时撤回. 返回本人在两个场景的评价.
+  /// 提交或撤回店铺在 [scene] 场景下的评价, 并返回当前用户在两个场景的评价结果.
   ///
-  /// 评价要求已认证, 撤回只要求登录.
+  /// [rating] 为 null 时表示撤回评价; 提交评价需完成身份认证, 撤回仅需登录.
   Future<MyRatingsDto> rateRestaurant(
     int id, {
     required String scene,
@@ -186,13 +186,13 @@ class PlaceApi {
     MyRatingsDto.fromJson,
   );
 
-  /// 收藏或取消收藏店铺. 收藏要求已认证, 取消只要求登录.
+  /// 收藏或取消收藏店铺; 收藏操作需完成身份认证, 取消收藏仅需登录.
   Future<void> setRestaurantFavorite(int id, {required bool favorite}) =>
       favorite
       ? _client.put(PlaceEndpoints.restaurantFavorite(id))
       : _client.delete(PlaceEndpoints.restaurantFavorite(id));
 
-  /// 我收藏的店, 包含已关门的店, 按收藏时间倒序.
+  /// 获取当前用户收藏的店铺列表 (含已关门店铺), 按收藏时间倒序排列.
   Future<Paged<RestaurantDto>> favoriteRestaurants({
     int page = 1,
     int pageSize = 20,
@@ -206,7 +206,7 @@ class PlaceApi {
     RestaurantDto.fromJson,
   );
 
-  /// 店铺的修改记录, 最新的在前. 不需要登录.
+  /// 分页获取店铺的修改记录, 按时间倒序排列, 无需登录即可访问.
   Future<Paged<RevisionDto>> restaurantHistory(
     int id, {
     int page = 1,
@@ -221,9 +221,9 @@ class PlaceApi {
     RevisionDto.fromJson,
   );
 
-  /// 把店铺恢复到某条修改记录之后的内容, 记为一次新的修改.
+  /// 将店铺内容恢复至指定修改记录时的状态, 并记为一次新的修改.
   ///
-  /// 当前内容已经是该版本时返回 `BizCodes.stateNotAllowed`.
+  /// 若当前内容已与该版本一致, 服务端返回 `BizCodes.stateNotAllowed`.
   Future<EditedRestaurantDto> restoreRestaurant(int id, int revisionId) async =>
       decodeJson(
         await _client.post(PlaceEndpoints.restoreRestaurant(id, revisionId)),

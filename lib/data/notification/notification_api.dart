@@ -16,13 +16,13 @@ abstract final class NotificationEndpoints {
   static const cards = '/notification/cards';
 }
 
-/// 接口分组 NotificationCards: 按分栏获取合并后的消息, 未读数, 标记已读.
+/// 通知消息接口 (`NotificationCards` 分组), 提供按分栏获取合并消息, 查询未读数和标记已读.
 class NotificationApi {
   NotificationApi(this._client);
 
   final ApiClient _client;
 
-  /// [column] 是分栏的接口取值, 如 `ALL`, `SYSTEM`. 按最近一条的时间倒序.
+  /// 按最近一条消息的时间倒序获取通知卡片列表; [column] 为分栏接口取值, 如 `ALL`, `SYSTEM`.
   Future<Paged<NoticeCardDto>> cards(
     String column, {
     int page = 1,
@@ -37,7 +37,7 @@ class NotificationApi {
     NoticeCardDto.fromJson,
   );
 
-  /// "全部" 分栏的未读数. `cards` 是有未读的行数, `members` 是未读的条数.
+  /// 查询 "全部" 分栏的未读数, 返回的 `cards` 为含未读消息的行数, `members` 为未读消息条数.
   Future<UnreadDto> unread({CancelToken? cancelToken}) async => decodeJson(
     await _client.get(
       NotificationEndpoints.unreadCount,
@@ -46,20 +46,20 @@ class NotificationApi {
     UnreadDto.fromJson,
   );
 
-  /// 把一行合并的各条都标为已读.
+  /// 将指定消息卡片内合并的多条消息全部标记为已读.
   Future<void> read(int id) => _client.post(NotificationEndpoints.readCard(id));
 
-  /// 把分栏 [column] 的全部消息标为已读, 含未加载的页. `ALL` 表示全部分栏.
+  /// 将分栏 [column] 下的全部消息 (含未加载页) 标记为已读; 传入 `ALL` 表示全部分栏.
   Future<void> readAll(String column) =>
       _client.post(NotificationEndpoints.readAll, query: {'column': column});
 }
 
 /// 消息卡片 (`NotificationDtos.Card`).
 ///
-/// - [unreadMemberCount] 为 0 表示合并的各条都已读.
-/// - [latestAt] 是最近一条的 Unix 毫秒时间.
-/// - [actors] 是最近的至多 3 个互动者. 系统消息为空.
-/// - [data] 只有系统消息有, 按其中的 `type` 区分结构, 由仓库逐种解析.
+/// - [unreadMemberCount] 为 0 时表示该卡片合并的消息已全部阅读.
+/// - [latestAt] 为最近一条消息的 Unix 毫秒时间戳.
+/// - [actors] 为最近至多 3 位互动者, 系统消息时为空.
+/// - [data] 仅系统消息携带, 按其中的 `type` 字段区分结构并由仓库逐类解析.
 @JsonSerializable(createToJson: false)
 class const NoticeCardDto({
   final int? id,
@@ -76,7 +76,7 @@ class const NoticeCardDto({
       _$NoticeCardDtoFromJson(json);
 }
 
-/// 消息的对象. [domain] 如 `foods`, `comments`, `users`, `feedback`, `announcements`.
+/// 消息指向的目标对象, [domain] 取值如 `foods`, `comments`, `users`, `feedback`, `announcements`.
 @JsonSerializable(createToJson: false)
 class const NoticeTargetDto({final String? domain, final int? id}) {
   factory NoticeTargetDto.fromJson(Map<String, dynamic> json) =>
@@ -99,9 +99,9 @@ class const UnreadDto({final int? cards, final int? members}) {
       _$UnreadDtoFromJson(json);
 }
 
-/// 消息数据. 把卡片 DTO 转换为 [Notice].
+/// 通知消息仓库, 负责将接口卡片 DTO 转换为领域模型 [Notice].
 ///
-/// 缺少 id 的卡片无法标记已读, 转换时丢弃.
+/// 缺少 `id` 的卡片无法执行已读标记, 因此在转换时直接丢弃.
 class NotificationRepository {
   NotificationRepository(this._api);
 
@@ -125,13 +125,13 @@ class NotificationRepository {
     );
   }
 
-  /// 有未读消息的行数. 消息页标题旁的 "3 条未读" 按行计数, 与列表中的未读圆点一致.
+  /// 返回含未读消息的行数; 消息页标题旁的 "3 条未读" 按行计数, 与列表中的未读圆点保持一致.
   Future<int> unreadCount({CancelToken? cancelToken}) async =>
       (await _api.unread(cancelToken: cancelToken)).cards ?? 0;
 
   Future<void> read(int id) => _api.read(id);
 
-  /// 把分栏 [column] 的全部消息标为已读, 含未加载的页.
+  /// 将分栏 [column] 下的全部消息 (含未加载页) 标记为已读.
   Future<void> readAll(NoticeColumn column) => _api.readAll(column.api);
 
   static Notice? _notice(NoticeCardDto dto) {

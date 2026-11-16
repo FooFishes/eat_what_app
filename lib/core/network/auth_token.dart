@@ -3,10 +3,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'auth_token.g.dart';
 
-/// 登录返回的会话凭证. 请求头名为 [name], 值为 `Bearer <value>`.
+/// 登录返回的会话凭证, 请求头名为 [name], 值为 `Bearer <value>`.
 ///
-/// 头名以登录接口的返回为准, 不写死, 当前部署为 `satoken`.
-/// 头名和值一起保存到安全存储.
+/// 头名以登录接口实际返回为准 (当前后端部署为 `satoken`), 并与凭证值一并存入安全存储.
 class const AuthToken({
   required final String name,
   required final String value,

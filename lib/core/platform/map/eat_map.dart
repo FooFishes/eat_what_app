@@ -38,10 +38,10 @@ class const MapCamera({
   required final double zoom,
 });
 
-/// 标记的图片: 按 [scale] 倍绘制的 PNG.
+/// 地图标记图标, 包含按 [scale] 倍率绘制的 PNG 字节与布局信息.
 ///
-/// [anchor] 是图片里对准坐标的那一点, 用 0–1 的比例表示.
-/// 同一张图应复用同一个实例: 比较标记是否变化时只看是不是同一个实例, 不比较字节.
+/// [anchor] 为对齐地理坐标的归一化锚点 (0–1 比例).
+/// 相同图标应复用同一 [MarkerImage] 实例, 标记变更比对仅校验实例引用而非字节内容.
 class MarkerImage({
   required final Uint8List png,
   required final double scale,
@@ -55,7 +55,7 @@ class const MapMarker({
   required final MarkerImage image,
   final int zIndex = 0,
 }) {
-  /// 两个同 id 的标记看起来是否一样.
+  /// 判断同一 id 的两个标记在视觉与位置上是否完全一致.
   bool sameAs(MapMarker other) =>
       point == other.point &&
       identical(image, other.image) &&
@@ -91,7 +91,7 @@ class const MapPolygon({
   );
 }
 
-/// 从 [before] 变成 [after] 要新增或修改的标记, 和要删掉的标记 id.
+/// 计算从 [before] 更新至 [after] 所需新增或修改的标记列表及待移除的标记 id.
 ({List<MapMarker> upserts, List<String> removed}) diffMarkers(
   List<MapMarker> before,
   List<MapMarker> after,
@@ -110,15 +110,15 @@ class const MapPolygon({
   );
 }
 
-/// 操作一张地图. 地图还没建好时, 调用什么也不做.
+/// 地图控制器, 在地图尚未就绪时调用其方法均为空操作.
 class EatMapController {
   MapHandle? _handle;
 
-  /// 把 [center] 移到可见区域的中心. [zoom] 为 null 时不改缩放级别.
+  /// 将 [center] 移动至可见区域中心, [zoom] 为 null 时保持当前缩放级别.
   Future<void> moveTo(MapLatLng center, {double? zoom, bool animated = true}) =>
       _handle?.moveTo(center, zoom: zoom, animated: animated) ?? Future.value();
 
-  /// 缩放到刚好装下 [points], 四周再各留 [margin].
+  /// 调整视野以完整容纳 [points], 并在四周保留 [margin] 边距.
   Future<void> fit(
     List<MapLatLng> points, {
     EdgeInsets margin = const EdgeInsets.all(40),
@@ -127,7 +127,7 @@ class EatMapController {
       _handle?.fit(points, margin: margin, animated: animated) ??
       Future.value();
 
-  /// 当前的相机. 地图还没建好时为 null.
+  /// 获取当前相机状态, 地图尚未就绪时返回 null.
   Future<MapCamera?> camera() => _handle?.camera() ?? Future.value();
 }
 
@@ -144,18 +144,16 @@ abstract interface class MapHandle {
   Future<MapCamera?> camera();
 }
 
-/// 引擎实现在建好地图后调用, 把自己交给控制器.
+/// 供地图引擎在初始化完成后向 [EatMapController] 绑定底层操作句柄.
 void attachMapHandle(EatMapController controller, MapHandle? handle) =>
     controller._handle = handle;
 
-/// 声明式的地图. 页面每次 build 给出完整的标记和多边形, 由引擎比较新旧后只改变化的部分.
+/// 声明式地图组件, 页面每次 build 传入全量标记与多边形, 由引擎比对差异后增量更新.
 ///
-/// - 跟着地理坐标走的东西 (标记, 范围) 交给地图引擎画, 拖动时和底图一起动.
-///   固定在屏幕上的东西 (搜索框, 按钮, 图钉) 由页面叠在地图上面.
-/// - [insets] 是被浮层盖住的部分. 引擎把 logo 和比例尺移进剩下的可见区域,
-///   相机的中心也指可见区域的中心.
-/// - 只在用户同意隐私政策之后显示: 第一次显示时才初始化百度地图 SDK.
-/// - 引擎画的标记不在语义树里. 地图整体用 [semanticLabel] 朗读, 页面要另给按钮替代.
+/// - 随地理坐标移动的元素 (标记, 多边形) 交由地图引擎绘制; 固定于屏幕的控件 (搜索框, 按钮, 中心图钉) 由页面叠加在其上方.
+/// - [insets] 为被浮层遮挡的区域, 引擎据此将 logo 与比例尺避让至可见区域, 相机中心亦对准可见区域中心.
+/// - 仅可在用户同意隐私政策后渲染, 首次挂载时才会初始化百度地图 SDK.
+/// - 引擎绘制的标记不进入无障碍语义树, 地图整体通过 [semanticLabel] 朗读, 页面需另行提供可交互的按钮替代.
 class EatMap extends ConsumerWidget {
   const new({
     super.key,
@@ -182,15 +180,15 @@ class EatMap extends ConsumerWidget {
   final List<MapMarker> markers;
   final List<MapPolygon> polygons;
 
-  /// 地图停止移动. [byGesture] 为 false 表示由代码移动.
+  /// 地图停止移动回调, [byGesture] 为 false 表示由代码触发移动.
   final void Function(MapCamera camera, bool byGesture)? onCameraIdle;
   final ValueChanged<String>? onMarkerTap;
 
-  /// 鉴权失败, 渲染失败或迟迟加载不出来. 页面据此退回列表.
+  /// 鉴权, 渲染失败或加载超时回调, 页面据此降级回列表视图.
   final VoidCallback? onFailed;
   final String semanticLabel;
 
-  /// 打开地图后多久还没加载完就算失败.
+  /// 地图初始化后判定为加载超时的等待上限.
   static const loadTimeout = Duration(seconds: 8);
 
   @override
@@ -201,15 +199,16 @@ class EatMap extends ConsumerWidget {
   );
 }
 
-/// 一种地图实现. App 是百度地图原生 SDK, Web 是百度地图 JS API GL, 测试里换成假实现.
+/// 地图引擎接口, App 端对应百度地图原生 SDK, Web 端对应百度地图 JS API GL, 测试中可替换为桩实现.
 abstract interface class MapEngine {
-  /// 能否显示地图. 当前平台没有 AK 时为 false, 页面只显示列表.
+  /// 地图引擎是否可用, 当平台未配置 AK 时返回 false, 页面据此仅展示列表.
   bool get available;
 
   Widget build(EatMap map);
 
-  /// [center] 周围 [radius] 米内和 [keyword] 匹配的地点, 最多 20 个. 公交站和地铁站不算.
-  /// 没有结果时返回空列表, 检索失败时抛出异常. 只在 [available] 时调用.
+  /// 检索 [center] 周围 [radius] 米内匹配 [keyword] 的地点 (最多 20 个, 已过滤公交站与地铁站).
+  ///
+  /// 无匹配结果时返回空列表, 检索异常时抛出错误, 仅应在 [available] 为 true 时调用.
   Future<List<MapPoi>> searchNearby(
     String keyword,
     MapLatLng center, {

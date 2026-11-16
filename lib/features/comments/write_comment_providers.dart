@@ -16,13 +16,13 @@ class const ComposerPhoto({
   final String? key,
 });
 
-/// 写评论页的照片和发送状态. 文字在页面的输入框里.
+/// 写评论页的照片列表与发送状态; 文本内容由页面的输入框控制器管理.
 class const Composer({
   final List<ComposerPhoto> photos = const [],
   final bool sending = false,
 });
 
-/// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 @riverpod
 class CommentComposer extends _$CommentComposer {
   @override
@@ -30,7 +30,7 @@ class CommentComposer extends _$CommentComposer {
 
   var _nextId = 0;
 
-  /// 加入照片, 超出上限的部分丢弃.
+  /// 追加待上传照片, 超出数量上限的部分将被截断丢弃.
   void addPhotos(List<PickedPhoto> picked) {
     final room = CommentRules.photoMax - state.photos.length;
     if (room <= 0 || picked.isEmpty) return;
@@ -52,7 +52,7 @@ class CommentComposer extends _$CommentComposer {
     sending: state.sending,
   );
 
-  /// 上传照片并发表. [rootId] 不为 null 时回复该评论, 回复不带照片.
+  /// 上传照片并提交内容. 当 [rootId] 非空时表示回复该评论, 此时不携带照片.
   ///
   /// 失败时抛出 [AppFailure].
   Future<CommentPosted> send(String text, {int? rootId, int? replyToId}) async {

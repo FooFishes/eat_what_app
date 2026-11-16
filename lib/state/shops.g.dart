@@ -8,23 +8,23 @@ part of 'shops.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+/// 指定店铺的资料, 用于菜品详情的店卡和餐厅详情页展示.
 ///
-/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
+/// 离开页面后仍会缓存 5 分钟, 期间重新进入不会重复发起请求.
 
 @ProviderFor(shop)
 final shopProvider = ShopFamily._();
 
-/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+/// 指定店铺的资料, 用于菜品详情的店卡和餐厅详情页展示.
 ///
-/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
+/// 离开页面后仍会缓存 5 分钟, 期间重新进入不会重复发起请求.
 
 final class ShopProvider
     extends $FunctionalProvider<AsyncValue<Shop>, Shop, FutureOr<Shop>>
     with $FutureModifier<Shop>, $FutureProvider<Shop> {
-  /// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+  /// 指定店铺的资料, 用于菜品详情的店卡和餐厅详情页展示.
   ///
-  /// 离开页面后继续缓存一段时间, 期间返回不重新请求.
+  /// 离开页面后仍会缓存 5 分钟, 期间重新进入不会重复发起请求.
   ShopProvider._({required ShopFamily super.from, required int super.argument})
     : super(
         retry: null,
@@ -68,9 +68,9 @@ final class ShopProvider
 
 String _$shopHash() => r'c6f2d60e45fd6a8ea6248a8c91f59cf6fd9ee6ba';
 
-/// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+/// 指定店铺的资料, 用于菜品详情的店卡和餐厅详情页展示.
 ///
-/// 离开页面后继续缓存一段时间, 期间返回不重新请求.
+/// 离开页面后仍会缓存 5 分钟, 期间重新进入不会重复发起请求.
 
 final class ShopFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Shop>, int> {
@@ -83,9 +83,9 @@ final class ShopFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的资料, 用于菜品详情的店卡和餐厅详情.
+  /// 指定店铺的资料, 用于菜品详情的店卡和餐厅详情页展示.
   ///
-  /// 离开页面后继续缓存一段时间, 期间返回不重新请求.
+  /// 离开页面后仍会缓存 5 分钟, 期间重新进入不会重复发起请求.
 
   ShopProvider call(int shopId) => ShopProvider._(argument: shopId, from: this);
 
@@ -189,17 +189,17 @@ final class HubNameFamily extends $Family
   String toString() => r'hubNameProvider';
 }
 
-/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
+/// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
 
 @ProviderFor(distanceTo)
 final distanceToProvider = DistanceToFamily._();
 
-/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
+/// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
 
 final class DistanceToProvider
     extends $FunctionalProvider<String?, String?, String?>
     with $Provider<String?> {
-  /// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
+  /// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
   DistanceToProvider._({
     required DistanceToFamily super.from,
     required GcjPoint? super.argument,
@@ -253,7 +253,7 @@ final class DistanceToProvider
 
 String _$distanceToHash() => r'593b3c7f5beff5a8d864be72c46364ee605225ed';
 
-/// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
+/// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
 
 final class DistanceToFamily extends $Family
     with $FunctionalFamilyOverride<String?, GcjPoint?> {
@@ -266,7 +266,7 @@ final class DistanceToFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 当前位置到 [point] 的距离文字. 没有定位或用户离校区过远时为 null.
+  /// 格式化当前位置到 [point] 的距离文字; 若没有定位或用户离校区过远则返回 null.
 
   DistanceToProvider call(GcjPoint? point) =>
       DistanceToProvider._(argument: point, from: this);

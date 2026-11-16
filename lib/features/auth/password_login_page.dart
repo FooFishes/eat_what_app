@@ -17,12 +17,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 密码登录页. 账号为手机号, 用户名或邮箱, 只有设置过密码的账号可用.
+/// 密码登录页, 支持使用手机号, 用户名或邮箱登录 (仅限已设置密码的账号).
 ///
-/// 出错时就地提示, 不清空账号输入. 服务端不区分账号不存在, 没设过密码和密码错误,
-/// 因此页面常驻说明没设过密码的用验证码登录.
-/// 同一账号密码错误次数过多后, 服务端要求先完成人机验证.
-/// 不提供找回密码, 忘记密码时改用验证码登录.
+/// 登录失败时就地提示且保留账号输入. 由于服务端不区分账号不存在, 未设密码与密码错误, 页面常驻引导未设密码的用户改用验证码登录.
+/// 同一账号连续输错密码达到上限后, 服务端会要求先完成人机验证. 页面不提供找回密码, 忘记密码时需改用验证码登录.
 class PasswordLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}});
 
@@ -56,13 +54,13 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
     super.dispose();
   }
 
-  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
+  /// 在当前页面弹出政策同意对话框; 若页面已卸载则按拒绝处理.
   Future<bool> _presentConsent() async {
     if (!mounted) return false;
     return showConsentDialog(context);
   }
 
-  /// 在本页弹出人机验证. 页面已关闭时按用户取消处理.
+  /// 在当前页面弹出人机验证; 若页面已卸载则按取消处理.
   Future<CaptchaOutcome> _presentCaptcha(Future<CaptchaParams?> params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);
@@ -87,9 +85,9 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
         );
   }
 
-  /// 切换到验证码登录.
+  /// 切换至验证码登录.
   ///
-  /// 从手机号登录页 push 进入时返回上一页. 从登录页进入或直接打开时, 换成手机号登录页.
+  /// 若当前页面是从手机号登录页 push 进入的, 则直接返回上一页; 若从登录页进入或由深链直接打开, 则替换为手机号登录页.
   void _useCode() {
     final matches = GoRouter.of(context)
         .routerDelegate

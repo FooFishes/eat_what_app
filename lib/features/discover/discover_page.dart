@@ -47,10 +47,9 @@ import 'package:go_router/go_router.dart';
 
 /// 发现页.
 ///
-/// - 舞台: 转盘, 一格一家推荐的美食店. 拖动或点击 "换一个" 切换, 点击 "就它了" 进入餐厅详情.
-///   "更多" 里可以选 "不想去这家".
-/// - 抽屉: 分类栏 ("美食" "甜点饮品" 和待接入的专题) 和推荐店列表. 分类栏只影响列表, 不影响转盘.
-/// - 顶栏: 左侧为地点, 饭点和场景, 右侧为搜索和消息.
+/// - 舞台: 美食店推荐转盘, 支持拖动或点击 "换一个" 切换店铺, 点击 "就它了" 进入餐厅详情, 或标记 "不想去这家".
+/// - 抽屉: 包含分类栏 ("美食", "甜点饮品" 及待接入的专题) 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
+/// - 顶栏: 左侧显示当前地点, 饭点与用餐场景, 右侧为搜索和消息入口.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -209,10 +208,9 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
     );
   }
 
-  /// 下拉刷新: 重新请求抽屉里当前这一栏和未读数.
+  /// 下拉刷新当前抽屉分类列表与未读消息数.
   ///
-  /// 转盘上有店时不重新请求转盘, 换店由 "换一个" 完成.
-  /// 转盘为空, 加载失败或显示上一次的批次时, 同时重新请求转盘.
+  /// 当转盘已有正常推荐数据时不刷新转盘 (切店由 "换一个" 完成); 仅在转盘为空, 加载失败或正展示过期缓存批次时一并重新请求转盘.
   Future<void> _refresh() async {
     ref.read(unreadCountProvider.notifier).refresh();
     final queue = ref.read(turntableQueueProvider).value;
@@ -334,9 +332,9 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// "在哪吃" 面板: 校区, 饭点, 去店里吃还是点外卖三组单选, 另有 "按现在的时间" 选项.
+/// "在哪吃" 切换面板, 包含校区, 饭点与用餐场景三组单选以及 "按现在的时间" 快捷操作.
 ///
-/// 面板里的选择先暂存, 点击 "确定" 才生效; 直接关闭面板则不改动.
+/// 面板内的变更仅在本地暂存, 点击 "确定" 后才生效, 直接关闭则放弃修改.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
     showPanel<void>(context, builder: (panel) => const _PlacePanel());
 
@@ -455,28 +453,27 @@ class _GroupTitle extends StatelessWidget {
   }
 }
 
-/// 发现页舞台: 转盘, 店名, 第一道招牌菜和价格, 距离 (或商圈) 和推荐率, 批次圆点,
-/// 以及 "换一个" "就它了" 和 "更多" 按钮.
+/// 发现页舞台区域, 展示转盘, 店铺及招牌菜信息, 距离或商圈, 推荐率, 批次圆点以及操作按钮.
 ///
-/// 盘子依次放第一道招牌菜的照片, 门头照片, 都没有时是 `mist` 底. 招牌菜摘要不含封面取景, 按居中的短边内切圆显示.
+/// 盘中照片优先取首道招牌菜图, 其次取门头图, 均无图时显示 `mist` 底色; 招牌菜摘要不含封面裁剪参数, 按居中短边内切圆展示.
 class _TurntableStage extends ConsumerWidget {
   const new({required this.feed});
 
   final TurntableFeed feed;
 
-  /// 手机上舞台大字 (菜名或店名) 一行的最大宽度: 四个字的 40px 字号. 更宽时文字右端压到盘沿上.
+  /// 手机端舞台大字单行最大宽度 (按 40px 字号四字宽度计), 超出时右端会遮挡盘沿.
   static const _nameMaxWidth = 160.0;
 
-  /// 舞台下方文字和按钮这一栏底边离抽屉顶边的距离.
+  /// 舞台底部信息栏与抽屉顶边之间的间距.
   static double _columnGap(bool wide) => wide ? 40 : 22;
 
   /// 手机上盘子 (连盘沿) 与顶栏和按钮之间至少留出的距离.
   static const _plateGap = EatSpace.s10;
 
-  /// 价格离菜名的距离. 菜名的行高很紧, 这里比各行之间留得大, 才不显得贴在一起.
+  /// 价格与菜名之间的间距. 由于菜名行高较紧凑, 需预留更大间距以避免视觉粘连.
   static const _priceGap = EatSpace.s14;
 
-  /// 菜名下方价格, 店名, 距离和推荐率各行之间的距离, 各行一致.
+  /// 菜名下方各信息行之间的统一垂直间距.
   static const _factGap = EatSpace.s8;
 
   @override
@@ -626,7 +623,7 @@ class _TurntableStage extends ConsumerWidget {
                                       color: palette.foreground,
                                     ),
                                   ),
-                                  // 价格属于招牌菜, 紧跟菜名. 店名和店的距离, 推荐率另起一组, 用前置图标标明各是什么.
+                                  // 价格归属招牌菜并紧随菜名之后; 店名, 距离与推荐率另起分组并以图标区分.
                                   if (price != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
@@ -749,9 +746,10 @@ class _TurntableStage extends ConsumerWidget {
   }
 }
 
-/// 舞台上的 "不想去这家" 按钮: 确认后标记, 不弹菜单.
+/// 处理 "不想去这家" 操作, 弹窗确认后直接标记屏蔽.
 ///
-/// 游客点了弹出登录拦截. 标记暂时不能撤销, 所以先确认. 标记成功后这家店从转盘和抽屉列表里去掉, 30 天内不再推荐.
+/// 游客触发时会弹出登录拦截; 由于当前不支持撤销屏蔽, 须先经用户二次确认.
+/// 标记成功后将店铺从转盘和抽屉列表中移除, 且 30 天内不再推荐.
 Future<void> _dismissShop(
   BuildContext context,
   WidgetRef ref,
@@ -820,7 +818,7 @@ Future<void> _dismissShop(
   }
 }
 
-/// 当前地点, 饭点和场景下一家店都没有时的舞台: 插画, 说明文字和 "发布一道菜" 按钮.
+/// 当前地点, 饭点与场景下无推荐店铺时的空舞台, 展示插画, 引导文案和 "发布一道菜" 按钮.
 class _EmptyStage extends ConsumerWidget {
   const new();
 
@@ -910,7 +908,7 @@ class _StageFailure extends StatelessWidget {
   }
 }
 
-/// 抽屉中 [kind] 一栏的推荐店, 滚动到底部时加载下一批. 点一行进入餐厅详情.
+/// 抽屉中 [kind] 分类的推荐店铺列表, 支持触底分页加载与点击跳转餐厅详情.
 class _ShopList extends ConsumerWidget {
   const new({required this.kind});
 
@@ -975,10 +973,9 @@ class _ShopList extends ConsumerWidget {
   }
 }
 
-/// 舞台上带前置图标的一项信息, 图标颜色和大小跟着文字.
+/// 舞台上带前置图标的信息条目, 图标尺寸与颜色跟随文字样式.
 ///
-/// 文字换行时图标对齐第一行.
-/// 允许两行时, 第二行不到第一行的三分之一就不换行, 在第一行末尾省略, 免得第二行大片留白.
+/// 文字换行时图标与首行对齐; 若允许两行且第二行宽度不足首行的三分之一, 则限制为单行并在末尾省略, 避免次行大面积留白.
 class _StageFact extends StatelessWidget {
   const new(this.icon, this.text, {required this.style, this.maxLines = 1});
 
@@ -1022,7 +1019,7 @@ class _StageFact extends StatelessWidget {
     );
   }
 
-  /// 文字正好排成两行, 且第二行不到第一行的三分之一宽.
+  /// 判断文本在指定宽度下是否恰好排成两行且末行不足首行宽度的三分之一.
   bool _wrapsShort(BuildContext context, TextScaler scaler, double width) {
     final painter = TextPainter(
       text: TextSpan(text: text, style: style),

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:eat/domain/models/geo.dart';
 
-/// 坐标转换, 距离计算和距离文字.
+/// 坐标转换, 距离计算与距离文本格式化工具.
 ///
 /// - WGS-84 转 GCJ-02 使用公开的偏移算法. 境外坐标不做偏移, 原样返回.
 /// - 接口的坐标都是 GCJ-02, 不需要反向转换.

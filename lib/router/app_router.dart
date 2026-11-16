@@ -56,12 +56,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_router.g.dart';
 
-/// 路由表.
+/// 应用路由配置.
 ///
-/// - 三个主页面是 `StatefulShellRoute` 的三个分支. 切换分支时各自的页面状态保留, 导航悬浮在页面上方.
-/// - 其余页面放在根导航器上, 覆盖导航. 详情页和流程页不显示导航.
-/// - 页面的开放程度标在 `metadata` 上: 谁都能进的标 [publicRoute], 游客能进的标 [guestRoute], 其余不标.
-///   守卫 [resolveRedirect] 把进不去的人导向登录页.
+/// - 三个主页面是 `StatefulShellRoute` 的三个分支, 切换分支时保留各自页面状态, 导航栏悬浮在页面上方.
+/// - 其余页面挂载于根导航器之上并覆盖导航栏, 详情页和流程页不显示导航.
+/// - 页面的访问权限标记在 `metadata` 上: 公开页面使用 [publicRoute], 游客可访问页面使用 [guestRoute],
+///   其余默认仅限登录用户. 守卫 [resolveRedirect] 会将无权访问的请求重定向至登录页.
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
   // push 打开的页面也写入 Web 地址栏, 使地址栏始终对应当前页面, 刷新或复制链接都回到同一页.
@@ -153,19 +153,19 @@ GoRouter appRouter(Ref ref) {
           sso: DeepLinks.ssoResultOf(state.uri.queryParameters),
         ),
       ),
-      // 认证邮件里的链接. 不作为认证页的子路由, 否则返回时先回到认证页并触发它的刷新.
+      // 认证邮件中的验证链接. 该路由不作为认证页的子路由, 否则返回时会先退回认证页并触发页面刷新.
       GoRoute(
         path: Paths.verifyEmail,
         builder: (_, state) =>
             VerifyEmailPage(token: state.uri.queryParameters['token']),
       ),
-      // Web 统一认证的回跳地址, 由本路由转换为认证页地址. App 的回跳由认证会话收下, 不经过路由.
+      // Web 统一认证的回调地址, 由本路由重定向至认证页地址. 原生端回调由认证会话直接接收, 不经过路由.
       GoRoute(
         path: Paths.ssoCallback,
         redirect: (_, state) =>
             DeepLinks.ssoLocation(state.uri.queryParameters),
       ),
-      // 游客的设置页只有 "个性化" 和 "关于". 子页面继承设置页的标记, 只给登录用户的子页面要标回 signedIn.
+      // 游客访问设置页时仅可见 "个性化" 和 "关于". 由于子路由会继承父路由权限, 仅限登录用户的子页面需显式覆盖为 [signedInRoute].
       GoRoute(
         path: Paths.settings,
         metadata: guestRoute,
@@ -303,7 +303,7 @@ GoRouter appRouter(Ref ref) {
         builder: (_, _) => const SearchPage(),
       ),
       GoRoute(path: Paths.inbox, builder: (_, _) => const InboxPage()),
-      // 专题页不作为往期专题的子路由. 作为子路由时, 从菜品详情或消息打开专题页会在下面叠一层往期专题, 返回时先回到往期专题.
+      // 专题页不作为往期专题的子路由, 否则从菜品详情或消息进入时会多压入一层往期专题页, 导致返回路径多出一级.
       GoRoute(
         path: Paths.topics,
         metadata: guestRoute,
@@ -411,9 +411,9 @@ GoRouter appRouter(Ref ref) {
   return router;
 }
 
-/// 匹配结果中页面的开放程度. 子路由继承父路由的标记, 自己标了时以自己的为准.
+/// 解析匹配结果中页面的访问权限. 子路由继承父路由权限, 若子路由自身已显式声明则以其为准.
 ///
-/// 地址不能匹配路由表时为 null.
+/// 若地址无法匹配路由表则返回 null.
 RouteAccess? _accessOf(RouteMatchList match) {
   if (match.isEmpty || match.isError) return null;
   var metadata = <String, dynamic>{};
@@ -428,14 +428,14 @@ RouteAccess? _accessOf(RouteMatchList match) {
   return RouteAccess.of(metadata);
 }
 
-/// 子路由使用相对路径: `/login` 下的 `/login/phone` 写作 `phone`.
+/// 提取相对父路由的子路径, 例如将 `/login` 下的 `/login/phone` 转为 `phone`.
 String _child(String path, String parent) => path.substring(parent.length + 1);
 
-/// 地址中的数字 id. 不是数字时 (如手动拼写的链接) 为 null, 页面显示 "页面不存在".
+/// 解析路径参数中的数字 id. 若参数非有效数字 (如手动拼写的链接) 则返回 null, 由路由渲染 "页面不存在".
 int? _idOf(GoRouterState state, String name) =>
     int.tryParse(state.pathParameters[name] ?? '');
 
-/// 登录各页之间原样传递的查询参数.
+/// 提取登录流程各页面间需透传的查询参数.
 Map<String, String> _loginQuery(GoRouterState state) => {
   for (final key in const ['from', 'expired'])
     key: ?state.uri.queryParameters[key],

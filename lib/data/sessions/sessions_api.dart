@@ -12,13 +12,13 @@ abstract final class SessionsEndpoints {
   static const sessions = '/auth/sessions';
 }
 
-/// 接口分组 DeviceSessions: 登录设备的列表, 下线单个设备和其他设备.
+/// 登录设备会话接口 (`DeviceSessions` 分组), 提供设备列表查询与下线单个或其余设备.
 class SessionsApi {
   SessionsApi(this._client);
 
   final ApiClient _client;
 
-  /// 当前账号已登录的设备, 按登录时间倒序. [cursor] 是上一页最后一项的 `sessionId`.
+  /// 分页查询当前账号的已登录设备, 按登录时间倒序排列; [cursor] 为上一页末尾项的 `sessionId`.
   Future<DeviceSessionPageDto> list({
     String? cursor,
     int size = 50,
@@ -35,7 +35,7 @@ class SessionsApi {
   Future<void> revoke(String sessionId) =>
       _client.delete(SessionsEndpoints.session(sessionId));
 
-  /// 下线本机以外的所有设备. 本机的会话不变.
+  /// 下线除本机以外的所有其他设备, 当前设备会话保持有效.
   Future<void> revokeOthers() => _client.post(SessionsEndpoints.revokeOthers);
 }
 
@@ -48,10 +48,9 @@ class const DeviceSessionPageDto({
       _$DeviceSessionPageDtoFromJson(json);
 }
 
-/// 一台已登录的设备. [device] 为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`.
+/// 已登录设备信息, [device] 取值为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`.
 ///
-/// [name] 是登录时上报的设备名, 没有时服务端从 User-Agent 推断 (如 "Chrome · macOS"), 推断不出为 null.
-/// [issuedAt] 是登录时间, [lastActiveAt] 是最近使用时间, 都是 ISO 8601.
+/// [name] 为登录时上报的设备名称, 若未上报则由服务端从 User-Agent 推断 (如 "Chrome · macOS"), 无法推断时为 null. [issuedAt] 与 [lastActiveAt] 分别为登录时间与最近活跃时间, 均为 ISO 8601 格式.
 @JsonSerializable(createToJson: false)
 class const DeviceSessionDto({
   final String? sessionId,

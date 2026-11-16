@@ -14,7 +14,7 @@ MapEngine createMapEngine(AppConfig config) =>
       _ => '',
     });
 
-/// Android 和 iOS 上的百度地图, 经本地插件 `eat_baidu_map` 调原生 SDK.
+/// Android 与 iOS 端的百度地图实现, 通过本地插件 `eat_baidu_map` 调用原生 SDK.
 class _NativeMapEngine implements MapEngine {
   _NativeMapEngine(this.apiKey);
 
@@ -33,7 +33,7 @@ class _NativeMapEngine implements MapEngine {
     required int radius,
   }) async {
     await BaiduMapSdk.initialize(apiKey);
-    // 鉴权完成前发出的检索拿不到 token, 直接失败.
+    // 鉴权尚未完成时发起检索会因缺少 token 而直接失败, 因此先等待鉴权结果.
     final (code, message) = await BaiduMapSdk.authResult;
     if (code != 0) throw StateError('百度地图鉴权失败: $code $message');
     final places = await BaiduPlaceSearch.searchNearby(
@@ -70,7 +70,7 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
   var _loaded = false;
   var _failed = false;
 
-  /// 已经发给原生的状态, 用来和下一次 build 比较.
+  /// 已同步至原生侧的视图状态, 用于与后续 build 的最新属性做增量比对.
   var _sentMarkers = const <MapMarker>[];
   List<MapPolygon>? _sentPolygons;
   EdgeInsets? _sentInsets;
@@ -120,7 +120,7 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
     _sync();
   }
 
-  /// 把这次 build 的标记, 多边形和内边距里变了的部分发给原生.
+  /// 计算当前 build 中内边距, 标记与多边形的增量变化, 并仅同步变更部分至原生侧.
   void _sync() {
     final c = _controller;
     if (c == null) return;

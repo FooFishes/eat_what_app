@@ -5,9 +5,9 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 换头像时调整照片: 拖动, 双指缩放或用滑条, 把脸放进圆圈. 手势和 "调整照片" 相同.
+/// 更换头像时的裁切页面, 支持拖动, 双指缩放或滑条调节取景区域, 交互手势与 "调整照片" 一致.
 ///
-/// 点 "完成" 返回取景. 页面依赖内存中的照片, 不进路由表, 由编辑资料页通过 `Navigator.push` 打开.
+/// 点击 "完成" 返回裁切结果; 因页面依赖内存图片数据, 不纳入路由表, 由编辑资料页通过 `Navigator.push` 打开.
 class AvatarCropPage extends StatefulWidget {
   const new({
     super.key,

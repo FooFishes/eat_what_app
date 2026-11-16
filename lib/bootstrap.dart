@@ -25,14 +25,14 @@ Future<void> bootstrap() async {
     retry: retryOnNetworkFailure,
   );
   await container.read(sessionProvider.notifier).restore();
-  // 崩溃上报要在首帧前启动, 才能收到启动过程中的错误. 本机没有同意记录时不启动.
+  // 崩溃上报需在首帧前启动, 才能捕获启动过程中的错误. 若本机尚无同意记录则不启动.
   await container.read(consentedServicesProvider.notifier).start();
-  // 导航的液态玻璃用自定义着色器绘制. 首帧前载入着色器, 避免导航先闪一帧白.
+  // 导航的液态玻璃采用自定义着色器绘制. 首帧前预载着色器, 避免导航栏出现白屏闪烁.
   await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   runApp(
     UncontrolledProviderScope(
       container: container,
-      // 玻璃默认跟随系统的深浅色. 应用固定浅色主题, 因此改为读取主题, 否则系统开深色模式时玻璃会变暗.
+      // 液态玻璃默认跟随系统深浅色. 由于应用固定浅色主题, 此处改为读取应用主题亮度, 避免系统开启深色模式时玻璃变暗.
       child: LiquidGlassWidgets.wrap(
         brightnessResolver: Theme.maybeBrightnessOf,
         child: const EatApp(),
@@ -41,7 +41,7 @@ Future<void> bootstrap() async {
   );
 }
 
-/// 内置字体, 图标和 emoji 图片的许可证. OFL, Apache-2.0 和 CC BY 都要求随资源分发许可证或署名, 注册后显示在系统的许可证页中.
+/// 注册内置字体, 图标和 emoji 图片的许可证. OFL, Apache-2.0 和 CC BY 均要求随资源分发协议或署名, 注册后将展示在系统许可证页中.
 Stream<LicenseEntry> _assetLicenses() async* {
   const assets = {
     'Inter': 'assets/fonts/OFL-Inter.txt',

@@ -16,7 +16,7 @@ class CacheStore {
 
   final KvStore _kv;
 
-  /// 读取一条记录. 写入时间超过 [maxAge] 的记录视为不存在.
+  /// 读取缓存记录, 若写入时间已超过 [maxAge] 则视为过期并返回 null.
   Future<String?> read(String group, String key, {Duration? maxAge}) async {
     try {
       final raw = await _kv.read(_key(group, key));
@@ -50,7 +50,7 @@ class CacheStore {
     }
   }
 
-  /// 把 [key] 移到最近访问的一端. 传入 [maxEntries] 时同时淘汰最久未访问的记录.
+  /// 将 [key] 更新至 LRU 索引末尾 (最近访问); 传入 [maxEntries] 时同步淘汰最久未访问的超出记录.
   Future<void> _touch(String group, String key, int? maxEntries) async {
     final indexKey = 'cache.$group._index';
     final raw = await _kv.read(indexKey);

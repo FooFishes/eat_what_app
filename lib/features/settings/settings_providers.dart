@@ -30,7 +30,7 @@ part 'settings_providers.g.dart';
 /// 验证码的重发间隔.
 const _resendInterval = Duration(seconds: 60);
 
-/// 发给本账号绑定手机的验证码的用途. 不同用途的验证码不通用, 重发倒计时也分开.
+/// 发送至当前账号绑定手机的验证码用途. 不同用途的验证码互不通用, 重发倒计时也相互独立.
 enum AccountCodePurpose {
   /// 设置用户名, 设置或修改密码.
   password,
@@ -39,9 +39,9 @@ enum AccountCodePurpose {
   deleteAccount,
 }
 
-/// 发给本账号绑定手机的验证码.
+/// 发送至账号绑定手机的验证码状态.
 ///
-/// [resendAt] 之前不能重发. [failure] 是最近一次发送失败的原因.
+/// 在 [resendAt] 之前不可重发. [failure] 记录最近一次发送失败的原因.
 class const AccountCodeState({
   final DateTime? resendAt,
   final bool sending = false,
@@ -54,7 +54,7 @@ class AccountCode extends _$AccountCode {
   AccountCodeState build(AccountCodePurpose purpose) =>
       const AccountCodeState();
 
-  /// 完成人机验证后发送. 用户关闭验证时不发送, 不开始倒计时.
+  /// 完成人机验证后发送验证码. 若用户关闭验证则放弃发送, 也不启动倒计时.
   Future<void> send(CaptchaPresenter present) async {
     if (state.sending) return;
     state = AccountCodeState(resendAt: state.resendAt, sending: true);
@@ -78,9 +78,9 @@ class AccountCode extends _$AccountCode {
   }
 }
 
-/// 隐私设置: 是否公开关注列表和粉丝列表.
+/// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时立即更新本地值, 请求失败时恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
 @riverpod
 class Privacy extends _$Privacy {
   @override
@@ -94,7 +94,7 @@ class Privacy extends _$Privacy {
         .privacy(me, cancelToken: ref.cancelToken());
   }
 
-  /// 成功返回 null, 失败时退回原值并返回失败原因.
+  /// 成功时返回 null, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set(PrivacySettings next) async {
     final before = state.value;
     if (before == null) return null;
@@ -109,7 +109,7 @@ class Privacy extends _$Privacy {
   }
 }
 
-/// 个性化推荐开关. 关闭后推荐不参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
 @riverpod
 class Personalized extends _$Personalized {
   @override
@@ -117,7 +117,7 @@ class Personalized extends _$Personalized {
       .watch(userRepositoryProvider)
       .personalized(cancelToken: ref.cancelToken());
 
-  /// 成功返回 null, 失败时退回原值并返回失败原因.
+  /// 成功时返回 null, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set({required bool personalized}) async {
     final before = state.value;
     if (before == null) return null;
@@ -134,14 +134,14 @@ class Personalized extends _$Personalized {
   }
 }
 
-/// 使用统计开关. 关闭时服务端删除已收集的记录.
+/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
 @riverpod
 class UsageStatsSetting extends _$UsageStatsSetting {
   @override
   Future<UsageStats> build() =>
       ref.watch(telemetryApiProvider).consent(cancelToken: ref.cancelToken());
 
-  /// 成功返回 null, 并采用服务端返回的开关. 失败时退回原值并返回失败原因.
+  /// 成功时返回 null 并采用服务端返回的开关状态, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set({required bool enabled}) async {
     final before = state.value;
     if (before == null) return null;
@@ -159,7 +159,7 @@ class UsageStatsSetting extends _$UsageStatsSetting {
   }
 }
 
-/// 屏蔽的人. [moreError] 是加载下一页失败的原因.
+/// 已屏蔽用户列表的分页状态. [moreError] 记录加载下一页失败的原因.
 class const BlockedPages({
   required final Paged<UserBrief> pages,
   final AppFailure? moreError,
@@ -196,7 +196,7 @@ class BlockedUsers extends _$BlockedUsers {
     }
   }
 
-  /// 解除屏蔽. 成功后从列表中移除. 失败时抛出 [AppFailure].
+  /// 解除对 [user] 的屏蔽, 成功后将其从列表中移除, 失败时抛出 [AppFailure].
   Future<void> unblock(UserBrief user) async {
     await ref.read(userRepositoryProvider).setBlocked(user.id, blocked: false);
     final current = state.value;
@@ -216,7 +216,7 @@ class BlockedUsers extends _$BlockedUsers {
   }
 }
 
-/// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+/// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
 @riverpod
 Future<String?> feedbackSubject(Ref ref, {int? dishId, int? shopId}) async {
   final token = ref.cancelToken();
@@ -235,7 +235,7 @@ Future<String?> feedbackSubject(Ref ref, {int? dishId, int? shopId}) async {
   return null;
 }
 
-/// 已登录的设备. 本机排在最前.
+/// 当前账号已登录的设备列表, 本机设备排在最前.
 @riverpod
 class DeviceSessions extends _$DeviceSessions {
   @override
@@ -243,12 +243,12 @@ class DeviceSessions extends _$DeviceSessions {
       .watch(sessionsRepositoryProvider)
       .list(cancelToken: ref.cancelToken());
 
-  /// 使一台设备下线. 成功后从列表中移除. 失败时抛出 [AppFailure].
+  /// 使指定设备下线并在成功后将其从列表中移除, 失败时抛出 [AppFailure].
   Future<void> revoke(DeviceSession device) async {
     try {
       await ref.read(sessionsRepositoryProvider).revoke(device.id);
     } on AppFailure catch (e) {
-      // 服务端找不到该设备, 说明它已经下线, 例如在其他设备上被下线. 结果与下线成功相同.
+      // 服务端找不到该设备时说明其已处于下线状态 (例如已在其他端踢下线), 视为操作成功.
       if (e.code != BizCodes.opFailed) rethrow;
     }
     final devices = state.value;
@@ -259,14 +259,14 @@ class DeviceSessions extends _$DeviceSessions {
     ]);
   }
 
-  /// 使本机以外的所有设备下线, 成功后重新读取列表. 本机的会话不变. 失败时抛出 [AppFailure].
+  /// 使本机以外的所有设备下线并刷新列表, 本机会话保持不变, 失败时抛出 [AppFailure].
   Future<void> revokeOthers() async {
     await ref.read(sessionsRepositoryProvider).revokeOthers();
     if (ref.mounted) ref.invalidateSelf();
   }
 }
 
-/// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
 @riverpod
 class PushSettings extends _$PushSettings {
   @override
@@ -274,7 +274,7 @@ class PushSettings extends _$PushSettings {
       .watch(pushRepositoryProvider)
       .settings(cancelToken: ref.cancelToken());
 
-  /// 成功返回 null, 并采用服务端返回的全部开关. 失败时退回原值并返回失败原因.
+  /// 成功时返回 null 并采用服务端返回的全部开关状态, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set(
     PushCategory category, {
     required bool enabled,
@@ -300,22 +300,22 @@ class PushSettings extends _$PushSettings {
   }
 }
 
-/// 换绑手机的进度.
+/// 换绑手机号的流程状态.
 ///
-/// 换绑分三步: 验证当前号码, 验证新号码, 提交. 服务端在给新号码发码时校验当前号码的验证码,
-/// 通过后 10 分钟内给新号码发码和提交都不再需要它.
+/// 换绑分为验证当前号码, 验证新号码, 提交三步. 服务端会在给新号码发码时校验当前号码的验证码,
+/// 通过后 10 分钟内重发新号码验证码或提交换绑均不再需要该验证码.
 class const PhoneChangeState({
-  /// 用户填的当前号码验证码, 等待服务端校验.
+  /// 用户输入的当前号码验证码, 等待随新号码发码请求一并校验.
   final String? oldCode,
 
-  /// 当前号码已通过服务端校验.
+  /// 当前号码是否已通过服务端校验.
   final bool oldVerified = false,
 }) {
-  /// 已离开第一步, 正在验证新号码.
+  /// 是否已进入验证新号码阶段.
   bool get verifyingNew => oldCode != null || oldVerified;
 }
 
-/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
+/// 换绑和补绑手机号的业务控制器. 补绑仅用于尚未绑定手机的账号, 无需验证当前号码.
 @riverpod
 class PhoneChange extends _$PhoneChange {
   @override
@@ -323,20 +323,20 @@ class PhoneChange extends _$PhoneChange {
 
   UserRepository get _users => ref.read(userRepositoryProvider);
 
-  /// 第一步: 给当前绑定的号码发验证码. 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  /// 向当前绑定的手机号发送验证码. 返回 false 表示用户取消了人机验证, 失败时抛出 [AppFailure].
   Future<bool> sendOldCode(CaptchaPresenter present) =>
       ref.read(captchaGateProvider).run(present, _users.sendOldMobileCode);
 
-  /// 填好当前号码的验证码, 进入第二步. 验证码由服务端在给新号码发码时校验.
+  /// 记录用户输入的当前号码验证码并进入下一步, 该验证码将在给新号码发码时由服务端校验.
   void enterOldCode(String code) => state = PhoneChangeState(oldCode: code);
 
-  /// 回到第一步, 重新验证当前号码.
+  /// 重置状态, 回到第一步重新验证当前号码.
   void restart() => state = const PhoneChangeState();
 
-  /// 第二步: 给新号码发验证码. 当前号码还没通过校验时一并提交它的验证码.
+  /// 向新手机号发送验证码, 若当前号码尚未通过校验则一并提交其验证码.
   ///
-  /// 当前号码的验证码错误 ([BizCodes.wrongCode]) 或校验已过期 ([BizCodes.paramMissing]) 时回到第一步.
-  /// 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  /// 若当前号码验证码错误 ([BizCodes.wrongCode]) 或校验已过期 ([BizCodes.paramMissing]), 则自动重置回第一步.
+  /// 返回 false 表示用户取消了人机验证, 失败时抛出 [AppFailure].
   Future<bool> sendNewCode(CaptchaPresenter present, String mobile) async {
     final oldCode = state.oldVerified ? null : state.oldCode;
     try {
@@ -363,9 +363,9 @@ class PhoneChange extends _$PhoneChange {
     }
   }
 
-  /// 第三步: 提交新号码和它的验证码, 成功后刷新账号信息. 其他设备要重新登录, 本机不受影响.
+  /// 提交新手机号与验证码完成换绑, 成功后刷新当前账号信息 (本机保持登录, 其他设备需重新登录).
   ///
-  /// 当前号码的校验已过期 ([BizCodes.stateNotAllowed]) 时回到第一步. 失败时抛出 [AppFailure].
+  /// 若当前号码的校验已过期 ([BizCodes.stateNotAllowed]), 则重置回第一步. 失败时抛出 [AppFailure].
   Future<void> commit(String mobile, String code) async {
     try {
       await _users.commitMobileChange(mobile, code);
@@ -376,27 +376,27 @@ class PhoneChange extends _$PhoneChange {
     await ref.read(sessionProvider.notifier).refreshUser();
   }
 
-  /// 补绑: 给 [mobile] 发验证码. 返回 false 表示用户关闭了人机验证. 失败时抛出 [AppFailure].
+  /// 为未绑定手机的账号向 [mobile] 发送补绑验证码. 返回 false 表示用户取消了人机验证, 失败时抛出 [AppFailure].
   Future<bool> sendBindCode(CaptchaPresenter present, String mobile) => ref
       .read(captchaGateProvider)
       .run(present, (ticket) => _users.sendBindCode(mobile, ticket));
 
-  /// 补绑: 提交 [mobile] 和它的验证码, 成功后刷新账号信息. 失败时抛出 [AppFailure].
+  /// 提交 [mobile] 与验证码完成补绑, 成功后刷新账号信息, 失败时抛出 [AppFailure].
   Future<void> bind(String mobile, String code) async {
     await _users.bindMobile(mobile, code);
     await ref.read(sessionProvider.notifier).refreshUser();
   }
 }
 
-/// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
+/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
 @riverpod
 class FeedbackSender extends _$FeedbackSender {
   @override
   bool build() => false;
 
-  /// [uploaded] 记录每张截图上传后的 key, 以截图的字节为键. 重试时复用这些 key, 不重复上传.
+  /// 提交反馈文本与截图, 失败时抛出 [AppFailure].
   ///
-  /// 失败时抛出 [AppFailure].
+  /// [uploaded] 以截图字节为键缓存已上传的存储 key, 重试时复用该 key 而不再重复上传.
   Future<void> send({
     required String text,
     required List<Uint8List> screenshots,

@@ -11,11 +11,12 @@ abstract final class PublishRules {
 
   static const priceMax = 999.0;
 
-  /// 去掉所有空白字符后的名字.
+  /// 去除名称中的所有空白字符.
   static String compactName(String name) => name.replaceAll(RegExp(r'\s'), '');
 
-  /// 菜名查重用的名字: 去掉所有空白字符并转为小写, 与后端的菜名判重一致.
-  /// 同一家店中查重名字相同即视为重名.
+  /// 生成用于查重的菜名键 (去除所有空白字符并转为小写), 判重逻辑与后端保持一致.
+  ///
+  /// 同一家店铺内该键值相同即视为重名.
   static String dishNameKey(String name) => compactName(name).toLowerCase();
 
   /// 解析价格. 合法范围为 0–999 元, 最多一位小数. 不合法或为空时返回 null.

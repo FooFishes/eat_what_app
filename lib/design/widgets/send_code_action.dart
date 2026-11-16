@@ -4,12 +4,11 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:material_ui/material_ui.dart' show CircularProgressIndicator;
 
-/// 验证码输入框右侧的发送操作, 放在 `EatFormField.trailing`.
+/// 放置于 `EatFormField.trailing` 的验证码发送操作按钮.
 ///
-/// - 可发送时是文字按钮 "获取验证码": `ink` 色 600 字重, 不带底色和胶囊. 点击区域高 44px.
-/// - [onPressed] 为 null 时文字为 `disabled-fg`, 不可点.
-/// - [sending] 时文字换成进度圈, 宽度不变.
-/// - [secondsLeft] 大于 0 时换成 "N 秒后重发" 倒计时.
+/// - 可发送状态下展示 600 字重 `ink` 色的 "获取验证码" 纯文字按钮 (无底色与胶囊, 点击区域高 44px).
+/// - 当 [onPressed] 为 null 时文字变为 `disabled-fg` 且不可点击.
+/// - 当 [sending] 为 true 时替换为等宽度的加载进度圈; 当 [secondsLeft] 大于 0 时展示 "N 秒后重发" 倒计时.
 class SendCodeAction extends StatelessWidget {
   const new({
     super.key,

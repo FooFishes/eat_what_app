@@ -24,26 +24,26 @@ abstract final class BizCodes {
   /// 未登录, 包括登录过期和在其他设备上被下线.
   static const notLoggedIn = 20001;
 
-  /// 一键登录的取号凭证无效, 已用过, 或换不到手机号. 凭证只能用一次, 重试要重新拉起授权页.
+  /// 一键登录的取号凭证无效, 已使用或无法换取手机号. 由于凭证仅限单次使用, 重试时需重新拉起授权页.
   static const oneClickTokenInvalid = 20002;
 
-  /// 无权限. 未认证访问需认证的接口时返回.
+  /// 无权限. 未通过认证却访问受限接口时返回.
   ///
   /// 对方未公开粉丝或关注列表时, 列表接口也返回该码.
   static const permissionDenied = 20004;
 
-  /// 登录请求没有带隐私政策的版本. 只在服务端发布过政策后出现.
+  /// 登录请求缺少隐私政策版本号, 仅在服务端发布过政策后出现.
   ///
-  /// 服务端在核销验证码之前校验同意. 用户同意后用同一个验证码或密码重试.
+  /// 服务端会在核销验证码前校验同意状态, 用户确认后可使用同一验证码或密码重试.
   static const consentRequired = 20005;
 
-  /// 服务端没有开启一键登录.
+  /// 服务端未开启一键登录.
   static const oneClickUnavailable = 20007;
 
   /// 隐私政策已更新.
   ///
-  /// 登录时表示带的版本不是当前版本, 处理方式同 [consentRequired].
-  /// 已登录时网络层请用户同意, 同意后重发一次原请求. 该码表示原请求未被执行, 因此可以重发.
+  /// 登录时表示携带的政策版本号已过期, 处理方式同 [consentRequired].
+  /// 已登录时由网络层引导用户重新确认, 确认后重发原请求 (该码表示原请求尚未执行, 可安全重发).
   static const consentPolicyChanged = 20009;
 
   static const userNotFound = 30001;
@@ -55,33 +55,33 @@ abstract final class BizCodes {
   static const userDisabled = 30002;
   static const usernameTaken = 30003;
 
-  /// 密码登录的所有失败: 账号不存在, 没设过密码, 密码错误. 也用于改密码时旧密码错误.
+  /// 密码校验失败, 涵盖账号不存在, 未设置密码, 密码错误, 以及修改密码时旧密码错误.
   static const wrongPassword = 30004;
   static const wrongCode = 30005;
 
   /// 账号已完成学生认证.
   static const alreadyVerified = 30006;
 
-  /// 邮箱认证链接无效, 已用过, 或不属于当前登录的账号.
+  /// 邮箱认证链接无效, 已使用或不属于当前登录账号.
   static const emailTokenInvalid = 30008;
 
   /// 邮箱不是山大邮箱.
   static const emailNotSdu = 30009;
 
-  /// 账号没设过密码. 只在用旧密码修改密码时出现.
+  /// 账号尚未设置密码, 仅在使用旧密码修改密码时返回.
   static const passwordNotSet = 30010;
   static const mobileNotBound = 30011;
 
-  /// 缺少人机验证票据. 需要重新进行人机验证.
+  /// 缺少人机验证票据, 需重新完成人机验证.
   static const captchaMissing = 30015;
 
-  /// 人机验证票据无效, 已过期或被判定有风险. 需要重新进行人机验证.
+  /// 人机验证票据无效, 已过期或触发风控, 需重新完成人机验证.
   static const captchaInvalid = 30016;
 
-  /// 账号在注销冷静期内. 登录时 `data.deleteAt` 是彻底删除的时间 (Unix 毫秒).
+  /// 账号处于注销冷静期内, 登录时 `data.deleteAt` 为彻底删除的 Unix 毫秒时间戳.
   ///
-  /// 在申请注销的设备上登录时带上撤销凭据即撤销, 不会收到该码.
-  /// 冷静期内服务端让账号的所有会话下线, 带凭证的请求收到该码时按登录过期处理.
+  /// 在原申请设备上携带撤销凭据登录可直接撤销注销, 不会收到该码.
+  /// 冷静期内服务端会下线全部会话, 已登录请求收到该码时按登录过期处理.
   static const accountDeletionPending = 30017;
 
   /// 第三方服务不可用, 超时, 返回异常, 例如短信服务拒绝发送, 一键登录的运营商接口出错.
@@ -113,9 +113,9 @@ abstract final class BizCodes {
   /// 发布的菜品与该店已有菜品重名 (忽略空白). `data.id` 为已有菜品的 id.
   static const duplicateDish = 40016;
 
-  /// 新建店时同一个地图地点已有店, 或 200 m 内有同名的店. `data.duplicates` 是这些店.
+  /// 新建店铺时同一地图地点已存在店铺, 或 200 m 内有同名店铺, `data.duplicates` 为候选重复店铺列表.
   ///
-  /// 只是提示, 用户确认不是同一家后带 `force` 重新提交.
+  /// 该码仅作确认提示, 用户确认并非同一家后可携带 `force` 重新提交.
   static const shopMayExist = 40017;
 
   static const sessionCodes = {notLoggedIn};
@@ -154,7 +154,7 @@ const failureMessages = <Object, String>{
   BizCodes.accountDeletionPending: '账号注销中，在申请注销的设备上重新登录可以撤销',
 };
 
-/// 业务码所属的失败类别.
+/// 返回业务码对应的失败类别.
 FailureKind failureKindOf(Object code) {
   if (code == BizCodes.tooFrequent) return FailureKind.tooFrequent;
   if (BizCodes.sessionCodes.contains(code)) return FailureKind.sessionExpired;

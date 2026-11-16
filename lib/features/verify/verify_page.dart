@@ -20,25 +20,25 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 学生认证页面. 支持山大统一认证和山大邮箱两种方式, 结果记入当前账号, 无需重新登录.
+/// 学生认证页, 支持山大统一认证与山大邮箱两种方式, 认证结果记入当前账号而无需重新登录.
 ///
-/// 页面有两种入口:
-/// - 认证引导: 新号码注册后进入, [onboarding] 为 true, 右上角显示 "先逛逛".
-/// - 普通页面: 从设置或拦截对话框进入, 左上角显示返回.
+/// 页面包含两种进入模式:
+/// - 认证引导: 新手机号注册后进入, [onboarding] 为 true, 右上角显示 "先逛逛".
+/// - 普通模式: 从设置页或权限拦截对话框进入, 左上角显示返回按钮.
 ///
-/// 打开页面和回到前台时自动刷新认证状态. 由统一认证回跳链接打开时, 同时显示认证结果.
+/// 页面打开及应用回到前台时会自动刷新认证状态. 若通过统一认证回跳链接进入, 则同时处理并展示回跳结果.
 class VerifyPage extends ConsumerStatefulWidget {
   const new({super.key, this.onboarding = false, this.from, this.sso});
 
   final bool onboarding;
 
-  /// 认证引导结束后的目标地址, 即登录前要去的页面. 为 null 时去发现页.
+  /// 认证引导完成或跳过后的目标路径 (即登录前原计划前往的页面), 为 null 时前往发现页.
   final String? from;
 
-  /// 统一认证回跳链接带来的结果, 来自地址中的 `sso`, `code` 和 `ticket`.
+  /// 统一认证回跳链接携带的认证结果, 解析自地址中的 `sso`, `code` 与 `ticket` 参数.
   ///
-  /// 页面读取后立即从地址中移除这些参数. 否则登录态变化引起的重建会重复读取,
-  /// 再次提交票据并形成循环. 移除后 Web 刷新页面时不会重复处理结果.
+  /// 页面读取后需立即从路由地址中移除这些参数, 否则登录态变化引发重建时会重复提交票据并导致循环,
+  /// 同时也可避免 Web 端刷新页面时重复处理.
   final SsoResult? sso;
 
   @override
@@ -54,8 +54,8 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
   @override
   void initState() {
     super.initState();
-    // 回跳链接不一定能唤起 App: 系统可能未通过域名校验, 应用内浏览器可能不将重定向转交给 App.
-    // 此时用户关闭浏览器回到 App, 回到前台时的刷新获取认证结果.
+    // 统一认证回跳链接可能因系统未通过域名校验或应用内浏览器拦截而无法唤起 App,
+    // 此时需在用户关闭浏览器返回前台时主动刷新以获取认证结果.
     _lifecycle = AppLifecycleListener(onResume: _refresh);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -77,7 +77,7 @@ class _VerifyPageState extends ConsumerState<VerifyPage> {
     }
   }
 
-  /// 显示地址中的统一认证结果, 并从地址中移除. 地址中没有结果时返回 false.
+  /// 读取并处理路由地址中的统一认证结果, 同时将其从地址参数中移除. 若地址中不含认证结果则返回 false.
   bool _takeSsoResult() {
     final sso = widget.sso;
     if (sso == null) return false;
@@ -394,7 +394,7 @@ class _Verified extends StatelessWidget {
   }
 }
 
-/// 认证方式行: 左侧图标, 中间名称和说明. 可点击时右侧显示外链图标.
+/// 认证方式入口行, 左侧为图标, 中间为标题与说明, 可点击时右侧附带外链图标.
 class _MethodRow extends StatelessWidget {
   const new({
     required this.icon,

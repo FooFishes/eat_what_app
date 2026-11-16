@@ -50,7 +50,7 @@ class MePage extends ConsumerStatefulWidget {
 class _MePageState extends ConsumerState<MePage> {
   int _tab = 0;
 
-  /// 收藏分栏是否显示店. 为 false 时显示菜. 由分栏顶部的 "菜" 和 "店" 切换.
+  /// 收藏分栏当前展示店铺还是菜品, 默认为 false (展示菜品), 由顶部 "菜" 和 "店" 标签切换.
   bool _favoriteShops = false;
 
   /// 下拉刷新: 重新请求资料, 统计和三个分栏. 失败时保留页面上的旧内容并提示原因.

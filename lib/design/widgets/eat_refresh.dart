@@ -2,11 +2,11 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 下拉刷新. 包裹页面的滚动视图. 下拉超过阈值后松手时调用 [onRefresh], 完成前进度圈停留在顶部.
+/// 下拉刷新容器, 包裹页面滚动视图并在下拉松手超过阈值时调用 [onRefresh], 完成前顶部持续显示进度圈.
 ///
-/// - 进度圈为 `paper` 底和 `ink` 线条, 不使用舞台色. 该配色在舞台和白底上的对比度都足够.
-/// - 只响应页面自身的纵向滚动. 页面内横向滚动的分类栏不会触发刷新.
-/// - 刷新期间页面保留原有内容, 不显示加载占位.
+/// - 进度圈采用 `paper` 底色与 `ink` 线条而不使用舞台色, 确保在舞台和白底上均有足够对比度.
+/// - 仅响应页面自身的纵向滚动, 不会因页面内横向滚动的分类栏而误触发.
+/// - 刷新期间保留页面原有内容, 不替换成加载占位.
 class EatRefresh extends StatelessWidget {
   const new({
     super.key,
@@ -17,7 +17,7 @@ class EatRefresh extends StatelessWidget {
 
   final Future<void> Function() onRefresh;
 
-  /// 进度圈出现的位置与滚动视图顶部的距离. 页面顶部有固定顶栏时传入顶栏底边的纵坐标.
+  /// 进度圈出现位置与滚动视图顶部的偏移距离, 页面顶部有固定顶栏时传入顶栏底边的纵坐标.
   final double edgeOffset;
 
   final Widget child;

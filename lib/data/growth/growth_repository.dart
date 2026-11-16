@@ -6,7 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'growth_repository.g.dart';
 
-/// 本人的等级和经验. 他人的等级在公开资料中, 见 `UserRepository.profile`.
+/// 提供本人的等级与经验数据. 他人等级包含在公开资料中, 见 `UserRepository.profile`.
 class GrowthRepository {
   GrowthRepository(this._api);
 
@@ -26,7 +26,7 @@ class GrowthRepository {
     );
   }
 
-  /// 缺少 id 或日期的条目不显示.
+  /// 获取经验明细分页数据, 缺少 id 或日期的条目会被过滤.
   Future<Paged<ExperienceEntry>> ledger({
     int page = 1,
     CancelToken? cancelToken,

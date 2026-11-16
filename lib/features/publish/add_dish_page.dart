@@ -46,22 +46,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 发布流程第 2 步加菜, 以及编辑已有的菜.
+/// 发布流程第 2 步的加菜页, 同时承担编辑已有菜品的功能.
 ///
-/// - 舞台: 封面和封面的舞台色.
-/// - 抽屉: 照片, 店, 菜名, 价格, 分类, 口味, 招牌菜和 "说两句".
+/// - 舞台区域展示菜品封面及其对应的舞台色.
+/// - 抽屉区域包含照片, 店铺, 菜名, 价格, 分类, 口味, 招牌菜开关与 "说两句" 表单项.
 ///
-/// 发布新菜:
-/// - 照片添加后立即在后台上传. 添加第一张照片后自动打开 "调整照片".
-/// - 菜名已填, 封面已上传且还没选分类时, 按菜名和照片识别一次分类和口味并预选.
-/// - 发布成功后关闭发布流程的所有页面, 再打开新发布的菜.
+/// 发布新菜流程:
+/// - 添加照片后立即在后台上传, 添加首张照片后自动打开 "调整照片" 页面.
+/// - 当菜名已填写, 封面已上传且尚未选择分类时, 根据菜名和照片识别一次分类与口味并预选.
+/// - 发布成功后关闭发布流程内的所有页面, 再打开新发布的菜品详情页.
 ///
-/// 编辑:
-/// - 预填这道菜现有的内容, 不能换店. 只提交改动的字段, 没有改动时不能保存.
-/// - 照片只能整组更换. 不换照片时不提交照片, 舞台色, 备选色和取景.
-/// - 没有从详情页带入菜品时 (如在 Web 上刷新), 按 id 读取详情.
+/// 编辑菜品流程:
+/// - 预填现有内容且不允许更换店铺; 提交时仅发送改动字段, 无改动时禁止保存.
+/// - 照片仅支持整组更换, 若未更换照片则不提交照片, 舞台色, 备选色与取景参数.
+/// - 未从详情页带入菜品对象时 (如在 Web 端刷新页面), 根据 id 重新请求详情.
 ///
-/// 已填写或已改动时返回需要确认. 草稿不保存.
+/// 若表单已有输入或改动, 返回前需弹出确认弹窗; 页面退出后不持久化草稿.
 class AddDishPage extends ConsumerWidget {
   const new({super.key, required int this.shopId})
     : dishId = null,
@@ -70,13 +70,13 @@ class AddDishPage extends ConsumerWidget {
   const new edit({super.key, required int this.dishId, this.initial})
     : shopId = null;
 
-  /// 发布新菜时所在的店. 编辑时为 null.
+  /// 发布新菜时所属的店铺 id, 编辑模式下为 null.
   final int? shopId;
 
-  /// 要编辑的菜. 发布新菜时为 null.
+  /// 待编辑的菜品 id, 发布新菜模式下为 null.
   final int? dishId;
 
-  /// 从详情页带入的菜. 为 null 时按 [dishId] 读取.
+  /// 从详情页传入的菜品对象, 为 null 时按 [dishId] 重新请求.
   final Dish? initial;
 
   @override
@@ -118,7 +118,7 @@ class AddDishPage extends ConsumerWidget {
   }
 }
 
-/// 离开编辑页. 有上一页时返回上一页, 否则 (如在 Web 上刷新后) 前往这道菜的详情.
+/// 离开编辑页; 若导航栈存在上一页则返回, 否则 (如在 Web 端刷新页面后) 直接跳转至该菜品详情页.
 void _backToDish(BuildContext context, int dishId) {
   if (Navigator.of(context).canPop()) {
     Navigator.of(context).pop();
@@ -127,12 +127,12 @@ void _backToDish(BuildContext context, int dishId) {
   }
 }
 
-/// 价格输入框的初始文字, 如 "18" "18.5". 没有价格时为空.
+/// 格式化价格输入框的初始文本 (如 "18" 或 "18.5"), 无价格时返回空字符串.
 String _priceInput(double? price) => price == null
     ? ''
     : price.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
-/// 招牌菜已满时的就地提示.
+/// 店铺招牌菜数量已达上限时的就地提示文案.
 const _signatureFullText = '这家店已有 3 道招牌菜，先取消一道';
 
 class _DishForm extends ConsumerStatefulWidget {
@@ -140,7 +140,7 @@ class _DishForm extends ConsumerStatefulWidget {
 
   final int shopId;
 
-  /// 正在编辑的菜. 发布新菜时为 null.
+  /// 正在编辑的原始菜品, 发布新菜时为 null.
   final Dish? original;
 
   @override
@@ -148,28 +148,28 @@ class _DishForm extends ConsumerStatefulWidget {
 }
 
 class _DishFormState extends ConsumerState<_DishForm> {
-  /// 菜名或封面变化后, 等待多久再识别分类和口味. 避免用输入到一半的菜名识别.
+  /// 菜名或封面变动后触发自动识别前的防抖时长, 避免对未输入完整的菜名发起识别.
   static const _suggestDelay = Duration(seconds: 1);
 
   late int _shopId = widget.shopId;
 
-  /// 通过 "换一家" 选中的店. 不为 null 时直接使用, 不再请求店铺资料.
+  /// 通过 "换一家" 选中的店铺对象; 非 null 时直接使用, 避免重复请求店铺资料.
   Shop? _changedShop;
   late final _draft = draftProvider(original: widget.original);
   late final _name = TextEditingController(text: widget.original?.name);
 
-  /// 编辑时价格输入框的初始文字. 文字没有改动时价格视为没有改动.
+  /// 编辑模式下价格输入框的初始文本, 文本未变化时视为价格未修改.
   ///
-  /// 后端允许两位小数, 发布时只允许一位. 原价按发布的格式校验会被判为不合法, 因此不改动时不校验.
+  /// 后端历史数据允许两位小数而发布校验仅允许一位小数, 若原价含两位小数则会校验失败, 因此价格未改动时跳过校验.
   late final _initialPrice = _priceInput(widget.original?.price);
   late final _price = TextEditingController(text: _initialPrice);
   late final _note = TextEditingController(text: widget.original?.description);
   var _busy = false;
 
-  /// 发布或保存时服务端判定重名, 返回的已有菜品 id.
+  /// 发布或保存时若服务端判定菜名重复, 记录返回的已有菜品 id.
   int? _duplicateId;
 
-  /// 发布或保存时服务端返回招牌菜已满. 用户再次切换招牌菜开关后清除.
+  /// 标记提交时服务端是否返回招牌菜已满错误, 用户重新切换招牌菜开关后清除.
   var _signatureFull = false;
   Timer? _suggestTimer;
   late final AppLifecycleListener _lifecycle;
@@ -194,10 +194,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
     super.dispose();
   }
 
-  /// 价格是否没有改动. 只在编辑时成立.
+  /// 价格在编辑模式下是否保持未改动.
   bool get _priceUnchanged => _editing && _price.text == _initialPrice;
 
-  /// 编辑时相对原菜的改动. 没有改动或不在编辑时为 null.
+  /// 计算编辑模式下相对原菜品的变更内容, 无改动或处于发布模式时返回 null.
   DishChange? _change(PublishDraft draft) {
     final original = widget.original;
     if (original == null) return null;
@@ -266,7 +266,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     if (first) await _crop();
   }
 
-  /// 打开 "调整照片" 调整封面.
+  /// 打开 "调整照片" 页面以调整封面取景与舞台色.
   Future<void> _crop() async {
     final notifier = ref.read(_draft.notifier);
     final draft = ref.read(_draft);
@@ -390,7 +390,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     }
   }
 
-  /// 提交编辑, 只提交改动的字段. 成功后通知详情, "我的" 和店铺菜单刷新, 再返回详情.
+  /// 提交菜品编辑且仅发送发生变更的字段; 成功后通知详情页, "我的" 与店铺菜单刷新并返回详情页.
   Future<void> _save(Dish original) async {
     if (!await guardAction(context, ref, Capability.editDish) || !mounted) {
       return;
@@ -424,10 +424,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
     }
   }
 
-  /// 就地处理发布和保存时的两种冲突, 处理了返回 true.
+  /// 就地处理发布与保存时的业务冲突, 若已处理则返回 true.
   ///
-  /// - 重名: 菜名下提示已有的菜.
-  /// - 招牌菜已满: 招牌菜开关下提示. 该码含义随接口而定, 只在本次标了招牌菜时按招牌菜已满处理.
+  /// - 重名冲突时在菜名下方提示已有菜品.
+  /// - 招牌菜已满时在招牌菜开关下方提示; 因同一错误码含义随接口而定, 仅当本次勾选了招牌菜时才按已满处理.
   bool _handleConflict(AppFailure e) {
     switch (e.code) {
       case BizCodes.duplicateDish:
@@ -443,7 +443,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     return false;
   }
 
-  /// 菜名或封面变化后, 等输入停止再识别分类和口味. 只在发布新菜时识别.
+  /// 菜名或封面变化后延迟调度分类与口味识别, 仅在发布新菜模式下生效.
   void _scheduleSuggest() {
     if (_editing) return;
     _suggestTimer?.cancel();
@@ -455,7 +455,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     final name = _name.text.trim();
     // 拼音输入法组字期间, 输入框中是拼音字母而不是菜名. 组字结束时菜名变化, 会再次触发.
     if (name.isEmpty || _name.value.composing.isValid) return;
-    // 识别接口要求认证. 没有权限时不请求, 发布时由拦截对话框说明.
+    // 识别接口要求账号已认证, 无权限时不发起请求, 待提交发布时再由权限拦截弹窗提示.
     final status = ref.read(accountStatusProvider);
     if (checkPermission(status, Capability.publishDish) is! Allowed) return;
     final note = _note.text.trim();
@@ -481,12 +481,11 @@ class _DishFormState extends ConsumerState<_DishForm> {
     ref.read(_draft.notifier).setSignature(value);
   }
 
-  /// 关闭发布流程的所有页面, 再压入新发布的菜.
+  /// 关闭发布流程内的所有页面并跳转至新发布的菜品详情页.
   ///
-  /// - 先关闭再压入, 用户从菜品详情返回时回到发起发布的页面, 而不是回到发布流程.
-  ///
-  /// 轻提示在离开页面前显示. 提示插入根 Overlay, 页面关闭后继续显示.
-  /// 根 Navigator 自身的 context 位于其 Overlay 之上, 以该 context 查找 Overlay 会失败, 提示不显示.
+  /// 预先弹出发布流程各页, 可使用户从菜品详情返回时回到发起发布的原页面, 而非退回发布流程.
+  /// 轻提示需在离开页面前触发: 提示插入在根 Overlay 中, 页面关闭后仍可继续显示;
+  /// 若在路由跳转后再用根 Navigator 自身的 context 查找 Overlay 会失败, 导致提示无法显示.
   void _finish(int id) {
     showToast(context, '发布成功');
     final router = GoRouter.of(context);
@@ -734,7 +733,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
   }
 }
 
-/// 顶栏: 返回, 发布新菜时右侧显示步骤 "2 / 2".
+/// 顶部导航栏, 包含返回按钮并在发布新菜时于右侧显示步骤 "2 / 2".
 class _TopBar extends StatelessWidget {
   const new({required this.onBack, required this.step});
 
@@ -766,10 +765,10 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-/// 加菜页舞台内容.
+/// 加菜页的顶部舞台内容组件.
 ///
-/// - 右侧: 封面盘子. 没有照片时显示虚线圆 "加一张照片".
-/// - 左下: 按已填写的分类, 菜名和价格预览这道菜在舞台上的样子.
+/// - 右侧展示封面餐盘, 尚未添加照片时显示虚线圆占位按钮 "加一张照片".
+/// - 左下根据已填写的分类, 菜名与价格实时预览菜品在舞台上的呈现效果.
 class _StageContent extends StatelessWidget {
   const new({
     required this.cover,
@@ -783,18 +782,18 @@ class _StageContent extends StatelessWidget {
     required this.coverLabel,
   });
 
-  /// 封面. 没有照片时为 null.
+  /// 封面图片提供器, 未添加照片时为 null.
   final ImageProvider? cover;
   final CoverCrop crop;
 
-  /// 舞台色是否取自 [cover]. 编辑时不换照片, 舞台色是这道菜现有的颜色, 不显示 "主色取自照片".
+  /// 舞台色是否提取自当前 [cover]; 编辑模式若未更换照片则沿用原有舞台色, 不显示 "主色取自照片".
   final bool sampled;
   final DishCategory? category;
   final String name;
   final double? price;
   final VoidCallback onAdd;
 
-  /// 点击封面盘子. 新照片打开 "调整照片", 编辑时的原有照片开始换照片.
+  /// 点击封面餐盘的回调: 若为新添加照片则打开 "调整照片", 若为编辑模式下的原图则触发换图.
   final VoidCallback onCover;
   final String coverLabel;
 
@@ -898,7 +897,7 @@ class _StageContent extends StatelessWidget {
   }
 }
 
-/// 没有照片时占据盘子位置的虚线圆 "加一张照片".
+/// 未添加照片时在餐盘位置展示的虚线圆按钮, 用于引导上传首张照片.
 class _AddPlate extends StatelessWidget {
   const new({required this.size, required this.onTap});
 
@@ -938,9 +937,7 @@ class _AddPlate extends StatelessWidget {
   }
 }
 
-/// 照片条: 已添加的照片, 添加按钮和张数.
-///
-/// 第一张是封面. 每张照片显示上传进度.
+/// 横向照片缩略图列表, 展示已添加照片的上传进度, 添加按钮及当前张数; 第一张默认作为封面.
 class _PhotoStrip extends StatelessWidget {
   const new({required this.photos, required this.onAdd, required this.onTap});
 
@@ -1090,7 +1087,7 @@ class _PhotoThumb extends StatelessWidget {
   }
 }
 
-/// 缩略图底部的 "封面" 字样.
+/// 覆盖在封面缩略图底部的 "封面" 角标.
 class _CoverBadge extends StatelessWidget {
   const new();
 
@@ -1115,9 +1112,9 @@ class _CoverBadge extends StatelessWidget {
 }
 
 // TODO: 菜品响应只有图片地址, 没有存储 key, 编辑时无法提交保留的原图, 照片只能整组更换. 后端在响应中提供 key 后改为可以单张增删和调整原有照片.
-/// 编辑时的原有照片和 "换照片".
+/// 编辑模式下展示原有照片及 "换照片" 入口的组件.
 ///
-/// 原有照片只能看, 不能单张删除或调整. 选了新照片后整组替换原有照片.
+/// 原有照片仅支持预览而不能单张删改, 选择新照片后将整组替换现有照片.
 class _ExistingPhotos extends StatelessWidget {
   const new({required this.images, required this.onReplace});
 
@@ -1183,7 +1180,7 @@ class _ExistingPhotos extends StatelessWidget {
   }
 }
 
-/// 编辑时已选了新照片: 说明原有照片会被替换, 以及 "不换了".
+/// 编辑模式下选定新照片后的提示条, 说明提交后将替换原有照片并提供 "不换了" 撤销按钮.
 class _ReplacingNote extends StatelessWidget {
   const new({required this.count, required this.onUndo});
 
@@ -1211,14 +1208,14 @@ class _ReplacingNote extends StatelessWidget {
   }
 }
 
-/// 这道菜所在的店. 发布新菜时可以 "换一家", 编辑时不能换店.
+/// 展示菜品所属店铺的行组件; 发布新菜时可点击 "换一家" 切换店铺, 编辑模式下禁止换店.
 class _ShopLine extends StatelessWidget {
   const new({required this.name, required this.onChange});
 
-  /// 店名. 读取中为 null.
+  /// 店铺名称, 数据读取中时为 null.
   final String? name;
 
-  /// 换店. 为 null 时不显示 "换一家".
+  /// 切换店铺的回调, 为 null 时隐藏 "换一家" 按钮.
   final VoidCallback? onChange;
 
   @override
@@ -1251,9 +1248,7 @@ class _ShopLine extends StatelessWidget {
   }
 }
 
-/// 重名提示和 "去看看".
-///
-/// 同一家店内菜名重复时不能发布, 提示引导用户查看已有的菜.
+/// 菜名重复时的提示条与 "去看看" 按钮, 引导用户查看同店内已存在的同名菜品.
 class _DuplicateNotice extends StatelessWidget {
   const new({required this.name, required this.onOpen});
 
@@ -1283,7 +1278,7 @@ class _DuplicateNotice extends StatelessWidget {
   }
 }
 
-/// 抽屉中的一组字段: 小标题和内容. [note] 是小标题右侧的一行说明.
+/// 抽屉表单中的分组容器, 包含左侧小标题, 右侧可选说明 [note] 与下方内容区.
 class _Group extends StatelessWidget {
   const new({required this.title, this.note, required this.child});
 
@@ -1327,10 +1322,10 @@ class _Group extends StatelessWidget {
   }
 }
 
-// TODO: 后端 v2 没有我的标签接口, "自己写" 只保留入口. 接口上线后恢复输入我的标签并随发布提交, 去掉 "待接入".
-/// 口味选择: 5 个口味多选, 最多 [PublishRules.tagsMax] 个.
+// TODO: 后端 v2 暂未提供自定义标签接口, "自己写" 目前仅保留入口. 接口上线后恢复自定义标签输入并随发布提交, 同时移除 "待接入" 标记.
+/// 口味多选组件, 最多可选 [PublishRules.tagsMax] 个口味.
 ///
-/// "自己写" 是我的标签的入口, 标 "待接入", 点击不发请求.
+/// "自己写" 为自定义标签入口, 当前标注为 "待接入" 且点击不发起请求.
 class _Tastes extends StatelessWidget {
   const new({required this.selected, required this.onToggle});
 
@@ -1357,7 +1352,7 @@ class _Tastes extends StatelessWidget {
   );
 }
 
-/// "招牌菜" 开关. 招牌菜已满时 ([full]) 在开关下提示.
+/// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 为 true) 时在开关下方显示提示.
 class _Signature extends StatelessWidget {
   const new({required this.value, required this.full, required this.onChanged});
 
@@ -1390,7 +1385,7 @@ class _Signature extends StatelessWidget {
   }
 }
 
-/// "说两句" 输入框. 多行输入, 右下角显示字数.
+/// "说两句" 多行文本输入框, 右下角实时显示当前字数统计.
 class _NoteField extends StatelessWidget {
   const new({required this.controller, required this.onChanged});
 

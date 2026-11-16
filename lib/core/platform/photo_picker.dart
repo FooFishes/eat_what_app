@@ -15,12 +15,12 @@ class const PickedPhoto({
   required final int height,
 });
 
-/// 无法取得照片的原因. 用户取消不算失败, 返回空列表.
+/// 无法获取照片的失败原因 (用户主动取消不视为失败, 而是返回空列表或 null).
 enum PhotoPickFailure {
-  /// 没有相机或相册权限.
+  /// 缺少相机或相册访问权限.
   denied,
 
-  /// 无法解码, 例如 Web 上的 HEIC.
+  /// 图片格式无法解码, 例如 Web 端传入 HEIC 格式.
   unsupported,
 }
 
@@ -147,7 +147,7 @@ class PlatformPhotoPicker implements PhotoPicker {
     return PickedPhoto(bytes: out, width: outWidth, height: outHeight);
   }
 
-  /// 只读取文件头中的尺寸, 不解码整张图片.
+  /// 仅从文件头解析图片宽高, 避免解码整张图片.
   static Future<(int, int)> _size(Uint8List bytes) async {
     try {
       final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);

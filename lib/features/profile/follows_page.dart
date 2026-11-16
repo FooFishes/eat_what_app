@@ -19,9 +19,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 // TODO: 粉丝和关注列表不返回与我的关注关系, 每一行单独请求对方的资料来决定按钮文字. 列表接口返回关注关系后改用列表数据.
-/// 粉丝和关注列表. 两个分栏, 每行是头像, 昵称和关注按钮, 点击一行进入他人主页.
+/// 粉丝和关注列表页, 分为两个分栏, 每行展示头像, 昵称和关注按钮, 点击行进入他人主页.
 ///
-/// 对方未公开某个列表时, 该分栏显示 "对方没有公开". 自己的列表总是可见.
+/// 对方未公开某个列表时, 该分栏展示未公开提示; 自己的列表始终可见.
 class FollowsPage extends ConsumerStatefulWidget {
   const new({super.key, required this.userId, required this.initial});
 

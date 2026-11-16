@@ -8,7 +8,7 @@ class const EatShadow({
   /// 外阴影, 直接传给 `BoxDecoration.boxShadow`.
   final List<BoxShadow> outer = const [],
 
-  /// 对应 CSS 的 `inset` 阴影. Flutter 不支持内阴影, 由组件自行绘制.
+  /// 对应 CSS 的 `inset` 阴影. Flutter 不支持内阴影, 因此由组件自行绘制.
   ///
   /// - `offset.dy` 为正: 顶部高光.
   /// - `offset.dy` 为负: 底部暗边.
@@ -16,40 +16,40 @@ class const EatShadow({
   final List<BoxShadow> inset = const [],
 });
 
-/// 设计规范中的阴影. 只用于下列位置, 卡片不加投影.
+/// 设计规范中的阴影集合, 仅用于下列位置, 卡片不加投影.
 class const EatShadows({
-  /// 舞台上的盘子: 白色盘沿和投影.
+  /// 舞台上盘子的白色盘沿和投影.
   required final EatShadow plate,
 
-  /// 悬浮元素: 导航胶囊, 地图上的搜索框和商圈标签.
+  /// 用于导航胶囊, 地图上的搜索框和商圈标签等悬浮元素.
   required final EatShadow float,
 
   /// 按钮的厚度画在胶囊内部: 底边一道内阴影, 外加一层收在按钮下方的柔和投影.
   /// 按下时内阴影消失, 投影收拢.
   ///
-  /// `ink` 实心按钮, 也用于浅色舞台上的实心按钮.
+  /// 用于 `ink` 实心按钮及浅色舞台上的实心按钮.
   required final EatShadow button,
   required final EatShadow buttonPressed,
 
-  /// 雾面按钮: `handle` 细描边和浅色底边. 按下时只保留描边.
+  /// 用于雾面按钮, 包含 `handle` 细描边和浅色底边, 按下时只保留描边.
   ///
-  /// 细描边让雾面按钮与不可用按钮的扁平灰底区分开.
+  /// 细描边用于区分雾面按钮与不可用按钮的扁平灰底.
   required final EatShadow buttonLight,
   required final EatShadow buttonLightPressed,
 
-  /// 描边按钮: `ink` 描边和柔和投影, 没有底边.
+  /// 用于描边按钮, 包含 `ink` 描边和柔和投影, 没有底边.
   required final EatShadow buttonOutline,
 
-  /// 深色舞台上的白色实心按钮.
+  /// 用于深色舞台上的白色实心按钮.
   required final EatShadow buttonOnStage,
 
-  /// 舞台上的半透明次按钮.
+  /// 用于舞台上的半透明次按钮.
   required final EatShadow buttonGhost,
 
-  /// 地图上的店铺标记.
+  /// 用于地图上的店铺标记.
   required final EatShadow pin,
 
-  /// 压在地图上的抽屉, 以及登录页的抽屉. 其他压在舞台色上的抽屉不加阴影.
+  /// 用于压在地图上的抽屉及登录页的抽屉; 其他压在舞台色上的抽屉不加阴影.
   required final EatShadow sheet,
 }) {
   static const standard = EatShadows(

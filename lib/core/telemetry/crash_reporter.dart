@@ -6,10 +6,10 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'crash_reporter.g.dart';
 
-/// 崩溃上报, 由 Sentry 实现.
+/// 崩溃上报服务, 底层由 Sentry 实现.
 ///
-/// 同意隐私政策后调用 [start] 才开始上报. 之前和 `SENTRY_DSN` 为空时, 所有调用都不上报.
-/// 只上报堆栈, 设备与版本信息和账号 id. 不截屏, 不录制会话, 不记录请求参数和响应体.
+/// 仅在用户同意隐私政策并调用 [start] 后激活, 在此之前或 `SENTRY_DSN` 为空时不发送任何事件.
+/// 仅采集堆栈, 设备与版本信息及账号 id, 不截屏, 不录制会话, 也不记录请求参数与响应体.
 class CrashReporter {
   CrashReporter(this._config);
 
@@ -71,7 +71,7 @@ class CrashReporter {
   static NavigatorObserver navigatorObserver() =>
       SentryNavigatorObserver(enableAutoTransactions: false);
 
-  /// Sentry 的 `release`, 如 `eat@0.3.0+30`. CI 上传符号表时使用同一格式.
+  /// 生成 Sentry 的 `release` 标识 (如 `eat@0.3.0+30`), 与 CI 上传符号表时的格式保持一致.
   @visibleForTesting
   static String releaseName(String version, String buildNumber) =>
       'eat@$version+$buildNumber';

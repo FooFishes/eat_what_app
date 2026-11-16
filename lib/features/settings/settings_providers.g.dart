@@ -106,21 +106,21 @@ abstract class _$AccountCode extends $Notifier<AccountCodeState> {
   }
 }
 
-/// 隐私设置: 是否公开关注列表和粉丝列表.
+/// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时立即更新本地值, 请求失败时恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
 
 @ProviderFor(Privacy)
 final privacyProvider = PrivacyProvider._();
 
-/// 隐私设置: 是否公开关注列表和粉丝列表.
+/// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时立即更新本地值, 请求失败时恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
 final class PrivacyProvider
     extends $AsyncNotifierProvider<Privacy, PrivacySettings> {
-  /// 隐私设置: 是否公开关注列表和粉丝列表.
+  /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
   ///
-  /// 修改时立即更新本地值, 请求失败时恢复原值.
+  /// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
   PrivacyProvider._()
     : super(
         from: null,
@@ -142,9 +142,9 @@ final class PrivacyProvider
 
 String _$privacyHash() => r'9a2cee4f15e05327e3678d1fd594951c8547d4d8';
 
-/// 隐私设置: 是否公开关注列表和粉丝列表.
+/// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时立即更新本地值, 请求失败时恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
 
 abstract class _$Privacy extends $AsyncNotifier<PrivacySettings> {
   FutureOr<PrivacySettings> build();
@@ -164,15 +164,15 @@ abstract class _$Privacy extends $AsyncNotifier<PrivacySettings> {
   }
 }
 
-/// 个性化推荐开关. 关闭后推荐不参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
 
 @ProviderFor(Personalized)
 final personalizedProvider = PersonalizedProvider._();
 
-/// 个性化推荐开关. 关闭后推荐不参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
 final class PersonalizedProvider
     extends $AsyncNotifierProvider<Personalized, bool> {
-  /// 个性化推荐开关. 关闭后推荐不参考当前用户的个人记录.
+  /// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
   PersonalizedProvider._()
     : super(
         from: null,
@@ -194,7 +194,7 @@ final class PersonalizedProvider
 
 String _$personalizedHash() => r'c9ef78eb2a326f0d92ddca12a5086469ba9648bc';
 
-/// 个性化推荐开关. 关闭后推荐不参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
 
 abstract class _$Personalized extends $AsyncNotifier<bool> {
   FutureOr<bool> build();
@@ -214,15 +214,15 @@ abstract class _$Personalized extends $AsyncNotifier<bool> {
   }
 }
 
-/// 使用统计开关. 关闭时服务端删除已收集的记录.
+/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
 
 @ProviderFor(UsageStatsSetting)
 final usageStatsSettingProvider = UsageStatsSettingProvider._();
 
-/// 使用统计开关. 关闭时服务端删除已收集的记录.
+/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
 final class UsageStatsSettingProvider
     extends $AsyncNotifierProvider<UsageStatsSetting, UsageStats> {
-  /// 使用统计开关. 关闭时服务端删除已收集的记录.
+  /// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
   UsageStatsSettingProvider._()
     : super(
         from: null,
@@ -244,7 +244,7 @@ final class UsageStatsSettingProvider
 
 String _$usageStatsSettingHash() => r'2f1eab7149ac02be3904b247dcb91b76e6e83b73';
 
-/// 使用统计开关. 关闭时服务端删除已收集的记录.
+/// 使用统计开关状态. 关闭后服务端会删除已收集的记录.
 
 abstract class _$UsageStatsSetting extends $AsyncNotifier<UsageStats> {
   FutureOr<UsageStats> build();
@@ -308,17 +308,17 @@ abstract class _$BlockedUsers extends $AsyncNotifier<BlockedPages> {
   }
 }
 
-/// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+/// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
 
 @ProviderFor(feedbackSubject)
 final feedbackSubjectProvider = FeedbackSubjectFamily._();
 
-/// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+/// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
 
 final class FeedbackSubjectProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
     with $FutureModifier<String?>, $FutureProvider<String?> {
-  /// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+  /// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
   FeedbackSubjectProvider._({
     required FeedbackSubjectFamily super.from,
     required ({int? dishId, int? shopId}) super.argument,
@@ -368,7 +368,7 @@ final class FeedbackSubjectProvider
 
 String _$feedbackSubjectHash() => r'd9ec8b4646baba16661e61fcb6033ace7bbd3e2b';
 
-/// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+/// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
 
 final class FeedbackSubjectFamily extends $Family
     with
@@ -385,7 +385,7 @@ final class FeedbackSubjectFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 反馈所关于的菜或店的名称. 两者都没有时为 null.
+  /// 查询反馈关联的菜品或店铺名称. 若两者均未指定则返回 null.
 
   FeedbackSubjectProvider call({int? dishId, int? shopId}) =>
       FeedbackSubjectProvider._(
@@ -397,15 +397,15 @@ final class FeedbackSubjectFamily extends $Family
   String toString() => r'feedbackSubjectProvider';
 }
 
-/// 已登录的设备. 本机排在最前.
+/// 当前账号已登录的设备列表, 本机设备排在最前.
 
 @ProviderFor(DeviceSessions)
 final deviceSessionsProvider = DeviceSessionsProvider._();
 
-/// 已登录的设备. 本机排在最前.
+/// 当前账号已登录的设备列表, 本机设备排在最前.
 final class DeviceSessionsProvider
     extends $AsyncNotifierProvider<DeviceSessions, List<DeviceSession>> {
-  /// 已登录的设备. 本机排在最前.
+  /// 当前账号已登录的设备列表, 本机设备排在最前.
   DeviceSessionsProvider._()
     : super(
         from: null,
@@ -427,7 +427,7 @@ final class DeviceSessionsProvider
 
 String _$deviceSessionsHash() => r'1dc3c596a5775e24d689ee3fbfae6a9f6caa59ec';
 
-/// 已登录的设备. 本机排在最前.
+/// 当前账号已登录的设备列表, 本机设备排在最前.
 
 abstract class _$DeviceSessions extends $AsyncNotifier<List<DeviceSession>> {
   FutureOr<List<DeviceSession>> build();
@@ -448,15 +448,15 @@ abstract class _$DeviceSessions extends $AsyncNotifier<List<DeviceSession>> {
   }
 }
 
-/// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
 
 @ProviderFor(PushSettings)
 final pushSettingsProvider = PushSettingsProvider._();
 
-/// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
 final class PushSettingsProvider
     extends $AsyncNotifierProvider<PushSettings, List<PushSetting>> {
-  /// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
+  /// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
   PushSettingsProvider._()
     : super(
         from: null,
@@ -478,7 +478,7 @@ final class PushSettingsProvider
 
 String _$pushSettingsHash() => r'666de3623ecf3cd3438a1db3e9131efbc64c4d31';
 
-/// 各推送栏目的开关. 修改时立即更新本地值, 保存失败时恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
 
 abstract class _$PushSettings extends $AsyncNotifier<List<PushSetting>> {
   FutureOr<List<PushSetting>> build();
@@ -499,15 +499,15 @@ abstract class _$PushSettings extends $AsyncNotifier<List<PushSetting>> {
   }
 }
 
-/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
+/// 换绑和补绑手机号的业务控制器. 补绑仅用于尚未绑定手机的账号, 无需验证当前号码.
 
 @ProviderFor(PhoneChange)
 final phoneChangeProvider = PhoneChangeProvider._();
 
-/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
+/// 换绑和补绑手机号的业务控制器. 补绑仅用于尚未绑定手机的账号, 无需验证当前号码.
 final class PhoneChangeProvider
     extends $NotifierProvider<PhoneChange, PhoneChangeState> {
-  /// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
+  /// 换绑和补绑手机号的业务控制器. 补绑仅用于尚未绑定手机的账号, 无需验证当前号码.
   PhoneChangeProvider._()
     : super(
         from: null,
@@ -537,7 +537,7 @@ final class PhoneChangeProvider
 
 String _$phoneChangeHash() => r'7e2b2c3a46c2377b9c0a18b4fa4d936ff6ea386e';
 
-/// 换绑和补绑手机. 补绑只用于还没有手机号的账号, 不需要验证当前号码.
+/// 换绑和补绑手机号的业务控制器. 补绑仅用于尚未绑定手机的账号, 无需验证当前号码.
 
 abstract class _$PhoneChange extends $Notifier<PhoneChangeState> {
   PhoneChangeState build();
@@ -557,15 +557,15 @@ abstract class _$PhoneChange extends $Notifier<PhoneChangeState> {
   }
 }
 
-/// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
+/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
 
 @ProviderFor(FeedbackSender)
 final feedbackSenderProvider = FeedbackSenderProvider._();
 
-/// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
+/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
 final class FeedbackSenderProvider
     extends $NotifierProvider<FeedbackSender, bool> {
-  /// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
+  /// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
   FeedbackSenderProvider._()
     : super(
         from: null,
@@ -595,7 +595,7 @@ final class FeedbackSenderProvider
 
 String _$feedbackSenderHash() => r'77b7a869fcd8973521b613a67fcf670f1165b433';
 
-/// 提交意见反馈. 截图逐张上传, 已上传的截图不重复上传.
+/// 意见反馈提交控制器, 逐张上传未上传过的截图并提交反馈内容.
 
 abstract class _$FeedbackSender extends $Notifier<bool> {
   bool build();

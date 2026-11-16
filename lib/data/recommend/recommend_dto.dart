@@ -2,12 +2,11 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'recommend_dto.g.dart';
 
-/// 推荐列表 (`RecommendDtos.Feed`): 分页字段与其他列表相同, 另带本次实际使用的饭点 [mealTime].
+/// 推荐列表响应 (`RecommendDtos.Feed`), 分页结构与常规列表一致, 并额外返回本次实际生效的饭点 [mealTime].
 ///
-/// 卡片 (`RecommendDtos.Card`) 是店铺的子集加上招牌菜和距离, 保留原始 JSON:
-/// 仓库用店铺的转换 `PlaceRepository.shopFromJson` 解析, 并把原文缓存为 "上一批".
+/// 推荐卡片 (`RecommendDtos.Card`) 为店铺字段子集并附加招牌菜与距离; 此处保留原始 JSON, 以便仓库复用 `PlaceRepository.shopFromJson` 解析并将原文缓存为 "上一批".
 ///
-/// 登录用户的 [currentPage] 只是回显请求的页码, [totalItems] 是当天还没推荐过的候选数.
+/// 对登录用户而言, [currentPage] 仅回显请求页码, [totalItems] 表示当日尚未推荐过的候选店铺数.
 @JsonSerializable(createToJson: false)
 class const RecommendFeedDto({
   final String? mealTime,

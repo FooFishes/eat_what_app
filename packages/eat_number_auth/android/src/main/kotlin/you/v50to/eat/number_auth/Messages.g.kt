@@ -199,13 +199,13 @@ class FlutterError (
 ) : RuntimeException()
 
 enum class LoginTokenStatus(val raw: Int) {
-  /** 用户点了登录, 拿到取号凭证. 授权页还开着并显示加载, 用 `closeAuthPage` 关闭. */
+  /** 用户点击登录并成功获取取号凭证; 此时授权页仍处于加载状态, 须调用 `closeAuthPage` 关闭. */
   GRANTED(0),
-  /** 用户关掉了授权页. 授权页已关闭. */
+  /** 用户主动关闭了授权页, 页面已关闭. */
   CANCELLED(1),
-  /** 用户点了切换按钮. 授权页已关闭. */
+  /** 用户点击了切换按钮, 页面已关闭. */
   SWITCHED(2),
-  /** 授权页没拉起来, 或取凭证失败. 授权页已关闭. */
+  /** 授权页未能拉起或取号失败, 页面已关闭. */
   FAILED(3);
 
   companion object {
@@ -216,7 +216,9 @@ enum class LoginTokenStatus(val raw: Int) {
 }
 
 /**
- * 授权页的外观和文案. 授权页是 SDK 的原生页面, 从底部升起, 号码和运营商协议由 SDK 填.
+ * 原生授权页的外观与文案配置.
+ *
+ * 授权页由 SDK 拉起并从底部弹出, 脱敏号码与运营商协议由 SDK 自动填充.
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
@@ -238,15 +240,15 @@ data class AuthPageStyleMessage (
   /** 内容的左右边距. */
   val margin: Double,
   val buttonHeight: Double,
-  /** 登录按钮的文字. 阿里云要求包含 "登录". */
+  /** 登录按钮的文案, 阿里云规范要求其中必须包含 "登录". */
   val loginText: String,
-  /** 切换按钮的文字, 点了改用别的登录方式. */
+  /** 切换按钮的文案, 用于改用其他登录方式. */
   val switchText: String,
-  /** 关闭按钮给读屏用的名字. */
+  /** 关闭按钮的无障碍朗读名称. */
   val closeLabel: String,
-  /** 协议名前面的文字, 如 "我已阅读并同意". */
+  /** 协议名称前的前缀文案, 如 "我已阅读并同意". */
   val privacyPrefix: String,
-  /** 没勾协议就点登录时弹出的二次确认弹窗: 标题, 协议名前面的文字, 按钮文字. */
+  /** 未勾选协议直接点击登录时弹出的二次确认弹窗: 标题, 协议名称前缀与确认按钮文案. */
   val alertTitle: String,
   val alertPrefix: String,
   val alertButtonText: String
@@ -332,9 +334,9 @@ data class AuthPageStyleMessage (
 /** Generated class from Pigeon that represents data sent in messages. */
 data class LoginTokenMessage (
   val status: LoginTokenStatus,
-  /** 取号凭证, 只在 [LoginTokenStatus.granted] 时有值. 只能用一次. */
+  /** 一次性取号凭证, 仅在 [LoginTokenStatus.granted] 时非空. */
   val token: String? = null,
-  /** SDK 的返回码, 只在 [LoginTokenStatus.failed] 时有值, 用于排查. */
+  /** SDK 返回的错误码, 仅在 [LoginTokenStatus.failed] 时非空, 用于问题排查. */
   val code: String? = null
 )
  {
@@ -419,14 +421,14 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface NumberAuthHostApi {
   /**
-   * 设置方案密钥, 检查当前环境能否一键登录, 并预取号.
+   * 配置方案密钥并预取号, 同时检查当前环境是否支持一键登录.
    *
-   * 返回 null 表示可以拉起授权页, 否则是 SDK 的返回码.
+   * 返回 null 表示可拉起授权页, 否则返回 SDK 错误码.
    */
   suspend fun prepare(secret: String, timeoutMs: Long): String?
-  /** 拉起授权页, 等用户点登录, 关闭或切换. */
+  /** 拉起授权页, 等待用户点击登录, 关闭或切换登录方式. */
   suspend fun requestLoginToken(style: AuthPageStyleMessage, timeoutMs: Long): LoginTokenMessage
-  /** 关闭授权页. 授权页没开着时什么也不做. */
+  /** 关闭授权页; 若授权页未打开则忽略. */
   fun closeAuthPage()
 
   companion object {

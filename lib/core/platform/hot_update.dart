@@ -4,10 +4,10 @@ import 'package:shorebird_code_push/shorebird_code_push.dart';
 
 part 'hot_update.g.dart';
 
-/// 热更新, 由 Shorebird 实现.
+/// 热更新管理, 底层由 Shorebird 实现.
 ///
-/// 只有用 `shorebird release` 构建的 Android 和 iOS 包可用.
-/// Web, 调试构建和 `flutter build` 的包不可用, 此时补丁号为 null, 检查更新什么也不做.
+/// 仅通过 `shorebird release` 构建的 Android 与 iOS 安装包可用.
+/// Web, 调试构建及普通 `flutter build` 产物均不可用, 此时补丁号为 null 且检查更新为空操作.
 class HotUpdate {
   HotUpdate([ShorebirdUpdater? updater])
     : _updater = updater ?? ShorebirdUpdater();

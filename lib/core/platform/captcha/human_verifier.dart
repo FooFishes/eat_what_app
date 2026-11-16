@@ -39,12 +39,12 @@ final class CaptchaPassed extends CaptchaOutcome {
   final CaptchaTicket ticket;
 }
 
-/// 服务端关闭了人机验证 (`enabled` 为 false), 不带票据发送.
+/// 服务端已关闭人机验证 (`enabled` 为 false), 请求不附带票据.
 final class CaptchaSkipped extends CaptchaOutcome {
   const CaptchaSkipped();
 }
 
-/// 用户关闭了验证, 不发送请求.
+/// 用户主动关闭验证, 取消后续请求.
 final class CaptchaCancelled extends CaptchaOutcome {
   const CaptchaCancelled();
 }
@@ -56,11 +56,11 @@ final class CaptchaFailed extends CaptchaOutcome {
   const CaptchaFailed();
 }
 
-/// 腾讯云验证码. 是否需要用户操作由腾讯判断, 无风险时自动通过, 用户无感知.
+/// 腾讯云人机验证入口, 是否需要交互由风控判定, 无风险时无感自动通过.
 ///
-/// App 在全屏透明 WebView 中加载腾讯的 JS, Web 直接在页面中加载. 两端的结果一致.
+/// App 端通过全屏透明 WebView 加载验证脚本, Web 端直接在页面中加载, 两端输出一致的 [CaptchaOutcome].
 ///
-/// 加载期间页面保持原样, 由发起验证的按钮显示加载状态. 遮罩在验证组件渲染完成后与组件一起出现.
+/// 加载期间原页面保持不变并由触发按钮展示加载态, 遮罩仅在验证组件实际渲染后一并显示.
 abstract interface class HumanVerifier {
   /// [params] 为正在获取的初始化参数, 结果为 null 时返回 [CaptchaSkipped].
   ///

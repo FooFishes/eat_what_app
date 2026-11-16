@@ -21,10 +21,10 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 菜品的修改记录. 白底列表, 最新的在前.
+/// 菜品修改记录页, 以白底列表按时间倒序展示变更历史.
 ///
-/// - 每条显示编辑者, 时间, 动作和改动的字段.
-/// - 第一条是当前内容, 标 "当前版本". 其余各条可以恢复到该版本, 恢复需要认证, 先二次确认.
+/// - 每条记录展示编辑者, 时间, 操作类型与变动字段.
+/// - 首条标注为 "当前版本", 其余历史版本支持恢复操作 (需账号已认证并经二次确认).
 class DishHistoryPage extends ConsumerWidget {
   const new({super.key, required this.dishId});
 
@@ -198,7 +198,7 @@ class _RevisionRowState extends ConsumerState<_RevisionRow> {
   }
 }
 
-/// 一条记录做了什么, 如 "修改了价格、照片".
+/// 生成单条修改记录的摘要文案, 如 "修改了价格、照片".
 String _summary(DishRevision revision) {
   final fields = revision.fields.map((f) => f.label).join('、');
   return switch (revision.action) {

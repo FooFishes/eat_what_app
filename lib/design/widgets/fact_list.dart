@@ -2,11 +2,11 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// 提示类对话框和面板中左右对齐的信息行, 如 "原因" "恢复".
+/// 提示类对话框和面板中用于展示左右对齐信息的列表组件, 如 "原因" "恢复".
 class FactList extends StatelessWidget {
   const new(this.facts, {super.key});
 
-  /// 每行的标签, 内容, 以及内容是否加粗. 恢复时间通常加粗.
+  /// 信息行数据, 包含每行的标签, 内容以及内容是否加粗 (例如恢复时间通常需要加粗).
   final List<({String label, String value, bool strong})> facts;
 
   @override

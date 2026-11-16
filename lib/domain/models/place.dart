@@ -10,7 +10,7 @@ class const Campus({
   required final String name,
   required final GcjPoint center,
 
-  /// 是否为默认校区. 没有定位时选择默认校区.
+  /// 是否为默认校区, 无法获取定位时将选用该校区.
   final bool isDefault = false,
 });
 
@@ -25,7 +25,7 @@ class const Hub({
   final List<List<GcjPoint>> boundary = const [],
 });
 
-/// 店铺类型. [api] 是接口中的取值. 能吃饱的都算美食.
+/// 店铺类型, [api] 为接口字段值, 正餐饱腹类店铺均归为美食.
 enum ShopKind {
   food('food', '美食'),
   drink('drink', '甜点饮品');
@@ -43,10 +43,9 @@ enum ShopKind {
   }
 }
 
-/// 店铺品类.
+/// 店铺品类, [api] 为接口字段值且与界面文字一致.
 ///
-/// [api] 是接口中的取值, 与界面文字相同. 后端按位存储, 只在末尾追加新值,
-/// 所以 [fromApi] 遇到不认识的值返回 null, 由调用方忽略.
+/// 因后端按位存储且仅在末尾追加新值, [fromApi] 遇到未知值时返回 null 并由调用方忽略.
 enum ShopCategory {
   rice('米饭炒菜'),
   noodles('粉面'),
@@ -70,7 +69,7 @@ enum ShopCategory {
   }
 }
 
-/// 店铺价位. 由新建或编辑店铺的人填写, 可以不填.
+/// 店铺人均价位区间, 由创建或编辑店铺的用户选填.
 enum PriceBand {
   under15('UNDER_15', '¥15 以下'),
   from15To30('FROM_15_TO_30', '¥15–30'),
@@ -89,7 +88,7 @@ enum PriceBand {
   }
 }
 
-/// 评价的场景: 在店里吃过, 或点过外卖. [api] 是接口中的取值.
+/// 店铺评价场景 (堂食或外卖), [api] 为接口字段值.
 enum RatingScene {
   dineIn('dine_in', '堂食'),
   delivery('delivery', '外卖');
@@ -100,7 +99,7 @@ enum RatingScene {
   final String label;
 }
 
-/// 对一家店在一个场景下的评价. [api] 是接口中的取值.
+/// 用户对店铺在单一场景下的评价结果, [api] 为接口字段值.
 enum ShopRating {
   recommend('RECOMMEND', '推荐'),
   notRecommend('NOT_RECOMMEND', '不推荐');
@@ -118,14 +117,14 @@ enum ShopRating {
   }
 }
 
-/// 一个场景的评价统计.
+/// 单一评价场景的统计数据.
 class const ShopStat({
-  /// 推荐率, 0–1. 没有评价时为 null.
+  /// 推荐率 (取值 0–1), 暂无评价时为 null.
   final double? rate,
   final int count = 0,
 });
 
-/// 当前用户在两个场景的评价. 没评过的场景为 null.
+/// 当前用户在堂食与外卖两个场景下的评价, 未评价的场景为 null.
 class const MyShopRatings({
   final ShopRating? dineIn,
   final ShopRating? delivery,
@@ -135,7 +134,7 @@ class const MyShopRatings({
     RatingScene.delivery => delivery,
   };
 
-  /// 把 [scene] 的评价换成 [rating], 另一个场景不变.
+  /// 仅替换 [scene] 对应的评价为 [rating], 保持另一场景不变.
   MyShopRatings withRating(RatingScene scene, ShopRating? rating) =>
       switch (scene) {
         RatingScene.dineIn => MyShopRatings(dineIn: rating, delivery: delivery),
@@ -152,9 +151,9 @@ class const MyShopRatings({
   int get hashCode => Object.hash(dineIn, delivery);
 }
 
-/// 店里的一道菜的摘要, 用于推荐卡片的招牌菜.
+/// 店铺内的菜品摘要, 用于推荐卡片展示招牌菜.
 ///
-/// [crop] 是封面的圆形取景, 服务端没有保存时居中.
+/// [crop] 为封面的圆形取景区域, 服务端未保存时默认居中.
 class const ShopDish({
   required final int id,
   required final String name,
@@ -165,9 +164,9 @@ class const ShopDish({
   final CoverCrop crop = const CoverCrop(),
 });
 
-/// 新建店时可能重复的已有店. [distance] 是到新店位置的距离, 单位米.
+/// 新建店铺时检测到的潜在重复店铺, [distance] 为其与新店位置的距离 (单位为米).
 ///
-/// [samePlace] 为 true 时是同一个地图地点上的店, 否则是附近同名的店.
+/// [samePlace] 为 true 时表示位于同一地图地点, 否则表示附近同名店铺.
 class const ShopDuplicate({
   required final int id,
   required final String name,
@@ -177,7 +176,7 @@ class const ShopDuplicate({
   final bool samePlace = false,
 });
 
-/// 地图上的一个地点, 来自百度地点检索, 是新建店的候选. [uid] 提交时作为店的 `poi`.
+/// 来自百度地点检索的地图候选地点, 用于新建店铺, 提交时将 [uid] 作为店铺的 `poi`.
 class const MapPlace({
   required final String uid,
   required final String name,
@@ -185,11 +184,11 @@ class const MapPlace({
   required final GcjPoint point,
 });
 
-/// 店铺. 店铺接口和推荐卡片都转换为本类型.
+/// 店铺信息, 店铺接口与推荐卡片均统一转换为该模型.
 ///
-/// - [address] 是地址描述, 如 "万达金街 1 层".
-/// - [signatures] 和 [distance] 只有推荐卡片带. 店铺接口不返回招牌菜, 店铺页另行请求.
-/// - [matchedDish] 只有搜店结果带.
+/// - [address] 为详细地址描述, 如 "万达金街 1 层".
+/// - [signatures] 与 [distance] 仅推荐卡片返回, 店铺详情接口不返回招牌菜, 需由店铺页另行请求.
+/// - [matchedDish] 仅在搜店结果中返回.
 class const Shop({
   required final int id,
   required final String name,
@@ -212,13 +211,13 @@ class const Shop({
   final List<MealTime> mealTimes = const [],
   final PriceBand? priceBand,
 
-  /// 至多 2 个.
+  /// 店铺品类列表, 至多 2 个.
   final List<ShopCategory> categories = const [],
 
-  /// 店铺的口味, 至多 3 个.
+  /// 店铺口味标签列表, 至多 3 个.
   final List<Taste> tastes = const [],
 
-  /// 能点外卖.
+  /// 是否支持外卖.
   final bool deliveryEnabled = false,
   final ShopStat dineIn = const ShopStat(),
   final ShopStat delivery = const ShopStat(),
@@ -229,23 +228,23 @@ class const Shop({
   /// 当前用户是否收藏. 游客为 null.
   final bool? favorite,
 
-  /// 已关门. 不出现在附近和推荐里, 不能再加菜.
+  /// 是否已关门, 已关门的店铺不会出现在附近和推荐中, 也不能继续添加菜品.
   final bool closed = false,
   final List<ShopDish> signatures = const [],
 
-  /// 搜店时因菜名命中的一道菜. 只有搜店结果可能有值, 不带照片.
+  /// 搜店时因菜名匹配命中的菜品摘要, 仅搜店结果可能有值且不包含照片.
   final ShopDish? matchedDish,
 
-  /// 与请求坐标的距离, 单位米. 只有带坐标的推荐卡片有值.
+  /// 与请求坐标的距离 (单位为米), 仅在传入坐标的推荐卡片中返回.
   final int? distance,
 });
 
-/// 店铺中可以编辑, 会出现在修改记录里的字段.
+/// 店铺中支持编辑且会记录在修改历史中的字段.
 enum ShopField {
   name('店名'),
   address('地址描述'),
 
-  /// 坐标. 接口中经度 `gcjLng` 和纬度 `gcjLat` 是两个字段, 合并为一项.
+  /// 店铺坐标, 合并了接口中的经度 `gcjLng` 与纬度 `gcjLat` 两个字段.
   location('位置'),
   poi('地图地点'),
   picture('门头照片'),
@@ -261,7 +260,7 @@ enum ShopField {
 
   final String label;
 
-  /// 不认识的字段返回 null, 由调用方忽略. 后端新增可编辑字段时客户端可能还不认识.
+  /// 未知字段返回 null 并由调用方忽略, 以兼容后端后续新增的可编辑字段.
   static ShopField? fromApi(String? value) => switch (value) {
     'gcjLng' || 'gcjLat' => location,
     final value? => values.asNameMap()[value],
@@ -271,7 +270,7 @@ enum ShopField {
 
 /// 店铺的一条修改记录.
 ///
-/// - [fields] 是这次改动的字段, 按后端顺序, 已去重并去掉不认识的字段.
+/// - [fields] 为本次改动的字段列表, 保持后端顺序, 已去重并过滤未知字段.
 /// - [restoredFrom] 是 [RevisionAction.restore] 恢复到的记录 id.
 /// - 编辑者账号已删除时 [editorId] 和 [editorName] 为 null.
 class const ShopRevision({

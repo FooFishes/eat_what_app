@@ -17,7 +17,7 @@ class NavGlassTransparency extends _$NavGlassTransparency {
   static const min = 0.2;
   static const max = 1.0;
 
-  /// 本机的值读出之前用户已经调整过时, 读出的旧值不再覆盖.
+  /// 标记用户是否已在本地偏好读出前调整过透明度, 若已调整则忽略随后读出的旧值.
   bool _changed = false;
 
   @override
@@ -34,7 +34,7 @@ class NavGlassTransparency extends _$NavGlassTransparency {
     state = saved.clamp(min, max);
   }
 
-  /// 拖动滑条时连续调用, 只更新内存中的值. 松手后调用 [save] 写入本机.
+  /// 拖动滑条时连续调用以实时更新内存中的值, 松手后再调用 [save] 写入本机.
   void set(double value) {
     _changed = true;
     state = value.clamp(min, max);

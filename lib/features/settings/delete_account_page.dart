@@ -16,10 +16,10 @@ import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 注销账号: 说明删除和保留的内容以及冷静期, 让用户选择是否同时删除评论和回复, 再验证身份.
+/// 注销账号页面, 用于说明数据删留规则与冷静期, 选择是否同步删除评论及回复并完成身份验证.
 ///
-/// 绑定了手机号的账号用发到该号码的验证码验证, 没有手机号的用密码.
-/// 确认后提交申请并退出登录. 冷静期内在这台设备上重新登录即撤销注销.
+/// 已绑定手机号的账号通过短信验证码验证身份, 未绑定手机号的账号则通过密码验证.
+/// 确认提交后立即退出当前登录, 冷静期内在同一台设备上重新登录即可自动撤销注销申请.
 class DeleteAccountPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -180,7 +180,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
       password: byCode ? null : _password.text,
     );
     if (submitted) {
-      // 先提示再退出登录. 退出后本页关闭, 提示在根浮层上, 仍会显示.
+      // 需在退出登录前弹出轻提示: 退出操作会关闭当前页面, 而挂在根浮层上的提示仍可继续显示.
       if (mounted) showToast(context, '已申请注销，7 天内在这台设备上登录可以撤销');
       await notifier.leave();
       return;

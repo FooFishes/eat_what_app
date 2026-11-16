@@ -10,23 +10,23 @@ abstract final class ConsentEndpoints {
   static const grant = '/auth/consent/grant';
 }
 
-/// 接口分组 AccountConsent: 隐私政策和数据跨境说明的同意. 两份文档共用一个版本号.
+/// 封装 AccountConsent 接口分组, 负责隐私政策与数据跨境说明的读取及确认提交, 两份文档共用同一版本号.
 ///
-/// 同意由用户在同意对话框中确认后提交. 客户端只对接读取政策和同意两个接口, 不对接状态查询.
+/// 协议确认需由用户在对话框中操作后提交. 客户端仅对接读取政策与提交确认两个接口, 不调用状态查询接口.
 class ConsentApi {
   ConsentApi(this._client);
 
   final ApiClient _client;
 
-  /// 当前政策. 服务端还没发布过政策时版本为 null. 不需要登录.
+  /// 获取当前政策信息, 无需登录. 若服务端尚未发布过政策, 返回的版本号为 null.
   Future<ConsentPolicyDto> policy() async => decodeJson(
     await _client.get(ConsentEndpoints.policy),
     ConsentPolicyDto.fromJson,
   );
 
-  /// 用当前会话同意 [policyVersion]. 需要登录.
+  /// 以当前登录会话确认 [policyVersion] 版本的协议, 需在登录后调用.
   ///
-  /// 本接口收到要求同意的业务码时不再请用户同意, 否则会无限循环.
+  /// 本接口收到要求确认协议的业务码时不再弹窗重试, 避免触发无限循环.
   Future<void> grant({required String policyVersion}) => _client.post(
     ConsentEndpoints.grant,
     body: {'policyVersion': policyVersion},

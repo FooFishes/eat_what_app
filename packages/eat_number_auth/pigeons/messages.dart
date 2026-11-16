@@ -1,12 +1,14 @@
-/// Dart 与原生之间的接口定义. 改完后在本包目录运行
+/// Dart 与原生之间的接口定义. 修改后须在本包目录运行
 /// `fvm dart run pigeon --input pigeons/messages.dart` 重新生成三端代码.
 ///
-/// 颜色一律是 ARGB 整数. 长度一律是逻辑像素, 由原生侧按屏幕密度换算.
+/// 颜色均为 ARGB 整数; 长度单位均为逻辑像素, 由原生侧按屏幕密度换算.
 library;
 
 import 'package:pigeon/pigeon.dart';
 
-/// 授权页的外观和文案. 授权页是 SDK 的原生页面, 从底部升起, 号码和运营商协议由 SDK 填.
+/// 原生授权页的外观与文案配置.
+///
+/// 授权页由 SDK 拉起并从底部弹出, 脱敏号码与运营商协议由 SDK 自动填充.
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
@@ -63,35 +65,35 @@ class AuthPageStyleMessage {
 
   double buttonHeight;
 
-  /// 登录按钮的文字. 阿里云要求包含 "登录".
+  /// 登录按钮的文案, 阿里云规范要求其中必须包含 "登录".
   String loginText;
 
-  /// 切换按钮的文字, 点了改用别的登录方式.
+  /// 切换按钮的文案, 用于改用其他登录方式.
   String switchText;
 
-  /// 关闭按钮给读屏用的名字.
+  /// 关闭按钮的无障碍朗读名称.
   String closeLabel;
 
-  /// 协议名前面的文字, 如 "我已阅读并同意".
+  /// 协议名称前的前缀文案, 如 "我已阅读并同意".
   String privacyPrefix;
 
-  /// 没勾协议就点登录时弹出的二次确认弹窗: 标题, 协议名前面的文字, 按钮文字.
+  /// 未勾选协议直接点击登录时弹出的二次确认弹窗: 标题, 协议名称前缀与确认按钮文案.
   String alertTitle;
   String alertPrefix;
   String alertButtonText;
 }
 
 enum LoginTokenStatus {
-  /// 用户点了登录, 拿到取号凭证. 授权页还开着并显示加载, 用 `closeAuthPage` 关闭.
+  /// 用户点击登录并成功获取取号凭证; 此时授权页仍处于加载状态, 须调用 `closeAuthPage` 关闭.
   granted,
 
-  /// 用户关掉了授权页. 授权页已关闭.
+  /// 用户主动关闭了授权页, 页面已关闭.
   cancelled,
 
-  /// 用户点了切换按钮. 授权页已关闭.
+  /// 用户点击了切换按钮, 页面已关闭.
   switched,
 
-  /// 授权页没拉起来, 或取凭证失败. 授权页已关闭.
+  /// 授权页未能拉起或取号失败, 页面已关闭.
   failed,
 }
 
@@ -100,28 +102,28 @@ class LoginTokenMessage {
 
   LoginTokenStatus status;
 
-  /// 取号凭证, 只在 [LoginTokenStatus.granted] 时有值. 只能用一次.
+  /// 一次性取号凭证, 仅在 [LoginTokenStatus.granted] 时非空.
   String? token;
 
-  /// SDK 的返回码, 只在 [LoginTokenStatus.failed] 时有值, 用于排查.
+  /// SDK 返回的错误码, 仅在 [LoginTokenStatus.failed] 时非空, 用于问题排查.
   String? code;
 }
 
 @HostApi()
 abstract class NumberAuthHostApi {
-  /// 设置方案密钥, 检查当前环境能否一键登录, 并预取号.
+  /// 配置方案密钥并预取号, 同时检查当前环境是否支持一键登录.
   ///
-  /// 返回 null 表示可以拉起授权页, 否则是 SDK 的返回码.
+  /// 返回 null 表示可拉起授权页, 否则返回 SDK 错误码.
   @async
   String? prepare(String secret, int timeoutMs);
 
-  /// 拉起授权页, 等用户点登录, 关闭或切换.
+  /// 拉起授权页, 等待用户点击登录, 关闭或切换登录方式.
   @async
   LoginTokenMessage requestLoginToken(
     AuthPageStyleMessage style,
     int timeoutMs,
   );
 
-  /// 关闭授权页. 授权页没开着时什么也不做.
+  /// 关闭授权页; 若授权页未打开则忽略.
   void closeAuthPage();
 }

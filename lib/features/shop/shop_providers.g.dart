@@ -8,21 +8,21 @@ part of 'shop_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+/// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
 ///
-/// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 @ProviderFor(ShopMenu)
 final shopMenuProvider = ShopMenuFamily._();
 
-/// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+/// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
 ///
-/// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 final class ShopMenuProvider
     extends $AsyncNotifierProvider<ShopMenu, LoadedPages<Dish>> {
-  /// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+  /// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
   ///
-  /// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+  /// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
   ShopMenuProvider._({
     required ShopMenuFamily super.from,
     required int super.argument,
@@ -61,9 +61,9 @@ final class ShopMenuProvider
 
 String _$shopMenuHash() => r'80d4f980ef85ce9eb1716597526739b1ae276bfb';
 
-/// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+/// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
 ///
-/// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 final class ShopMenuFamily extends $Family
     with
@@ -83,9 +83,9 @@ final class ShopMenuFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+  /// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
   ///
-  /// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+  /// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 
   ShopMenuProvider call(int shopId) =>
       ShopMenuProvider._(argument: shopId, from: this);
@@ -94,9 +94,9 @@ final class ShopMenuFamily extends $Family
   String toString() => r'shopMenuProvider';
 }
 
-/// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+/// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
 ///
-/// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 abstract class _$ShopMenu extends $AsyncNotifier<LoadedPages<Dish>> {
   late final _$args = ref.$arg as int;
@@ -120,16 +120,16 @@ abstract class _$ShopMenu extends $AsyncNotifier<LoadedPages<Dish>> {
   }
 }
 
-/// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+/// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
 ///
-/// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 @ProviderFor(shopSignatures)
 final shopSignaturesProvider = ShopSignaturesFamily._();
 
-/// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+/// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
 ///
-/// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 final class ShopSignaturesProvider
     extends
@@ -139,9 +139,9 @@ final class ShopSignaturesProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+  /// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
   ///
-  /// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+  /// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
   ShopSignaturesProvider._({
     required ShopSignaturesFamily super.from,
     required int super.argument,
@@ -187,9 +187,9 @@ final class ShopSignaturesProvider
 
 String _$shopSignaturesHash() => r'e79ae3951387b92f67e432b706a70b9039904d0c';
 
-/// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+/// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
 ///
-/// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
 
 final class ShopSignaturesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, int> {
@@ -202,9 +202,9 @@ final class ShopSignaturesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+  /// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
   ///
-  /// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+  /// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
 
   ShopSignaturesProvider call(int shopId) =>
       ShopSignaturesProvider._(argument: shopId, from: this);
@@ -213,24 +213,21 @@ final class ShopSignaturesFamily extends $Family
   String toString() => r'shopSignaturesProvider';
 }
 
-/// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+/// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
 ///
-/// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-/// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+/// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 
 @ProviderFor(ShopMineState)
 final shopMineStateProvider = ShopMineStateFamily._();
 
-/// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+/// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
 ///
-/// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-/// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+/// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 final class ShopMineStateProvider
     extends $NotifierProvider<ShopMineState, ShopMine> {
-  /// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+  /// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
   ///
-  /// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-  /// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+  /// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
   ShopMineStateProvider._({
     required ShopMineStateFamily super.from,
     required int super.argument,
@@ -277,10 +274,9 @@ final class ShopMineStateProvider
 
 String _$shopMineStateHash() => r'dc5e3ee202e9773f3fb0d14124f030b92ea240aa';
 
-/// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+/// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
 ///
-/// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-/// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+/// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 
 final class ShopMineStateFamily extends $Family
     with
@@ -294,10 +290,9 @@ final class ShopMineStateFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+  /// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
   ///
-  /// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-  /// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+  /// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 
   ShopMineStateProvider call(int shopId) =>
       ShopMineStateProvider._(argument: shopId, from: this);
@@ -306,10 +301,9 @@ final class ShopMineStateFamily extends $Family
   String toString() => r'shopMineStateProvider';
 }
 
-/// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+/// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
 ///
-/// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-/// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+/// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 
 abstract class _$ShopMineState extends $Notifier<ShopMine> {
   late final _$args = ref.$arg as int;
@@ -332,15 +326,15 @@ abstract class _$ShopMineState extends $Notifier<ShopMine> {
   }
 }
 
-/// 一家店的修改记录, 最新的在前, 分页加载.
+/// 指定店铺的修改记录分页列表, 按时间倒序排列.
 
 @ProviderFor(ShopHistory)
 final shopHistoryProvider = ShopHistoryFamily._();
 
-/// 一家店的修改记录, 最新的在前, 分页加载.
+/// 指定店铺的修改记录分页列表, 按时间倒序排列.
 final class ShopHistoryProvider
     extends $AsyncNotifierProvider<ShopHistory, LoadedPages<ShopRevision>> {
-  /// 一家店的修改记录, 最新的在前, 分页加载.
+  /// 指定店铺的修改记录分页列表, 按时间倒序排列.
   ShopHistoryProvider._({
     required ShopHistoryFamily super.from,
     required int super.argument,
@@ -379,7 +373,7 @@ final class ShopHistoryProvider
 
 String _$shopHistoryHash() => r'94bab4e095ac42be6ced1b4db355c314f89cb638';
 
-/// 一家店的修改记录, 最新的在前, 分页加载.
+/// 指定店铺的修改记录分页列表, 按时间倒序排列.
 
 final class ShopHistoryFamily extends $Family
     with
@@ -399,7 +393,7 @@ final class ShopHistoryFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一家店的修改记录, 最新的在前, 分页加载.
+  /// 指定店铺的修改记录分页列表, 按时间倒序排列.
 
   ShopHistoryProvider call(int shopId) =>
       ShopHistoryProvider._(argument: shopId, from: this);
@@ -408,7 +402,7 @@ final class ShopHistoryFamily extends $Family
   String toString() => r'shopHistoryProvider';
 }
 
-/// 一家店的修改记录, 最新的在前, 分页加载.
+/// 指定店铺的修改记录分页列表, 按时间倒序排列.
 
 abstract class _$ShopHistory extends $AsyncNotifier<LoadedPages<ShopRevision>> {
   late final _$args = ref.$arg as int;

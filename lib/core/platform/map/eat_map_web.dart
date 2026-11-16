@@ -14,7 +14,7 @@ import 'package:web/web.dart' as web;
 MapEngine createMapEngine(AppConfig config) =>
     _WebMapEngine(config.baiduMapAkWeb);
 
-/// Web 上的百度地图 JS API GL. 第一次显示地图时才加载脚本.
+/// Web 端的百度地图 JS API GL 实现, 仅在首次渲染地图时按需加载脚本.
 class _WebMapEngine implements MapEngine {
   _WebMapEngine(this.apiKey);
 
@@ -26,7 +26,7 @@ class _WebMapEngine implements MapEngine {
   @override
   Widget build(EatMap map) => _WebMap(apiKey: apiKey, map: map);
 
-  /// 用 `LocalSearch` 的周边检索. 进出时在 GCJ-02 和 BD-09 之间转换.
+  /// 基于 `LocalSearch` 执行周边检索, 请求入参与响应坐标均在 GCJ-02 与 BD-09 之间自动转换.
   @override
   Future<List<MapPoi>> searchNearby(
     String keyword,
@@ -45,7 +45,7 @@ class _WebMapEngine implements MapEngine {
         'onSearchComplete': ((_BLocalResult? result) {
           if (done.isCompleted) return;
           final status = search.getStatus();
-          // 0 是 BMAP_STATUS_SUCCESS; 搜不到时是 2 (BMAP_STATUS_UNKNOWN_LOCATION), 条数为 0. 其余是超时等失败.
+          // 状态码 0 为成功 (BMAP_STATUS_SUCCESS), 2 为无结果 (BMAP_STATUS_UNKNOWN_LOCATION), 其余状态码均视为超时或检索失败.
           if (status != 0 && status != 2) {
             done.completeError(StateError('百度地点检索失败: $status'));
             return;
@@ -79,10 +79,10 @@ class _WebMapEngine implements MapEngine {
 
 Future<void>? _script;
 
-/// 把四个角上的 logo, 版权和比例尺推进可见区域, 和 App 上 SDK 设了内边距的效果一样.
+/// 调整四角 logo, 版权及比例尺的偏移样式, 使之推入未被浮层遮挡的可见区域, 效果与原生 SDK 设置内边距一致.
 ///
-/// 百度要求不遮挡 logo 和审图号, 而它们默认贴着容器边缘, 会被抽屉或左侧面板盖住.
-/// 内边距写成容器上的 CSS 变量, 由 [_WebMapState._sync] 更新.
+/// 百度地图要求不得遮挡 logo 与审图号, 而控件默认紧贴容器边缘易被抽屉或左侧面板覆盖,
+/// 故通过 [_WebMapState._sync] 动态更新容器的 CSS 变量来避让.
 const _controlsCss = '''
 .eat-baidu-map .anchorBL { margin-left: var(--eat-left, 0); margin-bottom: var(--eat-bottom, 0); }
 .eat-baidu-map .anchorBR { margin-right: var(--eat-right, 0); margin-bottom: var(--eat-bottom, 0); }
@@ -98,7 +98,7 @@ void _styleControls() {
   web.document.head!.append(web.HTMLStyleElement()..textContent = _controlsCss);
 }
 
-/// 加载 JS API GL. 带 `callback` 参数时脚本异步插入真正的地图库, 加载完调用回调.
+/// 按需加载 JS API GL 脚本, 携带 `callback` 参数以在异步加载真正地图库完毕后触发就绪回调.
 Future<void> _loadScript(String apiKey) => _script ??= () {
   final done = Completer<void>();
   const callback = '__eatBaiduMapReady';
@@ -137,10 +137,10 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
   var _loaded = false;
   var _failed = false;
 
-  /// 正在执行代码发起的移动. 停下时据此区分手势和代码.
+  /// 标记当前相机移动是否由代码触发, 以便在移动结束时区分手势操作与程序控制.
   var _movingByCode = false;
 
-  /// 已经按内边距平移过的偏移. 内边距变化时只平移差值, 让可见区域中心的坐标不变.
+  /// 已应用的内边距中心偏移量, 当内边距变化时仅平移差值, 保持可见区域中心地理坐标不变.
   var _appliedOffset = (dx: 0.0, dy: 0.0);
   EdgeInsets? _appliedInsets;
 
@@ -197,7 +197,7 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
     } on Object {
       return;
     }
-    // 地图在创建时读取容器尺寸, 要等元素挂到页面上.
+    // 地图初始化时需读取容器实际尺寸, 因此需等待 div 挂载至页面 DOM 树.
     while (mounted && !div.isConnected) {
       await Future<void>.delayed(const Duration(milliseconds: 16));
     }
@@ -231,7 +231,7 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
     _sync();
   }
 
-  /// `moveend` 和 `zoomend` 常常连着来, 合成一次.
+  /// `moveend` 与 `zoomend` 常连续触发, 通过防抖合并为一次空闲回调.
   void _scheduleIdle() {
     _idle?.cancel();
     _idle = Timer(const Duration(milliseconds: 60), () async {
@@ -413,7 +413,7 @@ _BIcon _icon(MarkerImage image) {
   );
 }
 
-/// 值里有 JS 对象的选项. 只有基本类型的选项直接用 `jsify`.
+/// 构造包含 JS 对象值的配置项 (纯基本类型的配置可直接调用 `jsify`).
 JSObject _options(Map<String, JSAny?> values) {
   final options = JSObject();
   values.forEach((key, value) => options[key] = value);
@@ -478,7 +478,7 @@ extension type _BMarker._(JSObject _) implements JSObject {
   external void addEventListener(String type, JSFunction handler);
 }
 
-/// 公交站和地铁站不会是店. `type` 只在它们上面不等于 `BMAP_POI_TYPE_NORMAL`.
+/// 过滤公交站与地铁站, 仅保留普通 POI (站点类型的 `type` 不等于 `BMAP_POI_TYPE_NORMAL`).
 bool _isPlace(_BLocalPoi poi) {
   final type = poi.type;
   final normal = globalContext['BMAP_POI_TYPE_NORMAL'];

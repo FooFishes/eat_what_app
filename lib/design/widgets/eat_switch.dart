@@ -7,10 +7,10 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/surface.dart';
 import 'package:flutter/widgets.dart';
 
-/// 开关行. 文字在左, 开关在右, 整行可点. 切换立即生效, 不配 "保存" 按钮.
+/// 整行可点的开关组件, 左侧显示文字而右侧为开关, 切换后立即生效而不额外配备 "保存" 按钮.
 ///
-/// - 需要确认的操作 (退出登录, 注销账号) 用按钮, 不用开关.
-/// - 关闭后会改变他人所见内容时, 在 [description] 中写明他人将看到什么.
+/// - 需要二次确认的操作 (如退出登录, 注销账号) 应使用按钮而非开关.
+/// - 若关闭后会改变他人所见内容, 需在 [description] 中明确说明他人将看到的状态.
 class EatSwitch extends StatelessWidget {
   const new({
     super.key,
@@ -26,7 +26,7 @@ class EatSwitch extends StatelessWidget {
   final bool value;
   final ValueChanged<bool>? onChanged;
 
-  /// 功能尚未对接接口. 开关正常显示, 文字后接 "待接入", 点击不发请求, 读屏报告不可用.
+  /// 标识该功能尚未对接接口: 开启后开关正常渲染并在文字后附加 "待接入", 但点击不触发请求且读屏报告不可用.
   final bool pending;
 
   @override

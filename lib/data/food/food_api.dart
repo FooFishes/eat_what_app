@@ -7,9 +7,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_api.g.dart';
 
-/// 列表接口的排序方式. 不传时, 指定店铺按 [menu] 排, 否则按 [newest] 排.
+/// 菜品列表接口的排序方式. 不传时, 指定店铺默认按 [menu] 排序, 否则按 [newest] 排序.
 enum FoodSort {
-  /// 菜单顺序: 招牌菜在前, 然后按分类顺序, 同一分类按赞数降序.
+  /// 菜单顺序: 招牌菜优先, 其余按分类排列, 同分类内按赞数降序.
   menu('MENU'),
   newest('NEWEST');
 
@@ -45,9 +45,9 @@ abstract final class FoodEndpoints {
   static String byUser(int userId) => '/foods/by-user/$userId';
 }
 
-/// 接口分组 Food: 详情, 列表, 发布, 编辑和修改记录, 赞和收藏, 他人的上传.
+/// 封装 Food 接口分组, 提供菜品详情, 列表, 发布, 编辑与修改记录, 点赞收藏及他人上传等接口.
 ///
-/// 标签的方法对应的接口在后端 v2 中已删除, 只有保留的待接入页面引用.
+/// 个人与系统标签相关接口在后端 v2 中已下线, 目前仅由保留的待接入页面引用.
 class FoodApi {
   FoodApi(this._client);
 
@@ -59,7 +59,7 @@ class FoodApi {
         FoodDto.fromJson,
       );
 
-  /// 按条件查询菜品. 多个条件之间为 "与" 关系. 不按校区过滤.
+  /// 按条件查询菜品, 多个条件之间为 "与" 关系, 且不按校区过滤.
   ///
   /// - [keyword] 只匹配菜名, 最多 64 字.
   /// - [category] 是分类的中文原值.
@@ -90,7 +90,7 @@ class FoodApi {
     FoodDto.fromJson,
   );
 
-  /// 我收藏的菜, 按收藏时间倒序.
+  /// 获取当前用户收藏的菜品列表, 按收藏时间倒序排列.
   Future<Paged<FoodDto>> favorites({
     int page = 1,
     int pageSize = 20,
@@ -134,7 +134,7 @@ class FoodApi {
     return revision is num ? revision.toInt() : null;
   }
 
-  /// 菜品的修改记录, 最新的在前. 不需要登录.
+  /// 获取菜品的修改历史记录, 按时间倒序排列, 无需登录.
   Future<Paged<FoodRevisionDto>> history(
     int id, {
     int page = 1,
@@ -155,7 +155,7 @@ class FoodApi {
   Future<void> restore(int id, int revisionId) =>
       _client.post(FoodEndpoints.restore(id, revisionId));
 
-  /// 按菜名, 说明和照片识别分类和口味.
+  /// 根据菜名, 说明和照片自动识别分类与口味.
   ///
   /// 后端未启用识别或识别失败时返回业务码 40001.
   Future<FoodSuggestionDto> suggestTags(
@@ -178,7 +178,7 @@ class FoodApi {
 
   Future<void> unfavorite(int id) => _client.post(FoodEndpoints.unfavorite(id));
 
-  /// 口味词表, 由运营维护.
+  /// 获取由运营维护的口味词表.
   Future<List<FoodTagDto>> systemTags({CancelToken? cancelToken}) async =>
       decodeList(
         await _client.get(FoodEndpoints.systemTags, cancelToken: cancelToken),
@@ -201,7 +201,7 @@ class FoodApi {
   Future<void> removeTag(int id, int tagId) =>
       _client.delete(FoodEndpoints.foodTag(id, tagId));
 
-  /// 我写过的标签和各自用于几道菜.
+  /// 获取当前用户创建过的个人标签及其关联菜品数量.
   Future<Paged<FoodTagDto>> myTags({
     int page = 1,
     int pageSize = 50,
@@ -218,11 +218,11 @@ class FoodApi {
   Future<void> renameMyTag(int tagId, String name) =>
       _client.put(FoodEndpoints.myTag(tagId), body: {'name': name});
 
-  /// 删除我的标签. 只去掉标签, 菜不受影响.
+  /// 删除个人标签, 仅移除标签本身, 不影响对应菜品.
   Future<void> deleteMyTag(int tagId) =>
       _client.delete(FoodEndpoints.myTag(tagId));
 
-  /// 我用个人标签 [tagId] 标过的菜, 跨店列出. 标签不存在或不是我的时失败, 业务码 40001.
+  /// 跨店列出使用个人标签 [tagId] 标记的菜品. 若标签不存在或非本人所有, 返回业务码 40001.
   Future<Paged<FoodDto>> taggedWith(
     int tagId, {
     int page = 1,
@@ -237,7 +237,7 @@ class FoodApi {
     FoodDto.fromJson,
   );
 
-  /// [userId] 上传的菜, 按发布时间倒序. 用于他人主页的 "上传" 分栏.
+  /// 获取指定用户 [userId] 上传的菜品, 按发布时间倒序排列, 用于他人主页的 "上传" 分栏.
   Future<Paged<FoodDto>> byUser(
     int userId, {
     int page = 1,

@@ -1,6 +1,6 @@
-/// 饭点. 各饭点的时间段见 `MealRules`.
+/// 饭点枚举, 各时段划分见 `MealRules`.
 ///
-/// 店铺适合的饭点和推荐所用的饭点都取这四个值.
+/// 店铺适用的营业时段与推荐场景均使用这四个取值.
 enum MealTime {
   breakfast('breakfast', '早饭'),
   lunch('lunch', '午饭'),

@@ -44,22 +44,22 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 新建店铺页面. 先按关键词搜地图上的店, 从候选里选一家; 搜不到时手动添加.
+/// 新建店铺页面: 通过关键词检索地图地点并选择候选进入表单, 未检索到时支持手动添加.
 ///
-/// 选了候选后进入表单, 店名, 位置和地址描述按地图上的信息预填, 都可以改, 提交时带上地点的 uid.
-/// 地图不可用 (没配 AK) 时直接进入手动添加的表单.
+/// 选定地图候选后进入表单并预填店名, 位置与地址描述 (均支持修改), 提交时携带对应地点的 uid;
+/// 若地图服务不可用 (未配置 AK), 则直接进入手动添加表单.
 ///
-/// 表单的字段:
-/// - 必填: 店名, 类型 (美食或甜点饮品), 地图选点, 地址描述. 所属商圈按地图中心自动判断.
-/// - 选填, 不改也能提交: 门头照片, 品类, 口味, 适合哪顿 (默认午饭和晚饭), 价位, 能点外卖.
+/// 表单字段说明:
+/// - 必填项包括店名, 类型 (美食或甜点饮品), 地图选点与地址描述, 所属商圈根据地图中心位置自动判定.
+/// - 选填项包括门头照片, 品类, 口味, 适合饭点 (默认午饭和晚饭), 价位与外卖支持状态, 保持默认即可提交.
 ///
-/// 已有店的提示: 选中的地点已经有人建过店, 或 200 m 内有同名 (忽略空白和大小写) 的店时, 由后端查出,
-/// 只提示, 可以选那家, 也可以继续新建. 同一地点可以有多家店, 如食堂的窗口, 继续新建时照样带上地点.
-/// 提交时后端仍说可能已有这家店 (40017) 时, 显示响应里的店; 用户选继续新建后带 `force` 重新提交.
+/// 重复店铺提示机制: 当选定地点已建店或 200 m 内存在同名店铺 (忽略空白与大小写) 时, 由服务端返回提示;
+/// 该提示不强制拦截, 用户可选择已有店铺或继续新建 (同一地点允许存在多家店铺, 如食堂窗口, 继续新建时仍保留地点 uid).
+/// 若提交时服务端仍返回疑似重复错误 (40017), 则展示响应中的候选店铺, 用户确认继续新建后携带 `force` 重新提交.
 ///
-/// 创建成功后的去向:
-/// - [returnShop] 为 true 时, 带着新店返回上一页. 用于加菜页的 "换一家".
-/// - 否则替换为新店的加菜页.
+/// 创建成功后的跳转逻辑:
+/// - 当 [returnShop] 为 true 时将新店对象返回上一页, 用于加菜页的 "换一家" 流程.
+/// - 否则将当前页替换为新店对应的加菜页.
 class NewShopPage extends ConsumerStatefulWidget {
   const new({super.key, this.initialName = '', this.returnShop = false});
 
@@ -75,10 +75,10 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   late final _name = TextEditingController(text: widget.initialName);
   final _address = TextEditingController();
 
-  /// 是否在填表单. 为 false 时显示地图候选.
+  /// 是否处于表单填写阶段, 为 false 时展示地图地点候选列表.
   late var _editing = !_canSearch;
 
-  /// 选中的地图候选. 手动添加时为 null.
+  /// 当前选定的地图候选地点, 手动添加时为 null.
   MapPlace? _place;
 
   final _map = EatMapController();
@@ -87,7 +87,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   PickedPhoto? _photo;
   final _nameKey = GlobalKey();
 
-  /// 店铺类型, 必选. 用户选择前为 null.
+  /// 必选的店铺类型, 用户尚未选择时为 null.
   ShopKind? _kind;
   var _categories = <ShopCategory>{};
   var _tastes = <Taste>{};
@@ -95,19 +95,19 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   PriceBand? _priceBand;
   var _delivery = false;
 
-  /// 用户在已有店的提示中选择了 "不是同一家, 继续新建". 提交时带 `force`.
+  /// 标记用户是否在重复店铺提示中选择了 "不是同一家, 继续新建", 为 true 时提交携带 `force` 参数.
   var _keepNew = false;
 
-  /// 提交时后端以 "可能已有这家店" 拒绝时响应里的店. 改店名或位置后清空.
+  /// 提交时若服务端判定疑似重复, 记录响应返回的候选店铺列表, 修改店名或位置后清空.
   List<ShopDuplicate>? _rejected;
 
-  /// 手指是否按在地图上.
+  /// 指针当前是否按在地图区域上.
   ///
-  /// 按在地图上时禁止页面滚动, 否则纵向拖动会被页面滚动拦截, 地图无法拖动.
+  /// 触摸地图时需禁用外层页面滚动, 避免纵向拖动手势被页面滚动容器拦截而导致地图无法平移.
   var _onMap = false;
   var _busy = false;
 
-  /// 已上传的门头照片及其存储 key. 重试提交时不重复上传.
+  /// 已上传的门头照片及对应的存储 key, 用于避免提交重试时重复上传同一图片.
   ({PickedPhoto photo, String key})? _uploaded;
 
   @override
@@ -124,7 +124,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     super.dispose();
   }
 
-  /// 地图中心. 未拖动过时取当前位置, 没有定位时取校区中心.
+  /// 当前地图中心坐标; 未拖动过地图时优先取当前定位, 无定位时回退至校区中心.
   GcjPoint? get _point =>
       _center ??
       ref.read(currentLocationProvider).point ??
@@ -132,9 +132,9 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
 
   bool get _canSearch => ref.read(placeRepositoryProvider).canSearchPlaces;
 
-  /// 选了一个候选: 预填表单, 地图移到候选的位置.
+  /// 选定地图候选后预填表单并将地图中心移至该地点.
   ///
-  /// 先收起键盘: 候选页和表单共用页面骨架, 不收起时搜索框的焦点会落到店名输入框上.
+  /// 切换前需先收起键盘: 候选列表与表单共用页面骨架, 若不主动失焦, 搜索框焦点会直接转移至店名输入框.
   void _choose(MapPlace place) => setState(() {
     FocusManager.instance.primaryFocus?.unfocus();
     _place = place;
@@ -147,7 +147,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _editing = true;
   });
 
-  /// 搜不到时手动添加. 店名先用搜索的关键词.
+  /// 未检索到合适地点时切换为手动添加表单, 并以当前搜索关键词预填店名.
   void _addManually() => setState(() {
     FocusManager.instance.primaryFocus?.unfocus();
     _place = null;
@@ -160,7 +160,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _editing = true;
   });
 
-  /// 从表单回到候选列表.
+  /// 从表单视图退回至地图候选列表.
   void _backToCandidates() => setState(() => _editing = false);
 
   Future<void> _pickPhoto() async {
@@ -168,7 +168,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     if (photos.isNotEmpty && mounted) setState(() => _photo = photos.first);
   }
 
-  /// 多选项的切换. 已满 [max] 项时不再选中新项, 提示上限.
+  /// 切换多选项的选中状态; 当已选数量达到 [max] 时拒绝新增并弹出上限提示.
   Set<T> _toggle<T>(Set<T> current, T value, int max, String name) {
     if (current.contains(value)) return {...current}..remove(value);
     if (current.length >= max) {
@@ -259,7 +259,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     }
   }
 
-  /// 后端以 "可能已有这家店" 拒绝新建: 显示响应里的店, 让用户选它或确认继续新建.
+  /// 处理服务端返回的疑似重复错误, 展示响应中的候选店铺供用户直接选用或确认继续新建.
   Future<void> _onDuplicate(List<ShopDuplicate> duplicates) async {
     showToast(context, '附近可能已有这家店');
     setState(() {
@@ -270,9 +270,9 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     if (field != null && field.mounted) await Scrollable.ensureVisible(field);
   }
 
-  /// 在已有店的提示中选择已有的店. 已关门的店不能选.
+  /// 在重复店铺提示中选用已有店铺, 已关门的店铺禁止选中.
   ///
-  /// 加菜页的 "换一家" 要带回完整的店, 因此先读一次店铺详情.
+  /// 当处于加菜页 "换一家" 流程时, 需先请求完整的店铺详情再返回上一页.
   Future<void> _useExisting(ShopDuplicate duplicate) async {
     if (duplicate.closed) {
       showToast(context, '这家店已关门，不能加菜');
@@ -310,7 +310,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
         ],
       );
     }
-    // 从候选进来的表单, 返回时回到候选; 地图不可用时没有候选, 直接离开页面.
+    // 从候选列表进入表单时拦截返回手势以退回候选列表; 若地图不可用则无候选列表, 允许直接退出页面.
     final canGoBack = _canSearch;
     return PopScope(
       canPop: !canGoBack,
@@ -603,7 +603,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   }
 }
 
-/// 输入框右侧的字数计数.
+/// 显示在输入框右侧的字符计数标签.
 class _Counter extends StatelessWidget {
   const new(this.count, this.max);
 
@@ -625,9 +625,7 @@ class _Counter extends StatelessWidget {
   }
 }
 
-/// 已有店的提示: 选中的地点已经有人建过店, 或附近有同名店. 提供 "就选它" 和继续新建的按钮.
-///
-/// [keepLabel] 是继续新建的按钮文字. 为 null 时不能继续新建, 只有 "就选它".
+/// 重复店铺提示组件: 当选定地点已建店或附近存在同名店铺时展示, 并提供 "就选它" 与继续新建操作按钮.
 class _ExistingNotice extends StatelessWidget {
   const new({required this.text, required this.onUse, required this.onKeep});
 
@@ -662,9 +660,9 @@ class _ExistingNotice extends StatelessWidget {
   }
 }
 
-/// 选点地图. 地图中心固定一个定位针, 用户拖动地图使针尖对准店门口.
+/// 地图选点组件: 在地图中心固定定位针, 用户拖动地图使针尖对准店铺位置.
 ///
-/// 拖动停止后, 地图中心通过 [onMoved] 回传.
+/// 拖动停止后, 地图中心坐标通过 [onMoved] 回调传出.
 class _PickMap extends StatelessWidget {
   const new({
     super.key,
@@ -693,7 +691,7 @@ class _PickMap extends StatelessWidget {
               initialCenter: mapPoint(initial),
               initialZoom: 17,
               minZoom: 13,
-              // 四角被圆角裁掉, 内边距把 logo 和比例尺挪进来. 四边相等, 地图中心不变.
+              // 地图容器四角被圆角裁剪, 通过四边相等的内边距将 logo 与比例尺向内推移, 同时保持地图中心不变.
               insets: const EdgeInsets.all(EatSpace.s10),
               onCameraIdle: (camera, _) => onMoved(gcjOf(camera.center)),
               onFailed: onFailed,
@@ -715,7 +713,7 @@ class _PickMap extends StatelessWidget {
   }
 }
 
-/// 门头照片. 未选择时显示虚线框和选填说明, 选择后显示照片和删除按钮.
+/// 门头照片选择组件: 未选图时展示虚线框与选填提示, 选图后展示预览图与删除按钮.
 class _StorefrontPhoto extends StatelessWidget {
   const new({
     required this.photo,

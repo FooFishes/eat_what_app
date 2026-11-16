@@ -25,9 +25,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_providers.g.dart';
 
-/// 分页加载的列表.
+/// 分页加载的列表状态.
 ///
-/// 加载下一页失败时记录在 [moreError] 中, 列表底部显示 "重试".
+/// 加载下一页失败时将错误记录在 [moreError] 中, 列表底部据此显示 "重试".
 class const ListPages<T>({
   required final Paged<T> pages,
   final AppFailure? moreError,
@@ -35,7 +35,7 @@ class const ListPages<T>({
 
 typedef DishPages = ListPages<Dish>;
 
-/// 列表的 "加载下一页". 同一时刻只加载一页.
+/// 列表分页加载器, 同一时刻仅允许加载一页.
 class _MoreLoader<T> {
   var _loading = false;
 
@@ -61,11 +61,10 @@ class _MoreLoader<T> {
 int? _myId(Ref ref) =>
     ref.watch(sessionProvider.select((s) => s is SignedIn ? s.user?.id : null));
 
-/// 我上传的菜. 发布成功后重新请求.
+/// 当前用户上传的菜品列表, 发布成功后会自动刷新.
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果, 不重新请求.
-///
-/// 封禁中改用他人主页的接口读取. 受限会话不能调用 `/foods/my`, 但可以调用 `/foods/by-user/{id}`.
+/// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
+/// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
 @Riverpod(keepAlive: true)
 class MyUploads extends _$MyUploads {
   @override
@@ -89,7 +88,7 @@ class MyUploads extends _$MyUploads {
   );
 }
 
-/// 我收藏的菜, 按收藏时间倒序.
+/// 当前用户收藏的菜品列表, 按收藏时间倒序排列.
 @Riverpod(keepAlive: true)
 class MyFavorites extends _$MyFavorites {
   @override
@@ -112,7 +111,7 @@ class MyFavorites extends _$MyFavorites {
   );
 }
 
-/// 我收藏的店. 已关门的店排在最后.
+/// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 @Riverpod(keepAlive: true)
 class MyFavoriteShops extends _$MyFavoriteShops {
   @override
@@ -135,7 +134,7 @@ class MyFavoriteShops extends _$MyFavoriteShops {
   );
 }
 
-/// 他人主页的 "上传". 离开页面后保留 5 分钟.
+/// 他人主页的 "上传" 菜品列表, 离开页面后缓存保留 5 分钟.
 @riverpod
 class UserUploads extends _$UserUploads {
   @override
@@ -158,12 +157,12 @@ class UserUploads extends _$UserUploads {
   );
 }
 
-/// 粉丝或关注列表.
+/// 粉丝或关注列表类型.
 enum FollowListKind { fans, followings }
 
 /// [userId] 的粉丝或关注列表.
 ///
-/// 对方未公开该列表时失败, [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面显示 "对方未公开".
+/// 若对方未公开该列表则请求失败, 此时 [AppFailure.code] 为 `BizCodes.permissionDenied`, 页面据此显示 "对方未公开".
 @riverpod
 class FollowList extends _$FollowList {
   @override
@@ -193,24 +192,24 @@ class FollowList extends _$FollowList {
       _more.load(ref, state.value, _fetch, (next) => state = AsyncData(next));
 }
 
-/// 失败是否因为对方未公开列表. 粉丝和关注列表接口只在这种情况下返回无权限.
+/// 判断失败是否由对方未公开列表所致; 粉丝和关注列表接口仅在该场景下返回无权限错误.
 bool isHiddenList(Object? error) =>
     error is AppFailure && error.code == BizCodes.permissionDenied;
 
-/// 失败是否因为用户不存在. 页面显示 "该用户不存在", 不使用码表中为登录准备的提示.
+/// 判断失败是否由用户不存在所致, 以便页面显示 "该用户不存在", 而非复用登录场景的默认提示.
 bool isMissingUser(Object? error) =>
     error is AppFailure && error.code == BizCodes.userNotFound;
 
-/// 当前用户是否屏蔽了 [userId]. 他人主页的 "更多" 据此显示 "屏蔽" 或 "解除屏蔽".
+/// 当前用户是否已屏蔽 [userId], 供他人主页 "更多" 菜单显示 "屏蔽" 或 "解除屏蔽".
 ///
-/// 取自对方的资料, 不单独请求.
+/// 该状态直接取自对方用户资料, 不单独发起请求.
 @riverpod
 class BlockState extends _$BlockState {
   @override
   Future<bool> build(int userId) async =>
       (await ref.watch(userProfileProvider(userId).future)).blocked;
 
-  /// 屏蔽或解除屏蔽. 屏蔽会解除双方的关注关系, 成功后重新请求双方的资料.
+  /// 屏蔽或解除屏蔽该用户. 屏蔽操作会解除双方的关注关系, 成功后会重新请求双方资料以同步状态.
   Future<void> set({required bool blocked}) async {
     await ref.read(userRepositoryProvider).setBlocked(userId, blocked: blocked);
     if (!ref.mounted) return;
@@ -219,7 +218,7 @@ class BlockState extends _$BlockState {
   }
 }
 
-/// 我的标签. 只有认证用户能写标签, 未认证时不请求, 返回空列表.
+/// 当前用户的自定义标签列表. 仅认证用户支持编写标签, 未认证时不发起请求而直接返回空列表.
 @riverpod
 class MyTags extends _$MyTags {
   @override
@@ -230,13 +229,13 @@ class MyTags extends _$MyTags {
         .myTags(cancelToken: ref.cancelToken());
   }
 
-  /// 改名. 失败时抛出 [AppFailure], 列表不变.
+  /// 重命名指定标签; 若请求失败则抛出 [AppFailure], 列表保持不变.
   Future<void> rename(MyTag tag, String name) async {
     await ref.read(foodRepositoryProvider).renameMyTag(tag.id, name);
     _replace(tag.id, (t) => MyTag(id: t.id, name: name, usage: t.usage));
   }
 
-  /// 删除标签. 菜不受影响. 失败时抛出 [AppFailure], 列表不变.
+  /// 删除指定标签, 已关联的菜品不受影响; 若请求失败则抛出 [AppFailure], 列表保持不变.
   Future<void> delete(MyTag tag) async {
     await ref.read(foodRepositoryProvider).deleteMyTag(tag.id);
     _replace(tag.id, (_) => null);
@@ -252,7 +251,7 @@ class MyTags extends _$MyTags {
   }
 }
 
-/// 用我的标签 [tagId] 标过的菜.
+/// 使用当前用户标签 [tagId] 标记过的菜品列表.
 @riverpod
 class TagDishes extends _$TagDishes {
   @override
@@ -272,7 +271,7 @@ class TagDishes extends _$TagDishes {
   );
 }
 
-/// 足迹的一个分栏, 按最近看过排序.
+/// 浏览足迹分栏列表, 按最近浏览时间倒序排列.
 @riverpod
 class Footprints extends _$Footprints {
   @override
@@ -291,20 +290,20 @@ class Footprints extends _$Footprints {
     (next) => state = AsyncData(next),
   );
 
-  /// 清空本分栏. 失败时抛出 [AppFailure], 列表不变.
+  /// 清空当前足迹分栏; 若请求失败则抛出 [AppFailure], 列表保持不变.
   Future<void> clear() async {
     await ref.read(historyRepositoryProvider).clear(kind);
     if (ref.mounted) state = const AsyncData(ListPages(pages: Paged.empty()));
   }
 }
 
-/// 本人的等级进度. 每次打开等级页重新请求.
+/// 当前用户的等级进度, 每次进入等级页时重新请求.
 @riverpod
 Future<GrowthProgress> growthProgress(Ref ref) => ref
     .watch(growthRepositoryProvider)
     .progress(cancelToken: ref.cancelToken());
 
-/// 本人的经验明细, 按入账时间倒序.
+/// 当前用户的经验值明细列表, 按入账时间倒序排列.
 @riverpod
 class ExperienceLedger extends _$ExperienceLedger {
   @override
@@ -324,15 +323,15 @@ class ExperienceLedger extends _$ExperienceLedger {
   );
 }
 
-/// 换头像时选好的照片和取景. [jpeg] 是按取景裁好的 512×512 头像.
+/// 更换头像时选定的照片及裁切结果, 其中 [jpeg] 为按取景框裁切后的 512×512 头像数据.
 class const AvatarDraft({
   required final PickedPhoto photo,
   required final Uint8List jpeg,
 });
 
-/// 保存资料: 更换头像时先上传头像, 然后保存昵称, 签名和头像.
+/// 保存个人资料; 若更换了头像则先上传头像文件, 再提交昵称, 签名和头像信息.
 ///
-/// 成功后刷新当前用户和 "我的" 的资料. 失败时抛出 [AppFailure].
+/// 保存成功后刷新当前用户及 "我的" 页面资料, 失败时抛出 [AppFailure].
 @riverpod
 class ProfileSaver extends _$ProfileSaver {
   @override

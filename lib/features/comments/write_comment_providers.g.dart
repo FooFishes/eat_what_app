@@ -8,15 +8,15 @@ part of 'write_comment_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 
 @ProviderFor(CommentComposer)
 final commentComposerProvider = CommentComposerFamily._();
 
-/// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 final class CommentComposerProvider
     extends $NotifierProvider<CommentComposer, Composer> {
-  /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+  /// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
   CommentComposerProvider._({
     required CommentComposerFamily super.from,
     required int super.argument,
@@ -63,7 +63,7 @@ final class CommentComposerProvider
 
 String _$commentComposerHash() => r'bb43fc1e898221696f9100bcb4cc88bf0f3b7ba4';
 
-/// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 
 final class CommentComposerFamily extends $Family
     with
@@ -83,7 +83,7 @@ final class CommentComposerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+  /// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 
   CommentComposerProvider call(int dishId) =>
       CommentComposerProvider._(argument: dishId, from: this);
@@ -92,7 +92,7 @@ final class CommentComposerFamily extends $Family
   String toString() => r'commentComposerProvider';
 }
 
-/// 写评论页的草稿. 照片在发送时上传, 上传过的照片重试时不再上传.
+/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
 
 abstract class _$CommentComposer extends $Notifier<Composer> {
   late final _$args = ref.$arg as int;

@@ -1,4 +1,4 @@
-/// 附近页和新建店共用的地图部分: 坐标类型的互转, 店铺标记的位图.
+/// 附近页与新建店铺页共用的地图工具, 提供坐标类型转换及地图标记位图的异步绘制缓存.
 library;
 
 import 'dart:async';
@@ -14,9 +14,9 @@ MapLatLng mapPoint(GcjPoint point) => MapLatLng(point.lat, point.lng);
 
 GcjPoint gcjOf(MapLatLng point) => GcjPoint(point.lat, point.lng);
 
-/// 店铺标记和我的位置画成的位图. 第一次用到时在后台画, 画好后调用 [onChanged] 让页面重建.
+/// 管理店铺标记与当前位置圆点的位图渲染缓存. 首次使用时在后台绘制, 完成后触发 [onChanged] 通知页面重建.
 ///
-/// 封面图还没下载好时, 先给不带封面的版本, 图到了再换.
+/// 若店铺封面图尚未下载完成, 则先返回无封面的基础标记位图, 待封面图就绪后再行替换.
 class PinImages {
   PinImages(this.onChanged);
 
@@ -25,10 +25,10 @@ class PinImages {
   final _drawing = <_PinKey>{};
   var _disposed = false;
 
-  /// 标记四周给阴影留的空白, 和 `shadow-pin` 的偏移, 模糊半径对应.
+  /// 标记四周为投影预留的留白边距, 与 `shadow-pin` 的偏移量和模糊半径对应.
   static const _shadow = EdgeInsets.fromLTRB(10, 6, 10, 14);
 
-  /// [ring] 是选中时外圈的颜色. 没画好时返回 null.
+  /// 获取店铺标记位图, 尚未绘制完成时返回 null. [ring] 为选中状态下的外圈颜色.
   MarkerImage? shop(
     BuildContext context, {
     required String name,

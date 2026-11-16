@@ -7,10 +7,10 @@ import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/widgets.dart';
 
-/// "调整照片" 底部的舞台色选择: 从照片推荐的三个舞台色, 下方实时预览菜品在首页的效果.
+/// 位于 "调整照片" 底部面板的舞台色选择器, 展示从照片中推荐的三个舞台色并提供首页效果的实时预览.
 ///
-/// - 放在 `crop-panel` 底上, 文字为 `paper`.
-/// - 只能从 [candidates] 中选择, 不提供任意取色的调色盘.
+/// - 渲染在 `crop-panel` 深色底上, 文字固定使用 `paper` 色.
+/// - 仅允许从 [candidates] 中点选, 不开放任意取色的调色盘.
 class StageColorPicker extends StatelessWidget {
   const new({
     super.key,
@@ -28,10 +28,10 @@ class StageColorPicker extends StatelessWidget {
   final StageColor selected;
   final ValueChanged<StageColor> onSelected;
 
-  /// 预览卡上的菜名. 为空时显示 "这道菜".
+  /// 预览卡上展示的菜名, 为空时默认显示 "这道菜".
   final String dishName;
 
-  /// 预览卡右上角盘子中的封面, 按裁切参数显示.
+  /// 预览卡右上角盘子中的封面图, 按传入的裁切参数显示.
   final ImageProvider? image;
   final double centerX;
   final double centerY;

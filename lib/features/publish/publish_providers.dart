@@ -28,10 +28,10 @@ part 'publish_providers.g.dart';
 /// 防抖期间参数变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+/// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
 ///
-/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-/// - 搜店接口也返回已关门的店, 这里去掉.
+/// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+/// - 搜店接口包含已关门店铺, 此处统一过滤排除.
 @riverpod
 Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
   // 定位或校区变化时重新请求. 搜店范围由 shopSearchScope 读取.
@@ -58,7 +58,7 @@ Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
   ];
 }
 
-/// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
+/// 当前用户所在的商圈, 用于选店页的位置提示; 无定位或不在任何商圈内时返回 null.
 @riverpod
 Future<Hub?> myHub(Ref ref) async {
   final me = ref.watch(currentLocationProvider.select((s) => s.point));
@@ -66,7 +66,7 @@ Future<Hub?> myHub(Ref ref) async {
   return ref.watch(placeRepositoryProvider).locateHub(me);
 }
 
-/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+/// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
 @riverpod
 Future<Hub?> hubAt(Ref ref, GcjPoint point) async {
   await Future<void>.delayed(_debounce);
@@ -74,9 +74,9 @@ Future<Hub?> hubAt(Ref ref, GcjPoint point) async {
   return ref.watch(placeRepositoryProvider).locateHub(point);
 }
 
-/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+/// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
 ///
-/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+/// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
 @riverpod
 Future<List<ShopDuplicate>> shopDuplicates(
   Ref ref,
@@ -91,9 +91,9 @@ Future<List<ShopDuplicate>> shopDuplicates(
       .duplicates(name, point, poi: poi, cancelToken: ref.cancelToken());
 }
 
-/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+/// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
 ///
-/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+/// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
 @riverpod
 Future<List<MapPlace>> mapPlaces(Ref ref, String keyword) async {
   if (keyword.isEmpty) return const [];
@@ -106,7 +106,7 @@ Future<List<MapPlace>> mapPlaces(Ref ref, String keyword) async {
   return ref.watch(placeRepositoryProvider).mapPlaces(keyword, scope!.point!);
 }
 
-/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+/// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
 @riverpod
 Future<Dish?> sameNameDish(Ref ref, int shopId, String name) async {
   if (PublishRules.compactName(name).isEmpty) return null;
@@ -117,7 +117,7 @@ Future<Dish?> sameNameDish(Ref ref, int shopId, String name) async {
       .sameName(shopId, name, cancelToken: ref.cancelToken());
 }
 
-/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+/// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 @riverpod
 Future<Dish> dishToEdit(Ref ref, int dishId) => ref
     .watch(foodRepositoryProvider)
@@ -126,7 +126,7 @@ Future<Dish> dishToEdit(Ref ref, int dishId) => ref
 /// 照片在上传队列中的状态.
 enum UploadStatus { waiting, uploading, done, failed }
 
-/// 加菜页中的一张照片: 本地字节, 上传进度, 上传完成后获得的存储 key.
+/// 加菜页中的单张待上传照片模型, 包含本地图片数据, 上传状态, 进度及上传完成后的存储 key.
 class const DraftPhoto({
   required final int id,
   required final PickedPhoto photo,
@@ -136,7 +136,7 @@ class const DraftPhoto({
   final String? key,
   final AppFailure? failure,
 
-  /// 回到前台时是否已经自动重试过. 自动重试每张照片只进行一次.
+  /// 应用回到前台时是否已触发过自动重试, 每张照片最多自动重试一次.
   final bool autoRetried = false,
 }) {
   DraftPhoto copy({
@@ -157,9 +157,9 @@ class const DraftPhoto({
   );
 }
 
-/// 加菜页的草稿. 第一张照片是封面, 裁切和舞台色都属于封面.
+/// 加菜页的表单草稿状态, 首张照片默认为封面, 裁切与舞台色均绑定于封面.
 ///
-/// 编辑已有的菜时, [photos] 只包含换上的新照片. 为空表示不换照片, 页面显示原有照片.
+/// 编辑已有菜品时, [photos] 仅保存待替换的新照片; 若为空则表示保留原有照片.
 class const PublishDraft({
   final List<DraftPhoto> photos = const [],
   final CoverCrop crop = const CoverCrop(),
@@ -167,9 +167,9 @@ class const PublishDraft({
   /// 封面按 [crop] 取色的结果. 计算完成前为 null.
   final StageSuggestion? suggestion,
 
-  /// 用户在 "调整照片" 中手动选择的颜色.
+  /// 用户在 "调整照片" 页面手动选定的舞台色.
   ///
-  /// 有值时优先于推荐色, 之后更换分类也不改变舞台色.
+  /// 非 null 时优先级高于自动推荐色, 且后续更换分类也不会覆盖该颜色.
   final StageColor? pickedStage,
   final DishCategory? category,
 
@@ -177,7 +177,7 @@ class const PublishDraft({
   final Set<Taste> tastes = const {},
   final bool signature = false,
 
-  /// 分类或口味是按识别结果预选的, 用户之后还没有手动改过.
+  /// 标记当前分类或口味是否来自自动识别预选且尚未被用户手动修改.
   final bool preselected = false,
 }) {
   /// 按枚举顺序排列的口味, 用于提交.
@@ -186,7 +186,7 @@ class const PublishDraft({
       if (tastes.contains(taste)) taste,
   ];
 
-  /// "调整照片" 中的推荐色. 取色可靠时按距离排序, 不可靠时第一个是分类默认色.
+  /// 供 "调整照片" 使用的推荐舞台色列表; 取色可靠时按色距排序, 不可靠时首位回退为分类默认色.
   List<StageColor> get candidates =>
       suggestion?.top3(category?.stage ?? StageColor.broth) ?? const [];
 
@@ -222,11 +222,11 @@ class const PublishDraft({
                 .reduce((a, b) => a + b) /
             photos.length;
 
-  /// 编辑时相对 [original] 的改动. 没有任何改动时返回 null.
+  /// 计算当前草稿相对于 [original] 的修改内容, 若无任何改动则返回 null.
   ///
-  /// - [name] 和 [description] 是输入框中去掉首尾空白的文字. [description] 为空表示清除.
-  /// - [price] 为 null 表示价格没有改动. 接口不能清除价格.
-  /// - 换了照片时提交整组新照片, 以及新封面的舞台色, 备选色和取景. 没换照片时这几项都不提交.
+  /// - [name] 与 [description] 需传入去除首尾空白后的文本, 其中 [description] 为空字符串表示清空描述.
+  /// - [price] 为 null 表示价格未修改, 因为接口不支持清空已有价格.
+  /// - 仅当更换过照片时才提交整组新照片及其封面舞台色, 备选色与取景参数.
   DishChange? changeFrom(
     Dish original, {
     required String name,
@@ -286,12 +286,11 @@ class const PublishDraft({
   );
 }
 
-/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+/// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-/// - 照片添加后立即在后台上传, 并发数有上限.
-/// - 上传失败的照片可以单张重试.
-/// - 回到前台时, 失败的照片自动重试一次.
+/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 @riverpod
 class Draft extends _$Draft {
   static const _parallel = 2;
@@ -299,11 +298,11 @@ class Draft extends _$Draft {
   final _tokens = <int, CancelToken>{};
   var _nextId = 0;
 
-  /// 封面解码后的取色缩小图. "调整照片" 拖动时用它重算推荐色.
+  /// 封面图片解码后的取色缩略图缓存, 供 "调整照片" 拖动时快速重算推荐色.
   Future<StageSample>? _coverSample;
   int? _coverSampleId;
 
-  /// 是否已经请求过识别. 每份草稿最多请求一次, 后端对识别按人按天限次.
+  /// 标记当前草稿是否已请求过标签识别; 因后端按用户按天限制调用次数, 每份草稿最多请求一次.
   var _suggestAsked = false;
 
   /// 用户是否手动选过分类和口味. 手动选过的项不被识别结果覆盖.
@@ -325,9 +324,9 @@ class Draft extends _$Draft {
     );
   }
 
-  /// 添加照片, 超出张数上限的部分丢弃.
+  /// 向草稿追加照片并丢弃超出张数上限的部分.
   ///
-  /// 返回添加前草稿是否没有照片. 返回 true 时页面接着打开 "调整照片".
+  /// 返回添加前草稿是否为空, 当返回 true 时调用方需紧接着打开 "调整照片" 页面.
   bool addPhotos(List<PickedPhoto> picked) {
     final room = PublishRules.photosMax - state.photos.length;
     if (room <= 0 || picked.isEmpty) return false;
@@ -356,7 +355,7 @@ class Draft extends _$Draft {
     _pump();
   }
 
-  /// 把一张照片设为封面. 该照片移到第一张, 裁切和舞台色重置.
+  /// 将指定照片设为封面并移至首位, 同时重置裁切与舞台色.
   void makeCover(int id) {
     final photo = state.photos.where((p) => p.id == id).firstOrNull;
     if (photo == null || state.photos.first.id == id) return;
@@ -391,7 +390,7 @@ class Draft extends _$Draft {
     _pump();
   }
 
-  /// 封面的取色缩小图, 供 "调整照片" 使用. 没有封面时为 null. 同一封面只解码一次.
+  /// 获取封面的取色缩略图供 "调整照片" 使用; 无封面时返回 null, 且同一封面仅解码一次.
   Future<StageSample>? coverSample() {
     final cover = state.photos.firstOrNull;
     if (cover == null) return null;
@@ -402,7 +401,7 @@ class Draft extends _$Draft {
     return _coverSample;
   }
 
-  /// 应用 "调整照片" 的结果. [picked] 是用户手动选择的颜色, 未选择时为 null.
+  /// 应用 "调整照片" 返回的裁切与取色结果; [picked] 为用户手动选定的舞台色, 未选择时为 null.
   void applyCrop(
     CoverCrop crop,
     StageSuggestion suggestion, {
@@ -419,7 +418,7 @@ class Draft extends _$Draft {
     state = state.copy(category: category, preselected: false);
   }
 
-  /// 选中或取消一个口味. 已选满 [PublishRules.tagsMax] 个时不能再选, 返回 false.
+  /// 切换指定口味的选中状态; 若已达到 [PublishRules.tagsMax] 上限而无法继续选中, 则返回 false.
   bool toggleTaste(Taste taste) {
     final tastes = {...state.tastes};
     if (!tastes.remove(taste)) {
@@ -433,7 +432,7 @@ class Draft extends _$Draft {
 
   void setSignature(bool signature) => state = state.copy(signature: signature);
 
-  /// 撤销换照片: 删除全部新照片, 取消未完成的上传. 编辑时回到原有照片.
+  /// 撤销更换照片操作, 取消未完成的上传任务并清空所有新照片, 编辑模式下恢复展示原有照片.
   void clearPhotos() {
     for (final token in _tokens.values) {
       token.cancel();
@@ -443,10 +442,10 @@ class Draft extends _$Draft {
     _resetCover();
   }
 
-  /// 按菜名, 说明和已上传的照片识别分类和口味, 预选到草稿中.
+  /// 根据菜名, 描述及已上传照片识别菜品分类与口味, 并预选至草稿中.
   ///
-  /// 只在封面已上传, 还没选分类且本草稿没有请求过时请求. 结果返回前用户手动选过的项不覆盖.
-  /// 识别失败 (未启用, 识别不出或网络错误) 时不提示, 用户照常手动选择.
+  /// 仅当封面已上传, 尚未选择分类且当前草稿未发起过识别时触发请求; 若结果返回前用户已手动修改对应项则不予覆盖.
+  /// 识别失败 (包括功能未启用, 无法识别或网络异常) 时静默忽略, 保持由用户手动选择.
   Future<void> suggest({
     required String name,
     required int shopId,
@@ -492,9 +491,9 @@ class Draft extends _$Draft {
     if (state.photos.isNotEmpty) unawaited(_suggestForCover());
   }
 
-  /// 按默认的居中裁切为封面取色.
+  /// 按默认居中裁切区域为封面提取推荐色.
   ///
-  /// 用户在 "调整照片" 中取消时, 草稿仍有可用的舞台色.
+  /// 预先计算可保证即使用户在 "调整照片" 页面取消操作, 草稿依然拥有可用的舞台色.
   Future<void> _suggestForCover() async {
     final coverId = state.photos.firstOrNull?.id;
     final sample = coverSample();

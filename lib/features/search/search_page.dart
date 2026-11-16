@@ -26,13 +26,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 搜索页. 白底页面, 打开时自动弹出键盘.
+/// 搜索页, 采用白底布局并在打开时自动弹出输入键盘.
 ///
-/// - 搜索框代替标题, 与返回按钮在同一行, 不随结果滚动.
-/// - 未输入时显示最近搜索的词. 没有搜索记录时说明可以搜索的内容.
-/// - 结果分为 "菜" 和 "店" 两个分栏. 默认显示 "菜", 只有店有结果时显示 "店".
-/// - "菜" 按发布时间倒序, 不写距离. "店" 按距离升序, 已关门的店排在最后并标明.
-/// - 没有结果时显示 "没找到". 认证用户额外显示 "新建一家店".
+/// - 顶部搜索框替代页面标题与返回按钮同行固定, 不随结果列表滚动.
+/// - 未输入关键词时展示最近搜索记录, 若无历史记录则显示可搜索范围说明.
+/// - 搜索结果分为 "菜" 与 "店" 两个分栏: 默认展示 "菜", 仅店铺存在结果时自动切至 "店".
+/// - "菜" 按发布时间倒序排列且不显示距离; "店" 按距离升序排列, 已关门店铺排至末尾并标注状态.
+/// - 无匹配结果时展示 "没找到" 空状态, 认证用户额外展示 "新建一家店" 入口.
 class SearchPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -44,7 +44,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   final _input = TextEditingController();
   var _keyword = '';
 
-  /// 用户手动选择的分栏. 有值时不再根据结果自动切换分栏.
+  /// 记录用户手动切换的分栏索引; 非 null 时停止根据结果数量自动切换分栏.
   int? _tab;
 
   @override
@@ -122,7 +122,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           dishes,
           keyword,
           retry: () => ref.invalidate(dishSearchProvider(keyword)),
-          // 搜菜接口不返回店的位置和商圈, 方块只写店名.
+          // 搜菜接口未返回店铺位置与商圈信息, 因此菜品卡片仅展示店名.
           builder: (items) => SliverTileGrid(
             count: items.length,
             builder: (context, i) {
@@ -188,7 +188,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 }
 
-/// 最近搜索的词, 可以清空.
+/// 展示最近搜索关键词并支持一键清空的列表区域.
 class _History extends ConsumerWidget {
   const new({required this.onPick});
 
@@ -246,9 +246,9 @@ class _History extends ConsumerWidget {
   }
 }
 
-/// 没有结果时的空状态.
+/// 搜索无结果时的空状态视图.
 ///
-/// 认证用户额外显示 "新建一家店". 新建店页面以搜索词作为店名初值, 创建后直接进入加菜页.
+/// 对已认证用户额外提供 "新建一家店" 按钮, 跳转时以当前搜索词作为店名初值, 建店后直接进入加菜页.
 class _NotFound extends ConsumerWidget {
   const new({required this.keyword});
 

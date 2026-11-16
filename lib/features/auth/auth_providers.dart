@@ -17,8 +17,8 @@ part 'auth_providers.g.dart';
 
 /// 登录页的协议勾选状态.
 ///
-/// 勾选同时同意隐私政策, 用户协议和个人信息出境说明. 手机号登录和密码登录都要求先勾选.
-/// 登录请求携带服务端当前的政策版本, 登录成功后写入本机的同意记录.
+/// 勾选即同时同意隐私政策, 用户协议和个人信息出境说明, 手机号登录和密码登录均要求先勾选.
+/// 登录请求会携带服务端当前的政策版本, 登录成功后将同意记录写入本机.
 @Riverpod(keepAlive: true)
 class LoginAgreement extends _$LoginAgreement {
   @override
@@ -47,7 +47,7 @@ final class AuthCodeLimited extends AuthFormEvent {
   final AppFailure failure;
 }
 
-/// 手机号登录页的状态: 验证码重发倒计时, 提交状态, 最近一次失败.
+/// 手机号登录页的表单状态, 包含验证码重发倒计时, 提交状态和最近一次失败结果.
 class const PhoneLoginState({
   final DateTime? resendAt,
   final bool sending = false,
@@ -63,7 +63,7 @@ class PhoneLogin extends _$PhoneLogin {
   @override
   PhoneLoginState build() => const PhoneLoginState();
 
-  /// 先完成人机验证再发送验证码. 用户关闭验证时不发送请求, 也不开始倒计时.
+  /// 发送验证码前需先完成人机验证; 若用户关闭验证, 则不发送请求也不开始倒计时.
   Future<void> sendCode(CaptchaPresenter present, String mobile) async {
     if (state.sending) return;
     state = PhoneLoginState(resendAt: state.resendAt, sending: true);
@@ -87,7 +87,7 @@ class PhoneLogin extends _$PhoneLogin {
     }
   }
 
-  /// 服务端要求同意新版政策时, 用 [present] 弹出同意对话框, 用户同意后用同一个验证码重试.
+  /// 使用验证码登录. 若服务端要求同意新版政策, 则通过 [present] 弹出同意对话框, 待用户同意后沿用同一个验证码重试.
   Future<void> submit(
     ConsentPresenter present,
     String mobile,
@@ -121,7 +121,7 @@ class PhoneLogin extends _$PhoneLogin {
   }
 }
 
-/// 密码登录页的状态: 提交状态和最近一次失败.
+/// 密码登录页的表单状态, 包含提交状态和最近一次失败结果.
 class const PasswordLoginState({
   final bool submitting = false,
   final AppFailure? failure,
@@ -132,10 +132,10 @@ class PasswordLogin extends _$PasswordLogin {
   @override
   PasswordLoginState build() => const PasswordLoginState();
 
-  /// 服务端要求同意新版政策时, 用 [consent] 弹出同意对话框. 要求人机验证时, 用 [captcha] 弹出验证.
+  /// 使用账号密码登录. 若服务端要求同意新版政策则通过 [consent] 弹出同意对话框, 若要求人机验证则通过 [captcha] 弹出验证.
   ///
-  /// 两种情况都在用户确认后用同一组账号密码重新登录. 账号密码只在本次调用中保留在内存里.
-  /// 用户关闭人机验证时按取消处理, 页面不显示提示.
+  /// 两种情况均在用户确认后沿用同一组账号密码重试, 账号密码仅在本次调用期间保留于内存中.
+  /// 若用户关闭人机验证则按取消处理, 页面不显示错误提示.
   Future<void> submit(
     ConsentPresenter consent,
     CaptchaPresenter captcha,
@@ -181,57 +181,57 @@ class PasswordLogin extends _$PasswordLogin {
   }
 }
 
-/// 点 "手机注册 / 登录" 之后, 登录页接下来该做什么.
+/// 点击 "手机注册 / 登录" 后的处理结果, 登录页据此决定后续跳转或提示.
 sealed class OneClickOutcome {
   const OneClickOutcome();
 }
 
-/// 一键登录成功. 守卫随后把页面导回原目标地址.
+/// 一键登录成功, 路由守卫随后将页面导回原目标地址.
 final class OneClickSignedIn extends OneClickOutcome {
   const OneClickSignedIn();
 }
 
-/// 用户关掉了授权页, 留在登录页.
+/// 用户关闭了授权页, 停留在登录页.
 final class OneClickDismissed extends OneClickOutcome {
   const OneClickDismissed();
 }
 
-/// 改用验证码登录: 一键登录不可用, 或用户在授权页点了 "其他号码登录".
+/// 因一键登录不可用或用户在授权页点击了 "其他号码登录", 转为使用验证码登录.
 ///
-/// [revoking] 表示账号在注销冷静期内而本机存有撤销凭据, 验证码登录页要提示用验证码登录可以撤销.
+/// 当 [revoking] 为 true 时, 表示账号处于注销冷静期且本机存有撤销凭据, 验证码登录页需提示用户可通过验证码登录撤销注销.
 final class OneClickUseCode extends OneClickOutcome {
   const OneClickUseCode({this.revoking = false});
 
   final bool revoking;
 }
 
-/// 用户授权后登录失败, 授权页已关闭. 页面弹对话框说明原因, 让用户重试或改用验证码登录.
+/// 用户授权后登录失败且授权页已关闭. 页面需弹出对话框说明原因, 并提供重试或改用验证码登录的入口.
 final class OneClickFailed extends OneClickOutcome {
   const OneClickFailed(this.failure);
 
   final AppFailure failure;
 }
 
-/// 这次登录不了, 重试也没用: 用户不同意新版政策, 或账号在注销冷静期内而本机没有撤销凭据.
-/// 授权页已关闭, 页面只说明原因.
+/// 当前无法登录且重试无效, 包括用户拒绝新版政策, 或账号处于注销冷静期而本机无撤销凭据两种情况.
+/// 此时授权页已关闭, 页面仅说明原因.
 final class OneClickBlocked extends OneClickOutcome {
   const OneClickBlocked(this.failure);
 
   final AppFailure failure;
 }
 
-/// 运营商一键登录. 状态是一次登录是否正在进行, 登录页的按钮据此显示加载.
+/// 运营商一键登录状态管理, 布尔状态表示登录流程是否正在进行, 登录页按钮据此显示加载状态.
 ///
-/// 用户勾选协议后在后台准备: 先问服务端开没开, 再初始化号码认证 SDK 并预取号.
-/// SDK 会联网并读取网络和 SIM 卡状态, 没勾选协议前不碰它.
+/// 用户勾选协议后才在后台执行准备: 先向服务端查询开关状态, 再初始化号码认证 SDK 并预取号.
+/// 由于 SDK 会联网并读取网络与 SIM 卡状态, 未勾选协议前不调用该 SDK.
 ///
-/// 一键登录不可用时 (Web, 没有 SIM 卡, 没开蜂窝网络, 服务端没开, 取凭证失败) 不提示, 直接改用验证码登录.
+/// 若一键登录不可用 (如 Web 端, 无 SIM 卡, 未开启蜂窝网络, 服务端未开启或获取凭证失败), 则不作错误提示, 直接转为验证码登录.
 @Riverpod(keepAlive: true)
 class OneClickLogin extends _$OneClickLogin {
-  /// 准备的结果: 能否拉起授权页. 为 null 表示还没准备, 或上次失败后要重新准备.
+  /// 预取号准备结果, 表示能否拉起授权页; 为 null 时表示尚未准备或上次失败后需重新准备.
   Future<bool>? _ready;
 
-  /// 服务端是否开启了一键登录. 问到结果后本次运行内不再问.
+  /// 服务端是否开启一键登录的缓存标记, 获取结果后在本次运行期间不再重复查询.
   bool? _enabled;
 
   @override
@@ -242,10 +242,9 @@ class OneClickLogin extends _$OneClickLogin {
     return false;
   }
 
-  /// 用户点了 "手机注册 / 登录", 且已勾选协议.
+  /// 响应 "手机注册 / 登录" 点击事件, 调用前需已勾选协议.
   ///
-  /// 能一键登录时拉起授权页, 用户确认后登录. 服务端要求同意新版政策时, 先关掉授权页,
-  /// 再用 [present] 弹出同意对话框, 用户同意后用同一个凭证重试.
+  /// 若一键登录可用则拉起授权页并在用户确认后登录; 若服务端要求同意新版政策, 则先关闭授权页再通过 [present] 弹出同意对话框, 待用户同意后沿用同一凭证重试.
   Future<OneClickOutcome> start(ConsentPresenter present) async {
     if (state) return const OneClickDismissed();
     state = true;
@@ -271,7 +270,7 @@ class OneClickLogin extends _$OneClickLogin {
     }
   }
 
-  /// 用凭证登录. 登录期间授权页开着并显示加载, 结束后关闭.
+  /// 使用运营商凭证执行登录. 请求期间授权页保持开启并显示加载状态, 结束后关闭.
   Future<OneClickOutcome> _login(ConsentPresenter present, String token) async {
     final numberAuth = ref.read(numberAuthProvider);
     final auth = ref.read(authRepositoryProvider);
@@ -297,7 +296,7 @@ class OneClickLogin extends _$OneClickLogin {
         _enabled = false;
         _ready = Future.value(false);
         return const OneClickUseCode();
-      // 一键登录不能撤销注销. 本机存有撤销凭据时, 改用验证码登录就能撤销.
+      // 一键登录无法撤销注销; 若本机存有撤销凭据, 改用验证码登录即可撤销.
       case BizCodes.accountDeletionPending:
         return await _deletionKey(ref) == null
             ? OneClickBlocked(e)
@@ -323,7 +322,7 @@ class OneClickLogin extends _$OneClickLogin {
     return numberAuth.prepare();
   }
 
-  /// 这次不可用的原因可能已经消失 (插了卡, 开了蜂窝网络, 网络恢复), 在后台重新准备, 下次点按钮时再试.
+  /// 若之前不可用的条件可能已恢复 (如插入 SIM 卡, 开启蜂窝网络或网络恢复), 在后台重置并重新准备, 供下次点击时使用.
   void _prepareAgain() {
     if (!ref.read(numberAuthProvider).supported || _enabled == false) return;
     _ready = null;
@@ -331,10 +330,10 @@ class OneClickLogin extends _$OneClickLogin {
   }
 }
 
-/// 带服务端当前的政策版本登录. 服务端要求同意时请用户确认, 用户同意后用同一组凭据重试一次.
+/// 携带服务端当前政策版本执行登录. 若服务端要求确认政策更新, 则弹窗请用户同意后沿用同一组凭据重试一次.
 ///
-/// 服务端在核销验证码之前校验同意, 因此重试不需要重新获取验证码.
-/// 用户不同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
+/// 服务端在核销验证码之前校验同意状态, 因此重试无需重新获取验证码.
+/// 若用户拒绝同意, 则抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
 Future<SignInResult> _withConsent(
   Ref ref,
   ConsentPresenter present,
@@ -349,7 +348,7 @@ Future<SignInResult> _withConsent(
   }
 }
 
-/// 本机保存的注销撤销凭据. 读取失败时不带, 不影响登录.
+/// 读取本机保存的注销撤销凭据. 读取失败时返回 null, 不阻塞登录流程.
 Future<String?> _deletionKey(Ref ref) async {
   try {
     return await ref.read(cancellationRepositoryProvider).deletionKey();
@@ -358,10 +357,10 @@ Future<String?> _deletionKey(Ref ref) async {
   }
 }
 
-/// 登录成功后记录协议同意, 再更新登录态. 守卫随后把页面导回原目标地址.
+/// 登录成功后先持久化协议同意记录, 再更新会话状态, 路由守卫随后将页面导回原目标地址.
 ///
-/// 首次同意时在这里补启动崩溃上报等服务.
-/// 登录的是在本机申请注销的账号时, 注销已随登录撤销, 删除本机的撤销凭据.
+/// 若为首次同意, 会在此处启动崩溃上报等依赖同意的服务.
+/// 若登录账号曾在本机申请注销, 此时注销已随登录撤销, 需清除本机的撤销凭据.
 Future<void> _signIn(Ref ref, SignInResult result) async {
   await ref.read(privacyConsentStoreProvider).record();
   unawaited(ref.read(consentedServicesProvider.notifier).start());
@@ -370,11 +369,11 @@ Future<void> _signIn(Ref ref, SignInResult result) async {
     try {
       await ref.read(cancellationRepositoryProvider).signedIn(user.id);
     } on Object {
-      // 凭据留在本机不影响使用. 下次登录时服务端忽略它.
+      // 凭据残留在本机不影响后续使用, 下次登录时服务端会忽略该凭据.
     }
   }
 }
 
-/// [failure] 是否为账号或密码错误. 是时输入框下划线显示 `warn` 色, 并提示账号或密码错误.
+/// 判断 [failure] 是否为账号或密码错误. 为 true 时输入框下划线显示 `warn` 色并就地提示错误.
 bool isWrongCredentials(AppFailure failure) =>
     failure.code == BizCodes.wrongPassword;

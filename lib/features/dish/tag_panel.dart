@@ -54,7 +54,7 @@ class _TagPanelState extends ConsumerState<_TagPanel> {
     super.dispose();
   }
 
-  /// 把输入框中的词加入待提交的我的标签. 超出 [_maxNewMine] 时不加入, 显示提示并返回 false.
+  /// 将输入框内容加入待提交的我的标签; 若超出 [_maxNewMine] 上限则拒绝加入, 显示错误提示并返回 false.
   bool _addMine() {
     final name = _input.text.trim();
     if (name.isEmpty) return true;

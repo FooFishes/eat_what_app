@@ -244,7 +244,7 @@ data class LatLngMessage (
 
 /** Generated class from Pigeon that represents data sent in messages. */
 data class CameraMessage (
-  /** 可见区域中心的坐标, 即扣掉 [InsetsMessage] 之后那块区域的中心. */
+  /** 可见区域中心的坐标, 即扣除 [InsetsMessage] 遮挡区域后的中心点. */
   val center: LatLngMessage,
   val zoom: Double
 )
@@ -337,10 +337,10 @@ data class InsetsMessage (
 data class MarkerMessage (
   val id: String,
   val position: LatLngMessage,
-  /** PNG. 按 [iconScale] 倍绘制, 原生侧据此还原成逻辑尺寸. */
+  /** PNG 图像字节, 原生侧按 [iconScale] 缩放还原为逻辑尺寸. */
   val icon: ByteArray,
   val iconScale: Double,
-  /** 锚点在图片内的位置, 0–1, 对准 [position]. */
+  /** 锚点在图片内的归一化位置 (0–1), 用于对准 [position]. */
   val anchorX: Double,
   val anchorY: Double,
   val zIndex: Long
@@ -455,8 +455,7 @@ data class PolygonMessage (
 }
 
 /**
- * SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
- * 地点检索的一条结果.
+ * 地点检索的单条结果.
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
@@ -465,7 +464,7 @@ data class PlaceMessage (
   val uid: String,
   val name: String,
   val address: String,
-  /** 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定. */
+  /** 坐标类型与地图一致, 由初始化时设置的全局坐标类型决定. */
   val location: LatLngMessage
 )
  {
@@ -577,12 +576,16 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 }
 
 
-/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
+/**
+ * SDK 级别调用, 须在同意隐私政策后调用 [initialize], 整个进程仅需一次.
+ *
+ * Generated interface from Pigeon that represents a handler of messages from Flutter.
+ */
 interface SdkHostApi {
   /**
-   * 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
+   * 依次配置隐私政策同意状态, GCJ-02 坐标类型与 AK, 然后启动 SDK.
    *
-   * 鉴权结果异步回到 [SdkFlutterApi.onAuthResult].
+   * 鉴权结果通过 [SdkFlutterApi.onAuthResult] 异步返回.
    */
   fun initialize(apiKey: String)
 
@@ -624,7 +627,7 @@ class SdkFlutterApi(private val binaryMessenger: BinaryMessenger, private val me
       MessagesPigeonCodec()
     }
   }
-  /** [code] 为 0 表示鉴权通过, 其余是百度的错误码. */
+  /** [code] 为 0 表示鉴权通过, 其余为百度错误码. */
   suspend fun onAuthResult(codeArg: Long, messageArg: String)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
@@ -646,23 +649,23 @@ class SdkFlutterApi(private val binaryMessenger: BinaryMessenger, private val me
   }
 }
 /**
- * 单张地图的调用. 每个平台视图用自己的通道, 通道后缀是平台视图 id.
+ * 单张地图实例的调用接口. 每个平台视图使用独立通道, 以平台视图 ID 作为后缀.
  *
  * Generated interface from Pigeon that represents a handler of messages from Flutter.
  */
 interface MapViewHostApi {
-  /** 新增或更新 [upserts] 中的标记, 删除 [removedIds] 中的标记. */
+  /** 新增或更新 [upserts] 中的标记, 并移除 [removedIds] 中的标记. */
   fun updateMarkers(upserts: List<MarkerMessage>, removedIds: List<String>)
-  /** 用 [polygons] 替换地图上全部的多边形. */
+  /** 使用 [polygons] 替换地图上的全部多边形. */
   fun setPolygons(polygons: List<PolygonMessage>)
-  /** 地图被浮层盖住的部分. logo, 比例尺和地图中心都移到剩下的区域. */
+  /** 设置地图被浮层遮挡的边距, logo, 比例尺与地图中心将移至剩余可见区域. */
   fun setInsets(insets: InsetsMessage)
-  /** 把 [center] 移到可见区域中心. [zoom] 为 null 时不改缩放级别. */
+  /** 将 [center] 移至可见区域中心; [zoom] 为 null 时保持当前缩放级别. */
   fun moveCamera(center: LatLngMessage, zoom: Double?, animated: Boolean)
-  /** 缩放到刚好装下 [points], 四周再各留 [margin]. */
+  /** 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距. */
   fun fitPoints(points: List<LatLngMessage>, margin: InsetsMessage, animated: Boolean)
   fun getCamera(): CameraMessage
-  /** 底图是否已经加载完. Dart 在平台视图创建后才开始收事件, 可能错过 [MapViewFlutterApi.onLoaded]. */
+  /** 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded]. */
   fun isLoaded(): Boolean
 
   companion object {
@@ -829,7 +832,7 @@ class MapViewFlutterApi(private val binaryMessenger: BinaryMessenger, private va
       }
     }
   }
-  /** 地图停止移动. [byGesture] 表示这次移动由用户手势触发. */
+  /** 地图停止移动时触发; [byGesture] 表示此次移动是否由用户手势引发. */
   suspend fun onCameraIdle(cameraArg: CameraMessage, byGestureArg: Boolean)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
@@ -868,7 +871,7 @@ class MapViewFlutterApi(private val binaryMessenger: BinaryMessenger, private va
       }
     }
   }
-  /** 地图数据无效或渲染失败, 例如 AK 无效时. */
+  /** 地图数据无效或渲染失败时触发, 例如 AK 无效. */
   suspend fun onError(codeArg: Long, messageArg: String)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
@@ -890,14 +893,15 @@ class MapViewFlutterApi(private val binaryMessenger: BinaryMessenger, private va
   }
 }
 /**
- * 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+ * 地点检索接口, 与地图共用同一次 SDK 初始化, 不依赖具体地图视图.
  *
  * Generated interface from Pigeon that represents a handler of messages from Flutter.
  */
 interface PlaceSearchHostApi {
   /**
-   * [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
-   * 没有结果时返回空列表, 检索失败时报错.
+   * 搜索 [center] 周围 [radius] 米内名称或地址匹配 [keyword] 的地点, 最多返回 [pageSize] 条.
+   *
+   * 无匹配结果时返回空列表, 检索失败时抛出异常.
    */
   suspend fun searchNearby(keyword: String, center: LatLngMessage, radius: Long, pageSize: Long): List<PlaceMessage>
 

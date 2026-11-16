@@ -8,24 +8,21 @@ part of 'published.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
+/// 记录本次应用启动以来的内容发布次数, 包括发布菜品, 编辑或恢复菜品以及新建店铺.
 ///
-/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
-/// 功能之间不能互相导入, 因此通过该 Provider 通知.
+/// 由于功能模块之间禁止互相导入, "我的" 页面统计与上传列表, 餐厅详情的菜单及菜品详情均通过监听该计数变化来重新请求.
 
 @ProviderFor(PublishedCount)
 final publishedCountProvider = PublishedCountProvider._();
 
-/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
+/// 记录本次应用启动以来的内容发布次数, 包括发布菜品, 编辑或恢复菜品以及新建店铺.
 ///
-/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
-/// 功能之间不能互相导入, 因此通过该 Provider 通知.
+/// 由于功能模块之间禁止互相导入, "我的" 页面统计与上传列表, 餐厅详情的菜单及菜品详情均通过监听该计数变化来重新请求.
 final class PublishedCountProvider
     extends $NotifierProvider<PublishedCount, int> {
-  /// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
+  /// 记录本次应用启动以来的内容发布次数, 包括发布菜品, 编辑或恢复菜品以及新建店铺.
   ///
-  /// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
-  /// 功能之间不能互相导入, 因此通过该 Provider 通知.
+  /// 由于功能模块之间禁止互相导入, "我的" 页面统计与上传列表, 餐厅详情的菜单及菜品详情均通过监听该计数变化来重新请求.
   PublishedCountProvider._()
     : super(
         from: null,
@@ -55,10 +52,9 @@ final class PublishedCountProvider
 
 String _$publishedCountHash() => r'c0e0c731fb85afbf7fcf0ce1742a717e6544648b';
 
-/// 本次启动以来的发布次数, 包括发布菜品, 编辑或恢复菜品和新建店铺.
+/// 记录本次应用启动以来的内容发布次数, 包括发布菜品, 编辑或恢复菜品以及新建店铺.
 ///
-/// "我的" 的统计与上传列表, 餐厅详情的菜单和菜品详情监听该值, 变化后重新请求.
-/// 功能之间不能互相导入, 因此通过该 Provider 通知.
+/// 由于功能模块之间禁止互相导入, "我的" 页面统计与上传列表, 餐厅详情的菜单及菜品详情均通过监听该计数变化来重新请求.
 
 abstract class _$PublishedCount extends $Notifier<int> {
   int build();

@@ -18,7 +18,7 @@ abstract final class AccountRules {
   static bool isPassword(String value) =>
       value.length >= 6 && value.length <= 64;
 
-  /// 密码登录的账号: 手机号, 用户名或邮箱. 与登录接口一致, 只要求长度为 3–64 位.
+  /// 校验密码登录账号格式 (支持手机号, 用户名或邮箱), 与登录接口一致, 仅限制长度为 3–64 位.
   ///
   /// 不按 [isUsername] 校验: 系统生成的登录名形如 `p_` 加 12 位十六进制, 超过 10 位.
   /// 按用户名规则拦截会让这些账号和邮箱都无法用密码登录.
@@ -34,7 +34,7 @@ abstract final class AccountRules {
     return domain == 'mail.sdu.edu.cn' || domain == 'sdu.edu.cn';
   }
 
-  /// 把手机号打码为 "138 **** 5678" 的形式. 长度不是 11 位时原样返回.
+  /// 将手机号脱敏为 "138 **** 5678" 格式, 长度不为 11 位时原样返回.
   static String maskMobile(String mobile) {
     if (mobile.length != 11) return mobile;
     return '${mobile.substring(0, 3)} **** ${mobile.substring(7)}';

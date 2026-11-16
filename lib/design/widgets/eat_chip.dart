@@ -12,14 +12,14 @@ enum _Kind { choice, tag, add, district }
 
 /// 胶囊小标签.
 ///
-/// 点击区域上下扩展到 [EatSize.touch], 布局高度因此等于点击区域的高度.
-/// 宽度不小于 [EatSize.touch], 单字标签的点击区域也满足下限.
-/// 放入 `Wrap` 时 `spacing` 用 `space-8`, `runSpacing` 用 0, 行距由扩展出的点击区域提供.
+/// 点击区域上下扩展到 [EatSize.touch], 因此布局高度等于点击区域的高度;
+/// 宽度不小于 [EatSize.touch], 使单字标签的点击区域也满足下限.
+/// 放入 `Wrap` 时 `spacing` 使用 `space-8`, `runSpacing` 使用 0, 行距由扩展出的点击区域提供.
 ///
 /// - 不使用舞台色着色.
 /// - 一个标签内不同时放图标, 文字和计数.
 class EatChip extends StatelessWidget {
-  /// 单选分类, 如菜品分类和商圈. 选中时为 `ink` 底 `paper` 字, 一组只有一个选中项.
+  /// 单选分类标签 (如菜品分类和商圈), 选中时为 `ink` 底 `paper` 字, 一组只有一个选中项.
   const new choice(
     this.label, {
     super.key,
@@ -27,7 +27,7 @@ class EatChip extends StatelessWidget {
     required this.onTap,
   }) : _kind = _Kind.choice;
 
-  /// 多选标签, 如口味标签. 选中时为 `tag-selected` 底加 `ink` 描边.
+  /// 多选标签 (如口味标签), 选中时为 `tag-selected` 底加 `ink` 描边.
   const new tag(
     this.label, {
     super.key,
@@ -35,12 +35,12 @@ class EatChip extends StatelessWidget {
     required this.onTap,
   }) : _kind = _Kind.tag;
 
-  /// 补充入口, 如 "自己写" "加标签". 细描边, 文字前自带圆形加号, 文字不用再写 "+".
+  /// 补充入口标签 (如 "自己写", "加标签"), 细描边且文字前自带圆形加号, 文字中不再写 "+".
   const new add(this.label, {super.key, required this.onTap})
     : selected = false,
       _kind = _Kind.add;
 
-  /// 地图上的商圈. 浮于地图之上, 未选中时带 `shadow-float`.
+  /// 地图上的商圈标签, 浮于地图之上, 未选中时带 `shadow-float`.
   const new district(
     this.label, {
     super.key,
@@ -148,9 +148,9 @@ BoxShadow _border(Color color) => BoxShadow(spreadRadius: 1.5, color: color);
 SurfaceStyle _addStyle(Color fill, Color border) =>
     SurfaceStyle.flat(fill, inset: [BoxShadow(spreadRadius: 1, color: border)]);
 
-/// "待接入" 标记. 放在未对接接口的功能名后, 接口上线后移除.
+/// "待接入" 标记, 放在未对接接口的功能名后, 接口上线后移除.
 ///
-/// 仅作标记, 不可点击. 文字颜色继承所在文字, 因此在舞台上同样清晰.
+/// 仅作标记且不可点击. 文字颜色继承所在文字, 因此在舞台上同样清晰.
 class PendingTag extends StatelessWidget {
   const new({super.key});
 

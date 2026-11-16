@@ -5,35 +5,33 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cross_border_consent.g.dart';
 
-/// 弹出同意对话框并等待用户选择. 返回 true 表示用户同意.
+/// 弹出协议确认对话框并等待用户选择, 返回 true 表示用户同意.
 ///
 /// 由界面用自身的 `BuildContext` 包装后传入, Provider 不持有 `BuildContext`.
 typedef ConsentPresenter = Future<bool> Function();
 
-/// 隐私政策和数据跨境说明的同意: 读取当前版本, 请用户确认, 用户同意后提交同意.
+/// 隐私政策与数据跨境传输的合规确认流程, 负责查询当前协议版本, 弹窗请求确认并在用户授权后提交记录.
 ///
-/// 不代替用户同意. 用户不同意时抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
-/// 政策正文使用托管的网页, 对话框只需要知道用户是否同意.
+/// 客户端不代用户默认授权; 若用户拒绝或无界面可弹窗, 则抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
+/// 协议正文托管于独立网页, 对话框仅需收集用户的确认结果.
 class CrossBorderConsent {
   CrossBorderConsent(this._api);
 
   final ConsentApi _api;
 
-  /// 已登录时使用的同意对话框, 由应用根部的组件注册和注销.
+  /// 已登录状态下使用的协议确认弹窗回调, 由应用根组件负责注册与注销.
   ///
-  /// 未注册时没有界面可以询问用户, 按用户不同意处理.
+  /// 若未注册则无法向用户展示弹窗, 流程按拒绝处理.
   ConsentPresenter? sessionPresenter;
 
-  /// 当前政策的版本. 服务端还没发布过政策时为 null, 此时登录不需要带版本.
+  /// 获取服务端当前生效的协议版本号; 若服务端尚未发布任何协议则返回 null, 此时登录请求无需携带版本号.
   Future<String?> currentVersion() async =>
       switch ((await _api.policy()).version) {
         final version? when version.isNotEmpty => version,
         _ => null,
       };
 
-  /// 请用户确认当前政策. 用户同意时返回政策版本, 不提交同意.
-  ///
-  /// 服务端还没发布过政策时不询问, 返回 null.
+  /// 请求用户确认当前版本的协议. 用户同意后返回对应版本号但不立即提交记录; 若服务端尚未发布协议则返回 null 且不弹窗.
   Future<String?> confirm(ConsentPresenter present) async {
     final version = await currentVersion();
     if (version == null) return null;
@@ -41,7 +39,7 @@ class CrossBorderConsent {
     return version;
   }
 
-  /// 已登录时用 [sessionPresenter] 请用户确认, 用户同意后用当前会话提交同意.
+  /// 在已登录状态下通过 [sessionPresenter] 请求用户确认最新协议, 确认后使用当前会话向服务端提交记录.
   Future<void> grantForSession() async {
     final present = sessionPresenter;
     if (present == null) throw AppFailure.fromCode(BizCodes.consentRequired);

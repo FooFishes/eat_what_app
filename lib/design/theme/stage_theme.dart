@@ -81,13 +81,13 @@ class const StagePalette({
 
 /// 向子树提供当前舞台的颜色.
 ///
-/// 舞台上的按钮和文字从本组件取色, 因此切换舞台色时同步变化.
+/// 舞台上的按钮和文字从本组件取色, 因此切换舞台色时可同步变化.
 class StageTheme extends InheritedWidget {
   const new({super.key, required this.palette, required super.child});
 
   final StagePalette palette;
 
-  /// 不在舞台内时返回 null.
+  /// 获取当前舞台配色, 不在舞台内时返回 null.
   static StagePalette? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<StageTheme>()?.palette;
 
@@ -101,7 +101,7 @@ class StageTheme extends InheritedWidget {
   bool updateShouldNotify(StageTheme oldWidget) => palette != oldWidget.palette;
 }
 
-/// 切换舞台色时, 底色, 文字和按钮的颜色按 [EatMotion.stageColor] 同步过渡.
+/// 切换舞台色时, 按 [EatMotion.stageColor] 同步过渡底色, 文字和按钮的颜色.
 ///
 /// 系统开启减少动态效果时直接切换.
 class AnimatedStageTheme extends StatelessWidget {

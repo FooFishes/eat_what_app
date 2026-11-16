@@ -15,16 +15,16 @@ part 'api_client.g.dart';
 
 /// 网络层把会话相关的事件交给上层处理的回调.
 ///
-/// 处理登录过期和请用户同意需要访问 `state` 中的登录态和 `features` 中的界面.
+/// 处理登录过期与协议确认需访问 `state` 中的登录态及 `features` 中的界面.
 /// `core` 不能导入 `state`, 因此由 `state` 构造回调并注入.
 class const ApiHooks({
   final VoidCallback? onSessionExpired,
   final VoidCallback? onForbidden,
 
-  /// 已登录时收到要求同意的业务码 ([BizCodes.consentCodes]) 后调用: 请用户同意, 并提交同意.
+  /// 已登录状态下收到协议确认业务码 ([BizCodes.consentCodes]) 时调用, 引导用户确认并提交记录.
   ///
-  /// 正常返回表示已同意, 网络层随后重发一次原请求.
-  /// 用户不同意或提交失败时抛出 [AppFailure], 网络层把它作为原请求的失败.
+  /// 正常返回表示已完成确认, 网络层随后重发一次原请求.
+  /// 若用户拒绝或提交失败则抛出 [AppFailure], 作为原请求的失败结果返回.
   final Future<void> Function()? requestConsent,
 });
 
@@ -63,9 +63,9 @@ class ApiClient {
   final ApiHooks _hooks;
   Future<void>? _consenting;
 
-  /// 同意成功的累计次数.
+  /// 协议确认成功的累计次数, 用于避免并发请求重复弹窗.
   ///
-  /// 请求发出后若计数已变化, 说明其他请求已完成同意. 此时收到要求同意的业务码时重发原请求, 不再次请用户同意.
+  /// 若请求发出后该计数已变化, 说明其他并发请求已完成确认, 收到要求确认的业务码时直接重发原请求即可.
   var _grants = 0;
 
   Future<Object?> get(
@@ -75,7 +75,7 @@ class ApiClient {
     CancelToken? cancelToken,
   }) => _send('GET', path, query: query, headers: headers, cancel: cancelToken);
 
-  /// [consentRetry] 为 false 时, 收到要求同意的业务码不请用户同意. 同意接口本身以 false 调用.
+  /// 当 [consentRetry] 为 false 时, 收到协议确认业务码不再触发确认流程, 供提交确认的接口自身使用.
   Future<Object?> post(
     String path, {
     Object? body,
@@ -189,9 +189,9 @@ class ApiClient {
     }
   }
 
-  /// 并发的多个请求要求同意时只请用户确认一次, 其余请求等待同一结果.
+  /// 并发请求同时触发协议确认时仅弹窗一次, 其余请求复用同一次确认结果.
   ///
-  /// 用户不同意或提交失败时抛出 [AppFailure].
+  /// 若用户拒绝或提交失败, 则抛出 [AppFailure].
   Future<void> _consentOnce() async {
     final pending = _consenting ??= () async {
       try {
@@ -269,9 +269,9 @@ class ApiClient {
   }
 }
 
-/// 给 App 端的请求加上 [_value] 作为 `User-Agent`. 后端按它区分登录设备是 iOS 还是安卓.
+/// 为 App 端请求注入 `User-Agent` ([_value]), 便于后端区分 iOS 与 Android 登录设备.
 ///
-/// 值依赖异步读取的版本名, 因此在发出请求前等待. 读取完成后每次请求只等待一个已完成的 Future.
+/// 由于版本名需异步读取, 拦截器在每次请求前等待该 Future 完成; 读取就绪后即无额外异步等待.
 class const _UserAgent(final Future<String> _value) extends Interceptor {
   @override
   Future<void> onRequest(
@@ -283,9 +283,9 @@ class const _UserAgent(final Future<String> _value) extends Interceptor {
   }
 }
 
-/// App 端请求的 `User-Agent`, 如 `EatWhat/0.1.0 (Android)`. [version] 读取失败时为 null, 省略版本.
+/// 构造 App 端请求的 `User-Agent` (如 `EatWhat/0.1.0 (Android)`), 当 [version] 读取失败为 null 时省略版本号.
 ///
-/// 后端在 `User-Agent` 中查找 `android` 和 `ios` (不区分大小写) 判断设备类型. 不能识别时登录设备显示为其他设备.
+/// 后端通过不区分大小写地匹配 `android` 或 `ios` 识别设备类型, 未匹配时归为其他设备.
 String appUserAgent(TargetPlatform platform, String? version) {
   final name = switch (platform) {
     TargetPlatform.android => 'Android',
@@ -295,10 +295,9 @@ String appUserAgent(TargetPlatform platform, String? version) {
   return '${version == null ? 'EatWhat' : 'EatWhat/$version'} ($name)';
 }
 
-/// 调试构建打印每个请求的请求体和响应体.
+/// 在调试构建中打印请求体与响应体.
 ///
-/// 不打印请求头, 以免凭证进入日志. 地址和正文里的手机号打码.
-/// 只在 [kDebugMode] 下添加, 发布构建不含此拦截器.
+/// 为避免凭证泄露不打印请求头, 同时对地址与正文中的手机号脱敏; 仅在 [kDebugMode] 下启用.
 class const _DebugBodyLogger() extends Interceptor {
   static final _mobile = RegExp(r'(?<!\d)(1\d{2})\d{4}(\d{4})(?!\d)');
 
@@ -346,7 +345,7 @@ class const _DebugBodyLogger() extends Interceptor {
   }
 }
 
-/// 外壳中的 `code` 不为 0.
+/// 响应外壳中 `code` 非零时抛出的内部业务异常.
 class const _BizError(
   final Object? code,
   final String? msg, [
@@ -380,7 +379,7 @@ Duration? retryOnNetworkFailure(int retryCount, Object error) {
 @Riverpod(keepAlive: true)
 ApiHooks apiHooks(Ref ref) => const ApiHooks();
 
-/// Web 不能设置 `User-Agent`, 由浏览器决定.
+/// 业务接口客户端实例. Web 端不能自定义 `User-Agent`, 由浏览器自动填充.
 @Riverpod(keepAlive: true)
 ApiClient apiClient(Ref ref) => ApiClient(
   baseUrl: ref.watch(appConfigProvider).apiBaseUrl,

@@ -2,7 +2,7 @@ import 'dart:ui';
 
 /// 间距令牌, 对应设计令牌 `space-*`.
 abstract final class EatSpace {
-  /// 最紧凑的间距, 用于图标与文字之间, 计数与标签之间.
+  /// 最紧凑的间距, 用于图标与文字之间, 以及计数与标签之间.
   static const s4 = 4.0;
 
   /// 标签之间的间距, 也用于紧凑的纵向堆叠.
@@ -27,7 +27,7 @@ abstract final class EatSpace {
 /// 圆角令牌.
 ///
 /// 不提供 `radius-plate`. 盘子, 头像和地图标记必须是正圆, 使用 `BoxShape.circle` 或 `ClipOval` 实现,
-/// 不使用足够大的圆角近似.
+/// 避免使用足够大的圆角近似.
 abstract final class EatRadius {
   /// 胶囊形圆角, 用于按钮, 标签, 搜索框和导航胶囊.
   static const pill = Radius.circular(999);
@@ -53,10 +53,10 @@ abstract final class EatSize {
   /// 主按钮高度.
   static const button = 52.0;
 
-  /// 对话框里按钮的高度. 对话框窄, 按钮比页面和面板里的小一号, 仍不小于 [touch].
+  /// 对话框内按钮的高度. 由于对话框较窄, 按钮比页面和面板里小一号, 但仍不小于 [touch].
   static const dialogButton = 44.0;
 
-  /// 分类和标签的高度. 点击区域向外扩展到 [touch].
+  /// 分类和标签的高度, 其点击区域向外扩展到 [touch].
   static const chip = 36.0;
 
   /// 悬浮导航胶囊和发布按钮的高度.
@@ -84,7 +84,7 @@ abstract final class EatSize {
   /// 舞台上主菜盘子的外框尺寸. 盘子在舞台右侧出血.
   static const plate = 320.0;
 
-  /// 舞台主图盘子的白色盘沿宽度. 较小的盘子按尺寸缩小盘沿, 见 `DishPlate`.
+  /// 舞台主图盘子的白色盘沿宽度. 较小的盘子按尺寸等比缩小盘沿, 见 `DishPlate`.
   static const plateRim = 8.0;
 
   /// 转盘上菜品中心到转盘圆心的距离.

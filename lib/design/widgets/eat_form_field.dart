@@ -3,11 +3,11 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 大字输入框. 上方为小号标签, 下方为只有下划线的大号输入框, 输入内容以标题字号显示.
+/// 大字输入框, 上方为小号标签, 下方为只有下划线的大号输入框, 输入内容以标题字号显示.
 ///
 /// - 下划线默认为 `handle`, 获得焦点时为 `ink`, 出错时为 `warn`.
 /// - 出错说明显示在下方, 写明错误原因和修改方法.
-/// - 必须提供标签, 不能只用占位文字代替. 占位文字与输入内容字号相同, 字重为 400.
+/// - 必须提供标签, 不能只用占位文字代替; 占位文字与输入内容字号相同, 字重为 400.
 ///
 /// 参数:
 /// - [numeric]: 手机号, 验证码等数字输入, 使用数字字体.
@@ -35,7 +35,7 @@ class EatFormField extends StatefulWidget {
   }) : price = false,
        multiline = false;
 
-  /// 多行输入, 如反馈内容. 使用正文字号, 至少显示 4 行, 超过 8 行时在框内滚动.
+  /// 多行输入 (如反馈内容), 使用正文字号, 至少显示 4 行, 超过 8 行时在框内滚动.
   const new multiline({
     super.key,
     required this.label,
@@ -57,7 +57,7 @@ class EatFormField extends StatefulWidget {
        obscureText = false,
        autofillHints = null;
 
-  /// 价格输入. 使用数字字体, 带前缀 "¥", 只接受数字和小数点.
+  /// 价格输入, 使用数字字体并带前缀 "¥", 只接受数字和小数点.
   const new price({
     super.key,
     required this.label,
@@ -84,7 +84,7 @@ class EatFormField extends StatefulWidget {
   final FocusNode? focusNode;
   final String? hintText;
 
-  /// 出错说明. 不为 null 时显示出错样式.
+  /// 出错说明, 不为 null 时显示出错样式.
   final String? errorText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -167,13 +167,13 @@ class _EatFormFieldState extends State<EatFormField> {
             : widget.inputFormatters,
         style: inputStyle.copyWith(color: c.ink),
         cursorColor: c.ink,
-        // 文字行高低于最小点击高度, 由上下留白补足到 44px.
+        // 文字行高低于最小点击高度, 因此由上下留白补足到 44px.
         decoration: InputDecoration(
           isCollapsed: true,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 8),
           hintText: widget.hintText,
-          // 占位文字的字重为 400. 与输入内容同为 700 时, 未填写的输入框与已填写的难以区分.
+          // 占位文字字重设为 400, 避免与 700 字重的输入内容难以区分.
           hintStyle: inputStyle.copyWith(
             color: c.inkMuted,
             fontWeight: FontWeight.w400,
@@ -203,7 +203,7 @@ class _EatFormFieldState extends State<EatFormField> {
                 ExcludeSemantics(
                   child: Text(prefix, style: inputStyle.copyWith(color: c.ink)),
                 ),
-                // 价格的 "¥" 紧贴数字. 区号 (如 "+86") 与号码之间用竖线分隔.
+                // 价格前缀 "¥" 紧贴数字, 区号 (如 "+86") 与号码之间则用竖线分隔.
                 if (widget.price)
                   const SizedBox(width: 2)
                 else ...[
@@ -212,7 +212,7 @@ class _EatFormFieldState extends State<EatFormField> {
                   const SizedBox(width: EatSpace.s10),
                 ],
               ],
-              // 标签与输入框合并为一个读屏节点. 右侧按钮不合并, 保持独立可点.
+              // 标签与输入框合并为一个读屏节点, 右侧按钮保持独立可点.
               Expanded(
                 child: MergeSemantics(
                   child: Semantics(label: widget.label, child: field),

@@ -1,4 +1,4 @@
-/// 编辑资料和我的标签的校验规则. 返回的提示显示在输入框下方, 没有问题时返回 null.
+/// 编辑资料与我的标签的输入校验规则. 校验失败时返回展示在输入框下方的提示文本, 合法时返回 null.
 abstract final class ProfileRules {
   static const nicknameMin = 2;
   static const nicknameMax = 12;
@@ -19,7 +19,7 @@ abstract final class ProfileRules {
   static String? signatureError(String value) =>
       lengthOf(value) > signatureMax ? '签名最多 $signatureMax 个字' : null;
 
-  /// [existing] 是已有的其他标签名. 标签名不能重复.
+  /// 校验标签名格式与唯一性, [existing] 为已存在的其他标签名列表.
   static String? myTagError(String value, Iterable<String> existing) {
     final name = value.trim();
     if (name.isEmpty) return '请输入标签名';

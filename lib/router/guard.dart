@@ -1,41 +1,41 @@
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 
-/// 页面的开放程度, 写在路由的 `metadata` 上. 守卫只读取该标记, 不维护路径白名单.
+/// 路由的访问权限级别, 声明在路由的 `metadata` 中. 守卫仅读取该标记, 不另行维护路径白名单.
 ///
-/// go_router 的 `metadata` 会被子路由继承, 父路由标了 [guest] 时, 只给登录用户的子路由要标回 [signedIn].
+/// go_router 的 `metadata` 会被子路由继承, 因此父路由设为 [guest] 时, 仅限登录用户的子路由需显式覆盖为 [signedIn].
 enum RouteAccess {
-  /// 谁都能进, 如登录页.
+  /// 允许所有用户访问, 如登录页.
   public,
 
-  /// 游客和登录用户能进. 游客指这次打开 App 后在登录页点过 "先逛逛" 的人.
+  /// 允许游客与已登录用户访问. 游客指本次启动后在登录页选择 "先逛逛" 的用户.
   guest,
 
-  /// 只有登录后能进. 不标记的页面都属于这一档.
+  /// 仅限已登录用户访问, 未显式声明权限的页面均默认为此级别.
   signedIn;
 
   static const _key = 'access';
 
-  /// 路由 `metadata` 中的标记. 没有标记时为 [signedIn].
+  /// 读取路由 `metadata` 中的访问权限标记, 未配置时默认返回 [signedIn].
   static RouteAccess of(Map<String, dynamic>? metadata) =>
       metadata?[_key] as RouteAccess? ?? signedIn;
 }
 
-/// 谁都能进的页面, 用作路由的 `metadata`.
+/// 公开页面的路由 `metadata` 标记, 允许所有用户访问.
 const publicRoute = <String, dynamic>{RouteAccess._key: RouteAccess.public};
 
-/// 游客也能进的页面.
+/// 游客可访问页面的路由 `metadata` 标记.
 const guestRoute = <String, dynamic>{RouteAccess._key: RouteAccess.guest};
 
-/// 只有登录后能进的页面. 只用来覆盖从父路由继承的标记, 其余页面不标.
+/// 仅限已登录用户的路由 `metadata` 标记, 仅用于覆盖父路由继承的权限, 其余默认页面无需标注.
 const signedInRoute = <String, dynamic>{RouteAccess._key: RouteAccess.signedIn};
 
 // TODO: 强制更新和停服维护的跳转未实现. 远程配置接口上线后在此加入对应规则.
-/// 顶层守卫. 返回访问 [location] 时应重定向到的地址, 无需重定向时返回 null.
+/// 顶层路由守卫, 根据当前登录态与页面权限返回访问 [location] 时的重定向地址, 无需重定向时返回 null.
 ///
-/// [access] 是目标页面的开放程度. [canMatch] 判断站内地址能否匹配路由表.
+/// [access] 为目标页面的访问权限, [canMatch] 用于判断站内地址能否匹配路由表.
 ///
-/// 游客停在登录页时不跳走, 这样游客随时能回登录页. 点 "先逛逛" 后由登录页自己跳转, 见 [browseTarget].
+/// 游客停留在登录页时不执行重定向, 以便随时返回登录操作; 点击 "先逛逛" 后的跳转由登录页自行处理, 见 [browseTarget].
 String? resolveRedirect({
   required Uri location,
   required RouteAccess access,
@@ -62,7 +62,7 @@ String? resolveRedirect({
   }
 }
 
-/// 未登录时访问 [location] 被导向的登录页地址.
+/// 构造未登录访问 [location] 时重定向的登录页地址.
 String _login(Uri location, SignOutReason reason) {
   // 用户主动退出时不记录原地址. 目标是发现页时也不记录, 因为登录后默认进入发现页.
   final remember =
@@ -76,10 +76,10 @@ String _login(Uri location, SignOutReason reason) {
   ).toString();
 }
 
-/// 在登录页点 "先逛逛" 后去的地址.
+/// 计算在登录页点击 "先逛逛" 后的目标地址.
 ///
-/// [from] 能匹配路由表, 且游客能进时去 [from], 否则去发现页.
-/// [accessOf] 返回站内地址对应页面的开放程度, 不能匹配路由表时返回 null.
+/// 若 [from] 可匹配路由表且允许游客访问则前往 [from], 否则前往发现页.
+/// [accessOf] 用于查询站内地址的访问权限, 不能匹配路由表时返回 null.
 String browseTarget(
   String? from,
   RouteAccess? Function(Uri location) accessOf,
@@ -95,9 +95,9 @@ String browseTarget(
 bool isLoginPath(String path) =>
     path == Paths.login || path.startsWith('${Paths.login}/');
 
-/// 登录后返回的地址. 只接受能匹配路由表的站内路径, 且不能是登录页本身.
+/// 校验并返回登录后的回跳地址. 仅接受可匹配路由表的非登录页站内路径.
 ///
-/// `from` 来自地址栏, 任何人都能构造. 不校验时, 构造的链接可以在登录后把用户带到外站.
+/// `from` 来自地址栏查询参数且可被外部构造, 若不校验则可能在登录后将用户重定向至外部站点.
 String? safeReturnPath(String? from, bool Function(Uri location) canMatch) {
   if (from == null || !from.startsWith('/') || from.startsWith('//')) {
     return null;

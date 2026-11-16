@@ -34,17 +34,16 @@ import 'package:go_router/go_router.dart';
 
 /// 登录页.
 ///
-/// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
-/// - 抽屉: "手机注册 / 登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
-///   勾选同时同意隐私政策, 用户协议和个人信息出境说明.
+/// - 舞台: 汤色背景, 装饰转盘, 品牌文字与简介; 右上角卷起的页角为 "先逛逛" 游客入口.
+/// - 抽屉: 包含 "手机注册 / 登录" 与 "账号密码登录" 两个按钮, 以及协议勾选行.
+///   勾选即同时同意隐私政策, 用户协议和个人信息出境说明.
 ///
-/// "手机注册 / 登录" 在能一键登录时拉起运营商的授权页, 用本机号码登录; 不能时去验证码登录页.
-/// 授权页上的 "其他号码登录" 也去验证码登录页.
+/// 点击 "手机注册 / 登录" 时, 若支持一键登录则拉起运营商授权页, 否则跳转验证码登录页;
+/// 授权页中的 "其他号码登录" 同样跳转至验证码登录页.
 ///
-/// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
+/// 未勾选协议时, 两个登录按钮与 "先逛逛" 仍可点击, 点击后先弹出协议对话框, 用户同意后自动勾选并继续执行原操作.
 ///
-/// [query] 包含地址中的 `from` 和 `expired`, 原样传给手机号登录页和密码登录页.
-/// 登录成功后, 守卫据此返回原页面.
+/// [query] 携带地址中的 `from` 和 `expired` 参数, 跳转手机号或密码登录页时原样透传, 登录成功后路由守卫据此返回原页面.
 class LoginPage extends ConsumerStatefulWidget {
   const new({
     super.key,
@@ -54,7 +53,7 @@ class LoginPage extends ConsumerStatefulWidget {
 
   final Map<String, String> query;
 
-  /// 点 "先逛逛" 后去的地址. 由路由表按 `from` 算好传入, 游客进不去的地址已换成发现页.
+  /// 点击 "先逛逛" 后的目标路由, 由路由表根据 `from` 计算传入; 游客无权访问的地址已替换为发现页.
   final String browseTarget;
 
   @override
@@ -62,7 +61,7 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  /// 已勾选协议时返回 true. 没勾时弹协议对话框, 同意后勾上并返回 true.
+  /// 确认用户已同意协议. 若尚未勾选则弹出协议对话框, 同意后自动勾选并返回 true.
   Future<bool> _ensureAgreed() async {
     if (ref.read(loginAgreementProvider)) return true;
     final agreed = await showAgreementDialog(context);
@@ -83,13 +82,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
+  /// 在当前页面弹出政策同意对话框; 若页面已卸载则按拒绝处理.
   Future<bool> _presentConsent() async {
     if (!mounted) return false;
     return showConsentDialog(context);
   }
 
-  /// 手机登录. 能一键登录时拉起运营商的授权页, 否则去验证码登录页.
+  /// 发起手机号登录; 若一键登录可用则拉起运营商授权页, 否则跳转验证码登录页.
   Future<void> _startPhone() async {
     if (!await _ensureAgreed() || !mounted) return;
     final outcome = await ref
@@ -155,10 +154,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     ),
   );
 
-  /// 不登录进去看看. 游客也要先同意隐私政策, 因为浏览同样会用到设备信息和使用记录.
+  /// 以游客身份进入应用. 由于浏览同样会采集设备信息和使用记录, 游客也须先同意隐私政策.
   ///
-  /// 先写入同意记录, 首次同意时补启动崩溃上报等服务, 再成为游客.
-  /// 守卫对停在登录页的游客不做处理, 所以由本页跳转.
+  /// 写入同意记录并补启动崩溃上报等服务后再切换为游客状态; 路由守卫不重定向已位于登录页的游客, 因此由本页主动跳转.
   Future<void> _browse() async {
     if (!await _ensureAgreed() || !mounted) return;
     await ref.read(privacyConsentStoreProvider).record();
@@ -216,7 +214,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // 纵向布局: 品牌字在顶部, 抽屉贴底, 转盘绘制在两者之间, 下半部分被抽屉遮挡.
     // 屏幕的富余高度按 1:8 分给品牌字上方留白和转盘, 避免中间出现大块空白.
     // 矮屏或大字号下内容超出屏幕时整页滚动, 避免品牌字与抽屉重叠.
-    // 不回弹也不拉伸: 越界拖动会改变 SliverFillRemaining 的高度, 转盘随之变形.
+    // 禁用越界回弹与拉伸, 避免拖动改变 SliverFillRemaining 高度而导致转盘变形.
     return EatStage(
       stage: StageColor.broth,
       child: Stack(
@@ -274,10 +272,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 抽屉上边和左右的内边距, 三边相等, 圆角才能和按钮同心.
   static const _sheetInset = EatSpace.s20;
 
-  /// 抽屉顶部的圆角. 取按钮的半径加内边距, 和按钮的圆角同心.
+  /// 抽屉顶部圆角半径, 取按钮圆角与内边距之和, 以保持两者同心.
   static const _sheetRadius = EatSize.button / 2 + _sheetInset;
 
-  /// 抽屉内容与屏幕底边的距离. 大于上边距, 避免按钮贴近底边.
+  /// 抽屉内容与屏幕底边的间距, 略大于上边距以避免按钮贴近屏幕底部.
   static const _sheetBottom = 44.0;
 
   /// 品牌字与状态栏的最小距离.
@@ -481,9 +479,9 @@ class _TurntableState extends State<_Turntable>
   }
 }
 
-/// 协议勾选行. 左侧为勾选框, 协议名可点击查看. 默认不勾.
+/// 协议勾选行, 左侧为勾选框, 右侧协议名称支持点击查看, 默认未勾选.
 ///
-/// 一次勾选同时同意隐私政策, 用户协议和数据存放在境外. 服务端把三者作为同一份同意记录.
+/// 单次勾选即同时同意隐私政策, 用户协议和个人信息出境说明, 服务端将三者合并记为同一份同意记录.
 class AgreementCheck extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -516,9 +514,8 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
 
     final style = eat.text.meta.copyWith(color: c.inkSoft);
 
-    /// 勾选框的点击区域比圆大, 圆的左右各空出 [inset].
-    /// 文字左移到离圆 [gap] 处, 行尾补同样宽的空白, 整行左右的空白相等,
-    /// 居中后看到的圆加文字一组正好在中间.
+    // 勾选框触控热区大于圆形本身, 圆形两侧各留白 [inset].
+    // 将文字左移至距圆 [gap] 处并在行尾补齐等宽空白, 使整行在居中时保持视觉对称.
     const inset = (EatSize.touch - 20) / 2;
     const gap = 6.0;
     final row = Row(
@@ -565,7 +562,7 @@ class _AgreementCheckState extends ConsumerState<AgreementCheck> {
   }
 }
 
-/// 《隐私政策》《用户协议》《个人信息出境说明》三个链接, 点击用浏览器打开. 用完调用 [dispose].
+/// 管理《隐私政策》《用户协议》和《个人信息出境说明》的链接点击器, 点击后通过浏览器打开对应页面, 使用完毕需调用 [dispose].
 class _AgreementLinks {
   _AgreementLinks(this._ref);
 
@@ -582,7 +579,7 @@ class _AgreementLinks {
     if (url.isNotEmpty) _ref.read(browserProvider).open(Uri.parse(url));
   }
 
-  /// "《隐私政策》《用户协议》和《个人信息出境说明》". 协议名加粗, 下划线用 [underline] 色.
+  /// 构建 "《隐私政策》《用户协议》和《个人信息出境说明》" 富文本片段, 协议名加粗并绘制 [underline] 色下划线.
   List<InlineSpan> spans(Color underline) => [
     _link('隐私政策', _privacy, underline),
     _link('用户协议', _terms, underline),
@@ -590,7 +587,7 @@ class _AgreementLinks {
     _link('个人信息出境说明', _crossBorder, underline),
   ];
 
-  /// 下划线只画在协议名下, 书名号不画, 否则线两端会悬空.
+  /// 仅在协议名称下方绘制下划线而不包含书名号, 避免下划线两端悬空.
   static TextSpan _link(
     String name,
     TapGestureRecognizer recognizer,
@@ -618,10 +615,10 @@ class _AgreementLinks {
   }
 }
 
-/// 协议对话框. 没勾协议时点登录按钮或 "先逛逛" 弹出, 返回 true 表示用户点了 "同意并继续".
+/// 协议确认对话框, 在未勾选协议时点击登录按钮或 "先逛逛" 弹出, 返回 true 表示用户点击了 "同意并继续".
 ///
-/// "同意并继续" 是主按钮, "不同意" 是次按钮, 和其他对话框一致.
-/// 点击 "不同意", 点击遮罩和系统返回都视为不同意, 停在登录页不再追问.
+/// 主次按钮排布与其他对话框一致 ("同意并继续" 为主按钮, "不同意" 为次按钮).
+/// 点击 "不同意", 点击遮罩或触发系统返回均视为拒绝, 停留在登录页且不再重复弹窗.
 Future<bool> showAgreementDialog(BuildContext context) async =>
     await showEatDialog<bool>(
       context,
@@ -682,16 +679,13 @@ class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
   }
 }
 
-/// 登录页右上角的 "先逛逛": 页角向左下卷起, 露出下面一层纸色, 上面写 "先逛逛".
-/// 纸色三角里 "先逛逛" 下方, 一双眼睛 ([Emoji.eyes]) 从屏幕右边探进来, 像有人躲在屏幕外偷看.
+/// 登录页右上角的 "先逛逛" 卷角入口: 页角向左下卷起, 露出下层纸色区域与 "先逛逛" 文案, 下方伴随从屏幕右侧探出的眼睛 ([Emoji.eyes]).
 ///
-/// 进页面时页角减速卷起, 不回弹, 快卷好时眼睛从屏幕右边探出来. 按下时再多卷一点.
-/// 之后每隔 [_idlePeriod] 把页角缓缓多掀起一点再放回去, 眼睛跟着多探出来一些.
-/// 系统开启减少动态效果时直接显示卷好的样子, 眼睛不动.
-/// 这是登录页特有的入口, 不用胶囊按钮.
+/// 进入页面时页角以减速曲线卷起且不回弹, 接近完成时眼睛从右侧滑入; 按下时页角进一步卷起.
+/// 随后每隔 [_idlePeriod] 触发一次轻幅掀动与回落动画, 眼睛同步小幅探出.
+/// 系统开启减少动态效果时直接呈现最终静止状态. 该入口为登录页专用样式, 不采用胶囊按钮.
 ///
-/// 点击区域是贴着右上角的矩形: 对角线右上方露出纸色, 左下方是卷起的页角, 画法见 [_CurlPainter].
-/// 卷起的页角会画到矩形外面一点.
+/// 交互热区为紧贴右上角的矩形, 对角线右上方显示下层纸色, 左下方绘制卷起的页角 (详见 [_CurlPainter]), 卷边会略微超出矩形边界.
 class _BrowseCorner extends StatefulWidget {
   const new({required this.onTap});
 
@@ -705,13 +699,13 @@ class _BrowseCornerState extends State<_BrowseCorner>
     with TickerProviderStateMixin {
   late final _curl = AnimationController(vsync: this, duration: _curlDuration);
 
-  /// 纸不会越过终点再弹回来, 所以不用转盘的回弹曲线.
+  /// 页角卷动不发生过冲回弹, 因此不采用转盘的回弹曲线.
   late final _curve = CurvedAnimation(
     parent: _curl,
     curve: Curves.easeOutCubic,
   );
 
-  /// 眼睛探出来的进度. 页角卷到大半才开始, 从屏幕右边伸进来.
+  /// 眼睛滑入的动画进度, 在页角卷动过半后启动.
   late final _peek = CurvedAnimation(
     parent: _curl,
     curve: const Interval(0.55, 1, curve: Curves.easeOutCubic),
@@ -719,18 +713,18 @@ class _BrowseCornerState extends State<_BrowseCorner>
 
   static const _curlDuration = Duration(milliseconds: 900);
 
-  /// 卷好之后循环掀页角, 值是一轮里的进度.
+  /// 静置后周期性掀动页角的循环动画, 数值代表单轮周期进度.
   late final _idle = AnimationController(vsync: this, duration: _idlePeriod);
 
   static const _idlePeriod = Duration(seconds: 6);
 
-  /// 掀页角时多卷的长度.
+  /// 周期性掀动时页角额外卷起的长度.
   static const _liftExtra = 8.0;
 
-  /// 卷好时纸色三角右边的长度, 不含状态栏. 要让 "先逛逛" 整个落在纸色三角里.
+  /// 静止状态下纸色三角右侧边的长度 (不含状态栏高度), 需保证 "先逛逛" 文案完整落入三角区域内.
   static const _rest = 106.0;
 
-  /// 按下时多卷的长度.
+  /// 按下态时页角额外卷起的长度.
   static const _pressExtra = 16.0;
 
   /// "先逛逛" 与页面右边和状态栏的距离.
@@ -740,20 +734,20 @@ class _BrowseCornerState extends State<_BrowseCorner>
   /// 眼睛图片的边长. 图里两只眼睛约占宽的八成, 高的六成.
   static const _eyesSize = 44.0;
 
-  /// 眼睛露在屏幕里的宽度, 和掀页角时多探出的宽度. 右边一小截留在屏幕外.
+  /// 眼睛在屏幕内的露出宽度及掀动时的额外探出宽度, 右侧边缘保留在屏幕外.
   static const _eyesShown = 34.0;
   static const _eyesPeek = 5.0;
 
-  /// 眼睛图片上边与状态栏的距离, 在 "先逛逛" 下面. 图片上方本身有一圈透明边.
+  /// 眼睛图片顶部距状态栏的距离, 位于 "先逛逛" 下方 (图片本身顶部含透明留白).
   static const _eyesTop = 30.0;
 
-  /// 眼睛向左歪一点, 像歪着头从屏幕边上探出来.
+  /// 眼睛图片的逆时针倾角.
   static const _eyesTilt = -12 * math.pi / 180;
 
-  /// "先逛逛" 跟随系统字号放大的上限. 再大就超出纸色三角.
+  /// "先逛逛" 文本跟随系统字号放大的上限, 超过该倍率会溢出纸色三角区域.
   static const _maxTextScale = 1.2;
 
-  /// 掀页角: 一轮里占 [_liftSpan], 缓起缓落, 不落到卷好的位置以下. 1 为掀到最高.
+  /// 计算单个静置周期内 [t] 时刻的页角掀动幅度, 仅在 [_liftSpan] 区间内缓起缓落, 取值范围 0 到 1.
   static double _liftAt(double t) {
     final x = (t - _liftStart) / _liftSpan;
     if (x <= 0 || x >= 1) return 0;
@@ -871,22 +865,21 @@ class _RevealClipper extends CustomClipper<Path> {
   bool shouldReclip(_RevealClipper oldClipper) => false;
 }
 
-/// 画卷起的页角: 页角绕一根圆柱卷过半圈, 再平着盖回页面上方, 画的是从正上方看到的样子.
+/// 绘制卷起的页角: 模拟页角绕圆柱卷过半圈后平铺覆盖在页面上方, 从正上方俯视的几何投影.
 ///
-/// 坐标以页角为原点, p 沿卷起的方向指向页面内, w 与之垂直. 卷起的方向比对角线偏 [_lean],
-/// 盖回去的页角因此是斜的. 圆柱半径 r, 页面在 p = a 处离开桌面,
-/// 页面上原来在 p = t 的一条线, 纸长 u = a - t, 卷起后落在:
+/// 以页角为坐标原点, p 轴沿卷起方向指向页面内部, w 轴与之垂直. 卷起方向相对对角线偏移 [_lean], 使翻折后的页角呈倾斜状.
+/// 设圆柱半径为 r, 页面在 p = a 处离开桌面, 原位于 p = t 的线段展开长度 u = a - t, 卷起后坐标为:
 ///
-/// - 圆柱上 (u <= πr): p = a - r·sin(u/r).
-/// - 盖回去的平面上 (u > πr): p = a + u - πr.
+/// - 圆柱段 (u <= πr): p = a - r·sin(u/r).
+/// - 覆盖平面段 (u > πr): p = a + u - πr.
 ///
-/// 这条线的宽度不变, 所以页面原来的两条直边在圆柱上投影成曲线.
-/// 以平涂的色块为主, 不画高光和模糊投影. 由下到上:
+/// 线段宽度保持不变, 页面原有的两条直边在圆柱段上投影为曲线.
+/// 整体采用扁平色块绘制, 不加高光与模糊阴影, 图层由下至上依次为:
 ///
-/// 1. 纸色: p < a 的三角, 即页角原来盖住的地方. 可见部分是画布对角线右上的一半.
-/// 2. 影子: 卷起部分向页面内错开一点的硬边色块, 只落在舞台上.
-/// 3. 圆柱下半圈: 页面正面向上弯起的部分, 比上半圈宽, 在两端露出来.
-/// 4. 圆柱上半圈和盖回去的页角: 朝上的是页面背面. 圆柱上的一段由外沿向内渐变到页角的颜色.
+/// 1. 纸色底区: p < a 的三角区域, 可见部分为画布对角线右上方的一半.
+/// 2. 阴影色块: 卷起部分向页面内侧偏移的硬边投影, 仅落在舞台底色上.
+/// 3. 圆柱下半圈: 页面正面向上弯曲的部分, 因比上半圈宽而在两端露出.
+/// 4. 圆柱上半圈与翻折页角: 朝上的一面为页面背面, 圆柱上缘向内绘制渐变过渡到页角背面的颜色.
 class _CurlPainter extends CustomPainter {
   const new({required this.paper, required this.back, required this.shadow});
 
@@ -896,7 +889,7 @@ class _CurlPainter extends CustomPainter {
   final Color back;
   final Color shadow;
 
-  /// 卷起的方向与页面上边的夹角. 45° 时页角沿对角线卷, 盖回去的两条边横平竖直, 显得呆板.
+  /// 卷起方向与页面顶边的夹角. 若取 45° 则页角沿对角线翻折, 翻折后的两条边呈水平和垂直方向, 视觉较呆板.
   static const _lean = 53 * math.pi / 180;
 
   /// 画布的宽高比.

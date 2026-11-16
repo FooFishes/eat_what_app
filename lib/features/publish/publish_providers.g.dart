@@ -8,18 +8,18 @@ part of 'publish_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+/// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
 ///
-/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-/// - 搜店接口也返回已关门的店, 这里去掉.
+/// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+/// - 搜店接口包含已关门店铺, 此处统一过滤排除.
 
 @ProviderFor(pickableShops)
 final pickableShopsProvider = PickableShopsFamily._();
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+/// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
 ///
-/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-/// - 搜店接口也返回已关门的店, 这里去掉.
+/// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+/// - 搜店接口包含已关门店铺, 此处统一过滤排除.
 
 final class PickableShopsProvider
     extends
@@ -29,10 +29,10 @@ final class PickableShopsProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+  /// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
   ///
-  /// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-  /// - 搜店接口也返回已关门的店, 这里去掉.
+  /// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+  /// - 搜店接口包含已关门店铺, 此处统一过滤排除.
   PickableShopsProvider._({
     required PickableShopsFamily super.from,
     required String super.argument,
@@ -78,10 +78,10 @@ final class PickableShopsProvider
 
 String _$pickableShopsHash() => r'332dcc19c5cbbbed05260ac9fcbbb7524f7a54ac';
 
-/// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+/// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
 ///
-/// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-/// - 搜店接口也返回已关门的店, 这里去掉.
+/// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+/// - 搜店接口包含已关门店铺, 此处统一过滤排除.
 
 final class PickableShopsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
@@ -94,10 +94,10 @@ final class PickableShopsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 选店列表: 当前校区内营业中的店. [keyword] 为空时列出附近的店, 否则按店名或地址搜索.
+  /// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
   ///
-  /// - 按与用户的距离升序排列. 没有定位时按与校区中心的距离排列, 两者都没有时按新建时间倒序.
-  /// - 搜店接口也返回已关门的店, 这里去掉.
+  /// - 列表按与用户的距离升序排列; 无定位时按与校区中心的距离排列, 两者均缺失时按创建时间倒序.
+  /// - 搜店接口包含已关门店铺, 此处统一过滤排除.
 
   PickableShopsProvider call(String keyword) =>
       PickableShopsProvider._(argument: keyword, from: this);
@@ -106,17 +106,17 @@ final class PickableShopsFamily extends $Family
   String toString() => r'pickableShopsProvider';
 }
 
-/// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
+/// 当前用户所在的商圈, 用于选店页的位置提示; 无定位或不在任何商圈内时返回 null.
 
 @ProviderFor(myHub)
 final myHubProvider = MyHubProvider._();
 
-/// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
+/// 当前用户所在的商圈, 用于选店页的位置提示; 无定位或不在任何商圈内时返回 null.
 
 final class MyHubProvider
     extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
     with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
-  /// 我当前所在的商圈, 用于选店页的位置提示. 没有定位或不在任何商圈内时为 null.
+  /// 当前用户所在的商圈, 用于选店页的位置提示; 无定位或不在任何商圈内时返回 null.
   MyHubProvider._()
     : super(
         from: null,
@@ -144,17 +144,17 @@ final class MyHubProvider
 
 String _$myHubHash() => r'30801ea7c162f9ef6f0eb76904ef25536364c232';
 
-/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+/// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
 
 @ProviderFor(hubAt)
 final hubAtProvider = HubAtFamily._();
 
-/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+/// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
 
 final class HubAtProvider
     extends $FunctionalProvider<AsyncValue<Hub?>, Hub?, FutureOr<Hub?>>
     with $FutureModifier<Hub?>, $FutureProvider<Hub?> {
-  /// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+  /// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
   HubAtProvider._({
     required HubAtFamily super.from,
     required GcjPoint super.argument,
@@ -200,7 +200,7 @@ final class HubAtProvider
 
 String _$hubAtHash() => r'ab05209d56ed9b3cb37591fce54c1858cb7aa031';
 
-/// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+/// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
 
 final class HubAtFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Hub?>, GcjPoint> {
@@ -213,7 +213,7 @@ final class HubAtFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 地图中心所在的商圈. 新建店时据此自动确定所属商圈.
+  /// 获取地图中心坐标所属的商圈, 用于新建店铺时自动确定商圈.
 
   HubAtProvider call(GcjPoint point) =>
       HubAtProvider._(argument: point, from: this);
@@ -222,16 +222,16 @@ final class HubAtFamily extends $Family
   String toString() => r'hubAtProvider';
 }
 
-/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+/// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
 ///
-/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+/// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
 
 @ProviderFor(shopDuplicates)
 final shopDuplicatesProvider = ShopDuplicatesFamily._();
 
-/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+/// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
 ///
-/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+/// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
 
 final class ShopDuplicatesProvider
     extends
@@ -243,9 +243,9 @@ final class ShopDuplicatesProvider
     with
         $FutureModifier<List<ShopDuplicate>>,
         $FutureProvider<List<ShopDuplicate>> {
-  /// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+  /// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
   ///
-  /// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+  /// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
   ShopDuplicatesProvider._({
     required ShopDuplicatesFamily super.from,
     required (String, GcjPoint, String?) super.argument,
@@ -292,9 +292,9 @@ final class ShopDuplicatesProvider
 
 String _$shopDuplicatesHash() => r'79fb9cc4d861bb9cc753eeaa4b09c54a20ed6907';
 
-/// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+/// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
 ///
-/// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+/// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
 
 final class ShopDuplicatesFamily extends $Family
     with
@@ -311,9 +311,9 @@ final class ShopDuplicatesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 新建店时可能重复的店: 地图地点 [poi] 上已有的店, 或 [point] 200 m 内与 [name] 同名的店, 包括已关门的店.
+  /// 查询新建店铺时可能重复的已有店铺 (包含已关门店铺), 涵盖地图地点 [poi] 关联店铺及 [point] 200 m 内的同名店铺.
   ///
-  /// 只用于提示, 用户可以继续新建. 输入停顿后再查.
+  /// 仅用于表单内防重提示而非强制拦截, 并在输入防抖后发起查询.
 
   ShopDuplicatesProvider call(String name, GcjPoint point, String? poi) =>
       ShopDuplicatesProvider._(argument: (name, point, poi), from: this);
@@ -322,16 +322,16 @@ final class ShopDuplicatesFamily extends $Family
   String toString() => r'shopDuplicatesProvider';
 }
 
-/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+/// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
 ///
-/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+/// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
 
 @ProviderFor(mapPlaces)
 final mapPlacesProvider = MapPlacesFamily._();
 
-/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+/// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
 ///
-/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+/// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
 
 final class MapPlacesProvider
     extends
@@ -341,9 +341,9 @@ final class MapPlacesProvider
           FutureOr<List<MapPlace>>
         >
     with $FutureModifier<List<MapPlace>>, $FutureProvider<List<MapPlace>> {
-  /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+  /// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
   ///
-  /// [keyword] 为空时为空列表. 检索失败时为错误状态.
+  /// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
   MapPlacesProvider._({
     required MapPlacesFamily super.from,
     required String super.argument,
@@ -390,9 +390,9 @@ final class MapPlacesProvider
 
 String _$mapPlacesHash() => r'bec9f99f32758ce81b16ebeabbe349dad56f4ba3';
 
-/// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+/// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
 ///
-/// [keyword] 为空时为空列表. 检索失败时为错误状态.
+/// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
 
 final class MapPlacesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<MapPlace>>, String> {
@@ -405,9 +405,9 @@ final class MapPlacesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 新建店的候选: 地图上和 [keyword] 匹配的地点, 在当前位置附近找, 没有定位时在校区中心附近找.
+  /// 检索与 [keyword] 匹配的地图候选地点, 优先在当前位置附近搜索, 无定位时回退至校区中心附近.
   ///
-  /// [keyword] 为空时为空列表. 检索失败时为错误状态.
+  /// 当 [keyword] 为空时返回空列表, 检索异常时抛出错误状态.
 
   MapPlacesProvider call(String keyword) =>
       MapPlacesProvider._(argument: keyword, from: this);
@@ -416,17 +416,17 @@ final class MapPlacesFamily extends $Family
   String toString() => r'mapPlacesProvider';
 }
 
-/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+/// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
 
 @ProviderFor(sameNameDish)
 final sameNameDishProvider = SameNameDishFamily._();
 
-/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+/// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
 
 final class SameNameDishProvider
     extends $FunctionalProvider<AsyncValue<Dish?>, Dish?, FutureOr<Dish?>>
     with $FutureModifier<Dish?>, $FutureProvider<Dish?> {
-  /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+  /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
   SameNameDishProvider._({
     required SameNameDishFamily super.from,
     required (int, String) super.argument,
@@ -472,7 +472,7 @@ final class SameNameDishProvider
 
 String _$sameNameDishHash() => r'dcc1779df716a0b10b6230f13a5eed45d9e997a3';
 
-/// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+/// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
 
 final class SameNameDishFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish?>, (int, String)> {
@@ -485,7 +485,7 @@ final class SameNameDishFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 菜名查重. 这家店已有同名菜时返回该菜, 否则为 null.
+  /// 对指定店铺内的菜名查重, 若已存在同名菜品则返回该菜品, 否则返回 null.
 
   SameNameDishProvider call(int shopId, String name) =>
       SameNameDishProvider._(argument: (shopId, name), from: this);
@@ -494,17 +494,17 @@ final class SameNameDishFamily extends $Family
   String toString() => r'sameNameDishProvider';
 }
 
-/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+/// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 
 @ProviderFor(dishToEdit)
 final dishToEditProvider = DishToEditFamily._();
 
-/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+/// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 
 final class DishToEditProvider
     extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
     with $FutureModifier<Dish>, $FutureProvider<Dish> {
-  /// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+  /// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
   DishToEditProvider._({
     required DishToEditFamily super.from,
     required int super.argument,
@@ -550,7 +550,7 @@ final class DishToEditProvider
 
 String _$dishToEditHash() => r'ad7666735026f144ef01713b2a4cac9df85b2719';
 
-/// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+/// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 
 final class DishToEditFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
@@ -563,7 +563,7 @@ final class DishToEditFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 要编辑的菜. 编辑页没有从详情页带入菜品时 (如在 Web 上刷新) 使用.
+  /// 按 id 读取待编辑菜品详情, 供编辑页未从详情页带入菜品对象时 (如在 Web 端刷新) 使用.
 
   DishToEditProvider call(int dishId) =>
       DishToEditProvider._(argument: dishId, from: this);
@@ -572,29 +572,26 @@ final class DishToEditFamily extends $Family
   String toString() => r'dishToEditProvider';
 }
 
-/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+/// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-/// - 照片添加后立即在后台上传, 并发数有上限.
-/// - 上传失败的照片可以单张重试.
-/// - 回到前台时, 失败的照片自动重试一次.
+/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 @ProviderFor(Draft)
 final draftProvider = DraftFamily._();
 
-/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+/// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-/// - 照片添加后立即在后台上传, 并发数有上限.
-/// - 上传失败的照片可以单张重试.
-/// - 回到前台时, 失败的照片自动重试一次.
+/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
-  /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+  /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
   ///
-  /// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-  /// - 照片添加后立即在后台上传, 并发数有上限.
-  /// - 上传失败的照片可以单张重试.
-  /// - 回到前台时, 失败的照片自动重试一次.
+  /// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+  /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+  /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
   DraftProvider._({
     required DraftFamily super.from,
     required Dish? super.argument,
@@ -641,12 +638,11 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
 
 String _$draftHash() => r'fd0968064ec6865ead8e59e39844433df1fe3a01';
 
-/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+/// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-/// - 照片添加后立即在后台上传, 并发数有上限.
-/// - 上传失败的照片可以单张重试.
-/// - 回到前台时, 失败的照片自动重试一次.
+/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 final class DraftFamily extends $Family
     with
@@ -666,12 +662,11 @@ final class DraftFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+  /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
   ///
-  /// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-  /// - 照片添加后立即在后台上传, 并发数有上限.
-  /// - 上传失败的照片可以单张重试.
-  /// - 回到前台时, 失败的照片自动重试一次.
+  /// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+  /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+  /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
   DraftProvider call({Dish? original}) =>
       DraftProvider._(argument: original, from: this);
@@ -680,12 +675,11 @@ final class DraftFamily extends $Family
   String toString() => r'draftProvider';
 }
 
-/// 加菜页的草稿和照片上传队列. 随页面释放, 草稿不持久化.
+/// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - [original] 是正在编辑的菜, 发布新菜时为 null. 编辑时分类, 口味和招牌菜预填为现有的值.
-/// - 照片添加后立即在后台上传, 并发数有上限.
-/// - 上传失败的照片可以单张重试.
-/// - 回到前台时, 失败的照片自动重试一次.
+/// - 编辑模式下传入 [original] 以预填分类, 口味与招牌菜状态; 发布新菜时该参数为 null.
+/// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
+/// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
 
 abstract class _$Draft extends $Notifier<PublishDraft> {
   late final _$args = ref.$arg as Dish?;

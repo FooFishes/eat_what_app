@@ -9,24 +9,24 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 文字分类栏 [EatTabs] 中的一项.
+/// 表示文字分类栏 [EatTabs] 中的单个标签项.
 class const EatTabItem(
   final String label, {
 
   /// 文字后的计数, 如 "上传 42".
   final int? count,
 
-  /// 功能尚未对接接口. 分类正常列出, 文字后接 "待接入".
+  /// 标识该分类尚未对接接口; 开启后仍正常列出, 并在文字后附加 "待接入".
   final bool pending = false,
 
   /// 文字前的图标, 如发现页分类栏中专题的图标.
   final EatIcons? icon,
 });
 
-/// 文字分类栏. 选中项靠字重区分, 没有下划线和底色.
+/// 文字分类栏组件, 选中项通过字重而非下划线或底色区分.
 ///
-/// - 点击区域上下扩展到 44px, 整条的布局高度因此约为 44px. 按基线对齐时会多出不到 1px.
-/// - 放不下时横向滚动, 不换行.
+/// - 点击区域上下扩展至 44px, 整条布局高度约为 44px (按基线对齐时会多出不足 1px).
+/// - 内容超出宽度时横向滚动, 不自动换行.
 class EatTabs extends StatelessWidget {
   const new({
     super.key,
@@ -40,13 +40,13 @@ class EatTabs extends StatelessWidget {
   final int selected;
   final ValueChanged<int> onSelected;
 
-  /// 横向滚动时内容两侧的留白, 通常为页面边距 `space-20`.
+  /// 横向滚动时内容两侧的留白, 通常设置为页面边距 `space-20`.
   final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    // tabBar 语义节点必须直接包含各个 tab, 因此放在滚动视图内部, 而不是外部.
+    // tabBar 语义节点必须直接包裹各个 tab, 因此放置在滚动视图内部而非外部.
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: padding,
@@ -97,11 +97,11 @@ class _TabState extends State<_Tab> {
     if (widget.selected && !oldWidget.selected) _reveal();
   }
 
-  /// 把本项滚动到分类栏中间. 点击的分类只露出一部分时, 选中后完整显示.
+  /// 将当前选中的分类滚动至分类栏中央, 使原本仅露出一部分的标签完整显示.
   void _reveal() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // 只滚动分类栏. `Scrollable.ensureVisible` 会同时滚动外层的页面, 使页面纵向跳动.
+      // 仅滚动分类栏自身, 避免使用 `Scrollable.ensureVisible` 触发外层页面发生纵向跳动.
       final box = context.findRenderObject();
       if (box == null) return;
       Scrollable.maybeOf(context)?.position.ensureVisible(

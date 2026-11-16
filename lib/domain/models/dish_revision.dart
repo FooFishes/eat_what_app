@@ -9,7 +9,7 @@ enum RevisionAction {
   final String api;
   final String label;
 
-  /// 不认识的值按 [edit] 处理. 每条记录都对应一次内容变化, 按修改显示不会误导.
+  /// 未知值按 [edit] 处理. 因每条记录均对应一次内容变更, 展示为修改不会产生误导.
   static RevisionAction fromApi(String? value) {
     for (final action in values) {
       if (action.api == value) return action;
@@ -18,7 +18,7 @@ enum RevisionAction {
   }
 }
 
-/// 菜品中可以编辑, 会出现在修改记录里的字段.
+/// 菜品中支持编辑且会记录在修改历史中的字段.
 enum DishField {
   name('name', '菜名'),
   category('category', '分类'),
@@ -33,7 +33,7 @@ enum DishField {
   final String api;
   final String label;
 
-  /// 不认识的字段返回 null, 由调用方忽略. 后端新增可编辑字段时客户端可能还不认识.
+  /// 未知字段返回 null 并由调用方忽略, 以兼容后端后续新增的可编辑字段.
   static DishField? fromApi(String? value) {
     for (final field in values) {
       if (field.api == value) return field;
@@ -44,7 +44,7 @@ enum DishField {
 
 /// 菜品的一条修改记录.
 ///
-/// - [fields] 是本次改动的字段, 按后端顺序, 已去掉不认识的字段.
+/// - [fields] 为本次变动的字段列表, 保持后端返回顺序并已过滤未知字段.
 /// - [restoredFrom] 是 [RevisionAction.restore] 恢复到的记录 id.
 /// - 编辑者账号已删除时 [editorId] 和 [editorName] 为 null.
 class const DishRevision({

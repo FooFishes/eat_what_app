@@ -230,7 +230,7 @@ struct LatLngMessage: Hashable, CustomStringConvertible {
 
 /// Generated class from Pigeon that represents data sent in messages.
 struct CameraMessage: Hashable, CustomStringConvertible {
-  /// 可见区域中心的坐标, 即扣掉 [InsetsMessage] 之后那块区域的中心.
+  /// 可见区域中心的坐标, 即扣除 [InsetsMessage] 遮挡区域后的中心点.
   var center: LatLngMessage
   var zoom: Double
 
@@ -323,10 +323,10 @@ struct InsetsMessage: Hashable, CustomStringConvertible {
 struct MarkerMessage: Hashable, CustomStringConvertible {
   var id: String
   var position: LatLngMessage
-  /// PNG. 按 [iconScale] 倍绘制, 原生侧据此还原成逻辑尺寸.
+  /// PNG 图像字节, 原生侧按 [iconScale] 缩放还原为逻辑尺寸.
   var icon: FlutterStandardTypedData
   var iconScale: Double
-  /// 锚点在图片内的位置, 0–1, 对准 [position].
+  /// 锚点在图片内的归一化位置 (0–1), 用于对准 [position].
   var anchorX: Double
   var anchorY: Double
   var zIndex: Int64
@@ -447,8 +447,7 @@ struct PolygonMessage: Hashable, CustomStringConvertible {
   }
 }
 
-/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
-/// 地点检索的一条结果.
+/// 地点检索的单条结果.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct PlaceMessage: Hashable, CustomStringConvertible {
@@ -456,7 +455,7 @@ struct PlaceMessage: Hashable, CustomStringConvertible {
   var uid: String
   var name: String
   var address: String
-  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  /// 坐标类型与地图一致, 由初始化时设置的全局坐标类型决定.
   var location: LatLngMessage
 
 
@@ -564,11 +563,13 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 }
 
 
+/// SDK 级别调用, 须在同意隐私政策后调用 [initialize], 整个进程仅需一次.
+///
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol SdkHostApi {
-  /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
+  /// 依次配置隐私政策同意状态, GCJ-02 坐标类型与 AK, 然后启动 SDK.
   ///
-  /// 鉴权结果异步回到 [SdkFlutterApi.onAuthResult].
+  /// 鉴权结果通过 [SdkFlutterApi.onAuthResult] 异步返回.
   func initialize(apiKey: String) throws
 }
 
@@ -578,9 +579,9 @@ class SdkHostApiSetup {
   /// Sets up an instance of `SdkHostApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: SdkHostApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
+    /// 依次配置隐私政策同意状态, GCJ-02 坐标类型与 AK, 然后启动 SDK.
     ///
-    /// 鉴权结果异步回到 [SdkFlutterApi.onAuthResult].
+    /// 鉴权结果通过 [SdkFlutterApi.onAuthResult] 异步返回.
     let initializeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.SdkHostApi.initialize\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       initializeChannel.setMessageHandler { message, reply in
@@ -601,7 +602,7 @@ class SdkHostApiSetup {
 
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol SdkFlutterApiProtocol {
-  /// [code] 为 0 表示鉴权通过, 其余是百度的错误码.
+  /// [code] 为 0 表示鉴权通过, 其余为百度错误码.
   @MainActor func onAuthResult(code codeArg: Int64, message messageArg: String) async throws
 }
 class SdkFlutterApi: SdkFlutterApiProtocol {
@@ -614,7 +615,7 @@ class SdkFlutterApi: SdkFlutterApiProtocol {
   var codec: MessagesPigeonCodec {
     return MessagesPigeonCodec.shared
   }
-  /// [code] 为 0 表示鉴权通过, 其余是百度的错误码.
+  /// [code] 为 0 表示鉴权通过, 其余为百度错误码.
   @MainActor func onAuthResult(code codeArg: Int64, message messageArg: String) async throws {
     return try await withCheckedThrowingContinuation { continuation in
       let channelName: String = "dev.flutter.pigeon.eat_baidu_map.SdkFlutterApi.onAuthResult\(messageChannelSuffix)"
@@ -636,22 +637,22 @@ class SdkFlutterApi: SdkFlutterApiProtocol {
     }
   }
 }
-/// 单张地图的调用. 每个平台视图用自己的通道, 通道后缀是平台视图 id.
+/// 单张地图实例的调用接口. 每个平台视图使用独立通道, 以平台视图 ID 作为后缀.
 ///
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol MapViewHostApi {
-  /// 新增或更新 [upserts] 中的标记, 删除 [removedIds] 中的标记.
+  /// 新增或更新 [upserts] 中的标记, 并移除 [removedIds] 中的标记.
   func updateMarkers(upserts: [MarkerMessage], removedIds: [String]) throws
-  /// 用 [polygons] 替换地图上全部的多边形.
+  /// 使用 [polygons] 替换地图上的全部多边形.
   func setPolygons(polygons: [PolygonMessage]) throws
-  /// 地图被浮层盖住的部分. logo, 比例尺和地图中心都移到剩下的区域.
+  /// 设置地图被浮层遮挡的边距, logo, 比例尺与地图中心将移至剩余可见区域.
   func setInsets(insets: InsetsMessage) throws
-  /// 把 [center] 移到可见区域中心. [zoom] 为 null 时不改缩放级别.
+  /// 将 [center] 移至可见区域中心; [zoom] 为 null 时保持当前缩放级别.
   func moveCamera(center: LatLngMessage, zoom: Double?, animated: Bool) throws
-  /// 缩放到刚好装下 [points], 四周再各留 [margin].
+  /// 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距.
   func fitPoints(points: [LatLngMessage], margin: InsetsMessage, animated: Bool) throws
   func getCamera() throws -> CameraMessage
-  /// 底图是否已经加载完. Dart 在平台视图创建后才开始收事件, 可能错过 [MapViewFlutterApi.onLoaded].
+  /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   func isLoaded() throws -> Bool
 }
 
@@ -661,7 +662,7 @@ class MapViewHostApiSetup {
   /// Sets up an instance of `MapViewHostApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: MapViewHostApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    /// 新增或更新 [upserts] 中的标记, 删除 [removedIds] 中的标记.
+    /// 新增或更新 [upserts] 中的标记, 并移除 [removedIds] 中的标记.
     let updateMarkersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.updateMarkers\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       updateMarkersChannel.setMessageHandler { message, reply in
@@ -678,7 +679,7 @@ class MapViewHostApiSetup {
     } else {
       updateMarkersChannel.setMessageHandler(nil)
     }
-    /// 用 [polygons] 替换地图上全部的多边形.
+    /// 使用 [polygons] 替换地图上的全部多边形.
     let setPolygonsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setPolygons\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setPolygonsChannel.setMessageHandler { message, reply in
@@ -694,7 +695,7 @@ class MapViewHostApiSetup {
     } else {
       setPolygonsChannel.setMessageHandler(nil)
     }
-    /// 地图被浮层盖住的部分. logo, 比例尺和地图中心都移到剩下的区域.
+    /// 设置地图被浮层遮挡的边距, logo, 比例尺与地图中心将移至剩余可见区域.
     let setInsetsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setInsets\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setInsetsChannel.setMessageHandler { message, reply in
@@ -710,7 +711,7 @@ class MapViewHostApiSetup {
     } else {
       setInsetsChannel.setMessageHandler(nil)
     }
-    /// 把 [center] 移到可见区域中心. [zoom] 为 null 时不改缩放级别.
+    /// 将 [center] 移至可见区域中心; [zoom] 为 null 时保持当前缩放级别.
     let moveCameraChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.moveCamera\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       moveCameraChannel.setMessageHandler { message, reply in
@@ -728,7 +729,7 @@ class MapViewHostApiSetup {
     } else {
       moveCameraChannel.setMessageHandler(nil)
     }
-    /// 缩放到刚好装下 [points], 四周再各留 [margin].
+    /// 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距.
     let fitPointsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.fitPoints\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       fitPointsChannel.setMessageHandler { message, reply in
@@ -759,7 +760,7 @@ class MapViewHostApiSetup {
     } else {
       getCameraChannel.setMessageHandler(nil)
     }
-    /// 底图是否已经加载完. Dart 在平台视图创建后才开始收事件, 可能错过 [MapViewFlutterApi.onLoaded].
+    /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
     let isLoadedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.isLoaded\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isLoadedChannel.setMessageHandler { _, reply in
@@ -779,10 +780,10 @@ class MapViewHostApiSetup {
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol MapViewFlutterApiProtocol {
   @MainActor func onLoaded() async throws
-  /// 地图停止移动. [byGesture] 表示这次移动由用户手势触发.
+  /// 地图停止移动时触发; [byGesture] 表示此次移动是否由用户手势引发.
   @MainActor func onCameraIdle(camera cameraArg: CameraMessage, byGesture byGestureArg: Bool) async throws
   @MainActor func onMarkerTap(id idArg: String) async throws
-  /// 地图数据无效或渲染失败, 例如 AK 无效时.
+  /// 地图数据无效或渲染失败时触发, 例如 AK 无效.
   @MainActor func onError(code codeArg: Int64, message messageArg: String) async throws
 }
 class MapViewFlutterApi: MapViewFlutterApiProtocol {
@@ -815,7 +816,7 @@ class MapViewFlutterApi: MapViewFlutterApiProtocol {
       }
     }
   }
-  /// 地图停止移动. [byGesture] 表示这次移动由用户手势触发.
+  /// 地图停止移动时触发; [byGesture] 表示此次移动是否由用户手势引发.
   @MainActor func onCameraIdle(camera cameraArg: CameraMessage, byGesture byGestureArg: Bool) async throws {
     return try await withCheckedThrowingContinuation { continuation in
       let channelName: String = "dev.flutter.pigeon.eat_baidu_map.MapViewFlutterApi.onCameraIdle\(messageChannelSuffix)"
@@ -856,7 +857,7 @@ class MapViewFlutterApi: MapViewFlutterApiProtocol {
       }
     }
   }
-  /// 地图数据无效或渲染失败, 例如 AK 无效时.
+  /// 地图数据无效或渲染失败时触发, 例如 AK 无效.
   @MainActor func onError(code codeArg: Int64, message messageArg: String) async throws {
     return try await withCheckedThrowingContinuation { continuation in
       let channelName: String = "dev.flutter.pigeon.eat_baidu_map.MapViewFlutterApi.onError\(messageChannelSuffix)"
@@ -878,12 +879,13 @@ class MapViewFlutterApi: MapViewFlutterApiProtocol {
     }
   }
 }
-/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+/// 地点检索接口, 与地图共用同一次 SDK 初始化, 不依赖具体地图视图.
 ///
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol PlaceSearchHostApi {
-  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
-  /// 没有结果时返回空列表, 检索失败时报错.
+  /// 搜索 [center] 周围 [radius] 米内名称或地址匹配 [keyword] 的地点, 最多返回 [pageSize] 条.
+  ///
+  /// 无匹配结果时返回空列表, 检索失败时抛出异常.
   func searchNearby(keyword: String, center: LatLngMessage, radius: Int64, pageSize: Int64) async throws -> [PlaceMessage]
 }
 
@@ -893,8 +895,9 @@ class PlaceSearchHostApiSetup {
   /// Sets up an instance of `PlaceSearchHostApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: PlaceSearchHostApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
-    /// 没有结果时返回空列表, 检索失败时报错.
+    /// 搜索 [center] 周围 [radius] 米内名称或地址匹配 [keyword] 的地点, 最多返回 [pageSize] 条.
+    ///
+    /// 无匹配结果时返回空列表, 检索失败时抛出异常.
     let searchNearbyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.PlaceSearchHostApi.searchNearby\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       searchNearbyChannel.setMessageHandler { message, reply in

@@ -17,9 +17,9 @@ class const CampusDto({
       _$CampusDtoFromJson(json);
 }
 
-/// 商圈.
+/// 商圈信息.
 ///
-/// [boundary] 为 GeoJSON MultiPolygon, 坐标系与 [gcjLng] 和 [gcjLat] 相同, 都是 GCJ-02. 没有边界时为 null.
+/// [boundary] 为 GeoJSON MultiPolygon, 与 [gcjLng], [gcjLat] 均采用 GCJ-02 坐标系; 无边界数据时为 null.
 @JsonSerializable(createToJson: false)
 class const HubDto({
   final int? id,
@@ -32,16 +32,16 @@ class const HubDto({
   factory HubDto.fromJson(Map<String, dynamic> json) => _$HubDtoFromJson(json);
 }
 
-/// GeoJSON 几何. `Point` 的坐标为 `[经度, 纬度]`, `MultiPolygon` 按多边形, 环, 点三层嵌套.
+/// GeoJSON 几何对象; `Point` 的坐标格式为 `[经度, 纬度]`, `MultiPolygon` 按多边形, 环, 点三层嵌套.
 @JsonSerializable(createToJson: false)
 class const GeoJsonDto({final String? type, final List<dynamic>? coordinates}) {
   factory GeoJsonDto.fromJson(Map<String, dynamic> json) =>
       _$GeoJsonDtoFromJson(json);
 }
 
-/// 店铺 (`RestaurantDtos.Restaurant`), 也用于解析推荐卡片 (`RecommendDtos.Card`).
+/// 店铺数据结构 (`RestaurantDtos.Restaurant`), 同时用于解析推荐卡片 (`RecommendDtos.Card`).
 ///
-/// 推荐卡片是店铺的子集, 另带 [signatureFoods]. 店铺接口不返回 [signatureFoods].
+/// 推荐卡片字段为店铺的子集并额外附带 [signatureFoods], 而普通店铺接口不返回该字段.
 @JsonSerializable(createToJson: false)
 class const RestaurantDto({
   final int? id,
@@ -50,7 +50,7 @@ class const RestaurantDto({
   final double? gcjLng,
   final double? gcjLat,
 
-  /// 百度地点的 uid. 手动添加的店为 null.
+  /// 百度地图地点的 uid, 手动创建的店铺为 null.
   final String? poi,
 
   /// 门头照片的地址.
@@ -60,10 +60,10 @@ class const RestaurantDto({
   final String? hubName,
   final int? campusId,
 
-  /// 与请求坐标的距离. 只在请求带坐标时返回.
+  /// 与请求坐标的距离 (米), 仅在请求携带坐标时返回.
   final double? distanceMeters,
 
-  /// 游客为 null.
+  /// 游客状态下为 null.
   final bool? isFavorite,
   final bool? deliveryEnabled,
 
@@ -71,41 +71,41 @@ class const RestaurantDto({
   final String? kind,
   final List<String>? mealTimes,
 
-  /// `UNDER_15`, `FROM_15_TO_30` 或 `OVER_30`. 没填时为 null.
+  /// 人均价格区间 (`UNDER_15`, `FROM_15_TO_30` 或 `OVER_30`), 未设置时为 null.
   final String? priceBand,
   final List<String>? categories,
 
-  /// 口味.
+  /// 口味标签.
   final List<String>? tags,
   final StatDto? dineIn,
   final StatDto? delivery,
 
-  /// 游客为 null.
+  /// 游客状态下为 null.
   final MyRatingsDto? myRatings,
   final List<SignatureFoodDto>? signatureFoods,
 
-  /// 搜店时因菜名命中的一道菜. 按店名或地址命中, 或不是搜索时为 null.
+  /// 搜索时因菜名命中的代表菜品; 若非搜索请求或仅命中店名与地址则为 null.
   final MatchedFoodDto? matchedFood,
 }) {
   factory RestaurantDto.fromJson(Map<String, dynamic> json) =>
       _$RestaurantDtoFromJson(json);
 }
 
-/// 一个场景的评价统计. [rate] 为 0–1 的推荐率, 没有评价时为 null.
+/// 单个消费场景的评价统计; [rate] 为 0–1 之间的推荐率, 尚无评价时为 null.
 @JsonSerializable(createToJson: false)
 class const StatDto({final double? rate, final int? count}) {
   factory StatDto.fromJson(Map<String, dynamic> json) =>
       _$StatDtoFromJson(json);
 }
 
-/// 当前用户在两个场景的评价: `RECOMMEND` 或 `NOT_RECOMMEND`, 没评过为 null.
+/// 当前用户在堂食与外卖场景下的评价 (`RECOMMEND` 或 `NOT_RECOMMEND`), 未评价的场景为 null.
 @JsonSerializable(createToJson: false)
 class const MyRatingsDto({final String? dineIn, final String? delivery}) {
   factory MyRatingsDto.fromJson(Map<String, dynamic> json) =>
       _$MyRatingsDtoFromJson(json);
 }
 
-/// 推荐卡片的招牌菜摘要. [pictureUrl] 是第一张照片.
+/// 推荐卡片中的招牌菜摘要, [pictureUrl] 为其首张照片地址.
 @JsonSerializable(createToJson: false)
 class const SignatureFoodDto({
   final int? id,
@@ -113,16 +113,16 @@ class const SignatureFoodDto({
   final double? price,
   final String? pictureUrl,
 
-  /// 封面的圆形取景. 没有时按居中的短边内切圆显示.
+  /// 封面的圆形取景参数, 缺失时默认按居中的短边内切圆裁剪.
   ///
-  /// 菜的舞台色 `stageColor` 不读: 店的舞台色按类型和品类定, 招牌菜不改变它 (产品 4.7).
+  /// 店铺舞台色由店铺类型与品类决定, 不受招牌菜影响, 因此不读取菜品的 `stageColor`.
   final CoverCropDto? coverCrop,
 }) {
   factory SignatureFoodDto.fromJson(Map<String, dynamic> json) =>
       _$SignatureFoodDtoFromJson(json);
 }
 
-/// 搜店时因菜名命中的菜 (`RestaurantDtos.MatchedFood`). [price] 可能为 null.
+/// 搜索店铺时因菜名命中的菜品摘要 (`RestaurantDtos.MatchedFood`), [price] 可能为 null.
 @JsonSerializable(createToJson: false)
 class const MatchedFoodDto({
   final int? id,
@@ -133,7 +133,7 @@ class const MatchedFoodDto({
       _$MatchedFoodDtoFromJson(json);
 }
 
-/// 评价的请求体. [scene] 为 `dine_in` 或 `delivery`.
+/// 店铺评价请求体, [scene] 取值为 `dine_in` 或 `delivery`.
 @JsonSerializable(createFactory: false)
 class const RatingRequestDto({
   required final String scene,
@@ -142,10 +142,10 @@ class const RatingRequestDto({
   Map<String, dynamic> toJson() => _$RatingRequestDtoToJson(this);
 }
 
-/// 新建店铺的请求体. 所属商圈由后端按坐标计算.
+/// 新建店铺的请求体, 所属商圈由服务端根据坐标自动计算.
 ///
-/// - [picture] 是门头照片上传后的存储 key.
-/// - 省略 [mealTimes] 时后端按午饭和晚饭处理.
+/// - [picture] 为门头照片上传后得到的存储 key.
+/// - 若省略 [mealTimes], 服务端默认视为覆盖午饭与晚饭时段.
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const CreateRestaurantDto({
   required final String name,
@@ -153,7 +153,7 @@ class const CreateRestaurantDto({
   required final double gcjLng,
   required final double gcjLat,
 
-  /// 从地图候选里选的店带百度地点的 uid, 手动添加的不带.
+  /// 从地图候选列表中选择的店铺需携带百度地点 uid, 手动创建时为 null.
   final String? poi,
   final String? picture,
   required final String kind,
@@ -163,16 +163,15 @@ class const CreateRestaurantDto({
   final List<String>? tags,
   final bool? deliveryEnabled,
 
-  /// 用户确认不是同一家后为 true, 跳过查重.
+  /// 用户确认与查重结果并非同一店铺后置为 true, 以跳过重复校验.
   final bool? force,
 }) {
   Map<String, dynamic> toJson() => _$CreateRestaurantDtoToJson(this);
 }
 
-/// 新建店时可能重复的店 (`RestaurantDtos.Duplicate`).
+/// 查重返回的疑似重复店铺 (`RestaurantDtos.Duplicate`).
 ///
-/// [reason] 为 `poi` (同一个地图地点) 或 `name` (200 m 内同名, 忽略空白和大小写).
-/// [distanceMeters] 是到新店位置的距离.
+/// [reason] 为 `poi` (同一地图地点) 或 `name` (200 m 内同名, 忽略空白与大小写); [distanceMeters] 为其与新建位置的距离 (米).
 @JsonSerializable(createToJson: false)
 class const ShopDuplicateDto({
   final int? id,
@@ -186,9 +185,9 @@ class const ShopDuplicateDto({
       _$ShopDuplicateDtoFromJson(json);
 }
 
-/// 修改店铺的请求体. 省略的字段不修改.
+/// 修改店铺的请求体, 省略的字段保持原值不变.
 ///
-/// 清除时 [poi], [picture], [priceBand] 传空串, [categories], [tags] 传空数组.
+/// 需清空字段时, [poi], [picture], [priceBand] 传入空字符串, [categories], [tags] 传入空列表.
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const EditRestaurantDto({
   final String? name,
@@ -208,17 +207,17 @@ class const EditRestaurantDto({
   Map<String, dynamic> toJson() => _$EditRestaurantDtoToJson(this);
 }
 
-/// 修改和恢复的结果. 内容没有变化时 [revisionId] 为 null.
+/// 店铺修改或恢复操作的结果; 若内容未发生实际变更, [revisionId] 为 null.
 @JsonSerializable(createToJson: false)
 class const EditedRestaurantDto({final int? id, final int? revisionId}) {
   factory EditedRestaurantDto.fromJson(Map<String, dynamic> json) =>
       _$EditedRestaurantDtoFromJson(json);
 }
 
-/// 店铺的一条修改记录.
+/// 店铺单条修改记录.
 ///
-/// - [action] 为 `create`, `edit` 或 `restore`.
-/// - [restoredFrom] 是恢复到的修改记录 id, 只有 `restore` 有值.
+/// - [action] 取值为 `create`, `edit` 或 `restore`.
+/// - [restoredFrom] 为恢复目标版本的记录 id, 仅当 [action] 为 `restore` 时有值.
 @JsonSerializable(createToJson: false)
 class const RevisionDto({
   final int? id,
@@ -232,7 +231,7 @@ class const RevisionDto({
       _$RevisionDtoFromJson(json);
 }
 
-/// 修改记录的编辑者. [avatar] 是头像地址.
+/// 修改记录的编辑者信息, [avatar] 为头像 URL.
 @JsonSerializable(createToJson: false)
 class const RevisionEditorDto({
   final int? id,
@@ -243,7 +242,7 @@ class const RevisionEditorDto({
       _$RevisionEditorDtoFromJson(json);
 }
 
-/// 一个字段的改动. `picture` 的 [from] 和 [to] 是图片地址, 其余是字段原值.
+/// 单个字段的变更记录; 当字段为 `picture` 时 [from] 和 [to] 为图片 URL, 其余字段为原值.
 @JsonSerializable(createToJson: false)
 class const FieldChangeDto({
   final String? field,

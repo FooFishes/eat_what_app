@@ -25,11 +25,11 @@ class const CurrentUser({
   final VerifyMethod? verifyMethod,
   final String? verifiedEmail,
 
-  /// 等级, 1 到 10. 服务端没有返回时为 null.
+  /// 用户等级, 取值 1 到 10, 服务端未返回时为 null.
   final int? level,
   final bool banned = false,
   final String? banReason,
 
-  /// 封禁截止时间. 只在封禁且有期限时有值, null 表示永久封禁或没有封禁.
+  /// 封禁截止时间, 仅在限时封禁时有值, 为 null 表示永久封禁或未被封禁.
   final DateTime? banUntil,
 });

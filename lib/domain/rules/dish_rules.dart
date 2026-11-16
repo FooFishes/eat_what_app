@@ -23,7 +23,7 @@ abstract final class DishRules {
     '套餐',
   ];
 
-  // TODO: 产品要求按词断行, 客户端没有中文分词能力, 目前按字数平分. 后端在发布时返回断行位置后改用该结果, 并删除 [_tails].
+  // TODO: 客户端缺少中文分词能力无法按词断行, 目前按字数均分. 后端在发布接口返回断行位置后改用该结果, 并删除 [_tails].
   /// 把菜名断成每行不超过 [lineLength] 个字的若干行.
   ///
   /// 各行字数尽量相等. 菜名以 [_tails] 中的词结尾时, 该词不拆到两行.
@@ -57,7 +57,7 @@ abstract final class DishRules {
     return result;
   }
 
-  /// 菜品没有保存舞台色时使用的颜色: 分类默认色, 没有分类时为 `broth`.
+  /// 菜品未保存舞台色时的兜底颜色, 优先取分类默认色, 无分类时使用 `broth`.
   static StageColor defaultStage(DishCategory? category) =>
       category?.stage ?? StageColor.broth;
 

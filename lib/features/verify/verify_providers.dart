@@ -26,10 +26,10 @@ class const VerifyState({
 /// 认证邮件的重发间隔, 与短信验证码一致.
 const emailResendInterval = Duration(seconds: 60);
 
-/// 统一认证的结果, 来自后端重定向到回跳链接时附带的 `result`, `code` 和 `ticket`.
+/// 统一认证回跳结果, 解析自后端重定向到回跳链接时附带的 `result`, `code` 与 `ticket` 参数.
 ///
-/// 成功时认证还没有生效, 要由发起认证的账号提交 [ticket].
-/// 回跳链接任何人都能构造, 因此 [success] 和 [code] 只用于提示.
+/// 成功回跳时认证尚未生效, 仍须由发起认证的原账号提交 [ticket] 完成确认.
+/// 由于回跳链接可被任意构造, [success] 与 [code] 仅用于界面提示.
 class const SsoResult({
   required final bool success,
   final int? code,
@@ -37,7 +37,7 @@ class const SsoResult({
   /// 一次性的认证票据, 5 分钟内有效. 只在成功时有值.
   final String? ticket,
 }) {
-  /// 回跳链接查询参数中的结果. `result` 既不是 success 也不是 failure 时返回 null.
+  /// 从回跳链接的查询参数中解析认证结果, 当 `result` 既非 success 也非 failure 时返回 null.
   static SsoResult? fromCallback(Map<String, String> query) =>
       switch (query['result']) {
         'success' => SsoResult(success: true, ticket: query['ticket']),
@@ -49,7 +49,7 @@ class const SsoResult({
       };
 }
 
-/// 统一认证失败的业务码. 回跳链接的 `code` 和提交票据的响应都可能是这些值.
+/// 统一认证失败的业务码集合, 回跳链接的 `code` 参数与提交票据接口的响应均可能返回这些值.
 abstract final class SsoCodes {
   /// 认证链接无效, 过期或已用过.
   static const linkExpired = 30012;
@@ -61,7 +61,7 @@ abstract final class SsoCodes {
   static const badSchoolResponse = 50003;
 }
 
-/// 统一认证失败时的提示. 不显示业务码, 未收录的业务码使用通用提示.
+/// 根据统一认证失败码返回用户提示文案, 不向用户暴露错误码, 未收录的业务码回落为通用提示.
 String ssoFailureMessage(int? code) => switch (code) {
   SsoCodes.linkExpired => '认证链接已失效，请重新发起认证',
   SsoCodes.studentIdTaken => '该学号已认证其他账号',
@@ -77,9 +77,9 @@ class Verify extends _$Verify {
   @override
   VerifyState build() => const VerifyState();
 
-  /// 跳转到学校的统一认证页, 认证结束后显示结果. 认证地址只能使用一次, 因此每次点击都重新获取.
+  /// 发起山大统一认证并跳转至学校认证页, 结束后根据回跳结果更新界面提示. 由于认证链接为一次性使用, 每次发起均会重新向服务端获取.
   ///
-  /// 认证页打开期间 `ssoStarted` 已为 true, 这期间回到前台的刷新也会提示认证未完成.
+  /// 跳转后 `ssoStarted` 即置为 true, 因此认证未完成前返回前台触发的自动刷新也会提示用户.
   Future<void> startSso() async {
     if (state.busy) return;
     final started = state.ssoStarted;
@@ -135,13 +135,12 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 更换邮箱: 清除已发送状态, 回到邮箱输入.
+  /// 清除已发送状态以返回邮箱输入界面.
   void editEmail() => state = VerifyState(ssoStarted: state.ssoStarted);
 
-  /// 重新请求认证状态. 在打开页面, 回到前台或点击 "我已完成, 刷新状态" 时调用.
+  /// 重新请求账号认证状态, 在打开页面, 回到前台或点击 "已完成, 刷新状态" 时调用.
   ///
-  /// 跳转过统一认证或用户主动刷新, 而账号仍未认证时, 提示重新认证.
-  /// 自动刷新不替换已有的提示, 以保留回跳链接给出的具体原因.
+  /// 若已发起过统一认证或由用户主动刷新而账号仍未认证, 则提示重新认证. 自动刷新不会覆盖已有提示, 以保留回跳链接携带的具体失败原因.
   Future<void> refresh({bool userAsked = false}) async {
     await ref.read(sessionProvider.notifier).refreshUser();
     if (!ref.mounted) return;
@@ -152,10 +151,10 @@ class Verify extends _$Verify {
     }
   }
 
-  /// 处理统一认证回跳的结果: 成功时提交票据完成认证, 然后重新请求认证状态.
+  /// 处理统一认证回跳结果: 成功时提交票据完成认证并刷新账号状态.
   ///
-  /// 票据只能由发起认证的账号提交. 期间切换过账号时, 服务端拒绝提交, 结果不套用到新账号.
-  /// 提交成功但账号仍未认证时, 可能是刷新失败, 提示稍后刷新而不是重新认证.
+  /// 票据仅允许发起认证的原账号提交, 若期间切换过账号, 服务端会拒绝提交以避免错绑到新账号.
+  /// 若票据提交成功但刷新后账号仍显示未认证, 可能是用户信息刷新失败, 此时提示稍后刷新而非要求重新认证.
   Future<void> showSsoResult(SsoResult result) async {
     String? failure;
     if (result case SsoResult(success: true, :final ticket?)) {
@@ -203,15 +202,15 @@ class Verify extends _$Verify {
       failure.kind == FailureKind.cancelled ? null : failure.message;
 }
 
-/// 邮箱认证落地页的进度. null 表示还没有提交.
+/// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
 @riverpod
 class EmailVerification extends _$EmailVerification {
   @override
   AsyncValue<void>? build() => null;
 
-  /// 提交邮件链接中的 [token], 成功后刷新账号状态. 失败的原因见 [AsyncError.error].
+  /// 提交邮件链接中的 [token] 完成邮箱认证, 成功后刷新账号状态, 失败详情保存在 [AsyncError.error] 中.
   ///
-  /// token 只能使用一次, 因此只提交一次. 页面重建不会重复提交.
+  /// 由于 [token] 仅能使用一次, 状态非空时忽略后续调用, 避免页面重建引发重复提交.
   Future<void> submit(String token) async {
     if (state != null) return;
     state = const AsyncLoading();

@@ -12,13 +12,12 @@ abstract final class ShopRules {
   static const categoriesMax = 2;
   static const tastesMax = 3;
 
-  /// 舞台上店名的最多行数. 菜名最多三行, 店名最长 20 字, 多给一行.
+  /// 舞台上店名的最大显示行数. 因店名最长可达 20 字, 相比菜名 (最多 3 行) 额外增加一行.
   static const nameMaxLines = 4;
 
-  /// 店名在舞台上的断行. 最多 [nameMaxLines] 行.
+  /// 计算店名在舞台上的断行结果, 最多 [nameMaxLines] 行.
   ///
-  /// 断成不超过 [nameMaxLines] 行时沿用菜名的规则 (`DishRules.stageLines`).
-  /// 更长的店名平分成 [nameMaxLines] 行, 每行超过四个字, 由页面缩小字号. 店名最长 20 字, 每行至多五个字.
+  /// 若按菜名规则 (`DishRules.stageLines`) 断行不超过 [nameMaxLines] 行则直接沿用; 更长的店名均分为 [nameMaxLines] 行 (每行最多 5 字), 超出 4 字时由页面缩小字号.
   static List<String> stageLines(String name) {
     final lines = DishRules.stageLines(name);
     if (lines.length <= nameMaxLines) return lines;
@@ -40,7 +39,7 @@ abstract final class ShopRules {
   /// 与搜店接口 `recommendedOnly` 的门槛相同, 附近页 "只看口碑好的" 筛出的店都能显示推荐率.
   static const rateMinCount = 3;
 
-  // TODO: 后端不保存店铺的舞台色. 后端恢复舞台色后, 响应中有舞台色时优先使用.
+  // TODO: 后端暂不保存店铺的舞台色, 目前客户端按类型和品类映射. 后端恢复该字段且响应中返回舞台色后, 优先使用服务端取值.
   /// 店铺的舞台色, 按类型和第一个品类映射. 甜点饮品店用 `porcelain`, 没有品类时用 `broth`.
   ///
   /// 映射是纯函数, 同一家店在店铺页, 推荐卡片和各端的颜色一致.
@@ -62,9 +61,9 @@ abstract final class ShopRules {
     RatingScene.delivery => shop.delivery,
   };
 
-  /// 舞台和店铺行显示的推荐率. 都不满 [rateMinCount] 条时为 null.
+  /// 计算舞台和店铺行展示的推荐率, 两个场景评价均不足 [rateMinCount] 条时返回 null.
   ///
-  /// 堂食满门槛时取堂食. 堂食不满而外卖满时取外卖, 外卖的推荐率比没有推荐率更有参考价值.
+  /// 堂食评价达到门槛时优先展示堂食; 若堂食不足而外卖达标, 则降级展示外卖推荐率.
   static ShopRateView? rateOf(Shop shop) {
     for (final scene in RatingScene.values) {
       final stat = statOf(shop, scene);

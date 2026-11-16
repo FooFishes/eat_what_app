@@ -1,21 +1,21 @@
-/// 评论和回复的规则: 字数, 照片数, 能否发送.
+/// 评论与回复的业务规则, 包含字数限制, 照片上限与发送条件校验.
 abstract final class CommentRules {
   /// 文字上限, 按 Unicode 码点计. 服务端先去掉首尾空白再计数.
   static const textMax = 200;
 
-  /// 一条评论最多的照片数. 回复不能带照片.
+  /// 单条评论允许上传的最大照片数量, 回复不可附带照片.
   static const photoMax = 3;
 
-  /// 菜品详情里露出的评论条数.
+  /// 菜品详情页默认展示的评论条数.
   static const dishPreview = 3;
 
-  /// 评论下面默认露出的回复条数, 其余收起在 "展开 N 条回复" 里.
+  /// 评论下方默认展示的回复条数, 超出部分折叠在 "展开 N 条回复" 中.
   static const replyPreview = 2;
 
-  /// 去掉首尾空白后的字数.
+  /// 去除首尾空白字符后的有效字数 (按 Unicode 码点计).
   static int length(String text) => text.trim().runes.length;
 
-  /// 能否发送. 评论至少包含文字或照片. 回复只能包含文字, 且文字不能为空.
+  /// 判断是否满足发送条件. 评论需至少包含文字或照片, 回复则仅限非空文字.
   static bool canSend(String text, {int photos = 0, bool reply = false}) {
     final length = CommentRules.length(text);
     if (length > textMax) return false;

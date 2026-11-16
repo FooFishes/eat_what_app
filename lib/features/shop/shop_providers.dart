@@ -14,13 +14,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'shop_providers.g.dart';
 
-/// 分页列表和加载下一页失败的原因.
+/// 分页列表状态, 包含当前已加载的分页数据及加载下一页失败的原因.
 class const LoadedPages<T>({
   required final Paged<T> pages,
   final AppFailure? moreError,
 });
 
-/// 按 [fetch] 加载下一页, 同一时刻只加载一页. 失败时把原因记在 [LoadedPages.moreError] 中.
+/// 通用分页加载器, 保证同一时刻仅发起一次 [fetch] 请求, 失败时将异常记录在 [LoadedPages.moreError] 中.
 class _MoreLoader<T> {
   var _loading = false;
 
@@ -43,9 +43,9 @@ class _MoreLoader<T> {
   }
 }
 
-/// 一家店的全部菜品, 按菜单顺序分页: 招牌菜在前, 然后按分类, 同一分类按赞数.
+/// 指定店铺的全部菜品分页列表, 按菜单顺序排序 (招牌菜优先, 其次按分类及赞数).
 ///
-/// [LoadedPages.pages] 的 `total` 是这家店的菜数. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// [LoadedPages.pages] 中的 total 即该店菜品总数. 发布新菜后会自动失效并重新请求, 离开页面后缓存保留 5 分钟.
 @riverpod
 class ShopMenu extends _$ShopMenu {
   final _more = _MoreLoader<Dish>();
@@ -70,9 +70,9 @@ class ShopMenu extends _$ShopMenu {
       _more.load(ref, state.value, _fetch, (next) => state = AsyncData(next));
 }
 
-/// 一家店的招牌菜, 至多 3 道, 按菜单顺序.
+/// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
 ///
-/// 店铺接口不返回招牌菜, 因此单独请求. 发布新菜后重新请求. 离开页面后保留 5 分钟.
+/// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
 @riverpod
 Future<List<Dish>> shopSignatures(Ref ref, int shopId) async {
   ref.cacheFor(const Duration(minutes: 5));
@@ -89,16 +89,15 @@ Future<List<Dish>> shopSignatures(Ref ref, int shopId) async {
   return page.items;
 }
 
-/// 当前用户对一家店的评价和收藏.
+/// 当前用户对指定店铺的评价与收藏状态.
 class const ShopMine({
   final MyShopRatings ratings = const MyShopRatings(),
   final bool favorite = false,
 });
 
-/// 当前用户对一家店的评价和收藏, 点击后立即修改本地值, 请求失败时恢复.
+/// 管理当前用户对指定店铺的评价与收藏状态, 操作时采用乐观更新并在失败时回滚.
 ///
-/// 初值和后续更新来自店铺详情中的个人状态, 只监听其中两个字段.
-/// 评价成功后店铺详情会重新请求. 若监听整个详情, 请求期间的旧数据会覆盖乐观值.
+/// 仅订阅店铺详情中的个人评价与收藏两个字段, 避免评价成功后重新请求店铺详情期间旧数据覆盖本地乐观值.
 @riverpod
 class ShopMineState extends _$ShopMineState {
   @override
@@ -113,9 +112,9 @@ class ShopMineState extends _$ShopMineState {
     );
   }
 
-  /// 评价 [scene] 场景, [rating] 为 null 时撤回. 成功时返回 null, 并重新请求店铺详情以更新推荐率.
+  /// 提交或撤回 [scene] 场景下的评价 ([rating] 为 null 表示撤回).
   ///
-  /// 失败时恢复原值并返回失败原因.
+  /// 成功时返回 null 并重新请求店铺详情以同步推荐率, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> rate(RatingScene scene, ShopRating? rating) async {
     final before = state;
     state = ShopMine(
@@ -152,7 +151,7 @@ class ShopMineState extends _$ShopMineState {
   }
 }
 
-/// 一家店的修改记录, 最新的在前, 分页加载.
+/// 指定店铺的修改记录分页列表, 按时间倒序排列.
 @riverpod
 class ShopHistory extends _$ShopHistory {
   final _more = _MoreLoader<ShopRevision>();

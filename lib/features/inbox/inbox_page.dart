@@ -77,7 +77,7 @@ class Inbox extends _$Inbox {
     }
   }
 
-  /// 标为已读. 请求失败时不恢复: 下次进入消息页时以服务端为准.
+  /// 将单条消息标为已读. 请求失败时不回滚本地状态, 下次进入消息页时以服务端数据为准.
   void markRead(Notice notice) {
     final current = state.value?.pages;
     if (current == null || notice.read) return;
@@ -298,13 +298,9 @@ class _NoticeList extends StatelessWidget {
   }
 }
 
-/// 消息的一行: 未读圆点, 头像或系统图标, 一句话和时间. 关注消息右侧是 "回关".
+/// 单条消息行, 包含未读圆点, 头像或系统图标, 消息摘要与时间, 关注消息右侧附带 "回关" 按钮.
 ///
-/// 点击后标为已读. 有跳转目标时同时跳转到目标页面.
-///
-/// 没有跳转目标的行, 读屏把点击结果读作 "标为已读". 否则读屏用户无法判断点击是否会离开消息页.
-///
-/// 没有跳转目标的行已读后不可点, 因为此时点击没有任何效果.
+/// 点击后标记已读并跳转到对应目标页 (若有); 无跳转目标的消息在读屏时提示点击结果为 "标为已读", 避免无障碍用户误判是否会离开当前页, 且已读后设为不可点击.
 class _NoticeRow extends ConsumerWidget {
   const new({required this.column, required this.notice, required this.now});
 

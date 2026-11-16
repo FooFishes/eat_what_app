@@ -12,11 +12,11 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 账号与安全页面: 学生认证, 手机号, 用户名, 密码, 登录设备和注销账号.
+/// 账号与安全设置页面, 提供学生认证, 手机号, 用户名, 密码, 登录设备与注销账号入口.
 ///
-/// - 没有手机号时点 "手机号" 进入绑定, 有手机号时进入换绑.
-/// - 未设置用户名时可点击进入设置. 设置后只显示, 不可修改.
-/// - 未设置密码时显示 "设置密码", 已设置时显示 "修改密码".
+/// - 未绑定手机号时点击 "手机号" 进入绑定流程, 已绑定时进入换绑流程.
+/// - 未设置用户名时支持点击设置, 设置完成后仅作展示且不可修改.
+/// - 密码项根据当前账号状态分别显示 "设置密码" 或 "修改密码".
 class AccountPage extends ConsumerWidget {
   const new({super.key});
 
@@ -96,7 +96,7 @@ class AccountPage extends ConsumerWidget {
   }
 }
 
-/// 按账号状态检查后打开 [path]. 未登录时弹出拦截对话框.
+/// 校验当前账号是否满足 [capability] 权限后打开 [path], 未登录或权限不足时弹出拦截对话框.
 Future<void> _open(
   BuildContext context,
   WidgetRef ref,

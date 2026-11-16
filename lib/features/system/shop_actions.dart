@@ -14,11 +14,10 @@ import 'package:eat/features/system/report_panel.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// "导航去店里".
+/// 发起店铺位置导航.
 ///
-/// - 只有一个可用的地图时直接打开.
-/// - 有多个时弹出面板让用户选择.
-/// - 未安装地图 App 或在 Web 上时, 可用的只有高德网页版.
+/// 仅有一个可用地图应用时立即唤起, 存在多个可用应用时弹出选择面板.
+/// 未安装本地地图应用或处于 Web 环境时仅提供高德网页版.
 Future<void> navigateToShop(
   BuildContext context,
   WidgetRef ref, {
@@ -59,18 +58,18 @@ Future<void> navigateToShop(
   }
 }
 
-/// 加菜前检查店铺是否营业. 已关门时显示提示并返回 false.
+/// 加菜前校验店铺是否处于营业状态, 若已关门则弹出提示并返回 false.
 ///
-/// 服务端不拒绝给已关门的店加菜, 由客户端拦截.
+/// 由于服务端不拦截针对已关门店铺的加菜请求, 需由客户端负责阻止.
 bool ensureShopOpen(BuildContext context, Shop shop) {
   if (!shop.closed) return true;
   showToast(context, '这家店已关门，不能加菜');
   return false;
 }
 
-/// 分享面板: 分享渠道和 "复制链接". 传入 [reportTarget] 时末尾增加 "举报".
+/// 打开分享面板, 提供系统分享与 "复制链接" 操作, 传入 [reportTarget] 时在末尾追加 "举报" 入口.
 ///
-/// 点击 "举报" 时关闭分享面板后打开举报面板, 不在面板上叠加面板.
+/// 选择 "举报" 时先关闭分享面板再打开举报面板, 避免双层面板叠加.
 Future<void> showSharePanel(
   BuildContext context,
   WidgetRef ref, {

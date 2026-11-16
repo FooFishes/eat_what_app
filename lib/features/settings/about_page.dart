@@ -14,11 +14,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 关于页面: 应用说明, 版本号, 反馈入口和两份协议.
+/// 关于页面, 展示应用说明, 版本信息, 反馈入口及隐私政策与用户协议.
 ///
-/// 游客也能进. 游客点 "反馈" 时弹登录对话框.
-///
-/// 版本写作 "版本 0.3.0（30）补丁 2", 依次是版本名, 构建号和热更新的补丁号. 没有补丁时不显示补丁号.
+/// 允许游客访问, 游客点击 "反馈" 时会弹出登录拦截对话框.
+/// 版本信息格式为 "版本 0.3.0 (30) 补丁 2", 依次对应版本名, 构建号与热更新补丁号; 无补丁时省略补丁号.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
 

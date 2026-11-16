@@ -29,10 +29,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 一条评论: 头像, 昵称, 时间, 文字, 照片, 赞和 "回复", 下方为该评论的回复.
+/// 评论卡片组件, 展示评论者头像, 昵称, 时间, 正文, 附图, 点赞与回复入口及其下方的回复列表.
 ///
-/// 菜品详情和全部评论共用本组件. 功能目录之间不能互相导入, 因此放在 `system`.
-/// 右上角 "更多" 中, 自己的评论为 "删除", 别人的评论为 "举报".
+/// 由菜品详情页与全部评论页共用 (为避免功能模块间相互导入而置于 `system` 目录).
+/// 右上角 "更多" 菜单对本人评论提供 "删除", 对他人评论提供 "举报".
 class CommentCard extends ConsumerWidget {
   const new({super.key, required this.comment, this.highlighted = false});
 
@@ -129,11 +129,11 @@ class CommentCard extends ConsumerWidget {
   }
 }
 
-/// 没有头像时的底色. 按用户 id 确定舞台色, 与个人主页一致.
+/// 计算用户默认头像的底色, 按用户 id 映射为固定舞台色以与个人主页保持一致.
 StageColor avatarColorOf(int userId) =>
     StageColor.values[userId % StageColor.values.length];
 
-/// 回复 [comment]. [to] 是被回复的那条回复, 回复评论本身时为 null.
+/// 回复主评论 [comment], 若针对某条楼中楼回复进行回复, 则通过 [to] 指定目标回复.
 Future<void> _reply(
   BuildContext context,
   WidgetRef ref,
@@ -153,13 +153,13 @@ Future<void> _reply(
   );
 }
 
-/// 心形加赞数. 赞过时为实心, 读屏报告为已按下.
+/// 评论点赞按钮, 展示心形图标与赞数. 已点赞时呈实心图标并向读屏工具报告为已选中状态.
 class CommentLikeButton extends ConsumerWidget {
   const new({super.key, required this.comment, this.compact = false});
 
   final Comment comment;
 
-  /// 回复行里的小号样式.
+  /// 是否使用回复行内的紧凑小号样式.
   final bool compact;
 
   @override
@@ -224,7 +224,7 @@ class CommentLikeButton extends ConsumerWidget {
   }
 }
 
-/// 文字按钮, 如 "回复". 点击区域不小于 44px.
+/// 通用文字操作按钮 (如 "回复"), 保证点击热区不小于 44px.
 class _TextAction extends StatelessWidget {
   const new(this.label, {required this.onTap});
 
@@ -256,7 +256,7 @@ class _TextAction extends StatelessWidget {
   }
 }
 
-/// 评论里的照片, 最多 3 张小图. 点击打开大图.
+/// 评论附图缩略图列表 (最多 3 张), 点击后进入大图浏览.
 class _Photos extends StatelessWidget {
   const new({required this.urls, required this.author});
 
@@ -300,9 +300,9 @@ class _Photos extends StatelessWidget {
   }
 }
 
-/// 评论下面的回复. 默认显示最早的 2 条, 其余折叠在 "展开 N 条回复" 中.
+/// 主评论下方的回复列表, 默认展示最早的 2 条并将剩余回复折叠为 "展开 N 条回复".
 ///
-/// 回复条数为 0 时不请求回复列表.
+/// 当主评论回复数为 0 时不会请求回复列表.
 class _Replies extends ConsumerStatefulWidget {
   const new({required this.comment});
 
@@ -399,17 +399,17 @@ class _ExpandButton extends StatelessWidget {
   }
 }
 
-/// 一条回复. 第一行为昵称和 "回复 小林", 右端为赞和 "更多". 回复的文字另起一行, 宽度与回复区相同.
+/// 单条回复行, 首行展示昵称与被回复对象并在右侧放置点赞和 "更多" 按钮, 正文另起一行占满回复区宽度.
 ///
-/// 文字与右侧按钮在同一行时, 每行只能显示七八个字, 短句也会折成多行.
-/// 点击昵称或文字回复这条回复.
+/// 若正文与右侧操作按钮同行排布, 可用宽度仅容七八个字会导致短句频繁折行, 因此将正文单独换行.
+/// 点击昵称或正文区域可触发回复.
 class _ReplyLine extends ConsumerWidget {
   const new({required this.root, required this.reply});
 
   final Comment root;
   final Comment reply;
 
-  /// 昵称所在的行右端为赞和 "更多" 预留的宽度.
+  /// 昵称行右侧为点赞与 "更多" 按钮预留的宽度.
   static const _actionsWidth = 116.0;
 
   @override
@@ -485,7 +485,7 @@ class _ReplyLine extends ConsumerWidget {
 
 enum _MenuAction { delete, report }
 
-/// 评论的 "更多" 面板: 自己写的显示 "删除", 别人写的显示 "举报".
+/// 打开评论操作面板, 本人评论显示 "删除", 他人评论显示 "举报".
 Future<void> showCommentMenu(
   BuildContext context,
   WidgetRef ref,
@@ -555,7 +555,7 @@ Future<void> _delete(
   }
 }
 
-/// 服务端答复 [comment] 不存在时, 提示已删除并从列表中移除, 返回 true. 其他失败返回 false.
+/// 若服务端返回 [comment] 已不存在, 则提示已删除并将其从本地列表移除后返回 true. 其他失败返回 false.
 bool _goneHandled(
   BuildContext context,
   WidgetRef ref,

@@ -4,8 +4,8 @@ part 'app_config.g.dart';
 
 /// 编译期通过 `--dart-define-from-file=config/<环境>.json` 传入的环境配置.
 ///
-/// 这些值会编入安装包, 只能存放可公开的值.
-/// 未传入的项为空串. 不带配置文件也能启动, 但无法调用接口.
+/// 这些值会编入安装包, 因此只能存放可公开的配置.
+/// 未传入的项默认为空串. 不带配置文件也能启动, 但无法调用接口.
 class const AppConfig({
   required final String envName,
   required final String apiBaseUrl,

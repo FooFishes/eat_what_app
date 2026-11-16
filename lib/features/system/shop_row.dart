@@ -9,13 +9,12 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 店铺行: 门头照片, 店名, 距离和商圈, 地址, 招牌菜. 右侧是推荐率. 用于附近页抽屉, 搜索页的 "店" 分栏和收藏的店.
+/// 店铺列表行组件, 用于附近页抽屉, 搜索页店铺分栏及我的收藏列表.
 ///
-/// - 缩略图依次取 [image], 门头照片. 都没有时为 `mist` 底.
-/// - 第一行依次是 "已关门", 距离, 商圈名.
-/// - 第二行是地址. 第三行依次取 [extra], 搜店时因菜名命中的菜 (如 "有「鲜虾蟹籽云吞」¥18"),
-///   第一道招牌菜 (如 "招牌：鲜虾蟹籽云吞"). 店铺接口不带招牌菜, 只有推荐卡片有.
-/// - 推荐率按 `ShopRules.rateOf` 显示, 评价不满门槛时不显示. 外卖的推荐率写作 "外卖推荐".
+/// - 缩略图优先取 [image], 其次取门头照片, 均无时显示 `mist` 占位底色.
+/// - 元信息首行依次展示 "已关门" 标识, 距离与商圈名, 次行展示地址.
+/// - 第三行依次取 [extra], 搜店命中的菜品 (如 "有 \"鲜虾蟹籽云吞\" ¥18") 或首道招牌菜 (如 "招牌: 鲜虾蟹籽云吞"). 常规店铺接口不返回招牌菜, 仅推荐流数据携带.
+/// - 右侧推荐率依据 [ShopRules.rateOf] 展示, 未达评价门槛时隐藏, 外卖场景标注为 "外卖推荐".
 class ShopRow extends ConsumerWidget {
   const new({
     super.key,
@@ -28,7 +27,7 @@ class ShopRow extends ConsumerWidget {
   final Shop shop;
   final String? extra;
 
-  /// 缩略图地址.
+  /// 自定义缩略图地址, 为 null 时回退至店铺门头照.
   final String? image;
 
   final VoidCallback onTap;

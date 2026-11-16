@@ -20,9 +20,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 设置页面: 头像和昵称 (点击进入编辑资料), 各子页面入口, 底部的 "退出登录".
+/// 设置页, 展示头像与昵称 (点击进入编辑资料), 各子页面入口以及底部的 "退出登录" 按钮.
 ///
-/// 游客只有 "个性化" 和 "关于" 两项.
+/// 游客模式下仅显示 "个性化" 和 "关于与反馈" 两项.
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
@@ -129,7 +129,7 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-/// 头像, 昵称和认证状态. 点击进入编辑资料.
+/// 展示用户头像, 昵称与认证状态, 点击进入编辑资料.
 class _Profile extends StatelessWidget {
   const new({required this.user, required this.onTap});
 

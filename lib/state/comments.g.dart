@@ -8,19 +8,19 @@ part of 'comments.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+/// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
 ///
 /// 离开页面后保留 5 分钟.
 
 @ProviderFor(DishComments)
 final dishCommentsProvider = DishCommentsFamily._();
 
-/// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+/// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
 ///
 /// 离开页面后保留 5 分钟.
 final class DishCommentsProvider
     extends $AsyncNotifierProvider<DishComments, CommentList> {
-  /// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+  /// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
   ///
   /// 离开页面后保留 5 分钟.
   DishCommentsProvider._({
@@ -61,7 +61,7 @@ final class DishCommentsProvider
 
 String _$dishCommentsHash() => r'a7a6cc77d6320ee42700d6b34e96939b453ef7e1';
 
-/// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+/// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
 ///
 /// 离开页面后保留 5 分钟.
 
@@ -83,7 +83,7 @@ final class DishCommentsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+  /// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
   ///
   /// 离开页面后保留 5 分钟.
 
@@ -94,7 +94,7 @@ final class DishCommentsFamily extends $Family
   String toString() => r'dishCommentsProvider';
 }
 
-/// 一道菜的评论. 菜品详情和全部评论共用 "最有用" 一组, 菜品详情只显示前几条.
+/// 指定菜品的评论列表状态. 菜品详情与全部评论页共用 "最有用" 排序的数据, 详情页仅展示前几条.
 ///
 /// 离开页面后保留 5 分钟.
 
@@ -120,15 +120,15 @@ abstract class _$DishComments extends $AsyncNotifier<CommentList> {
   }
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间正序.
+/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 
 @ProviderFor(CommentReplies)
 final commentRepliesProvider = CommentRepliesFamily._();
 
-/// 一条评论下的回复, 每页 20 条, 按时间正序.
+/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 final class CommentRepliesProvider
     extends $AsyncNotifierProvider<CommentReplies, CommentList> {
-  /// 一条评论下的回复, 每页 20 条, 按时间正序.
+  /// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
   CommentRepliesProvider._({
     required CommentRepliesFamily super.from,
     required int super.argument,
@@ -167,7 +167,7 @@ final class CommentRepliesProvider
 
 String _$commentRepliesHash() => r'9cb593f31113c0f0312050d0dc66f1fb5949f31b';
 
-/// 一条评论下的回复, 每页 20 条, 按时间正序.
+/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 
 final class CommentRepliesFamily extends $Family
     with
@@ -187,7 +187,7 @@ final class CommentRepliesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 一条评论下的回复, 每页 20 条, 按时间正序.
+  /// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 
   CommentRepliesProvider call(int commentId) =>
       CommentRepliesProvider._(argument: commentId, from: this);
@@ -196,7 +196,7 @@ final class CommentRepliesFamily extends $Family
   String toString() => r'commentRepliesProvider';
 }
 
-/// 一条评论下的回复, 每页 20 条, 按时间正序.
+/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
 
 abstract class _$CommentReplies extends $AsyncNotifier<CommentList> {
   late final _$args = ref.$arg as int;
@@ -219,15 +219,15 @@ abstract class _$CommentReplies extends $AsyncNotifier<CommentList> {
   }
 }
 
-/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
+/// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 
 @ProviderFor(CommentWriter)
 final commentWriterProvider = CommentWriterProvider._();
 
-/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
+/// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 final class CommentWriterProvider
     extends $NotifierProvider<CommentWriter, void> {
-  /// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
+  /// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
   CommentWriterProvider._()
     : super(
         from: null,
@@ -257,7 +257,7 @@ final class CommentWriterProvider
 
 String _$commentWriterHash() => r'bb4ed516ccf84b9f76dc6cc4d4b98a7105e790f5';
 
-/// 发表和删除评论. 成功后更新已加载的各个列表, 并刷新 "我的评论".
+/// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 
 abstract class _$CommentWriter extends $Notifier<void> {
   void build();
@@ -343,21 +343,21 @@ abstract class _$CommentLikes extends $Notifier<Map<int, CommentLike>> {
   }
 }
 
-/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
+/// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
+/// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.
 
 @ProviderFor(MyComments)
 final myCommentsProvider = MyCommentsProvider._();
 
-/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
+/// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
+/// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.
 final class MyCommentsProvider
     extends $AsyncNotifierProvider<MyComments, CommentFeed> {
-  /// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
+  /// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
   ///
-  /// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
+  /// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.
   MyCommentsProvider._()
     : super(
         from: null,
@@ -379,9 +379,9 @@ final class MyCommentsProvider
 
 String _$myCommentsHash() => r'f51ca02a6bda79a7668712e1c080c9a62be253e3';
 
-/// "我的" 中的评论分栏: 我写过的评论和回复. 已删除的不返回.
+/// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
 ///
-/// "我的" 是常驻的主页面, 切换到其他主页面后保留结果. 发表和删除后重新请求.
+/// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.
 
 abstract class _$MyComments extends $AsyncNotifier<CommentFeed> {
   FutureOr<CommentFeed> build();
@@ -401,23 +401,23 @@ abstract class _$MyComments extends $AsyncNotifier<CommentFeed> {
   }
 }
 
-/// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+/// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
 ///
-/// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+/// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
 
 @ProviderFor(commentedDish)
 final commentedDishProvider = CommentedDishFamily._();
 
-/// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+/// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
 ///
-/// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+/// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
 
 final class CommentedDishProvider
     extends $FunctionalProvider<AsyncValue<Dish>, Dish, FutureOr<Dish>>
     with $FutureModifier<Dish>, $FutureProvider<Dish> {
-  /// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+  /// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
   ///
-  /// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+  /// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
   CommentedDishProvider._({
     required CommentedDishFamily super.from,
     required int super.argument,
@@ -463,9 +463,9 @@ final class CommentedDishProvider
 
 String _$commentedDishHash() => r'3945376e7d4d2e104e2a9d52572bca11d7ca0f43';
 
-/// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+/// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
 ///
-/// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+/// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
 
 final class CommentedDishFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Dish>, int> {
@@ -478,9 +478,9 @@ final class CommentedDishFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// "我的评论" 一行要显示的菜: 先用本地缓存的详情, 没有缓存时请求.
+  /// 获取 "我的评论" 单条记录关联的菜品信息, 优先读取本地缓存, 缺失时再请求详情接口.
   ///
-  /// 评论记录只带菜的 id, 菜名和缩略图要另外获取. 离开页面后保留 5 分钟.
+  /// 由于评论记录仅包含菜品 id, 需额外获取菜名与缩略图; 离开页面后缓存保留 5 分钟.
 
   CommentedDishProvider call(int dishId) =>
       CommentedDishProvider._(argument: dishId, from: this);

@@ -16,9 +16,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place_repository.g.dart';
 
-/// 修改店铺时的改动. 字段为 null 表示不修改.
+/// 修改店铺的变更集合, 为 null 的字段保持原值不变.
 ///
-/// [photo] 和 [priceBand] 可以清除, 因此包一层记录: 记录为 null 表示不修改, 记录里的值为 null 表示清除.
+/// [photo] 与 [priceBand] 支持清空操作, 因此采用单字段 record 包装: 外层 record 为 null 表示不修改, 内层字段为 null 表示清空.
 class const ShopChange({
   final String? name,
   final String? address,
@@ -46,19 +46,19 @@ class const ShopChange({
       closed == null;
 }
 
-/// 校区, 商圈和店铺数据. 把 DTO 转换为领域模型.
+/// 地点数据仓库, 负责管理校区, 商圈和店铺数据并将接口 DTO 转换为领域模型.
 ///
-/// 缺少坐标的条目直接丢弃, 因为它们无法显示在地图上, 也无法计算距离.
+/// 缺少坐标的条目无法在地图展示或参与距离计算, 因此在转换时直接丢弃.
 class PlaceRepository {
   PlaceRepository(this._api, this._map);
 
   final PlaceApi _api;
   final MapEngine _map;
 
-  /// 地图上能否检索地点. 不能时新建店直接手动添加.
+  /// 当前地图引擎是否支持地点检索; 若不可用, 新建店铺时直接进入手动填写.
   bool get canSearchPlaces => _map.available;
 
-  /// [near] 周围 [radius] 米内和 [keyword] 匹配的地图地点, 最多 20 个. 检索失败时抛出异常.
+  /// 检索 [near] 周围 [radius] 米内匹配 [keyword] 的地图地点 (最多 20 条), 检索失败时抛出异常.
   Future<List<MapPlace>> mapPlaces(
     String keyword,
     GcjPoint near, {
@@ -80,9 +80,9 @@ class PlaceRepository {
     ];
   }
 
-  /// 新建店时可能重复的店: 同一个地图地点 [poi], 或 [point] 200 m 内与 [name] 同名 (忽略空白和大小写).
+  /// 查询可能与新建店铺重复的已有店铺, 匹配同一地图地点 [poi] 或 [point] 周围 200 m 内与 [name] 同名 (忽略空白与大小写) 的店铺.
   ///
-  /// 同地点的在前, 其余按距离. [name] 为空且没有 [poi] 时为空列表.
+  /// 同地点结果优先排列, 其余按距离排序; 若 [name] 为空且未提供 [poi], 则直接返回空列表.
   Future<List<ShopDuplicate>> duplicates(
     String name,
     GcjPoint point, {
@@ -114,7 +114,7 @@ class PlaceRepository {
     );
   }
 
-  /// 已开放的校区, 按运营设定的顺序排列.
+  /// 获取已开放的校区列表, 按服务端设定的顺序排列.
   Future<List<Campus>> campuses({CancelToken? cancelToken}) async {
     final list = await _api.campuses(cancelToken: cancelToken);
     final sorted = [...list]
@@ -132,7 +132,7 @@ class PlaceRepository {
   }
 
   // TODO: 只请求第一页, 商圈数超过单页上限时后面的商圈会丢失. 商圈增多后改为按 `hasNext` 翻页取完.
-  /// 全部商圈. 单个校区周边约十余个商圈, 因此一页取完.
+  /// 获取全部商圈列表; 当前单个校区周边商圈数量较少, 仅通过单页请求获取.
   Future<List<Hub>> hubs({CancelToken? cancelToken}) async {
     final page = await _api.hubs(cancelToken: cancelToken);
     return [for (final dto in page.items) ?_hub(dto)];
@@ -143,12 +143,11 @@ class PlaceRepository {
     return dto == null ? null : _hub(dto);
   }
 
-  /// 新建店铺, 返回店铺 id. 所属商圈由后端按坐标计算.
+  /// 新建店铺并返回其 id, 所属商圈由服务端根据坐标自动计算.
   ///
-  /// - [photoKey] 为门头照片上传后的存储 key.
-  /// - 不传 [mealTimes] 时后端按午饭和晚饭处理.
-  /// - 同一个地图地点已有店, 或 200 m 内有同名的店时, 后端返回 40017, `data.duplicates` 是这些店
-  ///   (见 [shopDuplicatesOf]). 用户确认不是同一家后带 [force] 重新提交.
+  /// - [photoKey] 为门头照片上传后得到的存储 key.
+  /// - 若省略 [mealTimes], 服务端默认按午饭和晚饭时段处理.
+  /// - 若同一地图地点或 200 m 内已存在同名店铺, 服务端返回业务码 40017 并在 `data.duplicates` 中附带重复项 (见 [shopDuplicatesOf]); 用户确认非同一家后可置 [force] 为 true 重新提交.
   Future<int> createShop({
     required String name,
     required String address,
@@ -182,9 +181,9 @@ class PlaceRepository {
     ),
   );
 
-  /// 修改店铺, 只提交 [change] 中的字段. 内容没有变化时后端不记修改记录, 返回 false.
+  /// 提交 [change] 中指定的店铺改动; 若内容未发生实际变更, 服务端不生成修改记录并返回 false.
   ///
-  /// 修改不查重, 真重复的店靠 "信息有误" 处理.
+  /// 编辑店铺时不触发查重, 确属重复的店铺通过信息纠错流程处理.
   Future<bool> editShop(int id, ShopChange change) async {
     final edited = await _api.editRestaurant(
       id,
@@ -216,7 +215,7 @@ class PlaceRepository {
     return edited.revisionId != null;
   }
 
-  /// 店铺的修改记录, 最新的在前.
+  /// 分页获取店铺的修改记录, 按时间倒序排列.
   Future<Paged<ShopRevision>> history(
     int id, {
     int page = 1,
@@ -235,9 +234,9 @@ class PlaceRepository {
     );
   }
 
-  /// 把店铺恢复到修改记录 [revisionId] 之后的内容.
+  /// 将店铺内容恢复至修改记录 [revisionId] 时的状态.
   ///
-  /// 当前内容已经是该版本时抛出 `BizCodes.stateNotAllowed`.
+  /// 若当前内容已与该版本一致, 则抛出 `BizCodes.stateNotAllowed`.
   Future<void> restore(int id, int revisionId) =>
       _api.restoreRestaurant(id, revisionId);
 
@@ -249,16 +248,16 @@ class PlaceRepository {
     return shop;
   }
 
-  // TODO: 搜店接口不排除已关门的店, 也不把它们排在最后. 后端提供排除参数后, 附近和选店改用该参数, 不再在客户端过滤.
-  /// 搜索 [campusId] 校区内的店, 包括已关门的店. 不传 [sort] 时, 传入 [near] 按距离升序排列, 否则按新建时间倒序.
+  // TODO: 搜店接口尚未排除已关门店铺, 也不会将其排在末尾. 后端提供排除参数后, 附近和选店改用该参数而不再在客户端过滤.
+  /// 搜索店铺 (包含已关门店铺); 未指定 [sort] 时, 若传入 [near] 则按距离升序排列, 否则按创建时间倒序.
   ///
-  /// - [keyword] 匹配店名, 地址和店里的菜名. 因菜名命中的店带 [Shop.matchedDish].
-  /// - [radius] 单位为米, 需要同时传入 [near], 为空时不限范围.
-  /// - 不传 [campusId] 时后端不按校区限定范围.
-  /// - [categories] 和 [tastes] 各自命中任一即可. [delivery] 只看能点外卖的店.
-  /// - [recommendedOnly] 只看任一场景至少 3 条评价且推荐率不低于 70% 的店.
+  /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 [Shop.matchedDish].
+  /// - [radius] 单位为米, 需配合 [near] 使用, 为 null 时不限制半径.
+  /// - 不传 [campusId] 时不限定校区范围.
+  /// - [categories] 和 [tastes] 各自满足任一取值即可命中; [delivery] 为 true 时仅保留支持外卖或有外卖评价的店铺.
+  /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
   ///
-  /// 没有 [near] 时不发送 [radius] 和 [ShopSort.distance], 因为后端对缺少坐标的这两项返回参数错误.
+  /// 若未传入 [near], 则不发送 [radius] 和 [ShopSort.distance], 避免后端因缺少坐标而返回参数错误.
   Future<Paged<Shop>> searchShops({
     GcjPoint? near,
     int? campusId,
@@ -300,7 +299,7 @@ class PlaceRepository {
     ),
   );
 
-  /// 评价店铺在 [scene] 场景下的体验, [rating] 为 null 时撤回. 返回服务端合并后本人在两个场景的评价.
+  /// 提交或撤回店铺在 [scene] 场景下的评价 ([rating] 为 null 时撤回), 返回服务端合并后的双场景个人评价.
   Future<MyShopRatings> rateShop(
     int id,
     RatingScene scene,
@@ -317,7 +316,7 @@ class PlaceRepository {
   Future<void> setShopFavorite(int id, {required bool favorite}) =>
       _api.setRestaurantFavorite(id, favorite: favorite);
 
-  /// 我收藏的店, 包含已关门的店, 最近收藏的在前.
+  /// 分页获取当前用户收藏的店铺 (含已关门店铺), 按收藏时间倒序排列.
   Future<Paged<Shop>> favoriteShops({
     int page = 1,
     CancelToken? cancelToken,
@@ -325,13 +324,13 @@ class PlaceRepository {
     await _api.favoriteRestaurants(page: page, cancelToken: cancelToken),
   );
 
-  /// 把店铺或推荐卡片的 JSON 转换为 [Shop]. 缺少 id 或坐标时返回 null.
+  /// 将店铺或推荐卡片的 JSON 解析为 [Shop], 缺少 id 或坐标时返回 null.
   static Shop? shopFromJson(Map<String, dynamic> json) =>
       shopOf(RestaurantDto.fromJson(json));
 
-  /// 把店铺或推荐卡片转换为 [Shop]. 缺少 id 或坐标时返回 null.
+  /// 将店铺或推荐卡片 DTO 转换为 [Shop], 缺少 id 或坐标时返回 null.
   ///
-  /// 不认识的品类, 口味和饭点忽略. 不认识的类型按美食处理, 因为后端只在末尾追加取值, 美食是默认的类型.
+  /// 未知的品类, 口味和饭点值会被忽略; 未知的店铺类型按默认值 [ShopKind.food] 处理, 以兼容后端后续新增枚举值.
   static Shop? shopOf(RestaurantDto dto) {
     if (dto.id == null || dto.gcjLat == null || dto.gcjLng == null) {
       return null;
@@ -437,7 +436,7 @@ class PlaceRepository {
     );
   }
 
-  /// MultiPolygon 中每个多边形的外环. 洞不绘制. 结构不符时返回空列表, 地图上不绘制范围.
+  /// 提取 GeoJSON MultiPolygon 中各多边形的外环坐标 (忽略内环孔洞); 若结构不符则返回空列表, 地图跳过绘制.
   static List<List<GcjPoint>> _rings(GeoJsonDto? geometry) {
     if (geometry?.type != 'MultiPolygon') return const [];
     try {
@@ -458,7 +457,7 @@ class PlaceRepository {
   }
 }
 
-/// 新建店被后端以 "可能已有这家店" (40017) 拒绝时, 响应里的已有店. 其他失败返回 null.
+/// 当新建店铺因疑似重复 (错误码 40017) 被拒绝时, 从失败对象中提取重复店铺列表; 其他失败返回 null.
 List<ShopDuplicate>? shopDuplicatesOf(AppFailure failure) => switch (failure) {
   AppFailure(
     code: BizCodes.shopMayExist,

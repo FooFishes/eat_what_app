@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:vector_graphics/vector_graphics.dart';
 
-/// MingCute 图标. 未指定颜色时使用所在文字的颜色.
+/// MingCute 图标组件, 未指定颜色时使用所在文字的颜色.
 class EatIcon extends StatelessWidget {
   const new(
     this.icon, {
@@ -25,8 +25,8 @@ class EatIcon extends StatelessWidget {
 
   /// 读屏文字.
   ///
-  /// 图标单独出现时写明动作, 如 "返回" "分享".
-  /// 旁边已有文字时留空, 图标作为装饰不参与读屏.
+  /// 图标单独出现时写明动作, 如 "返回", "分享".
+  /// 旁边已有文字时留空, 使其仅作装饰而不参与读屏.
   final String? semanticLabel;
 
   @override

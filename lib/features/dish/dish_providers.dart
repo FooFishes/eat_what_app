@@ -10,12 +10,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dish_providers.g.dart';
 
-/// 菜品详情.
+/// 获取菜品详情.
 ///
-/// 获取到最新数据时清除赞和收藏的本地覆盖值.
-/// 网络不可达时使用本地缓存的详情, 没有缓存则抛出失败.
-///
-/// 发布次数变化时重新请求. 编辑页属于另一个功能, 保存后只能通过发布次数通知详情刷新.
+/// 拿到最新数据后清除赞和收藏的本地乐观覆盖值; 网络不可达时回退到本地缓存, 若无缓存则抛出失败.
+/// 监听发布次数变化以在编辑页保存后触发刷新, 因为编辑页位于独立模块, 通过发布计数联动详情更新.
 @riverpod
 Future<Dish> dishDetail(Ref ref, int dishId) async {
   ref.cacheFor(const Duration(minutes: 5));

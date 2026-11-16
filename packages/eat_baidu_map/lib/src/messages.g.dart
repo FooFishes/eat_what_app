@@ -156,7 +156,7 @@ class LatLngMessage {
 class CameraMessage {
   CameraMessage({required this.center, required this.zoom});
 
-  /// 可见区域中心的坐标, 即扣掉 [InsetsMessage] 之后那块区域的中心.
+  /// 可见区域中心的坐标, 即扣除 [InsetsMessage] 遮挡区域后的中心点.
   LatLngMessage center;
 
   double zoom;
@@ -273,12 +273,12 @@ class MarkerMessage {
 
   LatLngMessage position;
 
-  /// PNG. 按 [iconScale] 倍绘制, 原生侧据此还原成逻辑尺寸.
+  /// PNG 图像字节, 原生侧按 [iconScale] 缩放还原为逻辑尺寸.
   Uint8List icon;
 
   double iconScale;
 
-  /// 锚点在图片内的位置, 0–1, 对准 [position].
+  /// 锚点在图片内的归一化位置 (0–1), 用于对准 [position].
   double anchorX;
 
   double anchorY;
@@ -404,8 +404,7 @@ class PolygonMessage {
   }
 }
 
-/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
-/// 地点检索的一条结果.
+/// 地点检索的单条结果.
 class PlaceMessage {
   PlaceMessage({
     required this.uid,
@@ -421,7 +420,7 @@ class PlaceMessage {
 
   String address;
 
-  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  /// 坐标类型与地图一致, 由初始化时设置的全局坐标类型决定.
   LatLngMessage location;
 
   List<Object?> _toList() {
@@ -518,6 +517,7 @@ class _PigeonCodec extends StandardMessageCodec {
   }
 }
 
+/// SDK 级别调用, 须在同意隐私政策后调用 [initialize], 整个进程仅需一次.
 class SdkHostApi {
   /// Constructor for [SdkHostApi]. The [binaryMessenger] named argument is
   /// available for dependency injection. If it is left null, the default
@@ -535,9 +535,9 @@ class SdkHostApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
+  /// 依次配置隐私政策同意状态, GCJ-02 坐标类型与 AK, 然后启动 SDK.
   ///
-  /// 鉴权结果异步回到 [SdkFlutterApi.onAuthResult].
+  /// 鉴权结果通过 [SdkFlutterApi.onAuthResult] 异步返回.
   Future<void> initialize(String apiKey) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.eat_baidu_map.SdkHostApi.initialize$pigeonVar_messageChannelSuffix';
@@ -562,7 +562,7 @@ class SdkHostApi {
 abstract class SdkFlutterApi {
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
-  /// [code] 为 0 表示鉴权通过, 其余是百度的错误码.
+  /// [code] 为 0 表示鉴权通过, 其余为百度错误码.
   void onAuthResult(int code, String message);
 
   static void setUp(
@@ -602,7 +602,7 @@ abstract class SdkFlutterApi {
   }
 }
 
-/// 单张地图的调用. 每个平台视图用自己的通道, 通道后缀是平台视图 id.
+/// 单张地图实例的调用接口. 每个平台视图使用独立通道, 以平台视图 ID 作为后缀.
 class MapViewHostApi {
   /// Constructor for [MapViewHostApi]. The [binaryMessenger] named argument is
   /// available for dependency injection. If it is left null, the default
@@ -620,7 +620,7 @@ class MapViewHostApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  /// 新增或更新 [upserts] 中的标记, 删除 [removedIds] 中的标记.
+  /// 新增或更新 [upserts] 中的标记, 并移除 [removedIds] 中的标记.
   Future<void> updateMarkers(
     List<MarkerMessage> upserts,
     List<String> removedIds,
@@ -644,7 +644,7 @@ class MapViewHostApi {
     );
   }
 
-  /// 用 [polygons] 替换地图上全部的多边形.
+  /// 使用 [polygons] 替换地图上的全部多边形.
   Future<void> setPolygons(List<PolygonMessage> polygons) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setPolygons$pigeonVar_messageChannelSuffix';
@@ -665,7 +665,7 @@ class MapViewHostApi {
     );
   }
 
-  /// 地图被浮层盖住的部分. logo, 比例尺和地图中心都移到剩下的区域.
+  /// 设置地图被浮层遮挡的边距, logo, 比例尺与地图中心将移至剩余可见区域.
   Future<void> setInsets(InsetsMessage insets) async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setInsets$pigeonVar_messageChannelSuffix';
@@ -686,7 +686,7 @@ class MapViewHostApi {
     );
   }
 
-  /// 把 [center] 移到可见区域中心. [zoom] 为 null 时不改缩放级别.
+  /// 将 [center] 移至可见区域中心; [zoom] 为 null 时保持当前缩放级别.
   Future<void> moveCamera(
     LatLngMessage center,
     double? zoom,
@@ -711,7 +711,7 @@ class MapViewHostApi {
     );
   }
 
-  /// 缩放到刚好装下 [points], 四周再各留 [margin].
+  /// 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距.
   Future<void> fitPoints(
     List<LatLngMessage> points,
     InsetsMessage margin,
@@ -755,7 +755,7 @@ class MapViewHostApi {
     return pigeonVar_replyValue! as CameraMessage;
   }
 
-  /// 底图是否已经加载完. Dart 在平台视图创建后才开始收事件, 可能错过 [MapViewFlutterApi.onLoaded].
+  /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   Future<bool> isLoaded() async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.isLoaded$pigeonVar_messageChannelSuffix';
@@ -781,12 +781,12 @@ abstract class MapViewFlutterApi {
 
   void onLoaded();
 
-  /// 地图停止移动. [byGesture] 表示这次移动由用户手势触发.
+  /// 地图停止移动时触发; [byGesture] 表示此次移动是否由用户手势引发.
   void onCameraIdle(CameraMessage camera, bool byGesture);
 
   void onMarkerTap(String id);
 
-  /// 地图数据无效或渲染失败, 例如 AK 无效时.
+  /// 地图数据无效或渲染失败时触发, 例如 AK 无效.
   void onError(int code, String message);
 
   static void setUp(
@@ -900,7 +900,7 @@ abstract class MapViewFlutterApi {
   }
 }
 
-/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+/// 地点检索接口, 与地图共用同一次 SDK 初始化, 不依赖具体地图视图.
 class PlaceSearchHostApi {
   /// Constructor for [PlaceSearchHostApi]. The [binaryMessenger] named argument is
   /// available for dependency injection. If it is left null, the default
@@ -918,8 +918,9 @@ class PlaceSearchHostApi {
 
   final String pigeonVar_messageChannelSuffix;
 
-  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
-  /// 没有结果时返回空列表, 检索失败时报错.
+  /// 搜索 [center] 周围 [radius] 米内名称或地址匹配 [keyword] 的地点, 最多返回 [pageSize] 条.
+  ///
+  /// 无匹配结果时返回空列表, 检索失败时抛出异常.
   Future<List<PlaceMessage>> searchNearby(
     String keyword,
     LatLngMessage center,

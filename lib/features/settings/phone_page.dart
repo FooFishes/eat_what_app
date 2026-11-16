@@ -16,12 +16,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 换绑手机. 账号还没有手机号时改为绑定手机.
+/// 绑定或换绑手机号的页面, 当账号尚未绑定手机号时直接进入绑定流程.
 ///
-/// - 换绑分三步: 用当前号码的验证码确认身份, 验证新号码, 提交. 不能用密码代替当前号码.
-/// - 新号码已注册其他账号时不能换绑.
-/// - 换绑后其他设备要重新登录, 本机不受影响.
-/// - 服务端拒绝的原因按步骤就地显示: 当前号码的验证码错误或校验过期时回到第一步.
+/// - 换绑流程依次通过当前号码验证码确认身份, 验证新号码并提交, 不可使用密码替代原号码验证.
+/// - 若新手机号已注册其他账号则不允许换绑; 换绑成功后其他设备需重新登录, 本机不受影响.
+/// - 服务端拒绝原因按步骤就地展示, 当当前号码验证码错误或校验过期时自动退回第一步.
 class PhonePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -63,7 +62,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
     return ref.read(humanVerifierProvider).verify(context, params);
   }
 
-  /// 发送验证码. 失败时就地提示并返回 false.
+  /// 请求发送短信验证码, 失败时就地展示错误提示并返回 false.
   Future<bool> _send(Future<bool> Function() send) async {
     setState(() {
       _oldError = null;
@@ -78,7 +77,7 @@ class _PhonePageState extends ConsumerState<PhonePage> {
     }
   }
 
-  /// 第一步填好验证码后进入第二步.
+  /// 完成当前手机号验证码输入后进入新手机号验证步骤.
   void _next() {
     FocusScope.of(context).unfocus();
     setState(() => _oldError = null);
@@ -111,9 +110,9 @@ class _PhonePageState extends ConsumerState<PhonePage> {
     }
   }
 
-  /// 把失败显示在对应的输入框下. [sendingNew] 表示失败来自给新号码发码.
+  /// 将服务端返回的错误映射并显示在对应输入框下方; [sendingNew] 表示错误发生于向新号码发送验证码阶段.
   ///
-  /// 给新号码发码时的验证码错误指当前号码的验证码, 此时进度已回到第一步.
+  /// 向新号码发送验证码时若返回验证码错误, 实际指当前手机号的验证码校验失效, 此时进度已自动退回第一步.
   void _fail(AppFailure e, {required bool sendingNew}) => setState(() {
     switch (e.code) {
       case BizCodes.wrongCode when sendingNew:

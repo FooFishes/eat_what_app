@@ -10,12 +10,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 三个主页面的外壳: 下层是各分支的页面, 上层悬浮 [EatNavBar].
+/// 三个主页面的外壳组件, 底层渲染各分支页面, 顶层悬浮 [EatNavBar].
 ///
-/// - 手机: 导航与屏幕左右相距 `space-16`, 与底部相距 `space-24` 加安全区.
-/// - 宽屏: 导航放在页面左侧悬浮面板的底部. 三个页面的面板位置相同, 因此切换时导航不移动.
+/// - 手机端: 导航栏距离屏幕左右 `space-16`, 距离底部为 `space-24` 加安全区高度.
+/// - 宽屏端: 导航栏位于左侧悬浮面板底部; 三个分支的面板位置一致, 切换标签时导航栏位置保持不变.
 ///
-/// 安卓返回键在附近页和 "我的" 页先回到发现页, 在发现页才退出应用.
+/// 在附近页和 "我的" 页触发系统返回时会先切换回发现页, 在发现页触发返回才退出应用.
 class MainShell extends ConsumerStatefulWidget {
   const new({super.key, required this.shell});
 
@@ -101,9 +101,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-/// 叠放各分支的页面, 只显示当前分支. 切走的分支不销毁, 保留滚动位置和页面状态.
+/// 叠放主页面各分支并仅显示当前分支, 切出时保留其滚动位置与页面状态.
 ///
-/// 与 `StatefulShellRoute.indexedStack` 的默认实现相同, 不可见的分支通过 `TickerMode` 关闭动画.
+/// 与 `StatefulShellRoute.indexedStack` 的默认实现相同, 不可见的分支通过 `TickerMode` 关闭动画,
 /// Riverpod 据此暂停这些分支的监听.
 ///
 /// 另外为每个分支提供 [TabReselect], 再次点击当前标签时页面滚回顶部.

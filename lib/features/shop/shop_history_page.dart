@@ -23,11 +23,11 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 店铺的修改记录: 白底列表, 最新的在前.
+/// 店铺修改记录页, 按时间倒序展示店铺的历次变更.
 ///
-/// - 每行写编辑者, 时间, 动作和改了哪些字段.
-/// - 最新一条就是店铺现在的样子, 标 "当前版本". 其余每条都能恢复, 恢复前二次确认.
-/// - 恢复要求已认证, 点击时检查权限. 修改记录谁都能看.
+/// - 每行展示编辑者, 时间, 操作类型以及变更字段.
+/// - 首条记录对应店铺当前状态并标注 "当前版本", 其余历史版本均支持二次确认后恢复.
+/// - 所有用户均可查看记录, 点击恢复时校验认证权限.
 class ShopHistoryPage extends ConsumerWidget {
   const new({super.key, required this.shopId});
 
@@ -95,7 +95,7 @@ class ShopHistoryPage extends ConsumerWidget {
   }
 }
 
-/// 修改记录的一行. [current] 为 true 时是最新一条, 不能恢复.
+/// 单条修改记录行. 当 [current] 为 true 时表示当前生效版本, 不提供恢复操作.
 class _RevisionRow extends ConsumerWidget {
   const new({
     required this.shopId,

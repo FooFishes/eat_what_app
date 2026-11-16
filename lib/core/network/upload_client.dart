@@ -24,10 +24,10 @@ class UploadClient {
 
   final Dio _dio;
 
-  /// [onProgress] 接收 0–1 的进度.
+  /// 上传图片到预签名地址, [onProgress] 接收 0–1 的进度.
   ///
-  /// 失败统一转换为 [AppFailure]: 取消为 `cancelled`, 5xx 和无响应为 `network`, 其余为 `unknown`.
-  /// 上传队列据此提供单张重试.
+  /// 失败统一转换为 [AppFailure] (取消转为 `cancelled`, 5xx 与无响应转为 `network`, 其余转为 `unknown`),
+  /// 供上传队列据此实现单张重试.
   Future<void> put(
     String url,
     Uint8List bytes, {

@@ -8,21 +8,21 @@ part of 'location.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 当前位置. 进入发现页和附近页时各定位一次.
+/// 维护当前设备位置, 在进入发现页与附近页时触发定位更新.
 ///
-/// 尚未申请过权限时不主动弹出系统权限框, 先由页面展示说明.
+/// 若尚未申请过系统定位权限, 不会主动弹出系统授权框, 而是交由页面先行展示权限说明.
 
 @ProviderFor(CurrentLocation)
 final currentLocationProvider = CurrentLocationProvider._();
 
-/// 当前位置. 进入发现页和附近页时各定位一次.
+/// 维护当前设备位置, 在进入发现页与附近页时触发定位更新.
 ///
-/// 尚未申请过权限时不主动弹出系统权限框, 先由页面展示说明.
+/// 若尚未申请过系统定位权限, 不会主动弹出系统授权框, 而是交由页面先行展示权限说明.
 final class CurrentLocationProvider
     extends $NotifierProvider<CurrentLocation, LocationState> {
-  /// 当前位置. 进入发现页和附近页时各定位一次.
+  /// 维护当前设备位置, 在进入发现页与附近页时触发定位更新.
   ///
-  /// 尚未申请过权限时不主动弹出系统权限框, 先由页面展示说明.
+  /// 若尚未申请过系统定位权限, 不会主动弹出系统授权框, 而是交由页面先行展示权限说明.
   CurrentLocationProvider._()
     : super(
         from: null,
@@ -52,9 +52,9 @@ final class CurrentLocationProvider
 
 String _$currentLocationHash() => r'ca4f821594b9a7b17082e936270ff9f04c3cdb77';
 
-/// 当前位置. 进入发现页和附近页时各定位一次.
+/// 维护当前设备位置, 在进入发现页与附近页时触发定位更新.
 ///
-/// 尚未申请过权限时不主动弹出系统权限框, 先由页面展示说明.
+/// 若尚未申请过系统定位权限, 不会主动弹出系统授权框, 而是交由页面先行展示权限说明.
 
 abstract class _$CurrentLocation extends $Notifier<LocationState> {
   LocationState build();

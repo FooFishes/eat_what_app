@@ -8,27 +8,21 @@ part of 'consented_services.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 必须在同意隐私政策后才能启动的服务: 崩溃上报和热更新检查.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报与热更新检查), 状态值表示是否已启动.
 ///
-/// 启动时本机已有同意记录, 由 `bootstrap` 在首帧前启动.
-/// 首次登录时由登录流程在写入同意记录后启动.
-/// 状态表示是否已启动.
+/// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 
 @ProviderFor(ConsentedServices)
 final consentedServicesProvider = ConsentedServicesProvider._();
 
-/// 必须在同意隐私政策后才能启动的服务: 崩溃上报和热更新检查.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报与热更新检查), 状态值表示是否已启动.
 ///
-/// 启动时本机已有同意记录, 由 `bootstrap` 在首帧前启动.
-/// 首次登录时由登录流程在写入同意记录后启动.
-/// 状态表示是否已启动.
+/// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 final class ConsentedServicesProvider
     extends $NotifierProvider<ConsentedServices, bool> {
-  /// 必须在同意隐私政策后才能启动的服务: 崩溃上报和热更新检查.
+  /// 管理须在同意隐私政策后方可启动的服务 (崩溃上报与热更新检查), 状态值表示是否已启动.
   ///
-  /// 启动时本机已有同意记录, 由 `bootstrap` 在首帧前启动.
-  /// 首次登录时由登录流程在写入同意记录后启动.
-  /// 状态表示是否已启动.
+  /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
   ConsentedServicesProvider._()
     : super(
         from: null,
@@ -58,11 +52,9 @@ final class ConsentedServicesProvider
 
 String _$consentedServicesHash() => r'4f252e177deee02571679da3c2f02a350fd8dfbe';
 
-/// 必须在同意隐私政策后才能启动的服务: 崩溃上报和热更新检查.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报与热更新检查), 状态值表示是否已启动.
 ///
-/// 启动时本机已有同意记录, 由 `bootstrap` 在首帧前启动.
-/// 首次登录时由登录流程在写入同意记录后启动.
-/// 状态表示是否已启动.
+/// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 
 abstract class _$ConsentedServices extends $Notifier<bool> {
   bool build();

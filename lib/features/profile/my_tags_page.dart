@@ -25,9 +25,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 我的标签: 当前用户写过的标签和各标签用于几道菜. 点击标签进入 "标签下的菜".
+/// 我的标签页, 展示当前用户创建的自定义标签及其关联菜品数量, 点击标签可进入 "标签下的菜".
 ///
-/// 右上角 "编辑" 进入编辑状态, 每行出现改名和删除. 删除只移除标签, 不影响菜品.
+/// 点击右上角 "编辑" 可切换至编辑态以重命名或删除标签, 删除操作仅移除标签本身而不影响菜品.
 class MyTagsPage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -252,7 +252,7 @@ class _TagRow extends StatelessWidget {
   }
 }
 
-/// 改标签名的面板. 提交失败时提示显示在面板内.
+/// 标签重命名面板, 提交失败时在面板内部显示错误提示.
 class _RenamePanel extends ConsumerStatefulWidget {
   const new({required this.tag, required this.others});
 

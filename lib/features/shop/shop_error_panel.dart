@@ -9,7 +9,7 @@ import 'package:eat/features/system/report_panel.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 餐厅详情的 "信息有误" 面板: 选一种错误, 补充说明选填. 提交成功后提示 "已提交, 我们会尽快处理".
+/// 打开店铺详情的 "信息有误" 反馈面板, 选择错误类型并填写可选说明, 提交成功后弹出轻提示.
 Future<void> showShopErrorPanel(
   BuildContext context,
   WidgetRef ref,

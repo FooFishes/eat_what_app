@@ -19,7 +19,7 @@ class const CommentDto({
   final int? id,
   final int? foodId,
 
-  /// 所属的根评论. 根评论为 null.
+  /// 所属根评论 id; 若当前条目本身为根评论则为 null.
   final int? rootId,
   final CommentAuthorDto? author,
 
@@ -27,14 +27,14 @@ class const CommentDto({
   final CommentAuthorDto? replyTo,
   final String? text,
 
-  /// 按 slot 排好的照片地址. 回复没有照片.
+  /// 按 slot 顺序排列的照片地址, 回复不含照片.
   final List<String>? pictureUrls,
   final int? likeCount,
 
-  /// 只对根评论有意义.
+  /// 回复数, 仅对根评论有意义.
   final int? replyCount,
 
-  /// 游客为 null.
+  /// 当前用户是否已点赞, 游客为 null.
   final bool? isLiked,
   final int? createdAt,
 }) {
@@ -42,7 +42,7 @@ class const CommentDto({
       _$CommentDtoFromJson(json);
 }
 
-/// 菜的图库中来自评论的一张照片 (`CommentDtos.Picture`). 只含根评论的照片.
+/// 菜品图库中来自评论的照片 (`CommentDtos.Picture`), 仅包含根评论的照片.
 @JsonSerializable(createToJson: false)
 class const GalleryImageDto({
   final int? commentId,

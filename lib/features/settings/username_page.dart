@@ -15,11 +15,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 设置用户名. 用户名用于密码登录, 只能设一次.
+/// 设置用户名页, 用于首次且唯一一次设置密码登录所用的用户名.
 ///
-/// - 用绑定手机的验证码确认身份. 未设置密码时可同时设置密码.
-/// - 设置后本机保持登录, 返回上一页. 同时设置了密码时, 其他设备要重新登录.
-/// - 已设置时只显示用户名.
+/// - 通过绑定手机的验证码校验身份, 若尚未设置密码可一并设置.
+/// - 设置后本机保持登录并返回上一页, 若同时设置了密码, 则其他设备需重新登录.
+/// - 若已设置过用户名, 则仅作只读展示.
 class UsernamePage extends ConsumerStatefulWidget {
   const new({super.key});
 
@@ -88,7 +88,7 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
       await ref.read(sessionProvider.notifier).refreshUser();
       if (!mounted) return;
       showToast(context, withPassword ? '用户名和密码已设置，其他设备需要重新登录' : '用户名已设置');
-      // 登录态变化后路由会重新匹配当前地址. 在本轮重建结束后返回, 否则本页会被重新放回路由栈.
+      // 刷新用户信息会触发路由重新匹配当前路径, 因此等待本帧重建结束后再返回, 避免本页被重新压入路由栈.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) BackFallback.back(context);
       });

@@ -25,14 +25,14 @@ import 'package:eat/state/comments.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 写评论或回复.
+/// 写评论或回复页面.
 ///
-/// - 写评论: 文字最多 200 字, 照片最多 3 张, 两者至少填写一项.
-/// - 回复: 只能写字, 输入框提示 "回复 小林".
+/// - 写评论: 文字上限 200 字, 照片上限 3 张, 两者至少填写一项.
+/// - 回复: 仅支持纯文字, 输入框占位提示为 "回复 小林" 格式.
 ///
-/// 发送后回到上一页, 评论立即公开. 已填写内容时返回需要确认. 发送失败时保留内容, 可重新发送.
+/// 发送成功后返回上一页且内容立即公开; 若已输入内容则返回前需弹窗确认; 发送失败时保留已填内容以便重试.
 ///
-/// 回复时被对方屏蔽, 提示 "无法回复对方". 被回复的评论已删除时提示, 并刷新该评论所在的列表.
+/// 若回复时已被对方屏蔽则提示 "无法回复对方"; 若目标评论已删除则提示并刷新对应评论列表.
 class WriteCommentPage extends ConsumerStatefulWidget {
   const new({
     super.key,
@@ -45,7 +45,7 @@ class WriteCommentPage extends ConsumerStatefulWidget {
 
   final int dishId;
 
-  /// 回复时所属评论的 id. 为 null 时写评论.
+  /// 回复所属主评论的 id; 为 null 时表示发表主评论.
   final int? rootId;
 
   /// 被回复的回复的 id. 回复评论本身时为 null.
@@ -54,7 +54,7 @@ class WriteCommentPage extends ConsumerStatefulWidget {
   /// 被回复人的昵称.
   final String? replyToName;
 
-  /// 打开页面后立即打开照片选择.
+  /// 是否在进入页面后立即弹出照片选择器.
   final bool pickOnOpen;
 
   @override
@@ -330,7 +330,7 @@ class _WriteCommentPageState extends ConsumerState<WriteCommentPage> {
   }
 }
 
-/// 一张已添加的照片, 右上角按钮移除该照片.
+/// 已添加的评论照片缩略图, 右上角附带移除按钮.
 class _Photo extends StatelessWidget {
   const new({required this.image, required this.label, required this.onRemove});
 
@@ -386,7 +386,7 @@ class _Photo extends StatelessWidget {
   }
 }
 
-/// "加照片" 方块: 虚线框内为相机图标.
+/// "加照片" 入口方块, 居中显示相机图标.
 class _AddPhoto extends StatelessWidget {
   const new({required this.onTap});
 

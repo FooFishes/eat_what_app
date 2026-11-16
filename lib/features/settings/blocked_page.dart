@@ -16,7 +16,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 屏蔽的人. 每行可以解除屏蔽, 点击一行进入对方主页. 对方已注销时显示 "已注销用户", 不能点.
+/// 屏蔽列表页面, 支持单行解除屏蔽或点击行进入对方主页; 若对方已注销则显示 "已注销用户" 且不可点击.
 class BlockedPage extends ConsumerWidget {
   const new({super.key});
 

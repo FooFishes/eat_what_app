@@ -8,9 +8,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'uploader.g.dart';
 
-/// 上传一张图片, 返回存储 key. 分三步: 申请签名, 向预签名地址 `PUT`, 确认完成.
+/// 图片上传器, 负责执行 "申请签名 – `PUT` 上传 – 确认完成" 三步流程并返回存储 key.
 ///
-/// 每次上传都从申请签名开始, 因为失败重试时上一次的签名可能已超过 `expireAt`.
+/// 每次上传 (含失败重试) 均重新申请签名, 以避免沿用已超过 `expireAt` 的过期地址.
 class Uploader {
   Uploader(this._api, this._client);
 

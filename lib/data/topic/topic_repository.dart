@@ -10,9 +10,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_repository.g.dart';
 
-/// 专题数据. 把接口 DTO 转换为 [Topic] 和 [TopicDetail].
+/// 专题数据仓库, 负责将接口 DTO 转换为领域模型 [Topic] 和 [TopicDetail].
 ///
-/// 缺少 id 或时间的专题无法展示和跳转, 转换时丢弃.
+/// 缺少 `id` 或起止时间的专题无法正常展示与跳转, 因此在转换时直接丢弃.
 class TopicRepository {
   TopicRepository(this._api);
 
@@ -40,7 +40,7 @@ class TopicRepository {
     );
   }
 
-  /// 专题详情. 接口返回的专题缺少必要字段时按专题不存在处理, 返回 null.
+  /// 获取专题详情; 若接口返回的专题摘要缺少必要字段, 则按专题不存在处理并返回 null.
   Future<TopicDetail?> detail(int id, {CancelToken? cancelToken}) async {
     final dto = await _api.detail(id, cancelToken: cancelToken);
     final topic = dto.topic == null ? null : _topic(dto.topic!);
@@ -56,7 +56,7 @@ class TopicRepository {
     );
   }
 
-  /// 收录过这道菜的专题, 最近开始的在前.
+  /// 获取收录过指定菜品的专题列表, 按开始时间倒序排列.
   Future<List<Topic>> byDish(int dishId, {CancelToken? cancelToken}) async {
     final items = await _api.byFood(dishId, cancelToken: cancelToken);
     return [for (final dto in items) ?_topic(dto)]
@@ -95,7 +95,7 @@ class TopicRepository {
         for (final name in dto.stageAlternates ?? const <String>[])
           ?stages[name],
       ],
-      // TODO: 专题的菜不返回 pictureKeys, 原封面未通过审核被滤掉时客户端无法识别, 裁切参数会应用到第二张图上. 后端提供封面标记后改为按标记判断.
+      // TODO: 专题菜品接口不返回 `pictureKeys`, 原封面未过审被过滤时客户端无法识别, 导致裁切参数误用到后续图片上. 后端提供封面标记后改为按标记判断.
       crop: CoverCrop(
         centerX: dto.coverCenterX ?? 0.5,
         centerY: dto.coverCenterY ?? 0.5,

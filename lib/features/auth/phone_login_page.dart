@@ -22,17 +22,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 手机号登录页. 使用手机号和短信验证码登录, 新号码验证后自动注册.
+/// 手机号登录页, 使用手机号与短信验证码登录, 未注册号码验证后自动完成注册.
 ///
-/// 发送验证码前先完成人机验证, 重发有冷却时间.
-/// 登录成功后由守卫导回原目标页面, 新号码导向认证引导.
+/// 发送验证码前须先通过人机验证, 重发存在冷却时间.
+/// 登录成功后由路由守卫导回原目标页面, 新注册账号则会先导向认证引导页.
 class PhoneLoginPage extends ConsumerStatefulWidget {
   const new({super.key, this.query = const {}, this.revoking = false});
 
   /// 登录页传入的 `from` 和 `expired`, 原样向下传递.
   final Map<String, String> query;
 
-  /// 一键登录发现账号在注销冷静期内, 转到本页. 顶部提示用验证码登录可以撤销.
+  /// 是否因一键登录检测到账号处于注销冷静期而转入本页; 为 true 时顶部提示可通过验证码登录撤销注销.
   final bool revoking;
 
   @override
@@ -68,13 +68,13 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     super.dispose();
   }
 
-  /// 在本页弹出人机验证. 页面已关闭时按用户取消处理.
+  /// 在当前页面弹出人机验证; 若页面已卸载则按取消处理.
   Future<CaptchaOutcome> _presentCaptcha(Future<CaptchaParams?> params) async {
     if (!mounted) return const CaptchaCancelled();
     return ref.read(humanVerifierProvider).verify(context, params);
   }
 
-  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
+  /// 在当前页面弹出政策同意对话框; 若页面已卸载则按拒绝处理.
   Future<bool> _presentConsent() async {
     if (!mounted) return false;
     return showConsentDialog(context);
@@ -167,7 +167,7 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         failure,
       _ => null,
     };
-    // 验证码输错次数过多时服务端按 IP 限流, 提示何时可以重试, 显示在验证码下方.
+    // 验证码连续输错过多时服务端会按 IP 限流, 此时在验证码输入框下方提示可重试时间.
     final codeError = switch (failure) {
       AppFailure(code: BizCodes.wrongCode, :final message) => message,
       AppFailure(kind: FailureKind.tooFrequent, :final message) => message,

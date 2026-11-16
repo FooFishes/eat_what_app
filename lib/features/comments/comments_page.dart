@@ -19,9 +19,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 一道菜的全部评论. 顶部切换 "最有用" 和 "最新", 滚动到底部时加载下一页.
+/// 菜品的全部评论页, 支持切换 "最有用" 与 "最新" 排序并在触底时加载下一页.
 ///
-/// 底部常驻输入栏, 点击后进入写评论页. 右侧相机按钮进入写评论页并打开照片选择.
+/// 底部常驻输入栏, 点击可进入写评论页; 点击右侧相机按钮则进入写评论页并自动打开照片选择.
 class CommentsPage extends ConsumerStatefulWidget {
   const new({super.key, required this.dishId});
 
@@ -132,7 +132,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
   }
 }
 
-/// 底部常驻的输入栏. 外观为输入框, 点击后进入写评论页.
+/// 底部常驻输入栏, 外观呈输入框样式, 点击后跳转至写评论页.
 class _ComposerBar extends ConsumerWidget {
   const new({required this.dishId});
 

@@ -185,17 +185,19 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 
 
 enum LoginTokenStatus: Int, CaseIterable {
-  /// 用户点了登录, 拿到取号凭证. 授权页还开着并显示加载, 用 `closeAuthPage` 关闭.
+  /// 用户点击登录并成功获取取号凭证; 此时授权页仍处于加载状态, 须调用 `closeAuthPage` 关闭.
   case granted = 0
-  /// 用户关掉了授权页. 授权页已关闭.
+  /// 用户主动关闭了授权页, 页面已关闭.
   case cancelled = 1
-  /// 用户点了切换按钮. 授权页已关闭.
+  /// 用户点击了切换按钮, 页面已关闭.
   case switched = 2
-  /// 授权页没拉起来, 或取凭证失败. 授权页已关闭.
+  /// 授权页未能拉起或取号失败, 页面已关闭.
   case failed = 3
 }
 
-/// 授权页的外观和文案. 授权页是 SDK 的原生页面, 从底部升起, 号码和运营商协议由 SDK 填.
+/// 原生授权页的外观与文案配置.
+///
+/// 授权页由 SDK 拉起并从底部弹出, 脱敏号码与运营商协议由 SDK 自动填充.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct AuthPageStyleMessage: Hashable, CustomStringConvertible {
@@ -216,15 +218,15 @@ struct AuthPageStyleMessage: Hashable, CustomStringConvertible {
   /// 内容的左右边距.
   var margin: Double
   var buttonHeight: Double
-  /// 登录按钮的文字. 阿里云要求包含 "登录".
+  /// 登录按钮的文案, 阿里云规范要求其中必须包含 "登录".
   var loginText: String
-  /// 切换按钮的文字, 点了改用别的登录方式.
+  /// 切换按钮的文案, 用于改用其他登录方式.
   var switchText: String
-  /// 关闭按钮给读屏用的名字.
+  /// 关闭按钮的无障碍朗读名称.
   var closeLabel: String
-  /// 协议名前面的文字, 如 "我已阅读并同意".
+  /// 协议名称前的前缀文案, 如 "我已阅读并同意".
   var privacyPrefix: String
-  /// 没勾协议就点登录时弹出的二次确认弹窗: 标题, 协议名前面的文字, 按钮文字.
+  /// 未勾选协议直接点击登录时弹出的二次确认弹窗: 标题, 协议名称前缀与确认按钮文案.
   var alertTitle: String
   var alertPrefix: String
   var alertButtonText: String
@@ -323,9 +325,9 @@ struct AuthPageStyleMessage: Hashable, CustomStringConvertible {
 /// Generated class from Pigeon that represents data sent in messages.
 struct LoginTokenMessage: Hashable, CustomStringConvertible {
   var status: LoginTokenStatus
-  /// 取号凭证, 只在 [LoginTokenStatus.granted] 时有值. 只能用一次.
+  /// 一次性取号凭证, 仅在 [LoginTokenStatus.granted] 时非空.
   var token: String? = nil
-  /// SDK 的返回码, 只在 [LoginTokenStatus.failed] 时有值, 用于排查.
+  /// SDK 返回的错误码, 仅在 [LoginTokenStatus.failed] 时非空, 用于问题排查.
   var code: String? = nil
 
 
@@ -420,13 +422,13 @@ class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
 protocol NumberAuthHostApi {
-  /// 设置方案密钥, 检查当前环境能否一键登录, 并预取号.
+  /// 配置方案密钥并预取号, 同时检查当前环境是否支持一键登录.
   ///
-  /// 返回 null 表示可以拉起授权页, 否则是 SDK 的返回码.
+  /// 返回 null 表示可拉起授权页, 否则返回 SDK 错误码.
   func prepare(secret: String, timeoutMs: Int64) async throws -> String?
-  /// 拉起授权页, 等用户点登录, 关闭或切换.
+  /// 拉起授权页, 等待用户点击登录, 关闭或切换登录方式.
   func requestLoginToken(style: AuthPageStyleMessage, timeoutMs: Int64) async throws -> LoginTokenMessage
-  /// 关闭授权页. 授权页没开着时什么也不做.
+  /// 关闭授权页; 若授权页未打开则忽略.
   func closeAuthPage() throws
 }
 
@@ -436,9 +438,9 @@ class NumberAuthHostApiSetup {
   /// Sets up an instance of `NumberAuthHostApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: NumberAuthHostApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    /// 设置方案密钥, 检查当前环境能否一键登录, 并预取号.
+    /// 配置方案密钥并预取号, 同时检查当前环境是否支持一键登录.
     ///
-    /// 返回 null 表示可以拉起授权页, 否则是 SDK 的返回码.
+    /// 返回 null 表示可拉起授权页, 否则返回 SDK 错误码.
     let prepareChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_number_auth.NumberAuthHostApi.prepare\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       prepareChannel.setMessageHandler { message, reply in
@@ -457,7 +459,7 @@ class NumberAuthHostApiSetup {
     } else {
       prepareChannel.setMessageHandler(nil)
     }
-    /// 拉起授权页, 等用户点登录, 关闭或切换.
+    /// 拉起授权页, 等待用户点击登录, 关闭或切换登录方式.
     let requestLoginTokenChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_number_auth.NumberAuthHostApi.requestLoginToken\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       requestLoginTokenChannel.setMessageHandler { message, reply in
@@ -476,7 +478,7 @@ class NumberAuthHostApiSetup {
     } else {
       requestLoginTokenChannel.setMessageHandler(nil)
     }
-    /// 关闭授权页. 授权页没开着时什么也不做.
+    /// 关闭授权页; 若授权页未打开则忽略.
     let closeAuthPageChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_number_auth.NumberAuthHostApi.closeAuthPage\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       closeAuthPageChannel.setMessageHandler { _, reply in

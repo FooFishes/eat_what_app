@@ -3,18 +3,17 @@ import 'package:eat/state/cross_border_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-/// 把网络层的会话回调接到登录态.
+/// 将网络层的会话与合规回调接入应用状态层.
 ///
 /// - 登录过期: 清除登录态.
 /// - 无权限: 刷新账号状态.
-/// - 隐私政策已更新: 弹出同意对话框请用户确认, 用户同意后提交同意.
+/// - 隐私政策已更新: 弹出确认对话框, 待用户确认后向服务端提交记录.
 ///
-/// `core` 不能导入 `state`, 因此由本文件覆盖 `apiHooksProvider`.
-/// `bootstrap` 和测试这些行为的测试都必须带上这组覆盖.
+/// 由于 `core` 层不能导入 `state` 层, 因此由本文件提供 `apiHooksProvider` 的覆盖实现.
+/// `bootstrap` 与涉及这些行为的测试均须注入这组覆盖.
 ///
-/// 回调通过 `ref.container` 读取 Provider.
-/// 登录态和同意接口都依赖网络层, 网络层又依赖这组回调.
-/// 改用 `ref.read` 会被 Riverpod 判定为循环依赖而拒绝.
+/// 回调内部通过 `ref.container` 延迟读取 Provider, 因为登录态与同意接口依赖网络层,
+/// 而网络层又依赖这组回调, 若改用 `ref.read` 会被 Riverpod 判定为循环依赖而拒绝.
 final stateOverrides = <Override>[
   apiHooksProvider.overrideWith((ref) {
     final container = ref.container;

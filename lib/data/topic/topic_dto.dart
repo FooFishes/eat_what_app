@@ -2,11 +2,11 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'topic_dto.g.dart';
 
-/// 专题摘要.
+/// 专题摘要信息.
 ///
-/// - [startsAt] 和 [endsAt] 是带时区的 ISO 8601 时间, 区间包含开始时刻, 不包含结束时刻.
-/// - [coverFoodId] 在封面菜不可见时为 null.
-/// - [visibleFoodCount] 是当前仍可见的菜数. 菜被删除后会少于发布时的数量.
+/// - [startsAt] 与 [endsAt] 为带时区的 ISO 8601 时间, 生效区间为左闭右开 `[startsAt, endsAt)`.
+/// - [coverFoodId] 在封面菜品不可见时为 null.
+/// - [visibleFoodCount] 为当前仍可见的菜品数, 若菜品后续被删除则会少于发布时的总数.
 @JsonSerializable(createToJson: false)
 class const TopicSummaryDto({
   final int? id,
@@ -22,9 +22,9 @@ class const TopicSummaryDto({
       _$TopicSummaryDtoFromJson(json);
 }
 
-/// 专题里的一道菜, 已包含菜品方块和舞台所需的字段.
+/// 专题内的菜品条目, 已包含菜品方块与舞台展示所需的全部字段.
 ///
-/// 圆形取景是平铺的三个字段, 不同于 `FoodDto` 的 `coverCrop` 对象.
+/// 其圆形取景参数以三个平铺字段返回, 不同于 `FoodDto` 中的嵌套 `coverCrop` 对象.
 @JsonSerializable(createToJson: false)
 class const TopicFoodDto({
   final int? id,
@@ -49,7 +49,7 @@ class const TopicFoodDto({
       _$TopicFoodDtoFromJson(json);
 }
 
-/// 专题详情: 摘要和按位置排好的菜.
+/// 专题详情数据结构, 包含专题摘要以及按展示顺序排列的菜品列表.
 @JsonSerializable(createToJson: false)
 class const TopicDetailDto({
   final TopicSummaryDto? topic,

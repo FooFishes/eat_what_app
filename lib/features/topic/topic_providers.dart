@@ -12,9 +12,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'topic_providers.g.dart';
 
-/// 专题详情. 专题不存在或尚未开始时为 null.
+/// 获取指定专题详情, 若专题不存在或尚未开始则返回 null.
 ///
-/// 往期专题的每一行读取专题详情来显示前三道菜, 因此进入专题页时不重新请求.
+/// 由于往期专题列表每行也会读取该详情以展示前三道菜, 缓存 5 分钟后从列表进入专题页时无需重复请求.
 @riverpod
 Future<TopicDetail?> topicDetail(Ref ref, int topicId) async {
   ref.cacheFor(const Duration(minutes: 5));
@@ -28,10 +28,10 @@ Future<TopicDetail?> topicDetail(Ref ref, int topicId) async {
   }
 }
 
-/// 往期专题的数据: 已获取的分页, 以及下一页是否加载失败.
+/// 往期专题列表的分页状态, 包含已加载的分页数据及下一页是否加载失败.
 typedef TopicArchivePages = ({Paged<Topic> pages, bool moreFailed});
 
-/// 当前校区的往期专题, 滚动到底部时加载下一页. 切换校区后重新请求.
+/// 当前校区的往期专题分页列表, 支持触底加载下一页, 切换校区时自动重新请求.
 @riverpod
 class TopicArchive extends _$TopicArchive {
   var _loadingMore = false;

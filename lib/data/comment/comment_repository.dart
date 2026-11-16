@@ -8,7 +8,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'comment_repository.g.dart';
 
-/// 评论数据. 把接口 DTO 转换为 [Comment] 等领域模型. 评论不做本地缓存.
+/// 提供评论与回复的数据访问, 负责将接口 DTO 转换为 [Comment] 等领域模型. 评论不做本地缓存.
 class CommentRepository {
   CommentRepository(this._api);
 
@@ -30,7 +30,7 @@ class CommentRepository {
     ),
   );
 
-  /// 一条评论下的回复, 按时间正序.
+  /// 获取指定评论下的回复列表, 按时间正序排列.
   Future<CommentPage> replies(
     int commentId, {
     int page = 1,
@@ -45,7 +45,7 @@ class CommentRepository {
     ),
   );
 
-  /// 菜的大图里来自评论的照片, 最多 [limit] 张. 地址缺失的照片不返回.
+  /// 获取菜品图库中来自评论的照片, 最多 [limit] 张, 并过滤掉地址缺失的条目.
   Future<List<GalleryPhoto>> gallery(
     int dishId, {
     int limit = 50,
@@ -91,7 +91,7 @@ class CommentRepository {
 
   Future<void> delete(int commentId) => _api.delete(commentId);
 
-  /// 赞或取消赞. 接口不返回赞数, 调用方自行维护计数.
+  /// 点赞或取消点赞. 由于接口不返回最新赞数, 调用方需自行维护计数.
   Future<void> setLiked(int commentId, {required bool liked}) =>
       liked ? _api.like(commentId) : _api.unlike(commentId);
 
@@ -134,7 +134,7 @@ class CommentRepository {
     total: result.total,
   );
 
-  /// 缺少 id, 菜 id 或作者 id 的条目无法点赞, 回复和判断能否删除, 因此不显示.
+  /// 缺少 id, 菜品 id 或作者 id 的条目无法执行点赞, 回复及删除权限判断, 因此予以过滤.
   static Comment? _comment(CommentDto dto) {
     final (id, dishId, authorId) = (dto.id, dto.foodId, dto.author?.id);
     if (id == null || dishId == null || authorId == null) return null;

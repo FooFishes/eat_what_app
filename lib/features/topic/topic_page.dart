@@ -20,9 +20,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 专题页: 专题名, 介绍, 起止时间和菜数, 其下为专题里的菜 (两列方块).
+/// 专题详情页, 展示专题名称, 介绍, 起止时间, 菜品数及下方的双列菜品网格.
 ///
-/// 从发现页, 往期专题, 菜品详情的专题提示和消息进入. 右上角分享专题链接.
+/// 可从发现页, 往期专题, 菜品详情的专题入口及消息通知进入, 右上角提供专题链接分享.
 class TopicPage extends ConsumerWidget {
   const new({super.key, required this.topicId});
 
@@ -112,7 +112,7 @@ class TopicPage extends ConsumerWidget {
   }
 }
 
-/// 专题的称呼, 起止时间和菜数, 如 "本周专题 10 月 20 日–10 月 26 日 12 道菜".
+/// 专题元信息栏, 展示专题类型标签, 起止时间及菜品数 (如 "本周专题 10 月 20 日–10 月 26 日 12 道菜").
 class _TopicMeta extends StatelessWidget {
   const new({required this.topic});
 

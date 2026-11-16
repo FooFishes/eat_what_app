@@ -6,16 +6,13 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// 白底页面骨架, 用于消息, 选店, 搜索, 评论和设置.
+/// 白底页面骨架, 用于消息, 选店, 搜索, 评论和设置等列表页.
 ///
-/// - 返回按钮和 `page-title` 标题在同一行, 标题过长时换行, 左右边距 `space-20`.
-/// - 标题行固定在顶部, 不随内容滚动. 内容滚动到标题行下方时, 标题行底边显示 `hairline`.
-/// - 宽屏时整页收窄为居中的一栏.
-/// - 分组靠小标题和留白分隔, 不加卡片. [slivers] 已包含左右边距.
-/// - 标题下面不放副标题. 说明写在内容里它所说明的输入框或列表旁边,
-///   标题旁只放 [titleNote] 这类简短的状态.
-/// - 键盘弹出时页面避让到键盘上方, 获得焦点的输入框会滚动到可见位置.
-/// - 拖动页面或点击空白处时收起键盘.
+/// - 返回按钮与 `page-title` 标题同行排布, 标题过长时自动换行, 左右边距为 `space-20`.
+/// - 标题行固定在顶部不随内容滚动, 内容滚动到标题行下方时在其底边显示 `hairline` 分割线.
+/// - 宽屏下整页收窄为居中一栏, 分组通过小标题与留白分隔而不使用卡片 ([slivers] 区域已包含左右边距).
+/// - 标题下方不设副标题, 详细说明应放在对应输入框或列表旁, 标题旁仅展示 [titleNote] 等简短状态.
+/// - 键盘弹出时自动避让并将焦点输入框滚动到可见区域, 拖动页面或点击空白处时收起键盘.
 class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -32,30 +29,29 @@ class PlainScaffold extends StatefulWidget {
 
   final String title;
 
-  /// 紧跟在标题后面的简短状态, 如 "3 条未读" "仅自己可见", 使用 `meta` 和 `ink-muted`.
-  /// 和标题同属一段文字, 放不下时接着标题换行.
+  /// 紧跟在标题后的简短状态文本 (如 "3 条未读" "仅自己可见"), 采用 `meta` 字号和 `ink-muted` 颜色, 空间不足时随标题自然换行.
   final String? titleNote;
 
   final List<Widget> slivers;
 
-  /// 顶栏右侧的图标按钮.
+  /// 顶栏右侧的操作图标按钮列表.
   final List<Widget> actions;
 
   final bool showBack;
 
-  /// 返回按钮的回调. 不传时返回上一页, 没有上一页时执行后备行为.
+  /// 点击返回按钮的回调, 未传入时返回上一页或执行后备跳转.
   final VoidCallback? onBack;
 
-  /// 页面的滚动行为.
+  /// 页面滚动物理行为.
   ///
-  /// 页面中有地图等需要拖动的组件时, 手指按在其上期间传入 `NeverScrollableScrollPhysics`.
-  /// 否则纵向拖动会被页面滚动接管.
+  /// 若页面包含地图等需手势拖动的组件, 在手指按压交互期间应传入 `NeverScrollableScrollPhysics`,
+  /// 防止纵向拖动被页面滚动拦截.
   final ScrollPhysics? physics;
 
-  /// 下拉刷新. 不传时页面不能下拉刷新.
+  /// 下拉刷新回调, 未传入时禁用下拉刷新.
   final Future<void> Function()? onRefresh;
 
-  /// 代替标题显示在返回按钮右侧的组件, 如搜索页的搜索框. 传入时 [title] 只用于读屏.
+  /// 替换标题展示在返回按钮右侧的自定义组件 (如搜索页搜索框), 传入时 [title] 仅提供给读屏.
   final Widget? header;
 
   @override
@@ -64,7 +60,7 @@ class PlainScaffold extends StatefulWidget {
 
 class _PlainScaffoldState extends State<PlainScaffold>
     with ScrollToTopOnReselect {
-  /// 内容是否已滚动到标题行下方.
+  /// 记录内容是否已滚动到标题行下方.
   final _scrolled = ValueNotifier(false);
 
   @override
@@ -151,7 +147,7 @@ class _PlainScaffoldState extends State<PlainScaffold>
       controller: scrollController,
       physics: switch ((widget.physics, widget.onRefresh)) {
         (final physics?, _) => physics,
-        // 内容不足一屏时默认不能滚动, 下拉手势不会触发刷新.
+        // 当内容不足一屏时默认不可滚动, 需强制允许滚动以使下拉手势能够触发刷新.
         (null, _?) => const AlwaysScrollableScrollPhysics(),
         (null, null) => null,
       },

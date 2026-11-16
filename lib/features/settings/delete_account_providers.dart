@@ -5,7 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'delete_account_providers.g.dart';
 
-/// 注销页的状态: 是否同时删除评论和回复, 提交状态, 最近一次失败.
+/// 注销账号页面的表单状态, 记录是否同步删除评论与回复, 提交状态及最近一次失败信息.
 class const DeleteAccountState({
   final bool deleteComments = false,
   final bool submitting = false,
@@ -22,9 +22,9 @@ class DeleteAccount extends _$DeleteAccount {
     state = DeleteAccountState(deleteComments: value);
   }
 
-  /// 申请注销. 有手机号的账号带 [code], 没有手机号的带 [password].
+  /// 提交注销申请; 已绑定手机号的账号需传入 [code], 未绑定手机号的账号需传入 [password].
   ///
-  /// 成功返回 true, 之后由页面调用 [leave]; 失败时记录原因, 返回 false.
+  /// 提交成功返回 true 并交由页面调用 [leave] 退出登录; 失败时记录错误原因并返回 false.
   Future<bool> submit({String? code, String? password}) async {
     final session = ref.read(sessionProvider);
     if (state.submitting || session is! SignedIn) return false;
@@ -53,6 +53,6 @@ class DeleteAccount extends _$DeleteAccount {
     }
   }
 
-  /// 申请成功后退出登录. 服务端已让全部设备下线, 这里清除本机的登录态.
+  /// 提交申请成功后清除本机登录态; 服务端已将全部设备置为下线状态.
   Future<void> leave() => ref.read(sessionProvider.notifier).logout();
 }

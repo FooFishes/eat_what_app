@@ -15,9 +15,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// "我的" 中的评论分栏: 我写过的评论和回复. 每行是菜的缩略图, 菜名, 我说的话和时间.
+/// "我的" 页面中的评论分栏, 展示自己发表的评论与回复, 每行包含菜品缩略图, 菜名, 评论内容与时间.
 ///
-/// 点击进入菜品详情并滚动到该评论. 回复滚动到所属的评论.
+/// 点击行可进入菜品详情并滚动定位至该评论 (若为回复则定位至所属主评论).
 class MyCommentsSliver extends ConsumerWidget {
   const new({super.key});
 

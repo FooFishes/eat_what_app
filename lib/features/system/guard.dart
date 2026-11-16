@@ -15,9 +15,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 受限操作的权限检查. 允许时返回 true, 不允许时弹出拦截对话框并返回 false.
+/// 执行受限操作前的权限校验. 允许时返回 true, 否则弹出对应的拦截对话框并返回 false.
 ///
-/// 受限按钮正常显示, 不隐藏也不置灰. 点击后由拦截对话框说明原因和下一步.
+/// 受限操作按钮在界面上正常显示而不隐藏或置灰, 由点击后的拦截对话框向用户说明原因及后续引导.
 Future<bool> guardAction(
   BuildContext context,
   WidgetRef ref,
@@ -91,13 +91,13 @@ Future<void> _showBanned(
   ),
 );
 
-/// 封禁期限, 如 "封禁至 11 月 30 日". 没有截止时间 [until] 时为 "永久封禁".
+/// 格式化账号封禁期限文案 (如 "封禁至 11 月 30 日"), 若截止时间 [until] 为 null 则返回 "永久封禁".
 String banTerm(DateTime? until, DateTime now) => switch (until) {
   final until? => '封禁至 ${TimeFormat.date(until, now)}',
   null => '永久封禁',
 };
 
-/// 游客的拦截对话框. "去登录" 带上当前地址进登录页, 登录后回到这里, 不替用户完成刚才的动作.
+/// 游客操作拦截对话框. 点击 "去登录" 时携带当前路径跳转至登录页, 登录完成后返回原页面而不自动重放刚才的操作.
 Future<void> _showSignIn(BuildContext context, Capability capability) {
   final router = GoRouter.of(context);
   return showEatDialog<void>(
@@ -131,13 +131,13 @@ Future<void> _showSignIn(BuildContext context, Capability capability) {
   );
 }
 
-/// 操作失败后的反馈.
+/// 统一处理操作失败后的界面反馈.
 ///
-/// - 服务端判定无权限时, 刷新账号状态后弹出拦截对话框.
-/// - 游客收到要求登录的响应时弹出登录对话框. 游客没有可过期的登录态, 不走登录过期流程.
-/// - 其余失败显示轻提示.
+/// - 服务端判定无权限时, 先刷新账号状态再弹出拦截对话框.
+/// - 游客收到会话过期响应时弹出登录引导对话框, 因游客不存在可过期的登录态而跳过登录过期处理流程.
+/// - 其余失败展示轻提示.
 ///
-/// [fallback] 是该操作的失败提示, 如 "点赞失败, 请重试". 只在失败类型没有固定提示时使用.
+/// [fallback] 为未知失败类型时的兜底提示文案 (如 "点赞失败, 请重试").
 Future<void> reportActionFailure(
   BuildContext context,
   WidgetRef ref,
@@ -149,13 +149,13 @@ Future<void> reportActionFailure(
     case FailureKind.cancelled:
       return;
     case FailureKind.sessionExpired:
-      // 已登录时由网络层清除登录态, 守卫随后带去登录页, 这里不再提示.
+      // 已登录状态下的会话过期由网络层清除登录态并交由路由守卫跳转至登录页, 此处不再额外提示.
       if (ref.read(sessionProvider) is Guest) {
         await guardAction(context, ref, capability);
       }
     case FailureKind.forbidden:
       await ref.read(sessionProvider.notifier).refreshUser();
-      // 刷新后仍判定为允许时, 拦截对话框不会出现. 此时显示无权限的统一提示, 否则点击后界面没有任何反馈.
+      // 若刷新账号状态后本地仍判定为允许, guardAction 不会弹出拦截对话框, 因此需展示服务端返回的无权限提示以避免点击无响应.
       if (context.mounted && await guardAction(context, ref, capability)) {
         if (context.mounted) showToast(context, failure.message);
       }
@@ -169,8 +169,8 @@ Future<void> reportActionFailure(
   }
 }
 
-/// 点击 "待接入" 入口后的反馈. 不发请求, 只显示轻提示.
+/// 点击 "待接入" 占位入口时的反馈提示, 不发起请求而仅弹出轻提示.
 ///
-/// [feature] 不影响提示内容, 用于在接口上线时按枚举值找到所有入口.
+/// [feature] 不影响展示文案, 仅用于在对应接口上线时按枚举值全局检索所有待接入入口.
 void showPending(BuildContext context, PendingFeature feature) =>
     showToast(context, '该功能即将上线');

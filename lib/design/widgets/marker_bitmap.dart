@@ -4,13 +4,12 @@ import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
-/// 把组件画成地图标记的位图, 让引擎画的标记和屏幕上的组件长得一样.
+/// 将 Flutter 组件离屏渲染为地图标记位图, 使地图引擎绘制的标记与屏幕组件外观一致.
 ///
-/// 组件在一棵不上屏的渲染树里排版, 绘制, 再按屏幕的像素比导出 PNG.
-/// [context] 里的主题, 字体, 文字方向和 MediaQuery 原样带进去.
-/// 组件里的网络图片要先放进缓存, 否则画出来的是占位底色.
+/// 组件会在不上屏的渲染树中完成排版与绘制, 再按当前屏幕像素比导出 PNG, 同时原样保留 [context] 中的主题, 字体, 文字方向和 MediaQuery.
+/// 组件引用的网络图片需提前写入缓存, 否则导出的位图仅包含占位底色.
 abstract final class MarkerBitmap {
-  /// [anchor] 根据排好的尺寸给出对准坐标的那一点, 单位为逻辑像素.
+  /// 根据排好的尺寸返回坐标锚点位置的回调, 单位为逻辑像素.
   static Future<MarkerImage> render(
     BuildContext context,
     Widget child, {
@@ -43,7 +42,7 @@ abstract final class MarkerBitmap {
       child: wrapped,
     ).attachToRenderTree(build);
     try {
-      // 缓存里的图片在第一遍 build 时同步到达, 会把 Image 标脏, 所以再 build 一遍.
+      // 已缓存的图片在首遍 build 时同步返回并标脏 Image, 因此需要执行第二遍 build.
       build
         ..buildScope(root)
         ..buildScope(root)

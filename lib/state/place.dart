@@ -15,12 +15,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'place.g.dart';
 
-/// 已开放的校区, 来自 `/campus/list`.
+/// 已开放的校区列表, 数据来自 `/campus/list`.
 @Riverpod(keepAlive: true)
 Future<List<Campus>> campuses(Ref ref) =>
     ref.watch(placeRepositoryProvider).campuses(cancelToken: ref.cancelToken());
 
-/// 全部商圈. 用于附近页的商圈胶囊.
+/// 全部商圈列表, 用于附近页的商圈胶囊筛选.
 @Riverpod(keepAlive: true)
 Future<List<Hub>> hubs(Ref ref) =>
     ref.watch(placeRepositoryProvider).hubs(cancelToken: ref.cancelToken());
@@ -31,16 +31,16 @@ class const PlaceChoice({
   final MealTime? manualMeal,
   final DateTime? manualUntil,
 
-  /// 去店里吃还是点外卖. 没选过时为 null, 按堂食处理.
+  /// 用餐场景 (堂食或外卖), 没选过时为 null 并按堂食处理.
   final RatingScene? scene,
 
   /// 本地存储中的选择是否已读出. 读出之前不按默认值请求推荐.
   final bool restored = false,
 });
 
-/// 地点, 饭点和场景的选择, 保存在本机.
+/// 管理持久化在本机的校区, 饭点与用餐场景选择.
 ///
-/// 属于设备级偏好, 退出登录时不清除. 场景和校区一样一直记住, 饭点只保持到当前时间段结束.
+/// 属于设备级偏好, 退出登录时不清除; 场景与校区一样长期保留, 手动选择的饭点仅保持到当前时间段结束.
 @Riverpod(keepAlive: true)
 class PlaceAndMeal extends _$PlaceAndMeal {
   static const campusKey = 'prefs.campus';
@@ -112,7 +112,7 @@ class PlaceAndMeal extends _$PlaceAndMeal {
     await _kv.delete(mealKey);
   }
 
-  /// 选择去店里吃还是点外卖.
+  /// 选择用餐场景 (堂食或外卖).
   Future<void> selectScene(RatingScene scene) async {
     state = PlaceChoice(
       campusId: state.campusId,
@@ -131,7 +131,7 @@ class const CurrentPlace({
   required final MealTime meal,
   required final bool autoMeal,
 
-  /// 去店里吃还是点外卖, 决定推荐的范围和排序.
+  /// 用餐场景, 决定菜品推荐的范围和排序.
   final RatingScene scene = RatingScene.dineIn,
 
   /// 本机选择和校区列表是否都已就绪. 未就绪时不请求推荐.
@@ -152,14 +152,14 @@ class const CurrentPlace({
   int get hashCode => Object.hash(campus?.id, meal, autoMeal, scene, ready);
 }
 
-/// 当前的校区, 饭点和场景.
+/// 计算当前生效的校区, 饭点与用餐场景.
 ///
-/// - 校区: 依次取上次选择的校区, 离定位最近的校区, 默认校区.
-/// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间.
-/// - 场景: 上次的选择, 没选过时为堂食.
+/// - 校区: 依次优先采用上次选择的校区, 离当前定位最近的校区, 默认校区.
+/// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间推算.
+/// - 场景: 采用上次选择, 没选过时为堂食.
 ///
-/// 时间段结束 ([mealPeriodEnd]) 和回到前台时, 由发现页触发重算.
-/// 这里不启动定时器: 该 Provider 常驻, 定时器会一直存在.
+/// 当时间段结束 ([mealPeriodEnd]) 或应用回到前台时, 由发现页触发重算;
+/// 此处不自行启动定时器, 避免常驻 Provider 持有长期定时器.
 @Riverpod(keepAlive: true)
 CurrentPlace currentPlace(Ref ref) {
   final choice = ref.watch(placeAndMealProvider);
@@ -204,15 +204,13 @@ CurrentPlace currentPlace(Ref ref) {
   );
 }
 
-/// 搜店的参照坐标和校区.
+/// 搜索店铺时使用的参照坐标与校区范围.
 ///
-/// - [point]: 我的定位, 没有定位时为当前校区的中心. 两者都没有时为 null, 后端按新建时间倒序排列.
-/// - [campusId]: 当前校区. 搜店接口不传校区时不限校区.
+/// - [point]: 当前设备定位, 若无定位则回退为当前校区的中心. 两者都没有时为 null, 后端按新建时间倒序排列.
+/// - [campusId]: 当前校区 id. 搜店接口不传校区时不限校区.
 typedef ShopSearchScope = ({GcjPoint? point, int? campusId});
 
-/// 当前的搜店范围. 校区列表正在加载时等待加载完成.
-///
-/// 调用方等待期间被释放时返回 null.
+/// 计算当前的搜店范围. 若校区列表仍在加载则等待其完成, 等待期间若调用方已释放则返回 null.
 Future<ShopSearchScope?> shopSearchScope(Ref ref) async {
   if (ref.read(campusesProvider).isLoading) {
     try {

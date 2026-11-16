@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:eat/design/tokens/eat_palette.dart';
 
-/// 舞台以外的颜色: 白底页面, 抽屉, 面板, 地图和 "调整照片" 页. 舞台上的颜色取自 `StageColor`.
+/// 舞台以外的界面颜色集合, 涵盖白底页面, 抽屉, 面板, 地图和 "调整照片" 页 (舞台颜色取自 `StageColor`).
 class const EatColors({
   /// 主文字色, 也是主操作和选中单选标签的实心底色.
   required final Color ink,
@@ -13,7 +13,7 @@ class const EatColors({
   /// 浅色舞台上的次级文字色.
   required final Color inkSoft,
 
-  /// 纸面底色, 用于抽屉, 白底页面和悬浮导航. 也是深色舞台上的文字色.
+  /// 纸面底色, 用于抽屉, 白底页面和悬浮导航, 也是深色舞台上的文字色.
   required final Color paper,
 
   /// 次级填充色, 用于次按钮, 搜索框, 导航选中项和未选中分类标签的底色.
@@ -39,7 +39,7 @@ class const EatColors({
   required final Color disabledBg,
   required final Color disabledFg,
 
-  /// 提示用户需要处理的文字色. 只用在 [paper] 上, 且必须配文字说明.
+  /// 提示用户需要处理的文字色. 仅用于 [paper] 底色之上, 且必须配文字说明.
   required final Color warn,
   required final Color mapMe,
   required final Color mapGround,

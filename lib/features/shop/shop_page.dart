@@ -37,13 +37,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 餐厅详情页.
+/// 餐厅详情页, 分为顶部舞台与下方抽屉两部分.
 ///
-/// - 舞台: 第一道招牌菜的照片, 没有时用门头照片. 店名, 商圈和地址, 距离, 菜数和推荐率.
-/// - 抽屉: 导航和加菜, 招牌菜, 品类和口味, 评价, 全部菜品, 以及 "编辑店铺" "修改记录" "信息有误".
+/// - 舞台展示主图 (优先取首道招牌菜, 其次取门头照), 店名, 商圈地址, 距离, 菜品数和推荐率.
+/// - 抽屉依次包含操作按钮, 招牌菜, 品类与口味, 评价入口, 全部菜品及底部资料维护链接.
 ///
-/// 店铺接口不返回招牌菜和菜数. 招牌菜单独请求, 菜数取自全部菜品的总数.
-/// 舞台色按店铺的类型和品类映射.
+/// 店铺详情接口不返回招牌菜与菜品总数, 因此招牌菜需单独请求, 菜品数取自全部菜品分页的总数.
+/// 舞台背景色根据店铺的类型与品类自动映射.
 class ShopPage extends ConsumerWidget {
   const new({super.key, required this.shopId});
 
@@ -109,7 +109,7 @@ class ShopPage extends ConsumerWidget {
     );
   }
 
-  /// 下拉刷新: 重新请求店铺, 招牌菜和菜品. 店铺请求失败时保留页面上的旧内容并提示原因.
+  /// 下拉刷新店铺详情, 招牌菜及菜单列表. 若刷新失败则保留页面现有内容并提示原因.
   Future<void> _refresh(BuildContext context, WidgetRef ref) async {
     ref
       ..invalidate(shopMenuProvider(shopId))
@@ -123,7 +123,7 @@ class ShopPage extends ConsumerWidget {
   }
 }
 
-/// 店铺已删除时的页面. 重试不会改变结果, 因此只提供返回.
+/// 店铺已被删除时的兜底页面. 由于重试无法恢复数据, 页面仅提供返回操作.
 class _Deleted extends StatelessWidget {
   const new();
 
@@ -150,7 +150,7 @@ class _Deleted extends StatelessWidget {
   );
 }
 
-/// 小标题. [trailing] 跟在标题后面, 如菜数.
+/// 抽屉内的分组标题, 可通过 [trailing] 在标题右侧附加计数等信息.
 class _Title extends StatelessWidget {
   const new(this.text, {this.trailing});
 
@@ -173,9 +173,9 @@ class _Title extends StatelessWidget {
   );
 }
 
-/// 招牌, 品类和口味, 以及 "你觉得这家怎么样".
+/// 抽屉上半部分概览区, 依次展示招牌菜, 品类与口味及用户评价入口.
 ///
-/// 招牌菜请求失败或没有招牌菜时不显示招牌一栏. 店铺没填品类和口味时不显示该栏.
+/// 若招牌菜为空或请求失败则隐藏招牌栏, 未填写品类与口味时隐藏对应栏位.
 class _Summary extends ConsumerWidget {
   const new({required this.shop});
 
@@ -241,7 +241,7 @@ class _Summary extends ConsumerWidget {
   }
 }
 
-/// "你觉得这家怎么样": 我的评价和 "评价" 按钮. 点击按钮打开评价面板.
+/// 店铺评价入口行, 展示当前用户的评价摘要并提供打开评价面板的按钮.
 class _Rating extends ConsumerWidget {
   const new({required this.shop});
 
@@ -274,7 +274,7 @@ class _Rating extends ConsumerWidget {
   }
 }
 
-/// 全部菜品, 按菜单顺序. 标题后是菜数.
+/// 全部菜品列表区, 按菜单顺序分页展示, 标题右侧附带菜品总数.
 class _Menu extends ConsumerWidget {
   const new({required this.shopId});
 
@@ -387,7 +387,7 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// 收藏店铺. 已收藏时为实心图标.
+/// 店铺收藏按钮, 已收藏时展示实心图标.
 class _FavoriteButton extends ConsumerWidget {
   const new({required this.shopId});
 
@@ -425,12 +425,12 @@ class _FavoriteButton extends ConsumerWidget {
   }
 }
 
-/// 餐厅详情舞台内容.
+/// 餐厅详情页的舞台内容.
 ///
-/// - 右侧: 盘子. 依次放第一道招牌菜的照片, 门头照片. 招牌菜请求完成前是空盘, 避免先显示门头照片再换成菜.
-/// - 左下: 店名, 商圈和地址, 距离, 菜数, 推荐率. 已关门的店另起一行写 "这家店已关门".
+/// - 右侧盘子优先展示首道招牌菜照片, 其次回退至门头照片. 招牌菜请求完成前保持空盘, 避免先展示门头照再发生跳变.
+/// - 左下区域依次展示店名, 商圈与地址, 距离, 菜品数与推荐率, 若店铺已关门则另起一行标注 "这家店已关门".
 ///
-/// 招牌菜摘要不含封面取景, 盘子按居中的短边内切圆显示.
+/// 招牌菜摘要接口不含封面取景框信息, 因此盘子以图片居中短边内切圆展示.
 class _StageContent extends ConsumerWidget {
   const new({required this.shop});
 
@@ -568,10 +568,10 @@ class _StageContent extends ConsumerWidget {
   }
 }
 
-/// 舞台上的推荐率, 按 `ShopRules.rateOf` 选场景.
+/// 舞台上的推荐率摘要, 依据 [ShopRules.rateOf] 选取展示场景.
 ///
-/// - 满门槛: "86% 推荐" (外卖的写作 "外卖 86% 推荐"), 其下小字 "32 人评过".
-/// - 不满门槛: 只写两个场景合计的评价条数, 如 "2 条评价". 无人评价时写 "还没人评价".
+/// - 达到评价门槛时展示推荐率 (如 "86% 推荐" 或 "外卖 86% 推荐") 及下方评价人数.
+/// - 未达门槛时仅展示双场景合计评价条数 (如 "2 条评价"), 暂无评价时展示 "还没人评价".
 class _RatingSummary extends StatelessWidget {
   const new({required this.shop, required this.numberStyle});
 
@@ -602,9 +602,9 @@ class _RatingSummary extends StatelessWidget {
   }
 }
 
-/// "导航去店里" 和 "加一道菜". 加菜跳过选店, 直接进入这家店的加菜页.
+/// 抽屉顶部的 "导航去店里" 与 "加一道菜" 操作栏, 点击加菜会跳过选店步骤进入当前店铺的加菜页.
 ///
-/// 已关门的店两个按钮都不可用. 服务端不拒绝给已关门的店加菜, 由客户端拦截.
+/// 已关门店铺会禁用这两个按钮. 由于服务端不拦截已关门店铺的加菜请求, 需由客户端控制拦截.
 class _Actions extends ConsumerWidget {
   const new({required this.shop});
 
@@ -656,9 +656,9 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-/// 页面底部的三个小字链接: "编辑店铺", "修改记录", "信息有误".
+/// 页面底部的资料维护链接组, 包含 "编辑店铺", "修改记录" 和 "信息有误".
 ///
-/// 编辑要求已认证, 点击时拦截. 修改记录谁都能看.
+/// "编辑店铺" 需要已认证权限并在点击时校验, "修改记录" 对所有用户开放.
 class _Links extends ConsumerWidget {
   const new({required this.shop});
 

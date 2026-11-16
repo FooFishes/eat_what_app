@@ -8,20 +8,20 @@ part of 'session.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 登录态. 路由守卫根据它决定跳转.
+/// 全局登录态管理, 路由守卫据此决定页面跳转.
 ///
-/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复本地凭证, 并在登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 
 @ProviderFor(Session)
 final sessionProvider = SessionProvider._();
 
-/// 登录态. 路由守卫根据它决定跳转.
+/// 全局登录态管理, 路由守卫据此决定页面跳转.
 ///
-/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复本地凭证, 并在登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 final class SessionProvider extends $NotifierProvider<Session, SessionState> {
-  /// 登录态. 路由守卫根据它决定跳转.
+  /// 全局登录态管理, 路由守卫据此决定页面跳转.
   ///
-  /// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
+  /// 启动时恢复本地凭证, 并在登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
   SessionProvider._()
     : super(
         from: null,
@@ -51,9 +51,9 @@ final class SessionProvider extends $NotifierProvider<Session, SessionState> {
 
 String _$sessionHash() => r'6b36f62c2803375e79dd9efebbb4f642ad4b251f';
 
-/// 登录态. 路由守卫根据它决定跳转.
+/// 全局登录态管理, 路由守卫据此决定页面跳转.
 ///
-/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复本地凭证, 并在登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 
 abstract class _$Session extends $Notifier<SessionState> {
   SessionState build();
@@ -73,23 +73,23 @@ abstract class _$Session extends $Notifier<SessionState> {
   }
 }
 
-/// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+/// 由当前登录态派生的账号状态, 用于判断哪些业务操作需要权限拦截.
 ///
-/// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
+/// 游客同样视为未登录状态, 游客可访问的页面范围由路由权限标记控制, 此处不做区分.
 
 @ProviderFor(accountStatus)
 final accountStatusProvider = AccountStatusProvider._();
 
-/// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+/// 由当前登录态派生的账号状态, 用于判断哪些业务操作需要权限拦截.
 ///
-/// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
+/// 游客同样视为未登录状态, 游客可访问的页面范围由路由权限标记控制, 此处不做区分.
 
 final class AccountStatusProvider
     extends $FunctionalProvider<AccountStatus, AccountStatus, AccountStatus>
     with $Provider<AccountStatus> {
-  /// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+  /// 由当前登录态派生的账号状态, 用于判断哪些业务操作需要权限拦截.
   ///
-  /// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
+  /// 游客同样视为未登录状态, 游客可访问的页面范围由路由权限标记控制, 此处不做区分.
   AccountStatusProvider._()
     : super(
         from: null,

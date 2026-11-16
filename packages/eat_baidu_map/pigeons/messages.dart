@@ -1,8 +1,8 @@
-/// Dart 与原生之间的接口定义. 改完后在本包目录运行
+/// Dart 与原生之间的接口定义. 修改后须在本包目录运行
 /// `fvm dart run pigeon --input pigeons/messages.dart` 重新生成三端代码.
 ///
-/// 坐标一律是 GCJ-02: SDK 初始化时把全局坐标类型设成 GCJ-02.
-/// 长度一律是逻辑像素, 由原生侧按屏幕密度换算.
+/// 坐标统一使用 GCJ-02, SDK 初始化时会配置全局坐标类型.
+/// 长度单位均为逻辑像素, 由原生侧按屏幕密度换算.
 library;
 
 import 'package:pigeon/pigeon.dart';
@@ -26,7 +26,7 @@ class LatLngMessage {
 class CameraMessage {
   CameraMessage({required this.center, required this.zoom});
 
-  /// 可见区域中心的坐标, 即扣掉 [InsetsMessage] 之后那块区域的中心.
+  /// 可见区域中心的坐标, 即扣除 [InsetsMessage] 遮挡区域后的中心点.
   LatLngMessage center;
   double zoom;
 }
@@ -59,11 +59,11 @@ class MarkerMessage {
   String id;
   LatLngMessage position;
 
-  /// PNG. 按 [iconScale] 倍绘制, 原生侧据此还原成逻辑尺寸.
+  /// PNG 图像字节, 原生侧按 [iconScale] 缩放还原为逻辑尺寸.
   Uint8List icon;
   double iconScale;
 
-  /// 锚点在图片内的位置, 0–1, 对准 [position].
+  /// 锚点在图片内的归一化位置 (0–1), 用于对准 [position].
   double anchorX;
   double anchorY;
   int zIndex;
@@ -89,8 +89,7 @@ class PolygonMessage {
   bool dashed;
 }
 
-/// SDK 级别的调用. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
-/// 地点检索的一条结果.
+/// 地点检索的单条结果.
 class PlaceMessage {
   PlaceMessage({
     required this.uid,
@@ -104,40 +103,41 @@ class PlaceMessage {
   String name;
   String address;
 
-  /// 坐标类型和地图一样, 由初始化时设置的全局坐标类型决定.
+  /// 坐标类型与地图一致, 由初始化时设置的全局坐标类型决定.
   LatLngMessage location;
 }
 
+/// SDK 级别调用, 须在同意隐私政策后调用 [initialize], 整个进程仅需一次.
 @HostApi()
 abstract class SdkHostApi {
-  /// 依次设置同意隐私政策, GCJ-02 坐标类型和 AK, 然后启动 SDK.
+  /// 依次配置隐私政策同意状态, GCJ-02 坐标类型与 AK, 然后启动 SDK.
   ///
-  /// 鉴权结果异步回到 [SdkFlutterApi.onAuthResult].
+  /// 鉴权结果通过 [SdkFlutterApi.onAuthResult] 异步返回.
   void initialize(String apiKey);
 }
 
 @FlutterApi()
 abstract class SdkFlutterApi {
-  /// [code] 为 0 表示鉴权通过, 其余是百度的错误码.
+  /// [code] 为 0 表示鉴权通过, 其余为百度错误码.
   void onAuthResult(int code, String message);
 }
 
-/// 单张地图的调用. 每个平台视图用自己的通道, 通道后缀是平台视图 id.
+/// 单张地图实例的调用接口. 每个平台视图使用独立通道, 以平台视图 ID 作为后缀.
 @HostApi()
 abstract class MapViewHostApi {
-  /// 新增或更新 [upserts] 中的标记, 删除 [removedIds] 中的标记.
+  /// 新增或更新 [upserts] 中的标记, 并移除 [removedIds] 中的标记.
   void updateMarkers(List<MarkerMessage> upserts, List<String> removedIds);
 
-  /// 用 [polygons] 替换地图上全部的多边形.
+  /// 使用 [polygons] 替换地图上的全部多边形.
   void setPolygons(List<PolygonMessage> polygons);
 
-  /// 地图被浮层盖住的部分. logo, 比例尺和地图中心都移到剩下的区域.
+  /// 设置地图被浮层遮挡的边距, logo, 比例尺与地图中心将移至剩余可见区域.
   void setInsets(InsetsMessage insets);
 
-  /// 把 [center] 移到可见区域中心. [zoom] 为 null 时不改缩放级别.
+  /// 将 [center] 移至可见区域中心; [zoom] 为 null 时保持当前缩放级别.
   void moveCamera(LatLngMessage center, double? zoom, bool animated);
 
-  /// 缩放到刚好装下 [points], 四周再各留 [margin].
+  /// 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距.
   void fitPoints(
     List<LatLngMessage> points,
     InsetsMessage margin,
@@ -146,7 +146,7 @@ abstract class MapViewHostApi {
 
   CameraMessage getCamera();
 
-  /// 底图是否已经加载完. Dart 在平台视图创建后才开始收事件, 可能错过 [MapViewFlutterApi.onLoaded].
+  /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   bool isLoaded();
 }
 
@@ -154,20 +154,21 @@ abstract class MapViewHostApi {
 abstract class MapViewFlutterApi {
   void onLoaded();
 
-  /// 地图停止移动. [byGesture] 表示这次移动由用户手势触发.
+  /// 地图停止移动时触发; [byGesture] 表示此次移动是否由用户手势引发.
   void onCameraIdle(CameraMessage camera, bool byGesture);
 
   void onMarkerTap(String id);
 
-  /// 地图数据无效或渲染失败, 例如 AK 无效时.
+  /// 地图数据无效或渲染失败时触发, 例如 AK 无效.
   void onError(int code, String message);
 }
 
-/// 地点检索. 和地图共用一次 SDK 初始化, 不依赖地图视图.
+/// 地点检索接口, 与地图共用同一次 SDK 初始化, 不依赖具体地图视图.
 @HostApi()
 abstract class PlaceSearchHostApi {
-  /// [center] 周围 [radius] 米内名字或地址和 [keyword] 匹配的地点, 最多 [pageSize] 条.
-  /// 没有结果时返回空列表, 检索失败时报错.
+  /// 搜索 [center] 周围 [radius] 米内名称或地址匹配 [keyword] 的地点, 最多返回 [pageSize] 条.
+  ///
+  /// 无匹配结果时返回空列表, 检索失败时抛出异常.
   @async
   List<PlaceMessage> searchNearby(
     String keyword,

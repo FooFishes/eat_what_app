@@ -2,9 +2,9 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// 补充入口文字前的圆形加号: [color] 实心圆, 中间 [plus] 色的加号.
+/// 补充入口文字前的圆形加号图标, 在 [color] 实心圆内居中绘制 [plus] 色加号.
 ///
-/// 用于 `EatButton.add` 和 `EatChip.add`, 文字里不再写 "+".
+/// 用于 `EatButton.add` 和 `EatChip.add`, 使用后文字中不再写 "+".
 class AddMark extends StatelessWidget {
   const new({
     super.key,

@@ -9,9 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Source { camera, gallery }
 
-/// 选择照片. 先让用户选择拍照或相册, 再选图并压缩, 最多 [limit] 张.
+/// 弹出拍照或相册来源面板并选取最多 [limit] 张压缩后的照片.
 ///
-/// 取消或失败时返回空列表. 失败时显示轻提示.
+/// 用户取消或发生异常时返回空列表, 并在异常时弹出轻提示.
 Future<List<PickedPhoto>> pickPhotos(
   BuildContext context,
   WidgetRef ref, {

@@ -10,7 +10,7 @@ import 'package:eat/state/appearance.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 个性化页面: 底部导航液态玻璃的透明度. 滑条上方的预览随拖动实时变化.
+/// 个性化设置页面, 用于调节底部导航栏液态玻璃透明度并实时预览效果.
 class PersonalizePage extends ConsumerWidget {
   const new({super.key});
 
@@ -59,9 +59,9 @@ class PersonalizePage extends ConsumerWidget {
   }
 }
 
-/// 导航压在舞台色和菜品插画上的样子, 只用于预览, 不响应点击, 不参与读屏.
+/// 底部导航栏叠加在舞台色与菜品插画上的静态预览组件, 屏蔽交互点击与无障碍读屏.
 ///
-/// 碗的下半截压在导航下面, 拖动滑条时能直接看到碗里的东西变清楚或变模糊.
+/// 将插画碗部下半截置于导航栏下方, 以便拖动透明度滑条时直观观察透过毛玻璃的清晰度变化.
 class _Preview extends StatelessWidget {
   const new({required this.transparency});
 

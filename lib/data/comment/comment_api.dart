@@ -7,7 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'comment_api.g.dart';
 
-/// 一页接口数据和 `PageResult.totalItems`.
+/// 封装分页数据及其总数 (`PageResult.totalItems`).
 typedef CountedPage<T> = ({Paged<T> page, int total});
 
 /// CommentApi 调用的接口路径, 相对于业务接口地址.
@@ -22,17 +22,17 @@ abstract final class CommentEndpoints {
   static const my = '/comments/my';
 }
 
-/// 接口分组 Comment: 评论和回复的列表, 发表, 删除, 赞, 我的评论, 菜的图库.
+/// 封装 Comment 分组接口, 提供评论与回复的列表查询, 发表, 删除, 点赞, 我的评论及菜品图库等能力.
 ///
-/// 评论不经审核, 发表后立即公开. 评论不存在时服务端返回 10001.
+/// 评论无需审核, 发表后立即公开; 若目标评论不存在, 服务端返回业务码 10001.
 class CommentApi {
   CommentApi(this._client);
 
   final ApiClient _client;
 
-  /// 一道菜的根评论, 不含回复. [sort] 为 `HOT` 或 `NEWEST`.
+  /// 获取菜品的根评论列表 (不含回复), [sort] 取值为 `HOT` 或 `NEWEST`.
   ///
-  /// 当前用户屏蔽的人写的评论不返回.
+  /// 已被当前用户屏蔽的用户所发表的评论不会返回.
   Future<CountedPage<CommentDto>> comments(
     int foodId, {
     required String sort,
@@ -48,7 +48,7 @@ class CommentApi {
     CommentDto.fromJson,
   );
 
-  /// 一条根评论下的回复, 按时间正序.
+  /// 获取指定根评论下的回复列表, 按时间正序排列.
   Future<CountedPage<CommentDto>> replies(
     int commentId, {
     int page = 1,
@@ -63,7 +63,7 @@ class CommentApi {
     CommentDto.fromJson,
   );
 
-  /// 菜的图库中来自根评论的照片, 新的在前. 上传者的照片不在其中.
+  /// 获取菜品图库中来自根评论的照片, 按时间倒序排列, 不包含菜品上传者的照片.
   Future<Paged<GalleryImageDto>> gallery(
     int foodId, {
     int page = 1,
@@ -78,7 +78,7 @@ class CommentApi {
     GalleryImageDto.fromJson,
   );
 
-  /// 发表评论, 返回新评论的 id. [pictureKeys] 是 `biz=comments` 上传完成的存储 key, 最多 3 个.
+  /// 发表评论并返回新评论 id. [pictureKeys] 为使用 `biz=comments` 上传后得到的存储 key, 最多 3 个.
   Future<int> create(
     int foodId, {
     required String text,
@@ -90,10 +90,10 @@ class CommentApi {
     ),
   );
 
-  /// 回复根评论 [commentId], 返回新回复的 id.
+  /// 回复根评论 [commentId] 并返回新回复 id.
   ///
-  /// [replyToId] 是被回复的那条回复, 直接回复根评论时为 null.
-  /// 被根评论的作者或被回复的人屏蔽时返回 40002.
+  /// [replyToId] 为被回复的子评论 id, 若直接回复根评论则为 null.
+  /// 若被根评论作者或被回复人屏蔽, 服务端返回业务码 40002.
   Future<int> reply(
     int foodId,
     int commentId, {
@@ -106,7 +106,7 @@ class CommentApi {
     ),
   );
 
-  /// 删除自己的评论或回复. 删除评论时下面的回复一起删除.
+  /// 删除自己的评论或回复. 删除根评论时, 其下的回复会一并删除.
   Future<void> delete(int commentId) =>
       _client.delete(CommentEndpoints.comment(commentId));
 
@@ -116,7 +116,7 @@ class CommentApi {
   Future<void> unlike(int commentId) =>
       _client.delete(CommentEndpoints.like(commentId));
 
-  /// 我写过的评论和回复, 按时间倒序. 已删除的不返回.
+  /// 获取当前用户发表过的评论和回复, 按时间倒序排列, 已删除的条目不返回.
   Future<Paged<CommentDto>> mine({
     int page = 1,
     int pageSize = 20,

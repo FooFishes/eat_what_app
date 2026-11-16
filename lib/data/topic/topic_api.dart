@@ -15,13 +15,13 @@ abstract final class TopicEndpoints {
   static String detail(int id) => '/topics/$id';
 }
 
-/// 接口分组 Topic: 当期专题, 往期专题, 专题详情, 收录过某道菜的专题.
+/// 专题接口 (`Topic` 分组), 提供当期专题, 往期专题, 专题详情及菜品关联专题查询.
 class TopicApi {
   TopicApi(this._client);
 
   final ApiClient _client;
 
-  /// 校区的当期专题. 没有当期专题时返回 null.
+  /// 获取指定校区的当期专题, 若暂无进行中的专题则返回 null.
   Future<TopicSummaryDto?> current(
     int campusId, {
     CancelToken? cancelToken,
@@ -34,7 +34,7 @@ class TopicApi {
     return data == null ? null : decodeJson(data, TopicSummaryDto.fromJson);
   }
 
-  /// 校区已结束的专题, 按结束时间倒序.
+  /// 分页获取指定校区已结束的专题, 按结束时间倒序排列.
   Future<Paged<TopicSummaryDto>> history(
     int campusId, {
     int page = 1,
@@ -49,14 +49,14 @@ class TopicApi {
     TopicSummaryDto.fromJson,
   );
 
-  /// 专题和其中的菜. 专题未发布或尚未开始时返回业务码 `BizCodes.stateNotAllowed`.
+  /// 获取专题详情及其包含的菜品; 若专题未发布或尚未开始, 服务端返回 `BizCodes.stateNotAllowed`.
   Future<TopicDetailDto> detail(int id, {CancelToken? cancelToken}) async =>
       decodeJson(
         await _client.get(TopicEndpoints.detail(id), cancelToken: cancelToken),
         TopicDetailDto.fromJson,
       );
 
-  /// 收录过这道菜且已开始的专题, 按开始时间倒序.
+  /// 获取收录过指定菜品且已开始的专题列表, 按开始时间倒序排列.
   Future<List<TopicSummaryDto>> byFood(
     int foodId, {
     CancelToken? cancelToken,

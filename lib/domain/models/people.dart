@@ -10,10 +10,10 @@ class const UserProfile({
   final String? avatarUrl,
   final String? signature,
 
-  /// 等级, 1 到 10. 服务端没有返回时为 null.
+  /// 用户等级, 取值 1 到 10, 服务端未返回时为 null.
   final int? level,
 
-  /// 获赞: 上传的菜收到的赞, 加上评论和回复收到的赞.
+  /// 累计获赞数, 包括上传菜品, 评论及回复收到的点赞.
   final int? earnedLikes,
   final int? fans,
   final int? followings,
@@ -24,9 +24,9 @@ class const UserProfile({
   final bool blocked = false,
 });
 
-/// 列表中的一个用户: 粉丝和关注列表, 屏蔽的人.
+/// 用户列表中的精简条目, 用于粉丝, 关注及屏蔽列表.
 ///
-/// [since] 是关注或屏蔽的时间. 屏蔽的账号已注销时 [nickname] 为 null.
+/// [since] 为关注或屏蔽时间. 若被屏蔽账号已注销, 则 [nickname] 为 null.
 class const UserBrief({
   required final int id,
   final String? nickname,
@@ -38,7 +38,7 @@ class const UserBrief({
 enum FollowState {
   none('关注'),
 
-  /// 对方关注了我, 我没有关注对方.
+  /// 对方已关注当前用户, 但当前用户尚未关注对方.
   followsMe('回关'),
   following('已关注'),
   mutual('已互关');
@@ -57,7 +57,7 @@ enum FollowState {
     (false, false) => none,
   };
 
-  /// 我是否关注了对方. 为 true 时按钮是次要样式, 点击取消关注.
+  /// 当前用户是否已关注对方. 为 true 时按钮采用次要样式, 点击可取消关注.
   bool get followedByMe => this == following || this == mutual;
 }
 
@@ -71,9 +71,9 @@ enum FootprintKind {
   final String api;
 }
 
-/// 足迹中的一条: 最近看过的一道菜或一家店. 同一对象只保留最近一次.
+/// 单条浏览足迹, 记录最近查看的菜品或店铺, 同一对象仅保留最近一次记录.
 ///
-/// [likes] 只有菜有.
+/// [likes] 仅菜品有值.
 class const Footprint({
   required final FootprintKind kind,
   required final int id,
@@ -83,7 +83,7 @@ class const Footprint({
   required final DateTime viewedAt,
 });
 
-/// 隐私设置中别人能看到什么. 两项默认都公开.
+/// 用户隐私设置, 控制他人的可见范围, 两项默认均为公开.
 class const PrivacySettings({
   final bool followingsPublic = true,
   final bool fansPublic = true,

@@ -52,10 +52,9 @@ DateTime? dateFromMillis(int? millis) => millis == null || millis <= 0
 DateTime? dateFromIso(String? value) =>
     value == null ? null : DateTime.tryParse(value)?.toLocal();
 
-/// 图片字段. 空串视为没有图片, 返回 null.
+/// 规范化图片地址字段, 若为空字符串则视为无图片并返回 null.
 ///
-/// `avatar`, `pictureUrl` 和 `coverUrl` 都是可直接展示的完整地址, 为有时效的预签名 URL.
-/// 后端对空的存储 key 原样返回空串, 不返回 null.
+/// `avatar`, `pictureUrl` 和 `coverUrl` 均为可直接展示的完整预签名 URL (具有时效性), 而后端对空的存储 key 会原样返回空字符串而非 null.
 String? imageUrl(String? value) =>
     value == null || value.isEmpty ? null : value;
 

@@ -60,15 +60,15 @@ abstract class _$Verify extends $Notifier<VerifyState> {
   }
 }
 
-/// 邮箱认证落地页的进度. null 表示还没有提交.
+/// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
 
 @ProviderFor(EmailVerification)
 final emailVerificationProvider = EmailVerificationProvider._();
 
-/// 邮箱认证落地页的进度. null 表示还没有提交.
+/// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
 final class EmailVerificationProvider
     extends $NotifierProvider<EmailVerification, AsyncValue<void>?> {
-  /// 邮箱认证落地页的进度. null 表示还没有提交.
+  /// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
   EmailVerificationProvider._()
     : super(
         from: null,
@@ -98,7 +98,7 @@ final class EmailVerificationProvider
 
 String _$emailVerificationHash() => r'cc642af8ebd837ec2a326c188ce3e7988477d60c';
 
-/// 邮箱认证落地页的进度. null 表示还没有提交.
+/// 邮箱认证落地页的提交状态, null 表示尚未开始提交.
 
 abstract class _$EmailVerification extends $Notifier<AsyncValue<void>?> {
   AsyncValue<void>? build();

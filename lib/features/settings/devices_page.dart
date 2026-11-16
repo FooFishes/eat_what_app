@@ -17,9 +17,9 @@ import 'package:eat/features/system/refresh.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 登录设备: 已登录的设备和登录时间, 可以使单台设备或其他全部设备下线.
+/// 登录设备管理页面, 展示已登录设备及登录时间, 并支持踢出单台设备或其余全部设备.
 ///
-/// 本机的会话不受影响. 服务端只记录登录时间, 不记录最近使用时间.
+/// 下线其他设备不会影响本机当前会话; 服务端仅记录登录时间, 未记录最近活跃时间.
 class DevicesPage extends ConsumerWidget {
   const new({super.key});
 
@@ -144,7 +144,7 @@ class _DeviceRowState extends ConsumerState<_DeviceRow> {
   }
 }
 
-/// 登录时间和最近使用时间, 如 "3 天前登录，2 小时前用过". 都不知道时为 "登录时间未知".
+/// 格式化设备登录与活跃时间 (如 "3 天前登录, 2 小时前用过"), 均缺失时返回 "登录时间未知".
 String _timesOf(DeviceSession device) {
   final now = clock.now();
   final times = [

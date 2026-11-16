@@ -34,10 +34,10 @@ final class SignedOut extends SessionState {
   final SignOutReason reason;
 }
 
-/// 游客: 在登录页点了 "先逛逛", 没有登录也能浏览.
+/// 游客态, 表示用户在登录页选择了 "先逛逛" 从而以未登录身份浏览.
 ///
-/// 只保存在内存中. 关闭 App 后再打开, 退出登录和登录过期后都回到 [SignedOut], 要再点一次 "先逛逛".
-/// 产品希望大家登录使用, 游客只是先看看的入口, 所以不记住上次是游客.
+/// 该状态仅保存在内存中而不写入本机. 重新启动应用, 退出登录和登录过期后均会回到 [SignedOut].
+/// 游客模式仅用于临时体验, 不持久化该状态可避免长期停留在游客态.
 final class Guest extends SessionState {
   const Guest();
 }
@@ -54,9 +54,9 @@ final class SignedIn extends SessionState {
   final bool justRegistered;
 }
 
-/// 登录态. 路由守卫根据它决定跳转.
+/// 全局登录态管理, 路由守卫据此决定页面跳转.
 ///
-/// 启动时恢复. 登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
+/// 启动时恢复本地凭证, 并在登录, "先逛逛", 退出, 过期和刷新用户信息时更新.
 @Riverpod(keepAlive: true)
 class Session extends _$Session {
   /// 本机安装过 App 的标记.
@@ -121,9 +121,9 @@ class Session extends _$Session {
     }
   }
 
-  /// 在登录页点 "先逛逛" 后成为游客. 已登录时不变.
+  /// 在登录页选择 "先逛逛" 后切换为游客态, 若当前已登录则不变.
   ///
-  /// 同意记录由登录页先写入, 本方法只更新登录态.
+  /// 隐私同意记录由登录页先行写入, 本方法只更新登录态.
   void browse() {
     if (state is SignedIn) return;
     state = const Guest();
@@ -161,9 +161,9 @@ class Session extends _$Session {
   }
 }
 
-/// 当前账号状态, 由登录态派生. 决定哪些操作需要拦截.
+/// 由当前登录态派生的账号状态, 用于判断哪些业务操作需要权限拦截.
 ///
-/// 游客也是未登录. 游客能进哪些页面由路由的标记决定, 这里不区分.
+/// 游客同样视为未登录状态, 游客可访问的页面范围由路由权限标记控制, 此处不做区分.
 @riverpod
 AccountStatus accountStatus(Ref ref) => switch (ref.watch(sessionProvider)) {
   SignedOut() || Guest() => AccountStatus.of(signedIn: false),

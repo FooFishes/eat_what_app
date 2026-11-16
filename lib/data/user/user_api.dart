@@ -27,7 +27,7 @@ abstract final class UserEndpoints {
   static const bindMobile = '/user/bindMobile';
 }
 
-/// 接口分组 User: 当前用户, 资料, 关注, 隐私, 屏蔽, 个性化推荐和换绑手机.
+/// 用户接口 (`User` 分组), 涵盖当前用户信息, 公开资料, 关注关系, 隐私设置, 屏蔽列表, 个性化推荐以及手机号绑定.
 class UserApi {
   UserApi(this._client);
 
@@ -48,7 +48,7 @@ class UserApi {
     UserProfileDto.fromJson,
   );
 
-  /// 更新昵称, 头像和签名. [avatar] 是上传后得到的存储 key, 为 null 时不修改头像.
+  /// 更新昵称, 头像和个性签名; [avatar] 为上传后得到的存储 key, 为 null 时保持原头像不变.
   Future<void> updateInfo({
     required String displayName,
     required String signature,
@@ -68,7 +68,7 @@ class UserApi {
   Future<void> unfollow(int userId) =>
       _client.post(UserEndpoints.unfollow, query: {'userId': userId});
 
-  /// [userId] 的粉丝. 对方不公开粉丝列表时失败, 业务码为 `BizCodes.permissionDenied`.
+  /// 分页获取 [userId] 的粉丝列表; 若对方未公开粉丝列表, 服务端返回 `BizCodes.permissionDenied`.
   Future<Paged<FansDto>> followers(
     int userId, {
     int page = 1,
@@ -83,7 +83,7 @@ class UserApi {
     FansDto.fromJson,
   );
 
-  /// [userId] 关注的人. 对方不公开关注列表时失败, 业务码为 `BizCodes.permissionDenied`.
+  /// 分页获取 [userId] 的关注列表; 若对方未公开关注列表, 服务端返回 `BizCodes.permissionDenied`.
   Future<Paged<FansDto>> followings(
     int userId, {
     int page = 1,
@@ -98,7 +98,7 @@ class UserApi {
     FansDto.fromJson,
   );
 
-  /// 是否公开关注列表 ([following]) 和粉丝列表 ([follower]).
+  /// 设置关注列表 ([following]) 与粉丝列表 ([follower]) 的公开可见性.
   Future<void> changePrivacy({
     required bool following,
     required bool follower,
@@ -134,7 +134,7 @@ class UserApi {
   Future<void> unblock(int userId) =>
       _client.delete(UserEndpoints.block(userId));
 
-  /// 个性化推荐开关. 默认开启.
+  /// 查询个性化推荐开关状态, 默认为开启.
   Future<bool> personalized({CancelToken? cancelToken}) async => _personalized(
     await _client.get(
       UserEndpoints.recommendationSettings,
@@ -152,14 +152,14 @@ class UserApi {
   static bool _personalized(Object? data) =>
       !(data is Map && data['personalized'] == false);
 
-  /// 换绑第一步: 给当前绑定的号码发验证码. 发送前需完成人机验证.
+  /// 换绑手机第一步, 向当前绑定号码发送验证码 (发送前需先完成人机验证).
   Future<void> sendOldMobileCode({
     Map<String, String> captchaHeaders = const {},
   }) => _client.post(UserEndpoints.mobileOldCode, headers: captchaHeaders);
 
-  /// 换绑第二步: 给新号码 [mobile] 发验证码. 发送前需完成人机验证.
+  /// 换绑手机第二步, 向新号码 [mobile] 发送验证码 (发送前需先完成人机验证).
   ///
-  /// 第一次调用要带旧号码的验证码 [oldCode], 服务端校验通过后 10 分钟内可以不带, 用于重发或更换新号码.
+  /// 首次调用需附带旧号码验证码 [oldCode]; 服务端校验通过后 10 分钟内可省略该参数, 用于重发验证码或更换目标号码.
   Future<void> sendNewMobileCode({
     String? oldCode,
     required String mobile,
@@ -170,7 +170,7 @@ class UserApi {
     headers: captchaHeaders,
   );
 
-  /// 换绑第三步: 提交新号码和它的验证码. 成功后其他设备要重新登录, 本机不受影响.
+  /// 换绑手机第三步, 提交新号码及其验证码; 换绑成功后其他设备需重新登录, 本机会话保持有效.
   Future<void> commitMobileChange({
     required String mobile,
     required String code,
@@ -179,7 +179,7 @@ class UserApi {
     body: {'mobile': mobile, 'code': code},
   );
 
-  /// 补绑手机: 给 [mobile] 发验证码. 只用于还没有手机号的账号. 发送前需完成人机验证.
+  /// 补绑手机第一步, 向 [mobile] 发送验证码 (仅适用于尚未绑定手机号的账号, 发送前需先完成人机验证).
   Future<void> sendBindCode(
     String mobile, {
     Map<String, String> captchaHeaders = const {},
@@ -189,7 +189,7 @@ class UserApi {
     headers: captchaHeaders,
   );
 
-  /// 补绑手机: 提交 [mobile] 和它的验证码.
+  /// 补绑手机第二步, 提交 [mobile] 及其验证码以完成绑定.
   Future<void> bindMobile({required String mobile, required String code}) =>
       _client.post(
         UserEndpoints.bindMobile,
@@ -197,7 +197,7 @@ class UserApi {
       );
 }
 
-/// `/user/followers` 和 `/user/followings` 的一项. [createdAt] 是关注的时间.
+/// `/user/followers` 和 `/user/followings` 的列表项, [createdAt] 为关注时间.
 @JsonSerializable(createToJson: false)
 class const FansDto({
   final int? id,
@@ -216,9 +216,9 @@ class const BlockedUserDto({final int? userId, final String? displayName}) {
       _$BlockedUserDtoFromJson(json);
 }
 
-/// `/user/userInfo` 的 `data` (`UserDtos.OtherInfo`): 指定用户的公开资料, 统计, 以及与当前用户的关系.
+/// `/user/userInfo` 返回的公开用户资料 (`UserDtos.OtherInfo`), 包含个人资料, 统计数据及与当前用户的关系.
 ///
-/// 产品不收集性别, 因此不读取 `gender`.
+/// 应用不收集性别信息, 因此忽略接口中的 `gender` 字段.
 @JsonSerializable(createToJson: false)
 class const UserProfileDto({
   final int? id,
@@ -226,10 +226,10 @@ class const UserProfileDto({
   final String? avatar,
   final String? signature,
 
-  /// 等级, 1 到 10. 所有人可见, 经验只有本人能看.
+  /// 用户等级 (1–10), 对所有人可见; 经验值仅本人可见.
   final int? level,
 
-  /// 获赞: 首次发布的菜收到的赞, 加上评论和回复收到的赞. 所有人可见.
+  /// 累计获赞数 (包含首次发布菜品, 评论及回复收到的点赞), 对所有人可见.
   final int? earnedLikes,
 
   /// 对方未公开粉丝列表时为 null. 查看自己时总有值.
@@ -249,10 +249,9 @@ class const UserProfileDto({
       _$UserProfileDtoFromJson(json);
 }
 
-/// `/user/info` 的 `data`. 字段按接口声明均为可空, 转换为领域模型时补默认值.
+/// `/user/info` 返回的当前用户信息; 按接口声明全部设为可空, 并在转换为领域模型时填充默认值.
 ///
-/// 该 DTO 原样存入本地缓存, 启动时先用缓存显示, 因此需要支持转回 JSON.
-/// 产品不收集性别, 生日和家乡, 因此不读取这些字段.
+/// 该 DTO 会原样序列化后存入本地缓存用于启动首屏展示, 因此需支持 `toJson`. 应用不收集性别, 生日与家乡信息, 故忽略对应字段.
 @JsonSerializable(includeIfNull: false)
 class const UserInfoDto({
   final int? id,

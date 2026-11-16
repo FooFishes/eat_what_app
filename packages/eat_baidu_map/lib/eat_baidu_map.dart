@@ -1,6 +1,6 @@
-/// 百度地图原生桥: Android 和 iOS 上的百度地图平台视图.
+/// 百度地图原生桥, 封装 Android 与 iOS 端的百度地图平台视图.
 ///
-/// 只做转发, 不含业务: 标记的差异比较, 坐标类型和失败回退都由 App 的 `core/platform/map/` 处理.
+/// 仅负责消息转发, 不包含业务逻辑; 标记差异比对, 坐标类型转换与失败回退均由 App 的 `core/platform/map/` 处理.
 library;
 
 import 'dart:async';
@@ -20,12 +20,12 @@ export 'src/messages.g.dart'
         PlaceMessage,
         PolygonMessage;
 
-/// 百度地图 SDK. 同意隐私政策之后调用 [initialize], 整个进程只需一次.
+/// 百度地图 SDK 入口, 须在用户同意隐私政策后调用 [initialize], 整个进程生命周期内仅需初始化一次.
 abstract final class BaiduMapSdk {
   static final _auth = Completer<(int, String)>();
   static Future<void>? _starting;
 
-  /// 鉴权结果. 第一个值为 0 表示通过, 其余是百度的错误码.
+  /// 鉴权结果, 首项为 0 表示通过, 其余为百度错误码.
   static Future<(int, String)> get authResult => _auth.future;
 
   static Future<void> initialize(String apiKey) =>
@@ -37,11 +37,11 @@ abstract final class BaiduMapSdk {
   }
 }
 
-/// 百度地点检索. 要先 [BaiduMapSdk.initialize].
+/// 百度地点检索接口, 调用前须先完成 [BaiduMapSdk.initialize].
 abstract final class BaiduPlaceSearch {
   static final _api = PlaceSearchHostApi();
 
-  /// [center] 周围 [radius] 米内和 [keyword] 匹配的地点, 最多 [pageSize] 条 (百度上限 20).
+  /// 搜索 [center] 周围 [radius] 米内与 [keyword] 匹配的地点, 最多返回 [pageSize] 条 (百度接口上限为 20).
   static Future<List<PlaceMessage>> searchNearby(
     String keyword,
     LatLngMessage center, {
@@ -69,7 +69,7 @@ class BaiduMapListener {
   final void Function(int code, String message)? onError;
 }
 
-/// 平台视图创建后交给 [BaiduMapView.onCreated], 用来操作这张地图.
+/// 平台视图创建后传递给 [BaiduMapView.onCreated], 用于控制对应地图实例.
 class BaiduMapController {
   BaiduMapController._(int id)
     : _api = MapViewHostApi(messageChannelSuffix: '$id');
@@ -103,9 +103,9 @@ class BaiduMapController {
   Future<bool> isLoaded() => _api.isLoaded();
 }
 
-/// 百度地图的平台视图. 只支持 Android 和 iOS.
+/// 百度地图平台视图, 仅支持 Android 与 iOS.
 ///
-/// 视图内的手势全部交给地图, 叠在上面的 Flutter 组件照常接收点击.
+/// 视图内的手势均交由原生地图处理, 叠加在其上的 Flutter 组件仍可正常接收点击事件.
 class BaiduMapView extends StatefulWidget {
   const new({
     super.key,
@@ -122,7 +122,7 @@ class BaiduMapView extends StatefulWidget {
   final double minZoom;
   final double maxZoom;
 
-  /// 只在创建时读取一次. 要换回调, 让回调本身读取最新的状态.
+  /// 仅在视图创建时读取一次; 若需动态响应状态变化, 应让回调内部读取最新状态.
   final BaiduMapListener listener;
   final ValueChanged<BaiduMapController> onCreated;
 

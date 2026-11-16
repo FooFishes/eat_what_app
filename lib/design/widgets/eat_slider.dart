@@ -2,10 +2,9 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// 白底页面上的滑条: `ink` 实心的圆形滑块, 已选部分 `ink`, 其余 `handle`.
+/// 白底页面上的滑条组件, 采用 `ink` 实心圆形滑块, 已选轨道为 `ink` 而未选部分为 `handle`.
 ///
-/// 轨道两端与所在内容的左右边缘对齐, 滑块拖到头时外缘正好贴边.
-/// 不画 Material 的按下光晕, 可点击的高度保持 44.
+/// 轨道两端与所在内容左右边缘对齐 (滑块拖到端点时外缘正好贴边), 禁用 Material 按下光晕并将可点击高度保持为 44.
 class EatSlider extends StatelessWidget {
   const new({
     super.key,
@@ -22,10 +21,10 @@ class EatSlider extends StatelessWidget {
   final double max;
   final ValueChanged<double> onChanged;
 
-  /// 松手时调用. 拖动中只更新显示, 保存等较重的操作放在这里.
+  /// 松手时触发的回调, 用于承接保存等较重操作 (拖动过程中仅通过 [onChanged] 更新显示).
   final ValueChanged<double>? onChangeEnd;
 
-  /// 读屏念出的当前值, 如 "透明度 70%".
+  /// 读屏朗读当前值的格式化回调, 如 "透明度 70%".
   final SemanticFormatterCallback? semanticFormatterCallback;
 
   static const _thumbRadius = 11.0;
@@ -34,7 +33,7 @@ class EatSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.eat.colors;
-    // Material 的 Slider 要求有 Material 祖先, 白底页面没有, 在这里补一层透明的.
+    // Material 的 Slider 要求祖先节点中存在 Material, 白底页面不提供该节点, 因此在此补充一层透明容器.
     return Material(
       type: MaterialType.transparency,
       child: SliderTheme(

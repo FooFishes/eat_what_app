@@ -24,29 +24,29 @@ final class ShopTarget extends NoticeTarget {
   final int shopId;
 }
 
-/// 处理结果关于的对象. 卡片只带提交记录的 id, 点击后先获取记录, 再按 [NoticeRules.targetOfCase] 跳转.
+/// 处理结果关联的目标占位. 因卡片仅包含提交记录 id, 点击后需先获取详情记录, 再按 [NoticeRules.targetOfCase] 跳转.
 final class CaseTarget extends NoticeTarget {
   const CaseTarget(this.caseId);
 
   final int caseId;
 }
 
-/// 设置里的登录设备. 新设备登录消息跳到这里.
+/// 设置页中的登录设备列表, 新设备登录通知点击后跳转至此.
 final class DevicesTarget extends NoticeTarget {
   const DevicesTarget();
 }
 
-/// 我的粉丝列表. 多人合并的关注消息跳到这里.
+/// 当前用户的粉丝列表, 多人合并的关注通知点击后跳转至此.
 final class MyFansTarget extends NoticeTarget {
   const MyFansTarget();
 }
 
-/// 不跳转. 点击只标为已读.
+/// 无跳转目标, 点击后仅将该消息标记为已读.
 final class NoTarget extends NoticeTarget {
   const NoTarget();
 }
 
-// TODO: 消息卡片不含菜名和封面, 赞, 收藏和评论消息只能写 "你上传的菜", 右侧不显示缩略图. 卡片返回菜名和封面后补上.
+// TODO: 消息卡片暂不含菜名和封面, 赞, 收藏和评论消息只能显示为 "你上传的菜" 且右侧无缩略图. 卡片返回菜名和封面后补齐文案与缩略图.
 /// 消息的分组, 显示文字和跳转目标.
 ///
 /// 无法识别的消息按普通消息显示, 点击后不跳转.
@@ -59,9 +59,9 @@ abstract final class NoticeRules {
     return time.isBefore(week) ? '更早' : '本周';
   }
 
-  /// 点击后的跳转目标.
+  /// 解析点击消息后的跳转目标.
   ///
-  /// 对象已删除时仍然跳转, 由目标页面显示已删除.
+  /// 即使目标对象已删除仍执行跳转, 由目标页面负责展示已删除提示.
   static NoticeTarget targetOf(Notice notice) {
     switch (notice.kind) {
       case NoticeKind.like || NoticeKind.favorite || NoticeKind.comment:
@@ -89,14 +89,14 @@ abstract final class NoticeRules {
     }
   }
 
-  /// 处理结果关于的对象对应的跳转目标. 只跳转到菜和店, 没有对象或对象是评论, 用户时不跳转.
+  /// 解析处理结果关联对象的跳转目标. 仅支持跳转至菜品或店铺, 无关联对象或对象为评论与用户时不跳转.
   static NoticeTarget targetOfCase(CaseSubject? subject) => switch (subject) {
     CaseSubject(kind: CaseSubjectKind.dish, :final id) => DishTarget(id),
     CaseSubject(kind: CaseSubjectKind.shop, :final id) => ShopTarget(id),
     _ => const NoTarget(),
   };
 
-  /// 只有一个人的关注消息可以回关, 返回对方的 id. 其余返回 null.
+  /// 仅单人关注消息支持快捷回关并直接返回对方 id, 多人合并或非关注消息返回 null.
   static int? followBackUserOf(Notice notice) =>
       notice.kind == NoticeKind.follow &&
           notice.memberCount == 1 &&
@@ -113,9 +113,7 @@ abstract final class NoticeRules {
         : first.name;
   }
 
-  /// 消息正文. 有互动者时不含互动者的名字, 名字在正文前单独加粗显示.
-  ///
-  /// 公告的正文是公告标题.
+  /// 生成消息正文. 存在互动者时正文不含其昵称 (昵称在正文前单独加粗显示), 公告类消息的正文即为其标题.
   static String sentenceOf(Notice notice) => switch (notice.kind) {
     NoticeKind.like => '赞了你上传的菜',
     NoticeKind.favorite => '收藏了你上传的菜',
@@ -148,9 +146,9 @@ abstract final class NoticeRules {
     _ => null,
   };
 
-  /// 正文下面的说明: 公告的内容, 封禁和删除的原因, 新设备的名称. 没有时返回 null.
+  /// 生成正文下方的补充说明 (包含公告内容, 封禁或删除原因, 新设备名称), 无补充信息时返回 null.
   ///
-  /// 封禁期限要按当前日期格式化, 由页面另起一行显示.
+  /// 封禁期限需结合当前日期格式化, 由页面另起一行单独展示.
   static String? contentOf(Notice notice) => switch (notice.detail) {
     AnnouncementDetail(:final content) when content.trim().isNotEmpty =>
       content.trim(),

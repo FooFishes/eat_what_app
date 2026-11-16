@@ -2,11 +2,11 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 
-/// 舞台下方的白色抽屉. 顶部两角为 `radius-sheet`, 顶部居中显示把手, 内容左右留白 `space-20`.
+/// 舞台下方的白色抽屉容器, 顶部两角采用 `radius-sheet` 圆角, 顶部居中显示把手且内容左右留白 `space-20`.
 ///
-/// - 抽屉是页面的一部分, 随页面滚动. 抽屉与舞台的重叠由页面骨架负责.
-/// - 抽屉内不嵌套卡片, 分区之间用 `section-title` 和留白分隔.
-/// - 位于舞台色上时不加阴影. [onMap] 为 true 时位于地图上, 加 `shadow-sheet`.
+/// - 抽屉属于页面滚动体的一部分, 其与舞台的重叠区域由页面骨架负责.
+/// - 抽屉内不嵌套卡片, 分区之间通过 `section-title` 和留白分隔.
+/// - 位于舞台色上时不加阴影, 当 [onMap] 为 true (即位于地图之上) 时叠加 `shadow-sheet`.
 class EatSheet extends StatelessWidget {
   const new({super.key, required this.child, this.onMap = false});
 
@@ -35,7 +35,7 @@ class EatSheet extends StatelessWidget {
   }
 }
 
-/// 抽屉和底部面板顶部的把手. 仅作示意, 不响应操作.
+/// 抽屉和底部面板顶部的拖动把手, 仅作视觉示意而不响应交互操作.
 class SheetHandle extends StatelessWidget {
   const new({super.key});
 

@@ -17,9 +17,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'food_repository.g.dart';
 
-/// 菜品数据. 把接口 DTO 转换为 [Dish], 并缓存浏览过的菜品详情.
+/// 负责菜品数据存取, 将接口 DTO 转换为 [Dish], 并缓存已浏览的菜品详情.
 ///
-/// 标签的方法对应的接口在后端 v2 中已删除, 只有保留的待接入页面引用.
+/// 个人与系统标签相关接口在后端 v2 中已下线, 目前仅由保留的待接入页面引用.
 class FoodRepository {
   FoodRepository(this._api, this._cache);
 
@@ -39,7 +39,7 @@ class FoodRepository {
     return toDish(dto);
   }
 
-  /// 缓存的菜品详情, 用于离线或请求返回前先行显示. 过期的缓存不返回.
+  /// 读取本地缓存的菜品详情, 用于离线展示或请求返回前先行渲染, 已过期的缓存不返回.
   Future<Dish?> cachedDetail(int id) async {
     final raw = await _cache.read(
       _detailGroup,
@@ -80,13 +80,13 @@ class FoodRepository {
     ),
   );
 
-  /// 我收藏的菜, 按收藏时间倒序.
+  /// 获取当前用户收藏的菜品列表, 按收藏时间倒序排列.
   Future<Paged<Dish>> favorites({
     int page = 1,
     CancelToken? cancelToken,
   }) async => _map(await _api.favorites(page: page, cancelToken: cancelToken));
 
-  /// 我首次发布的菜, 最新的在前.
+  /// 获取当前用户首次发布的菜品列表, 按发布时间倒序排列.
   Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
       _map(await _api.mine(page: page, cancelToken: cancelToken));
 
@@ -134,7 +134,7 @@ class FoodRepository {
     ),
   );
 
-  /// 菜品的修改记录, 最新的在前. 不需要登录.
+  /// 获取菜品的修改记录, 按时间倒序排列, 无需登录.
   Future<Paged<DishRevision>> history(
     int id, {
     int page = 1,
@@ -154,7 +154,7 @@ class FoodRepository {
   /// 当前内容已经是该版本时抛出业务码为 `BizCodes.stateNotAllowed` 的 [AppFailure].
   Future<void> restore(int id, int revisionId) => _api.restore(id, revisionId);
 
-  /// 识别时最多发送的照片张数. 后端超出时拒绝整个请求.
+  /// 识别分类与口味时最多提交的照片张数, 超出该限制时后端会拒绝整个请求.
   static const _suggestPhotosMax = 3;
 
   /// 按菜名, 说明和照片识别分类和口味. 结果只是建议, 由用户确认后再提交.
@@ -218,7 +218,7 @@ class FoodRepository {
     return n / scale;
   }
 
-  /// 该店中与 [name] 同名 (忽略空白和大小写) 的菜品. 没有时返回 null.
+  /// 查找指定店铺中与 [name] 同名 (忽略空白和大小写) 的菜品, 不存在时返回 null.
   Future<Dish?> sameName(
     int shopId,
     String name, {
@@ -250,7 +250,7 @@ class FoodRepository {
         TasteTag(id: dto.id!, name: dto.name!),
   ];
 
-  /// 该菜品当前的口味标签和我的标签.
+  /// 获取指定菜品当前的口味标签与我的个人标签.
   Future<({List<TasteTag> taste, List<MyTag> mine})> tagsOf(
     int id, {
     CancelToken? cancelToken,
@@ -267,7 +267,7 @@ class FoodRepository {
 
   Future<void> removeTag(int id, int tagId) => _api.removeTag(id, tagId);
 
-  /// 我写过的全部标签, 按接口顺序. 标签数量少, 一次获取全部, 最多请求 10 页.
+  /// 获取当前用户创建过的全部个人标签 (按接口返回顺序). 由于标签总数较少, 此处连续请求全部页, 最多 10 页.
   Future<List<MyTag>> myTags({CancelToken? cancelToken}) async {
     final tags = <MyTag>[];
     var page = 1;
@@ -285,7 +285,7 @@ class FoodRepository {
 
   Future<void> deleteMyTag(int tagId) => _api.deleteMyTag(tagId);
 
-  /// 用我的标签 [tagId] 标过的菜, 跨店查询.
+  /// 跨店查询使用个人标签 [tagId] 标记过的菜品.
   Future<Paged<Dish>> taggedWith(
     int tagId, {
     int page = 1,

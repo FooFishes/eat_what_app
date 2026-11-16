@@ -13,9 +13,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'recommend_repository.g.dart';
 
-/// 推荐店铺. 卡片按店铺的转换变成 [Shop], 带招牌菜和距离.
+/// 店铺推荐仓库, 负责将推荐卡片解析为附带招牌菜与距离的 [Shop].
 ///
-/// 每次拿到的非空结果保存为 "上一批", 按校区, 场景, 饭点和类型区分. 请求失败时页面用 [lastBatch] 显示.
+/// 每次请求的非空结果会按校区, 场景, 饭点与类型分别缓存为 "上一批", 以便请求失败时通过 [lastBatch] 降级展示.
 class RecommendRepository {
   RecommendRepository(this._api, this._cache);
 
@@ -24,14 +24,13 @@ class RecommendRepository {
 
   static const _group = 'recommend';
 
-  /// 一批推荐店铺. 缺少 id 或坐标的卡片丢弃.
+  /// 获取一批推荐店铺, 缺少 id 或坐标的卡片将在转换时丢弃.
   ///
-  /// 下一批总是请求 `page + 1`:
-  /// - 游客按页码翻页, 同一天的顺序不变.
-  /// - 登录用户每次拿到当天还没推荐过的店, 页码只回显. 不分校区, 场景, 饭点和类型, 转盘和抽屉列表共用.
-  ///   当天的候选都推荐过后, 后端从头再来, 可能返回已经拿到过的店, 由调用方去重.
+  /// 翻页请求固定传入 `page + 1`:
+  /// - 游客按页码顺序翻页, 当日内排序保持不变.
+  /// - 登录用户每次获取当日尚未推荐过的店铺, 页码仅作回显; 该去重池不区分校区, 场景, 饭点与类型, 且转盘与抽屉列表共用. 当日候选全部推荐完后服务端会重新循环, 此时可能返回重复店铺, 需由调用方去重.
   ///
-  /// [near] 是我的位置. 带位置时堂食只推荐 3000 m 内的店, 外卖只推荐 5000 m 内的店.
+  /// [near] 为当前位置坐标; 传入时堂食仅推荐 3000 m 内店铺, 外卖仅推荐 5000 m 内店铺.
   Future<Paged<Shop>> recommend({
     required RatingScene scene,
     required MealTime meal,
@@ -76,7 +75,7 @@ class RecommendRepository {
     );
   }
 
-  /// 该校区, 场景, 饭点和类型上次拿到的一批. 没有缓存或缓存无法解析时返回空列表.
+  /// 读取指定校区, 场景, 饭点与类型对应的最近一次成功缓存; 若无缓存或解析失败则返回空列表.
   Future<List<Shop>> lastBatch({
     required RatingScene scene,
     required MealTime meal,
@@ -95,7 +94,7 @@ class RecommendRepository {
     }
   }
 
-  /// 不想去这家: 30 天内不再推荐. 需要登录.
+  /// 标记该店铺 30 天内不再推荐, 需登录账号.
   Future<void> dismiss(int shopId) => _api.dismiss(shopId);
 
   static String _key(
