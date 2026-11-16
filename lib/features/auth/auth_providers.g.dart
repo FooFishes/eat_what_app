@@ -181,3 +181,81 @@ abstract class _$PasswordLogin extends $Notifier<PasswordLoginState> {
     return element.handleCreate(ref, build);
   }
 }
+
+/// 运营商一键登录. 状态是一次登录是否正在进行, 登录页的按钮据此显示加载.
+///
+/// 用户勾选协议后在后台准备: 先问服务端开没开, 再初始化号码认证 SDK 并预取号.
+/// SDK 会联网并读取网络和 SIM 卡状态, 没勾选协议前不碰它.
+///
+/// 一键登录不可用时 (Web, 没有 SIM 卡, 没开蜂窝网络, 服务端没开, 取凭证失败) 不提示, 直接改用验证码登录.
+
+@ProviderFor(OneClickLogin)
+final oneClickLoginProvider = OneClickLoginProvider._();
+
+/// 运营商一键登录. 状态是一次登录是否正在进行, 登录页的按钮据此显示加载.
+///
+/// 用户勾选协议后在后台准备: 先问服务端开没开, 再初始化号码认证 SDK 并预取号.
+/// SDK 会联网并读取网络和 SIM 卡状态, 没勾选协议前不碰它.
+///
+/// 一键登录不可用时 (Web, 没有 SIM 卡, 没开蜂窝网络, 服务端没开, 取凭证失败) 不提示, 直接改用验证码登录.
+final class OneClickLoginProvider
+    extends $NotifierProvider<OneClickLogin, bool> {
+  /// 运营商一键登录. 状态是一次登录是否正在进行, 登录页的按钮据此显示加载.
+  ///
+  /// 用户勾选协议后在后台准备: 先问服务端开没开, 再初始化号码认证 SDK 并预取号.
+  /// SDK 会联网并读取网络和 SIM 卡状态, 没勾选协议前不碰它.
+  ///
+  /// 一键登录不可用时 (Web, 没有 SIM 卡, 没开蜂窝网络, 服务端没开, 取凭证失败) 不提示, 直接改用验证码登录.
+  OneClickLoginProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'oneClickLoginProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$oneClickLoginHash();
+
+  @$internal
+  @override
+  OneClickLogin create() => OneClickLogin();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$oneClickLoginHash() => r'cc97fc5dc8f18660afd4b87335fa85f21f157fb5';
+
+/// 运营商一键登录. 状态是一次登录是否正在进行, 登录页的按钮据此显示加载.
+///
+/// 用户勾选协议后在后台准备: 先问服务端开没开, 再初始化号码认证 SDK 并预取号.
+/// SDK 会联网并读取网络和 SIM 卡状态, 没勾选协议前不碰它.
+///
+/// 一键登录不可用时 (Web, 没有 SIM 卡, 没开蜂窝网络, 服务端没开, 取凭证失败) 不提示, 直接改用验证码登录.
+
+abstract class _$OneClickLogin extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

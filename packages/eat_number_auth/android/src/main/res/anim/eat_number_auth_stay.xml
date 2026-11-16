@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 授权页进出时, 背后的页面不动. 时长取进出动画中较长的一个. -->
+<translate xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="280"
+    android:fromYDelta="0%"
+    android:toYDelta="0%" />

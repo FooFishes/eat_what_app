@@ -23,6 +23,16 @@ Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
   'deletionKey': ?instance.deletionKey,
 };
 
+OneClickConfigDto _$OneClickConfigDtoFromJson(Map<String, dynamic> json) =>
+    OneClickConfigDto(enabled: json['enabled'] as bool?);
+
+Map<String, dynamic> _$OneClickLoginRequestDtoToJson(
+  OneClickLoginRequestDto instance,
+) => <String, dynamic>{
+  'accessToken': instance.accessToken,
+  'policyVersion': ?instance.policyVersion,
+};
+
 Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
   PasswordLoginRequestDto instance,
 ) => <String, dynamic>{

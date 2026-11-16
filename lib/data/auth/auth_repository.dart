@@ -74,6 +74,28 @@ class AuthRepository {
     ),
   );
 
+  /// 服务端是否开启了 App 的一键登录.
+  Future<bool> oneClickEnabled() async =>
+      (await _auth.oneClickConfig()).enabled ?? false;
+
+  /// 一键登录. [accessToken] 是用户在运营商授权页确认后得到的取号凭证, 新号码在此步自动注册.
+  ///
+  /// 服务端在核销凭证之前校验同意, 因此收到要求同意的业务码时可以用同一个凭证重试.
+  /// 其余失败之后凭证作废, 重试要重新拉起授权页.
+  ///
+  /// 不能撤销注销: 账号在注销冷静期内时返回 `BizCodes.accountDeletionPending`, 要改用验证码或密码登录.
+  Future<SignInResult> loginWithOneClick(
+    String accessToken, {
+    String? policyVersion,
+  }) async => _resultOf(
+    await _auth.oneClickLogin(
+      OneClickLoginRequestDto(
+        accessToken: accessToken,
+        policyVersion: policyVersion,
+      ),
+    ),
+  );
+
   /// [account] 为手机号, 用户名或邮箱. [ticket] 是人机验证的票据, 服务端要求时才需要.
   /// [deletionKey] 同 [loginWithCode].
   Future<SignInResult> loginWithPassword(

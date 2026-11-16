@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SDK 按名字查找进出动画, 资源压缩看不到这层引用, 不声明会在 release 包里被删掉. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@anim/eat_number_auth_*" />

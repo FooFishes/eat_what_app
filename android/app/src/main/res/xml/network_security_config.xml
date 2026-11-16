@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 明文 HTTP 默认禁止, 只放行一键登录要用的两个运营商网关 (阿里云号码认证的接入文档要求):
+     联通和移动的取号请求走各自的内网网关, 只支持 HTTP. 其余域名一律 HTTPS. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">enrichgw.10010.com</domain>
+        <domain includeSubdomains="true">onekey.cmpassport.com</domain>
+    </domain-config>
+</network-security-config>

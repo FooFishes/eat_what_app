@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:eat/core/config/app_config.dart';
+import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/platform/browser.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -17,7 +19,9 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/features/auth/auth_providers.dart';
+import 'package:eat/features/system/consent_dialog.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/privacy_consent.dart';
@@ -33,6 +37,9 @@ import 'package:go_router/go_router.dart';
 /// - 舞台: 汤色底, 装饰转盘, 品牌字和简介. 右上角卷起的页角是 "先逛逛", 点了不登录进去看看.
 /// - 抽屉: "手机注册 / 登录" 和 "账号密码登录" 两个黑色按钮, 协议勾选.
 ///   勾选同时同意隐私政策, 用户协议和个人信息出境说明.
+///
+/// "手机注册 / 登录" 在能一键登录时拉起运营商的授权页, 用本机号码登录; 不能时去验证码登录页.
+/// 授权页上的 "其他号码登录" 也去验证码登录页.
 ///
 /// 没勾协议时两个登录按钮和 "先逛逛" 照常可点, 点了先弹协议对话框. 同意后勾上并直接继续刚才那一步.
 ///
@@ -66,11 +73,87 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _start(String path) async {
     if (!await _ensureAgreed() || !mounted) return;
-    final query = widget.query;
+    _go(path);
+  }
+
+  void _go(String path, {Map<String, String> extra = const {}}) {
+    final query = {...widget.query, ...extra};
     context.go(
       Uri(path: path, queryParameters: query.isEmpty ? null : query).toString(),
     );
   }
+
+  /// 在本页弹出同意对话框. 页面已关闭时按用户不同意处理.
+  Future<bool> _presentConsent() async {
+    if (!mounted) return false;
+    return showConsentDialog(context);
+  }
+
+  /// 手机登录. 能一键登录时拉起运营商的授权页, 否则去验证码登录页.
+  Future<void> _startPhone() async {
+    if (!await _ensureAgreed() || !mounted) return;
+    final outcome = await ref
+        .read(oneClickLoginProvider.notifier)
+        .start(_presentConsent);
+    if (!mounted) return;
+    switch (outcome) {
+      case OneClickSignedIn() || OneClickDismissed():
+        break;
+      case OneClickUseCode(:final revoking):
+        _go(Paths.loginPhone, extra: {if (revoking) 'revoke': '1'});
+      case OneClickFailed(:final failure):
+        _showOneClickFailed(failure);
+      case OneClickBlocked(:final failure):
+        if (failure.code == BizCodes.accountDeletionPending) {
+          _showDeletionPending(failure);
+        } else {
+          showToast(context, failure.message);
+        }
+    }
+  }
+
+  void _showOneClickFailed(AppFailure failure) => showEatDialog<void>(
+    context,
+    builder: (dialog) => EatDialog(
+      icon: EatIcons.warning,
+      title: failure.message,
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.mist(
+              '用验证码登录',
+              onPressed: () {
+                Navigator.of(dialog).pop();
+                _go(Paths.loginPhone);
+              },
+            ),
+          ),
+          Expanded(
+            child: EatButton.solid(
+              '重试',
+              onPressed: () {
+                Navigator.of(dialog).pop();
+                _startPhone();
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  void _showDeletionPending(AppFailure failure) => showEatDialog<void>(
+    context,
+    builder: (dialog) => EatDialog(
+      icon: EatIcons.warning,
+      title: failure.message,
+      actions: EatButton.solid(
+        '知道了',
+        onPressed: () => Navigator.of(dialog).pop(),
+      ),
+    ),
+  );
 
   /// 不登录进去看看. 游客也要先同意隐私政策, 因为浏览同样会用到设备信息和使用记录.
   ///
@@ -116,7 +199,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               EatButton.solid(
                 '手机注册 / 登录',
                 icon: EatIcons.phone,
-                onPressed: () => _start(Paths.loginPhone),
+                loading: ref.watch(oneClickLoginProvider),
+                onPressed: _startPhone,
               ),
               EatButton.solid(
                 '账号密码登录',

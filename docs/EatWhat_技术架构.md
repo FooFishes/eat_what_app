@@ -23,6 +23,8 @@
 > 2026-11-15：人机验证加载期间不盖遮罩，参数和验证页同时加载（18.3）。
 
 > 2026-11-14：按后端 9d376aa 更新：封禁改为受限会话，账号状态加回封禁中（5.4、7.4、8.1）；注销和撤销（9.1、9.2）；使用统计开关（19.1）；新建店查重改由后端提示（14.4、7.4 的 40017）；等级和获赞恢复，待接入只剩专题、我的标签和口味投票（8.5）；去掉自动去掉背景（13.8）。
+>
+> 2026-11-16：加运营商一键登录（阿里云号码认证，依赖选型 15.1）：`core/platform/number_auth/` 和本地插件 `packages/eat_number_auth/`（2.1），方案密钥的配置（7.1），业务码 20002、20007（7.4），SDK 的初始化时机（9.4），登录流程（18.4），多平台差异（20），假实现（21.1）。
 
 本文说明客户端怎么搭：分层、目录、状态、路由、网络、存储，以及产品第 11、12 节那些运行保障在代码里落在哪。用到的包和版本见 `EatWhat_依赖选型.md`。行为以产品文档为准，接口没跟上的地方按现状差距过渡。标「待确认」的条目汇总在文末。
 
@@ -52,7 +54,7 @@ lib/
     copy/                   通用文案：动作叫法、错误提示
     format/                 价格「¥18」、时间「12 分钟前」、计数
     platform/               平台能力的接口和各端实现：定位、地图（map/：EatMap 和 App、Web 两套引擎、BD-09 换算，14.4）、选图压缩、分享、
-                            外部地图、推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）
+                            外部地图、推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）、运营商一键登录（number_auth/，18.4）
     telemetry/              埋点 Analytics、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
     tokens/                 tokens.json 里只用 dart:ui 就能表达的部分：颜色原值、间距、圆角、尺寸、StageColor
@@ -111,6 +113,8 @@ tool/                       一次性脚本：数字字体子集化、图标描�
 packages/
   eat_baidu_map/            本地插件：Kotlin、Swift 包百度地图 SDK，只给 core/platform/map/ 用（14.4）；
                             pigeons/ 里是 Pigeon 接口定义，生成的三端文件入库
+  eat_number_auth/          本地插件：Kotlin、Swift 包阿里云号码认证 SDK，只给 core/platform/number_auth/ 用（18.4）；
+                            SDK 的二进制随插件入库，由 tool/number_auth_sdk.py 安装
 test/                       与 lib/ 同构；另有 support/（假实现）、fixtures/（样例 JSON、取色样图）
 ```
 
@@ -383,6 +387,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
+| `NUMBER_AUTH_KEY_ANDROID`、`NUMBER_AUTH_KEY_IOS` | 阿里云号码认证的方案密钥，各端只读自己那个（依赖选型 15.1）。为空时没有一键登录，「手机注册 / 登录」直接去手机号登录页（18.4） | — |
 | `PRIVACY_URL`、`TERMS_URL` | 《隐私政策》《用户协议》的网页地址，登录页、同意对话框和关于里打开。服务端 `/auth/consent/policy` 返回的 `privacyText`、`crossBorderText` 不用（9.5） | `https://<域名>/legal/privacy-policy.html` |
 | `CROSS_BORDER_URL` | 《个人信息出境说明》的网页地址，登录页和同意对话框里打开（9.5） | `https://<域名>/legal/cross-border.html` |
 
@@ -415,8 +420,10 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 10003 | 请求频率过高，`data.retryAfterSeconds` 和 `Retry-After` 给出等待秒数 | 「操作过于频繁，请 N 分钟后再试」，按秒、分钟、小时换算；没有秒数时「请稍后再试」 |
 | 10004 | 路径不存在（HTTP 404）或方法不对（HTTP 405） | 按未知错误处理 |
 | 20001 | 未登录，包括被下线和过期 | 登录过期流程（5.4）；游客收到时不走过期流程，按 `NeedsSignIn` 弹登录面板（8.1） |
+| 20002 | 一键登录的取号凭证无效、已用过或换不到手机号 | 对话框提示「本机号码验证失败，请重试」，重试要重新拉起授权页（18.4） |
 | 20004 | 权限不足：没有认证、删别人的评论、对方未公开粉丝或关注列表 | 重新拉用户信息，按新的账号状态弹拦截对话框（第 8 节）；重新判定仍允许时提示「当前账号不能进行该操作」。粉丝和关注列表在页面上认成「对方未公开」 |
 | 20005、20009 | 没带同意、同意的政策版本不是当前版本 | 9.5 |
+| 20007 | 服务端没开一键登录 | 不提示，改用验证码登录（18.4） |
 | 30001 | 用户不存在 | 他人主页、粉丝列表「该用户不存在」 |
 | 30002 | 受限会话做了封禁中不允许的事（`data` 带 `reason`、`banUntil`）；账号已不存在（`data` 为空，服务端同时让会话下线） | 带原因时按没权限处理：刷新用户信息，弹封禁对话框（8.1）；不带原因时走登录过期流程（5.4）；登录时「账号已被封禁」 |
 | 30017 | 账号在注销冷静期（登录时 `data.deleteAt`；带登录态的请求时服务端同时让会话下线） | 登录时提示「账号注销中，在申请注销的设备上重新登录可以撤销」（9.2）；带登录态时走登录过期流程（5.4） |
@@ -440,7 +447,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | 40016 | 发布的菜和这家店已有的菜重名（忽略空白和大小写），`data.id` 是已有的那道；编辑时改名撞名也返回 | 加菜页在菜名下提示「这家店已有……」和「去看看」，不能发布；编辑页提示换个菜名。`ApiClient` 失败时把外壳里的 `data` 带在 `AppFailure.data` 上 |
 | 9xxxx、HTTP 5xx | 系统错误 | 「服务器出错，请稍后再试」；上报 |
 
-v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的字符串码，客户端已经从码表里删掉。还没有的码：功能已关闭、只读维护、操作受限、内容违规，后端还没做这些功能。
+v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，客户端已经从码表里删掉；20002、20007 现在只由一键登录返回（18.4）。还没有的码：功能已关闭、只读维护、操作受限、内容违规，后端还没做这些功能。
 
 ### 7.5 错误转成用户能看懂的提示
 
@@ -591,6 +598,7 @@ v2 不再返回 20002、20003、20006、20007、20008、20010 和集群会话的
 - 本地记录只决定这台设备能不能初始化 SDK。服务端的同意由登录请求带的政策版本记下，政策更新后由服务端返回 20009 要求重新同意（9.5）。
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 - 百度地图 SDK 更晚：同意之后、第一次打开附近或新建店时才初始化（14.4）。
+- 号码认证 SDK 更早：登录要用它，所以用户在登录页勾选协议（或在协议对话框里同意）之后就初始化并预取号，这时本地同意记录还没写（18.4）。没勾选之前不碰它。
 
 ### 9.5 隐私政策和数据跨境同意
 
@@ -1383,6 +1391,32 @@ class PushNotice({
 - 「拿参数 → 验证 → 发送 → 30015/30016 时重来」写在 `state/captcha_gate.dart` 的 `CaptchaGate`，最多三次。验证要弹在页面上，页面把「用自己的 `BuildContext` 调 `HumanVerifier.verify`」包成一个函数传给 Provider，Provider 里不拿 `BuildContext`。
 - 客户端基础节流（现状差距 2.1）：验证码 60 秒倒计时、提交类按钮防连点。
 
+### 18.4 运营商一键登录
+
+用阿里云号码认证（依赖选型 15.1）。产品 6.2：「手机注册 / 登录」在能一键登录时拉起运营商的授权页，用户确认后用本机号码登录；不能时去手机号登录页。只做 Android 和 iOS，Web 不接。
+
+- 接口：`GET /auth/phone/one-click/config` 返回 `{enabled}`；`POST /auth/phone/one-click/login {accessToken, policyVersion}` 返回和验证码登录一样的登录凭证，新号码在这一步自动注册。`accessToken` 是 SDK 在用户授权后给出的取号凭证，服务端拿它向阿里云换手机号，App 读不到号码。凭证只能用一次，只放请求体，不进 URL 和本地存储。
+- `NumberAuth` 接口（`core/platform/number_auth/`）：`supported`（平台是 Android 或 iOS 且配了方案密钥，7.1）、`prepare()`（设置密钥、检查环境、预取号）、`requestToken()`（拉起授权页，结果是拿到凭证、用户关闭、用户点「其他号码登录」、失败四种）、`closeAuthPage()`。App 的实现调本地插件 `packages/eat_number_auth/`，Web 和没配密钥的构建是 `UnsupportedNumberAuth`，按条件导入切换。SDK 的返回码只打印出来供排查，不区分处理。
+- 本地插件 `eat_number_auth`：Pigeon 定义三个方法（`prepare`、`requestLoginToken`、`closeAuthPage`），Kotlin、Swift 各一份实现，SDK 的任何失败都转成返回值。SDK 的二进制随插件入库（依赖选型 15.1）。Android 的原生库没有 x86_64 版本，在这种设备（主要是模拟器）上直接按不可用返回。
+- 初始化时机：用户在登录页勾选协议（或在协议对话框里点「同意并继续」）之后才碰 SDK（9.4）。`features/auth/auth_providers.dart` 的 `OneClickLogin` 监听勾选状态，勾上后在后台准备：先问服务端开没开，再 `prepare()`。预取号成功后授权页才能立刻弹出。服务端的开关问到结果后本次运行内不再问。
+- 点按钮：等准备的结果（按钮显示加载），可用就拉起授权页。
+  - 拿到凭证：授权页留着并显示加载，带当前政策版本调登录接口，登录完再关授权页。
+  - 用户关闭授权页：留在登录页。点「其他号码登录」：去手机号登录页。
+  - 准备失败、授权页没拉起来、取凭证失败或超时（各 5 秒）：不提示，去手机号登录页，同时在后台重新准备，下次点按钮时再试。
+- 授权后登录失败，先关授权页再处理：
+  - 20005、20009：弹同意对话框，同意后用同一个凭证重试一次（服务端在核销凭证之前校验同意）；不同意就停在登录页，轻提示「同意隐私政策后才能继续」。
+  - 20007（服务端没开）：不提示，去手机号登录页，本次运行内不再尝试一键登录。
+  - 30017（注销冷静期，一键登录不能撤销注销）：本机存着撤销凭据时去手机号登录页（地址带 `revoke=1`），页面顶部提示「账号注销中，用验证码登录可以撤销」；没有时停在登录页，对话框提示「账号注销中，在申请注销的设备上重新登录可以撤销」。
+  - 其余（20002 凭证无效、限流、第三方服务出错、网络失败）：对话框显示原因，主按钮「重试」重新拉起授权页拿新凭证，次按钮「用验证码登录」去手机号登录页。
+- 授权页是 SDK 的原生页面，不在 Flutter 里：底部弹窗模式，白底、顶部圆角、`scrim` 遮罩，`ink` 实心胶囊按钮，右上角关闭按钮，点面板外面或系统返回也关闭。颜色、圆角、边距和按钮高度取自 `design/tokens` 的原始值，经 Pigeon 传给原生；图片（按钮底、勾选框、关闭按钮）都是原生现画的。授权页上只放运营商的协议，勾选框默认不勾；没勾就点登录时用 SDK 自带的二次确认弹窗，点「同意并继续」后直接登录。号码、运营商标语和运营商协议按阿里云的要求保留，不隐藏。具体数值在真机上调。
+- Android：
+  - 授权页、二次确认弹窗和协议网页三个 Activity 声明在插件的 `AndroidManifest.xml` 里；SDK 的 aar 另外声明 `ACCESS_WIFI_STATE`、`ACCESS_NETWORK_STATE`、`CHANGE_NETWORK_STATE`（连着 Wi-Fi 时取号请求也要走蜂窝网络）。
+  - 联通和移动的取号网关只支持 HTTP，`android/app/src/main/res/xml/network_security_config.xml` 只对 `enrichgw.10010.com`、`onekey.cmpassport.com` 放行明文，其余域名照旧只能 HTTPS。
+  - 授权页的进出动画是插件里的三个 `anim` 资源，SDK 按名字查找，`res/raw/eat_number_auth_keep.xml` 让资源压缩保留它们。
+  - 阿里云的认证方案绑定包名和签名，控制台只绑了正式签名。debug 签名的包照常尝试，SDK 返回 600017，按不可用回退到验证码登录。
+- iOS：三个静态 xcframework 经 SwiftPM 的 `binaryTarget` 链接，`-ObjC`，另加 `Network.framework`。不拷 SDK 自带的 `ATAuthSDK.bundle`，用到的图片都现画。iOS 这部分没有在本地构建和运行过，以 CI 的 `ios` 任务和真机为准。
+- 测试：`test/support/fakes.dart` 的 `FakeNumberAuth` 默认不支持，其余登录测试因此仍然直接进手机号登录页；`test/features/auth/one_click_login_test.dart` 覆盖上面各个分支。
+
 ## 19. 统计埋点与崩溃上报
 
 ### 19.1 埋点
@@ -1438,6 +1472,7 @@ class PushNotice({
 | 分享 | 系统分享面板 | 系统分享面板 | 支持 Web Share 时用系统分享，否则复制链接；微信里复制链接 | `core/platform/share/` |
 | 打开分享链接 | App Links | Universal Links | 直接打开；微信里顶部「在 App 里打开」 | `router/deep_links.dart` |
 | 推送 | 本地通知，App 在后台存活时 | 本地通知，基本只在刚退到后台时 | 没有，只看消息页 | `core/platform/push/` |
+| 一键登录 | 阿里云号码认证 SDK，本地插件 `eat_number_auth` | 同一个本地插件 | 没有，只用验证码和密码登录 | `core/platform/number_auth/` |
 
 产品表之外，实现上还有这些差异：
 
@@ -1470,7 +1505,7 @@ class PushNotice({
 
 - 时间相关的逻辑都从 `clock` 取时间，测试里用 `withClock` 固定。
 - 网络用一个假的 `HttpClientAdapter`（放 `test/support/`）返回样例 JSON，不起真服务器。
-- 假实现放 `test/support/fakes.dart`：内存里的 `KvStore`、`SecureStore`，按「方法 路径」返回样例的 `FakeAdapter`，直接给结果的 `FakeHumanVerifier`，只记录标记和多边形、不起平台视图的假 `EatMap`（14.4），以及一键搭好这些的 `TestEnv`。真要 mock 时再加 `mocktail`。
+- 假实现放 `test/support/fakes.dart`：内存里的 `KvStore`、`SecureStore`，按「方法 路径」返回样例的 `FakeAdapter`，直接给结果的 `FakeHumanVerifier`，默认不支持的 `FakeNumberAuth`（18.4），只记录标记和多边形、不起平台视图的假 `EatMap`（14.4），以及一键搭好这些的 `TestEnv`。真要 mock 时再加 `mocktail`。
 
 ### 21.2 Golden 测试
 
@@ -1482,7 +1517,7 @@ class PushNotice({
 - `android`、`ios`、`web` 任务都带 `--build-number=<run_number>`，配了 `APP_CONFIG` 时写成 `config/ci.json` 用 `--dart-define-from-file` 传入；`web` 另带 `--no-web-resources-cdn`。安卓配了上传密钥时还原 `android/key.properties`，否则 debug 签名。
 - 打 tag 的发版构建：安卓加混淆，上传符号表；Web 生成 source map，上传后从产物里删掉。配了 `SHOREBIRD_TOKEN` 且有 `shorebird.yaml` 时安卓改用 `shorebird release`（第 16.2 节）。iOS 签名前只做未签名构建，不混淆。补丁用手动触发的 `patch.yml`。凭据都缺省可跳过，清单见 AGENTS.md「CI」。
 - 带原生代码的新依赖：单独一个 PR。Android 可以在本地构建和测试，iOS 看 CI 的 `ios` 任务能否编过。
-- `packages/eat_baidu_map/` 的 Pigeon 生成文件：`check` 任务重新生成一遍，`git diff --exit-code` 检查是否最新（依赖选型 7.1）。
+- `packages/eat_baidu_map/`、`packages/eat_number_auth/` 的 Pigeon 生成文件：`check` 任务重新生成一遍，`git diff --exit-code` 检查是否最新（依赖选型 7.1）。
 
 ### 21.4 手动检查
 

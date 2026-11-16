@@ -17,6 +17,8 @@ void main() {
       baiduMapAkAndroid: '',
       baiduMapAkIos: '',
       baiduMapAkWeb: '',
+      numberAuthKeyAndroid: '',
+      numberAuthKeyIos: '',
       privacyUrl: '',
       termsUrl: '',
       crossBorderUrl: '',

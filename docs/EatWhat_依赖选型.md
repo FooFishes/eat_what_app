@@ -9,6 +9,8 @@
 > 2026-11-04：底部导航的发布按钮也改用液态玻璃（总表）。
 >
 > 2026-11-09：地图从 `flutter_map` + 天地图改为百度地图，App 用自己写的原生桥直接调百度 SDK、Web 用 JS API GL，去掉 `flutter_map`、`latlong2`（总表、第 7.1、17、18 节、D1）。
+>
+> 2026-11-16：加运营商一键登录，用阿里云号码认证 SDK，App 用自己写的原生桥 `packages/eat_number_auth/`（总表、第 15.1、17、18 节）。
 
 本文记录装哪个包、锁哪条版本线、为什么不选另一个。新增依赖前先查这里，表里没有的先提出来，确定后补进本文再改 `pubspec.yaml`。这些包在代码里怎么用，见 `EatWhat_技术架构.md`。
 
@@ -19,7 +21,7 @@
 - **Android 本地可测，iOS 由 CI 验证**。本地默认用 Web 验证，Android 也可以在本地构建和测试。带原生代码的包能不能在 iOS 15 上编过，看 CI 的 `ios` 任务。每个带原生代码的包第一次加进来时单独一个 PR。
 - **约束写法**：`^x.y.z`，锁主版本。`pubspec.lock` 入库。升级走 `build(deps): 升级 xxx 至 x.y.z` 的提交。
 - **加的时机**：按开发计划，在第一个用到它的阶段加入，「何时加」一列写的就是阶段；加入时把这一列改成「已引入」。不提前装。
-- **代码生成只用三处**：Provider 用 `riverpod_generator`，接口 DTO 用 `json_serializable`，都经 `build_runner`；原生桥的消息用 `pigeon`（只在 `packages/eat_baidu_map/`，第 7.1 节）。不用 `freezed`、`retrofit`、`go_router_builder`。理由见第 3、5 节。
+- **代码生成只用三处**：Provider 用 `riverpod_generator`，接口 DTO 用 `json_serializable`，都经 `build_runner`；原生桥的消息用 `pigeon`（只在两个本地插件 `packages/eat_baidu_map/`、`packages/eat_number_auth/` 里，第 7.1、15.1 节）。不用 `freezed`、`retrofit`、`go_router_builder`。理由见第 3、5 节。
 - 标「待确认」的条目汇总在文末。
 
 ## 1. 总表
@@ -50,6 +52,7 @@
 | 定位 | `geolocator` | `^14.1.2` | 2026-10-19 | ✅ | ✅ | ✅（仅 HTTPS） | 已引入（阶段三） |
 | 地图（App） | 本地插件 `packages/eat_baidu_map/`（自己写的原生桥），内含百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map`（Maven Central）、iOS `BaiduMapKit` 的 Base 和 Map（自己转成 xcframework，见第 7.1 节） | `8.2.0`、`7.2.0`，原生依赖锁死版本 | 2026-08-17、2026-07-27 | ✅ | ✅ | — | 换掉 `flutter_map`（D1 确认后），见第 7.1 节 |
 | 地图（Web） | 百度地图 JS API GL | `v=1.0&type=webgl` | — | — | — | ✅ | 同上。运行时插入脚本，不进 `pubspec.yaml`，用 `web` 包调用 |
+| 一键登录（App） | 本地插件 `packages/eat_number_auth/`（自己写的原生桥），内含阿里云号码认证 SDK，二进制随插件入库（见第 15.1 节） | Android `2.14.25`、iOS `2.14.19` | — | ✅ | ✅ | — | 已引入，见第 15.1 节 |
 | 系统分享 | `share_plus` | `^13.3.1` | 2026-10-01 | ✅ | ✅ | ✅（不支持时复制链接） | 已引入（阶段三） |
 | 选图 | `image_picker` | `^1.2.4` | 2026-10-06 | ✅ | ✅ | ✅ | 已引入（阶段四） |
 | 压缩 | `flutter_image_compress` | `^2.5.1` | 2026-07-25 | ✅ | ✅ | ✅（只用 `compressWithList`） | 已引入（阶段四） |
@@ -69,7 +72,7 @@
 | 静态检查 | `flutter_lints` | `^6.0.0` | 2025-05-27 | 已有 |
 | 代码生成 | `build_runner` | `^2.16.2` | 2026-10-07 | 已引入（阶段一） |
 | Provider 生成 | `riverpod_generator` | `^4.0.9` | 2026-09-03 | 已引入（阶段一） |
-| 原生桥消息生成 | `pigeon` | `^29.1.1` | 2026-11-06 | 地图换百度时加（第 7.1 节），只进 `packages/eat_baidu_map/` 的 `dev_dependencies` |
+| 原生桥消息生成 | `pigeon` | `^29.1.1` | 2026-11-06 | 地图换百度时加（第 7.1 节），只进两个本地插件的 `dev_dependencies` |
 | Provider 写法检查（分析器插件） | `riverpod_lint` | `^3.1.9` | 2026-09-03 | 已引入（阶段一）。写在 `analysis_options.yaml` 的 `plugins`，不进 `pubspec.yaml` |
 | SVG 预编译（资源转换器） | `vector_graphics_compiler` | `^1.3.2` | 2026-10-15 | 已引入（阶段一） |
 | 数字字体子集化 | fonttools（Python 工具，不进 pubspec，`tool/subset_fonts.py` 调用） | 不锁，实测 4.60.2 | — | 已引入（阶段一，只在开发机用） |
@@ -447,7 +450,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | PostHog `posthog_flutter` 5.56.1 | 云服务在境外，自建也重 |
 | Firebase Crashlytics / Analytics | 大陆不可用 |
 
-## 15. 人机验证
+## 15. 人机验证与一键登录
 
 产品 12.4：每次发验证码前都先过人机验证，没有风险时自动通过，有风险时才要用户动手。
 
@@ -460,6 +463,22 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 当时比较过的其他方案：阿里云验证码 2.0 有官方的 Flutter WebView 接入文档；极验有官方插件 `gt4_flutter_plugin` 0.1.6，但只有 Android、iOS，Web 还要另接 JS；Cloudflare Turnstile、reCAPTCHA 在大陆访问没保障或不可用。
 
+### 15.1 一键登录：阿里云号码认证 SDK
+
+产品 6.2：App 上用本机号码一键登录。后端已经接好（`/auth/phone/one-click/*`，服务端调阿里云 `GetMobile` 换手机号），流程见技术架构 18.4。
+
+| 项 | 结论 |
+| --- | --- |
+| 用什么 | 本地插件 `packages/eat_number_auth/`，Kotlin、Swift 直接调阿里云号码认证 SDK（内含中国移动、中国联通、中国电信的认证 SDK）：Android `2.14.25`（三个 aar：`auth_number_product`、`logger`、`main`），iOS `2.14.19`（静态库，三个 xcframework：`ATAuthSDK`、`YTXMonitor`、`YTXOperators`） |
+| 平台 | Android、iOS。Web 不接 |
+| 二进制 | SDK 只能登录阿里云控制台下载，没有公开的下载地址和 Maven 仓库，所以随插件入库（aar 约 1.2 MB，xcframework 约 18 MB）。下载包里的 Demo 不入库，解压在本机的 `third_party/`（已加进 `.gitignore`） |
+| 升级 | 下载新的压缩包，解压后跑 `python tool/number_auth_sdk.py <安卓包目录> <iOS 包目录>`，再同步改 `packages/eat_number_auth/android/build.gradle.kts` 里的版本号 |
+
+- **Android**：库模块不能直接依赖本地 aar 文件，脚本把三个 aar 按 Maven 目录结构放到插件的 `android/maven/`（坐标的 group 自定为 `local.aliyun.pnvs`），插件的 `build.gradle.kts` 把这个目录登记成所有工程的仓库。授权页的主题继承自 `Theme.AppCompat`，所以另依赖 `androidx.appcompat`。混淆规则随 aar 自带。原生库只有 `arm64-v8a`、`armeabi-v7a`、`x86`。
+- **iOS**：xcframework 放在插件的 `ios/eat_number_auth/Frameworks/`，经 SwiftPM 的 `binaryTarget` 链接。脚本把各切片 `Info.plist` 的 `MinimumOSVersion` 改成 15.0，和 App 一致（不一致时 App Store Connect 以 90208 拒收，同第 7.1 节百度地图的做法）。
+- **消息**：和 `eat_baidu_map` 一样用 `pigeon` 生成，接口定义在 `packages/eat_number_auth/pigeons/messages.dart`。
+- **认证方案**：在阿里云号码认证控制台按包名加签名（Android）、Bundle ID（iOS）各建一个，得到方案密钥，填进环境配置（第 18 节）。Android 的方案只绑了正式签名。
+
 ## 16. 开发与测试工具
 
 | 工具 | 版本 | 用途 |
@@ -469,7 +488,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `riverpod_generator` | `^4.0.9` | 生成 Provider |
 | `riverpod_lint` | `^3.1.9` | 分析器插件，写在 `analysis_options.yaml`；结果只有 `fvm dart analyze` 报告，`flutter analyze` 看不到 |
 | `json_serializable` | `^6.15.2` | 生成 DTO 的 `fromJson`（阶段二） |
-| `pigeon` | `^29.1.1` | 生成原生桥的 Dart、Kotlin、Swift 三端接口；不走 `build_runner`，在 `packages/eat_baidu_map/` 里跑 `fvm dart run pigeon --input pigeons/messages.dart` |
+| `pigeon` | `^29.1.1` | 生成原生桥的 Dart、Kotlin、Swift 三端接口；不走 `build_runner`，在本地插件的目录里跑 `fvm dart run pigeon --input pigeons/messages.dart` |
 | `mocktail` | `^1.0.5` | mock 仓库、接口；不需要代码生成（不选 `mockito` 5.8.1，它的空安全写法要生成） |
 | `clock` | `^1.1.3` | 运行时依赖，饭点、「12 分钟前」、验证码倒计时都从 `clock.now()` 取时间，测试里用 `withClock` 固定时间 |
 | `vector_graphics_compiler` | `^1.3.2` | SVG 资源转换器 |
@@ -484,7 +503,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 **规则**
 
-- 同意《隐私政策》之前，不初始化任何会联网或收集设备信息的 SDK。同意发生在登录页：登录成功或点「先逛逛」进游客模式时写入同意记录（产品 6.2），所以同意之前只有登录页和协议页在运行。游客和登录用户初始化的 SDK 相同，只是不绑定推送、不设用户 id。
+- 同意《隐私政策》之前，不初始化任何会联网或收集设备信息的 SDK。同意发生在登录页：登录成功或点「先逛逛」进游客模式时写入同意记录（产品 6.2），所以同意之前只有登录页和协议页在运行。例外是一键登录的号码认证 SDK：登录要用它，所以在登录页勾选协议后就初始化（技术架构 9.4、18.4）。游客和登录用户初始化的 SDK 相同，只是不绑定推送、不设用户 id。
 - 下表进隐私政策的「第三方 SDK 清单」，写明 SDK 名称、提供方、用途、收集的信息、隐私政策链接。新增 SDK 时同步更新本表和隐私政策。
 - 系统能力（定位、相机、相册、通知权限）不是第三方 SDK，但要在隐私政策里说明用途和时机。
 
@@ -493,6 +512,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | Shorebird | Shorebird（境外服务） | 热更新 | 应用版本、补丁号、平台与 CPU 架构、随机客户端标识 | 同意隐私政策后 | 境外 |
 | 百度地图 SDK（App）、JS API GL（Web） | 百度 | 地图底图和覆盖物，新建店时的地点检索（发送关键词和检索中心） | 以《百度地图开放平台产品和服务隐私政策》（`lbsyun.baidu.com/index.php?title=openprivacy`）为准，基础地图 SDK 写明会读 Android ID、应用名、网络信息等 | 同意隐私政策后，第一次打开附近、新建店时 | 境内 |
 | 腾讯云验证码（国际站） | 腾讯云 | 风控 | 设备环境、操作行为 | 每次发验证码前 | 国际站，存放地待确认 |
+| 阿里云号码认证 SDK（内含中国移动、中国联通、中国电信的认证 SDK） | 阿里云、三家运营商 | 本机号码一键登录 | 以阿里云号码认证服务和三家运营商认证服务的隐私政策、服务条款为准；会读取网络状态（Wi-Fi、蜂窝）、运营商和 SIM 卡状态，本机号码由运营商经阿里云给到我们的服务端 | 登录页勾选协议后（Android、iOS） | 境内 |
 | Sentry（自建） | 我们自己部署，不是第三方 | 崩溃上报 | 崩溃堆栈、设备型号、系统版本、App 版本、账号 ID | 同意隐私政策后 | 境外，和业务数据同处 |
 
 ## 18. 密钥与配置
@@ -501,12 +521,14 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | --- | --- | --- | --- |
 | 环境配置（接口地址、Web 地址等） | 客户端 | 公开 | `config/<环境>.json`（未跟踪），CI 用 Secret 写出；仓库只放 `config/example.json` |
 | 百度地图 AK（Android、iOS、Web 各一个） | 客户端 | 公开，在控制台绑定包名和 SHA1、Bundle ID、Referer 白名单 | 同上；Android 的 AK 由 `build.gradle.kts` 从 `dart-defines` 写进 `AndroidManifest.xml` |
+| 号码认证方案密钥（Android、iOS 各一个） | 客户端 | 公开，在控制台绑定包名和签名、Bundle ID | 同上（`NUMBER_AUTH_KEY_ANDROID`、`NUMBER_AUTH_KEY_IOS`） |
 | Sentry DSN | 客户端 | 公开 | 环境配置 |
 | `SENTRY_AUTH_TOKEN` | CI 上传符号表 | 机密 | CI Secret，不写进 `pubspec.yaml` |
 | `SHOREBIRD_TOKEN` | CI 发版和补丁 | 机密 | CI Secret（`shorebird.yaml` 里的 `app_id` 不是机密，可以入库） |
 | 安卓上传密钥、`android/key.properties` | 签名 | 机密 | CI Secret；`build.gradle.kts` 参考 legacy 的「缺失时回落 debug 签名」写法 |
 | iOS 证书、描述文件、App Store Connect API Key | 签名、上传 | 机密 | CI Secret |
 | 腾讯验证码 AppSecretKey、云 API 密钥 | 后端 | 机密 | 后端。客户端用的 AppId 由 `/auth/captcha/config` 每次下发，不进环境配置 |
+| 阿里云 AccessKey（号码认证 `GetMobile`） | 后端 | 机密 | 后端 |
 
 `--dart-define-from-file` 传进去的值会编进安装包，只能放公开的值。`.gitignore` 要补上 `config/*.json`（保留 `example.json`）、`android/key.properties`、`*.jks`、`.sentry-native/`。
 

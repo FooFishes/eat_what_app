@@ -61,3 +61,6 @@ app.*.map.json
 
 # Sentry 原生 SDK 的运行目录.
 .sentry-native/
+
+# 第三方 SDK 的下载包 (含 Demo), 只在本机解压. 要用的二进制由 tool/ 下的脚本装进 packages/.
+/third_party/

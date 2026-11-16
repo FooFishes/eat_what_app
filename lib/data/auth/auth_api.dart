@@ -9,6 +9,8 @@ abstract final class AuthEndpoints {
   static const captchaConfig = '/auth/captcha/config';
   static const phoneCode = '/auth/phone/code';
   static const phoneLogin = '/auth/phone/login';
+  static const oneClickConfig = '/auth/phone/one-click/config';
+  static const oneClickLogin = '/auth/phone/one-click/login';
   static const login = '/auth/login';
   static const logout = '/auth/logout';
   static const sdu = '/auth/sdu';
@@ -22,7 +24,7 @@ abstract final class AuthEndpoints {
   static const setUsername = '/auth/username/set';
 }
 
-/// 接口分组 Auth: 登录, 发送验证码, 人机验证参数, 学生认证, 设置用户名和密码.
+/// 接口分组 Auth 和 OneClickAuth: 登录, 发送验证码, 人机验证参数, 学生认证, 设置用户名和密码.
 class AuthApi {
   AuthApi(this._client);
 
@@ -50,6 +52,18 @@ class AuthApi {
   Future<LoginReplyDto> phoneLogin(PhoneLoginRequestDto request) async =>
       decodeJson(
         await _client.post(AuthEndpoints.phoneLogin, body: request.toJson()),
+        LoginReplyDto.fromJson,
+      );
+
+  /// 服务端是否开启了 App 的一键登录.
+  Future<OneClickConfigDto> oneClickConfig() async => decodeJson(
+    await _client.get(AuthEndpoints.oneClickConfig),
+    OneClickConfigDto.fromJson,
+  );
+
+  Future<LoginReplyDto> oneClickLogin(OneClickLoginRequestDto request) async =>
+      decodeJson(
+        await _client.post(AuthEndpoints.oneClickLogin, body: request.toJson()),
         LoginReplyDto.fromJson,
       );
 

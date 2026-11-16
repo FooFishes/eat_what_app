@@ -24,6 +24,9 @@ abstract final class BizCodes {
   /// 未登录, 包括登录过期和在其他设备上被下线.
   static const notLoggedIn = 20001;
 
+  /// 一键登录的取号凭证无效, 已用过, 或换不到手机号. 凭证只能用一次, 重试要重新拉起授权页.
+  static const oneClickTokenInvalid = 20002;
+
   /// 无权限. 未认证访问需认证的接口时返回.
   ///
   /// 对方未公开粉丝或关注列表时, 列表接口也返回该码.
@@ -33,6 +36,9 @@ abstract final class BizCodes {
   ///
   /// 服务端在核销验证码之前校验同意. 用户同意后用同一个验证码或密码重试.
   static const consentRequired = 20005;
+
+  /// 服务端没有开启一键登录.
+  static const oneClickUnavailable = 20007;
 
   /// 隐私政策已更新.
   ///
@@ -121,6 +127,8 @@ abstract final class BizCodes {
 const failureMessages = <Object, String>{
   10001: '提交的内容有误，请检查后重试',
   10002: '提交的内容有误，请检查后重试',
+  BizCodes.oneClickTokenInvalid: '本机号码验证失败，请重试',
+  BizCodes.oneClickUnavailable: '一键登录暂不可用，请用验证码登录',
   BizCodes.userNotFound: '用户不存在',
   BizCodes.wrongPassword: '账号或密码错误',
   BizCodes.userDisabled: '账号已被封禁',

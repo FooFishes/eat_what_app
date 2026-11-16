@@ -27,10 +27,13 @@ import 'package:go_router/go_router.dart';
 /// 发送验证码前先完成人机验证, 重发有冷却时间.
 /// 登录成功后由守卫导回原目标页面, 新号码导向认证引导.
 class PhoneLoginPage extends ConsumerStatefulWidget {
-  const new({super.key, this.query = const {}});
+  const new({super.key, this.query = const {}, this.revoking = false});
 
   /// 登录页传入的 `from` 和 `expired`, 原样向下传递.
   final Map<String, String> query;
+
+  /// 一键登录发现账号在注销冷静期内, 转到本页. 顶部提示用验证码登录可以撤销.
+  final bool revoking;
 
   @override
   ConsumerState<PhoneLoginPage> createState() => _PhoneLoginPageState();
@@ -182,6 +185,10 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (widget.revoking) ...[
+                  const FormMessage('账号注销中，用验证码登录可以撤销'),
+                  const SizedBox(height: EatSpace.s20),
+                ],
                 EatFormField(
                   label: '手机号',
                   controller: _mobile,

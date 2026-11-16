@@ -38,9 +38,10 @@ lib/
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的 Inter 和许可证）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图，署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）
+tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
+  eat_number_auth/   本地插件：运营商一键登录的原生桥（Kotlin、Swift），包着阿里云号码认证 SDK，SDK 的二进制随插件入库，见技术架构 18.4
 android/ ios/ web/   平台工程（flutter create 生成，按需修改）
 docs/                文档与接口定义
 prototype/
@@ -70,7 +71,7 @@ Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.7 stable，附�
 fvm install                              # 安装 .fvmrc 指定的 SDK
 fvm flutter pub get
 fvm dart run build_runner build          # 改了 @riverpod、@JsonSerializable 后重新生成；开发时可用 watch
-# 改了 packages/eat_baidu_map/pigeons/messages.dart 后, 在该目录重新生成并格式化三端接口
+# 改了本地插件 (packages/eat_baidu_map、packages/eat_number_auth) 的 pigeons/messages.dart 后, 在该插件目录重新生成并格式化三端接口
 fvm dart run pigeon --input pigeons/messages.dart && fvm dart format lib/src/messages.g.dart
 fvm dart format .
 fvm flutter analyze
@@ -93,6 +94,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 - `applicationId` 与 `namespace` 都是 `you.v50to.eat`，入口 `android/app/src/main/kotlin/you/v50to/eat/MainActivity.kt`。
 - Gradle 用 Kotlin DSL：AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0，Java / JVM target 17。`targetSdk` 跟随 Flutter 默认值；`minSdk` 取 Flutter 默认值和 26 中较大的一个（`sentry_flutter` 要求 26）。
 - release 用 `android/key.properties` 指向的上传密钥签名，文件不存在时回落 debug 签名。密钥和 `key.properties` 不入库，CI 从 Secrets 还原（见下文 CI）。
+- 明文 HTTP 只对一键登录要用的两个运营商网关放行，写在 `android/app/src/main/res/xml/network_security_config.xml`，见技术架构 18.4。
 
 **iOS**
 
@@ -109,7 +111,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 - 依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它对应后端当前源码的完整契约，包含尚未部署的接口，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh`，从 Apifox 业务模块导出 OpenAPI 3.1 YAML 覆盖该文件；令牌只放环境变量，不入库。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
 - 客户端按后端最新源码开发，不为已部署的旧版本写兼容分支。字段、校验、业务码有疑问时直接读后端源码（分支 `feat/eatwhat-v2`，DTO 以 Java 源码为准）和后端的 `AGENTS.md`、`docs/legacy-api/README.md`。
-- 主要分组（后端 v2）：账号（Auth、Consent、DeviceSession、Verification、Contact）、User、Restaurant、Campus、Hub、Food、Recommend、Preference、Taste、Comment、Notification、Push、Feedback、History、Upload、RemoteConfig、Telemetry；`AdminUser`、`AdminConsent`、`AdminAi`、`AdminRemoteConfig` 是管理接口，客户端不调用。openapi 里不同模块的同名结构会互相覆盖，这些 DTO 照后端 Java 源码写，见技术架构 7.6。
+- 主要分组（后端 v2）：账号（Auth、OneClickAuth、Consent、DeviceSession、Verification、Contact）、User、Restaurant、Campus、Hub、Food、Recommend、Preference、Taste、Comment、Notification、Push、Feedback、History、Upload、RemoteConfig、Telemetry；`AdminUser`、`AdminConsent`、`AdminAi`、`AdminRemoteConfig` 是管理接口，客户端不调用。openapi 里不同模块的同名结构会互相覆盖，这些 DTO 照后端 Java 源码写，见技术架构 7.6。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
 - 隐私政策、用户协议和数据存放在境外由用户在登录页的勾选框里一起同意，验证码登录和密码登录都带服务端当前的 `policyVersion`；政策更新后服务端返回 20005 或 20009，弹一个最简的同意对话框，用户点同意后重试。客户端不代用户同意，不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。

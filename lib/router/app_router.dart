@@ -131,7 +131,10 @@ GoRouter appRouter(Ref ref) {
         routes: [
           GoRoute(
             path: _child(Paths.loginPhone, Paths.login),
-            builder: (_, state) => PhoneLoginPage(query: _loginQuery(state)),
+            builder: (_, state) => PhoneLoginPage(
+              query: _loginQuery(state),
+              revoking: state.uri.queryParameters['revoke'] == '1',
+            ),
           ),
           GoRoute(
             path: _child(Paths.loginPassword, Paths.login),

@@ -30,6 +30,23 @@ class const PhoneLoginRequestDto({
   Map<String, dynamic> toJson() => _$PhoneLoginRequestDtoToJson(this);
 }
 
+/// `/auth/phone/one-click/config` 的 `data`.
+@JsonSerializable(createToJson: false)
+class const OneClickConfigDto({final bool? enabled}) {
+  factory OneClickConfigDto.fromJson(Map<String, dynamic> json) =>
+      _$OneClickConfigDtoFromJson(json);
+}
+
+/// [accessToken] 是号码认证 SDK 在用户授权后给出的取号凭证, 服务端用它向阿里云换手机号.
+/// [policyVersion] 同 [PhoneLoginRequestDto.policyVersion].
+@JsonSerializable(createFactory: false, includeIfNull: false)
+class const OneClickLoginRequestDto({
+  required final String accessToken,
+  final String? policyVersion,
+}) {
+  Map<String, dynamic> toJson() => _$OneClickLoginRequestDtoToJson(this);
+}
+
 @JsonSerializable(createFactory: false, includeIfNull: false)
 class const PasswordLoginRequestDto({
   required final String userName,

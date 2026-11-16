@@ -10,6 +10,7 @@ environment:
 # 本地插件和 App 共用一次依赖解析和一份 pubspec.lock.
 workspace:
   - packages/eat_baidu_map
+  - packages/eat_number_auth
 
 dependencies:
   app_links: ^7.2.2
@@ -18,6 +19,8 @@ dependencies:
   dio: ^5.11.1
   eat_baidu_map:
     path: packages/eat_baidu_map
+  eat_number_auth:
+    path: packages/eat_number_auth
   flutter:
     sdk: flutter
   flutter_image_compress: ^2.5.1

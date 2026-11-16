@@ -1,0 +1,29 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 号码认证 SDK 的 aar 另外声明 ACCESS_WIFI_STATE, ACCESS_NETWORK_STATE 和 CHANGE_NETWORK_STATE:
+         连着 Wi-Fi 时取号请求也要走蜂窝网络, SDK 靠它们判断和切换网络. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application>
+        <!-- 授权页和二次确认弹窗, 都是窗口模式. 窗口模式的 Activity 在 Android 8.0 上不能指定方向, 所以跟随上一个页面. -->
+        <activity
+            android:name="com.mobile.auth.gatewayauth.LoginAuthActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            android:theme="@style/authsdk_activity_dialog" />
+        <activity
+            android:name="com.mobile.auth.gatewayauth.PrivacyDialogActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind"
+            android:theme="@style/authsdk_activity_dialog" />
+        <!-- 运营商协议的网页. 类名里的拼写是 SDK 原样. -->
+        <activity
+            android:name="com.mobile.auth.gatewayauth.activity.AuthWebVeiwActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
+    </application>
+</manifest>

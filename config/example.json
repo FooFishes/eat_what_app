@@ -6,6 +6,8 @@
   "BAIDU_MAP_AK_ANDROID": "",
   "BAIDU_MAP_AK_IOS": "",
   "BAIDU_MAP_AK_WEB": "",
+  "NUMBER_AUTH_KEY_ANDROID": "",
+  "NUMBER_AUTH_KEY_IOS": "",
   "PRIVACY_URL": "https://example.com/legal/privacy-policy.html",
   "TERMS_URL": "https://example.com/legal/user-agreement.html",
   "CROSS_BORDER_URL": "https://example.com/legal/cross-border.html"

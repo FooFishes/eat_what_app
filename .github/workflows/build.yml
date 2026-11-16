@@ -131,11 +131,15 @@ jobs:
       - run: dart run build_runner build --only-check
       # 原生桥的 Pigeon 生成文件也入库. 接口定义改了没重新生成, 此步失败.
       - name: Check Pigeon output
-        working-directory: packages/eat_baidu_map
         run: |
-          dart run pigeon --input pigeons/messages.dart
-          dart format lib/src/messages.g.dart
-          git diff --exit-code .
+          for plugin in eat_baidu_map eat_number_auth; do
+            (
+              cd "packages/$plugin"
+              dart run pigeon --input pigeons/messages.dart
+              dart format lib/src/messages.g.dart
+              git diff --exit-code .
+            )
+          done
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
       # riverpod_lint 等分析器插件的结果只由 dart analyze 报告.

@@ -11,6 +11,7 @@ import 'package:eat/core/platform/captcha/human_verifier.dart';
 import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
+import 'package:eat/core/platform/number_auth/number_auth.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/core/storage/secure_store.dart';
@@ -194,6 +195,8 @@ const testConfig = AppConfig(
   baiduMapAkAndroid: '',
   baiduMapAkIos: '',
   baiduMapAkWeb: '',
+  numberAuthKeyAndroid: '',
+  numberAuthKeyIos: '',
   privacyUrl: 'https://eat.test/privacy.html',
   termsUrl: 'https://eat.test/terms.html',
   crossBorderUrl: 'https://eat.test/cross-border.html',
@@ -253,6 +256,47 @@ class FakeHumanVerifier implements HumanVerifier {
     calls++;
     return outcome;
   }
+}
+
+/// 模拟的一键登录, 不访问号码认证 SDK.
+///
+/// 默认不支持, 登录页因此直接去验证码登录页. 测一键登录时把 [supported] 设为 true.
+class FakeNumberAuth implements NumberAuth {
+  @override
+  bool supported = false;
+
+  /// [prepare] 的结果: 当前环境能否拉起授权页.
+  bool available = true;
+
+  /// 授权页依次给出的结果. 只剩一个时重复使用.
+  List<NumberAuthOutcome> outcomes = [const NumberAuthGranted('ac-1')];
+
+  /// 设置后授权页一直开着, 完成它才给出结果. 用来测授权页开着时的界面.
+  Completer<void>? hold;
+
+  var prepares = 0;
+  var requests = 0;
+
+  /// 授权页是否开着. 拿到凭证后授权页留着, 等 [closeAuthPage].
+  var open = false;
+
+  @override
+  Future<bool> prepare() async {
+    prepares++;
+    return available;
+  }
+
+  @override
+  Future<NumberAuthOutcome> requestToken() async {
+    requests++;
+    await hold?.future;
+    final outcome = outcomes.length > 1 ? outcomes.removeAt(0) : outcomes.first;
+    open = outcome is NumberAuthGranted;
+    return outcome;
+  }
+
+  @override
+  Future<void> closeAuthPage() async => open = false;
 }
 
 /// 模拟的定位服务. 返回预设的权限和 WGS-84 坐标, 不访问系统.
@@ -380,6 +424,7 @@ class TestEnv {
   final kv = MemoryKvStore();
   final secure = MemorySecureStore();
   final verifier = FakeHumanVerifier();
+  final numberAuth = FakeNumberAuth();
   final location = FakeLocationService();
   final photos = FakePhotoPicker();
   final updater = FakeShorebirdUpdater();
@@ -405,6 +450,7 @@ class TestEnv {
         secureStoreProvider.overrideWithValue(secure),
         tokenStoreProvider.overrideWithValue(tokens),
         humanVerifierProvider.overrideWithValue(verifier),
+        numberAuthProvider.overrideWithValue(numberAuth),
         locationServiceProvider.overrideWithValue(location),
         photoPickerProvider.overrideWithValue(photos),
         linkSourceProvider.overrideWithValue(links),
