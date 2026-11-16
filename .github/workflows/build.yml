@@ -123,6 +123,10 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # 资源转换器给每个 SVG 单独起一个 dart run vector_graphics_compiler, flutter test 最多 64 个并发, flutter build 是核数的一半.
+      # 编译器的快照不存在时, 这些进程会同时从源码重编编译器, 每个 2–3 GB. 先串行编一个图标, 把快照生成好.
+      - name: Warm up vector_graphics_compiler
+        run: dart run vector_graphics_compiler --input=assets/icons/add.svg --output="$RUNNER_TEMP/warmup.vec"
       # 生成文件入库. 源文件修改后未重新生成, 或生成后未提交, 此步失败.
       - run: dart run build_runner build --only-check
       # 原生桥的 Pigeon 生成文件也入库. 接口定义改了没重新生成, 此步失败.
@@ -164,6 +168,9 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # 先生成 vector_graphics_compiler 的快照, 原因见 check.
+      - name: Warm up vector_graphics_compiler
+        run: dart run vector_graphics_compiler --input=assets/icons/add.svg --output="$RUNNER_TEMP/warmup.vec"
 
       - name: Prepare build arguments
         run: |
@@ -282,6 +289,9 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # 先生成 vector_graphics_compiler 的快照, 原因见 check.
+      - name: Warm up vector_graphics_compiler
+        run: dart run vector_graphics_compiler --input=assets/icons/add.svg --output="$RUNNER_TEMP/warmup.vec"
 
       # 百度地图 iOS SDK 不入库, 从百度 CDN 下载并转成 xcframework. 脚本里写着版本和校验值, 按脚本内容缓存.
       - uses: actions/cache@v4
@@ -362,6 +372,9 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # 先生成 vector_graphics_compiler 的快照, 原因见 check.
+      - name: Warm up vector_graphics_compiler
+        run: dart run vector_graphics_compiler --input=assets/icons/add.svg --output="$RUNNER_TEMP/warmup.vec"
 
       # CanvasKit 从自己的域名加载, 默认的 www.gstatic.com 在大陆访问不到.
       # 构建号写进 version.json, 启动时读出, 作为崩溃上报的 release.
