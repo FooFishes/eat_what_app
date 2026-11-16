@@ -1,6 +1,7 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
+import 'package:eat/core/platform/device/device_identity.dart';
 import 'package:eat/data/auth/auth_api.dart';
 import 'package:eat/data/auth/auth_dto.dart';
 import 'package:flutter/foundation.dart';
@@ -17,10 +18,12 @@ class const SignInResult({
 /// 负责登录, 发送验证码, 学生认证以及设置用户名和密码.
 ///
 /// 隐私政策需由用户亲自确认, 本类不代为同意, 登录请求仅携带调用方传入的政策版本.
+/// 各种登录请求都带上本机的安装 ID ([_installId]), 由服务端关联账号与设备.
 class AuthRepository {
-  AuthRepository(this._auth);
+  AuthRepository(this._auth, this._installId);
 
   final AuthApi _auth;
+  final Future<String> Function() _installId;
 
   static String get _device => kIsWeb ? 'WEB' : 'APP';
 
@@ -70,6 +73,7 @@ class AuthRepository {
         device: _device,
         policyVersion: policyVersion,
         deletionKey: deletionKey,
+        installId: await _installId(),
       ),
     ),
   );
@@ -92,6 +96,7 @@ class AuthRepository {
       OneClickLoginRequestDto(
         accessToken: accessToken,
         policyVersion: policyVersion,
+        installId: await _installId(),
       ),
     ),
   );
@@ -113,6 +118,7 @@ class AuthRepository {
         device: _device,
         policyVersion: policyVersion,
         deletionKey: deletionKey,
+        installId: await _installId(),
       ),
       captchaHeaders: ticket?.headers ?? const {},
     ),
@@ -180,5 +186,7 @@ class AuthRepository {
 }
 
 @Riverpod(keepAlive: true)
-AuthRepository authRepository(Ref ref) =>
-    AuthRepository(ref.watch(authApiProvider));
+AuthRepository authRepository(Ref ref) => AuthRepository(
+  ref.watch(authApiProvider),
+  () => ref.read(deviceIdentityProvider).installId(),
+);

@@ -8,6 +8,8 @@ import 'package:eat/core/network/api_client.dart';
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/core/network/upload_client.dart';
 import 'package:eat/core/platform/captcha/human_verifier.dart';
+import 'package:eat/core/platform/device/device_identity.dart';
+import 'package:eat/core/platform/device/device_profile.dart';
 import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
@@ -418,6 +420,28 @@ class FakeMapEngine implements MapEngine {
   }
 }
 
+/// 测试环境里本机的安装 ID.
+const testInstallId = '019365a0-7c3e-7d2a-9f1b-3e8c2a4d5f60';
+
+/// 固定返回 [testInstallId] 的安装 ID, 不读写安全存储.
+class FakeDeviceIdentity implements DeviceIdentity {
+  @override
+  Future<String> installId() async => testInstallId;
+}
+
+/// 测试环境里本机的设备档案.
+const testDeviceProfile = DeviceProfile(
+  platform: 'android',
+  hardwareId: 'a3f9c2e1d4b5a6f7',
+  model: 'Pixel 8',
+  osVersion: '14',
+  appVersion: '0.1.0',
+  appBuild: '1',
+  screenWidth: 412,
+  screenHeight: 915,
+  pixelRatio: 2.625,
+);
+
 /// 测试用的模拟环境. 网络和存储都在内存中, 网络层回调连接到登录态.
 class TestEnv {
   final adapter = FakeAdapter();
@@ -429,6 +453,9 @@ class TestEnv {
   final photos = FakePhotoPicker();
   final updater = FakeShorebirdUpdater();
   final links = FakeLinkSource();
+
+  /// 本机的设备档案. 测试档案变化时在创建容器前修改.
+  DeviceProfile deviceProfile = testDeviceProfile;
 
   /// 创建 Provider 容器. 给定 [session] 时以 [session] 为初始登录态.
   ///
@@ -455,6 +482,8 @@ class TestEnv {
         photoPickerProvider.overrideWithValue(photos),
         linkSourceProvider.overrideWithValue(links),
         hotUpdateProvider.overrideWithValue(HotUpdate(updater)),
+        deviceIdentityProvider.overrideWithValue(FakeDeviceIdentity()),
+        deviceProfileProvider.overrideWith((_) async => deviceProfile),
         uploadClientProvider.overrideWithValue(UploadClient(adapter: adapter)),
         apiClientProvider.overrideWith(
           (ref) => ApiClient(

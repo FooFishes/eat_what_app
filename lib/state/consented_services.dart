@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/telemetry/crash_reporter.dart';
+import 'package:eat/state/device.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +10,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'consented_services.g.dart';
 
-/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报与热更新检查), 状态值表示是否已启动.
+/// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 热更新检查和设备注册), 状态值表示是否已启动.
 ///
 /// 若启动时本机已有同意记录, 则由 `bootstrap` 在首帧前启动; 首次登录时由登录流程在写入同意记录后启动.
 @Riverpod(keepAlive: true)
@@ -38,6 +39,7 @@ class ConsentedServices extends _$ConsentedServices {
       fireImmediately: true,
     );
     unawaited(ref.read(hotUpdateProvider).downloadIfAvailable());
+    unawaited(ref.read(deviceRegistrationProvider).register());
   }
 
   static int? _userId(SessionState session) => switch (session) {

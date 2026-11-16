@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 及以下的自动备份规则, 排除安全存储的两个文件 (登录 token, 安装 ID 和加密它们的密钥).
+     Keystore 中的主密钥不随备份迁移, 若恢复到新设备, 密文将无法解密. 安装 ID 也不应在设备之间复制.
+     规则须与 data_extraction_rules.xml 保持一致. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml"/>
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml"/>
+</full-backup-content>

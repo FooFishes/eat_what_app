@@ -601,6 +601,7 @@ void main() {
           'code': '246810',
           'device': 'APP',
           'policyVersion': 'v3',
+          'installId': testInstallId,
         });
         expect(env.adapter.sent('POST /auth/phone/code'), hasLength(1));
         expect(env.adapter.sent('POST /auth/consent/grant'), isEmpty);

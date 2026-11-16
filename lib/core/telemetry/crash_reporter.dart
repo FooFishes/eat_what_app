@@ -65,6 +65,17 @@ class CrashReporter {
     );
   }
 
+  /// 记录一条本地异常的面包屑, 用于不中断流程的降级处理. [message] 不得包含个人信息.
+  static void recordBreadcrumb(String category, String message) {
+    Sentry.addBreadcrumb(
+      Breadcrumb(
+        category: category,
+        level: SentryLevel.warning,
+        message: message,
+      ),
+    );
+  }
+
   /// 记录路由跳转的面包屑, 挂在根导航器上.
   ///
   /// 不开启自动性能追踪.

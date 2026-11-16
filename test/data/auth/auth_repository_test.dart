@@ -39,6 +39,7 @@ void main() {
         'code': '246810',
         'device': 'APP',
         'policyVersion': 'v3',
+        'installId': testInstallId,
       });
       expect(env.adapter.sent('GET /auth/consent/policy'), isEmpty);
     });
@@ -114,6 +115,7 @@ void main() {
         'password': 'secret1',
         'device': 'APP',
         'policyVersion': 'v3',
+        'installId': testInstallId,
       });
       expect(sent.headers.containsKey('X-Captcha-Ticket'), isFalse);
     });

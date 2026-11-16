@@ -21,6 +21,7 @@ Map<String, dynamic> _$PhoneLoginRequestDtoToJson(
   'device': instance.device,
   'policyVersion': ?instance.policyVersion,
   'deletionKey': ?instance.deletionKey,
+  'installId': ?instance.installId,
 };
 
 OneClickConfigDto _$OneClickConfigDtoFromJson(Map<String, dynamic> json) =>
@@ -31,6 +32,7 @@ Map<String, dynamic> _$OneClickLoginRequestDtoToJson(
 ) => <String, dynamic>{
   'accessToken': instance.accessToken,
   'policyVersion': ?instance.policyVersion,
+  'installId': ?instance.installId,
 };
 
 Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
@@ -41,6 +43,7 @@ Map<String, dynamic> _$PasswordLoginRequestDtoToJson(
   'device': instance.device,
   'policyVersion': ?instance.policyVersion,
   'deletionKey': ?instance.deletionKey,
+  'installId': ?instance.installId,
 };
 
 CaptchaConfigDto _$CaptchaConfigDtoFromJson(Map<String, dynamic> json) =>

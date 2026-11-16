@@ -54,7 +54,7 @@ lib/
     copy/                   通用文案：动作叫法、错误提示
     format/                 价格「¥18」、时间「12 分钟前」、计数
     platform/               平台能力的接口和各端实现：定位、地图（map/：EatMap 和 App、Web 两套引擎、BD-09 换算，14.4）、选图压缩、分享、
-                            外部地图、推送、设备与安装 ID、版本、热更新、浏览器（仅 Web）、运营商一键登录（number_auth/，18.4）
+                            外部地图、推送、设备（device/：安装 ID 和设备档案，9.4）、版本、热更新、浏览器（仅 Web）、运营商一键登录（number_auth/，18.4）
     telemetry/              埋点 Analytics、崩溃上报 CrashReporter
   design/                   设计系统，不认识业务数据
     tokens/                 tokens.json 里只用 dart:ui 就能表达的部分：颜色原值、间距、圆角、尺寸、StageColor
@@ -81,9 +81,9 @@ lib/
                             每组：xxx_api.dart（请求与 JSON 解析）、xxx_repository.dart（缓存、合并、转领域模型）。
                             place/ 是校区、商圈和餐厅（含编辑、修改记录、评价）；recommend/ 是推荐店铺和不想去这家（10.6）；
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
-                            topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关
+                            topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关；device/ 是设备注册（9.4）
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态；
+                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态、设备注册；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
@@ -146,11 +146,11 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 1 | `WidgetsFlutterBinding.ensureInitialized()`；Web 上 `usePathUrlStrategy()` | 等 |
 | 2 | 读 `AppConfig`（编译期常量） | 立即 |
 | 3 | 读本地存储（`shared_preferences`）里的偏好；读安全存储里的 token | 等，几十毫秒 |
-| 4 | iOS 卸载重装检测：本地存储里没有「已安装」标记而 Keychain 里有 token，就清掉 Keychain（Keychain 卸载后会残留，`shared_preferences` 不会） | 等 |
+| 4 | iOS 卸载重装检测：本地存储里没有「已安装」标记而 Keychain 里有 token，就清掉 Keychain 里的登录态，安装 ID 不清（Keychain 卸载后会残留，`shared_preferences` 不会） | 等 |
 | 5 | 读本地同意记录、缓存的远程配置（没有就用内置默认值）、缓存的当前用户 | 等 |
 | 6 | 已同意隐私政策：先初始化 Sentry，再 `runApp`；没同意：直接 `runApp` | — |
 | 7 | 首帧：有登录态进 `/discover`（先显示缓存），没有进 `/login`；舞台先用上一次的舞台色 | — |
-| 8 | 首帧后、已同意：拉远程配置 → 版本检查 → 热更新检查 → `GET /user/info` 校验登录态 → 初始化推送（已登录时） | 后台 |
+| 8 | 首帧后、已同意：拉远程配置 → 版本检查 → 热更新检查 → `GET /user/info` 校验登录态 → 初始化推送（已登录时）；注册设备（9.4） | 后台 |
 
 第一次写入同意记录后（登录成功，或在登录页点「先逛逛」并同意），补做第 6、8 步里还没做的初始化；游客不校验登录态、不初始化推送。第 7 步对游客不变：游客不落盘，冷启动没有登录态就进 `/login`（产品 7.4）。
 
@@ -193,7 +193,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `navGlassTransparencyProvider` | 底部导航液态玻璃的透明度（存 `prefs.appearance.navGlass`，退出登录不清）；`MainShell` 读它传给 `EatNavBar` | 设置 → 个性化 |
 | `networkStatusProvider` | 最近一次请求是否连不上网 | 网络层 |
 | `tasteVocabularyProvider` | 口味词表。后端 v2 没有词表接口，本地返回五个口味；只有待接入的加标签面板在用，发布直接用 `Taste` | 只读 |
-| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查）是否已启动 | 启动时、首次写入同意记录时 |
+| `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查、设备注册）是否已启动 | 启动时、首次写入同意记录时 |
 | `publishedCountProvider` | 这次打开以来发布、编辑、恢复了几次；「我的」的统计和上传、餐厅详情的菜单、还开着的菜品详情监听它，变了就重新拉 | 加菜页、编辑菜品、新建店页、修改记录页 |
 | `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
@@ -552,8 +552,9 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 | --- | --- | --- | --- |
 | `tokenName`、`tokenValue` | 安全存储 | 账号 | 删 |
 | 注销的撤销凭据和申请注销的账号 id（`account.deletion`，9.2） | 安全存储 | 设备 | 留（撤销注销要用；用它登录了申请注销的账号后删） |
-| 安装 ID（首次启动随机生成，用于风控识别设备、埋点）。原来只有游客推荐去重在用，v2 推荐不收设备标识，`core/storage/device_id.dart` 已删除，以后接埋点时再加 | 安全存储 | 设备 | 留 |
+| 安装 ID（`device.installId`，首次启动随机生成的 UUID v7，用于风控识别设备、埋点，9.4） | 安全存储 | 设备 | 留 |
 | 隐私政策同意版本和时间 | `prefs.*` | 设备 | 留 |
+| 上次注册成功的设备档案摘要（`prefs.device.registered`，9.4） | `prefs.*` | 设备 | 留 |
 | 当前校区；堂食还是外卖（`prefs.scene`，`dine_in` 或 `delivery`） | `prefs.*` | 设备 | 留 |
 | 手动选的饭点和到期时间 | `prefs.*` | 设备 | 留 |
 | 上一次的舞台色 | `prefs.*` | 设备 | 留 |
@@ -599,6 +600,15 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 - 只有本地同意记录存在时才初始化 Sentry、Shorebird 检查、推送、埋点上报、读取设备信息（第 3 节）。
 - 百度地图 SDK 更晚：同意之后、第一次打开附近或新建店时才初始化（14.4）。
 - 号码认证 SDK 更早：登录要用它，所以用户在登录页勾选协议（或在协议对话框里同意）之后就初始化并预取号，这时本地同意记录还没写（18.4）。没勾选之前不碰它。
+
+**设备标识与设备注册**（方案见 `EatWhat_设备标识与风控.md`）
+
+- 一台设备由客户端自报的设备信息（标识和档案）描述，只当线索；信任只由平台签发、服务端验签的证据派生，而且派生是服务端的事。证据现在一个渠道都不接，`AttestationProvider` 等抽象到接渠道时再写。
+- **标识**：`core/platform/device/device_identity.dart` 的 `DeviceIdentity`，用 `uuid` 生成 v7，存安全存储（`device.installId`）。读安全存储失败就重新生成并记一次面包屑，不阻断启动。生成不等于采集，只在有同意记录后才发出去（登录请求除外，见下）。
+- **档案与硬件标识**：`deviceProfileProvider`（`core/platform/device/device_profile.dart`，平台相关部分用条件导入拆 `_io` / `_web`）。型号、系统版本、IDFV 用 `device_info_plus`，ANDROID_ID 用 `android_id`；App 版本、构建号来自 `pubspec.yaml`，有 Shorebird 补丁时构建号写成 `构建号+补丁号`；屏幕是逻辑像素和像素比。Web 取不到的项为 null，不编。
+- **注册**：`POST /device/register`（`data/device/`），游客和登录用户都调，同一安装 ID 重复提交按更新处理。同意记录写入后（启动流程第 8 步，和 Sentry、埋点并列）由 `consentedServicesProvider` 触发 `state/device.dart` 的 `DeviceRegistration`。上次成功注册的档案摘要存 `prefs.device.registered`，档案（App 版本、系统版本等）没变就不重发；失败静默，下次冷启动重试。首帧不等它。退出登录不注销设备，设备级数据留着。
+- **登录**：验证码、密码和一键登录的请求体都带 `installId`，服务端把它记在这次登录的会话里，把设备和账号关联起来。游客登录后客户端不做迁移。
+- 不加任何自定义请求头，不在设备注册和登录以外的请求里带设备信息。客户端不判断设备可信与否，不发 IDFA，不接 OAID。
 
 ### 9.5 隐私政策和数据跨境同意
 
@@ -1482,6 +1492,8 @@ class PushNotice({
 | --- | --- | --- | --- |
 | 热更新 | Shorebird | Shorebird | 不需要，提示「有新版本，请刷新页面」 |
 | 登录态 | Keystore | Keychain（卸载重装后残留，首次启动清理） | localStorage 加密存储（A10） |
+| 安装 ID（9.4） | 安全存储，卸载重装会变 | Keychain，卸载重装后大概率不变（首次启动清理登录态时不清它） | localStorage，可被清 |
+| 硬件标识 | ANDROID_ID（按签名和用户隔离，卸载重装不变） | `identifierForVendor`（同厂商 App 全部卸载后才变） | 没有 |
 | 本地存储 | `shared_preferences`（DataStore） | `shared_preferences`（NSUserDefaults） | localStorage，同一浏览器的标签页共用一份 |
 | 图片缓存 | 磁盘 | 磁盘 | 浏览器 HTTP 缓存 |
 | 人机验证 | WebView 加载 H5 | WebView 加载 H5 | 页面里直接加载 JS |
@@ -1490,6 +1502,7 @@ class PushNotice({
 | 返回 | 返回键：主页面先回发现再退出 | 侧滑返回 | 浏览器后退 |
 | 资源加载 | 安装包内 | 安装包内 | `--no-web-resources-cdn`，CanvasKit 和字体从自己的域名加载 |
 
+- Android 的安全存储（`FlutterSecureStorage.xml`、`FlutterSecureKeyStorage.xml`）排除出自动备份和设备迁移（`res/xml/backup_rules.xml`、`data_extraction_rules.xml`），Keystore 密钥不随备份走。
 - 平台判断只在 `core/platform/` 里做。需要 `dart:io` 或 `package:web` 的代码用条件导入拆成 `_io.dart` 和 `_web.dart`，Web 构建不能引用 `webview_flutter`、`flutter_local_notifications` 这类没有 Web 实现的包的平台代码路径（编译能过，但运行时会抛异常）。
 - Web 支持近两年的 Chrome、Safari、Edge、Firefox 和微信内置浏览器（产品 11.1）。微信里首屏要下载的东西（CanvasKit 压缩后约 2–3 MB、主程序、字体）见待确认 A14。
 - 渲染器先用默认的 CanvasKit（JS 编译）；临时工程里 Wasm 预检通过，等主流程稳定后再评估 `--wasm`。

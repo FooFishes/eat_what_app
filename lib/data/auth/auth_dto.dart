@@ -26,6 +26,9 @@ class const PhoneLoginRequestDto({
 
   /// 申请注销时保存在本机的撤销凭据. 若账号处于冷静期内, 验证码校验通过后将撤销注销.
   final String? deletionKey,
+
+  /// 本机的安装 ID. 服务端把它记在这次登录的会话里, 从而关联账号与设备.
+  final String? installId,
 }) {
   Map<String, dynamic> toJson() => _$PhoneLoginRequestDtoToJson(this);
 }
@@ -44,6 +47,9 @@ class const OneClickConfigDto({final bool? enabled}) {
 class const OneClickLoginRequestDto({
   required final String accessToken,
   final String? policyVersion,
+
+  /// 同 [PhoneLoginRequestDto.installId].
+  final String? installId,
 }) {
   Map<String, dynamic> toJson() => _$OneClickLoginRequestDtoToJson(this);
 }
@@ -57,6 +63,9 @@ class const PasswordLoginRequestDto({
 
   /// 同 [PhoneLoginRequestDto.deletionKey].
   final String? deletionKey,
+
+  /// 同 [PhoneLoginRequestDto.installId].
+  final String? installId,
 }) {
   Map<String, dynamic> toJson() => _$PasswordLoginRequestDtoToJson(this);
 }

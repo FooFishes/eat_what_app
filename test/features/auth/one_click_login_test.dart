@@ -86,6 +86,7 @@ void main() {
     expect(env.adapter.sent(_login).single.body, {
       'accessToken': 'ac-1',
       'policyVersion': 'v3',
+      'installId': testInstallId,
     });
     expect(container.read(sessionProvider), isA<SignedIn>());
     expect(locationOf(router), Paths.discover);
@@ -262,8 +263,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(env.adapter.sent(_login).map((r) => r.body), [
-          {'accessToken': 'ac-1', 'policyVersion': 'v3'},
-          {'accessToken': 'ac-1', 'policyVersion': 'v4'},
+          {
+            'accessToken': 'ac-1',
+            'policyVersion': 'v3',
+            'installId': testInstallId,
+          },
+          {
+            'accessToken': 'ac-1',
+            'policyVersion': 'v4',
+            'installId': testInstallId,
+          },
         ]);
         expect(env.numberAuth.requests, 1);
         expect(locationOf(router), Paths.discover);
