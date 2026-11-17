@@ -30,20 +30,24 @@ class EatApp extends ConsumerWidget {
       // 缺少默认样式时, 未指定样式的文字会显示为 Flutter 的缺省样式 (红字加黄色下划线).
       builder: (context, child) {
         final eat = context.eat;
-        return MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 2,
-          child: DefaultTextStyle(
-            style: eat.text.body.copyWith(color: eat.colors.ink),
-            child: ConsentHost(
-              navigatorKey: router.routerDelegate.navigatorKey,
-              child: RemoteConfigHost(
+        // 整个 App 底下铺一层白底. iOS 26 的键盘是半透明的圆角面板, 页面没画到的地方会透出原生视图的黑底.
+        return ColoredBox(
+          color: eat.colors.paper,
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 2,
+            child: DefaultTextStyle(
+              style: eat.text.body.copyWith(color: eat.colors.ink),
+              child: ConsentHost(
                 navigatorKey: router.routerDelegate.navigatorKey,
-                openPath: (location) => router.push(location),
-                child: BackFallback(
-                  fallback: () => router.go(Paths.discover),
-                  child: LoadFailureObserver(
-                    onShown: pages.loadFailed,
-                    child: child!,
+                child: RemoteConfigHost(
+                  navigatorKey: router.routerDelegate.navigatorKey,
+                  openPath: (location) => router.push(location),
+                  child: BackFallback(
+                    fallback: () => router.go(Paths.discover),
+                    child: LoadFailureObserver(
+                      onShown: pages.loadFailed,
+                      child: child!,
+                    ),
                   ),
                 ),
               ),

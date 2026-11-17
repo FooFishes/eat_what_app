@@ -5,6 +5,9 @@ import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
+import 'package:eat/design/tokens/eat_palette.dart';
+import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -140,6 +143,35 @@ void main() {
       {'event': 'publish_success', 'kind': 'FOOD'},
     ]);
     await tester.pump(const Duration(seconds: 2));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('键盘弹起时整页停在键盘上方，键盘后面铺白底', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+    tester.view.viewInsets = FakeViewPadding(
+      bottom: 300 * tester.view.devicePixelRatio,
+    );
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pump();
+
+    final inset = find.byType(KeyboardInset);
+    expect(tester.getRect(inset).bottom, 844, reason: '留白一直铺到屏幕底边, 在键盘后面');
+    final fill = tester.widget<ColoredBox>(
+      find.descendant(of: inset, matching: find.byType(ColoredBox)).first,
+    );
+    expect(fill.color, EatPalette.paper);
+    expect(
+      tester.getRect(find.byType(StageScaffold)).bottom,
+      lessThanOrEqualTo(844 - 300),
+      reason: '内容停在键盘上方',
+    );
     await unmountApp(tester, container);
   });
 

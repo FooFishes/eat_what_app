@@ -289,7 +289,7 @@ void main() {
   });
 
   group('KeyboardInset', () {
-    testWidgets('键盘升降时只有留白这层重建，里面读到的键盘高度是 0', (tester) async {
+    testWidgets('键盘升降时只有留白这层重建，里面读到的键盘高度是 0；传了 color 就铺在键盘后面', (tester) async {
       useScreen(tester, const Size(390, 844));
       var builds = 0;
       double? seen;
@@ -300,7 +300,10 @@ void main() {
           return const SizedBox.expand();
         },
       );
-      await _pump(tester, KeyboardInset(child: child));
+      await _pump(
+        tester,
+        KeyboardInset(color: const Color(0xFFFFFFFF), child: child),
+      );
       expect(builds, 1);
 
       for (final bottom in [100.0, 200.0, 300.0]) {
@@ -311,6 +314,19 @@ void main() {
       expect(builds, 1, reason: '键盘动画的每一帧不重建里面的内容');
       expect(seen, 0);
       expect(tester.getRect(find.byWidget(child)).bottom, 844 - 300);
+      expect(
+        tester
+            .widget<ColoredBox>(
+              find
+                  .descendant(
+                    of: find.byType(KeyboardInset),
+                    matching: find.byType(ColoredBox),
+                  )
+                  .first,
+            )
+            .color,
+        const Color(0xFFFFFFFF),
+      );
     });
   });
 

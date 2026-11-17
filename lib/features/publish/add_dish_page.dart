@@ -602,7 +602,9 @@ class _DishFormState extends ConsumerState<_DishForm> {
         if (!didPop) unawaited(_leave());
       },
       // 只有这一层跟着键盘动画每帧重建, 加菜页其余部分不重建.
+      // 键盘后面铺白底: 外面没有别的底色, iOS 26 半透明的圆角键盘后面会透出黑色.
       child: KeyboardInset(
+        color: context.eat.colors.paper,
         child: Column(
           children: [
             Expanded(
