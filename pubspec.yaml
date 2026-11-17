@@ -79,6 +79,12 @@ flutter:
     - assets/emoji/eyes_still.webp
     - assets/emoji/LICENSE-Twemoji.txt
     - assets/fonts/OFL-Inter.txt
+    # 中文字体只给安卓用, 不写在下方的 fonts 中: 那里的字体在 Web 上会于首帧前全部下载.
+    # 启动时由 EatFonts.loadSans 注册, 由 tool/subset_fonts.py 子集化生成.
+    - path: assets/fonts/NotoSansSC-VF.ttf
+      platforms: [android]
+    - path: assets/fonts/OFL-NotoSansSC.txt
+      platforms: [android]
     - assets/config/remote_defaults.json
     - shorebird.yaml
 

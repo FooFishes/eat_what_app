@@ -1,5 +1,6 @@
 import 'package:eat/app.dart';
 import 'package:eat/core/network/api_client.dart';
+import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/api_hooks.dart';
 import 'package:eat/state/consented_services.dart';
@@ -22,6 +23,8 @@ Future<void> bootstrap() async {
   // Web 使用路径形式的地址 (/dishes/123) 而非 #/dishes/123, 与分享链接和 App Links 保持一致.
   usePathUrlStrategy();
   LicenseRegistry.addLicense(_assetLicenses);
+  // 中文字体约 4 MB, 与下方读取本地数据并行加载, 首帧前完成.
+  final fonts = EatFonts.loadSans();
   final container = ProviderContainer(
     overrides: stateOverrides,
     retry: retryOnNetworkFailure,
@@ -35,6 +38,7 @@ Future<void> bootstrap() async {
   container.read(analyticsProvider).observeLifecycle();
   // 导航的液态玻璃采用自定义着色器绘制. 首帧前预载着色器, 避免导航栏出现白屏闪烁.
   await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
+  await fonts;
   runApp(
     UncontrolledProviderScope(
       container: container,
@@ -49,7 +53,9 @@ Future<void> bootstrap() async {
 
 /// 注册内置字体, 图标和 emoji 图片的许可证. OFL, Apache-2.0 和 CC BY 均要求随资源分发协议或署名, 注册后将展示在系统许可证页中.
 Stream<LicenseEntry> _assetLicenses() async* {
-  const assets = {
+  final assets = {
+    if (EatFonts.sans != null)
+      'Noto Sans SC': 'assets/fonts/OFL-NotoSansSC.txt',
     'Inter': 'assets/fonts/OFL-Inter.txt',
     'MingCute': 'assets/LICENSE-MingCute.txt',
     'Twemoji': 'assets/emoji/LICENSE-Twemoji.txt',

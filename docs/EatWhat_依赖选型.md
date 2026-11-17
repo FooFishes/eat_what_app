@@ -342,13 +342,19 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 字体 | 用途 | 来源与许可 | 原始大小 | 做法 |
 | --- | --- | --- | --- | --- |
-| 系统字体 | 全部中文 | 系统自带 | — | 不内置；安卓 Roboto 加系统中文字体，iOS SF 加苹方 |
+| Noto Sans SC | 安卓上的全部中文 | Google Fonts，OFL | 可变字体 `NotoSansSC[wght].ttf` 17.8 MB | 子集化到 GB 2312 和常用标点，改写字重映射后只打进安卓包，3.9 MB |
+| 系统字体 | iOS 的中文 | 系统自带 | — | 苹方，不内置 |
+| 回落字体 | Web 的中文 | 引擎按需下载 Noto Sans SC 的分片 | — | 不内置，回落地址指向自托管副本 |
 | Inter | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `Inter[opsz,wght].ttf` 876,576 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
 
-- 中文原先内置 Noto Sans SC 的 GB 2312 子集（3.9 MB）。2026-11-11 改用系统字体：贴近各平台原生观感，安装包小约 3.9 MB，也不再有子集外生僻字字形不一致的问题。代价是苹方最粗只有 Semibold，安卓不少机型只有常规和粗体两档，舞台主角的 800 在这些系统上会细一些。
+- 中文原先内置 Noto Sans SC，2026-11-11 改用系统字体，2026-11-17 安卓又改回内置：安卓各厂商的系统中文字体不同（小米 MiSans、华为 HarmonyOS Sans、原生 Noto 等），汉字的视觉大小和字重差别明显，同一字号在不同机型上观感不一。iOS 的苹方效果好，继续用系统字体。代价是安卓包大 3.9 MB，子集外的生僻字由系统字体显示，字形会不同。
+- 选字体时比较过 MiSans 和 HarmonyOS Sans。MiSans 的大小和行内位置最接近苹方，但《MiSans 字体知识产权许可协议》写明「不得对 MiSans 字体或其任何单独组件进行改编或二次开发」，不能子集化，原样内置要 20 MB；HarmonyOS Sans 的协议同样禁止修改，只有静态字重，四档原文件约 33 MB。两者都放弃。另外两者的字重都偏粗：MiSans 的 `wght` 轴不是标准刻度（Regular 在 330，Bold 在 630，上限 700），Flutter 把 `FontWeight(400)` 原样设成 wght 400，落在 Medium 和 Demibold 之间；小米机型的系统字体在 Flutter 里显得粗也是这个原因。
+- **字重映射**：按样例汉字的笔画面积（去掉轮廓重叠后）对比苹方，Noto 的 400 和苹方 Regular 相当，600 以上偏粗；iOS 上苹方最粗只有 Semibold，600–800 都显示成它。`tool/subset_fonts.py` 改写字体的 `avar` 表，让样式里写的 400 / 600 / 700 / 800 实际取 Noto 的 wght 400 / 560 / 600 / 640：700 对齐苹方 Semibold，600 略细、800 略粗，保留层次。映射写在字体里，代码照常写 `FontWeight`，散在各组件里的字重也一起生效。
+- Noto Sans SC 的间隔号「·」是全角宽度，苹方的是半宽。子集不收这个字符，中文样式把 Inter 设为回落字体，由 Inter 的半宽间隔号显示。
+- **只打进安卓包**：`pubspec.yaml` 的 `fonts` 里声明的字体，Web 会在首帧前全部下载（引擎的 `_downloadAssetFonts`），所以 Noto 不写在 `fonts` 里，而是作为普通资源加 `platforms: [android]`，启动时由 `EatFonts.loadSans` 用 `FontLoader` 注册。iOS 和 Web 的包里没有这个文件。
 - Inter 用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；另按字号设 `opsz`（技术架构 11.5）。
 - 数字原先用设计稿里的 Bricolage Grotesque，字形个性强，小字号下 `6 8 9`、`3 5` 不好认，换成为屏幕小字号设计的 Inter。Inter 字形开口大，带等宽数字 `tnum`。
-- `tool/subset_fonts.py` 把 Inter 裁到 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。
+- `tool/subset_fonts.py` 把 Noto Sans SC 裁到 GB 2312 和常用标点并改写字重映射，把 Inter 裁到 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。
 - **Web 的问题**：Flutter Web（CanvasKit、skwasm）用不了浏览器的系统字体，缺字时默认去 `fonts.gstatic.com` 按需下载 Noto 系列回落字体的分片（中文、emoji 都是），大陆访问不到。构建时用 `--no-web-resources-cdn`，并把 `fontFallbackBaseUrl` 指向我们自己托管的回落字体副本，否则 Web 上的中文会显示成方块。
 - 不用 `google_fonts`（运行时从境外下载）。
 - 字体文件放项目 `assets/fonts/`，在 `pubspec.yaml` 声明；`prototype/` 里的资源不直接引用。子集化脚本放 `tool/`，输出入库，CI 不跑。
@@ -546,5 +552,5 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | D4 | 崩溃上报的 Sentry 放哪、谁维护 | 沿用自建 Sentry（legacy 的 `sentry.orbithy.com` 或新部署），数据和业务一起在境外，写进隐私政策。要确认谁维护、大陆访问速度 | 产品负责人、后端 |
 | D5 | 统计埋点自建还是用第三方 | 已定（2026-11-02）：自建，上报到后端 `/telemetry`；崩溃仍用 Sentry | — |
 | D6 | 人机验证服务商 | 已定：腾讯云验证码国际站，后端已接（第 15 节）。还要实测国际站 JS 在大陆网络下的表现，确认验证数据的存放地写进隐私政策 | 产品负责人、后端 |
-| D7 | 中文字体怎么内置 | 已定（2026-11-11）：不内置，安卓、iOS 用系统字体，Web 用自托管的回落字体；数字仍内置 Inter（第 9.1 节） | — |
+| D7 | 中文字体怎么内置 | 已定（2026-11-17）：安卓内置 Noto Sans SC 子集并校正字重，iOS 用苹方，Web 用自托管的回落字体；数字仍内置 Inter（第 9.1 节） | — |
 | D8 | 自动去背景放哪做 | 已定（2026-11-14）：不做 | — |

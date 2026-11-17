@@ -1,12 +1,52 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 
-/// 字体族.
+/// 字体族. 字体文件和许可证位于 `assets/fonts/`.
 ///
-/// 文字默认使用系统字体: 安卓为 Roboto 加系统中文字体, iOS 为 SF 加苹方, 因此中文样式不指定字体族.
-/// 只有数字使用内置的 Inter, 字体文件和许可证位于 `assets/fonts/`.
+/// 中文在安卓上使用内置的 Noto Sans SC: 各厂商的系统中文字体大小和字重差别明显, 内置后各机型显示一致.
+/// iOS 使用系统的苹方. Web 无法使用浏览器的系统字体, 由引擎按需下载回落字体;
+/// 不内置是因为 Web 会在首帧前下载全部声明的字体, 首屏将多出约 4 MB.
+/// 数字三端都使用内置的 Inter.
 abstract final class EatFonts {
-  /// 数字字体, 仅用于价格, 距离, 统计和计数; 缺字时回落到系统字体.
+  /// 安卓内置的中文字体族名.
+  static const bundledSans = 'NotoSansSC';
+
+  /// 数字字体, 仅用于价格, 距离, 统计和计数; 缺字时回落到中文字体.
   static const numeral = 'Inter';
+
+  /// 中文字体文件. 只打进安卓包 (`pubspec.yaml` 中限定了平台), 由 [loadSans] 在启动时注册.
+  ///
+  /// 不写在 `fonts` 中: 那里的字体在 Web 上会于首帧前全部下载.
+  static const _sansAsset = 'assets/fonts/NotoSansSC-VF.ttf';
+
+  /// 当前平台的中文字体族; 为 null 时使用系统字体.
+  static final String? sans = sansFor(defaultTargetPlatform, isWeb: kIsWeb);
+
+  /// 给定平台的中文字体族.
+  @visibleForTesting
+  static String? sansFor(TargetPlatform platform, {required bool isWeb}) =>
+      !isWeb && platform == TargetPlatform.android ? bundledSans : null;
+
+  /// 注册内置的中文字体, 需在首帧前完成, 否则首帧会先用系统字体排版.
+  ///
+  /// 加载失败时上报错误并继续启动, 文字回落到系统字体.
+  static Future<void> loadSans() async {
+    final family = sans;
+    if (family == null) return;
+    try {
+      await (FontLoader(family)..addFont(rootBundle.load(_sansAsset))).load();
+    } catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'eat design',
+          context: ErrorDescription('加载内置中文字体'),
+        ),
+      );
+    }
+  }
 }
 
 /// 文字样式表.
@@ -77,6 +117,9 @@ TextStyle _sans(
   int weight, {
   double? letterSpacing,
 }) => TextStyle(
+  fontFamily: EatFonts.sans,
+  // 内置的中文字体不含间隔号 · (全角过宽), 由 Inter 的半宽间隔号显示, 见 tool/subset_fonts.py.
+  fontFamilyFallback: [if (EatFonts.sans != null) EatFonts.numeral],
   fontSize: size,
   height: lineHeight / size,
   leadingDistribution: TextLeadingDistribution.even,
@@ -95,6 +138,7 @@ TextStyle _numeral(
   bool tabular = false,
 }) => TextStyle(
   fontFamily: EatFonts.numeral,
+  fontFamilyFallback: [?EatFonts.sans],
   fontSize: size,
   height: lineHeight / size,
   leadingDistribution: TextLeadingDistribution.even,

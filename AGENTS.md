@@ -37,7 +37,7 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
-assets/              进 App 的资源：fonts/（子集化的 Inter 和许可证）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图，署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）
+assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图，署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）
 tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
@@ -126,7 +126,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 - **舞台色**：只有 9 个 `stage-*`，做成枚举，每个值自带文字色和次按钮色，深浅写死。从照片取色只看圆形取景内的像素，按饱和度加权后吸附到最近的 `stage-*`，不可靠时用分类默认色。
 - **导航**：`NavBar` 只出现在发现、附近、我的三个主页面，悬浮在内容上方；滚动列表底部留出约 100px。
 - **颜色**：没有品牌主色，主操作用 `ink` 实心；`warn` 只用于提示用户该做什么，且必须配文字。
-- **字体**：中文用系统字体（安卓 Roboto 加系统中文字体，iOS 苹方），不内置；Inter 只用于数字（价格、距离、计数），内置。字号用 `EatTextStyles` 的预设，偏差不大的地方先用预设；字重只用 400、600、700、800，800 只给舞台上的主角。选中态靠字重，不靠颜色。
+- **字体**：中文在安卓上用内置的 Noto Sans SC（各厂商系统字体的大小和字重差别大，内置后各机型一致），iOS 用系统的苹方，Web 用引擎按需下载的回落字体；Inter 只用于数字（价格、距离、计数），三端内置。字号用 `EatTextStyles` 的预设，偏差不大的地方先用预设；字重只用 400、600、700、800，800 只给舞台上的主角。选中态靠字重，不靠颜色。
 - **形状**：能点的都是胶囊；盘子、地图标记和头像永远是正圆（`DishPlate` 带 8px 白色盘沿），列表缩略图是方圆角（`radius-thumb`），推荐流方块是圆角方图。阴影只用在规范列出的几处，不给卡片加投影。
 - **图标**：MingCute 官方一套（`@mingcute/svg`），默认用空心（Regular），按用途命名，`EatIcons` 同时是用途名和官方名的对照表，SVG 在 `assets/icons/`，颜色用 `currentColor` 跟着文字。只有赞过 `heart-on`、收藏过 `bookmark-on` 和底部导航选中的标签（`discover-on` `nearby-on` `me-on`）用实心（Filled），不混用其他图标库，不用 emoji。
 - **文案**：短句。引导（标题、按钮、空状态）可以用同学之间说话的语气；提示和报错（轻提示、校验、拦截、确认、系统消息、失败）用规范短句，不用「一下」「吧」「开小差」这类口语，不显示错误码；距离「320 m」、价格「¥18」；专题、标签用「」引用；不用 emoji 和感叹号。唯一的例外是登录页的两个动画表情，介绍文案末尾的思考表情和「先逛逛」卷角后面的眼睛：用 `assets/emoji/` 里的图片（`lib/design/icons/emoji.dart`），不用系统 emoji 字体，其他位置不加。还没有接口的功能照样画出来，旁边放「待接入」虚线标签（`Chip`）。
