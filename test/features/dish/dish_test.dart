@@ -46,7 +46,7 @@ void main() {
 
     expect(find.text('招牌 · 主食'), findsOneWidget);
     expect(find.text('鲜虾蟹\n籽云吞'), findsOneWidget);
-    expect(find.text('¥18'), findsOneWidget);
+    expect(find.text('¥ 18'), findsOneWidget);
     expect(find.text('袁记云饺'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('辣'), findsOneWidget);

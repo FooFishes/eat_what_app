@@ -203,9 +203,9 @@ class _EatFormFieldState extends State<EatFormField> {
                 ExcludeSemantics(
                   child: Text(prefix, style: inputStyle.copyWith(color: c.ink)),
                 ),
-                // 价格前缀 "¥" 紧贴数字, 区号 (如 "+86") 与号码之间则用竖线分隔.
+                // 价格前缀 "¥" 和数字之间隔约一个空格, 与显示的 "¥ 18" 一致; 区号 (如 "+86") 与号码之间则用竖线分隔.
                 if (widget.price)
-                  const SizedBox(width: 2)
+                  const SizedBox(width: EatSpace.s4)
                 else ...[
                   const SizedBox(width: EatSpace.s10),
                   Container(width: 1, height: 20, color: c.hairline),

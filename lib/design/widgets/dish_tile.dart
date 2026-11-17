@@ -60,7 +60,7 @@ class DishTile extends StatelessWidget {
   final ImageProvider? image;
   final String name;
 
-  /// 价格文字 (如 "¥18"), 为 null 时不显示.
+  /// 价格文字 (如 "¥ 18"), 为 null 时不显示.
   final String? price;
 
   /// 店名, 用于推荐流和搜索结果.

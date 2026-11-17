@@ -219,6 +219,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
-    expect(find.text('有「鲜虾云吞」 ¥18'), findsOneWidget);
+    expect(find.text('有「鲜虾云吞」 ¥ 18'), findsOneWidget);
   });
 }

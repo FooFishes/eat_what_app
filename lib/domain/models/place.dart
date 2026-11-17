@@ -70,9 +70,9 @@ enum ShopCategory {
 
 /// 店铺人均价位区间, 由创建或编辑店铺的用户选填.
 enum PriceBand {
-  under15('UNDER_15', '¥15 以下'),
-  from15To30('FROM_15_TO_30', '¥15–30'),
-  over30('OVER_30', '¥30 以上');
+  under15('UNDER_15', '¥ 15 以下'),
+  from15To30('FROM_15_TO_30', '¥ 15–30'),
+  over30('OVER_30', '¥ 30 以上');
 
   const new(this.api, this.label);
 

@@ -100,11 +100,11 @@ abstract final class DishRules {
     return colors;
   }
 
-  /// 价格的显示文字, 如 "¥18" "¥18.5". 没有价格时返回 null.
+  /// 价格的显示文字, 如 "¥ 18" "¥ 18.5", 符号和数字之间隔一个空格. 没有价格时返回 null.
   static String? priceText(double? price) {
     if (price == null) return null;
     final fixed = price.toStringAsFixed(1);
-    return '¥${fixed.endsWith('.0') ? fixed.substring(0, fixed.length - 2) : fixed}';
+    return '¥ ${fixed.endsWith('.0') ? fixed.substring(0, fixed.length - 2) : fixed}';
   }
 
   /// 获赞最多的 [count] 道菜, 用于个人主页的舞台.

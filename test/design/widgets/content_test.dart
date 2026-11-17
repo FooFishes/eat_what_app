@@ -251,7 +251,7 @@ void main() {
         child: DishTile(
           image: null,
           name: '老坛酸菜牛肉手擀宽面加蛋',
-          price: '¥19.5',
+          price: '¥ 19.5',
           shop: '鲁味面食档',
           distance: '70 m',
           onTap: () {},
@@ -261,7 +261,7 @@ void main() {
 
     expect(tester.takeException(), isNull, reason: '菜名再长也只截断菜名');
     final name = tester.getRect(find.text('老坛酸菜牛肉手擀宽面加蛋'));
-    final price = tester.getRect(find.text('¥19.5'));
+    final price = tester.getRect(find.text('¥ 19.5'));
     expect(price.left, greaterThan(name.right - 1));
     expect(
       price.right,
@@ -279,7 +279,7 @@ void main() {
         child: DishTile(
           image: null,
           name: '红烧肉盖饭',
-          price: '¥15',
+          price: '¥ 15',
           likes: 412,
           compact: true,
           onTap: () {},
@@ -290,7 +290,7 @@ void main() {
     final image = tester.getSize(find.byType(CoverImage));
     expect(image.width, image.height);
     expect(
-      tester.getTopLeft(find.text('¥15')).dy,
+      tester.getTopLeft(find.text('¥ 15')).dy,
       greaterThan(tester.getTopLeft(find.text('红烧肉盖饭')).dy),
     );
     expect(

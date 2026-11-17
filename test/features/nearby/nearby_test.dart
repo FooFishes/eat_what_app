@@ -186,7 +186,7 @@ void main() {
 
     await tap('甜点饮品');
     await tap('粉面');
-    await tap('¥15–30');
+    await tap('¥ 15–30');
     expect(find.text('至少 3 条评价，推荐率不低于 70%'), findsOneWidget);
     await tap('只看口碑好的');
     final query = env.adapter.sent('GET /restaurant/browse').last.query;

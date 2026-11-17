@@ -169,7 +169,7 @@ void main() {
     );
 
     expect(tester.widget<EatChip>(_chip('粉面')).selected, isTrue);
-    expect(tester.widget<EatChip>(_chip('¥15 以下')).selected, isTrue);
+    expect(tester.widget<EatChip>(_chip('¥ 15 以下')).selected, isTrue);
     await tester.ensureVisible(_button('清空偏好'));
     await tester.pumpAndSettle();
     await tester.tap(_button('清空偏好'));

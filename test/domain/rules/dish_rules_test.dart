@@ -59,8 +59,8 @@ void main() {
   });
 
   test('价格：整数不写小数，最多一位小数', () {
-    expect(DishRules.priceText(18), '¥18');
-    expect(DishRules.priceText(18.5), '¥18.5');
+    expect(DishRules.priceText(18), '¥ 18');
+    expect(DishRules.priceText(18.5), '¥ 18.5');
     expect(DishRules.priceText(null), isNull);
   });
 

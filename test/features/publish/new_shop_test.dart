@@ -159,7 +159,7 @@ void main() {
     expect(find.text('品类最多选 2 个'), findsOneWidget);
     await tap(tester, '辣');
     await tap(tester, '早饭');
-    await tap(tester, '¥15 以下');
+    await tap(tester, '¥ 15 以下');
     expect(find.text('能点外卖'), findsNothing);
     await submit(tester);
 

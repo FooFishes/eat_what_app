@@ -133,7 +133,7 @@ class _KitPageState extends State<KitPage> {
                 style: eat.text.stage,
               ),
               Text(
-                '¥18',
+                '¥ 18',
                 textScaler: TextScaler.noScaling,
                 style: eat.text.priceHero,
               ),
@@ -307,7 +307,7 @@ class _KitPageState extends State<KitPage> {
             leading: const ListThumb(image: null, size: 56),
             title: const Text('红烧肉'),
             lines: const [Text('64 人收藏')],
-            trailing: Text('¥38', style: eat.text.priceInline),
+            trailing: Text('¥ 38', style: eat.text.priceInline),
             action: EatIconButton(
               EatIcons.bookmarkOn,
               label: '已收藏',

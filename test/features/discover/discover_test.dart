@@ -72,7 +72,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('袁记云饺'), findsNWidgets(2));
-    expect(_offRows('¥18'), 1, reason: '舞台上的价格');
+    expect(_offRows('¥ 18'), 1, reason: '舞台上的价格');
     expect(find.text('86% 推荐'), findsOneWidget, reason: '舞台上的推荐率');
     expect(find.text('招牌：鲜虾蟹籽云吞'), findsNothing, reason: '招牌菜在店铺行下面单独排成方块');
     expect(find.text('万达金街'), findsWidgets, reason: '没有定位时写商圈名');
@@ -94,7 +94,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(_offRows('一碗面'), 1, reason: '舞台换到下一家');
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(_offRows('¥18'), 0, reason: '没有招牌菜的店名是大字，不写价格');
+    expect(_offRows('¥ 18'), 0, reason: '没有招牌菜的店名是大字，不写价格');
     expect(find.text('50% 推荐'), findsNothing, reason: '评价不满 3 条不显示推荐率');
 
     await tester.tap(find.text('就它了'));
@@ -156,11 +156,11 @@ void main() {
     expect(inFirst(find.byType(ListThumb)), findsNothing, reason: '不放门头照');
     expect(inFirst(find.text('招牌')), findsOneWidget, reason: '只有标过招牌的菜挂签');
     expect(
-      inFirst(find.textContaining('¥12', findRichText: true)),
+      inFirst(find.textContaining('¥ 12', findRichText: true)),
       findsOneWidget,
     );
     expect(
-      inFirst(find.textContaining('¥18', findRichText: true)),
+      inFirst(find.textContaining('¥ 18', findRichText: true)),
       findsOneWidget,
       reason: '第一道是主图',
     );
