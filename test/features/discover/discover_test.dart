@@ -2,9 +2,13 @@ import 'dart:math' as math;
 
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/turntable.dart';
+import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/features/discover/shop_entry.dart';
+import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
@@ -34,6 +38,14 @@ Map<String, Object?> _feed({bool hasNext = false}) => FakeAdapter.ok(
   ], hasNext: hasNext),
 );
 
+/// 抽屉店铺条目以外 (即舞台上) 文字为 [text] 的组件数.
+int _offRows(String text) =>
+    find.text(text).evaluate().length -
+    find
+        .descendant(of: find.byType(ShopEntry), matching: find.text(text))
+        .evaluate()
+        .length;
+
 void main() {
   late TestEnv env;
 
@@ -60,9 +72,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('袁记云饺'), findsNWidgets(2));
-    expect(find.text('¥18'), findsOneWidget);
+    expect(_offRows('¥18'), 1, reason: '舞台上的价格');
     expect(find.text('86% 推荐'), findsOneWidget, reason: '舞台上的推荐率');
-    expect(find.text('招牌：鲜虾蟹籽云吞'), findsOneWidget, reason: '店铺行的第三行');
+    expect(find.text('招牌：鲜虾蟹籽云吞'), findsNothing, reason: '招牌菜在店铺行下面单独排成方块');
     expect(find.text('万达金街'), findsWidgets, reason: '没有定位时写商圈名');
     final sent = env.adapter.sent('GET /recommend');
     expect(
@@ -79,14 +91,127 @@ void main() {
 
     await tester.tap(find.text('换一个'));
     await tester.pumpAndSettle();
-    expect(find.text('一碗面'), findsNWidgets(2));
+    expect(_offRows('一碗面'), 1, reason: '舞台换到下一家');
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.text('¥18'), findsNothing, reason: '没有招牌菜的店名是大字，不写价格');
+    expect(_offRows('¥18'), 0, reason: '没有招牌菜的店名是大字，不写价格');
     expect(find.text('50% 推荐'), findsNothing, reason: '评价不满 3 条不显示推荐率');
 
     await tester.tap(find.text('就它了'));
     await tester.pumpAndSettle();
     expect(tester.widget<ShopPage>(find.byType(ShopPage)).shopId, 2);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('抽屉里每家店：序号和推荐理由，菜排成一行、第一道最宽，不放门头照；点菜进菜品详情、点店名进餐厅详情', (
+    tester,
+  ) async {
+    env.adapter.on('GET /recommend', [
+      FakeAdapter.ok(
+        feedJson([
+          cardJson(
+            id: 1,
+            moreFoods: [
+              {
+                'id': 201,
+                'name': '鲜肉小馄饨',
+                'price': 12,
+                'pictureUrl': 'https://img.test/foods/2.jpg',
+                'signature': true,
+                'rating': {'score': 4.3, 'count': 5},
+              },
+              {'id': 202, 'name': '紫菜蛋花汤', 'price': null},
+            ],
+          ),
+          cardJson(
+            id: 2,
+            name: '一碗面',
+            signature: null,
+            moreFoods: [
+              {
+                'id': 301,
+                'name': '牛肉面',
+                'price': 16,
+                'rating': {'score': 4.0, 'count': 7},
+              },
+            ],
+          ),
+        ]),
+      ),
+    ]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+
+    final first = find.ancestor(
+      of: find.textContaining('紫菜蛋花汤', findRichText: true),
+      matching: find.byType(ShopEntry),
+    );
+    Finder inFirst(Finder finder) =>
+        find.descendant(of: first, matching: finder);
+    expect(inFirst(find.byType(CoverImage)), findsNWidgets(3));
+    expect(inFirst(find.byType(DishPlate)), findsNothing, reason: '带盘沿的盘子只给舞台');
+    expect(inFirst(find.byType(ListThumb)), findsNothing, reason: '不放门头照');
+    expect(inFirst(find.text('招牌')), findsOneWidget, reason: '只有标过招牌的菜挂签');
+    expect(
+      inFirst(find.textContaining('¥12', findRichText: true)),
+      findsOneWidget,
+    );
+    expect(
+      inFirst(find.textContaining('¥18', findRichText: true)),
+      findsOneWidget,
+      reason: '第一道是主图',
+    );
+    expect(
+      inFirst(find.textContaining('4.3 分', findRichText: true)),
+      findsNothing,
+      reason: '一行里的菜只写菜名和价格',
+    );
+    expect(inFirst(find.text('01')), findsOneWidget, reason: '榜单序号');
+    expect(inFirst(find.text('86%')), findsOneWidget, reason: '推荐理由：推荐率');
+    expect(
+      inFirst(find.textContaining('招牌：')),
+      findsNothing,
+      reason: '菜已经摆出来了，不再写一行招牌菜名',
+    );
+
+    await tester.dragUntilVisible(
+      find.textContaining('牛肉面', findRichText: true),
+      first,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    final second = find.ancestor(
+      of: find.textContaining('牛肉面', findRichText: true),
+      matching: find.byType(ShopEntry),
+    );
+    expect(
+      find.descendant(of: second, matching: find.text('02')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: second, matching: find.byType(CoverImage)),
+      findsOneWidget,
+      reason: '只有一道菜时图在左，菜名和价格在右',
+    );
+
+    await tester.ensureVisible(
+      find.textContaining('鲜肉小馄饨', findRichText: true),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('鲜肉小馄饨', findRichText: true));
+    await tester.pumpAndSettle();
+    expect(tester.widget<DishPage>(find.byType(DishPage)).dishId, 201);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    // 刚才往下翻过, 店名被固定在顶部的分类栏挡住, 先拉回来再点.
+    await tester.drag(first, const Offset(0, 400));
+    await tester.pumpAndSettle();
+    await tester.tap(inFirst(find.text('袁记云饺')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<ShopPage>(find.byType(ShopPage)).shopId, 1);
     await unmountApp(tester, container);
   });
 
@@ -118,7 +243,7 @@ void main() {
         .first;
     await tester.dragFrom(tester.getCenter(plate), const Offset(-120, 0));
     await tester.pumpAndSettle();
-    expect(find.text('老王烧烤'), findsNWidgets(2), reason: '拖到了第三家');
+    expect(_offRows('老王烧烤'), 1, reason: '拖到了第三家');
     await tester.dragFrom(tester.getCenter(plate), const Offset(-2, 0));
     await tester.pumpAndSettle();
 
@@ -153,7 +278,7 @@ void main() {
     expect(env.adapter.sent('POST /recommend/dismiss/1'), hasLength(1));
     expect(find.text('30 天内不再推荐这家店'), findsOneWidget);
     expect(find.text('袁记云饺'), findsNothing);
-    expect(find.text('一碗面'), findsNWidgets(2), reason: '舞台停在下一家');
+    expect(_offRows('一碗面'), 1, reason: '舞台停在下一家');
     await _waitToast(tester);
     await unmountApp(tester, container);
   });

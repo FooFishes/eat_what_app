@@ -33,6 +33,19 @@ abstract final class EatMotion {
 
   static const pressOffset = 1.0;
 
+  /// 用于照片方块按下: 缩到 [tilePressScale], 松开后复原. 照片没有厚度, 下沉 1px 看不出来, 改为轻微缩小.
+  static const tilePressScale = 0.97;
+
+  /// 用于列表条目第一次出现: 从下方 [revealOffset] 处淡入上移, 相邻条目依次错开 [revealStagger].
+  static const EatTransition reveal = (
+    duration: Duration(milliseconds: 420),
+    curve: Curves.easeOutCubic,
+  );
+
+  static const revealOffset = 16.0;
+
+  static const revealStagger = Duration(milliseconds: 70);
+
   /// 用于对话框进出动效: 淡入的同时从 [dialogScale] 放大到原大小.
   static const EatTransition dialog = (
     duration: Duration(milliseconds: 200),

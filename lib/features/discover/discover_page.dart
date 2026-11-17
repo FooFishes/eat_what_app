@@ -35,9 +35,9 @@ import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/discover/discover_providers.dart';
+import 'package:eat/features/discover/shop_entry.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/notices.dart';
-import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/location.dart';
@@ -205,10 +205,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
         const SliverToBoxAdapter(child: DiscoverNotices()),
         SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-          sliver: _ShopList(kind: _kind),
-        ),
+        // 不加左右边距: 店铺条目自己留边距, 横排的菜要能滑出右边距.
+        _ShopList(kind: _kind),
       ],
     );
   }
@@ -942,7 +940,10 @@ class _ShopList extends ConsumerWidget {
       if (list.hasError && !list.isLoading) {
         return SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: EatSpace.s20,
+              vertical: EatSpace.s24,
+            ),
             child: FailureState(
               error: list.error,
               onRetry: () => ref.invalidate(provider),
@@ -950,14 +951,15 @@ class _ShopList extends ConsumerWidget {
           ),
         );
       }
-      return const SliverToBoxAdapter(
-        child: RowListPlaceholder(count: 5, thumbSize: EatSize.thumbLg),
-      );
+      return const SliverToBoxAdapter(child: ShopEntryPlaceholder());
     }
     if (feed.shops.isEmpty) {
       return SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: EatSpace.s20,
+            vertical: EatSpace.s24,
+          ),
           child: EmptyState(
             icon: EatIcons.store,
             title: switch (kind) {
@@ -973,10 +975,12 @@ class _ShopList extends ConsumerWidget {
       slivers: [
         SliverList.separated(
           itemCount: feed.shops.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 18),
-          itemBuilder: (context, i) => ShopRow(
+          separatorBuilder: (_, _) => const SizedBox(height: ShopEntry.gap),
+          itemBuilder: (context, i) => ShopEntry(
             shop: feed.shops[i],
+            index: i,
             onTap: () => context.push(Paths.shop(feed.shops[i].id)),
+            onDishTap: (dish) => context.push(Paths.dish(dish.id)),
           ),
         ),
         if (feed.hasMore || feed.moreError != null)

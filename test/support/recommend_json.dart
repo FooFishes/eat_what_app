@@ -1,6 +1,6 @@
 /// 推荐卡片 (`RecommendDtos.Card`) 的响应样例: 店铺的子集, 带招牌菜和距离.
 ///
-/// [signature] 为 null 时没有招牌菜. [distance] 只在请求带坐标时返回.
+/// [signature] 为 null 时没有招牌菜, [moreFoods] 是排在它后面的其他代表菜. [distance] 只在请求带坐标时返回.
 /// 默认是游客视角, 没有收藏和我的评价.
 Map<String, Object?> cardJson({
   int id = 7,
@@ -16,6 +16,7 @@ Map<String, Object?> cardJson({
   ),
   ({double rate, int count}) dineIn = (rate: 0.86, count: 12),
   ({double rate, int count})? delivery,
+  List<Map<String, Object?>> moreFoods = const [],
 }) => {
   'id': id,
   'name': name,
@@ -44,6 +45,7 @@ Map<String, Object?> cardJson({
         'price': signature.price,
         'pictureUrl': signature.photo,
       },
+    ...moreFoods,
   ],
 };
 
