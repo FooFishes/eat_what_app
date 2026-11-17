@@ -386,6 +386,38 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('推荐流到底后继续上拉，整个推荐流一起上移，松手回弹；转盘不动', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+
+    await tester.dragFrom(const Offset(195, 700), const Offset(0, -1500));
+    await tester.pumpAndSettle();
+    final last = find.text('饺子馆');
+    final rest = tester.getTopLeft(last).dy;
+
+    final pull = await tester.startGesture(const Offset(195, 600));
+    for (var i = 0; i < 10; i++) {
+      await pull.moveBy(const Offset(0, -30));
+      await tester.pump();
+    }
+    expect(
+      tester.getTopLeft(last).dy,
+      lessThan(rest),
+      reason: '到底后继续上拉, 推荐流上移',
+    );
+    await pull.up();
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(last).dy,
+      moreOrLessEquals(rest),
+      reason: '松手回弹到原位',
+    );
+    await unmountApp(tester, container);
+  });
+
   for (final (size, top) in [
     (const Size(390, 844), 47.0),
     (const Size(360, 640), 24.0),

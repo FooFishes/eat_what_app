@@ -23,8 +23,9 @@ void main() {
     var taps = <String>[];
     setUp(() => taps = []);
 
-    Widget page() => StageScaffold(
+    Widget page({bool fixedStage = false}) => StageScaffold(
       stage: StageColor.broth,
+      fixedStage: fixedStage,
       stageContent: Stack(
         children: [
           Positioned(
@@ -69,6 +70,86 @@ void main() {
         tester.getTopLeft(find.byType(SheetHandle)).dy,
         520 - 32 + 10 - 300,
       );
+    });
+
+    testWidgets('fixedStage 时舞台固定在底层，抽屉上滑时盖上来', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, page(fixedStage: true));
+      await tester.pumpAndSettle();
+      final button = tester.getTopLeft(find.text('就它了'));
+
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(find.byType(SheetHandle)).dy,
+        lessThan(520 - 32 + 10 - 250),
+        reason: '抽屉上移',
+      );
+      expect(tester.getTopLeft(find.text('就它了')), button, reason: '舞台不随滚动移动');
+
+      await tester.tap(find.text('就它了'), warnIfMissed: false);
+      expect(taps, isEmpty, reason: '被抽屉盖住的按钮点不到');
+    });
+
+    testWidgets('fixedStage 时顶部滑到头就停，底部继续上拉整块抽屉上移、松手回弹', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, page(fixedStage: true));
+      await tester.pumpAndSettle();
+      final handle = find.byType(SheetHandle);
+      final top = tester.getTopLeft(handle).dy;
+
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, 200));
+      await tester.pump();
+      expect(tester.getTopLeft(handle).dy, top, reason: '顶部不越界');
+      await tester.pumpAndSettle();
+
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      final text = find.text('今日推荐');
+      final rest = tester.getTopLeft(text).dy;
+      final pull = await tester.startGesture(const Offset(195, 600));
+      await pull.moveBy(const Offset(0, -40));
+      await pull.moveBy(const Offset(0, -200));
+      await tester.pump();
+      expect(tester.getTopLeft(text).dy, lessThan(rest), reason: '底部越界');
+      expect(
+        rest - tester.getTopLeft(text).dy,
+        lessThanOrEqualTo(128),
+        reason: '越界有上限',
+      );
+      await pull.up();
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(text).dy, moreOrLessEquals(rest));
+    });
+
+    testWidgets('fixedStage 时快速甩到底，越界后回弹到底部', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, page(fixedStage: true));
+      await tester.pumpAndSettle();
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      final text = find.text('今日推荐');
+      final rest = tester.getTopLeft(text).dy;
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, 300));
+      await tester.pumpAndSettle();
+
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, -600),
+        4000,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(text).dy, moreOrLessEquals(rest));
+    });
+
+    testWidgets('fixedStage 时滑到头没有拉伸效果，默认仍有', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, page());
+      expect(find.byType(StretchingOverscrollIndicator), findsOneWidget);
+
+      await _pump(tester, page(fixedStage: true));
+      expect(find.byType(StretchingOverscrollIndicator), findsNothing);
+      expect(find.byType(GlowingOverscrollIndicator), findsNothing);
     });
 
     Widget barPage({required VoidCallback onBack}) => StageScaffold(

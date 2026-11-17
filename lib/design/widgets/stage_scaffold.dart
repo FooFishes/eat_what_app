@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
@@ -23,6 +25,9 @@ import 'package:flutter/widgets.dart';
 /// - 当抽屉滚入顶栏下方时, 顶栏过渡为 `paper` 底色与 `ink` 图标并淡入其中的 [StageBarTitle].
 /// - [pinnedBottom] 为抽屉第一行内容 (如分类栏) 的副本, 该行滚至顶栏下方时副本会吸顶固定在顶栏正下方.
 ///
+/// 手机布局下舞台默认随页面一起滚走; [fixedStage] 为 true 时舞台固定在底层, 上滑时抽屉从下方盖住舞台,
+/// 滑到头时没有拉伸效果: 顶部滑到头就停 (下拉交给刷新), 底部继续上拉时整块抽屉跟着上移, 松手回弹.
+///
 /// 抽屉中的 sliver 需自行预留左右 `space-20` 边距, 底部则自动留出悬浮导航或系统安全区高度.
 class StageScaffold extends StatefulWidget {
   const new({
@@ -33,6 +38,7 @@ class StageScaffold extends StatefulWidget {
     this.topBar,
     this.pinnedBottom,
     this.onRefresh,
+    this.fixedStage = false,
   }) : map = null;
 
   /// 构建以地图为舞台的页面骨架 (如附近页), 地图铺于底层而抽屉叠加阴影压在地图之上.
@@ -44,7 +50,8 @@ class StageScaffold extends StatefulWidget {
     this.onRefresh,
   }) : stage = null,
        stageContent = null,
-       pinnedBottom = null;
+       pinnedBottom = null,
+       fixedStage = false;
 
   final StageColor? stage;
   final Widget? stageContent;
@@ -61,6 +68,9 @@ class StageScaffold extends StatefulWidget {
 
   /// 下拉刷新回调, 未传入时禁用下拉刷新.
   final Future<void> Function()? onRefresh;
+
+  /// 手机布局下舞台是否固定在底层不随滚动移动, 上滑时由抽屉盖住. 宽屏布局的舞台始终固定, 不受影响.
+  final bool fixedStage;
 
   /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
   static double barBottomOf(BuildContext context) =>
@@ -119,7 +129,8 @@ class _StageScaffoldState extends State<StageScaffold>
     final offset = scrollController.offset;
     final sheetTop = stageHeight - EatSize.sheetOverlap - offset;
     _bar.value = (
-      lift: (offset / _liftSpan).clamp(0.0, 1.0),
+      // 舞台固定时没有内容从顶栏下方穿过, 不需要垫舞台色.
+      lift: widget.fixedStage ? 0.0 : (offset / _liftSpan).clamp(0.0, 1.0),
       pin: ((_barBottom + _pinLead - sheetTop) / _pinSpan).clamp(0.0, 1.0),
       row: sheetTop + _handleExtent <= _barBottom,
     );
@@ -254,11 +265,18 @@ class _StageScaffoldState extends State<StageScaffold>
             edgeOffset: _barBottom,
             CustomScrollView(
               controller: scrollController,
-              physics: physics,
+              physics: widget.fixedStage
+                  ? _SheetBounceScrollPhysics(parent: physics)
+                  : physics,
+              // 舞台固定时, 滑到头的拉伸效果会把底层舞台一起拉变形, 所以关掉, 到底的反馈改由回弹给出.
+              scrollBehavior: widget.fixedStage
+                  ? ScrollConfiguration.of(context).copyWith(overscroll: false)
+                  : null,
               paintOrder: SliverPaintOrder.lastIsTop,
               slivers: [
                 _OverlappedSliver(
                   overlap: EatSize.sheetOverlap,
+                  pinned: widget.fixedStage,
                   child: SizedBox(
                     height: height,
                     child: Stack(
@@ -462,29 +480,46 @@ class StageBarTitle extends StatelessWidget {
 ///
 /// 后续 sliver 会从其底部向上 [overlap] 处开始排列,
 /// 配合 `SliverPaintOrder.lastIsTop` 使溢出部分被后续抽屉覆盖, 形成抽屉压住舞台的层叠效果.
+///
+/// [pinned] 为 true 时内容始终画在视口顶部, 不随滚动移动, 抽屉照常上移并逐渐盖住它.
+/// 舞台仍在滚动视图内, 所以拖动舞台照样滚动页面, 下拉刷新和顶栏变色也照常按滚动位置计算.
 class _OverlappedSliver extends SingleChildRenderObjectWidget {
-  const new({required this.overlap, required Widget super.child});
+  const new({
+    required this.overlap,
+    this.pinned = false,
+    required Widget super.child,
+  });
 
   final double overlap;
+  final bool pinned;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderOverlappedSliver(overlap);
+      _RenderOverlappedSliver(overlap, pinned);
 
   @override
   void updateRenderObject(
     BuildContext context,
     _RenderOverlappedSliver renderObject,
-  ) => renderObject.overlap = overlap;
+  ) => renderObject
+    ..overlap = overlap
+    ..pinned = pinned;
 }
 
 class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
-  _RenderOverlappedSliver(this._overlap);
+  _RenderOverlappedSliver(this._overlap, this._pinned);
 
   double _overlap;
   set overlap(double value) {
     if (value == _overlap) return;
     _overlap = value;
+    markNeedsLayout();
+  }
+
+  bool _pinned;
+  set pinned(bool value) {
+    if (value == _pinned) return;
+    _pinned = value;
     markNeedsLayout();
   }
 
@@ -506,9 +541,72 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
       paintExtent: layoutExtent,
       layoutExtent: layoutExtent,
       maxPaintExtent: extent,
+      // 固定时布局范围缩到 0 才说明舞台已被抽屉完全盖住, 在那之前都要绘制.
+      visible: _pinned ? constraints.scrollOffset < scrollExtent : null,
       hasVisualOverflow: true,
     );
-    setChildParentData(child, constraints, geometry!);
+    if (_pinned) {
+      (child.parentData! as SliverPhysicalParentData).paintOffset = Offset.zero;
+    } else {
+      setChildParentData(child, constraints, geometry!);
+    }
+  }
+
+  /// 固定时舞台不随滚动移动, 命中测试和绘制一样以视口顶部为原点.
+  @override
+  double childMainAxisPosition(RenderBox child) =>
+      _pinned ? 0 : super.childMainAxisPosition(child);
+}
+
+/// 舞台固定时的滚动物理: 顶部和 Android 默认一样滑到头就停, 越界的下拉交给刷新; 底部可以越界, 整块抽屉跟着手指上移, 松手回弹.
+///
+/// 只在底部回弹, 是因为顶部越界会把固定的舞台一起拉下来, 也会和下拉刷新抢手势.
+class _SheetBounceScrollPhysics extends BouncingScrollPhysics {
+  const new({super.parent});
+
+  /// 手指拖动时底部最多越界的距离. 回弹只是到底的提示, 不需要像 iOS 那样能拉很远.
+  static const _maxDragOverscroll = 128.0;
+
+  @override
+  _SheetBounceScrollPhysics applyTo(ScrollPhysics? ancestor) =>
+      _SheetBounceScrollPhysics(parent: buildParent(ancestor));
+
+  /// 越界后的拖动阻力, 约为 [BouncingScrollPhysics] 默认值的六成, 越往外越难拖.
+  @override
+  double frictionFactor(double overscrollFraction) =>
+      0.3 * math.pow(1 - overscrollFraction, 2);
+
+  /// 拖动越界不超过 [_maxDragOverscroll].
+  ///
+  /// 上限只加在手指拖动上: 若在 [applyBoundaryConditions] 里挡住, 惯性滚动撞到上限时会直接停下, 停在越界处不再回弹.
+  @override
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    final applied = super.applyPhysicsToUserOffset(position, offset);
+    if (applied >= 0 || position.pixels < position.maxScrollExtent) {
+      return applied;
+    }
+    final room =
+        _maxDragOverscroll - (position.pixels - position.maxScrollExtent);
+    return math.max(applied, -math.max(room, 0.0));
+  }
+
+  /// 比默认略硬的回弹弹簧 (默认刚度 100): 快速甩到底时冲出去少一些, 回弹仍然柔和.
+  @override
+  SpringDescription get spring =>
+      SpringDescription.withDampingRatio(mass: 0.5, stiffness: 200, ratio: 1.1);
+
+  /// 顶部按 [ClampingScrollPhysics] 的规则挡住越界, 底部照 [BouncingScrollPhysics] 放行.
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    if (value < position.pixels &&
+        position.pixels <= position.minScrollExtent) {
+      return value - position.pixels;
+    }
+    if (value < position.minScrollExtent &&
+        position.minScrollExtent < position.pixels) {
+      return value - position.minScrollExtent;
+    }
+    return 0;
   }
 }
 

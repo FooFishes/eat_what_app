@@ -200,6 +200,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent: stageContent,
       // 分类栏滚动到顶栏下方后固定显示. 浏览列表的任意位置都可以切换分类.
       pinnedBottom: tabs,
+      // 转盘固定在底层, 上滑时推荐流从下方盖上来.
+      fixedStage: true,
       onRefresh: _refresh,
       sheetSlivers: [
         const SliverToBoxAdapter(child: DiscoverNotices()),
