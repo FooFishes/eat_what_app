@@ -898,6 +898,27 @@ paths:
                 $ref: '#/components/schemas/ResultVoid'
       security:
         - satoken: []
+  /user/mobile/change/verify-old:
+    post:
+      tags:
+        - 账号 · Contact
+      summary: 【需登录】验证换绑前的当前手机号
+      operationId: verifyOldMobile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOldMobile'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
+      security:
+        - satoken: []
   /user/mobile/change/old-code:
     post:
       tags:
@@ -1934,6 +1955,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultSaTokenInfo'
       summary: 网页一键登录（未注册自动建号）
+  /auth/phone/verification:
+    post:
+      tags:
+        - 账号 · PhoneVerification
+      summary: 【需登录】核验本机号码并获取业务操作凭据
+      operationId: verify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Verify'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultProof'
+      security:
+        - satoken: []
+  /auth/phone/verification/web-token:
+    post:
+      tags:
+        - 账号 · PhoneVerification
+      summary: 【需登录】获取网页本机号码校验鉴权 Token
+      operationId: webToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebTokenRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultWebToken'
+      security:
+        - satoken: []
   /auth/phone/one-click/login:
     post:
       tags:
@@ -2159,7 +2222,7 @@ paths:
     post:
       tags:
         - 账号 · Contact
-      summary: 【需登录，同意前可用】注销账号（手机验证码或密码确认，立即生效、不可恢复）
+      summary: 【需登录，同意前可用】申请注销账号（短信、号码核验或密码确认，7天冷静期）
       operationId: deleteAccount
       requestBody:
         content:
@@ -2435,6 +2498,21 @@ paths:
           required: false
           schema:
             type: string
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: verified
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: banned
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: OK
@@ -2687,12 +2765,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: campusId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
         - name: gcjLng
           in: query
           required: false
@@ -2810,12 +2882,6 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: campusId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
         - name: gcjLng
           in: query
           required: false
@@ -2910,12 +2976,6 @@ paths:
           schema:
             type: string
         - name: hubId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
-        - name: campusId
           in: query
           required: false
           schema:
@@ -3062,12 +3122,6 @@ paths:
           schema:
             type: number
             format: double
-        - name: campusId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
         - name: mealTime
           in: query
           required: false
@@ -3134,12 +3188,6 @@ paths:
           schema:
             type: number
             format: double
-        - name: campusId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
         - name: mealTime
           in: query
           required: false
@@ -3499,12 +3547,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: campusId
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int64
         - name: mealTime
           in: query
           required: false
@@ -3770,7 +3812,7 @@ paths:
       tags:
         - 账号 · Verification
       summary: 【需登录】查询已完成的认证类型
-      operationId: verify
+      operationId: verify_1
       responses:
         '200':
           description: OK
@@ -3822,6 +3864,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultWebOneClickConfig'
       summary: 查询网页一键登录开关
+  /auth/phone/verification/config:
+    get:
+      tags:
+        - 账号 · PhoneVerification
+      summary: 【需登录】查询本机号码校验开关
+      operationId: config
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultConfig'
+      security:
+        - satoken: []
   /auth/phone/one-click/config:
     get:
       tags:
@@ -3889,6 +3946,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultSummary'
+      security:
+        - satoken: []
+  /admin/summary/trend:
+    get:
+      tags:
+        - 账号 · AdminUser
+      summary: 【需角色：admin】获取最近若干天每天的注册人数
+      operationId: summaryTrend
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultSummaryTrend'
       security:
         - satoken: []
   /admin/remote-config:
@@ -3994,6 +4073,21 @@ paths:
                 $ref: '#/components/schemas/ResultAdminCase'
       security:
         - satoken: []
+  /admin/feedback/cases/counts:
+    get:
+      tags:
+        - feedback · Feedback
+      summary: 【需角色：admin】获取未处理的反馈举报数量
+      operationId: counts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOpenCounts'
+      security:
+        - satoken: []
   /admin/engagement/stats:
     get:
       tags:
@@ -4013,6 +4107,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultEngagementStats'
+      security:
+        - satoken: []
+  /admin/engagement/stats/range:
+    get:
+      tags:
+        - 账号 · AdminUser
+      summary: 【需角色：admin】获取区间内每天的日活
+      operationId: engagementRange
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultEngagementRange'
+      security:
+        - satoken: []
+  /admin/content/stats:
+    get:
+      tags:
+        - food · AdminContent
+      summary: 【需角色：admin】获取菜品、店铺的总数和每日新增
+      operationId: stats
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultStats'
       security:
         - satoken: []
   /admin/consent/policies/{id}:
@@ -4397,9 +4539,6 @@ components:
           format: double
         boundaryGeoJson:
           type: string
-        campusId:
-          type: integer
-          format: int64
     Rated:
       type: object
       properties:
@@ -4666,6 +4805,15 @@ components:
         timestamp:
           type: integer
           format: int64
+    VerifyOldMobile:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: ^\d{6}$
+        phoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
     SendNewMobileCode:
       type: object
       properties:
@@ -4676,6 +4824,9 @@ components:
           type: string
           minLength: 1
           pattern: ^1[3-9]\d{9}$
+        oldPhoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
       required:
         - mobile
     BindMobile:
@@ -4687,10 +4838,11 @@ components:
           pattern: ^1[3-9]\d{9}$
         code:
           type: string
-          minLength: 1
           pattern: ^\d{6}$
+        phoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
       required:
-        - code
         - mobile
     SendBindCode:
       type: object
@@ -5147,14 +5299,14 @@ components:
           type: string
         code:
           type: string
-          minLength: 1
           pattern: ^\d{6}$
+        phoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
         newPassword:
           type: string
           maxLength: 64
           minLength: 6
-      required:
-        - code
     SendEmail:
       type: object
       properties:
@@ -5250,13 +5402,89 @@ components:
           minLength: 0
         policyVersion:
           type: string
-        deviceName:
-          type: string
         installId:
           type: string
           format: uuid
       required:
         - spToken
+    Verify:
+      type: object
+      properties:
+        scene:
+          type: string
+          enum:
+            - BIND
+            - CHANGE_OLD
+            - CHANGE_NEW
+            - RESET_PASSWORD
+            - SET_USERNAME
+            - DELETE_ACCOUNT
+        client:
+          type: string
+          enum:
+            - WEB
+            - APP
+        mobile:
+          type: string
+          pattern: ^1[3-9]\d{9}$
+        token:
+          type: string
+          maxLength: 8192
+          minLength: 0
+      required:
+        - client
+        - scene
+        - token
+    Proof:
+      type: object
+      properties:
+        phoneVerificationToken:
+          type: string
+        expiresIn:
+          type: integer
+          format: int32
+    ResultProof:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/Proof'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    WebTokenRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          maxLength: 1024
+          minLength: 0
+      required:
+        - url
+    ResultWebToken:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/WebToken'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    WebToken:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        jwtToken:
+          type: string
     OneClickLogin:
       type: object
       properties:
@@ -5265,8 +5493,6 @@ components:
           maxLength: 8192
           minLength: 0
         policyVersion:
-          type: string
-        deviceName:
           type: string
         installId:
           type: string
@@ -5293,8 +5519,6 @@ components:
           type: string
         deletionKey:
           type: string
-        deviceName:
-          type: string
         installId:
           type: string
           format: uuid
@@ -5316,14 +5540,15 @@ components:
       properties:
         code:
           type: string
-          minLength: 1
           pattern: ^\d{6}$
+        phoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
         newPassword:
           type: string
           maxLength: 64
           minLength: 6
       required:
-        - code
         - newPassword
     Login:
       type: object
@@ -5341,8 +5566,6 @@ components:
         policyVersion:
           type: string
         deletionKey:
-          type: string
-        deviceName:
           type: string
         installId:
           type: string
@@ -5401,6 +5624,9 @@ components:
           pattern: ^\d{6}$
         password:
           type: string
+        phoneVerificationToken:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{43}$
         deleteComments:
           type: boolean
     DeletionRequested:
@@ -6098,9 +6324,6 @@ components:
           format: int64
         hubName:
           type: string
-        campusId:
-          type: integer
-          format: int64
         distanceMeters:
           type: number
           format: double
@@ -6541,9 +6764,6 @@ components:
         gcjLat:
           type: number
           format: double
-        campusId:
-          type: integer
-          format: int64
         boundary:
           type: object
           additionalProperties: {}
@@ -7175,6 +7395,26 @@ components:
       properties:
         enabled:
           type: boolean
+    Config:
+      type: object
+      properties:
+        webEnabled:
+          type: boolean
+        appEnabled:
+          type: boolean
+    ResultConfig:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/Config'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     OneClickConfig:
       type: object
       properties:
@@ -7252,6 +7492,36 @@ components:
         verifiedRate:
           type: number
           format: double
+    ResultSummaryTrend:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/SummaryTrend'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    SummaryTrend:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/SummaryTrendDay'
+        timezone:
+          type: string
+    SummaryTrendDay:
+      type: object
+      properties:
+        date:
+          type: string
+        newUsers:
+          type: integer
+          format: int64
     AdminView:
       type: object
       properties:
@@ -7433,6 +7703,34 @@ components:
         timestamp:
           type: integer
           format: int64
+    OpenCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        feedback:
+          type: integer
+          format: int64
+        catalogError:
+          type: integer
+          format: int64
+        report:
+          type: integer
+          format: int64
+    ResultOpenCounts:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/OpenCounts'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     EngagementStats:
       type: object
       properties:
@@ -7466,6 +7764,85 @@ components:
         timestamp:
           type: integer
           format: int64
+    EngagementDay:
+      type: object
+      properties:
+        date:
+          type: string
+        activeUsers:
+          type: integer
+          format: int64
+    EngagementRange:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/EngagementDay'
+        timezone:
+          type: string
+    ResultEngagementRange:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/EngagementRange'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    Day:
+      type: object
+      properties:
+        date:
+          type: string
+        foods:
+          type: integer
+          format: int64
+        restaurants:
+          type: integer
+          format: int64
+    ResultStats:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/Stats'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    Stats:
+      type: object
+      properties:
+        totalFoods:
+          type: integer
+          format: int64
+        todayFoods:
+          type: integer
+          format: int64
+        totalRestaurants:
+          type: integer
+          format: int64
+        todayRestaurants:
+          type: integer
+          format: int64
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/Day'
+        timezone:
+          type: string
     PageResultConsentPolicy:
       type: object
       properties:
