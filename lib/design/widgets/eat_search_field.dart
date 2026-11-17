@@ -4,6 +4,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/tap_outside.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// 无描边的胶囊搜索框, 在白底页面上使用 `mist` 底色, 当 [floating] 为 true 时使用 `paper` 底色并叠加 `shadow-float` 以浮于地图之上.
@@ -88,6 +89,7 @@ class _EatSearchFieldState extends State<EatSearchField> {
                 autofocus: widget.autofocus,
                 onChanged: widget.onChanged,
                 onSubmitted: widget.onSubmitted,
+                onTapOutside: unfocusOnTapOutside,
                 textInputAction: TextInputAction.search,
                 style: textStyle,
                 cursorColor: c.ink,
@@ -103,17 +105,20 @@ class _EatSearchFieldState extends State<EatSearchField> {
               ),
             ),
           ),
-          ListenableBuilder(
-            listenable: _controller,
-            builder: (context, _) => _controller.text.isEmpty
-                ? SizedBox(width: onFilter == null ? 12 : 0)
-                : EatIconButton(
-                    EatIcons.closeCircle,
-                    label: '清空',
-                    size: 20,
-                    color: c.inkMuted,
-                    onPressed: _clear,
-                  ),
+          // "清空" 算作输入框内部, 点了不收起键盘; "筛选" 会打开面板, 点了照常收起.
+          TextFieldTapRegion(
+            child: ListenableBuilder(
+              listenable: _controller,
+              builder: (context, _) => _controller.text.isEmpty
+                  ? SizedBox(width: onFilter == null ? 12 : 0)
+                  : EatIconButton(
+                      EatIcons.closeCircle,
+                      label: '清空',
+                      size: 20,
+                      color: c.inkMuted,
+                      onPressed: _clear,
+                    ),
+            ),
           ),
           if (onFilter case final onFilter?)
             EatTappable(

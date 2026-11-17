@@ -894,6 +894,7 @@ extension RefCache on Ref {
 - 顶部栏在状态栏下面；舞台色延伸到状态栏后面。`NavBar` 底部是 24px 加系统底部安全区。
 - 方向：手机（最短边 < 600）启动时锁竖屏；平板和 Web 不锁，按宽屏规则排。iOS 的 `Info.plist` 允许 iPad 横屏。
 - 键盘：输入框获得焦点时滚到可见；底部主按钮（下一步、发布、发送）跟着 `viewInsets.bottom` 浮在键盘上方。
+- 收起键盘：输入框（`EatFormField`、`EatSearchField` 和加菜页的备注框）都设 `onTapOutside: unfocusOnTapOutside`（`design/widgets/tap_outside.dart`），手指按到输入框外面（包括开始滚动）就失焦。Flutter 在 iOS、Android 上默认点外面不失焦，iOS 没有返回键、数字键盘也没有回车，所以要自己处理。输入框自带的按钮（发送验证码、清空）用 `TextFieldTapRegion` 和输入框包在一起，点了不收；搜索框的「筛选」不在里面，点了收起再开面板。`PlainScaffold` 另外在拖动页面时收起键盘。
 
 ### 12.7 系统字号
 

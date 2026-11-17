@@ -45,6 +45,7 @@ import 'package:eat/state/analytics.dart';
 import 'package:eat/state/published.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/shops.dart';
+import 'package:eat/design/widgets/tap_outside.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -1484,6 +1485,7 @@ class _NoteField extends StatelessWidget {
               minLines: 3,
               maxLines: 6,
               onChanged: (_) => onChanged(),
+              onTapOutside: unfocusOnTapOutside,
               inputFormatters: const [
                 CodePointLengthLimitingFormatter(PublishRules.noteMax),
               ],

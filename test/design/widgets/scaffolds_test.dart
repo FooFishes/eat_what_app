@@ -2,6 +2,7 @@ import 'package:eat/design/theme/eat_colors.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
@@ -337,10 +338,7 @@ void main() {
           title: '手机号登录',
           slivers: [
             SliverToBoxAdapter(
-              child: Material(
-                type: MaterialType.transparency,
-                child: TextField(focusNode: focus),
-              ),
+              child: EatFormField(label: '手机号', focusNode: focus),
             ),
           ],
         ),

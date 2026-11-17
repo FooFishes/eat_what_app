@@ -12,7 +12,7 @@ import 'package:flutter/widgets.dart';
 /// - 标题行固定在顶部不随内容滚动, 内容滚动到标题行下方时在其底边显示 `hairline` 分割线.
 /// - 宽屏下整页收窄为居中一栏, 分组通过小标题与留白分隔而不使用卡片 ([slivers] 区域已包含左右边距).
 /// - 标题下方不设副标题, 详细说明应放在对应输入框或列表旁, 标题旁仅展示 [titleNote] 等简短状态.
-/// - 键盘弹出时自动避让并将焦点输入框滚动到可见区域, 拖动页面或点击空白处时收起键盘.
+/// - 键盘弹出时自动避让并将焦点输入框滚动到可见区域, 拖动页面时收起键盘; 点输入框外面收起键盘由输入框自己处理 (见 `unfocusOnTapOutside`).
 class PlainScaffold extends StatefulWidget {
   const new({
     super.key,
@@ -176,42 +176,37 @@ class _PlainScaffoldState extends State<PlainScaffold>
         color: eat.colors.paper,
         child: DefaultTextStyle.merge(
           style: TextStyle(color: eat.colors.ink),
-          child: GestureDetector(
-            onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-            behavior: HitTestBehavior.translucent,
-            excludeFromSemantics: true,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-              child: MediaQuery.removeViewInsets(
-                context: context,
-                removeBottom: true,
-                child: Column(
-                  children: [
-                    ValueListenableBuilder(
-                      valueListenable: _scrolled,
-                      builder: (context, scrolled, child) => DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: scrolled
-                                  ? eat.colors.hairline
-                                  : eat.colors.paper,
-                            ),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+            child: MediaQuery.removeViewInsets(
+              context: context,
+              removeBottom: true,
+              child: Column(
+                children: [
+                  ValueListenableBuilder(
+                    valueListenable: _scrolled,
+                    builder: (context, scrolled, child) => DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: scrolled
+                                ? eat.colors.hairline
+                                : eat.colors.paper,
                           ),
                         ),
-                        child: child,
                       ),
-                      child: titleRow,
+                      child: child,
                     ),
-                    Expanded(
-                      child: MediaQuery.removePadding(
-                        context: context,
-                        removeTop: true,
-                        child: scroll,
-                      ),
+                    child: titleRow,
+                  ),
+                  Expanded(
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeTop: true,
+                      child: scroll,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

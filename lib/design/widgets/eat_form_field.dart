@@ -1,5 +1,6 @@
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/tap_outside.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -156,6 +157,7 @@ class _EatFormFieldState extends State<EatFormField> {
         autofocus: widget.autofocus,
         onChanged: widget.onChanged,
         onSubmitted: widget.onSubmitted,
+        onTapOutside: unfocusOnTapOutside,
         textInputAction: widget.textInputAction,
         keyboardType: widget.keyboardType,
         obscureText: widget.obscureText,
@@ -192,37 +194,43 @@ class _EatFormFieldState extends State<EatFormField> {
             style: eat.text.meta.copyWith(color: c.inkMuted),
           ),
         ),
-        Container(
-          constraints: const BoxConstraints(minHeight: EatSize.touch),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: lineColor, width: 1.5)),
-          ),
-          child: Row(
-            children: [
-              if (widget.prefix case final prefix?) ...[
-                ExcludeSemantics(
-                  child: Text(prefix, style: inputStyle.copyWith(color: c.ink)),
+        // 前缀, 输入框和右侧按钮整行算作输入框内部, 点右侧按钮不收起键盘.
+        TextFieldTapRegion(
+          child: Container(
+            constraints: const BoxConstraints(minHeight: EatSize.touch),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: lineColor, width: 1.5)),
+            ),
+            child: Row(
+              children: [
+                if (widget.prefix case final prefix?) ...[
+                  ExcludeSemantics(
+                    child: Text(
+                      prefix,
+                      style: inputStyle.copyWith(color: c.ink),
+                    ),
+                  ),
+                  // 价格前缀 "¥" 和数字之间隔约一个空格, 与显示的 "¥ 18" 一致; 区号 (如 "+86") 与号码之间则用竖线分隔.
+                  if (widget.price)
+                    const SizedBox(width: EatSpace.s4)
+                  else ...[
+                    const SizedBox(width: EatSpace.s10),
+                    Container(width: 1, height: 20, color: c.hairline),
+                    const SizedBox(width: EatSpace.s10),
+                  ],
+                ],
+                // 标签与输入框合并为一个读屏节点, 右侧按钮保持独立可点.
+                Expanded(
+                  child: MergeSemantics(
+                    child: Semantics(label: widget.label, child: field),
+                  ),
                 ),
-                // 价格前缀 "¥" 和数字之间隔约一个空格, 与显示的 "¥ 18" 一致; 区号 (如 "+86") 与号码之间则用竖线分隔.
-                if (widget.price)
-                  const SizedBox(width: EatSpace.s4)
-                else ...[
+                if (widget.trailing case final trailing?) ...[
                   const SizedBox(width: EatSpace.s10),
-                  Container(width: 1, height: 20, color: c.hairline),
-                  const SizedBox(width: EatSpace.s10),
+                  trailing,
                 ],
               ],
-              // 标签与输入框合并为一个读屏节点, 右侧按钮保持独立可点.
-              Expanded(
-                child: MergeSemantics(
-                  child: Semantics(label: widget.label, child: field),
-                ),
-              ),
-              if (widget.trailing case final trailing?) ...[
-                const SizedBox(width: EatSpace.s10),
-                trailing,
-              ],
-            ],
+            ),
           ),
         ),
         if (error != null)

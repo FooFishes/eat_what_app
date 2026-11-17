@@ -84,6 +84,80 @@ void main() {
   });
 
   group('输入框', () {
+    testWidgets('点输入框外面收起键盘；点自带的按钮不收，点另一个输入框焦点直接切过去', (tester) async {
+      final phone = FocusNode();
+      final code = FocusNode();
+      addTearDown(phone.dispose);
+      addTearDown(code.dispose);
+      var sends = 0;
+      await pumpEat(
+        tester,
+        SizedBox(
+          width: 340,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EatFormField(
+                label: '手机号',
+                focusNode: phone,
+                trailing: EatButton.mist(
+                  '发送验证码',
+                  height: 36,
+                  onPressed: () => sends++,
+                ),
+              ),
+              EatFormField(label: '验证码', focusNode: code),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(TextField).first);
+      await tester.pump();
+      expect(phone.hasFocus, isTrue);
+
+      await tester.tap(find.text('发送验证码'));
+      await tester.pump();
+      expect(sends, 1);
+      expect(phone.hasFocus, isTrue, reason: '自带的按钮算输入框里面');
+
+      await tester.tap(find.byType(TextField).last);
+      await tester.pump();
+      expect(code.hasFocus, isTrue);
+
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pump();
+      expect(code.hasFocus, isFalse);
+      expect(phone.hasFocus, isFalse);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+    testWidgets('搜索框点「清空」不收键盘，点「筛选」收起', (tester) async {
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await pumpEat(
+        tester,
+        SizedBox(
+          width: 360,
+          child: EatSearchField(
+            hintText: '搜店名或菜名',
+            focusNode: focus,
+            onFilter: () {},
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), '螺蛳粉');
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+      await tester.tap(find.bySemanticsLabel('清空'));
+      await tester.pump();
+      expect(focus.hasFocus, isTrue);
+
+      await tester.tap(find.bySemanticsLabel('筛选'));
+      await tester.pump();
+      expect(focus.hasFocus, isFalse);
+    }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
     testWidgets('搜索框输入回调，筛选按钮有说明', (tester) async {
       final typed = <String>[];
       var filters = 0;
