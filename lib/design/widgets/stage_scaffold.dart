@@ -266,7 +266,14 @@ class _StageScaffoldState extends State<StageScaffold>
             CustomScrollView(
               controller: scrollController,
               physics: widget.fixedStage
-                  ? _SheetBounceScrollPhysics(parent: physics)
+                  ? _SheetBounceScrollPhysics(
+                      parent: physics,
+                      snapOffset:
+                          height -
+                          EatSize.sheetOverlap +
+                          _handleExtent -
+                          _barBottom,
+                    )
                   : physics,
               // 舞台固定时, 滑到头的拉伸效果会把底层舞台一起拉变形, 所以关掉, 到底的反馈改由回弹给出.
               scrollBehavior: widget.fixedStage
@@ -561,15 +568,49 @@ class _RenderOverlappedSliver extends RenderSliverSingleBoxAdapter {
 /// 舞台固定时的滚动物理: 顶部和 Android 默认一样滑到头就停, 越界的下拉交给刷新; 底部可以越界, 整块抽屉跟着手指上移, 松手回弹.
 ///
 /// 只在底部回弹, 是因为顶部越界会把固定的舞台一起拉下来, 也会和下拉刷新抢手势.
+///
+/// 往上甩时若惯性会越过 [snapOffset] (抽屉第一行吸顶的位置), 改为减速停在那里, 不带着推荐流继续冲下去; 到不了的甩动照常.
 class _SheetBounceScrollPhysics extends BouncingScrollPhysics {
-  const new({super.parent});
+  const new({super.parent, this.snapOffset});
+
+  /// 抽屉第一行刚好滚到顶栏下方时的滚动位置.
+  final double? snapOffset;
 
   /// 手指拖动时底部最多越界的距离. 回弹只是到底的提示, 不需要像 iOS 那样能拉很远.
   static const _maxDragOverscroll = 128.0;
 
   @override
   _SheetBounceScrollPhysics applyTo(ScrollPhysics? ancestor) =>
-      _SheetBounceScrollPhysics(parent: buildParent(ancestor));
+      _SheetBounceScrollPhysics(
+        parent: buildParent(ancestor),
+        snapOffset: snapOffset,
+      );
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    final simulation = super.createBallisticSimulation(position, velocity);
+    final snap = snapOffset;
+    if (simulation == null ||
+        snap == null ||
+        velocity <= 0 ||
+        position.pixels >= snap - toleranceFor(position).distance ||
+        snap >= position.maxScrollExtent ||
+        simulation.x(_settleTime) <= snap) {
+      return simulation;
+    }
+    return _SnapSimulation(
+      start: position.pixels,
+      end: snap,
+      velocity: velocity,
+      tolerance: toleranceFor(position),
+    );
+  }
+
+  /// 判断惯性最终停在哪里时取的时刻, 足够让模拟停下.
+  static const _settleTime = 60.0;
 
   /// 越界后的拖动阻力, 约为 [BouncingScrollPhysics] 默认值的六成, 越往外越难拖.
   @override
@@ -608,6 +649,40 @@ class _SheetBounceScrollPhysics extends BouncingScrollPhysics {
     }
     return 0;
   }
+}
+
+/// 从当前位置匀减速到 [end] 停住, 不越过终点.
+///
+/// 按离手速度算减速时长, 使起步速度和离手时一致; 距离太近, 速度太快时至少用 [_minDuration], 起步速度相应放慢, 避免急刹.
+class _SnapSimulation extends Simulation {
+  _SnapSimulation({
+    required double start,
+    required double end,
+    required double velocity,
+    super.tolerance,
+  }) : _start = start,
+       _distance = end - start,
+       _duration = math.max(2 * (end - start) / velocity, _minDuration);
+
+  static const _minDuration = 0.2;
+
+  final double _start;
+  final double _distance;
+  final double _duration;
+
+  double _progress(double time) => (time / _duration).clamp(0.0, 1.0);
+
+  @override
+  double x(double time) {
+    final rest = 1 - _progress(time);
+    return _start + _distance * (1 - rest * rest);
+  }
+
+  @override
+  double dx(double time) => 2 * _distance * (1 - _progress(time)) / _duration;
+
+  @override
+  bool isDone(double time) => time >= _duration;
 }
 
 /// 抽屉的白色背景 sliver; 绘制方式与 `DecoratedSliver` 相同, 但同时拦截自身区域的命中测试.

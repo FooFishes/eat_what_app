@@ -122,6 +122,47 @@ void main() {
       expect(tester.getTopLeft(text).dy, moreOrLessEquals(rest));
     });
 
+    testWidgets('fixedStage 时往上用力甩，停在抽屉第一行吸顶的位置；再甩才继续往下', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(
+        tester,
+        StageScaffold(
+          stage: StageColor.broth,
+          fixedStage: true,
+          stageContent: const SizedBox(),
+          topBar: const SizedBox(),
+          sheetSlivers: const [
+            SliverToBoxAdapter(child: SizedBox(height: 5000)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      final handle = find.byType(SheetHandle);
+      final barBottom = StageScaffold.barBottomOf(
+        tester.element(find.byType(StageScaffold)),
+      );
+
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, -300),
+        5000,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.getTopLeft(handle).dy,
+        moreOrLessEquals(barBottom - 28 + 10),
+        reason: '把手区高 28, 把手在其中下移 10; 第一行正好贴在顶栏下方',
+      );
+
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, -300),
+        5000,
+      );
+      await tester.pumpAndSettle();
+      expect(handle, findsNothing, reason: '吸顶以后照常甩, 推荐流继续往下走');
+    });
+
     testWidgets('fixedStage 时快速甩到底，越界后回弹到底部', (tester) async {
       useScreen(tester, const Size(390, 844));
       await _pump(tester, page(fixedStage: true));
