@@ -44,8 +44,9 @@ class _PhotoViewerState extends State<PhotoViewer> {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final media = MediaQuery.of(context);
-    final width = media.size.width;
+    final safe = MediaQuery.viewPaddingOf(context);
+    final screen = MediaQuery.sizeOf(context);
+    final width = screen.width;
     final credit = widget.photos[_index].credit;
     return ColoredBox(
       color: eat.colors.ink,
@@ -68,7 +69,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
             ),
           ),
           Positioned(
-            top: media.padding.top + 4,
+            top: safe.top + 4,
             left: 8,
             child: EatIconButton(
               EatIcons.close,
@@ -80,7 +81,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
           Positioned(
             left: EatSpace.s20,
             right: EatSpace.s20,
-            bottom: media.padding.bottom + EatSpace.s24,
+            bottom: safe.bottom + EatSpace.s24,
             child: Text(
               [
                 '${_index + 1} / ${widget.photos.length}',

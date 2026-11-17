@@ -42,7 +42,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     Widget action(String label, VoidCallback onTap, {bool strong = false}) =>
         EatTappable(
           onTap: onTap,
@@ -70,7 +70,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
         color: c.cropGround,
         child: Column(
           children: [
-            SizedBox(height: media.padding.top),
+            SizedBox(height: safe.top),
             Row(
               children: [
                 action('取消', () => Navigator.of(context).pop()),
@@ -112,7 +112,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
               height: widget.height,
               onChanged: (crop) => setState(() => _crop = crop),
             ),
-            SizedBox(height: media.padding.bottom + EatSpace.s24),
+            SizedBox(height: safe.bottom + EatSpace.s24),
           ],
         ),
       ),

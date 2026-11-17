@@ -7,6 +7,7 @@ import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -284,6 +285,32 @@ void main() {
       signal.value++;
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(find.byType(SheetHandle)).dy, 520 - 32 + 10);
+    });
+  });
+
+  group('KeyboardInset', () {
+    testWidgets('键盘升降时只有留白这层重建，里面读到的键盘高度是 0', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      var builds = 0;
+      double? seen;
+      final child = Builder(
+        builder: (context) {
+          builds++;
+          seen = MediaQuery.viewInsetsOf(context).bottom;
+          return const SizedBox.expand();
+        },
+      );
+      await _pump(tester, KeyboardInset(child: child));
+      expect(builds, 1);
+
+      for (final bottom in [100.0, 200.0, 300.0]) {
+        tester.view.viewInsets = FakeViewPadding(bottom: bottom * 3);
+        await tester.pump();
+      }
+      addTearDown(tester.view.resetViewInsets);
+      expect(builds, 1, reason: '键盘动画的每一帧不重建里面的内容');
+      expect(seen, 0);
+      expect(tester.getRect(find.byWidget(child)).bottom, 844 - 300);
     });
   });
 

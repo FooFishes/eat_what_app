@@ -164,7 +164,7 @@ class _CropPageState extends State<CropPage> {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       // 缩放滑条是 Material 组件, 需要 Material 祖先.
@@ -174,7 +174,7 @@ class _CropPageState extends State<CropPage> {
           style: TextStyle(color: c.paper),
           child: Column(
             children: [
-              SizedBox(height: media.padding.top),
+              SizedBox(height: safe.top),
               _TopBar(
                 onCancel: () => Navigator.of(context).pop(),
                 onDone: _done,
@@ -212,7 +212,7 @@ class _CropPageState extends State<CropPage> {
                     EatSpace.s20,
                     EatSpace.s16,
                     EatSpace.s20,
-                    media.padding.bottom + EatSpace.s16,
+                    safe.bottom + EatSpace.s16,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

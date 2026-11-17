@@ -19,6 +19,7 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
@@ -244,16 +245,17 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final list = shops.value ?? const <Shop>[];
     final selectedHub = hubs.where((h) => h.id == hubId).firstOrNull;
 
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
+    final screen = MediaQuery.sizeOf(context);
     // 地图被搜索框, 商圈胶囊和抽屉 (宽屏是左侧面板) 盖住的部分.
     final insets = layout.isWide
         ? EdgeInsets.only(
             left: EatLayout.widePanelInset + EatLayout.widePanelWidth,
-            top: media.padding.top + EatSpace.s16 + EatSize.touch,
+            top: safe.top + EatSpace.s16 + EatSize.touch,
           )
         : EdgeInsets.only(
-            top: media.padding.top + 8 + 48 + EatSpace.s10 + EatSize.touch,
-            bottom: media.size.height * _sheetRest,
+            top: safe.top + 8 + 48 + EatSpace.s10 + EatSize.touch,
+            bottom: screen.height * _sheetRest,
           );
     final map = _hasMap
         ? _NearbyMap(
@@ -377,7 +379,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
             Padding(
               padding: EdgeInsets.fromLTRB(
                 EatSpace.s16,
-                media.padding.top + 8,
+                safe.top + 8,
                 EatSpace.s16,
                 EatSpace.s10,
               ),
@@ -385,8 +387,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
             ),
             chips,
             Expanded(
-              child: MediaQuery.removePadding(
-                context: context,
+              child: RemovePadding(
                 removeTop: true,
                 child: EatRefresh(
                   onRefresh: () => pullToRefresh(
@@ -420,7 +421,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         ),
       );
     }
-    final height = media.size.height;
+    final height = screen.height;
     return ColoredBox(
       color: context.eat.colors.paper,
       child: Stack(
@@ -429,13 +430,13 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           Positioned(
             left: EatSpace.s16,
             right: EatSpace.s16,
-            top: media.padding.top + 8,
+            top: safe.top + 8,
             child: search,
           ),
           Positioned(
             left: 0,
             right: 0,
-            top: media.padding.top + 8 + 48 + EatSpace.s10,
+            top: safe.top + 8 + 48 + EatSpace.s10,
             child: chips,
           ),
           Positioned(

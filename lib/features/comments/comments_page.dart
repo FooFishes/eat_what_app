@@ -7,6 +7,7 @@ import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/comment_card.dart';
@@ -44,8 +45,7 @@ class _CommentsPageState extends ConsumerState<CommentsPage> {
     return Column(
       children: [
         Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
+          child: RemovePadding(
             removeBottom: true,
             child: PlainScaffold(
               title: '吃过的人说',
@@ -153,7 +153,7 @@ class _ComposerBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     final padding = EatLayout.of(context).plainHorizontalPadding;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -165,7 +165,7 @@ class _ComposerBar extends ConsumerWidget {
           padding,
           EatSpace.s10,
           padding,
-          media.padding.bottom + EatSpace.s10,
+          safe.bottom + EatSpace.s10,
         ),
         child: Row(
           spacing: EatSpace.s10,

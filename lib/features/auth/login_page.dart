@@ -170,7 +170,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final eat = context.eat;
     final c = eat.colors;
     final query = widget.query;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     final sheet = DecoratedBox(
       decoration: BoxDecoration(
         color: c.paper,
@@ -184,7 +184,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           _sheetInset,
           _sheetInset,
           _sheetInset,
-          _sheetBottom + media.padding.bottom,
+          _sheetBottom + safe.bottom,
         ),
         child: DefaultTextStyle.merge(
           style: TextStyle(color: c.ink),
@@ -227,7 +227,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget _content(BuildContext context, Widget sheet) {
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     return CustomScrollView(
       scrollBehavior: ScrollConfiguration.of(context)
           .copyWith(overscroll: false, physics: const ClampingScrollPhysics()),
@@ -240,7 +240,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   EatSpace.s24,
-                  media.padding.top + _brandTop,
+                  safe.top + _brandTop,
                   EatSpace.s24,
                   EatSpace.s24,
                 ),

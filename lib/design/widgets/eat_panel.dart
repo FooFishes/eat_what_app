@@ -5,6 +5,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// 从底部弹出面板, 背后覆盖 `scrim`, 点击遮罩或下拉均可关闭.
@@ -82,7 +83,7 @@ class EatPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.paddingOf(context);
     final titleText = Semantics(
       header: true,
       child: Text(title, style: eat.text.heading.copyWith(color: c.ink)),
@@ -115,31 +116,34 @@ class EatPanel extends StatelessWidget {
         ],
       ),
     };
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        EatSpace.s20,
-        10,
-        EatSpace.s20,
-        32 + media.padding.bottom + media.viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SheetHandle(),
-          SizedBox(height: icon == null ? 10 : 18),
-          header,
-          if (subtitle case final subtitle?)
-            Text(subtitle, style: eat.text.meta.copyWith(color: c.inkMuted)),
-          if (child case final child?) ...[
-            const SizedBox(height: EatSpace.s14),
-            Flexible(child: SingleChildScrollView(child: child)),
+    // 面板自己是白底, 键盘后面那块也是面板的白色, 不用另外铺底色.
+    return KeyboardInset(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          EatSpace.s20,
+          10,
+          EatSpace.s20,
+          32 + safe.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SheetHandle(),
+            SizedBox(height: icon == null ? 10 : 18),
+            header,
+            if (subtitle case final subtitle?)
+              Text(subtitle, style: eat.text.meta.copyWith(color: c.inkMuted)),
+            if (child case final child?) ...[
+              const SizedBox(height: EatSpace.s14),
+              Flexible(child: SingleChildScrollView(child: child)),
+            ],
+            if (actions case final actions?) ...[
+              SizedBox(height: icon == null ? EatSpace.s14 : 20),
+              actions,
+            ],
           ],
-          if (actions case final actions?) ...[
-            SizedBox(height: icon == null ? EatSpace.s14 : 20),
-            actions,
-          ],
-        ],
+        ),
       ),
     );
   }

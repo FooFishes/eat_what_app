@@ -2,7 +2,9 @@ import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -85,14 +87,14 @@ class _PlainScaffoldState extends State<PlainScaffold>
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.paddingOf(context);
     final padding = EatLayout.of(context).plainHorizontalPadding;
     final navInset = NavBarInset.of(context);
     final header = widget.header;
     final titleRow = Padding(
       padding: EdgeInsets.fromLTRB(
         widget.showBack ? padding - EatBackButton.inset : padding,
-        media.padding.top + 4,
+        safe.top + 4,
         widget.actions.isEmpty ? padding : padding - 4,
         4,
       ),
@@ -160,9 +162,7 @@ class _PlainScaffoldState extends State<PlainScaffold>
         ),
         SliverToBoxAdapter(
           child: SizedBox(
-            height: navInset > 0
-                ? navInset
-                : media.padding.bottom + EatSpace.s24,
+            height: navInset > 0 ? navInset : safe.bottom + EatSpace.s24,
           ),
         ),
       ],
@@ -176,38 +176,27 @@ class _PlainScaffoldState extends State<PlainScaffold>
         color: eat.colors.paper,
         child: DefaultTextStyle.merge(
           style: TextStyle(color: eat.colors.ink),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-            child: MediaQuery.removeViewInsets(
-              context: context,
-              removeBottom: true,
-              child: Column(
-                children: [
-                  ValueListenableBuilder(
-                    valueListenable: _scrolled,
-                    builder: (context, scrolled, child) => DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: scrolled
-                                ? eat.colors.hairline
-                                : eat.colors.paper,
-                          ),
+          child: KeyboardInset(
+            child: Column(
+              children: [
+                ValueListenableBuilder(
+                  valueListenable: _scrolled,
+                  builder: (context, scrolled, child) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: scrolled
+                              ? eat.colors.hairline
+                              : eat.colors.paper,
                         ),
                       ),
-                      child: child,
                     ),
-                    child: titleRow,
+                    child: child,
                   ),
-                  Expanded(
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeTop: true,
-                      child: scroll,
-                    ),
-                  ),
-                ],
-              ),
+                  child: titleRow,
+                ),
+                Expanded(child: RemovePadding(removeTop: true, child: scroll)),
+              ],
             ),
           ),
         ),

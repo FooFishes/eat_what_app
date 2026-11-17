@@ -23,10 +23,13 @@ import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/surface.dart';
+import 'package:eat/design/widgets/tap_outside.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
@@ -45,7 +48,6 @@ import 'package:eat/state/analytics.dart';
 import 'package:eat/state/published.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/shops.dart';
-import 'package:eat/design/widgets/tap_outside.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
@@ -555,7 +557,6 @@ class _DishFormState extends ConsumerState<_DishForm> {
     );
     final signatureFull = _signatureFull && draft.signature;
     final replacing = draft.photos.isNotEmpty;
-    final media = MediaQuery.of(context);
 
     String? note;
     var label = original == null ? '发布' : '保存';
@@ -600,174 +601,169 @@ class _DishFormState extends ConsumerState<_DishForm> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_leave());
       },
-      child: Padding(
-        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
-        child: MediaQuery.removeViewInsets(
-          context: context,
-          removeBottom: true,
-          child: Column(
-            children: [
-              Expanded(
-                child: MediaQuery.removePadding(
-                  context: context,
-                  removeBottom: true,
-                  child: StageScaffold(
-                    stage: stage,
-                    topBar: _TopBar(onBack: _leave, step: original == null),
-                    stageContent: _StageContent(
-                      cover: cover,
-                      crop: crop,
-                      sampled: replacing,
-                      category: draft.category,
-                      name: name,
-                      price: price,
-                      onAdd: _addPhotos,
-                      onCover: replacing ? _crop : _addPhotos,
-                      coverLabel: replacing ? '调整照片' : '换照片',
-                    ),
-                    sheetSlivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: EatSpace.s20,
-                        ),
-                        sliver: SliverList.list(
-                          children: [
-                            if (original != null && !replacing)
-                              _ExistingPhotos(
-                                images: original.images,
-                                onReplace: _addPhotos,
-                              )
-                            else
-                              _PhotoStrip(
-                                photos: draft.photos,
-                                max: options.photosMax,
-                                onAdd: _addPhotos,
-                                onTap: _photoActions,
-                              ),
-                            if (original != null && replacing)
-                              _ReplacingNote(
-                                count: original.images.length,
-                                onUndo: ref.read(_draft.notifier).clearPhotos,
-                              ),
-                            const SizedBox(height: EatSpace.s16),
-                            _ShopLine(
-                              name: shopName,
-                              onChange: original == null ? _changeShop : null,
-                            ),
-                            const SizedBox(height: EatSpace.s16),
-                            EatFormField(
-                              label: '菜名',
-                              controller: _name,
-                              hintText: '比如 鲜虾蟹籽云吞',
-                              textInputAction: TextInputAction.next,
-                              inputFormatters: const [
-                                CodePointLengthLimitingFormatter(
-                                  PublishRules.dishNameMax,
-                                ),
-                              ],
-                              onChanged: (_) {
-                                setState(() => _duplicateId = null);
-                                _scheduleSuggest();
-                              },
-                            ),
-                            if (duplicateId != null)
-                              _DuplicateNotice(
-                                name: sameName?.name ?? name,
-                                onOpen: () =>
-                                    context.push(Paths.dish(duplicateId)),
-                              ),
-                            const SizedBox(height: EatSpace.s16),
-                            EatFormField.price(
-                              label: '价格',
-                              controller: _price,
-                              hintText: '0',
-                              errorText: _priceUnchanged
-                                  ? null
-                                  : PublishRules.priceError(_price.text),
-                              textInputAction: TextInputAction.done,
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: EatSpace.s24),
-                            _Group(
-                              title: '分类',
-                              note: draft.preselected ? '按照片预选，可以改' : null,
-                              child: Wrap(
-                                spacing: EatSpace.s8,
-                                children: [
-                                  for (final c in options.categories)
-                                    EatChip.choice(
-                                      c.label,
-                                      selected: draft.category == c,
-                                      onTap: () => ref
-                                          .read(_draft.notifier)
-                                          .setCategory(c),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            _Group(
-                              title: '口味，最多 ${options.tagsMax} 个',
-                              child: _Tastes(
-                                tastes: options.tastes,
-                                selected: draft.tastes,
-                                onToggle: _toggleTaste,
-                              ),
-                            ),
-                            _Group(
-                              title: '适合哪顿，选填',
-                              note: draft.mealTimes.isEmpty
-                                  ? _followShopText(shopMeals)
-                                  : null,
-                              child: Wrap(
-                                spacing: EatSpace.s8,
-                                children: [
-                                  for (final meal in options.mealTimes)
-                                    EatChip.tag(
-                                      meal.label,
-                                      selected: draft.mealTimes.contains(meal),
-                                      onTap: () => ref
-                                          .read(_draft.notifier)
-                                          .toggleMeal(meal),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            EatSwitch(
-                              label: '能点外卖',
-                              value: draft.deliveryEnabled,
-                              onChanged: ref.read(_draft.notifier).setDelivery,
-                            ),
-                            _Signature(
-                              value: draft.signature,
-                              max: options.signaturesMax,
-                              full: signatureFull,
-                              onChanged: _setSignature,
-                            ),
-                            const SizedBox(height: EatSpace.s16),
-                            _Group(
-                              title: '说两句，选填',
-                              child: _NoteField(
-                                controller: _note,
-                                onChanged: () => setState(() {}),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+      // 只有这一层跟着键盘动画每帧重建, 加菜页其余部分不重建.
+      child: KeyboardInset(
+        child: Column(
+          children: [
+            Expanded(
+              child: RemovePadding(
+                removeBottom: true,
+                child: StageScaffold(
+                  stage: stage,
+                  topBar: _TopBar(onBack: _leave, step: original == null),
+                  stageContent: _StageContent(
+                    cover: cover,
+                    crop: crop,
+                    sampled: replacing,
+                    category: draft.category,
+                    name: name,
+                    price: price,
+                    onAdd: _addPhotos,
+                    onCover: replacing ? _crop : _addPhotos,
+                    coverLabel: replacing ? '调整照片' : '换照片',
                   ),
+                  sheetSlivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: EatSpace.s20,
+                      ),
+                      sliver: SliverList.list(
+                        children: [
+                          if (original != null && !replacing)
+                            _ExistingPhotos(
+                              images: original.images,
+                              onReplace: _addPhotos,
+                            )
+                          else
+                            _PhotoStrip(
+                              photos: draft.photos,
+                              max: options.photosMax,
+                              onAdd: _addPhotos,
+                              onTap: _photoActions,
+                            ),
+                          if (original != null && replacing)
+                            _ReplacingNote(
+                              count: original.images.length,
+                              onUndo: ref.read(_draft.notifier).clearPhotos,
+                            ),
+                          const SizedBox(height: EatSpace.s16),
+                          _ShopLine(
+                            name: shopName,
+                            onChange: original == null ? _changeShop : null,
+                          ),
+                          const SizedBox(height: EatSpace.s16),
+                          EatFormField(
+                            label: '菜名',
+                            controller: _name,
+                            hintText: '比如 鲜虾蟹籽云吞',
+                            textInputAction: TextInputAction.next,
+                            inputFormatters: const [
+                              CodePointLengthLimitingFormatter(
+                                PublishRules.dishNameMax,
+                              ),
+                            ],
+                            onChanged: (_) {
+                              setState(() => _duplicateId = null);
+                              _scheduleSuggest();
+                            },
+                          ),
+                          if (duplicateId != null)
+                            _DuplicateNotice(
+                              name: sameName?.name ?? name,
+                              onOpen: () =>
+                                  context.push(Paths.dish(duplicateId)),
+                            ),
+                          const SizedBox(height: EatSpace.s16),
+                          EatFormField.price(
+                            label: '价格',
+                            controller: _price,
+                            hintText: '0',
+                            errorText: _priceUnchanged
+                                ? null
+                                : PublishRules.priceError(_price.text),
+                            textInputAction: TextInputAction.done,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          const SizedBox(height: EatSpace.s24),
+                          _Group(
+                            title: '分类',
+                            note: draft.preselected ? '按照片预选，可以改' : null,
+                            child: Wrap(
+                              spacing: EatSpace.s8,
+                              children: [
+                                for (final c in options.categories)
+                                  EatChip.choice(
+                                    c.label,
+                                    selected: draft.category == c,
+                                    onTap: () => ref
+                                        .read(_draft.notifier)
+                                        .setCategory(c),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          _Group(
+                            title: '口味，最多 ${options.tagsMax} 个',
+                            child: _Tastes(
+                              tastes: options.tastes,
+                              selected: draft.tastes,
+                              onToggle: _toggleTaste,
+                            ),
+                          ),
+                          _Group(
+                            title: '适合哪顿，选填',
+                            note: draft.mealTimes.isEmpty
+                                ? _followShopText(shopMeals)
+                                : null,
+                            child: Wrap(
+                              spacing: EatSpace.s8,
+                              children: [
+                                for (final meal in options.mealTimes)
+                                  EatChip.tag(
+                                    meal.label,
+                                    selected: draft.mealTimes.contains(meal),
+                                    onTap: () => ref
+                                        .read(_draft.notifier)
+                                        .toggleMeal(meal),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          EatSwitch(
+                            label: '能点外卖',
+                            value: draft.deliveryEnabled,
+                            onChanged: ref.read(_draft.notifier).setDelivery,
+                          ),
+                          _Signature(
+                            value: draft.signature,
+                            max: options.signaturesMax,
+                            full: signatureFull,
+                            onChanged: _setSignature,
+                          ),
+                          const SizedBox(height: EatSpace.s16),
+                          _Group(
+                            title: '说两句，选填',
+                            child: _NoteField(
+                              controller: _note,
+                              onChanged: () => setState(() {}),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              PublishBottomBar(
-                note: note,
-                child: EatButton.solid(
-                  label,
-                  loading: _busy,
-                  onPressed: onPressed,
-                ),
+            ),
+            PublishBottomBar(
+              note: note,
+              child: EatButton.solid(
+                label,
+                loading: _busy,
+                onPressed: onPressed,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -16,8 +16,9 @@ class PublishBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    if (media.viewInsets.bottom > 0) return const SizedBox.shrink();
+    final safe = MediaQuery.paddingOf(context);
+    final keyboard = MediaQuery.viewInsetsOf(context);
+    if (keyboard.bottom > 0) return const SizedBox.shrink();
     final eat = context.eat;
     final padding = EatLayout.of(context).plainHorizontalPadding;
     return ColoredBox(
@@ -27,7 +28,7 @@ class PublishBottomBar extends StatelessWidget {
           padding,
           EatSpace.s10,
           padding,
-          media.padding.bottom + EatSpace.s16,
+          safe.bottom + EatSpace.s16,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

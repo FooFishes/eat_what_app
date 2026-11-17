@@ -48,7 +48,8 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final shell = widget.shell;
     final layout = EatLayout.of(context);
-    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // 用系统安全区本身而不是 padding: 键盘弹出时 padding 的底边会缩到 0, 导航栏会跟着动, 整页也会跟着 NavBarInset 重建.
+    final safeBottom = MediaQuery.viewPaddingOf(context).bottom;
     final navBar = EatNavBar(
       currentIndex: shell.currentIndex,
       onSelected: _select,

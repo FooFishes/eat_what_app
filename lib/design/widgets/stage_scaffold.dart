@@ -8,6 +8,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -74,7 +75,9 @@ class StageScaffold extends StatefulWidget {
 
   /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
   static double barBottomOf(BuildContext context) =>
-      MediaQuery.paddingOf(context).top + 4 + _StageScaffoldState._barHeight;
+      MediaQuery.viewPaddingOf(context).top +
+      4 +
+      _StageScaffoldState._barHeight;
 
   @override
   State<StageScaffold> createState() => _StageScaffoldState();
@@ -146,11 +149,9 @@ class _StageScaffoldState extends State<StageScaffold>
   Widget _build(BuildContext context, StagePalette? palette) {
     final eat = context.eat;
     final layout = EatLayout.of(context);
-    final media = MediaQuery.of(context);
+    final safe = MediaQuery.viewPaddingOf(context);
     final navInset = NavBarInset.of(context);
-    final bottomSpace = navInset > 0
-        ? navInset
-        : media.padding.bottom + EatSpace.s24;
+    final bottomSpace = navInset > 0 ? navInset : safe.bottom + EatSpace.s24;
     final backdrop =
         widget.map ??
         ColoredBox(color: palette!.background, child: const SizedBox.expand());
@@ -207,8 +208,7 @@ class _StageScaffoldState extends State<StageScaffold>
                 borderRadius: const BorderRadius.all(EatRadius.sheet),
                 child: DefaultTextStyle.merge(
                   style: TextStyle(color: eat.colors.ink),
-                  child: MediaQuery.removePadding(
-                    context: context,
+                  child: RemovePadding(
                     removeTop: true,
                     removeBottom: true,
                     child: refreshable(
@@ -241,7 +241,7 @@ class _StageScaffoldState extends State<StageScaffold>
       );
     } else {
       final height = layout.stageHeight;
-      final barTop = media.padding.top + 4;
+      final barTop = safe.top + 4;
       _stageHeight = height;
       _barBottom = barTop + _barHeight;
       body = Stack(
