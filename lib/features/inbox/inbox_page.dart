@@ -273,32 +273,44 @@ class _NoticeList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = clock.now();
+    final hairline = context.eat.colors.hairline;
     final rows = <Widget>[];
     String? group;
     for (final notice in notices) {
       final g = NoticeRules.groupOf(notice.latestAt, now);
-      if (g != group) {
+      final first = g != group;
+      if (first) {
         group = g;
         rows.add(
           Padding(
-            padding: EdgeInsets.only(top: rows.isEmpty ? 0 : 10, bottom: 2),
+            padding: EdgeInsets.only(
+              top: rows.isEmpty ? 0 : EatSpace.s20,
+              bottom: EatSpace.s4,
+            ),
             child: ListGroupTitle(g),
           ),
         );
       }
-      rows.add(_NoticeRow(column: column, notice: notice, now: now));
+      rows.add(
+        DecoratedBox(
+          position: DecorationPosition.foreground,
+          decoration: first
+              ? const BoxDecoration()
+              : BoxDecoration(
+                  border: Border(top: BorderSide(color: hairline)),
+                ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: EatSpace.s14),
+            child: _NoticeRow(column: column, notice: notice, now: now),
+          ),
+        ),
+      );
     }
-    return SliverList.separated(
-      itemCount: rows.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 16),
-      itemBuilder: (_, i) => rows[i],
-    );
+    return SliverList.list(children: rows);
   }
 }
 
-/// 单条消息行, 包含未读圆点, 头像或系统图标, 消息摘要与时间, 关注消息右侧附带 "回关" 按钮.
-///
-/// 点击后标记已读并跳转到对应目标页 (若有); 无跳转目标的消息在读屏时提示点击结果为 "标为已读", 避免无障碍用户误判是否会离开当前页, 且已读后设为不可点击.
+/// 单条消息行. 有互动者的消息用 [_InteractionRow], 系统消息用 [_SystemRow].
 class _NoticeRow extends ConsumerWidget {
   const new({required this.column, required this.notice, required this.now});
 
@@ -308,50 +320,14 @@ class _NoticeRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final target = NoticeRules.targetOf(notice);
-    final actors = NoticeRules.actorsOf(notice);
-    final sentence = NoticeRules.sentenceOf(notice);
-    final reply = NoticeRules.replyOf(notice);
-    final content = NoticeRules.contentOf(notice);
-    final followBack = NoticeRules.followBackUserOf(notice);
-    final actor = notice.actors.firstOrNull;
-    final sentenceStyle = eat.text.body.copyWith(color: eat.colors.ink);
-    return EatListRow(
-      unread: !notice.read,
-      leading: actor == null
-          ? _SystemIcon(kind: notice.kind, detail: notice.detail)
-          : EatAvatar(
-              name: actor.name,
-              color: StageColor.values[actor.id % StageColor.values.length],
-              image: networkImage(actor.avatar, width: EatSize.avatar),
-            ),
-      title: actors == null
-          ? Text(sentence, style: sentenceStyle)
-          : Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: actors),
-                  TextSpan(text: ' $sentence', style: sentenceStyle),
-                ],
-              ),
-            ),
-      lines: [
-        if (reply != null) Text('回复：$reply'),
-        if (content != null) Text(content),
-        if (notice.detail case BanDetail(:final until))
-          Text(banTerm(until, now)),
-        Text(TimeFormat.relative(notice.latestAt, now)),
-      ],
-      action: followBack == null ? null : _FollowBack(userId: followBack),
-      onTap: target is NoTarget && notice.read
-          ? null
-          : () {
-              ref.read(inboxProvider(column).notifier).markRead(notice);
-              unawaited(_open(context, ref, target));
-            },
-      tapHint: target is NoTarget ? '标为已读' : null,
-    );
+    void open(NoticeTarget target) {
+      ref.read(inboxProvider(column).notifier).markRead(notice);
+      unawaited(_open(context, ref, target));
+    }
+
+    return notice.actors.isEmpty
+        ? _SystemRow(notice: notice, now: now, onOpen: open)
+        : _InteractionRow(notice: notice, now: now, onOpen: open);
   }
 
   static Future<void> _open(
@@ -377,6 +353,229 @@ class _NoticeRow extends ConsumerWidget {
         }
       case NoTarget():
     }
+  }
+}
+
+/// 互动消息行: 未读圆点, 对方头像, 一句话和时间, 关注消息右侧附带 "回关" 按钮.
+///
+/// 点整行标为已读并跳转到对应目标页 (若有). 不跳转的行在读屏时提示点击结果为 "标为已读", 避免无障碍用户误判是否会离开当前页, 且已读后设为不可点击.
+class _InteractionRow extends StatelessWidget {
+  const new({required this.notice, required this.now, required this.onOpen});
+
+  final Notice notice;
+  final DateTime now;
+  final void Function(NoticeTarget) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final target = NoticeRules.targetOf(notice);
+    final reply = NoticeRules.replyOf(notice);
+    final followBack = NoticeRules.followBackUserOf(notice);
+    final actor = notice.actors.first;
+    return EatListRow(
+      unread: !notice.read,
+      leading: EatAvatar(
+        name: actor.name,
+        color: StageColor.values[actor.id % StageColor.values.length],
+        image: networkImage(actor.avatar, width: EatSize.avatar),
+      ),
+      title: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: NoticeRules.actorsOf(notice)),
+            TextSpan(
+              text: ' ${NoticeRules.sentenceOf(notice)}',
+              style: eat.text.body.copyWith(color: eat.colors.ink),
+            ),
+          ],
+        ),
+      ),
+      lines: [
+        if (reply != null) Text('回复：$reply'),
+        Text(TimeFormat.relative(notice.latestAt, now)),
+      ],
+      action: followBack == null ? null : _FollowBack(userId: followBack),
+      onTap: target is NoTarget && notice.read ? null : () => onOpen(target),
+      tapHint: target is NoTarget ? '标为已读' : null,
+    );
+  }
+}
+
+/// 系统消息行, 显示全文.
+///
+/// - 第一行是标题, 时间靠右; 下面是公告正文, 封禁或删除的原因和期限.
+/// - 有跳转目标时, 详情 (设备名, 运营回复) 放进标题下方的 [_DetailBlock], 点这一块才跳转; 点标题和正文只标为已读.
+/// - 没有详情块时, 标题和正文与图标垂直居中; 有详情块时标题与图标顶端对齐, 详情块紧跟标题, 不留出图标下方的空白.
+class _SystemRow extends StatelessWidget {
+  const new({required this.notice, required this.now, required this.onOpen});
+
+  final Notice notice;
+  final DateTime now;
+  final void Function(NoticeTarget) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final target = NoticeRules.targetOf(notice);
+    final hasDetail = NoticeRules.actionOf(notice) != null;
+    final content = NoticeRules.contentOf(notice);
+    final reply = NoticeRules.replyOf(notice);
+    final body = [
+      if (!hasDetail && content != null) content,
+      if (!hasDetail && reply != null) '回复：$reply',
+      if (notice.detail case BanDetail(:final until)) banTerm(until, now),
+    ];
+    final muted = eat.text.meta.copyWith(color: eat.colors.inkMuted);
+    final title = Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Expanded(
+          child: Text(
+            NoticeRules.sentenceOf(notice),
+            style: eat.text.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: eat.colors.ink,
+            ),
+          ),
+        ),
+        const SizedBox(width: EatSpace.s8),
+        Text(TimeFormat.relative(notice.latestAt, now), style: muted),
+      ],
+    );
+    final textBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 2,
+      children: [
+        title,
+        for (final line in body) Text(line, style: muted),
+      ],
+    );
+    final text = hasDetail
+        ? textBlock
+        : EatTappable(
+            onTap: notice.read && target is NoTarget
+                ? null
+                : () => onOpen(target),
+            button: false,
+            tapHint: target is NoTarget ? '标为已读' : null,
+            focusShape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(EatRadius.thumb),
+            ),
+            builder: (context, _) => ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: EatSize.avatar),
+              child: Align(alignment: Alignment.centerLeft, child: textBlock),
+            ),
+          );
+    final row = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SystemIcon(kind: notice.kind, detail: notice.detail),
+            const SizedBox(width: EatSpace.s14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  text,
+                  if (hasDetail) ...[
+                    const SizedBox(height: EatSpace.s8),
+                    _DetailBlock(notice: notice, onTap: () => onOpen(target)),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (!notice.read)
+          const Positioned(
+            left: -13,
+            top: (EatSize.avatar - 7) / 2,
+            child: UnreadDot(),
+          ),
+      ],
+    );
+    if (!hasDetail || notice.read) return row;
+    // 有详情块时, 点详情块以外的地方只标为已读. 读屏用户可以点详情块或 "全部已读", 因此这里不提供语义动作, 也不和详情块的语义合并.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      excludeFromSemantics: true,
+      onTap: () => onOpen(const NoTarget()),
+      child: row,
+    );
+  }
+}
+
+/// 系统消息的详情块: `mist` 底的方圆角块, 左侧图标, 中间是详情和说明, 右侧箭头. 整块是跳转入口.
+///
+/// 新设备登录显示设备名和 "可以在登录设备里让它下线"; 处理结果显示运营回复 (有的话) 和 "查看处理详情".
+class _DetailBlock extends StatelessWidget {
+  const new({required this.notice, required this.onTap});
+
+  final Notice notice;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final action = NoticeRules.actionOf(notice)!;
+    final (icon, primary, secondary) = switch (notice.detail) {
+      NewDeviceDetail(:final platform) => (
+        platform == 'WEB' ? EatIcons.computer : EatIcons.phone,
+        NoticeRules.contentOf(notice),
+        NoticeRules.noteOf(notice) ?? action,
+      ),
+      _ => (EatIcons.document, NoticeRules.replyOf(notice), action),
+    };
+    return EatTappable(
+      onTap: onTap,
+      label: [?primary, action].join('，'),
+      focusShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(EatRadius.thumb),
+      ),
+      builder: (context, _) => Container(
+        constraints: const BoxConstraints(minHeight: EatSize.touch),
+        padding: const EdgeInsets.symmetric(
+          horizontal: EatSpace.s14,
+          vertical: EatSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: c.mist,
+          borderRadius: const BorderRadius.all(EatRadius.thumb),
+        ),
+        child: Row(
+          children: [
+            EatIcon(icon, size: 20, color: c.ink),
+            const SizedBox(width: EatSpace.s10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (primary != null)
+                    Text(
+                      primary,
+                      style: eat.text.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: c.ink,
+                      ),
+                    ),
+                  Text(
+                    secondary,
+                    style: eat.text.meta.copyWith(color: c.inkMuted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: EatSpace.s8),
+            EatIcon(EatIcons.chevronRight, size: 18, color: c.inkMuted),
+          ],
+        ),
+      ),
+    );
   }
 }
 

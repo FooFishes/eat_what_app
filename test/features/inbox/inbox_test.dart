@@ -184,7 +184,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「系统」分栏：公告显示标题和内容，点了只标已读；处理结果进我的反馈详情', (tester) async {
+  testWidgets('「系统」分栏：公告显示标题和内容，点了只标已读；处理结果点链接进我的反馈详情', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(
@@ -267,6 +267,19 @@ void main() {
       env.adapter.sent('POST /notification/cards/$_caseId/read'),
       hasLength(1),
     );
+    expect(
+      router.state.uri.toString(),
+      Paths.inbox,
+      reason: '有操作链接的系统消息点整行只标已读',
+    );
+
+    await tester.tap(find.text('查看处理详情'));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('POST /notification/cards/$_caseId/read'),
+      hasLength(1),
+      reason: '已读过的消息不再请求',
+    );
     expect(router.state.uri.toString(), Paths.myFeedbackCase(5));
     expect(env.adapter.sent('GET /feedback/mine/5'), hasLength(1));
     await unmountApp(tester, container);
@@ -292,9 +305,56 @@ void main() {
       location: Paths.inbox,
     );
 
-    await tester.tap(find.text('你举报的内容已处理'));
+    await tester.tap(find.text('查看处理详情'));
     await tester.pumpAndSettle();
     expect(router.state.uri.toString(), Paths.myFeedbackCase(5));
+    expect(
+      env.adapter.sent('POST /notification/cards/$_caseId/read'),
+      hasLength(1),
+      reason: '点链接也算读过',
+    );
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('新设备登录把设备名和提醒放进详情块；点详情块进登录设备', (tester) async {
+    env.adapter
+      ..on('GET /notification/cards', [
+        FakeAdapter.ok(
+          pageJson([
+            noticeCardJson(
+              id: _caseId,
+              column: 'SYSTEM',
+              kind: 'new_device_login',
+              domain: 'sessions',
+              actors: const [],
+              data: {
+                'type': 'new_device_login',
+                'deviceName': 'iPad Pro 12-Inch 3',
+                'device': 'IOS',
+              },
+            ),
+          ]),
+        ),
+      ])
+      ..on('POST /notification/cards/$_caseId/read', [FakeAdapter.ok()]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.inbox,
+    );
+
+    expect(find.text('iPad Pro 12-Inch 3'), findsOneWidget);
+    expect(find.text('不是本人登录时，可以让它下线'), findsOneWidget);
+    await expectAccessible(tester);
+
+    await tester.tap(find.text('iPad Pro 12-Inch 3'));
+    await tester.pumpAndSettle();
+    expect(router.state.uri.toString(), Paths.settingsDevices);
+    expect(
+      env.adapter.sent('POST /notification/cards/$_caseId/read'),
+      hasLength(1),
+    );
     await unmountApp(tester, container);
   });
 

@@ -149,15 +149,17 @@ void main() {
       detail: const NewDeviceDetail(deviceName: 'Pixel 8', platform: 'ANDROID'),
     );
     expect(NoticeRules.sentenceOf(named), '你的账号已在新设备上登录');
-    expect(NoticeRules.contentOf(named), startsWith('Pixel 8，'));
+    expect(NoticeRules.contentOf(named), 'Pixel 8');
+    expect(NoticeRules.noteOf(named), '不是本人登录时，可以让它下线');
     expect(NoticeRules.targetOf(named), isA<DevicesTarget>());
+    expect(NoticeRules.actionOf(named), '查看登录设备');
     final unnamed = _notice(
       NoticeKind.newDeviceLogin,
       domain: 'sessions',
       actors: const [],
       detail: const NewDeviceDetail(platform: 'IOS'),
     );
-    expect(NoticeRules.contentOf(unnamed), startsWith('iPhone，'));
+    expect(NoticeRules.contentOf(unnamed), 'iPhone');
   });
 
   test('内容被删除写菜名或评论摘要和原因，不跳转', () {

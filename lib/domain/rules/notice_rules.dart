@@ -147,7 +147,22 @@ abstract final class NoticeRules {
     BanDetail(:final reason?) ||
     ContentRemovedDetail(:final reason?) => '原因：$reason',
     NewDeviceDetail(:final deviceName, :final platform) =>
-      '${deviceName ?? _platformOf(platform)}，不是你本人登录时，可以在登录设备里让它下线',
+      deviceName ?? _platformOf(platform),
+    _ => null,
+  };
+
+  /// 补充说明之后的提醒, 目前只有新设备登录消息提醒用户核对设备. 没有时返回 null.
+  static String? noteOf(Notice notice) => switch (notice.kind) {
+    NoticeKind.newDeviceLogin => '不是本人登录时，可以让它下线',
+    _ => null,
+  };
+
+  /// 系统消息的跳转入口说明, 没有跳转目标的消息返回 null.
+  ///
+  /// 系统消息在列表里显示全文, 跳转只由正文下方的入口触发, 点整行只标为已读, 避免用户还没读完就离开消息页.
+  static String? actionOf(Notice notice) => switch (targetOf(notice)) {
+    DevicesTarget() => '查看登录设备',
+    CaseTarget() => '查看处理详情',
     _ => null,
   };
 
