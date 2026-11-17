@@ -65,7 +65,7 @@ prototype/
 
 ## 环境与命令
 
-Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.7 stable，附带 Dart 3.13.5）。CI 从 `.fvmrc` 读取版本，升级 Flutter 只改这一个文件。一律用 `fvm flutter` / `fvm dart`，不要用全局的 `flutter`。
+Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.8 stable，附带 Dart 3.13.7）。CI 从 `.fvmrc` 读取版本，升级 Flutter 只改这一个文件。一律用 `fvm flutter` / `fvm dart`，不要用全局的 `flutter`。
 
 ```bash
 fvm install                              # 安装 .fvmrc 指定的 SDK
