@@ -975,7 +975,7 @@ class _ShopList extends ConsumerWidget {
       slivers: [
         SliverList.separated(
           itemCount: feed.shops.length,
-          separatorBuilder: (_, _) => const SizedBox(height: ShopEntry.gap),
+          separatorBuilder: (_, _) => const ShopEntryDivider(),
           itemBuilder: (context, i) => ShopEntry(
             shop: feed.shops[i],
             index: i,

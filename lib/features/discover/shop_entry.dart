@@ -1,3 +1,5 @@
+import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -14,8 +16,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// 发现页抽屉里的一家推荐店, 排成精选榜单的一项. 一家店压在约 230 高, 展开抽屉时一屏能看到两家多.
 ///
 /// - 店名前面一个浅色的大号序号 (01, 02), 对应转盘上 "这一批的第几家", 让列表读起来是挑过的, 不是搜出来的. 抽屉保持白底, 不用颜色.
-/// - 店名下面一行: 推荐率的比例条和 "86% 推荐", 后面跟距离, 商圈和品类, 一层比一层弱.
-/// - 只有店名跟在序号后面; 下面一行, 照片和照片下的说明都从页面左边距开始, 共用一条左边线.
+/// - 店名下面一行: 推荐率的比例条和 "86% 推荐", 后面跟距离, 品类和商圈, 各带一个和舞台信息相同的图标, 一层比一层弱.
+/// - 店名和下面一行信息都跟在序号后面, 共用店名的起点; 照片和照片下的说明从页面左边距开始, 和序号共用一条左边线.
 /// - 菜排成同高的一行, 第一道是 "店的脸", 宽度是其他菜的两倍. 只有一道时图在左, 菜名和价格在右.
 /// - 菜用圆角方图直接放原图, 不套盘沿, 带盘沿的盘子只给舞台上的主角.
 /// - 第一次出现时淡入上移, 相邻条目依次错开; 照片按下时轻微缩小. 系统开启减少动态效果时都直接到终点.
@@ -37,9 +39,6 @@ class ShopEntry extends ConsumerWidget {
 
   /// 最多排几道菜, 与推荐卡片返回的代表菜上限一致.
   static const dishesMax = 3;
-
-  /// 两家店之间的间距. 比一家店内部的间距大得多, 不需要分隔线.
-  static const gap = 32.0;
 
   /// 菜照片的高度. 三道菜时主图约 8:5, 另外两道约 4:5.
   static const photoHeight = 104.0;
@@ -71,34 +70,56 @@ class ShopEntry extends ConsumerWidget {
               distance: ref.watch(distanceToProvider(shop.point)),
               onTap: onTap,
             ),
-            switch (dishes) {
-              [] => const SizedBox.shrink(),
-              [final dish] => _SoloDish(
-                dish: dish,
-                width: (content - EatSpace.s14) / 2,
-                onTap: () => onDishTap(dish),
-              ),
-              _ => Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: _dishGap,
-                children: [
-                  for (final (i, dish) in dishes.indexed)
-                    Expanded(
-                      flex: i == 0 ? _heroFlex : 1,
-                      child: _DishTile(
-                        dish: dish,
-                        width: unit * (i == 0 ? _heroFlex : 1),
-                        onTap: () => onDishTap(dish),
+            if (dishes.isNotEmpty)
+              switch (dishes) {
+                [final dish] => _SoloDish(
+                  dish: dish,
+                  width: (content - EatSpace.s14) / 2,
+                  onTap: () => onDishTap(dish),
+                ),
+                _ => Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: _dishGap,
+                  children: [
+                    for (final (i, dish) in dishes.indexed)
+                      Expanded(
+                        flex: i == 0 ? _heroFlex : 1,
+                        child: _DishTile(
+                          dish: dish,
+                          width: unit * (i == 0 ? _heroFlex : 1),
+                          onTap: () => onDishTap(dish),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            },
+                  ],
+                ),
+              },
           ],
         ),
       ),
     );
   }
+}
+
+/// 两家店之间的分隔: 一条 `hairline` 细线, 上下留白.
+///
+/// 上一家以菜名和价格的小字结尾, 下一家以店名开头, 只靠留白时两段文字连在一起读. 细线只画在左右边距之内, 和照片共用左边线, 读起来还是同一张榜单.
+class ShopEntryDivider extends StatelessWidget {
+  const new({super.key});
+
+  /// 细线上下各自的留白.
+  static const space = EatSpace.s16;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(
+      horizontal: EatSpace.s20,
+      vertical: space,
+    ),
+    child: SizedBox(
+      height: 1,
+      child: ColoredBox(color: context.eat.colors.hairline),
+    ),
+  );
 }
 
 /// 店名一栏: 序号和店名, 下面一行推荐理由, 距离和要点.
@@ -125,16 +146,15 @@ class _Header extends StatelessWidget {
       if (shop.closed) Text('已关门', style: meta.copyWith(color: c.warn)),
       if (rate != null) _Reason(rate: rate),
       if (distance case final distance?)
-        Text(distance, style: eat.text.count.copyWith(color: c.inkMuted)),
-      for (final fact in [?shop.hubName, ?shop.categories.firstOrNull?.label])
-        Flexible(
-          child: Text(
-            fact,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: meta,
-          ),
+        _Fact(
+          EatIcons.pin,
+          distance,
+          style: eat.text.count.copyWith(color: c.inkMuted),
         ),
+      if (shop.categories.firstOrNull?.label case final category?)
+        Flexible(child: _Fact(EatIcons.utensils, category, style: meta)),
+      if (shop.hubName case final hub?)
+        Flexible(child: _Fact(EatIcons.district, hub, style: meta)),
     ];
     return EatTappable(
       onTap: onTap,
@@ -142,42 +162,72 @@ class _Header extends StatelessWidget {
       focusShape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(EatRadius.thumb),
       ),
-      builder: (context, _) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (context, _) => Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        spacing: EatSpace.s10,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            spacing: EatSpace.s10,
-            children: [
-              ExcludeSemantics(
-                child: Text(
-                  '${index + 1}'.padLeft(2, '0'),
-                  // 等宽数字, 各家店名的起点一致.
-                  style: eat.text.stat.copyWith(
-                    color: c.handle,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
+          ExcludeSemantics(
+            child: Text(
+              '${index + 1}'.padLeft(2, '0'),
+              // 等宽数字, 各家店名的起点一致.
+              style: eat.text.stat.copyWith(
+                color: c.handle,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
-              Flexible(
-                child: Text(
+            ),
+          ),
+          // 店名和下面的信息行放在同一列, 共用店名的起点; 序号对着这一列上下居中.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   shop.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: eat.text.heading.copyWith(color: c.ink),
                 ),
-              ),
-            ],
+                if (line.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(spacing: EatSpace.s14, children: line),
+                ],
+              ],
+            ),
           ),
-          if (line.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Row(spacing: EatSpace.s10, children: line),
-          ],
         ],
       ),
     );
   }
+}
+
+/// 店名下的一项信息: 前置图标和单行文字, 图标尺寸与颜色跟随文字, 写法与舞台上的信息条目一致.
+class _Fact extends StatelessWidget {
+  const new(this.icon, this.text, {required this.style});
+
+  final EatIcons icon;
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    spacing: EatSpace.s4,
+    children: [
+      EatIcon(
+        icon,
+        size: MediaQuery.textScalerOf(context).scale(style.fontSize ?? 13),
+        color: style.color,
+      ),
+      Flexible(
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style,
+        ),
+      ),
+    ],
+  );
 }
 
 /// 推荐理由: 推荐率的比例条和百分比.
@@ -501,13 +551,13 @@ class ShopEntryPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => LoadingArea(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-      child: Column(
-        spacing: ShopEntry.gap,
-        children: [
-          for (var i = 0; i < count; i++)
-            const Column(
+    child: Column(
+      children: [
+        for (var i = 0; i < count; i++) ...[
+          if (i > 0) const ShopEntryDivider(),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: EatSpace.s20),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: EatSpace.s10,
               children: [
@@ -545,8 +595,9 @@ class ShopEntryPlaceholder extends StatelessWidget {
                 ),
               ],
             ),
+          ),
         ],
-      ),
+      ],
     ),
   );
 }
