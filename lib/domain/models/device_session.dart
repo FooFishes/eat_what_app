@@ -1,7 +1,7 @@
 /// 登录设备的类型.
 enum DevicePlatform {
   web('网页版'),
-  ios('iPhone'),
+  ios('苹果'),
   android('安卓'),
   unknown('其他设备');
 

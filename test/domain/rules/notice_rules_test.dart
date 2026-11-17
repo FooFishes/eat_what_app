@@ -159,7 +159,7 @@ void main() {
       actors: const [],
       detail: const NewDeviceDetail(platform: 'IOS'),
     );
-    expect(NoticeRules.contentOf(unnamed), 'iPhone');
+    expect(NoticeRules.contentOf(unnamed), '苹果设备');
   });
 
   test('内容被删除写菜名或评论摘要和原因，不跳转', () {

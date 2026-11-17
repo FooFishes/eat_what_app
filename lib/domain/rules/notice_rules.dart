@@ -167,7 +167,7 @@ abstract final class NoticeRules {
   };
 
   static String _platformOf(String? platform) => switch (platform) {
-    'IOS' => 'iPhone',
+    'IOS' => '苹果设备',
     'ANDROID' => '安卓设备',
     'WEB' => '网页版',
     _ => '其他设备',

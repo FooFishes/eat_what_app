@@ -184,7 +184,7 @@ class NotificationRepository {
         until: dateFromMillis((json['banUntil'] as num?)?.toInt()),
       ),
       'new_device_login' => NewDeviceDetail(
-        deviceName: text('deviceName').isEmpty ? null : text('deviceName'),
+        deviceName: deviceNameOf(json['deviceName'] as String?),
         platform: json['device'] as String?,
       ),
       'content_removed' => ContentRemovedDetail(

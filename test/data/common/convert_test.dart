@@ -23,4 +23,11 @@ void main() {
       expect(dateFromIso('1793505600000'), isNull);
     });
   });
+
+  test('设备名称：未知设备和空白都当作没有名称', () {
+    expect(deviceNameOf(' Pixel 8 '), 'Pixel 8');
+    expect(deviceNameOf('未知设备'), isNull);
+    expect(deviceNameOf('  '), isNull);
+    expect(deviceNameOf(null), isNull);
+  });
 }

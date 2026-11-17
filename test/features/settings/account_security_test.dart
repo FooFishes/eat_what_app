@@ -99,7 +99,7 @@ void main() {
     expect(find.text('Chrome · macOS'), findsOneWidget);
     expect(find.text('10 分钟前登录，3 分钟前用过'), findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('iPhone')).dy,
+      tester.getTopLeft(find.text('苹果')).dy,
       lessThan(tester.getTopLeft(find.text('网页版')).dy),
     );
     expect(find.text('待接入'), findsNothing);

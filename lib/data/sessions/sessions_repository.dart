@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:eat/data/common/convert.dart';
 import 'package:eat/data/sessions/sessions_api.dart';
 import 'package:eat/domain/models/device_session.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -44,10 +45,7 @@ class SessionsRepository {
         'ANDROID' => DevicePlatform.android,
         _ => DevicePlatform.unknown,
       },
-      name: switch (dto.name?.trim()) {
-        final name? when name.isNotEmpty => name,
-        _ => null,
-      },
+      name: deviceNameOf(dto.name),
       signedInAt: DateTime.tryParse(dto.issuedAt ?? '')?.toLocal(),
       lastActiveAt: DateTime.tryParse(dto.lastActiveAt ?? '')?.toLocal(),
       current: dto.current ?? false,

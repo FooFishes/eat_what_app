@@ -50,7 +50,7 @@ class const DeviceSessionPageDto({
 
 /// 已登录设备信息, [device] 取值为 `WEB`, `IOS`, `ANDROID` 或 `UNKNOWN`.
 ///
-/// [name] 为登录时上报的设备名称, 若未上报则由服务端从 User-Agent 推断 (如 "Chrome · macOS"), 无法推断时为 null. [issuedAt] 与 [lastActiveAt] 分别为登录时间与最近活跃时间, 均为 ISO 8601 格式.
+/// [name] 是服务端按安装 ID 读取的登记机型, 没有机型时为 "未知设备", 转换时和空白一样当作没有名称. [issuedAt] 与 [lastActiveAt] 分别为登录时间与最近活跃时间, 均为 ISO 8601 格式.
 @JsonSerializable(createToJson: false)
 class const DeviceSessionDto({
   final String? sessionId,

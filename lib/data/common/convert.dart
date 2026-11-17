@@ -1,6 +1,14 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/domain/models/paged.dart';
 
+/// 服务端给的设备名称: 设备列表和新设备登录消息里, 名称取自安装 ID 登记的机型.
+///
+/// 没有机型时服务端写 "未知设备", 这里和空白一样转成 null, 由界面改用平台名 (如 "安卓", "苹果").
+String? deviceNameOf(String? value) => switch (value?.trim()) {
+  final name? when name.isNotEmpty && name != '未知设备' => name,
+  _ => null,
+};
+
 /// 把接口的 `PageResult` (`items`, `currentPage`, `hasNext`, `totalItems`) 转换为 [Paged].
 Paged<T> decodePage<T>(
   Object? data,
