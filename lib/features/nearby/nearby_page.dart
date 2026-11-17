@@ -22,6 +22,7 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/nearby/nearby_providers.dart';
@@ -210,12 +211,12 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final campus = ref.watch(currentPlaceProvider.select((p) => p.campus));
     final me = ref.watch(currentLocationProvider.select((s) => s.point));
     final myHub = ref.watch(myHubProvider).value;
-    // 与后端的校区范围一致: 没有校区的商圈只算在默认校区里.
+    // 商圈不属于校区, 只显示离所选校区不远的商圈.
     final hubs = [
       for (final hub in ref.watch(hubsProvider).value ?? const <Hub>[])
         if (campus == null ||
-            hub.campusId == campus.id ||
-            (hub.campusId == null && campus.isDefault))
+            GeoRules.distance(hub.center, campus.center) <=
+                GeoRules.maxDistanceFromCampus)
           hub,
     ];
     final hubId = _hubTouched ? _hubId : myHub?.id;

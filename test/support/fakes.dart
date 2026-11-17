@@ -586,7 +586,6 @@ Map<String, Object?> restaurantJson({
   'permanentlyClosed': false,
   'hubId': 3,
   'hubName': '万达金街',
-  'campusId': 1,
   'isFavorite': null,
   'deliveryEnabled': false,
   'kind': 'food',

@@ -31,7 +31,7 @@ void main() {
     final query = env.adapter.sent('GET /restaurant/browse').last.query;
     expect(query['gcjLat'], 36.667382);
     expect(query['radius'], 3000);
-    expect(query['campusId'], 1);
+    expect(query.containsKey('campusId'), isFalse);
     expect(find.text('附近 2 家', findRichText: true), findsOneWidget);
     final near = tester.getTopLeft(find.text('近一点的店'));
     final far = tester.getTopLeft(find.text('远一点的店'));
@@ -82,14 +82,13 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('商圈胶囊：默认校区显示本校区和不属于任何校区的商圈', (tester) async {
+  testWidgets('商圈胶囊：只显示离所选校区不远的商圈', (tester) async {
     final env = TestEnv();
-    Map<String, Object?> hub(int id, String name, int? campusId) => {
+    Map<String, Object?> hub(int id, String name, double lat, double lng) => {
       'id': id,
       'name': name,
-      'gcjLng': 117.1412,
-      'gcjLat': 36.6681,
-      'campusId': campusId,
+      'gcjLng': lng,
+      'gcjLat': lat,
       'boundary': null,
     };
     env.adapter
@@ -97,9 +96,9 @@ void main() {
       ..on('GET /hub/list', [
         FakeAdapter.ok(
           pageJson([
-            hub(1, '舜泰广场', 1),
-            hub(2, '西门小吃街', null),
-            hub(3, '洪家楼', 2),
+            hub(1, '舜泰广场', 36.6681, 117.1412),
+            hub(2, '西门小吃街', 36.6900, 117.1700),
+            hub(3, '洪家楼', 36.687406, 117.068225),
           ]),
         ),
       ])

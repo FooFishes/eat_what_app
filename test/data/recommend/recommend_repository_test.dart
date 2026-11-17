@@ -12,7 +12,7 @@ import '../../support/recommend_json.dart';
 void main() {
   const here = GcjPoint(36.6681, 117.1412);
 
-  test('请求带上场景、饭点、类型、校区、坐标和页码', () async {
+  test('请求带上场景、饭点、类型、坐标和页码，不带校区', () async {
     final env = TestEnv();
     env.adapter.on('GET /recommend', [FakeAdapter.ok(feedJson([]))]);
     final container = await env.container();
@@ -34,7 +34,6 @@ void main() {
       'scene': 'delivery',
       'mealTime': 'dinner',
       'kind': 'drink',
-      'campusId': 2,
       'gcjLat': here.lat,
       'gcjLng': here.lng,
       'page': 3,
@@ -212,7 +211,6 @@ void main() {
           scene: RatingScene.delivery,
           meal: MealTime.dinner,
           kind: ShopKind.drink,
-          campusId: 2,
           near: here,
         );
 
@@ -222,7 +220,6 @@ void main() {
       'scene': 'delivery',
       'mealTime': 'dinner',
       'kind': 'drink',
-      'campusId': 2,
       'gcjLat': here.lat,
       'gcjLng': here.lng,
     });

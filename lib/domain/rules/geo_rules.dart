@@ -43,7 +43,9 @@ abstract final class GeoRules {
     return '${text.endsWith('.0') ? text.substring(0, text.length - 2) : text} km';
   }
 
-  /// 用户与校区中心的距离上限, 单位为米. 超过该值时不显示距离, 改为显示商圈名.
+  /// 算作在校区附近的距离上限, 单位为米.
+  ///
+  /// 用户离校区中心超过该值时不显示距离, 改为显示商圈名, 推荐也改用校区的坐标; 附近页只显示中心在该范围内的商圈.
   static const maxDistanceFromCampus = 5000.0;
 
   /// 从 [me] 到 [target] 的距离文字. 没有定位或用户离 [campusCenter] 过远时返回 null.

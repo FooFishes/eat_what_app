@@ -37,7 +37,7 @@ void main() {
 
     final dishQuery = env.adapter.sent('GET /foods/list').single.query;
     expect(dishQuery, containsPair('keyword', '袁记'));
-    expect(dishQuery, containsPair('campusId', 1), reason: '搜菜限当前校区');
+    expect(dishQuery.containsKey('campusId'), isFalse, reason: '后端搜菜不按校区筛选');
     expect(dishQuery.containsKey('mealTime'), isFalse);
     expect(find.text('袁记云饺'), findsOneWidget);
     await tester.testTextInput.receiveAction(TextInputAction.search);

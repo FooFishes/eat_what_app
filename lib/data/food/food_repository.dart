@@ -57,7 +57,7 @@ class FoodRepository {
   ///
   /// - [keyword] 只匹配菜名.
   /// - 不传 [sort] 时, 指定 [restaurantId] 按菜单顺序, 否则按最新排列.
-  /// - [scene] 为外卖时只返回能点外卖的菜. 带 [scene] 或 [campusId] 时排除已关门的店.
+  /// - [scene] 为外卖时只返回能点外卖的菜. 带 [scene] 时排除已关门的店.
   /// - 不传 [restaurantId] 也不传 [mealTime] 时, 服务端按北京时间的当前饭点筛选.
   Future<Paged<Dish>> list({
     int? restaurantId,
@@ -66,7 +66,6 @@ class FoodRepository {
     bool? signatureOnly,
     FoodSort? sort,
     RatingScene? scene,
-    int? campusId,
     MealTime? mealTime,
     int page = 1,
     int pageSize = 20,
@@ -79,7 +78,6 @@ class FoodRepository {
       signatureOnly: signatureOnly,
       sort: sort,
       scene: scene?.api,
-      campusId: campusId,
       mealTime: mealTime?.api,
       page: page,
       pageSize: pageSize,

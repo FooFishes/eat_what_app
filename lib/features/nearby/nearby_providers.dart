@@ -5,7 +5,6 @@ import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/state/location.dart';
-import 'package:eat/state/place.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -99,11 +98,9 @@ Future<List<Shop>> nearbyShops(Ref ref, NearbyQuery query) async {
   ref.cacheFor(const Duration(minutes: 1));
   final keyword = query.keyword.trim();
   final filter = query.filter;
-  final campusId = ref.watch(currentPlaceProvider.select((p) => p.campus?.id));
   final page = await ref
       .watch(placeRepositoryProvider)
       .searchShops(
-        campusId: campusId,
         keyword: keyword.isEmpty ? null : keyword,
         hubId: query.hubId,
         near: query.center,

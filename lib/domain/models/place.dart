@@ -21,7 +21,6 @@ class const Hub({
   required final int id,
   required final String name,
   required final GcjPoint center,
-  final int? campusId,
   final List<List<GcjPoint>> boundary = const [],
 });
 
@@ -209,8 +208,6 @@ class const Shop({
   final int? hubId,
   final String? hubName,
 
-  /// 所属商圈的校区. 不属于商圈或商圈没有校区时为 null.
-  final int? campusId,
   required final ShopKind kind,
   final List<MealTime> mealTimes = const [],
   final PriceBand? priceBand,

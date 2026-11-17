@@ -33,7 +33,6 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
       .list(
         keyword: keyword,
         sort: FoodSort.newest,
-        campusId: scope.campusId,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );
@@ -53,7 +52,6 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
       .watch(placeRepositoryProvider)
       .searchShops(
         keyword: keyword,
-        campusId: scope.campusId,
         near: scope.point,
         pageSize: 40,
         cancelToken: ref.cancelToken(),

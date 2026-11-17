@@ -73,7 +73,7 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'ad43a2f99a5874c678ab5fba808c883edfc6a530';
+String _$dishSearchHash() => r'ec86a862df1cd4593476a9b2e73b80e8ca5a73ef';
 
 /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
 ///
@@ -166,7 +166,7 @@ final class ShopSearchProvider
   }
 }
 
-String _$shopSearchHash() => r'6ab0cb04d84fe7981012f04ab9fb602d94b030de';
+String _$shopSearchHash() => r'b0d4e1250799ba4ca523ba724a7c2649db54ed1a';
 
 /// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
 ///

@@ -13,19 +13,19 @@ import '../../support/fakes.dart';
 void main() {
   const here = GcjPoint(36.6681, 117.1412);
 
-  test('搜店总是带上坐标和校区', () async {
+  test('搜店带上坐标，不带校区', () async {
     final env = TestEnv();
     env.adapter.on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
     final container = await env.container();
 
     await container
         .read(placeRepositoryProvider)
-        .searchShops(keyword: '袁记', near: here, campusId: 2);
+        .searchShops(keyword: '袁记', near: here);
 
     final query = env.adapter.sent('GET /restaurant/search').single.query;
     expect(query, containsPair('gcjLat', here.lat));
     expect(query, containsPair('gcjLng', here.lng));
-    expect(query, containsPair('campusId', 2));
+    expect(query.containsKey('campusId'), isFalse);
   });
 
   test('搜店带上类型、品类、口味、价位、外卖、口碑好、收藏和排序', () async {
@@ -119,7 +119,6 @@ void main() {
     expect(full.photo, 'https://img.test/restaurants/1.jpg');
     expect(full.closed, isTrue);
     expect(full.hubName, '万达金街');
-    expect(full.campusId, 1);
     expect(full.kind, ShopKind.drink);
     expect(full.mealTimes, [MealTime.breakfast, MealTime.night]);
     expect(full.priceBand, PriceBand.from15To30);
@@ -224,7 +223,6 @@ void main() {
         'name': '舜泰广场',
         'gcjLng': 117.13,
         'gcjLat': 36.66,
-        'campusId': 1,
         'boundary': null,
       }),
     ]);

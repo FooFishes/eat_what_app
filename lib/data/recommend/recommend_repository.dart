@@ -30,7 +30,7 @@ class RecommendRepository {
   /// - 游客按页码顺序翻页, 当日内排序保持不变.
   /// - 登录用户每次获取当日尚未推荐过的店铺, 页码仅作回显; 该去重池不区分校区, 场景, 饭点与类型, 且转盘与抽屉列表共用. 当日候选全部推荐完后服务端会重新循环, 此时可能返回重复店铺, 需由调用方去重.
   ///
-  /// [near] 为当前位置坐标; 传入时堂食仅推荐 3000 m 内店铺, 外卖仅推荐 5000 m 内店铺.
+  /// [near] 为查询位置的坐标; 传入时堂食仅推荐 3000 m 内店铺, 外卖仅推荐 5000 m 内店铺. 后端不按校区筛选, [campusId] 只用来区分本地的 "上一批" 缓存.
   Future<Paged<Shop>> recommend({
     required RatingScene scene,
     required MealTime meal,
@@ -45,7 +45,6 @@ class RecommendRepository {
       scene: scene.api,
       gcjLat: near?.lat,
       gcjLng: near?.lng,
-      campusId: campusId,
       mealTime: meal.api,
       kind: kind.api,
       page: page,
@@ -101,7 +100,6 @@ class RecommendRepository {
     required RatingScene scene,
     required MealTime meal,
     ShopKind kind = ShopKind.food,
-    int? campusId,
     GcjPoint? near,
     CancelToken? cancelToken,
   }) async {
@@ -109,7 +107,6 @@ class RecommendRepository {
       scene: scene.api,
       gcjLat: near?.lat,
       gcjLng: near?.lng,
-      campusId: campusId,
       mealTime: meal.api,
       kind: kind.api,
       cancelToken: cancelToken,

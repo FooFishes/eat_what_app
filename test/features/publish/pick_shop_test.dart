@@ -28,7 +28,7 @@ void main() {
     final query = env.adapter.sent('GET /restaurant/browse').single.query;
     expect(query, containsPair('gcjLat', 36.667382));
     expect(query, containsPair('gcjLng', 117.140109));
-    expect(query, containsPair('campusId', 1));
+    expect(query.containsKey('campusId'), isFalse);
   });
 
   test('定位和校区都拿不到时照常搜店，不带坐标', () async {

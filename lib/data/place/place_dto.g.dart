@@ -20,7 +20,6 @@ HubDto _$HubDtoFromJson(Map<String, dynamic> json) => HubDto(
   name: json['name'] as String?,
   gcjLng: (json['gcjLng'] as num?)?.toDouble(),
   gcjLat: (json['gcjLat'] as num?)?.toDouble(),
-  campusId: (json['campusId'] as num?)?.toInt(),
   boundary: json['boundary'] == null
       ? null
       : GeoJsonDto.fromJson(json['boundary'] as Map<String, dynamic>),
@@ -43,7 +42,6 @@ RestaurantDto _$RestaurantDtoFromJson(Map<String, dynamic> json) =>
       permanentlyClosed: json['permanentlyClosed'] as bool?,
       hubId: (json['hubId'] as num?)?.toInt(),
       hubName: json['hubName'] as String?,
-      campusId: (json['campusId'] as num?)?.toInt(),
       distanceMeters: (json['distanceMeters'] as num?)?.toDouble(),
       isFavorite: json['isFavorite'] as bool?,
       deliveryEnabled: json['deliveryEnabled'] as bool?,

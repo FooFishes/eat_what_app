@@ -125,7 +125,6 @@ class PlaceApi {
   /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 `matchedFood`.
   /// - 坐标可选但必须成对传入; 未指定 [sort] 时, 传坐标按距离升序排列, 否则按创建时间倒序.
   /// - [radius] 和 [ShopSort.distance] 均需配合坐标使用.
-  /// - 传入 [campusId] 时仅检索该校区, 其中默认校区还包含不属于任何商圈的店铺.
   /// - [categories] 和 [tags] 各自满足任一取值即可命中.
   /// - [delivery] 为 true 时仅保留支持外卖或存在外卖评价的店铺.
   /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
@@ -133,7 +132,6 @@ class PlaceApi {
   Future<Paged<RestaurantDto>> searchRestaurants({
     double? gcjLat,
     double? gcjLng,
-    int? campusId,
     String? keyword,
     int? hubId,
     int? radius,
@@ -154,7 +152,6 @@ class PlaceApi {
           ? PlaceEndpoints.browseRestaurants
           : PlaceEndpoints.searchRestaurants,
       query: {
-        'campusId': ?campusId,
         'keyword': ?keyword,
         'hubId': ?hubId,
         'gcjLat': ?gcjLat,

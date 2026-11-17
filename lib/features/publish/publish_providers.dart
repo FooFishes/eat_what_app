@@ -49,7 +49,6 @@ Future<List<Shop>> pickableShops(Ref ref, String keyword) async {
       .watch(placeRepositoryProvider)
       .searchShops(
         keyword: keyword.isEmpty ? null : keyword,
-        campusId: scope.campusId,
         near: scope.point,
         pageSize: 40,
         cancelToken: ref.cancelToken(),

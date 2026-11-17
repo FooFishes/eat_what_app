@@ -220,11 +220,10 @@ CurrentPlace currentPlace(Ref ref) {
   );
 }
 
-/// 搜索店铺时使用的参照坐标与校区范围.
+/// 搜索店铺时使用的参照坐标.
 ///
-/// - [point]: 当前设备定位, 若无定位则回退为当前校区的中心. 两者都没有时为 null, 后端按新建时间倒序排列.
-/// - [campusId]: 当前校区 id. 搜店接口不传校区时不限校区.
-typedef ShopSearchScope = ({GcjPoint? point, int? campusId});
+/// [point] 为当前设备定位, 若无定位则回退为当前校区的中心. 两者都没有时为 null, 后端按新建时间倒序排列.
+typedef ShopSearchScope = ({GcjPoint? point});
 
 /// 计算当前的搜店范围. 若校区列表仍在加载则等待其完成, 等待期间若调用方已释放则返回 null.
 Future<ShopSearchScope?> shopSearchScope(Ref ref) async {
@@ -238,7 +237,7 @@ Future<ShopSearchScope?> shopSearchScope(Ref ref) async {
   }
   final campus = ref.read(currentPlaceProvider).campus;
   final point = ref.read(currentLocationProvider).point ?? campus?.center;
-  return (point: point, campusId: campus?.id);
+  return (point: point);
 }
 
 /// 当前饭点的失效时间: 手动选择的到期时间, 或当前时间段的结束时间.

@@ -26,7 +26,6 @@ class const HubDto({
   final String? name,
   final double? gcjLng,
   final double? gcjLat,
-  final int? campusId,
   final GeoJsonDto? boundary,
 }) {
   factory HubDto.fromJson(Map<String, dynamic> json) => _$HubDtoFromJson(json);
@@ -58,7 +57,6 @@ class const RestaurantDto({
   final bool? permanentlyClosed,
   final int? hubId,
   final String? hubName,
-  final int? campusId,
 
   /// 与请求坐标的距离 (米), 仅在请求携带坐标时返回.
   final double? distanceMeters,

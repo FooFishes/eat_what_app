@@ -252,14 +252,12 @@ class PlaceRepository {
   ///
   /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 [Shop.matchedDish].
   /// - [radius] 单位为米, 需配合 [near] 使用, 为 null 时不限制半径.
-  /// - 不传 [campusId] 时不限定校区范围.
   /// - [categories] 和 [tastes] 各自满足任一取值即可命中; [delivery] 为 true 时仅保留支持外卖或有外卖评价的店铺.
   /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
   ///
   /// 若未传入 [near], 则不发送 [radius] 和 [ShopSort.distance], 避免后端因缺少坐标而返回参数错误.
   Future<Paged<Shop>> searchShops({
     GcjPoint? near,
-    int? campusId,
     String? keyword,
     int? hubId,
     int? radius,
@@ -276,7 +274,6 @@ class PlaceRepository {
     CancelToken? cancelToken,
   }) async => _page(
     await _api.searchRestaurants(
-      campusId: campusId,
       keyword: keyword,
       hubId: hubId,
       gcjLat: near?.lat,
@@ -343,7 +340,6 @@ class PlaceRepository {
       photo: imageUrl(dto.pictureUrl),
       hubId: dto.hubId,
       hubName: _text(dto.hubName),
-      campusId: dto.campusId,
       kind: ShopKind.fromApi(dto.kind) ?? ShopKind.food,
       mealTimes: [
         for (final m in dto.mealTimes ?? const <String>[]) ?MealTime.fromApi(m),
@@ -435,7 +431,6 @@ class PlaceRepository {
       id: dto.id!,
       name: dto.name ?? '',
       center: GcjPoint(dto.gcjLat!, dto.gcjLng!),
-      campusId: dto.campusId,
       boundary: _rings(dto.boundary),
     );
   }

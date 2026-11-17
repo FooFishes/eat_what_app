@@ -532,7 +532,7 @@ void main() {
     });
   });
 
-  test('按场景、校区和饭点查菜', () async {
+  test('按场景和饭点查菜', () async {
     final env = TestEnv();
     env.adapter.on('GET /foods/list', [FakeAdapter.ok(pageJson([]))]);
     final container = await env.container();
@@ -542,14 +542,12 @@ void main() {
         .list(
           keyword: '云吞',
           scene: RatingScene.delivery,
-          campusId: 1,
           mealTime: MealTime.night,
         );
 
     expect(env.adapter.sent('GET /foods/list').single.query, {
       'keyword': '云吞',
       'scene': 'delivery',
-      'campusId': 1,
       'mealTime': 'night',
       'page': 1,
       'pageSize': 20,

@@ -76,7 +76,7 @@ final class PickableShopsProvider
   }
 }
 
-String _$pickableShopsHash() => r'332dcc19c5cbbbed05260ac9fcbbb7524f7a54ac';
+String _$pickableShopsHash() => r'ac61c6912f6e4bcb0d5b61b850f5fe701694b71e';
 
 /// 获取当前校区内营业中的可选店铺列表; [keyword] 为空时列出附近店铺, 否则按店名或地址搜索.
 ///

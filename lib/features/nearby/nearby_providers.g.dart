@@ -76,7 +76,7 @@ final class NearbyShopsProvider
   }
 }
 
-String _$nearbyShopsHash() => r'c5e1ae3c387f9e831cf0a24baa14885f9ae413b8';
+String _$nearbyShopsHash() => r'10ebe4772af23f301004d0fad075ba7221dcfd26';
 
 /// 查询当前校区内附近营业中的店铺, 按与用户的距离升序排列.
 ///

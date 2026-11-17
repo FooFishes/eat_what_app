@@ -104,17 +104,17 @@ List<StageColor> turntableColors(List<Shop> shops) {
   return colors;
 }
 
-/// 获取推荐请求携带的定位坐标. 无定位或当前位置距离目标校区过远时返回 null.
+/// 推荐请求的查询位置: 有定位且离所选校区不远时用定位, 否则用校区的坐标. 两者都没有时返回 null, 后端不按位置筛选.
 ///
-/// 携带位置时堂食仅推荐 3 km 内店铺, 外卖仅推荐 5 km 内店铺, 因此远离校区时按位置筛选会返回空列表.
-/// 该值仅在发起请求时读取而不监听变化, 避免定位晚于首屏返回时重排已展示的转盘, 后续批次请求再自然带上定位.
+/// 后端不按校区筛选推荐, 校区只是一个位置预设. 携带位置时堂食只推荐 3 km 内的店, 外卖只推荐 5 km 内的店, 所以人离校区很远时改用校区坐标, 否则会按人所在的位置筛选.
+/// 定位只在发起请求时读取, 不监听变化, 避免定位晚于首屏返回时重排已展示的转盘, 后续批次请求再自然带上定位.
 GcjPoint? _near(Ref ref, CurrentPlace place) {
   final me = ref.read(currentLocationProvider).point;
   final center = place.campus?.center;
-  if (me == null) return null;
+  if (me == null) return center;
   if (center != null &&
       GeoRules.distance(me, center) > GeoRules.maxDistanceFromCampus) {
-    return null;
+    return center;
   }
   return me;
 }

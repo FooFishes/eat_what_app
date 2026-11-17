@@ -90,7 +90,7 @@ class FoodApi {
   /// - [keyword] 只匹配菜名, 最多 64 字.
   /// - [category] 是分类的中文原值.
   /// - [scene] 为 `delivery` 时只返回能点外卖的菜, `dine_in` 不限外卖.
-  /// - [campusId] 限定校区. 带 [scene] 或 [campusId] 时排除已关门的店.
+  /// - 带 [scene] 时排除已关门的店.
   /// - [mealTime] 是 `breakfast` 等饭点. 不指定店铺时省略 [mealTime], 服务端按北京时间的当前饭点筛选;
   ///   指定店铺时省略则不按饭点筛选.
   /// - [pageSize] 后端上限为 100.
@@ -101,7 +101,6 @@ class FoodApi {
     bool? signatureOnly,
     FoodSort? sort,
     String? scene,
-    int? campusId,
     String? mealTime,
     int page = 1,
     int pageSize = 20,
@@ -116,7 +115,6 @@ class FoodApi {
         'signatureOnly': ?signatureOnly,
         'sort': ?sort?.api,
         'scene': ?scene,
-        'campusId': ?campusId,
         'mealTime': ?mealTime,
         'page': page,
         'pageSize': pageSize,

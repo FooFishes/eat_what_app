@@ -78,10 +78,11 @@ void main() {
     expect(find.text('万达金街'), findsWidgets, reason: '没有定位时写商圈名');
     final sent = env.adapter.sent('GET /recommend');
     expect(
-      sent.map((r) => r.query['campusId']),
-      everyElement(1),
-      reason: '校区定下来之前不拉推荐：推荐按天去重，发错的请求也会占掉店',
+      sent.map((r) => (r.query['gcjLat'], r.query['gcjLng'])),
+      everyElement((36.667382, 117.140109)),
+      reason: '没有定位时按校区坐标推荐；校区定下来之前不拉推荐：推荐按天去重，发错的请求也会占掉店',
     );
+    expect(sent.any((r) => r.query.containsKey('campusId')), isFalse);
     expect(sent.map((r) => r.query['scene']), everyElement('dine_in'));
     expect(sent.map((r) => r.query['kind']), everyElement('food'));
     expect(sent.map((r) => r.query['pageSize']), containsAll([8, 10]));
