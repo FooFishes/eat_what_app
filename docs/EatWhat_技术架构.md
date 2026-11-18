@@ -722,7 +722,7 @@ extension RefCache on Ref {
 
 推荐的单位是店（产品第 8 节）。数据层在 `data/recommend/`（`RecommendApi`、`RecommendRepository`），发现页的转盘队列和抽屉列表在 `features/discover/discover_providers.dart`。
 
-- **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`campusId`、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。`mealTime` 总是显式传，按产品 4.5 的时间段算（后端不传时的默认边界是 10、14、21 点，和产品不同，已反馈）。离校区中心超过 5 km 时不带位置。
+- **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`campusId`、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`，「自助」栏传 `buffet`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。`mealTime` 总是显式传，按产品 4.5 的时间段算（后端不传时的默认边界是 10、14、21 点，和产品不同，已反馈）。离校区中心超过 5 km 时不带位置。
 - **卡片**：店铺详情的子集加 `signatureFoods`（最多 3 道）和 `distanceMeters`，用店铺的转换（`PlaceRepository.shopFromJson`）变成 `Shop`，招牌菜在 `signatures`（带封面的 `coverCrop`，转盘的盘子按它取景），距离在 `distance`。缺 id 或坐标的卡片丢弃。舞台色用 `ShopRules.stageOf`（11.3）。
 - **分批**：转盘每批 8 家，少于 5 家不用转盘，仍可拖动换店。下一批一律请求 `page + 1`。游客按页码翻页，同一天的顺序不变；登录用户由后端按「用户 + 日期」去重，每次给当天还没推过的店，页码只回显，转盘、抽屉列表和不同场景、校区共用这一份记录，当天推完了从头再来。客户端按 id 去重，一批全是已经拿到过的店就当没有下一批。
 - **上一批**：每次拿到的非空结果按「校区 + 场景 + 饭点 + 类型」存一份（10.1），请求失败时先用它。
@@ -770,7 +770,7 @@ extension RefCache on Ref {
 | `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 菜 | 米饭炒菜 |
 
 - 菜品分类的默认色（产品 4.4）写在 `domain/rules/dish_rules.dart` 的 `DishRules.defaultStage`；`DishCategory` 的 `api` 是后端的中文原值（主食、菜、小吃、汤、饮品甜品、特色）。
-- 店铺的舞台色（产品 4.7）写在 `domain/rules/shop_rules.dart` 的 `ShopRules.stageOf`：甜点饮品店用 `porcelain`，美食店按第一个品类映射，没有品类用 `broth`。纯函数，餐厅详情、推荐卡片和各端一致。
+- 店铺的舞台色（产品 4.7）写在 `domain/rules/shop_rules.dart` 的 `ShopRules.stageOf`：甜点饮品店用 `porcelain`，美食店和自助店按第一个品类映射，没有品类用 `broth`。纯函数，餐厅详情、推荐卡片和各端一致。
 - `test/design/stage_color_test.dart` 检查每个舞台色上的主文字和次级文字都不低于 4.5:1。
 - 状态栏图标跟着舞台深浅切换（`AnnotatedRegion<SystemUiOverlayStyle>`）。
 

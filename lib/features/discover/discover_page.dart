@@ -51,7 +51,7 @@ import 'package:go_router/go_router.dart';
 /// 发现页.
 ///
 /// - 舞台: 美食店推荐转盘, 支持拖动或点击 "换一个" 切换店铺, 点击 "就它了" 进入餐厅详情, 或标记 "不想去这家".
-/// - 抽屉: 包含分类栏 ("美食", "甜点饮品" 及待接入的专题) 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
+/// - 抽屉: 包含分类栏 ("美食", "甜点饮品", "自助" 及待接入的专题) 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
 /// - 顶栏: 左侧显示当前地点, 饭点与用餐场景, 右侧为搜索和消息入口.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -1082,6 +1082,7 @@ class _ShopList extends ConsumerWidget {
             title: switch (kind) {
               ShopKind.food => '还没有推荐的店',
               ShopKind.drink => '还没有推荐的甜点饮品店',
+              ShopKind.buffet => '还没有推荐的自助店',
             },
             message: '换个饭点或校区看看，也可以发布第一道菜。',
           ),

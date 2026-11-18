@@ -40,7 +40,7 @@ abstract final class ShopRules {
   static const rateMinCount = 3;
 
   // TODO: 后端暂不保存店铺的舞台色, 目前客户端按类型和品类映射. 后端恢复该字段且响应中返回舞台色后, 优先使用服务端取值.
-  /// 店铺的舞台色, 按类型和第一个品类映射. 甜点饮品店用 `porcelain`, 没有品类时用 `broth`.
+  /// 店铺的舞台色, 按类型和第一个品类映射. 甜点饮品店用 `porcelain`, 美食店和自助店按品类, 没有品类时用 `broth`.
   ///
   /// 映射是纯函数, 同一家店在店铺页, 推荐卡片和各端的颜色一致.
   static StageColor stageOf(Shop shop) {

@@ -24,10 +24,11 @@ class const Hub({
   final List<List<GcjPoint>> boundary = const [],
 });
 
-/// 店铺类型, [api] 为接口字段值, 正餐饱腹类店铺均归为美食.
+/// 店铺类型, [api] 为接口字段值, 正餐饱腹类店铺均归为美食, 自助餐单独一类.
 enum ShopKind {
   food('food', '美食'),
-  drink('drink', '甜点饮品');
+  drink('drink', '甜点饮品'),
+  buffet('buffet', '自助');
 
   const new(this.api, this.label);
 

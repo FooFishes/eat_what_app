@@ -338,6 +338,25 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('分类栏：「自助」请求自助店，没有时说明', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+    );
+    env.adapter.on('GET /recommend', [FakeAdapter.ok(feedJson([]))]);
+    await tester.tap(find.text('自助'));
+    // 切换后列表的请求要等下一帧才发出, 先多推一帧, 否则页面没有动画时 pumpAndSettle 会在请求发出前就返回.
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('GET /recommend').map((r) => r.query['kind']),
+      contains('buffet'),
+    );
+    expect(find.text('还没有推荐的自助店'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
   testWidgets('往下翻时顶栏和分类栏停在顶部，搜索和消息从带字的胶囊收成图标；下拉刷新重新拉这一栏', (tester) async {
     env.adapter.on('GET /recommend', [
       FakeAdapter.ok(
