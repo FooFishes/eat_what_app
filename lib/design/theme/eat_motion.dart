@@ -19,6 +19,14 @@ abstract final class EatMotion {
     curve: Curves.ease,
   );
 
+  /// 舞台页顶栏在舞台样式和吸顶后的白底样式之间切换: 底色, 文字和图标颜色, 首页按钮的收拢一起过渡.
+  ///
+  /// 按时间过渡而不是跟着滚动距离走, 往上甩时抽屉很快穿过分界处, 跟着滚动会像突变.
+  static const EatTransition barPin = (
+    duration: Duration(milliseconds: 300),
+    curve: Curves.easeInOutCubic,
+  );
+
   /// 用于标签, 单选与开关的选中态切换, 取规范 160–200ms 范围的中间值.
   static const EatTransition select = (
     duration: Duration(milliseconds: 180),

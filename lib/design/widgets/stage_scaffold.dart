@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:eat/design/layout/eat_layout.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -74,6 +76,12 @@ class StageScaffold extends StatefulWidget {
   final bool fixedStage;
 
   /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
+  /// 顶栏从舞台样式过渡到白底样式的进度: 0 是舞台样式, 1 是吸顶后的白底样式, 随滚动连续变化.
+  ///
+  /// 只在 [topBar] 里有意义, 其他位置和宽屏布局下为 0. 顶栏里的组件可以按它切换形态 (如首页的按钮吸顶后收成图标).
+  static double barPinOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_StageBarPin>()?.pin ?? 0;
+
   static double barBottomOf(BuildContext context) =>
       MediaQuery.viewPaddingOf(context).top +
       4 +
@@ -84,7 +92,7 @@ class StageScaffold extends StatefulWidget {
 }
 
 class _StageScaffoldState extends State<StageScaffold>
-    with ScrollToTopOnReselect {
+    with ScrollToTopOnReselect, SingleTickerProviderStateMixin {
   /// 顶栏单行高度.
   static const _barHeight = 52.0;
 
@@ -94,20 +102,31 @@ class _StageScaffoldState extends State<StageScaffold>
   /// 舞台色顶栏背景生效的滚动阈值: 滚动超过该距离后顶栏铺设舞台底色, 避免上移的盘子和文字与顶栏图标重叠.
   static const _liftSpan = 16.0;
 
-  /// 抽屉顶边距顶栏底边 [_pinLead] 时顶栏开始过渡到白底样式, 继续滚动 [_pinSpan] 后过渡完成.
+  /// 抽屉顶边离顶栏底边不到 [_pinLead] 时顶栏过渡到白底样式;
+  /// 拉回去时要再离开 [_pinHysteresis] 才退回舞台样式, 慢慢拖到分界处时不会来回切换.
   static const _pinLead = 8.0;
-  static const _pinSpan = 24.0;
+  static const _pinHysteresis = 8.0;
+
+  /// 顶栏样式的过渡进度, 按 [EatMotion.barPin] 的时长和曲线走, 不跟着滚动距离走.
+  late final _pin = AnimationController(vsync: this)..addListener(_publish);
+  bool _pinned = false;
+  double _lift = 0;
+  bool _row = false;
+  double _sheetTop = double.infinity;
 
   /// 顶栏的实时交互状态.
   ///
   /// - `lift`: 0 为透明无底色, 1 为完全铺满舞台色.
   /// - `pin`: 0 为舞台样式, 1 为白底样式.
   /// - `row`: 抽屉第一行是否已滚动到顶栏下方.
-  final _bar = ValueNotifier<({double lift, double pin, bool row})>((
-    lift: 0,
-    pin: 0,
-    row: false,
-  ));
+  /// - `sheetTop`: 抽屉顶边在屏幕上的纵坐标, 顶栏的白底从这里开始画.
+  final _bar =
+      ValueNotifier<({double lift, double pin, bool row, double sheetTop})>((
+        lift: 0,
+        pin: 0,
+        row: false,
+        sheetTop: double.infinity,
+      ));
 
   /// 手机布局下舞台的高度和顶栏底边纵坐标, 每次 build 时更新供滚动监听计算 [_bar].
   double? _stageHeight;
@@ -122,6 +141,7 @@ class _StageScaffoldState extends State<StageScaffold>
   @override
   void dispose() {
     scrollController.removeListener(_onScroll);
+    _pin.dispose();
     _bar.dispose();
     super.dispose();
   }
@@ -131,13 +151,37 @@ class _StageScaffoldState extends State<StageScaffold>
     if (stageHeight == null || !scrollController.hasClients) return;
     final offset = scrollController.offset;
     final sheetTop = stageHeight - EatSize.sheetOverlap - offset;
-    _bar.value = (
-      // 舞台固定时没有内容从顶栏下方穿过, 不需要垫舞台色.
-      lift: widget.fixedStage ? 0.0 : (offset / _liftSpan).clamp(0.0, 1.0),
-      pin: ((_barBottom + _pinLead - sheetTop) / _pinSpan).clamp(0.0, 1.0),
-      row: sheetTop + _handleExtent <= _barBottom,
-    );
+    // 舞台固定时没有内容从顶栏下方穿过, 不需要垫舞台色.
+    _lift = widget.fixedStage ? 0.0 : (offset / _liftSpan).clamp(0.0, 1.0);
+    _row = sheetTop + _handleExtent <= _barBottom;
+    _sheetTop = sheetTop;
+    final gap = sheetTop - _barBottom;
+    final pinned = _pinned ? gap <= _pinLead + _pinHysteresis : gap <= _pinLead;
+    if (pinned != _pinned) {
+      _pinned = pinned;
+      final target = pinned ? 1.0 : 0.0;
+      final duration = context.motion(EatMotion.barPin);
+      if (duration == Duration.zero) {
+        _pin.value = target;
+      } else {
+        unawaited(
+          _pin.animateTo(
+            target,
+            duration: duration,
+            curve: EatMotion.barPin.curve,
+          ),
+        );
+      }
+    }
+    _publish();
   }
+
+  void _publish() => _bar.value = (
+    lift: _lift,
+    pin: _pin.value,
+    row: _row,
+    sheetTop: _sheetTop,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -372,13 +416,16 @@ class _StageScaffoldState extends State<StageScaffold>
         final colors = palette == null
             ? plain
             : StagePalette.lerp(palette, plain, pin);
-        final fill = palette == null
+        // 抽屉顶边以下画一块和抽屉一样带圆角的白底, 跟着抽屉的实际位置移动, 抽屉滑到顶栏下面时那里立刻是白的,
+        // 不会在白底上再播一遍舞台色褪掉的过程. 只有抽屉顶边以上 (状态栏和顶栏露出舞台的那一段) 随 [pin] 从舞台色过渡到白.
+        final stageFill = palette == null
             ? c.paper
             : Color.lerp(
                 palette.background.withValues(alpha: bar.lift),
                 c.paper,
                 pin,
               )!;
+        final sheetTop = palette == null ? 0.0 : bar.sheetTop;
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: colors.isDark
               ? SystemUiOverlayStyle.light
@@ -388,15 +435,13 @@ class _StageScaffoldState extends State<StageScaffold>
               // 顶栏具有底色时拦截点击事件, 防止点击穿透至被遮挡的舞台内容.
               Positioned.fill(
                 child: IgnorePointer(
-                  ignoring: fill.a == 0,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: fill,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: c.hairline.withValues(alpha: pin),
-                        ),
-                      ),
+                  ignoring: stageFill.a == 0 && sheetTop >= _barBottom,
+                  child: CustomPaint(
+                    painter: _BarFillPainter(
+                      stage: stageFill,
+                      paper: c.paper,
+                      sheetTop: sheetTop,
+                      hairline: c.hairline.withValues(alpha: pin),
                     ),
                   ),
                 ),
@@ -442,6 +487,51 @@ class _StageScaffoldState extends State<StageScaffold>
 }
 
 /// 顶栏向白底样式过渡的进度值, 由 [StageScaffold] 注入给顶栏中的 [StageBarTitle].
+/// 顶栏的底色: 整块铺 [stage], 再从 [sheetTop] 往下画一块顶部带 `radius-sheet` 圆角的 [paper], 与抽屉的顶边重合; 底边画 [hairline].
+class _BarFillPainter extends CustomPainter {
+  _BarFillPainter({
+    required this.stage,
+    required this.paper,
+    required this.sheetTop,
+    required this.hairline,
+  });
+
+  final Color stage;
+  final Color paper;
+  final double sheetTop;
+  final Color hairline;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.clipRect(rect);
+    if (stage.a > 0) canvas.drawRect(rect, Paint()..color = stage);
+    if (sheetTop < size.height) {
+      canvas.drawRRect(
+        RRect.fromRectAndCorners(
+          Rect.fromLTRB(0, sheetTop, size.width, size.height),
+          topLeft: EatRadius.sheet,
+          topRight: EatRadius.sheet,
+        ),
+        Paint()..color = paper,
+      );
+    }
+    if (hairline.a > 0) {
+      canvas.drawRect(
+        Rect.fromLTRB(0, size.height - 1, size.width, size.height),
+        Paint()..color = hairline,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BarFillPainter old) =>
+      stage != old.stage ||
+      paper != old.paper ||
+      sheetTop != old.sheetTop ||
+      hairline != old.hairline;
+}
+
 class _StageBarPin extends InheritedWidget {
   const new({required this.pin, required super.child});
 
@@ -463,8 +553,7 @@ class StageBarTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pin =
-        context.dependOnInheritedWidgetOfExactType<_StageBarPin>()?.pin ?? 0;
+    final pin = StageScaffold.barPinOf(context);
     if (pin == 0) return const SizedBox();
     return IgnorePointer(
       child: ExcludeSemantics(

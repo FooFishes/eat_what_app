@@ -13,6 +13,26 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../support/screen.dart';
 
+/// 截下整个画面, 取 [at] (逻辑像素) 处的颜色.
+Future<Color> _pixel(WidgetTester tester, Offset at) async {
+  final dpr = tester.view.devicePixelRatio;
+  final element = tester.element(find.byType(MaterialApp));
+  return (await tester.runAsync(() async {
+    final image = await captureImage(element);
+    final data = (await image.toByteData())!;
+    final x = (at.dx * dpr).round();
+    final y = (at.dy * dpr).round();
+    final i = (y * image.width + x) * 4;
+    image.dispose();
+    return Color.fromARGB(
+      data.getUint8(i + 3),
+      data.getUint8(i),
+      data.getUint8(i + 1),
+      data.getUint8(i + 2),
+    );
+  }))!;
+}
+
 Future<void> _pump(WidgetTester tester, Widget page) => tester.pumpWidget(
   MaterialApp(
     theme: eatThemeData(),
@@ -155,6 +175,11 @@ void main() {
         moreOrLessEquals(barBottom - 28 + 10),
         reason: '把手区高 28, 把手在其中下移 10; 第一行正好贴在顶栏下方',
       );
+      expect(
+        await _pixel(tester, Offset(195, barBottom - 28 - 10)),
+        EatColors.light.paper,
+        reason: '抽屉顶边停在顶栏里, 上面露出舞台的那一段也过渡成白底',
+      );
 
       await tester.fling(
         find.byType(CustomScrollView),
@@ -248,6 +273,44 @@ void main() {
       await tester.dragFrom(const Offset(195, 700), const Offset(0, -600));
       await tester.pumpAndSettle();
       expect(barColor(), EatColors.light.ink);
+    });
+
+    testWidgets('顶栏换样式按 300ms 过渡，不跟着滚动距离突变；拉回去同样过渡', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, barPage(onBack: () {}));
+      await tester.pumpAndSettle();
+      Color barColor() =>
+          DefaultTextStyle.of(tester.element(find.bySemanticsLabel('返回')))
+              .style
+              .color!;
+      final stage = StageColor.tomato.foreground;
+      final ink = EatColors.light.ink;
+
+      // 一下子滚过分界处, 像往上甩时那样.
+      final scroll = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      scroll.position.jumpTo(600);
+      await tester.pump();
+      expect(barColor(), stage, reason: '刚越过分界处时还没开始变');
+      expect(
+        await _pixel(tester, const Offset(195, 30)),
+        EatColors.light.paper,
+        reason: '抽屉已经在顶栏下面了, 底色直接是白的, 不再从舞台色褪过去',
+      );
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(barColor(), isNot(stage));
+      expect(barColor(), isNot(ink), reason: '150ms 时还在半路');
+      await tester.pump(const Duration(milliseconds: 170));
+      expect(barColor(), ink);
+
+      scroll.position.jumpTo(0);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(barColor(), isNot(ink));
+      expect(barColor(), isNot(stage));
+      await tester.pumpAndSettle();
+      expect(barColor(), stage);
     });
 
     testWidgets('传了 onRefresh 才能下拉刷新，内容不满一屏也能拉', (tester) async {
