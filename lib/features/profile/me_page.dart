@@ -9,11 +9,11 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
-import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/dish.dart';
@@ -94,20 +94,25 @@ class _MePageState extends ConsumerState<MePage> {
         children: [
           const SizedBox(width: 12),
           Expanded(child: StageBarTitle(user?.nickname ?? '我的')),
-          EatIconButton(
-            EatIcons.edit,
-            label: '编辑资料',
-            onPressed: () async {
-              if (await guardAction(context, ref, Capability.editProfile) &&
-                  context.mounted) {
-                await context.push(Paths.meEdit);
-              }
-            },
-          ),
-          EatIconButton(
-            EatIcons.settings,
-            label: '设置',
-            onPressed: () => context.push(Paths.settings),
+          StageBarActions(
+            children: [
+              StageBarAction(
+                icon: EatIcons.edit,
+                text: '编辑',
+                label: '编辑资料',
+                onTap: () async {
+                  if (await guardAction(context, ref, Capability.editProfile) &&
+                      context.mounted) {
+                    await context.push(Paths.meEdit);
+                  }
+                },
+              ),
+              StageBarAction(
+                icon: EatIcons.settings,
+                text: '设置',
+                onTap: () => context.push(Paths.settings),
+              ),
+            ],
           ),
         ],
       ),
@@ -262,10 +267,14 @@ class _GuestMe extends StatelessWidget {
       topBar: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          EatIconButton(
-            EatIcons.settings,
-            label: '设置',
-            onPressed: () => context.push(Paths.settings),
+          StageBarActions(
+            children: [
+              StageBarAction(
+                icon: EatIcons.settings,
+                text: '设置',
+                onTap: () => context.push(Paths.settings),
+              ),
+            ],
           ),
         ],
       ),

@@ -26,6 +26,7 @@ import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -250,7 +251,6 @@ class _TopBar extends ConsumerWidget {
     final delivery = place.scene == RatingScene.delivery;
     final strong = eat.text.subhead;
     final plain = strong.copyWith(fontWeight: FontWeight.w400);
-    final pin = StageScaffold.barPinOf(context);
     return Row(
       children: [
         Expanded(
@@ -296,158 +296,28 @@ class _TopBar extends ConsumerWidget {
             ),
           ),
         ),
-        // 舞台上是两个带文字的胶囊, 右边缘与左侧文字一样离屏幕边缘 `space-20` (顶栏自带 8, 再让出 12);
-        // 吸顶后按进度收成两个纯图标按钮, 与其他舞台页的顶栏一致.
-        Padding(
-          padding: EdgeInsetsDirectional.only(end: 12 * (1 - pin)),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: EatSpace.s8 * (1 - pin),
-            children: [
-              _BarAction(
-                icon: EatIcons.search,
-                text: '搜索',
-                label: '搜索',
-                pin: pin,
-                onTap: () => context.push(Paths.search),
-              ),
-              _BarAction(
-                icon: EatIcons.bell,
-                text: '消息',
-                label: unread > 0 ? '消息，$unread 条未读' : '消息',
-                pin: pin,
-                dot: unread > 0,
-                onTap: () async {
-                  if (await guardAction(context, ref, Capability.viewInbox) &&
-                      context.mounted) {
-                    await context.push(Paths.inbox);
-                  }
-                },
-              ),
-            ],
-          ),
+        StageBarActions(
+          children: [
+            StageBarAction(
+              icon: EatIcons.search,
+              text: '搜索',
+              onTap: () => context.push(Paths.search),
+            ),
+            StageBarAction(
+              icon: EatIcons.bell,
+              text: '消息',
+              label: unread > 0 ? '消息，$unread 条未读' : '消息',
+              dot: unread > 0,
+              onTap: () async {
+                if (await guardAction(context, ref, Capability.viewInbox) &&
+                    context.mounted) {
+                  await context.push(Paths.inbox);
+                }
+              },
+            ),
+          ],
         ),
       ],
-    );
-  }
-}
-
-/// 首页顶栏右侧的按钮.
-///
-/// [pin] 为 0 时是舞台次按钮色的胶囊, 图标后跟 [text]; 随 [pin] 增大, 底色和文字淡出, 文字宽度收拢,
-/// 到 1 时与 `EatIconButton` 一样是 44×44 的纯图标. 点击区域始终不小于 44.
-class _BarAction extends StatelessWidget {
-  const new({
-    required this.icon,
-    required this.text,
-    required this.label,
-    required this.pin,
-    required this.onTap,
-    this.dot = false,
-  });
-
-  final EatIcons icon;
-  final String text;
-
-  /// 读屏朗读的说明, 可以比 [text] 多带状态 (如未读条数).
-  final String label;
-  final double pin;
-  final VoidCallback onTap;
-
-  /// 是否在图标右上角显示未读圆点.
-  final bool dot;
-
-  static const _height = 36.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    final palette = StageTheme.maybeOf(context);
-    final ghost = palette?.ghost ?? eat.colors.mist;
-    final open = 1 - pin;
-    // 圆点描边取图标背后的颜色: 舞台上是胶囊底色, 吸顶后是顶栏的白底.
-    final dotBorder = Color.lerp(
-      ghost,
-      palette?.background ?? eat.colors.paper,
-      pin,
-    )!;
-    final glyph = Stack(
-      clipBehavior: Clip.none,
-      children: [
-        EatIcon(icon, size: 20),
-        if (dot)
-          Positioned(
-            top: -1,
-            right: -1,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: DefaultTextStyle.of(context).style.color,
-                shape: BoxShape.circle,
-                border: Border.all(color: dotBorder, width: 2),
-              ),
-            ),
-          ),
-      ],
-    );
-    return EatTappable(
-      onTap: onTap,
-      label: label,
-      focusShape: const StadiumBorder(),
-      builder: (context, pressed) => SizedBox(
-        height: EatSize.touch,
-        child: Center(
-          child: Transform.translate(
-            offset: Offset(0, pressed ? 1 : 0),
-            child: Container(
-              height: _height,
-              constraints: const BoxConstraints(minWidth: EatSize.touch),
-              // 吸顶后左右各留 12, 图标居中在 44 宽的按钮里.
-              padding: EdgeInsets.only(
-                left: 12 + 2 * open,
-                right: 12 + 4 * open,
-              ),
-              decoration: ShapeDecoration(
-                shape: const StadiumBorder(),
-                color: ghost.withValues(alpha: ghost.a * open),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  glyph,
-                  if (open > 0)
-                    ClipRect(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        widthFactor: open,
-                        child: Opacity(
-                          opacity: open,
-                          child: Padding(
-                            padding: const EdgeInsetsDirectional.only(
-                              start: EatSpace.s4,
-                            ),
-                            child: ExcludeSemantics(
-                              child: Text(
-                                text,
-                                maxLines: 1,
-                                textScaler: TextScaler.noScaling,
-                                style: eat.text.body.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
