@@ -25,6 +25,7 @@ abstract final class FoodEndpoints {
   static const duplicates = '/foods/duplicates';
   static const list = '/foods/list';
   static const favorites = '/foods/favorites';
+  static const likes = '/foods/likes';
   static const my = '/foods/my';
   static const upload = '/foods/upload';
   static String edit(int id) => '/foods/edit/$id';
@@ -132,6 +133,20 @@ class FoodApi {
   }) async => decodePage(
     await _client.get(
       FoodEndpoints.favorites,
+      query: {'page': page, 'pageSize': pageSize},
+      cancelToken: cancelToken,
+    ),
+    FoodDto.fromJson,
+  );
+
+  /// 获取当前用户赞过的菜品列表, 按点赞时间倒序排列.
+  Future<Paged<FoodDto>> likes({
+    int page = 1,
+    int pageSize = 20,
+    CancelToken? cancelToken,
+  }) async => decodePage(
+    await _client.get(
+      FoodEndpoints.likes,
       query: {'page': page, 'pageSize': pageSize},
       cancelToken: cancelToken,
     ),

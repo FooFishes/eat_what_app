@@ -120,6 +120,55 @@ abstract class _$MyFavorites extends $AsyncNotifier<DishPages> {
   }
 }
 
+/// 当前用户赞过的菜品列表, 按点赞时间倒序排列.
+
+@ProviderFor(MyLikes)
+final myLikesProvider = MyLikesProvider._();
+
+/// 当前用户赞过的菜品列表, 按点赞时间倒序排列.
+final class MyLikesProvider extends $AsyncNotifierProvider<MyLikes, DishPages> {
+  /// 当前用户赞过的菜品列表, 按点赞时间倒序排列.
+  MyLikesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'myLikesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$myLikesHash();
+
+  @$internal
+  @override
+  MyLikes create() => MyLikes();
+}
+
+String _$myLikesHash() => r'737356d19b58a1776af76613601e80825b96a05e';
+
+/// 当前用户赞过的菜品列表, 按点赞时间倒序排列.
+
+abstract class _$MyLikes extends $AsyncNotifier<DishPages> {
+  FutureOr<DishPages> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<DishPages>, DishPages>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<DishPages>, DishPages>,
+              AsyncValue<DishPages>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 
 @ProviderFor(MyFavoriteShops)

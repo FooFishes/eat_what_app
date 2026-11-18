@@ -91,6 +91,10 @@ class FoodRepository {
     CancelToken? cancelToken,
   }) async => _map(await _api.favorites(page: page, cancelToken: cancelToken));
 
+  /// 获取当前用户赞过的菜品列表, 按点赞时间倒序排列.
+  Future<Paged<Dish>> likes({int page = 1, CancelToken? cancelToken}) async =>
+      _map(await _api.likes(page: page, cancelToken: cancelToken));
+
   /// 获取当前用户首次发布的菜品列表, 按发布时间倒序排列.
   Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
       _map(await _api.mine(page: page, cancelToken: cancelToken));

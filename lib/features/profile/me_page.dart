@@ -36,7 +36,7 @@ import 'package:go_router/go_router.dart';
 /// "我的" 页面.
 ///
 /// - 舞台: 我获赞最多的菜, 头像, 昵称和等级, 签名和四项统计.
-/// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 评论三个分栏.
+/// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 赞过, 评论四个分栏.
 /// - 右上角: 编辑资料和设置.
 ///
 /// 游客看到的是 [_GuestMe].
@@ -58,6 +58,7 @@ class _MePageState extends ConsumerState<MePage> {
   /// 未显示的分栏只标记为过期, 切换到该分栏时才重新请求.
   Future<void> _refresh(int? userId) async {
     ref.invalidate(myFavoritesProvider);
+    ref.invalidate(myLikesProvider);
     ref.invalidate(myFavoriteShopsProvider);
     ref.invalidate(myCommentsProvider);
     ref.invalidate(myUploadsProvider);
@@ -137,6 +138,7 @@ class _MePageState extends ConsumerState<MePage> {
             tabs: [
               EatTabItem('上传', count: uploads.value?.pages.total),
               const EatTabItem('收藏'),
+              const EatTabItem('赞过'),
               const EatTabItem('评论'),
             ],
             selected: _tab,
@@ -218,6 +220,25 @@ class _MePageState extends ConsumerState<MePage> {
                     ),
                   ),
               ],
+            ),
+            // 受限会话不能调用 `/foods/likes`, 封禁中不请求.
+            2 when banned => const SliverToBoxAdapter(
+              child: EmptyState(
+                icon: EatIcons.block,
+                title: '账号封禁中',
+                message: '封禁期间暂时不能查看赞过的菜。',
+              ),
+            ),
+            2 => DishGridSliver(
+              value: ref.watch(myLikesProvider),
+              showShop: true,
+              onRetry: () => ref.invalidate(myLikesProvider),
+              onLoadMore: () => ref.read(myLikesProvider.notifier).loadMore(),
+              empty: const EmptyState(
+                icon: EatIcons.heart,
+                title: '还没赞过菜',
+                message: '在菜品详情点心形，赞过的菜都在这里。',
+              ),
             ),
             _ => const MyCommentsSliver(),
           },

@@ -145,4 +145,43 @@ void main() {
       await expectAccessible(tester);
     });
   });
+
+  Future<TestEnv> likesEnv(
+    WidgetTester tester,
+    List<Map<String, Object?>> dishes,
+  ) async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({'displayName': '天凉被破王'}),
+      ])
+      ..on('GET /foods/my', [FakeAdapter.ok(pageJson([]))])
+      ..on('GET /foods/likes', [FakeAdapter.ok(pageJson(dishes))]);
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.me,
+    );
+    expect(env.adapter.sent('GET /foods/likes'), isEmpty);
+    await tester.tap(find.text('赞过'));
+    // 切换后列表的请求要等下一帧才发出, 先多推一帧, 否则页面没有动画时 pumpAndSettle 会在请求发出前就返回.
+    await tester.pump();
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('GET /foods/likes'), hasLength(1));
+    return env;
+  }
+
+  testWidgets('「赞过」列出赞过的菜', (tester) async {
+    await likesEnv(tester, [foodJson(id: 3, name: '酸汤肥牛')]);
+    expect(find.text('酸汤肥牛'), findsOneWidget);
+    await expectAccessible(tester);
+  });
+
+  testWidgets('没赞过菜时说明在哪里赞', (tester) async {
+    await likesEnv(tester, []);
+    expect(find.text('还没赞过菜'), findsOneWidget);
+    await expectAccessible(tester);
+  });
 }

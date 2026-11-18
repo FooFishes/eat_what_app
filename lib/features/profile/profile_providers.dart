@@ -111,6 +111,29 @@ class MyFavorites extends _$MyFavorites {
   );
 }
 
+/// 当前用户赞过的菜品列表, 按点赞时间倒序排列.
+@Riverpod(keepAlive: true)
+class MyLikes extends _$MyLikes {
+  @override
+  Future<DishPages> build() async {
+    _myId(ref);
+    return DishPages(
+      pages: await ref
+          .watch(foodRepositoryProvider)
+          .likes(cancelToken: ref.cancelToken()),
+    );
+  }
+
+  final _more = _MoreLoader<Dish>();
+
+  Future<void> loadMore() => _more.load(
+    ref,
+    state.value,
+    (page) => ref.read(foodRepositoryProvider).likes(page: page),
+    (next) => state = AsyncData(next),
+  );
+}
+
 /// 当前用户收藏的店铺列表, 已关门的店铺排在最后.
 @Riverpod(keepAlive: true)
 class MyFavoriteShops extends _$MyFavoriteShops {
