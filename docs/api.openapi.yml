@@ -673,6 +673,73 @@ paths:
                 $ref: '#/components/schemas/ResultEdited'
       security:
         - satoken: []
+  /comments/{id}/reactions/{reaction}:
+    put:
+      tags:
+        - comment · Comment
+      summary: 【需角色：verified 或 admin】设置评论表情回应
+      operationId: react
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reaction
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - THUMBS_UP
+              - HEART
+              - LAUGH
+              - SURPRISED
+              - SAD
+              - YUMMY
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListReaction'
+      security:
+        - satoken: []
+    delete:
+      tags:
+        - comment · Comment
+      summary: 【需登录】取消评论表情回应
+      operationId: removeReaction
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reaction
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - THUMBS_UP
+              - HEART
+              - LAUGH
+              - SURPRISED
+              - SAD
+              - YUMMY
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListReaction'
+      security:
+        - satoken: []
   /comments/{id}/like:
     put:
       tags:
@@ -3572,6 +3639,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultPageResultFoodView'
       summary: 菜品列表（指定店铺时按菜单顺序）
+  /foods/likes:
+    get:
+      tags:
+        - food · Food
+      summary: 【需登录】获取本人点赞的菜品（按点赞时间倒序）
+      operationId: likes
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPageResultFoodView'
+      security:
+        - satoken: []
   /foods/favorites:
     get:
       tags:
@@ -4613,6 +4708,38 @@ components:
             type: string
         deliveryEnabled:
           type: boolean
+    Reaction:
+      type: object
+      properties:
+        reaction:
+          type: string
+          enum:
+            - THUMBS_UP
+            - HEART
+            - LAUGH
+            - SURPRISED
+            - SAD
+            - YUMMY
+        count:
+          type: integer
+          format: int64
+        selected:
+          type: boolean
+    ResultListReaction:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reaction'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     VersionRequest:
       type: object
       properties:
@@ -6973,6 +7100,10 @@ components:
         createdAt:
           type: integer
           format: int64
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reaction'
     PageResultComment:
       type: object
       properties:
