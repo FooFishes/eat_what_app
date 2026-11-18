@@ -45,31 +45,37 @@ void main() {
     var taps = <String>[];
     setUp(() => taps = []);
 
-    Widget page({bool fixedStage = false}) => StageScaffold(
-      stage: StageColor.broth,
-      fixedStage: fixedStage,
-      stageContent: Stack(
-        children: [
-          Positioned(
-            left: 20,
-            bottom: 32 + 8,
-            child: EatButton.stageSolid('就它了', onPressed: () => taps.add('露出')),
+    Widget page({bool fixedStage = false, double sheetHeight = 2000}) =>
+        StageScaffold(
+          stage: StageColor.broth,
+          fixedStage: fixedStage,
+          stageContent: Stack(
+            children: [
+              Positioned(
+                left: 20,
+                bottom: 32 + 8,
+                child: EatButton.stageSolid(
+                  '就它了',
+                  onPressed: () => taps.add('露出'),
+                ),
+              ),
+              Positioned(
+                right: 20,
+                bottom: 0,
+                child: EatButton.stageGhost(
+                  '压住',
+                  height: 30,
+                  onPressed: () => taps.add('压住'),
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            right: 20,
-            bottom: 0,
-            child: EatButton.stageGhost(
-              '压住',
-              height: 30,
-              onPressed: () => taps.add('压住'),
+          sheetSlivers: [
+            SliverToBoxAdapter(
+              child: SizedBox(height: sheetHeight, child: const Text('今日推荐')),
             ),
-          ),
-        ],
-      ),
-      sheetSlivers: const [
-        SliverToBoxAdapter(child: SizedBox(height: 2000, child: Text('今日推荐'))),
-      ],
-    );
+          ],
+        );
 
     testWidgets('抽屉画在舞台上面：露出来的按钮点得到，被压住的点不到', (tester) async {
       useScreen(tester, const Size(390, 844));
@@ -93,6 +99,30 @@ void main() {
         520 - 32 + 10 - 300,
       );
     });
+
+    for (final fixedStage in [false, true]) {
+      testWidgets('内容很少时抽屉也能拖到第一行吸顶的位置，下面铺满白底 (fixedStage: $fixedStage)', (
+        tester,
+      ) async {
+        useScreen(tester, const Size(390, 844));
+        await _pump(tester, page(fixedStage: fixedStage, sheetHeight: 100));
+        await tester.pumpAndSettle();
+
+        await tester.dragFrom(const Offset(195, 700), const Offset(0, -600));
+        await tester.pumpAndSettle();
+        // 顶栏底边 4 + 52 = 56, 抽屉顶边再往上一个把手区 28, 把手在抽屉顶边下 10.
+        expect(tester.getTopLeft(find.byType(SheetHandle)).dy, 56 - 28 + 10);
+        final position = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        expect(position.pixels, 520 - 32 + 28 - 56);
+        expect(
+          await _pixel(tester, const Offset(195, 830)),
+          EatColors.light.paper,
+          reason: '内容下面到屏幕底边都是白底, 不露出舞台',
+        );
+      });
+    }
 
     testWidgets('fixedStage 时舞台固定在底层，抽屉上滑时盖上来', (tester) async {
       useScreen(tester, const Size(390, 844));

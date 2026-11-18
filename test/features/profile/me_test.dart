@@ -95,6 +95,8 @@ void main() {
       await tester.tap(find.text('收藏'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('店'));
+      // 切换后列表的请求要等下一帧才发出, 先多推一帧, 否则页面没有动画时 pumpAndSettle 会在请求发出前就返回.
+      await tester.pump();
       await tester.pumpAndSettle();
     }
 

@@ -288,6 +288,9 @@ class _StageScaffoldState extends State<StageScaffold>
       final barTop = safe.top + 4;
       _stageHeight = height;
       _barBottom = barTop + _barHeight;
+      // 抽屉第一行刚好滚到顶栏下方时的滚动位置.
+      final rowPinOffset =
+          height - EatSize.sheetOverlap + _handleExtent - _barBottom;
       body = Stack(
         children: [
           // 仅在 iOS 等平台触发顶部弹性回弹时露出, 避免舞台上方出现白色空隙.
@@ -312,11 +315,7 @@ class _StageScaffoldState extends State<StageScaffold>
               physics: widget.fixedStage
                   ? _SheetBounceScrollPhysics(
                       parent: physics,
-                      snapOffset:
-                          height -
-                          EatSize.sheetOverlap +
-                          _handleExtent -
-                          _barBottom,
+                      snapOffset: rowPinOffset,
                     )
                   : physics,
               // 舞台固定时, 滑到头的拉伸效果会把底层舞台一起拉变形, 所以关掉, 到底的反馈改由回弹给出.
@@ -358,11 +357,8 @@ class _StageScaffoldState extends State<StageScaffold>
                     ],
                   ),
                 ),
-                // 内容不满一屏时将白底延伸至页面底部, 避免抽屉在页面中间提前断开.
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: ColoredBox(color: eat.colors.paper),
-                ),
+                // 内容少时在抽屉下面补白底, 抽屉照样能拖到第一行吸顶的位置, 不在页面中间断开.
+                _SheetFloor(reach: rowPinOffset, color: eat.colors.paper),
               ],
             ),
           ),
@@ -772,6 +768,72 @@ class _SnapSimulation extends Simulation {
 
   @override
   bool isDone(double time) => time >= _duration;
+}
+
+/// 接在抽屉后面的白底, 把总滚动范围补到至少 [reach] 加一屏高, 滚到 [reach] 时白底仍铺到屏幕底边.
+///
+/// 内容够长时高度为 0. 不用 `SliverFillRemaining`: 它只补满一屏, 内容少时抽屉拖不上去.
+class _SheetFloor extends LeafRenderObjectWidget {
+  const new({required this.reach, required this.color});
+
+  final double reach;
+  final Color color;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderSheetFloor(reach, color);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderSheetFloor renderObject,
+  ) => renderObject
+    ..reach = reach
+    ..color = color;
+}
+
+class _RenderSheetFloor extends RenderSliver {
+  _RenderSheetFloor(this._reach, this._color);
+
+  double _reach;
+  set reach(double value) {
+    if (value == _reach) return;
+    _reach = value;
+    markNeedsLayout();
+  }
+
+  Color _color;
+  set color(Color value) {
+    if (value == _color) return;
+    _color = value;
+    markNeedsPaint();
+  }
+
+  @override
+  void performLayout() {
+    final extent = math.max(
+      0.0,
+      _reach +
+          constraints.viewportMainAxisExtent -
+          constraints.precedingScrollExtent,
+    );
+    final paintExtent = calculatePaintOffset(constraints, from: 0, to: extent);
+    geometry = SliverGeometry(
+      scrollExtent: extent,
+      paintExtent: paintExtent,
+      maxPaintExtent: extent,
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    final paintExtent = geometry!.paintExtent;
+    if (paintExtent <= 0) return;
+    context.canvas.drawRect(
+      offset & Size(constraints.crossAxisExtent, paintExtent),
+      Paint()..color = _color,
+    );
+  }
 }
 
 /// 抽屉的白色背景 sliver; 绘制方式与 `DecoratedSliver` 相同, 但同时拦截自身区域的命中测试.

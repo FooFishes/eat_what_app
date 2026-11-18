@@ -312,6 +312,8 @@ void main() {
       FakeAdapter.ok(feedJson([cardJson(id: 9, name: '一点点', kind: 'drink')])),
     ]);
     await tester.tap(find.text('甜点饮品'));
+    // 切换后列表的请求要等下一帧才发出, 先多推一帧, 否则页面没有动画时 pumpAndSettle 会在请求发出前就返回.
+    await tester.pump();
     await tester.pumpAndSettle();
     expect(
       env.adapter.sent('GET /recommend').map((r) => r.query['kind']),
