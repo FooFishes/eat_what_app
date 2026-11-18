@@ -336,8 +336,8 @@ class _NoticeRow extends ConsumerWidget {
     NoticeTarget target,
   ) async {
     switch (target) {
-      case DishTarget(:final dishId):
-        await context.push(Paths.dish(dishId));
+      case DishTarget(:final dishId, :final comment):
+        await context.push(Paths.dish(dishId, comment: comment));
       case UserTarget(:final userId):
         await context.push(Paths.user(userId));
       case ShopTarget(:final shopId):

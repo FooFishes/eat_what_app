@@ -6,9 +6,12 @@ sealed class NoticeTarget {
 }
 
 final class DishTarget extends NoticeTarget {
-  const DishTarget(this.dishId);
+  const DishTarget(this.dishId, {this.comment});
 
   final int dishId;
+
+  /// 进菜品详情后滚到并标出的评论 id.
+  final int? comment;
 }
 
 final class UserTarget extends NoticeTarget {
@@ -75,8 +78,17 @@ abstract final class NoticeRules {
           return CaseTarget(caseId);
         }
         return const NoTarget();
-      // TODO: 回复和评论赞的卡片只带评论 id, 不带菜 id, 后端也没有按 id 读取评论的接口, 因此无法跳到菜品详情. 卡片带上菜 id 后跳到菜品详情并滚动到该评论.
-      case NoticeKind.reply || NoticeKind.commentLike:
+      // 回复消息的目标是根评论, 卡片另带菜 id, 进菜品详情滚到这条评论.
+      case NoticeKind.reply:
+        return switch (notice.dishId) {
+          final dishId? when notice.targetDomain == 'comments' => DishTarget(
+            dishId,
+            comment: notice.targetId,
+          ),
+          _ => const NoTarget(),
+        };
+      // TODO: 评论赞的卡片只带评论 id, 不带菜 id, 后端也没有按 id 读取评论的接口, 因此无法跳到菜品详情. 卡片带上菜 id 后跳到菜品详情并滚动到该评论.
+      case NoticeKind.commentLike:
         return const NoTarget();
       case NoticeKind.newDeviceLogin:
         return const DevicesTarget();

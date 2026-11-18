@@ -157,6 +157,7 @@ class NotificationRepository {
             ),
       ],
       detail: _detail(dto.data),
+      dishId: (dto.data?['foodId'] as num?)?.toInt(),
     );
   }
 

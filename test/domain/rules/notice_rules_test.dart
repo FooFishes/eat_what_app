@@ -12,6 +12,7 @@ Notice _notice(
   int members = 1,
   List<NoticeActor> actors = const [_xiaolin],
   NoticeDetail? detail,
+  int? dishId,
 }) => Notice(
   id: 1,
   kind: kind,
@@ -21,6 +22,7 @@ Notice _notice(
   latestAt: DateTime(2026, 11, 1),
   actors: actors,
   detail: detail,
+  dishId: dishId,
 );
 
 void main() {
@@ -69,10 +71,26 @@ void main() {
     expect(NoticeRules.targetOf(comment), isA<DishTarget>());
   });
 
-  test('回复和评论赞没有菜 id，不跳转', () {
-    final reply = _notice(NoticeKind.reply, domain: 'comments', targetId: 300);
+  test('回复带菜 id 时进菜品详情并滚到根评论；没带菜 id 的回复和评论赞不跳转', () {
+    final reply = _notice(
+      NoticeKind.reply,
+      domain: 'comments',
+      targetId: 300,
+      dishId: 42,
+    );
     expect(NoticeRules.sentenceOf(reply), '回复了你');
-    expect(NoticeRules.targetOf(reply), isA<NoTarget>());
+    expect(
+      NoticeRules.targetOf(reply),
+      isA<DishTarget>()
+          .having((t) => t.dishId, 'dishId', 42)
+          .having((t) => t.comment, 'comment', 300),
+    );
+    final oldReply = _notice(
+      NoticeKind.reply,
+      domain: 'comments',
+      targetId: 300,
+    );
+    expect(NoticeRules.targetOf(oldReply), isA<NoTarget>());
     final like = _notice(
       NoticeKind.commentLike,
       domain: 'comments',

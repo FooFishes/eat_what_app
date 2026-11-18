@@ -13,6 +13,7 @@ const _likeId = 101;
 const _followId = 102;
 const _announceId = 103;
 const _caseId = 104;
+const _replyId = 105;
 
 /// 他人资料 `/user/userInfo` 的响应数据: 对方关注了我.
 Map<String, Object?> _profile({bool followedByMe = false}) => {
@@ -358,7 +359,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('评论消息点进菜品详情；回复消息没有菜 id，只标已读', (tester) async {
+  testWidgets('评论消息点进菜品详情；回复消息进菜品详情并滚到根评论，没有菜 id 的只标已读', (tester) async {
     env.adapter
       ..on('GET /notification/cards', [
         FakeAdapter.ok(
@@ -372,11 +373,21 @@ void main() {
               targetId: 300,
               actors: [actorJson(9, '阿哲')],
             ),
+            noticeCardJson(
+              id: _replyId,
+              column: 'COMMENTS',
+              kind: 'reply',
+              domain: 'comments',
+              targetId: 301,
+              actors: [actorJson(10, '小周')],
+              data: {'foodId': 7},
+            ),
           ]),
         ),
       ])
       ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()])
-      ..on('POST /notification/cards/$_followId/read', [FakeAdapter.ok()]);
+      ..on('POST /notification/cards/$_followId/read', [FakeAdapter.ok()])
+      ..on('POST /notification/cards/$_replyId/read', [FakeAdapter.ok()]);
     final (container, router) = await pumpApp(
       tester,
       env,
@@ -384,7 +395,7 @@ void main() {
       location: Paths.inbox,
     );
 
-    await tester.tap(find.textContaining('回复了你', findRichText: true));
+    await tester.tap(find.textContaining('阿哲', findRichText: true));
     await tester.pumpAndSettle();
     expect(
       env.adapter.sent('POST /notification/cards/$_followId/read'),
@@ -397,6 +408,14 @@ void main() {
     final page = tester.widget<DishPage>(find.byType(DishPage));
     expect(page.dishId, 1);
     expect(page.focusComment, isNull);
+
+    router.pop();
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('小周', findRichText: true));
+    await tester.pumpAndSettle();
+    final reply = tester.widget<DishPage>(find.byType(DishPage));
+    expect(reply.dishId, 7);
+    expect(reply.focusComment, 301);
     await unmountApp(tester, container);
   });
 

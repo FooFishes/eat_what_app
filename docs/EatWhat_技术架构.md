@@ -1231,12 +1231,13 @@ class PushNotice({
 ### 15.5 消息页
 
 - 接口用消息卡片（`data/notification/` 的 `NotificationApi`）：`GET /notification/cards` 按分栏分页拉，服务端已把同一接收人、同一类事件、同一对象、同一天的消息合成一行；`GET /notification/cards/unread/count` 给有未读的行数（`cards`）和未读条数（`members`），未读数只用行数（4.2）；`POST /notification/cards/{id}/read` 把一行标为已读，卡片 id 是数字。
-- 卡片结构按后端 `NotificationDtos.Card`（openapi 里的 `Card` 被推荐卡片覆盖了，7.6）：`target{domain, id}`、最近 3 个互动者 `actors[{id, displayName, avatar}]`、`data`（只有系统类有：反馈和举报结果 `{type, caseId, kind, outcome, reasonCode, reply}`、公告 `{type, level, title, content}`）。
+- 卡片结构按后端 `NotificationDtos.Card`（openapi 里的 `Card` 被推荐卡片覆盖了，7.6）：`target{domain, id}`、最近 3 个互动者 `actors[{id, displayName, avatar}]`、`data`（回复 `{foodId}`，根评论已删除的旧卡片可为空；系统类：反馈和举报结果 `{type, caseId, kind, outcome, reasonCode, reply}`、公告 `{type, level, title, content}`）。
 - 分栏：全部、评论、赞和收藏、关注、系统（`NoticeColumn`，对应接口的 `ALL`、`COMMENTS`、`LIKES_AND_FAVORITES`、`FOLLOWS`、`SYSTEM`）。每个分栏是一个 `inboxProvider(column)`，切换分栏重新请求；行按「今天」「本周」「更早」分组。
 - 类型（`NoticeKind`）只做 v2 产生的：`like`、`favorite`、`comment`、`reply`、`comment_like`、`follow`、`case_result`、`announcement`，不认识的显示成普通消息、不跳转。产品 10.2 里「以后」的几类不做。
 - 点一行：先在本地标为已读、未读数减 1，再请求标为已读（失败不退回，下次进来以服务端为准）；有跳转目标的行同时跳过去（6.3）。没有目标的行读屏朗读为「标为已读」（`tapHint`，11.8），已读后不能再点。
   - `like`、`favorite`、`comment`：菜品详情。`comment` 不带评论 id，滚不到这条。
-  - `reply`、`comment_like`：卡片的目标是评论 id，没有菜 id，后端也没有按 id 读评论的接口，暂时不跳（TODO，已反馈后端）。
+  - `reply`：卡片的目标是根评论 id，`data.foodId` 是菜 id，进菜品详情并带 `comment=<根评论 id>`，滚到这条评论；没有 `foodId` 的旧卡片不跳。
+  - `comment_like`：卡片的目标是评论 id，没有菜 id，后端也没有按 id 读评论的接口，暂时不跳（TODO，已反馈后端）。
   - `follow`：只有一人时进他人主页，多人时进我的粉丝。
   - `case_result`：先用 `caseId` 调 `GET /feedback/mine/{id}` 取 `target{type, id}`，是菜或店才跳，取不到就不跳。
   - `announcement`：显示标题和正文，不跳。

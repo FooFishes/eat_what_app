@@ -62,6 +62,7 @@ class const NoticeActor({
 /// - [memberCount] 为合并的消息条数, [actors] 为其中最近的至多 3 位互动者 (按时间倒序).
 /// - [targetDomain] 原样保留接口取值, 如 `foods`, `users`, `comments`, 由 `NoticeRules` 识别.
 /// - [read] 表示该合并组内的所有消息均已读.
+/// - [dishId] 是评论所在的菜, 目前只有回复消息带; 根评论已删除的旧回复消息也没有.
 class const Notice({
   required final int id,
   required final NoticeKind kind,
@@ -72,6 +73,7 @@ class const Notice({
   required final DateTime latestAt,
   final List<NoticeActor> actors = const [],
   final NoticeDetail? detail,
+  final int? dishId,
 }) {
   Notice markedRead() => Notice(
     id: id,
@@ -83,6 +85,7 @@ class const Notice({
     latestAt: latestAt,
     actors: actors,
     detail: detail,
+    dishId: dishId,
   );
 }
 
