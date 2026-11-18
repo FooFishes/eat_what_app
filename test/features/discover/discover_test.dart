@@ -11,6 +11,7 @@ import 'package:eat/features/discover/shop_entry.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -335,7 +336,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('往下翻时顶栏和分类栏停在顶部；下拉刷新重新拉这一栏', (tester) async {
+  testWidgets('往下翻时顶栏和分类栏停在顶部，搜索和消息从带字的胶囊收成图标；下拉刷新重新拉这一栏', (tester) async {
     env.adapter.on('GET /recommend', [
       FakeAdapter.ok(
         feedJson([
@@ -349,11 +350,23 @@ void main() {
       session: const SignedIn(user: verifiedUser),
     );
     expect(find.text('美食'), findsOneWidget);
+    expect(find.text('搜索'), findsOneWidget);
+    expect(find.text('消息'), findsOneWidget);
+    expect(
+      tester.getSize(find.bySemanticsLabel('搜索')).width,
+      greaterThan(EatSize.touch),
+    );
 
     await tester.dragFrom(const Offset(195, 700), const Offset(0, -560));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('搜索'), findsOneWidget);
     expect(tester.getTopLeft(find.bySemanticsLabel('搜索')).dy, lessThan(60));
+    expect(find.text('搜索'), findsNothing);
+    expect(find.text('消息'), findsNothing);
+    expect(
+      tester.getSize(find.bySemanticsLabel('搜索')),
+      const Size(EatSize.touch, EatSize.touch),
+    );
     // 抽屉里的分类栏滚到顶栏下方后, 顶栏下面显示它的副本.
     // 列表比屏幕长, 抽屉里的分类栏会滚出屏幕, 因此只看能点到的那一个.
     double topMost() => find
@@ -368,6 +381,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('美食'), findsOneWidget);
     expect(topMost(), greaterThan(400));
+    expect(find.text('搜索'), findsOneWidget);
     final before = env.adapter.sent('GET /recommend').length;
     await tester.fling(
       find.byType(CustomScrollView),
