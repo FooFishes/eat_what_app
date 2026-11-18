@@ -133,6 +133,54 @@ void main() {
     expect(env.adapter.sent('DELETE /comments/11/like'), hasLength(1));
   });
 
+  test('表情回应：不认识的和人数为 0 的不留，按回应的顺序排；选上用 PUT、取消用 DELETE，返回最新计数', () async {
+    env.adapter
+      ..on('GET /foods/1/comments', [
+        FakeAdapter.ok(
+          commentPageJson([
+            commentJson(
+              reactions: [
+                reactionJson('YUMMY', 2),
+                reactionJson('CLAP', 5),
+                reactionJson('SAD', 0),
+                reactionJson('HEART', 1, selected: true),
+              ],
+            ),
+          ]),
+        ),
+      ])
+      ..on('PUT /comments/11/reactions/YUMMY', [
+        FakeAdapter.ok([reactionJson('YUMMY', 3, selected: true)]),
+      ])
+      ..on('DELETE /comments/11/reactions/YUMMY', [FakeAdapter.ok([])]);
+
+    final page = await repo.comments(1, sort: CommentSort.newest);
+    expect(
+      page.page.items.single.reactions.map(
+        (r) => (r.reaction, r.count, r.selected),
+      ),
+      [(CommentReaction.heart, 1, true), (CommentReaction.yummy, 2, false)],
+    );
+
+    final selected = await repo.setReaction(
+      11,
+      CommentReaction.yummy,
+      selected: true,
+    );
+    expect(selected.single.count, 3);
+    final removed = await repo.setReaction(
+      11,
+      CommentReaction.yummy,
+      selected: false,
+    );
+    expect(removed, isEmpty);
+    expect(env.adapter.sent('PUT /comments/11/reactions/YUMMY'), hasLength(1));
+    expect(
+      env.adapter.sent('DELETE /comments/11/reactions/YUMMY'),
+      hasLength(1),
+    );
+  });
+
   test('删除失败时抛出原因', () async {
     env.adapter.on('DELETE /comments/11', [
       FakeAdapter.ok(null),

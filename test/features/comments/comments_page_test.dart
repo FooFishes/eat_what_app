@@ -327,4 +327,130 @@ void main() {
     await expectAccessible(tester);
     await unmountApp(tester, container);
   });
+
+  group('表情回应', () {
+    setUp(() {
+      env.adapter.on('GET /foods/1/comments', [
+        FakeAdapter.ok(
+          commentPageJson([
+            commentJson(
+              id: 11,
+              replies: 1,
+              reactions: [
+                reactionJson('HEART', 1, selected: true),
+                reactionJson('YUMMY', 2),
+              ],
+            ),
+          ]),
+        ),
+      ]);
+      env.adapter.on('GET /comments/11/replies', [
+        FakeAdapter.ok(commentPageJson([replyJson(id: 21)])),
+      ]);
+    });
+
+    testWidgets('有人回应过的显示成「表情 人数」；点别的一种换过去，计数以接口返回为准', (tester) async {
+      env.adapter.on('PUT /comments/11/reactions/YUMMY', [
+        FakeAdapter.ok([reactionJson('YUMMY', 3, selected: true)]),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      expect(find.bySemanticsLabel('爱心，1'), findsOneWidget);
+      expect(find.bySemanticsLabel('好吃，2'), findsOneWidget);
+      await expectAccessible(tester);
+
+      await tester.tap(find.bySemanticsLabel('好吃，2'));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('PUT /comments/11/reactions/YUMMY'),
+        hasLength(1),
+      );
+      expect(find.bySemanticsLabel('好吃，3'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('^爱心')), findsNothing);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('点自己选过的那种是取消；失败时恢复并提示', (tester) async {
+      env.adapter.on('DELETE /comments/11/reactions/HEART', [
+        FakeAdapter.fail(10002, '无法回应这条评论'),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.bySemanticsLabel('爱心，1'));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('DELETE /comments/11/reactions/HEART'),
+        hasLength(1),
+      );
+      expect(find.bySemanticsLabel('爱心，1'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('「回应」打开面板选一种；回复在「更多」里回应', (tester) async {
+      env.adapter
+        ..on('PUT /comments/11/reactions/SURPRISED', [
+          FakeAdapter.ok([
+            reactionJson('SURPRISED', 1, selected: true),
+            reactionJson('YUMMY', 2),
+          ]),
+        ])
+        ..on('PUT /comments/21/reactions/LAUGH', [
+          FakeAdapter.ok([reactionJson('LAUGH', 1, selected: true)]),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('回应'));
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsOneWidget);
+      await expectAccessible(tester);
+      await tester.tap(find.bySemanticsLabel('惊讶'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('惊讶，1'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('更多').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('回应').last);
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条回复'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('笑哭'));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('PUT /comments/21/reactions/LAUGH'),
+        hasLength(1),
+      );
+      expect(find.bySemanticsLabel('笑哭，1'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('没认证时点「回应」弹拦截对话框，不发请求', (tester) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: testUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('回应'));
+      await tester.pumpAndSettle();
+      expect(find.text('认证后才能回应'), findsOneWidget);
+      expect(find.text('回应这条评论'), findsNothing);
+      await unmountApp(tester, container);
+    });
+  });
 }

@@ -40,9 +40,23 @@ class const CommentDto({
   /// 当前用户是否已点赞, 游客为 null.
   final bool? isLiked,
   final int? createdAt,
+
+  /// 有人选过的表情回应, 没人回应时为空列表.
+  final List<CommentReactionDto>? reactions,
 }) {
   factory CommentDto.fromJson(Map<String, dynamic> json) =>
       _$CommentDtoFromJson(json);
+}
+
+/// 一种表情回应的人数 (`CommentDtos.Reaction`). [selected] 表示当前用户选的是这一种.
+@JsonSerializable(createToJson: false)
+class const CommentReactionDto({
+  final String? reaction,
+  final int? count,
+  final bool? selected,
+}) {
+  factory CommentReactionDto.fromJson(Map<String, dynamic> json) =>
+      _$CommentReactionDtoFromJson(json);
 }
 
 /// 菜品图库中来自评论的照片 (`CommentDtos.Picture`), 仅包含根评论的照片.

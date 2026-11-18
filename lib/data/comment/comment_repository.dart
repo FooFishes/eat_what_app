@@ -95,6 +95,15 @@ class CommentRepository {
   Future<void> setLiked(int commentId, {required bool liked}) =>
       liked ? _api.like(commentId) : _api.unlike(commentId);
 
+  /// 选上或取消 [reaction], 返回这条评论现在的全部回应.
+  Future<List<ReactionCount>> setReaction(
+    int commentId,
+    CommentReaction reaction, {
+    required bool selected,
+  }) async => _reactions(
+    await _api.setReaction(commentId, reaction.api, selected: selected),
+  );
+
   Future<Paged<MyComment>> mine({
     int page = 1,
     int pageSize = 20,
@@ -159,7 +168,25 @@ class CommentRepository {
       replyCount: dto.replyCount ?? 0,
       createdAt: _time(dto.createdAt),
       images: [for (final url in dto.pictureUrls ?? const []) ?imageUrl(url)],
+      reactions: _reactions(dto.reactions),
     );
+  }
+
+  /// 不认识的回应和人数为 0 的不显示, 按 [CommentReaction] 的顺序排列.
+  static List<ReactionCount> _reactions(List<CommentReactionDto>? dtos) {
+    final byReaction = {
+      for (final dto in dtos ?? const <CommentReactionDto>[])
+        if (CommentReaction.fromApi(dto.reaction) case final reaction?)
+          if ((dto.count ?? 0) > 0)
+            reaction: ReactionCount(
+              reaction: reaction,
+              count: dto.count!,
+              selected: dto.selected ?? false,
+            ),
+    };
+    return [
+      for (final reaction in CommentReaction.values) ?byReaction[reaction],
+    ];
   }
 
   static String _name(String? value) =>

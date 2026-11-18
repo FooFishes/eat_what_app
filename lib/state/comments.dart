@@ -13,6 +13,7 @@ import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/paged.dart';
+import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -267,6 +268,40 @@ class CommentLikes extends _$CommentLikes {
   }
 
   void _set(int id, CommentLike value) => state = {...state, id: value};
+}
+
+/// 评论表情回应的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
+///
+/// 菜品详情和全部评论显示同一条评论时同步变化.
+@Riverpod(keepAlive: true)
+class CommentReactions extends _$CommentReactions {
+  @override
+  Map<int, List<ReactionCount>> build() {
+    _myId(ref);
+    return const {};
+  }
+
+  /// 点一种回应: 没选过就选上 (换掉原来那种), 选过就取消. 先改覆盖值, 成功后换成服务端返回的计数, 失败时恢复原值并返回原因.
+  Future<AppFailure?> toggle(
+    int commentId,
+    List<ReactionCount> before,
+    CommentReaction reaction,
+  ) async {
+    final selected = !before.any((r) => r.reaction == reaction && r.selected);
+    _set(commentId, CommentRules.toggleReaction(before, reaction));
+    try {
+      final after = await ref
+          .read(commentRepositoryProvider)
+          .setReaction(commentId, reaction, selected: selected);
+      if (ref.mounted) _set(commentId, after);
+      return null;
+    } on AppFailure catch (e) {
+      if (ref.mounted) _set(commentId, before);
+      return e;
+    }
+  }
+
+  void _set(int id, List<ReactionCount> value) => state = {...state, id: value};
 }
 
 /// "我的" 页面中的个人评论与回复列表 (不含已删除记录).

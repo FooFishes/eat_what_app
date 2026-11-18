@@ -1,3 +1,4 @@
+import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,6 +23,45 @@ void main() {
       expect(CommentRules.canSend('同意', reply: true), isTrue);
       expect(CommentRules.canSend('', reply: true), isFalse);
       expect(CommentRules.canSend('同意', photos: 1, reply: true), isFalse);
+    });
+  });
+
+  group('表情回应', () {
+    const yummy = ReactionCount(reaction: CommentReaction.yummy, count: 2);
+    const myHeart = ReactionCount(
+      reaction: CommentReaction.heart,
+      count: 1,
+      selected: true,
+    );
+
+    test('选上一种：这一种加一人并标为自己选的，按回应的顺序排', () {
+      final after = CommentRules.toggleReaction([
+        yummy,
+      ], CommentReaction.thumbsUp);
+      expect(after.map((r) => (r.reaction, r.count, r.selected)), [
+        (CommentReaction.thumbsUp, 1, true),
+        (CommentReaction.yummy, 2, false),
+      ]);
+    });
+
+    test('换一种：原来那种少一人，没人了就去掉', () {
+      final after = CommentRules.toggleReaction([
+        myHeart,
+        yummy,
+      ], CommentReaction.yummy);
+      expect(after.map((r) => (r.reaction, r.count, r.selected)), [
+        (CommentReaction.yummy, 3, true),
+      ]);
+    });
+
+    test('点自己选的那种是取消', () {
+      final after = CommentRules.toggleReaction([
+        myHeart,
+        yummy,
+      ], CommentReaction.heart);
+      expect(after.map((r) => (r.reaction, r.count, r.selected)), [
+        (CommentReaction.yummy, 2, false),
+      ]);
     });
   });
 }

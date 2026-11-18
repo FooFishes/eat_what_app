@@ -9,6 +9,9 @@ import 'package:eat/domain/models/account_status.dart';
 /// 封禁中的账号持有受限会话: 后端默认放行读取并拒绝写入, 少数接口例外 (见 [Capability.openToBanned]).
 enum Capability {
   like,
+
+  /// 评论的表情回应, 要求的身份和点赞相同.
+  react,
   favorite,
   tasteTag,
   myTag,
@@ -113,6 +116,7 @@ enum Capability {
   /// 拦截对话框中的动作词, 如 "认证后才能点赞" 和 "登录后才能点赞" 中的 "点赞".
   String get verb => switch (this) {
     like => '点赞',
+    react => '回应',
     favorite => '收藏',
     tasteTag || myTag => '加标签',
     comment => '评论',

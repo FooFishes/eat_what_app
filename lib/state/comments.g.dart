@@ -343,6 +343,83 @@ abstract class _$CommentLikes extends $Notifier<Map<int, CommentLike>> {
   }
 }
 
+/// 评论表情回应的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
+///
+/// 菜品详情和全部评论显示同一条评论时同步变化.
+
+@ProviderFor(CommentReactions)
+final commentReactionsProvider = CommentReactionsProvider._();
+
+/// 评论表情回应的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
+///
+/// 菜品详情和全部评论显示同一条评论时同步变化.
+final class CommentReactionsProvider
+    extends $NotifierProvider<CommentReactions, Map<int, List<ReactionCount>>> {
+  /// 评论表情回应的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
+  ///
+  /// 菜品详情和全部评论显示同一条评论时同步变化.
+  CommentReactionsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'commentReactionsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$commentReactionsHash();
+
+  @$internal
+  @override
+  CommentReactions create() => CommentReactions();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Map<int, List<ReactionCount>> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Map<int, List<ReactionCount>>>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$commentReactionsHash() => r'c6a1e28abdb58dd74619bacbecb50edf167683ed';
+
+/// 评论表情回应的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
+///
+/// 菜品详情和全部评论显示同一条评论时同步变化.
+
+abstract class _$CommentReactions
+    extends $Notifier<Map<int, List<ReactionCount>>> {
+  Map<int, List<ReactionCount>> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref =
+        this.ref
+            as $Ref<
+              Map<int, List<ReactionCount>>,
+              Map<int, List<ReactionCount>>
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                Map<int, List<ReactionCount>>,
+                Map<int, List<ReactionCount>>
+              >,
+              Map<int, List<ReactionCount>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// "我的" 页面中的个人评论与回复列表 (不含已删除记录).
 ///
 /// 由于 "我的" 是常驻主页面, 切换到其他主页面后保留当前结果, 仅在发表或删除后重新请求.

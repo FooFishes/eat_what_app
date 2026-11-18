@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/emoji.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -29,7 +30,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 评论卡片组件, 展示评论者头像, 昵称, 时间, 正文, 附图, 点赞与回复入口及其下方的回复列表.
+/// 评论卡片组件, 展示评论者头像, 昵称, 时间, 正文, 附图, 表情回应, 点赞, 回复与回应入口及其下方的回复列表.
 ///
 /// 由菜品详情页与全部评论页共用 (为避免功能模块间相互导入而置于 `system` 目录).
 /// 右上角 "更多" 菜单对本人评论提供 "删除", 对他人评论提供 "举报".
@@ -46,6 +47,7 @@ class CommentCard extends ConsumerWidget {
     final eat = context.eat;
     final c = eat.colors;
     final now = clock.now();
+    final reactions = _reactionsOf(ref, comment);
     final body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 12,
@@ -96,6 +98,8 @@ class CommentCard extends ConsumerWidget {
                 Text(comment.text, style: eat.text.body.copyWith(color: c.ink)),
               if (comment.images.isNotEmpty)
                 _Photos(urls: comment.images, author: comment.authorName),
+              if (reactions.isNotEmpty)
+                _ReactionBar(comment: comment, reactions: reactions),
               Transform.translate(
                 offset: const Offset(-10, 0),
                 child: Row(
@@ -105,6 +109,10 @@ class CommentCard extends ConsumerWidget {
                     _TextAction(
                       '回复',
                       onTap: () => _reply(context, ref, comment, to: null),
+                    ),
+                    _TextAction(
+                      '回应',
+                      onTap: () => _showReactionPanel(context, ref, comment),
                     ),
                   ],
                 ),
@@ -221,6 +229,172 @@ class CommentLikeButton extends ConsumerWidget {
         fallback: '点赞失败，请重试',
       );
     }
+  }
+}
+
+/// [comment] 当前的表情回应: 本地点过的以覆盖值为准, 否则取评论自带的.
+List<ReactionCount> _reactionsOf(WidgetRef ref, Comment comment) =>
+    ref.watch(commentReactionsProvider.select((m) => m[comment.id])) ??
+    comment.reactions;
+
+ReactionEmoji _emojiOf(CommentReaction reaction) =>
+    ReactionEmoji.values.byName(reaction.name);
+
+/// 点一种回应: 没选过就选上 (换掉自己原来那种), 选过就取消. 回应和赞要求的身份相同.
+Future<void> _react(
+  BuildContext context,
+  WidgetRef ref,
+  Comment comment,
+  CommentReaction reaction,
+) async {
+  if (!await guardAction(context, ref, Capability.react)) return;
+  EatHaptics.light();
+  final before =
+      ref.read(commentReactionsProvider)[comment.id] ?? comment.reactions;
+  final failure = await ref
+      .read(commentReactionsProvider.notifier)
+      .toggle(comment.id, before, reaction);
+  if (failure != null && context.mounted) {
+    if (_goneHandled(context, ref, comment, failure)) return;
+    await reportActionFailure(
+      context,
+      ref,
+      failure,
+      capability: Capability.react,
+      fallback: '回应失败，请重试',
+    );
+  }
+}
+
+/// 选表情回应的底部面板, 六种排成一行, 自己选过的那种带底色, 再点一次是取消.
+Future<void> _showReactionPanel(
+  BuildContext context,
+  WidgetRef ref,
+  Comment comment,
+) async {
+  if (!await guardAction(context, ref, Capability.react) || !context.mounted) {
+    return;
+  }
+  final current =
+      ref.read(commentReactionsProvider)[comment.id] ?? comment.reactions;
+  final mine = current.where((r) => r.selected).firstOrNull?.reaction;
+  final picked = await showPanel<CommentReaction>(
+    context,
+    builder: (panel) => EatPanel(
+      title: comment.isReply ? '回应这条回复' : '回应这条评论',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          for (final reaction in CommentReaction.values)
+            _ReactionOption(
+              reaction: reaction,
+              selected: reaction == mine,
+              onTap: () => Navigator.of(panel).pop(reaction),
+            ),
+        ],
+      ),
+    ),
+  );
+  if (picked == null || !context.mounted) return;
+  await _react(context, ref, comment, picked);
+}
+
+class _ReactionOption extends StatelessWidget {
+  const new({
+    required this.reaction,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CommentReaction reaction;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => EatTappable(
+    onTap: onTap,
+    label: reaction.label,
+    toggled: selected,
+    focusShape: const CircleBorder(),
+    builder: (context, _) => DecoratedBox(
+      decoration: ShapeDecoration(
+        shape: const CircleBorder(),
+        color: selected ? context.eat.colors.mist : null,
+      ),
+      child: SizedBox.square(
+        dimension: 48,
+        child: Center(child: ReactionEmojiImage(_emojiOf(reaction), size: 28)),
+      ),
+    ),
+  );
+}
+
+/// 有人选过的表情回应, 每种一个 "表情 人数" 胶囊, 自己选的那种描边, 人数加粗. 点胶囊选上或取消这一种.
+class _ReactionBar extends ConsumerWidget {
+  const new({required this.comment, required this.reactions});
+
+  final Comment comment;
+  final List<ReactionCount> reactions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final c = eat.colors;
+    return Wrap(
+      spacing: 6,
+      children: [
+        for (final r in reactions)
+          EatTappable(
+            onTap: () => _react(context, ref, comment, r.reaction),
+            label: '${r.reaction.label}，${r.count}',
+            toggled: r.selected,
+            focusShape: const StadiumBorder(),
+            builder: (context, _) => ExcludeSemantics(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: EatSize.touch,
+                  minHeight: EatSize.touch,
+                ),
+                child: Center(
+                  widthFactor: 1,
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      color: c.mist,
+                      shape: StadiumBorder(
+                        side: r.selected
+                            ? BorderSide(color: c.ink, width: 1.5)
+                            : BorderSide.none,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: 4,
+                        children: [
+                          ReactionEmojiImage(_emojiOf(r.reaction), size: 16),
+                          Text(
+                            '${r.count}',
+                            style: eat.text.count.copyWith(
+                              color: c.ink,
+                              fontWeight: r.selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -417,7 +591,8 @@ class _ReplyLine extends ConsumerWidget {
     final eat = context.eat;
     final c = eat.colors;
     final style = eat.text.body.copyWith(color: c.ink);
-    return Stack(
+    final reactions = _reactionsOf(ref, reply);
+    final line = Stack(
       children: [
         EatTappable(
           onTap: () => _reply(context, ref, root, to: reply),
@@ -480,12 +655,24 @@ class _ReplyLine extends ConsumerWidget {
         ),
       ],
     );
+    if (reactions.isEmpty) return line;
+    // 回应放在整行的点击区域外面, 点胶囊不会触发回复.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        line,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: _ReactionBar(comment: reply, reactions: reactions),
+        ),
+      ],
+    );
   }
 }
 
-enum _MenuAction { delete, report }
+enum _MenuAction { react, delete, report }
 
-/// 打开评论操作面板, 本人评论显示 "删除", 他人评论显示 "举报".
+/// 打开评论操作面板, 本人评论显示 "删除", 他人评论显示 "举报". 回复另有 "回应", 根评论的回应入口在操作行里.
 Future<void> showCommentMenu(
   BuildContext context,
   WidgetRef ref,
@@ -497,21 +684,35 @@ Future<void> showCommentMenu(
     context,
     builder: (panel) => EatPanel(
       title: comment.isReply ? '这条回复' : '这条评论',
-      child: mine
-          ? EatPanelAction(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (comment.isReply)
+            EatPanelAction(
+              icon: EatIcons.emoji,
+              label: '回应',
+              onTap: () => Navigator.of(panel).pop(_MenuAction.react),
+            ),
+          if (mine)
+            EatPanelAction(
               icon: EatIcons.delete,
               label: '删除',
               onTap: () => Navigator.of(panel).pop(_MenuAction.delete),
             )
-          : EatPanelAction(
+          else
+            EatPanelAction(
               icon: EatIcons.report,
               label: '举报',
               onTap: () => Navigator.of(panel).pop(_MenuAction.report),
             ),
+        ],
+      ),
     ),
   );
   if (!context.mounted) return;
   switch (action) {
+    case _MenuAction.react:
+      await _showReactionPanel(context, ref, comment);
     case _MenuAction.report:
       await showReportPanel(
         context,

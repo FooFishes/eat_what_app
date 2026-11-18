@@ -58,6 +58,7 @@ void main() {
   group('产品 7.2 的权限表', () {
     const interactions = [
       Capability.like,
+      Capability.react,
       Capability.favorite,
       Capability.tasteTag,
       Capability.myTag,

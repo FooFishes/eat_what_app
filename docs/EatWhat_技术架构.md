@@ -203,6 +203,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，接口按时间正序给。`replyCount` 为 0 时不请求 | 同上 |
 | `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表和 `myCommentsProvider`。发布即公开，发表后总是刷新 | 写评论页、评论的「更多」 |
 | `commentLikesProvider` | 评论赞的本地覆盖值，按评论 id，初值是评论自带的 `isLiked`；详情和全部评论同一条一起变，失败退回。接口成功只返回 null，成功后保留本地值 | 评论的赞按钮 |
+| `commentReactionsProvider` | 评论表情回应的本地覆盖值，按评论 id，初值是评论自带的 `reactions`；先按 `CommentRules.toggleReaction` 改，成功后换成接口返回的计数，失败退回 | 评论的回应胶囊和回应面板 |
 | `myCommentsProvider` | 「我的」里的评论分栏，分页 | 发表、删除后重新拉 |
 | `commentedDishProvider(dishId)` | 「我的评论」一行要显示的菜：先用本地缓存的详情，没有再请求 | 只读 |
 

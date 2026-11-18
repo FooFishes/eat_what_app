@@ -18,6 +18,8 @@ abstract final class CommentEndpoints {
   static String replies(int commentId) => '/comments/$commentId/replies';
   static String foodGallery(int foodId) => '/foods/$foodId/gallery';
   static String like(int commentId) => '/comments/$commentId/like';
+  static String reaction(int commentId, String reaction) =>
+      '/comments/$commentId/reactions/$reaction';
   static String comment(int commentId) => '/comments/$commentId';
   static const my = '/comments/my';
 }
@@ -115,6 +117,24 @@ class CommentApi {
 
   Future<void> unlike(int commentId) =>
       _client.delete(CommentEndpoints.like(commentId));
+
+  /// 选上或取消一种表情回应 ([reaction] 为接口取值), 返回这条评论现在的全部回应.
+  ///
+  /// 每人对一条评论只留一种, 选上新的时服务端替换掉原来那种.
+  Future<List<CommentReactionDto>> setReaction(
+    int commentId,
+    String reaction, {
+    required bool selected,
+  }) async {
+    final path = CommentEndpoints.reaction(commentId, reaction);
+    final data = selected
+        ? await _client.put(path)
+        : await _client.delete(path);
+    return [
+      for (final item in data as List<dynamic>? ?? const [])
+        decodeJson(item, CommentReactionDto.fromJson),
+    ];
+  }
 
   /// 获取当前用户发表过的评论和回复, 按时间倒序排列, 已删除的条目不返回.
   Future<Paged<CommentDto>> mine({

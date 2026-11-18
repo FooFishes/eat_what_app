@@ -36,6 +36,7 @@ enum EatIcons {
   download('download-2'),
   earth('earth'),
   edit('edit'),
+  emoji('emoji'),
   external('external-link'),
   eye('eye'),
   eyeOff('eye-close'),

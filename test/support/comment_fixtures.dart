@@ -38,6 +38,7 @@ Map<String, Object?> commentJson({
   int replies = 0,
   int ageMinutes = 60,
   List<String> images = const [],
+  List<Map<String, Object?>> reactions = const [],
 }) => {
   'id': id,
   'foodId': foodId,
@@ -50,7 +51,15 @@ Map<String, Object?> commentJson({
   'replyCount': replies,
   'isLiked': liked,
   'createdAt': commentTime(ageMinutes),
+  'reactions': reactions,
 };
+
+/// 一种表情回应的人数 (`CommentDtos.Reaction`), [reaction] 是接口取值.
+Map<String, Object?> reactionJson(
+  String reaction,
+  int count, {
+  bool selected = false,
+}) => {'reaction': reaction, 'count': count, 'selected': selected};
 
 /// 一条回复. [root] 是所属评论的 id, [replyTo] 是被回复的人.
 Map<String, Object?> replyJson({
@@ -63,6 +72,7 @@ Map<String, Object?> replyJson({
   int likes = 0,
   bool? liked = false,
   int ageMinutes = 30,
+  List<Map<String, Object?>> reactions = const [],
 }) => commentJson(
   id: id,
   root: root,
@@ -73,6 +83,7 @@ Map<String, Object?> replyJson({
   likes: likes,
   liked: liked,
   ageMinutes: ageMinutes,
+  reactions: reactions,
 );
 
 /// `PageResult` 外壳. [total] 缺省时为 [items] 的条数.

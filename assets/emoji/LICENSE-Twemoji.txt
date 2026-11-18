@@ -10,8 +10,13 @@ Changes: the shapes were split into layers and animated (blinking, glancing,
 head and hand motion), then rendered to animated WebP. The motion was created
 by the EatWhat team. The original authors do not endorse this app.
 
-The adapted images are distributed under the same CC BY 4.0 license, whose
-full text follows.
+The reaction images in reactions/ (thumbs_up.svg, heart.svg, laugh.svg,
+surprised.svg, sad.svg, yummy.svg) are Twemoji 1f44d, 2764, 1f602, 1f62e,
+1f622 and 1f60b, taken unchanged from the npm package @twemoji/svg 15.0.0
+and only renamed.
+
+The adapted images and the reaction images are distributed under the same
+CC BY 4.0 license, whose full text follows.
 
 Attribution 4.0 International
 

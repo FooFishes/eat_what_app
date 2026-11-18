@@ -78,6 +78,10 @@ flutter:
     - assets/emoji/eyes.webp
     - assets/emoji/eyes_still.webp
     - assets/emoji/LICENSE-Twemoji.txt
+    # 评论表情回应, 取自 @twemoji/svg 15.0.0, 只按用途改名.
+    - path: assets/emoji/reactions/
+      transformers:
+        - package: vector_graphics_compiler
     - assets/fonts/OFL-Inter.txt
     # 中文字体只给安卓用, 不写在下方的 fonts 中: 那里的字体在 Web 上会于首帧前全部下载.
     # 启动时由 EatFonts.loadSans 注册, 由 tool/subset_fonts.py 子集化生成.

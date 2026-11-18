@@ -11,6 +11,35 @@ enum CommentSort {
   final String api;
 }
 
+/// 评论的表情回应. [api] 是接口取值, [label] 是读屏和面板里的名字.
+enum CommentReaction {
+  thumbsUp('THUMBS_UP', '大拇指'),
+  heart('HEART', '爱心'),
+  laugh('LAUGH', '笑哭'),
+  surprised('SURPRISED', '惊讶'),
+  sad('SAD', '难过'),
+  yummy('YUMMY', '好吃');
+
+  const new(this.api, this.label);
+
+  final String api;
+  final String label;
+
+  static CommentReaction? fromApi(String? value) {
+    for (final reaction in values) {
+      if (reaction.api == value) return reaction;
+    }
+    return null;
+  }
+}
+
+/// 一种表情回应的人数. [selected] 表示当前用户选的是这一种, 游客总为 false.
+class const ReactionCount({
+  required final CommentReaction reaction,
+  required final int count,
+  final bool selected = false,
+});
+
 /// 一条公开的评论或回复.
 ///
 /// 回复只有一层: [rootId] 为所属根评论 id, 根评论自身为 null.
@@ -38,6 +67,9 @@ class const Comment({
 
   /// 照片地址列表, 最多 3 张. 回复不包含照片.
   final List<String> images = const [],
+
+  /// 有人选过的表情回应, 按 [CommentReaction] 的顺序排列.
+  final List<ReactionCount> reactions = const [],
 }) {
   bool get isReply => rootId != null;
 
@@ -56,6 +88,7 @@ class const Comment({
     replyCount: count,
     createdAt: createdAt,
     images: images,
+    reactions: reactions,
   );
 }
 

@@ -32,7 +32,17 @@ CommentDto _$CommentDtoFromJson(Map<String, dynamic> json) => CommentDto(
   replyCount: (json['replyCount'] as num?)?.toInt(),
   isLiked: json['isLiked'] as bool?,
   createdAt: (json['createdAt'] as num?)?.toInt(),
+  reactions: (json['reactions'] as List<dynamic>?)
+      ?.map((e) => CommentReactionDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
 );
+
+CommentReactionDto _$CommentReactionDtoFromJson(Map<String, dynamic> json) =>
+    CommentReactionDto(
+      reaction: json['reaction'] as String?,
+      count: (json['count'] as num?)?.toInt(),
+      selected: json['selected'] as bool?,
+    );
 
 GalleryImageDto _$GalleryImageDtoFromJson(Map<String, dynamic> json) =>
     GalleryImageDto(
