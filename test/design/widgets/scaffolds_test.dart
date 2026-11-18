@@ -100,6 +100,23 @@ void main() {
       );
     });
 
+    testWidgets('传了 stageHeight 时舞台按它定高，抽屉顶部跟着上移', (tester) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(
+        tester,
+        StageScaffold(
+          stage: StageColor.broth,
+          stageHeight: 400,
+          stageContent: const SizedBox(),
+          sheetSlivers: const [
+            SliverToBoxAdapter(child: SizedBox(height: 2000)),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(find.byType(SheetHandle)).dy, 400 - 32 + 10);
+    });
+
     for (final fixedStage in [false, true]) {
       testWidgets('内容很少时抽屉也能拖到第一行吸顶的位置，下面铺满白底 (fixedStage: $fixedStage)', (
         tester,

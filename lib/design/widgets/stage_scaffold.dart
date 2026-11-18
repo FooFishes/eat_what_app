@@ -42,6 +42,7 @@ class StageScaffold extends StatefulWidget {
     this.pinnedBottom,
     this.onRefresh,
     this.fixedStage = false,
+    this.stageHeight,
   }) : map = null;
 
   /// 构建以地图为舞台的页面骨架 (如附近页), 地图铺于底层而抽屉叠加阴影压在地图之上.
@@ -54,7 +55,8 @@ class StageScaffold extends StatefulWidget {
   }) : stage = null,
        stageContent = null,
        pinnedBottom = null,
-       fixedStage = false;
+       fixedStage = false,
+       stageHeight = null;
 
   final StageColor? stage;
   final Widget? stageContent;
@@ -74,6 +76,9 @@ class StageScaffold extends StatefulWidget {
 
   /// 手机布局下舞台是否固定在底层不随滚动移动, 上滑时由抽屉盖住. 宽屏布局的舞台始终固定, 不受影响.
   final bool fixedStage;
+
+  /// 手机布局下舞台的高度, 不传时按 [EatLayout.stageHeight]. 舞台上没有主角菜的页面 (如个人主页) 按内容定高, 把空间让给抽屉.
+  final double? stageHeight;
 
   /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
   /// 顶栏从舞台样式过渡到白底样式的进度: 0 是舞台样式, 1 是吸顶后的白底样式, 随滚动连续变化.
@@ -284,7 +289,7 @@ class _StageScaffoldState extends State<StageScaffold>
         ],
       );
     } else {
-      final height = layout.stageHeight;
+      final height = widget.stageHeight ?? layout.stageHeight;
       final barTop = safe.top + 4;
       _stageHeight = height;
       _barBottom = barTop + _barHeight;

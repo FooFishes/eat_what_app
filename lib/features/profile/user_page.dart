@@ -102,6 +102,7 @@ class UserPage extends ConsumerWidget {
           ],
         ],
       ),
+      stageHeight: ProfileStage.heightOf(context),
       stageContent: ProfileStage(
         userId: userId,
         name: profile?.nickname ?? '',

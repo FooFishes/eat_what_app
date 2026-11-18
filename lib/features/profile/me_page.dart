@@ -3,7 +3,6 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
-import 'package:eat/design/layout/eat_layout.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -112,6 +111,7 @@ class _MePageState extends ConsumerState<MePage> {
           ),
         ],
       ),
+      stageHeight: ProfileStage.heightOf(context),
       stageContent: ProfileStage(
         userId: user?.id ?? 0,
         name: user?.nickname ?? '同学',
@@ -269,6 +269,7 @@ class _GuestMe extends StatelessWidget {
           ),
         ],
       ),
+      stageHeight: ProfileStage.heightOf(context),
       stageContent: const _GuestPlate(),
       sheetSlivers: [
         SliverPadding(
@@ -301,12 +302,12 @@ class _GuestPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final plate = 220 * EatLayout.of(context).stageScale;
+    const plate = ProfileStage.plateSize;
     return Stack(
       children: [
         Positioned(
-          right: -plate * 0.22,
-          top: 112 * EatLayout.of(context).stageScale,
+          right: -plate * ProfileStage.plateBleed,
+          top: ProfileStage.plateTop(context),
           child: DishPlate.illustration(
             IllustrationImage(Illustration.niunan, size: plate),
             size: plate,

@@ -1,7 +1,7 @@
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
-import 'package:eat/design/layout/eat_layout.dart';
+import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -29,7 +29,9 @@ StageColor avatarColorOf(int userId) =>
 
 /// 渲染 "我的" 页面与他人主页共用的顶部舞台内容.
 ///
-/// - 右侧展示获赞最多的菜品; 若尚未上传过菜品则显示插画空盘, 上传列表加载中则留空.
+/// - 舞台高度按内容定 ([heightOf]), 不用菜品页的舞台高度, 抽屉默认能多露出一截.
+/// - 右上角展示获赞最多的菜品; 若尚未上传过菜品则显示插画空盘, 上传列表加载中则留空.
+///   盘子和头像, 昵称, 签名在同一高度, 这几行右边让出盘子露出的宽度.
 /// - 左下展示头像, 昵称与等级, 用户名, 签名及四项统计, 点击粉丝和关注可进入对应列表.
 /// - 等级取自 [profile], 在加载中或接口未返回时不显示; 当 [onLevelTap] 为 null 时等级不可点击.
 class ProfileStage extends ConsumerWidget {
@@ -62,12 +64,48 @@ class ProfileStage extends ConsumerWidget {
   final bool loading;
   final VoidCallback? onLevelTap;
 
+  static const plateSize = 168.0;
+
+  /// 盘子伸出屏幕右边的比例.
+  static const plateBleed = 0.22;
+
+  /// 盘子顶边的纵坐标, 紧挨顶栏下面.
+  static double plateTop(BuildContext context) =>
+      StageScaffold.barBottomOf(context) + 4;
+
+  /// 舞台内容离抽屉顶边的距离.
+  static const _bottomGap = 24.0;
+
+  /// 手机布局下的舞台高度: 顶栏下面留一点空, 放下头像到统计这几行 (用户名和两行签名都按有算, 加载前后高度不跳), 再加抽屉压住的部分.
+  static double heightOf(BuildContext context) {
+    final text = MediaQuery.textScalerOf(context);
+    final eat = context.eat.text;
+    double line(TextStyle style, [int lines = 1]) =>
+        text.scale(style.fontSize!) * style.height! * lines;
+    final stats = EatSize.touch > 32 + line(eat.caption)
+        ? EatSize.touch
+        : 32 + line(eat.caption);
+    final content =
+        72 +
+        EatSpace.s14 +
+        EatSize.touch +
+        line(eat.meta) +
+        4 +
+        line(eat.body, 2) +
+        EatSpace.s10 +
+        stats;
+    return StageScaffold.barBottomOf(context) +
+        EatSpace.s14 +
+        content +
+        _bottomGap +
+        EatSize.sheetOverlap;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final palette = StageTheme.of(context);
-    final scale = EatLayout.of(context).stageScale;
-    final plate = 220 * scale;
+    const plate = plateSize;
     final profile = this.profile;
     final top = this.top;
     Future<void> openList(FollowListKind kind) async {
@@ -95,8 +133,8 @@ class ProfileStage extends ConsumerWidget {
     return Stack(
       children: [
         Positioned(
-          right: -plate * 0.22,
-          top: 112 * scale,
+          right: -plate * plateBleed,
+          top: plateTop(context),
           child: top != null
               ? DishPlate(
                   image: networkImage(top.cover, width: plate),
@@ -115,61 +153,71 @@ class ProfileStage extends ConsumerWidget {
         Positioned(
           left: EatSpace.s20,
           right: EatSpace.s20,
-          bottom: EatSize.sheetOverlap + 24,
+          bottom: EatSize.sheetOverlap + _bottomGap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              EatAvatar(
-                name: name,
-                color: avatarColorOf(userId),
-                image: networkImage(avatarUrl, width: 72),
-                size: 72,
-              ),
-              const SizedBox(height: EatSpace.s14),
-              Row(
-                spacing: EatSpace.s8,
-                children: [
-                  Flexible(
-                    child: Semantics(
-                      header: true,
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textScaler: TextScaler.noScaling,
-                        style: eat.text.title.copyWith(
-                          color: palette.foreground,
+              Padding(
+                padding: const EdgeInsets.only(
+                  right: plate * (1 - plateBleed) + EatSpace.s10 - EatSpace.s20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    EatAvatar(
+                      name: name,
+                      color: avatarColorOf(userId),
+                      image: networkImage(avatarUrl, width: 72),
+                      size: 72,
+                    ),
+                    const SizedBox(height: EatSpace.s14),
+                    Row(
+                      spacing: EatSpace.s8,
+                      children: [
+                        Flexible(
+                          child: Semantics(
+                            header: true,
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textScaler: TextScaler.noScaling,
+                              style: eat.text.title.copyWith(
+                                color: palette.foreground,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (profile?.level case final level?)
+                          LevelBadge(
+                            level: level,
+                            title: profile?.title,
+                            onTap: onLevelTap,
+                          ),
+                      ],
+                    ),
+                    if (username case final username?)
+                      Text(
+                        '@$username',
+                        style: eat.text.meta.copyWith(
+                          color: palette.secondaryForeground,
                         ),
                       ),
-                    ),
-                  ),
-                  if (profile?.level case final level?)
-                    LevelBadge(
-                      level: level,
-                      title: profile?.title,
-                      onTap: onLevelTap,
-                    ),
-                ],
+                    if (signature case final signature?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          signature,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: eat.text.body.copyWith(
+                            color: palette.secondaryForeground,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              if (username case final username?)
-                Text(
-                  '@$username',
-                  style: eat.text.meta.copyWith(
-                    color: palette.secondaryForeground,
-                  ),
-                ),
-              if (signature case final signature?)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    signature,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: eat.text.body.copyWith(
-                      color: palette.secondaryForeground,
-                    ),
-                  ),
-                ),
               const SizedBox(height: EatSpace.s10),
               Row(
                 children: [
