@@ -17,8 +17,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// TODO: 粉丝和关注列表不返回与我的关注关系, 每一行单独请求对方的资料来决定按钮文字. 列表接口返回关注关系后改用列表数据.
-/// 粉丝和关注列表页, 分为两个分栏, 每行展示头像, 昵称和关注按钮, 点击行进入他人主页.
+/// 粉丝和关注列表页, 分为两个分栏, 每行展示头像和昵称, 点击行进入他人主页.
+///
+/// 只有我自己的列表在每行右侧放关注按钮, 关注关系取自列表数据; 他人的列表不显示与我的关系.
 ///
 /// 对方未公开某个列表时, 该分栏展示未公开提示; 自己的列表始终可见.
 class FollowsPage extends ConsumerStatefulWidget {
@@ -170,7 +171,8 @@ class _UserList extends ConsumerWidget {
         SliverList.separated(
           itemCount: users.length,
           separatorBuilder: (_, _) => const SizedBox(height: EatSpace.s16),
-          itemBuilder: (context, i) => _UserRow(user: users[i], me: me),
+          itemBuilder: (context, i) =>
+              _UserRow(user: users[i], me: me, showFollow: me == userId),
         ),
         if (data.pages.hasNext)
           SliverToBoxAdapter(
@@ -185,17 +187,19 @@ class _UserList extends ConsumerWidget {
   }
 }
 
-class _UserRow extends ConsumerWidget {
-  const new({required this.user, required this.me});
+class _UserRow extends StatelessWidget {
+  const new({required this.user, required this.me, required this.showFollow});
 
   final UserBrief user;
   final int? me;
 
+  /// 是否显示关注按钮. 只有我自己的列表显示, 他人的列表不看与我的关系.
+  final bool showFollow;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final name = user.nickname ?? '同学';
     final isMe = user.id == me;
-    final profile = isMe ? null : ref.watch(userProfileProvider(user.id));
     return EatListRow(
       leading: EatAvatar(
         name: name,
@@ -205,11 +209,13 @@ class _UserRow extends ConsumerWidget {
       title: Text(name),
       onTap: () =>
           isMe ? context.go(Paths.me) : context.push(Paths.user(user.id)),
-      action: switch (profile?.value) {
-        final profile? => FollowButton(profile: profile),
-        null when isMe => null,
-        null => const Skeleton(width: 72, height: 36, radius: EatRadius.pill),
-      },
+      action: isMe || !showFollow
+          ? null
+          : FollowButton(
+              userId: user.id,
+              followedByMe: user.followedByMe,
+              followsMe: user.followsMe,
+            ),
     );
   }
 }

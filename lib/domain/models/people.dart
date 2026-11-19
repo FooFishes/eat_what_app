@@ -38,6 +38,10 @@ class const UserBrief({
   /// 等级称号, 目前只有满级有, 其余为 null. 屏蔽列表不带.
   final String? title,
   final DateTime? since,
+
+  /// 对方与当前登录用户之间的关注关系. 只有粉丝和关注列表带, 屏蔽列表恒为 false.
+  final bool followsMe = false,
+  final bool followedByMe = false,
 });
 
 /// 当前用户与另一个用户的关注关系. [label] 是关注按钮上的文字.

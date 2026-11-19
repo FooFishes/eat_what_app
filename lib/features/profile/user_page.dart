@@ -93,7 +93,7 @@ class UserPage extends ConsumerWidget {
           const EatBackButton(),
           Expanded(child: StageBarTitle(profile?.nickname ?? '')),
           if (!isMe && profile != null) ...[
-            FollowButton(profile: profile, onStage: true),
+            FollowButton.of(profile, onStage: true),
             EatIconButton(
               EatIcons.more,
               label: '更多',

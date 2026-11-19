@@ -258,6 +258,8 @@ class UserRepository {
             avatarUrl: imageUrl(dto.avatar),
             title: _text(dto.title),
             since: dateFromMillis(dto.createdAt),
+            followsMe: dto.isFollowingMe ?? false,
+            followedByMe: dto.isFollowingHim ?? false,
           ),
     ],
     page: page.page,

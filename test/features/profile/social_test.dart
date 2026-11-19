@@ -249,16 +249,31 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('我的关注列表：每行按关系显示按钮，点行进他人主页', (tester) async {
+  testWidgets('我的关注列表：按列表数据显示按钮，不逐行请求资料，点行进他人主页', (tester) async {
     env.adapter
       ..on('GET /user/userInfo', [
         FakeAdapter.ok(_profile(id: 42, name: '天凉被破王')),
-        FakeAdapter.ok(_profile(followedByMe: true)),
+        FakeAdapter.ok(_profile(followsMe: true, followedByMe: true)),
       ])
       ..on('GET /user/followings', [
         FakeAdapter.ok(
           pageJson([
-            {'id': 9, 'displayName': '阿哲', 'avatar': null, 'createdAt': 1},
+            {
+              'id': 9,
+              'displayName': '阿哲',
+              'avatar': null,
+              'createdAt': 1,
+              'isFollowingMe': true,
+              'isFollowingHim': true,
+            },
+            {
+              'id': 7,
+              'displayName': '小林',
+              'avatar': null,
+              'createdAt': 1,
+              'isFollowingMe': false,
+              'isFollowingHim': true,
+            },
           ]),
         ),
       ]);
@@ -268,11 +283,12 @@ void main() {
       session: const SignedIn(user: verifiedUser),
       location: Paths.follows(42, fans: false),
     );
-    // 列表显示后, 每一行请求对应用户的资料. pumpAndSettle 等待这些请求完成.
     await tester.pumpAndSettle();
 
     expect(find.text('粉丝和关注'), findsOneWidget);
+    expect(find.text('已互关'), findsOneWidget);
     expect(find.text('已关注'), findsOneWidget);
+    expect(env.adapter.sent('GET /user/userInfo'), hasLength(1));
     await expectAccessible(tester);
 
     await tester.tap(find.text('阿哲'));
@@ -280,6 +296,82 @@ void main() {
     expect(
       find.byWidgetPredicate((w) => w is UserPage && w.userId == 9),
       findsOneWidget,
+    );
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('我的粉丝列表：按列表数据显示「回关」和「已互关」，不逐行请求资料', (tester) async {
+    env.adapter
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok(_profile(id: 42, name: '天凉被破王')),
+      ])
+      ..on('GET /user/followers', [
+        FakeAdapter.ok(
+          pageJson([
+            {
+              'id': 9,
+              'displayName': '阿哲',
+              'avatar': null,
+              'createdAt': 1,
+              'isFollowingMe': true,
+              'isFollowingHim': false,
+            },
+            {
+              'id': 7,
+              'displayName': '小林',
+              'avatar': null,
+              'createdAt': 1,
+              'isFollowingMe': true,
+              'isFollowingHim': true,
+            },
+          ]),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.follows(42, fans: true),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_button('回关'), findsOneWidget);
+    expect(_button('已互关'), findsOneWidget);
+    expect(env.adapter.sent('GET /user/userInfo'), hasLength(1));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('他人的粉丝列表：不放关注按钮，不逐行请求资料', (tester) async {
+    env.adapter
+      ..on('GET /user/userInfo', [FakeAdapter.ok(_profile())])
+      ..on('GET /user/followers', [
+        FakeAdapter.ok(
+          pageJson([
+            {
+              'id': 7,
+              'displayName': '小林',
+              'avatar': null,
+              'createdAt': 1,
+              'isFollowingMe': true,
+            },
+          ]),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.follows(9, fans: true),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('小林'), findsOneWidget);
+    expect(find.byType(EatButton), findsNothing);
+    expect(
+      env.adapter
+          .sent('GET /user/userInfo')
+          .where((r) => r.query['userId'] == 7),
+      isEmpty,
     );
     await unmountApp(tester, container);
   });

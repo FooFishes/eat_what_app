@@ -13,7 +13,7 @@ part 'social.g.dart';
 int? _myId(Ref ref) =>
     ref.watch(sessionProvider.select((s) => s is SignedIn ? s.user?.id : null));
 
-/// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+/// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
 ///
 /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
 /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -49,10 +49,14 @@ class Follows extends _$Follows {
 
   final _pending = <int>{};
 
-  /// 查询当前用户是否已关注 [profile] 对应的用户, 本地覆盖值优先.
-  FollowState stateOf(UserProfile profile) => FollowState.of(
-    followedByMe: state[profile.id] ?? profile.followedByMe,
-    followsMe: profile.followsMe,
+  /// 当前用户与 [userId] 的关注关系. [followedByMe] 是服务端给的值, 本地覆盖值优先.
+  FollowState stateOf(
+    int userId, {
+    required bool followedByMe,
+    required bool followsMe,
+  }) => FollowState.of(
+    followedByMe: state[userId] ?? followedByMe,
+    followsMe: followsMe,
   );
 
   /// 关注或取消关注. 成功返回 null, 失败时恢复原值并返回失败原因.

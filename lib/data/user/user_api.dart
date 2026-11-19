@@ -198,6 +198,8 @@ class UserApi {
 }
 
 /// `/user/followers` 和 `/user/followings` 的列表项 (`UserDtos.Person`), [createdAt] 为关注时间.
+///
+/// [isFollowingMe] 表示对方关注了当前登录用户, [isFollowingHim] 表示当前登录用户关注了对方, 不论查看的是谁的列表.
 @JsonSerializable(createToJson: false)
 class const FansDto({
   final int? id,
@@ -207,6 +209,8 @@ class const FansDto({
   /// 等级称号, 目前只有满级有 ("老吃家"), 其余为 null.
   final String? title,
   final int? createdAt,
+  final bool? isFollowingMe,
+  final bool? isFollowingHim,
 }) {
   factory FansDto.fromJson(Map<String, dynamic> json) =>
       _$FansDtoFromJson(json);

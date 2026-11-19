@@ -12,6 +12,8 @@ FansDto _$FansDtoFromJson(Map<String, dynamic> json) => FansDto(
   avatar: json['avatar'] as String?,
   title: json['title'] as String?,
   createdAt: (json['createdAt'] as num?)?.toInt(),
+  isFollowingMe: json['isFollowingMe'] as bool?,
+  isFollowingHim: json['isFollowingHim'] as bool?,
 );
 
 BlockedUserDto _$BlockedUserDtoFromJson(Map<String, dynamic> json) =>

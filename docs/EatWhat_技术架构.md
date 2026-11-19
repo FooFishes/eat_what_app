@@ -197,7 +197,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `consentedServicesProvider` | 同意隐私政策后才能启动的服务（崩溃上报、热更新检查、设备注册、埋点上报）是否已启动 | 启动时、首次写入同意记录时 |
 | `analyticsProvider` | 埋点的采集、攒批和上报，本机的使用统计开关（19.1） | 各页面记事件；隐私页开关；登录时同步服务端开关 |
 | `publishedCountProvider` | 这次打开以来发布、编辑、恢复了几次；「我的」的统计和上传、餐厅详情的菜单、还开着的菜品详情监听它，变了就重新拉 | 加菜页、编辑菜品、新建店页、修改记录页 |
-| `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」、他人主页、粉丝和关注列表的每一行共用。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
+| `userProfileProvider(userId)` | 某个用户的公开资料、统计和与我的关注关系；「我的」和他人主页共用，粉丝和关注列表的关注关系取自列表数据。他人的离开后保留 5 分钟，自己的一直保留 | 关注、屏蔽成功后由 `followsProvider` 让双方重新拉 |
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
 | `dishCommentsProvider(dishId, sort)` | 一道菜的评论，分页；菜品详情只显示「最有用」的前几条，全部评论两种排序都用。离开后保留 5 分钟 | 滚到底 `loadMore`；删除后 `removeLocal`，发表后重新拉 |
 | `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，接口按时间正序给。`replyCount` 为 0 时不请求 | 同上 |

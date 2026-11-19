@@ -8,7 +8,7 @@ part of 'social.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+/// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
 ///
 /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
 /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -18,7 +18,7 @@ part of 'social.dart';
 @ProviderFor(userProfile)
 final userProfileProvider = UserProfileFamily._();
 
-/// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+/// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
 ///
 /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
 /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -33,7 +33,7 @@ final class UserProfileProvider
           FutureOr<UserProfile>
         >
     with $FutureModifier<UserProfile>, $FutureProvider<UserProfile> {
-  /// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+  /// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
   ///
   /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
   /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -85,7 +85,7 @@ final class UserProfileProvider
 
 String _$userProfileHash() => r'42cd56c7076930d0ee8e858f37aaaeb748aed305';
 
-/// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+/// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
 ///
 /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
 /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -103,7 +103,7 @@ final class UserProfileFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 指定用户的公开资料与统计数据, 由 "我的", 他人主页, 粉丝和关注列表的每一行共用.
+  /// 指定用户的公开资料与统计数据, 由 "我的" 和他人主页共用.
   ///
   /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
   /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
@@ -164,7 +164,7 @@ final class FollowsProvider extends $NotifierProvider<Follows, Map<int, bool>> {
   }
 }
 
-String _$followsHash() => r'0b0dd672de2f2df1d95fc1c483f5798f9dfa405a';
+String _$followsHash() => r'3b0b56a252ff1ad00f98707e2ec49c7c95fb7dde';
 
 /// 关注关系的本地覆盖值, 以对方的 id 为键, 用于乐观更新.
 ///
