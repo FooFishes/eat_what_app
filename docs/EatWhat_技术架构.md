@@ -268,6 +268,9 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 通知 | `/settings/notify` | 根 | 否 | `G-SettingsNotify` |
 | 关于 | `/settings/about` | 根 | 游客 | `G-SettingsAbout` |
 | 反馈 | `/feedback`（可带 `dishId`、`shopId`） | 根 | 否 | `G-Feedback` |
+| 开发团队 | `/settings/about/team` | 根 | 游客 | 无画板，按白底页规则 |
+| 开源声明 | `/settings/about/licenses` | 根 | 游客 | 无画板，按白底页规则 |
+| 许可证全文 | `/settings/about/licenses/:name` | 根 | 游客 | 无画板，按白底页规则 |
 | 我的反馈 | `/settings/about/feedback` | 根 | 否 | 无画板，按白底页规则 |
 | 我的反馈详情 | `/settings/about/feedback/:caseId` | 根 | 否 | 无画板，按白底页规则 |
 | 发布 1/2 选店 | `/publish`；加菜页「换一家」打开时带 `change=1` | 根 | 否 | `G-PickShop` |

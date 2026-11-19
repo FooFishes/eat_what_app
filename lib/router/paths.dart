@@ -74,6 +74,17 @@ abstract final class Paths {
   static const settingsPersonalize = '/settings/personalize';
   static const settingsAbout = '/settings/about';
 
+  /// 开发团队页路径.
+  static const team = '/settings/about/team';
+
+  /// 开源声明页路径, 列出用到的开源组件.
+  static const licenses = '/settings/about/licenses';
+
+  /// 单个开源组件的许可证全文页路径, [name] 为许可证登记的组件名.
+  static const licensePattern = '/settings/about/licenses/:name';
+  static String license(String name) =>
+      '/settings/about/licenses/${Uri.encodeComponent(name)}';
+
   /// 我的反馈列表页路径, 列出本人提交的意见反馈, 信息有误和举报.
   static const myFeedback = '/settings/about/feedback';
 

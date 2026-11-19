@@ -24,6 +24,7 @@ import 'package:eat/features/publish/new_shop_page.dart';
 import 'package:eat/features/publish/publish_page.dart';
 import 'package:eat/features/search/search_page.dart';
 import 'package:eat/features/settings/about_page.dart';
+import 'package:eat/features/settings/open_source_page.dart';
 import 'package:eat/features/shop/shop_edit_page.dart';
 import 'package:eat/features/shop/shop_history_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
@@ -234,6 +235,22 @@ GoRouter appRouter(Ref ref) {
             path: _child(Paths.settingsAbout, Paths.settings),
             builder: (_, _) => const AboutPage(),
             routes: [
+              GoRoute(
+                path: _child(Paths.team, Paths.settingsAbout),
+                builder: (_, _) => const TeamPage(),
+              ),
+              GoRoute(
+                path: _child(Paths.licenses, Paths.settingsAbout),
+                builder: (_, _) => const OpenSourcePage(),
+                routes: [
+                  GoRoute(
+                    path: _child(Paths.licensePattern, Paths.licenses),
+                    builder: (_, state) => LicenseTextPage(
+                      name: state.pathParameters['name'] ?? '',
+                    ),
+                  ),
+                ],
+              ),
               GoRoute(
                 path: _child(Paths.myFeedback, Paths.settingsAbout),
                 metadata: signedInRoute,

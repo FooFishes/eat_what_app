@@ -15,10 +15,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 关于页面, 展示应用说明, 版本信息, 反馈与我的反馈入口及隐私政策与用户协议.
+/// 关于页面: 最上面是放大的版本号, 下面是反馈与我的反馈, 再下面一组不带图标的隐私政策, 用户协议, 开发团队, 开源声明.
 ///
 /// 允许游客访问, 游客点击 "反馈" 或 "我的反馈" 时会弹出登录拦截对话框.
-/// 版本信息格式为 "版本 0.3.0 (30) 补丁 2", 依次对应版本名, 构建号与热更新补丁号; 无补丁时省略补丁号.
+/// 版本名用大号数字写在最上面, 右边小字写构建号与热更新补丁号 ("构建 30  补丁 2"), 无补丁时省略补丁号; 下面一句提醒转述时把这些都说全.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
 
@@ -41,25 +41,62 @@ class AboutPage extends ConsumerWidget {
         SliverList.list(
           children: [
             if (version != null)
-              Text.rich(
-                TextSpan(
-                  children: [
-                    const TextSpan(text: '版本 '),
-                    TextSpan(text: version, style: eat.text.count),
-                    if (hasBuild) ...[
-                      const TextSpan(text: '（'),
-                      TextSpan(text: build, style: eat.text.count),
-                      const TextSpan(text: '）'),
+              Semantics(
+                container: true,
+                label: [
+                  [
+                    '版本 $version',
+                    if (hasBuild) '构建 $build',
+                    if (patch != null) '补丁 $patch',
+                  ].join('，'),
+                  '如需要向他人提供版本号，请将所有内容进行转述。',
+                ].join('。'),
+                child: ExcludeSemantics(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        '版本',
+                        style: eat.text.meta.copyWith(color: c.inkMuted),
+                      ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        spacing: EatSpace.s10,
+                        children: [
+                          Text(
+                            version,
+                            style: eat.text.stat.copyWith(
+                              fontSize: 40,
+                              height: 48 / 40,
+                              color: c.ink,
+                            ),
+                          ),
+                          if (hasBuild || patch != null)
+                            Flexible(
+                              child: Text(
+                                [
+                                  if (hasBuild) '构建 $build',
+                                  if (patch != null) '补丁 $patch',
+                                ].join('  '),
+                                style: eat.text.count.copyWith(
+                                  color: c.inkMuted,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: EatSpace.s4),
+                      Text(
+                        '如需要向他人提供版本号，请将所有内容进行转述。',
+                        style: eat.text.caption.copyWith(color: c.inkMuted),
+                      ),
                     ],
-                    if (patch != null) ...[
-                      TextSpan(text: hasBuild ? '补丁 ' : ' 补丁 '),
-                      TextSpan(text: '$patch', style: eat.text.count),
-                    ],
-                  ],
+                  ),
                 ),
-                style: eat.text.meta.copyWith(color: c.inkMuted),
               ),
-            const SizedBox(height: EatSpace.s20),
+            const SizedBox(height: EatSpace.s24),
             SettingsGroup(
               children: [
                 SettingsRow(
@@ -84,27 +121,26 @@ class AboutPage extends ConsumerWidget {
                     }
                   },
                 ),
-                SettingsRow(
-                  icon: EatIcons.document,
-                  label: '隐私政策',
-                  onTap: () => open(config.privacyUrl),
-                ),
-                SettingsRow(
-                  icon: EatIcons.document,
-                  label: '用户协议',
-                  onTap: () => open(config.termsUrl),
-                ),
               ],
             ),
             const SizedBox(height: EatSpace.s16),
-            Text(
-              '反馈问题时请附上版本号，便于排查。',
-              style: eat.text.caption.copyWith(color: c.inkMuted),
-            ),
-            const SizedBox(height: EatSpace.s8),
-            Text(
-              '沙软今天吃什么由学生独立开发，与学校无隶属关系。',
-              style: eat.text.caption.copyWith(color: c.inkMuted),
+            SettingsGroup(
+              dividerIndent: 0,
+              children: [
+                SettingsRow(
+                  label: '隐私政策',
+                  onTap: () => open(config.privacyUrl),
+                ),
+                SettingsRow(label: '用户协议', onTap: () => open(config.termsUrl)),
+                SettingsRow(
+                  label: '开发团队',
+                  onTap: () => context.push(Paths.team),
+                ),
+                SettingsRow(
+                  label: '开源声明',
+                  onTap: () => context.push(Paths.licenses),
+                ),
+              ],
             ),
           ],
         ),

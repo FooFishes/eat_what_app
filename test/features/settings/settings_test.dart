@@ -1,6 +1,7 @@
 import 'package:eat/core/network/auth_token.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/features/auth/login_page.dart';
+import 'package:eat/features/settings/open_source_page.dart';
 import 'package:eat/features/settings/about_page.dart';
 import 'package:eat/features/settings/account_page.dart';
 import 'package:eat/features/settings/delete_account_page.dart';
@@ -11,6 +12,7 @@ import 'package:eat/router/paths.dart';
 import 'package:eat/state/appearance.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -148,8 +150,47 @@ void main() {
     );
 
     expect(find.byType(AboutPage), findsOneWidget);
-    expect(find.text('版本 0.1.0（1）补丁 2'), findsOneWidget);
+    expect(find.text('0.1.0'), findsOneWidget);
+    expect(find.text('构建 1  补丁 2'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('^版本 0.1.0，构建 1，补丁 2。')),
+      findsOneWidget,
+    );
     await expectAccessible(tester);
+  });
+
+  testWidgets('关于页分别进开发团队和开源声明，开源声明里点一项看许可证全文', (tester) async {
+    LicenseRegistry.addLicense(
+      () => Stream.value(
+        const LicenseEntryWithLineBreaks(['some_package'], '许可证正文'),
+      ),
+    );
+    addTearDown(LicenseRegistry.reset);
+    await pumpApp(
+      tester,
+      env,
+      session: const Guest(),
+      location: Paths.settingsAbout,
+    );
+
+    await tester.tap(find.text('开发团队'));
+    await tester.pumpAndSettle();
+    expect(find.byType(TeamPage), findsOneWidget);
+    expect(find.text('FooFish'), findsOneWidget);
+    expect(find.text('后端开发'), findsOneWidget);
+    await expectAccessible(tester);
+    await tester.tap(find.bySemanticsLabel('返回'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('开源声明'));
+    await tester.pumpAndSettle();
+    expect(find.byType(OpenSourcePage), findsOneWidget);
+    await expectAccessible(tester);
+
+    await tester.tap(find.text('some_package'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LicenseTextPage), findsOneWidget);
+    expect(find.text('许可证正文'), findsOneWidget);
   });
 
   testWidgets('游客的设置里有个性化，拖动滑条改透明度并记在本机', (tester) async {
