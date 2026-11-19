@@ -16,6 +16,7 @@ import 'package:eat/design/widgets/eat_nav_bar.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_stage.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
@@ -44,6 +45,8 @@ class _KitPageState extends State<KitPage> {
   var _radio = 0;
   var _publicFollows = true;
   var _likes = false;
+  var _distance = 1;
+  var _price = 3;
   var _nav = 0;
 
   @override
@@ -339,7 +342,7 @@ class _KitPageState extends State<KitPage> {
             onTap: () {},
           ),
         ]),
-        section('单选行和开关', [
+        section('单选行、开关和分段条', [
           for (final (i, (name, distance, place)) in [
             ('螺蛳粉研究所', '600 m', '万达金街 B1'),
             ('家常小馆', '500 m', '银座商城 2 层'),
@@ -376,6 +379,25 @@ class _KitPageState extends State<KitPage> {
             value: true,
             onChanged: (_) {},
             pending: true,
+          ),
+          EatSegmentSlider(
+            semanticsLabel: '份量',
+            labels: const ['小份', '中份', '大份'],
+            selected: _distance.clamp(0, 2),
+            onChanged: (i) => setState(() => _distance = i),
+          ),
+          EatSegmentSlider.route(
+            semanticsLabel: '最远距离',
+            labels: const ['500 m', '1 km', '2 km', '3 km', '不限'],
+            selected: _distance,
+            onChanged: (i) => setState(() => _distance = i),
+          ),
+          EatSegmentSlider.coins(
+            semanticsLabel: '人均价位',
+            labels: const ['¥ 15 以下', '¥ 15–30', '¥ 30 以上', '不限'],
+            allIndex: 3,
+            selected: _price,
+            onChanged: (i) => setState(() => _price = i),
           ),
         ]),
         section('输入', [

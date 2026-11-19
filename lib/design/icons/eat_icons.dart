@@ -12,6 +12,7 @@ enum EatIcons {
   announce('announcement'),
   back('left'),
   bell('notification'),
+  bike('bike'),
   block('forbid-circle'),
   bookmark('bookmark'),
   bookmarkOn('bookmark', filled: true),
@@ -19,6 +20,7 @@ enum EatIcons {
   buffet('dish-cover'),
   calendar('calendar'),
   camera('camera'),
+  car('car'),
   check('check'),
   checkCircle('check-circle'),
   chevronDown('down'),
@@ -92,6 +94,7 @@ enum EatIcons {
   upload('upload'),
   utensils('fork-spoon'),
   verify('safety-certificate'),
+  walk('walk'),
   warning('warning'),
   wifiOff('wifi-off');
 

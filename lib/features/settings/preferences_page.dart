@@ -6,7 +6,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
-import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
@@ -18,6 +18,7 @@ import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/settings/preferences_providers.dart';
 import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -238,32 +239,22 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
     final options = data.options;
     final note = eat.text.meta.copyWith(color: c.inkMuted);
     Widget chips(List<Widget> children) =>
-        Wrap(spacing: EatSpace.s8, children: children);
-    Widget group(String title, Widget child, {String? hint}) => Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListGroupTitle(title),
-          if (hint != null) ...[
-            const SizedBox(height: 2),
-            Text(hint, style: note),
-          ],
-          const SizedBox(height: EatSpace.s4),
-          child,
-        ],
-      ),
-    );
-    final distances = [
-      ...RecommendPreferences.distanceChoices,
-      if (p.maxDistance case final d?
-          when !RecommendPreferences.distanceChoices.contains(d))
-        d,
-    ]..sort();
+        Wrap(spacing: EatSpace.s8, runSpacing: EatSpace.s8, children: children);
+    // "不限" 放在最右边: 价位和距离都是越往右越宽松.
+    final bands = <PriceBand?>[...PriceBand.values, null];
+    final distances = <int?>[
+      ...[
+        ...RecommendPreferences.distanceChoices,
+        if (p.maxDistance case final d?
+            when !RecommendPreferences.distanceChoices.contains(d))
+          d,
+      ]..sort(),
+      null,
+    ];
     return [
       if (!personalized)
         Padding(
-          padding: const EdgeInsets.only(top: EatSpace.s10),
+          padding: const EdgeInsets.only(top: EatSpace.s10, left: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: EatSpace.s8,
@@ -280,80 +271,94 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
         )
       else if (data.saved.isEmpty && _draft == null)
         Padding(
-          padding: const EdgeInsets.only(top: EatSpace.s10),
+          padding: const EdgeInsets.only(top: EatSpace.s10, left: 4),
           child: Text('还没设置偏好。选几项喜欢的，推荐会更合你的口味', style: note),
         ),
-      group(
-        '喜欢的品类',
-        hint: '推荐时优先',
-        chips([
-          for (final category in options.categories)
-            EatChip.tag(
-              category.label,
-              selected: p.likedCategories.contains(category),
-              onTap: () => _edit((p) => p.toggleCategory(category)),
-            ),
-        ]),
-      ),
-      group(
-        '喜欢的口味',
-        hint: '推荐时优先',
-        chips([
-          for (final taste in options.tastes)
-            EatChip.tag(
-              taste.label,
-              selected: p.likedTastes.contains(taste),
-              onTap: () => _edit((p) => p.toggleLiked(taste)),
-            ),
-        ]),
-      ),
-      group(
-        '忌口',
-        hint: '带这些口味的店不会推荐给你',
-        chips([
-          for (final taste in options.dislikable)
-            EatChip.tag(
-              taste.label,
-              selected: p.dislikedTastes.contains(taste),
-              onTap: () => _edit((p) => p.toggleDisliked(taste)),
-            ),
-        ]),
-      ),
-      group(
-        '价位',
-        hint: '人均',
-        chips([
-          EatChip.choice(
-            '不限',
-            selected: p.priceBand == null,
-            onTap: () => _edit((p) => p.withPriceBand(null)),
+      const SizedBox(height: EatSpace.s20),
+      SettingsGroup(
+        title: '喜欢的',
+        note: const Text('推荐时优先'),
+        dividerIndent: 0,
+        children: [
+          _Field(
+            label: '品类',
+            child: chips([
+              for (final category in options.categories)
+                EatChip.tag(
+                  category.label,
+                  selected: p.likedCategories.contains(category),
+                  onTap: () => _edit((p) => p.toggleCategory(category)),
+                ),
+            ]),
           ),
-          for (final band in PriceBand.values)
-            EatChip.choice(
-              band.label,
-              selected: p.priceBand == band,
-              onTap: () => _edit((p) => p.withPriceBand(band)),
-            ),
-        ]),
-      ),
-      group(
-        '最远距离',
-        hint: '只对去店里吃生效',
-        chips([
-          EatChip.choice(
-            '不限',
-            selected: p.maxDistance == null,
-            onTap: () => _edit((p) => p.withMaxDistance(null)),
+          _Field(
+            label: '口味',
+            child: chips([
+              for (final taste in options.tastes)
+                EatChip.tag(
+                  taste.label,
+                  selected: p.likedTastes.contains(taste),
+                  onTap: () => _edit((p) => p.toggleLiked(taste)),
+                ),
+            ]),
           ),
-          for (final meters in distances)
-            EatChip.choice(
-              GeoRules.formatDistance(meters.toDouble()),
-              selected: p.maxDistance == meters,
-              onTap: () => _edit((p) => p.withMaxDistance(meters)),
-            ),
-        ]),
+        ],
       ),
-      if (personalized) const _TasteSection(),
+      const SizedBox(height: EatSpace.s24),
+      SettingsGroup(
+        title: '忌口',
+        note: const Text('带这些口味的店不会推荐给你'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: EatSpace.s14),
+            child: chips([
+              for (final taste in options.dislikable)
+                EatChip.tag(
+                  taste.label,
+                  selected: p.dislikedTastes.contains(taste),
+                  onTap: () => _edit((p) => p.toggleDisliked(taste)),
+                ),
+            ]),
+          ),
+        ],
+      ),
+      const SizedBox(height: EatSpace.s24),
+      SettingsGroup(
+        title: '价位和距离',
+        dividerIndent: 0,
+        children: [
+          _Field(
+            label: '人均价位',
+            child: EatSegmentSlider.coins(
+              semanticsLabel: '人均价位',
+              allIndex: bands.length - 1,
+              labels: [for (final band in bands) band?.label ?? '不限'],
+              selected: bands.indexOf(p.priceBand),
+              onChanged: (i) => _edit((p) => p.withPriceBand(bands[i])),
+            ),
+          ),
+          _Field(
+            label: '最远距离',
+            hint: '只对去店里吃生效',
+            child: EatSegmentSlider.route(
+              semanticsLabel: '最远距离',
+              icons: [for (final meters in distances) _travelIcon(meters)],
+              labels: [
+                for (final meters in distances)
+                  meters == null
+                      ? '不限'
+                      : GeoRules.formatDistance(meters.toDouble()),
+              ],
+              selected: distances.indexOf(p.maxDistance),
+              onChanged: (i) => _edit((p) => p.withMaxDistance(distances[i])),
+            ),
+          ),
+        ],
+      ),
+      if (personalized) ...[
+        const SizedBox(height: EatSpace.s24),
+        const _TasteSection(),
+      ],
       if (!data.saved.isEmpty) ...[
         const SizedBox(height: 28),
         EatButton.mist(
@@ -364,6 +369,60 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
       ],
       const SizedBox(height: EatSpace.s24),
     ];
+  }
+}
+
+/// 最远距离对应的出行方式图标: 1 km 以内步行, 2 km 以内骑车, 再远和不限开车.
+EatIcons _travelIcon(int? meters) => switch (meters) {
+  final m? when m <= 1000 => EatIcons.walk,
+  final m? when m <= 2000 => EatIcons.bike,
+  _ => EatIcons.car,
+};
+
+/// 卡片里的一项: 上面一行是名字和可选的说明, 下面是选择控件.
+class _Field extends StatelessWidget {
+  const new({required this.label, this.hint, required this.child});
+
+  final String label;
+  final String? hint;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: EatSpace.s14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: EatSpace.s10,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            spacing: EatSpace.s8,
+            children: [
+              Text(
+                label,
+                style: eat.text.body.copyWith(
+                  color: c.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (hint case final hint?)
+                Expanded(
+                  child: Text(
+                    hint,
+                    textAlign: TextAlign.end,
+                    style: eat.text.meta.copyWith(color: c.inkMuted),
+                  ),
+                ),
+            ],
+          ),
+          child,
+        ],
+      ),
+    );
   }
 }
 
@@ -385,16 +444,9 @@ class _TasteSection extends ConsumerWidget {
       ];
       content = profile.isEmpty
           ? Text('多赞几道菜、收藏几家店，这里会显示你偏爱的口味和品类', style: note)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [
-                Text(
-                  names.map((n) => '「$n」').join(''),
-                  style: eat.text.body.copyWith(color: c.ink),
-                ),
-                Text('推荐时和你选的喜欢一起优先', style: note),
-              ],
+          : Text(
+              names.map((n) => '「$n」').join(''),
+              style: eat.text.body.copyWith(color: c.ink),
             );
     } else if (taste.hasError && !taste.isLoading) {
       content = LoadFailureReport(
@@ -414,38 +466,36 @@ class _TasteSection extends ConsumerWidget {
     } else {
       content = const LoadingArea(child: Skeleton.line(width: 160));
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: EatSpace.s8,
-        children: [const ListGroupTitle('从你的点赞和收藏看出'), content],
-      ),
+    return SettingsGroup(
+      title: '从你的点赞和收藏看出',
+      note: const Text('推荐时和你选的喜欢一起优先'),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: EatSpace.s14),
+          child: content,
+        ),
+      ],
     );
   }
 }
 
-/// 偏好表单的加载占位, 按分组小标题和一行胶囊排列.
+/// 偏好表单的加载占位, 按分组小标题和一张卡片排列.
 class _FormPlaceholder extends StatelessWidget {
   const new();
 
   @override
   Widget build(BuildContext context) => LoadingArea(
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var i = 0; i < 4; i++) ...[
-          const SizedBox(height: 18),
-          const Skeleton.line(width: 72, fontSize: 13),
-          const SizedBox(height: EatSpace.s10),
-          const Wrap(
-            spacing: EatSpace.s8,
-            children: [
-              Skeleton(width: 72, height: EatSize.chip, radius: EatRadius.pill),
-              Skeleton(width: 56, height: EatSize.chip, radius: EatRadius.pill),
-              Skeleton(width: 88, height: EatSize.chip, radius: EatRadius.pill),
-            ],
+        for (var i = 0; i < 3; i++) ...[
+          const SizedBox(height: EatSpace.s20),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Skeleton.line(width: 72, fontSize: 13),
           ),
+          const SizedBox(height: EatSpace.s10),
+          const Skeleton(height: 120, radius: EatRadius.thumbLg),
         ],
       ],
     ),

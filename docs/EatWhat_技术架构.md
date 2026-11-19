@@ -64,7 +64,7 @@ lib/
     icons/                  图标名表、EatIcon；菜品插画（Illustration，只用于空状态、引导和演示）
     widgets/                设计规范里的组件。和 Flutter 同名的（Chip、Switch、FormField……）一律加 Eat 前缀：
                             EatButton、EatIconButton、EatChip、PendingTag（待接入）、EatTabs、EatListRow、
-                            EatRadioRow、EatSwitch、EatSlider、EatSearchField、EatFormField、EatSheet、EatStage、
+                            EatRadioRow、EatSwitch、EatSlider、EatSegmentSlider（分段条）、EatSearchField、EatFormField、EatSheet、EatStage、
                             EatPanel（showPanel）、EatNavBar、DishPlate、DishTile、Skeleton、EmptyState、
                             FailureState；以后的 StageScaffold、PlainScaffold、Turntable、TasteCloud、
                             StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳。

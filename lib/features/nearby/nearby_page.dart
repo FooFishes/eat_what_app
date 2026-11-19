@@ -13,6 +13,7 @@ import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -620,6 +621,9 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
   late var _kind = widget.query.filter.kind;
   late var _categories = {...widget.query.filter.categories};
   late var _priceBand = widget.query.filter.priceBand;
+
+  /// 价位从便宜到贵, "不限" 放在最右边.
+  static const _bands = <PriceBand?>[...PriceBand.values, null];
   late var _recommendedOnly = widget.query.filter.recommendedOnly;
   late var _favoritesOnly = widget.query.filter.favoritesOnly;
 
@@ -729,21 +733,12 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
           ),
           const SizedBox(height: EatSpace.s8),
           group('价位'),
-          Wrap(
-            spacing: EatSpace.s8,
-            children: [
-              EatChip.choice(
-                '不限',
-                selected: _priceBand == null,
-                onTap: () => setState(() => _priceBand = null),
-              ),
-              for (final band in PriceBand.values)
-                EatChip.choice(
-                  band.label,
-                  selected: _priceBand == band,
-                  onTap: () => setState(() => _priceBand = band),
-                ),
-            ],
+          EatSegmentSlider.coins(
+            semanticsLabel: '价位',
+            labels: [for (final band in _bands) band?.label ?? '不限'],
+            allIndex: _bands.length - 1,
+            selected: _bands.indexOf(_priceBand),
+            onChanged: (i) => setState(() => _priceBand = _bands[i]),
           ),
           const SizedBox(height: EatSpace.s8),
           EatSwitch(

@@ -1,7 +1,8 @@
-import 'dart:ui' show Tristate;
+import 'dart:ui' show SemanticsAction, Tristate;
 
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_radio_row.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -271,6 +272,127 @@ void main() {
     });
   });
 
+  group('EatSegmentSlider', () {
+    const labels = ['500 m', '1 km', '2 km', '不限'];
+
+    /// 三种造型共用一套操作, 下面的用例每种都跑一遍.
+    final looks =
+        <
+          String,
+          (
+            double,
+            EatSegmentSlider Function(int selected, ValueChanged<int> changed),
+          )
+        >{
+          '胶囊': (
+            44,
+            (selected, changed) => EatSegmentSlider(
+              semanticsLabel: '最远距离',
+              labels: labels,
+              selected: selected,
+              onChanged: changed,
+            ),
+          ),
+          '路线': (
+            76,
+            (selected, changed) => EatSegmentSlider.route(
+              semanticsLabel: '最远距离',
+              labels: labels,
+              selected: selected,
+              onChanged: changed,
+            ),
+          ),
+          '硬币': (
+            76,
+            (selected, changed) => EatSegmentSlider.coins(
+              semanticsLabel: '最远距离',
+              labels: labels,
+              allIndex: 3,
+              selected: selected,
+              onChanged: changed,
+            ),
+          ),
+        };
+
+    Future<List<int>> pumpSlider(
+      WidgetTester tester,
+      EatSegmentSlider Function(int, ValueChanged<int>) build, {
+      int selected = 0,
+    }) async {
+      final picked = <int>[];
+      await pumpEat(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) => SizedBox(
+            width: 320,
+            child: build(
+              selected,
+              (i) => setState(() {
+                selected = i;
+                picked.add(i);
+              }),
+            ),
+          ),
+        ),
+      );
+      return picked;
+    }
+
+    /// 选中的那段的文字: 胶囊造型是滑块上的字, 另外两种是下面那行里加粗的字, 都是 600 字重.
+    String current(WidgetTester tester) => tester
+        .widgetList<Text>(find.byType(Text))
+        .firstWhere((t) => t.style?.fontWeight == FontWeight.w600)
+        .data!;
+
+    for (final MapEntry(key: name, value: (height, build)) in looks.entries) {
+      testWidgets('$name: 点哪段选哪段, 高 ${height.toInt()}px', (tester) async {
+        final picked = await pumpSlider(tester, build);
+
+        expect(tester.getSize(find.byType(EatSegmentSlider)).height, height);
+        await tester.tap(find.text('2 km').last);
+        await tester.pumpAndSettle();
+        expect(picked, [2]);
+        expect(current(tester), '2 km');
+      });
+
+      testWidgets('$name: 拖动时跟手, 松手吸附到最近一段, 只回调一次', (tester) async {
+        final picked = await pumpSlider(tester, build);
+        final rect = tester.getRect(find.byType(EatSegmentSlider));
+        final segment = rect.width / labels.length;
+
+        final gesture = await tester.startGesture(
+          rect.centerLeft + Offset(segment / 2, 0),
+        );
+        await gesture.moveBy(const Offset(20, 0));
+        await gesture.moveBy(Offset(segment * 2.2 - 20, 0));
+        await tester.pump();
+        expect(picked, isEmpty, reason: '拖动中不回调');
+        expect(current(tester), '2 km');
+        await gesture.up();
+        await tester.pumpAndSettle();
+        expect(picked, [2]);
+      });
+    }
+
+    testWidgets('读屏当作滑块, 能加一段减一段', (tester) async {
+      final semantics = tester.ensureSemantics();
+      final picked = await pumpSlider(tester, looks['路线']!.$2, selected: 1);
+
+      final node = tester.getSemantics(find.byType(EatSegmentSlider));
+      expect(node.label, '最远距离');
+      expect(node.value, '1 km');
+      expect(node.increasedValue, '2 km');
+      expect(node.decreasedValue, '500 m');
+      tester.semantics.performAction(
+        find.semantics.byLabel('最远距离'),
+        SemanticsAction.increase,
+      );
+      await tester.pumpAndSettle();
+      expect(picked, [2]);
+      semantics.dispose();
+    });
+  });
+
   group('EatSwitch', () {
     testWidgets('整行可点，回调取反后的值', (tester) async {
       final values = <bool>[];
@@ -323,7 +445,7 @@ void main() {
     });
   });
 
-  testWidgets('分类、标签、单选行和开关满足点击区域和说明要求', (tester) async {
+  testWidgets('分类、标签、单选行、开关和分段条满足点击区域和说明要求', (tester) async {
     await pumpEat(
       tester,
       SizedBox(
@@ -348,6 +470,19 @@ void main() {
             ),
             EatRadioRow(title: '广告', selected: true, onSelected: () {}),
             EatSwitch(label: '赞和收藏', value: false, onChanged: (_) {}),
+            EatSegmentSlider.coins(
+              semanticsLabel: '人均价位',
+              labels: const ['¥ 15 以下', '¥ 15–30', '¥ 30 以上', '不限'],
+              allIndex: 3,
+              selected: 2,
+              onChanged: (_) {},
+            ),
+            EatSegmentSlider.route(
+              semanticsLabel: '最远距离',
+              labels: const ['500 m', '1 km', '不限'],
+              selected: 1,
+              onChanged: (_) {},
+            ),
           ],
         ),
       ),

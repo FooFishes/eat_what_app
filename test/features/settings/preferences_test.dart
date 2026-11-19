@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:eat/design/icons/eat_icon.dart';
+import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +17,20 @@ const _prefs = '/user/recommendation-profile/preferences';
 /// 文字为 [label] 的胶囊. 喜欢的口味和忌口里都有 "辣" "麻", 前者在上.
 Finder _chip(String label) =>
     find.byWidgetPredicate((w) => w is EatChip && w.label == label);
+
+/// 名为 [name] 的分段条上选中的那一段.
+String _picked(WidgetTester tester, String name) {
+  final slider = tester.widget<EatSegmentSlider>(
+    find.byWidgetPredicate(
+      (w) => w is EatSegmentSlider && w.semanticsLabel == name,
+    ),
+  );
+  return slider.labels[slider.selected];
+}
+
+/// 最远距离大头针里的出行方式图标.
+Finder _travel(EatIcons icon) =>
+    find.byWidgetPredicate((w) => w is EatIcon && w.icon == icon);
 
 Finder _button(String label) =>
     find.byWidgetPredicate((w) => w is EatButton && w.label == label);
@@ -95,12 +112,17 @@ void main() {
     await tester.ensureVisible(find.text('推荐偏好'));
     await tester.tap(find.text('推荐偏好'));
     await tester.pumpAndSettle();
-    expect(find.text('喜欢的品类'), findsOneWidget);
+    expect(find.text('品类'), findsOneWidget);
 
     expect(tester.widget<EatChip>(_chip('辣').first).selected, isTrue);
-    expect(tester.widget<EatChip>(_chip('1 km')).selected, isTrue);
-    expect(tester.widget<EatChip>(_chip('不限').first).selected, isTrue);
+    expect(_picked(tester, '最远距离'), '1 km');
+    expect(_travel(EatIcons.walk), findsOneWidget);
+    expect(_picked(tester, '人均价位'), '不限');
+    await tester.scrollUntilVisible(find.text('「酸」'), 200);
     expect(find.text('「酸」'), findsOneWidget);
+    await tester.scrollUntilVisible(_chip('粉面'), -200);
+    await tester.ensureVisible(_chip('粉面'));
+    await tester.pumpAndSettle();
 
     await tester.tap(_chip('粉面'));
     await tester.pump();
@@ -111,16 +133,24 @@ void main() {
     expect(tester.widget<EatChip>(_chip('辣').first).selected, isFalse);
     expect(tester.widget<EatChip>(_chip('辣').last).selected, isTrue);
 
+    await tester.ensureVisible(find.text('2 km'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('2 km'));
+    await tester.pumpAndSettle();
+    expect(_picked(tester, '最远距离'), '2 km');
+    expect(_travel(EatIcons.bike), findsOneWidget);
+    expect(_travel(EatIcons.walk), findsNothing);
+
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT $_prefs').single.body, {
       'likedCategories': ['粉面'],
       'likedTags': <String>[],
       'dislikedTags': ['辣'],
-      'maxDistance': 1000,
+      'maxDistance': 2000,
     });
     expect(find.text('偏好已保存'), findsOneWidget);
-    expect(find.text('喜欢的品类'), findsNothing);
+    expect(find.text('品类'), findsNothing);
     expect(find.text('推荐偏好'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
     await unmountApp(tester, container);
@@ -147,13 +177,13 @@ void main() {
     expect(find.text('放弃修改？'), findsOneWidget);
     await tester.tap(_button('继续编辑'));
     await tester.pumpAndSettle();
-    expect(find.text('喜欢的品类'), findsOneWidget);
+    expect(find.text('品类'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('返回'));
     await tester.pumpAndSettle();
     await tester.tap(_button('放弃'));
     await tester.pumpAndSettle();
-    expect(find.text('喜欢的品类'), findsNothing);
+    expect(find.text('品类'), findsNothing);
     expect(find.text('推荐偏好'), findsOneWidget);
     expect(env.adapter.sent('PUT $_prefs'), isEmpty);
     await unmountApp(tester, container);
@@ -173,8 +203,8 @@ void main() {
     );
 
     expect(tester.widget<EatChip>(_chip('粉面')).selected, isTrue);
-    expect(tester.widget<EatChip>(_chip('¥ 15 以下')).selected, isTrue);
-    await tester.ensureVisible(_button('清空偏好'));
+    expect(_picked(tester, '人均价位'), '¥ 15 以下');
+    await tester.scrollUntilVisible(_button('清空偏好'), 200);
     await tester.pumpAndSettle();
     await tester.tap(_button('清空偏好'));
     await tester.pumpAndSettle();
@@ -183,7 +213,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE $_prefs'), isEmpty);
 
-    await tester.ensureVisible(_button('清空偏好'));
+    await tester.scrollUntilVisible(_button('清空偏好'), 200);
     await tester.pumpAndSettle();
     await tester.tap(_button('清空偏好'));
     await tester.pumpAndSettle();
