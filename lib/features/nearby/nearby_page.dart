@@ -31,7 +31,7 @@ import 'package:eat/features/nearby/nearby_providers.dart';
 import 'package:eat/features/system/base_map.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/refresh.dart';
-import 'package:eat/features/system/shop_row.dart';
+import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
@@ -363,10 +363,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         ),
         sheetSlivers: [
           SliverToBoxAdapter(child: header),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-            sliver: rows,
-          ),
+          rows,
         ],
       );
     }
@@ -409,12 +406,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
                           child: SizedBox(height: EatSpace.s10),
                         ),
                         SliverToBoxAdapter(child: header),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: EatSpace.s20,
-                          ),
-                          sliver: rows,
-                        ),
+                        rows,
                         SliverToBoxAdapter(
                           child: SizedBox(height: navInset > 0 ? navInset : 24),
                         ),
@@ -489,12 +481,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
                           sliver: SliverToBoxAdapter(child: SheetHandle()),
                         ),
                         SliverToBoxAdapter(child: header),
-                        SliverPadding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: EatSpace.s20,
-                          ),
-                          sliver: rows,
-                        ),
+                        rows,
                         SliverToBoxAdapter(
                           child: SizedBox(height: navInset > 0 ? navInset : 24),
                         ),
@@ -510,18 +497,39 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     );
   }
 
+  /// 店铺列表. 店铺条目自带左右边距, 其他状态在这里加.
   Widget _rows(AsyncValue<List<Shop>> shops, List<Shop> list) {
-    if (!shops.hasValue) {
-      if (shops.hasError && !shops.isLoading) {
-        return SliverToBoxAdapter(
-          child: FailureState(
-            error: shops.error,
-            onRetry: () => ref.invalidate(nearbyShopsProvider),
-          ),
-        );
-      }
+    if (!shops.hasValue && !(shops.hasError && !shops.isLoading)) {
       return const SliverToBoxAdapter(
-        child: RowListPlaceholder(count: 5, thumbSize: EatSize.thumbLg),
+        child: ShopEntryPlaceholder(count: 5, dishes: false),
+      );
+    }
+    if (list.isEmpty || !shops.hasValue) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+        sliver: _states(shops, list),
+      );
+    }
+    return SliverList.separated(
+      itemCount: list.length,
+      separatorBuilder: (_, _) => const ShopEntryDivider(),
+      itemBuilder: (context, i) => ShopEntry(
+        shop: list[i],
+        index: i,
+        dishes: false,
+        onTap: () => context.push(Paths.shop(list[i].id)),
+      ),
+    );
+  }
+
+  /// 加载失败和空列表.
+  Widget _states(AsyncValue<List<Shop>> shops, List<Shop> list) {
+    if (!shops.hasValue) {
+      return SliverToBoxAdapter(
+        child: FailureState(
+          error: shops.error,
+          onRetry: () => ref.invalidate(nearbyShopsProvider),
+        ),
       );
     }
     if (list.isEmpty && _keyword.isEmpty && _filter.count > 0) {
@@ -540,24 +548,14 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         ),
       );
     }
-    if (list.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
-          child: EmptyState(
-            icon: EatIcons.store,
-            title: _keyword.isEmpty ? '这附近还没有店' : '没找到「$_keyword」',
-            message: _keyword.isEmpty ? '拖动地图看看附近，或切换其他商圈。' : '换个店名或地址试试。',
-          ),
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: EatSpace.s24),
+        child: EmptyState(
+          icon: EatIcons.store,
+          title: _keyword.isEmpty ? '这附近还没有店' : '没找到「$_keyword」',
+          message: _keyword.isEmpty ? '拖动地图看看附近，或切换其他商圈。' : '换个店名或地址试试。',
         ),
-      );
-    }
-    return SliverList.separated(
-      itemCount: list.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 18),
-      itemBuilder: (context, i) => ShopRow(
-        shop: list[i],
-        onTap: () => context.push(Paths.shop(list[i].id)),
       ),
     );
   }

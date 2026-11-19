@@ -133,7 +133,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、隐私政策的同意对话框（`consent_dialog.dart` 的 `showConsentDialog` 和 `ConsentHost`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、发现页推荐和附近页列表共用的榜单条目（`shop_entry.dart` 的 `ShopEntry`，附近页不带菜，右边加门头小图）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、隐私政策的同意对话框（`consent_dialog.dart` 的 `showConsentDialog` 和 `ConsentHost`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 

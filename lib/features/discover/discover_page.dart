@@ -35,7 +35,7 @@ import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
 import 'package:eat/features/discover/discover_providers.dart';
-import 'package:eat/features/discover/shop_entry.dart';
+import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/notices.dart';
 import 'package:eat/router/paths.dart';

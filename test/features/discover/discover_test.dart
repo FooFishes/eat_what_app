@@ -7,7 +7,7 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
-import 'package:eat/features/discover/shop_entry.dart';
+import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/state/session.dart';

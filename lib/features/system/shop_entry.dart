@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
@@ -13,7 +14,8 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 发现页抽屉里的一家推荐店, 排成精选榜单的一项. 一家店压在约 230 高, 展开抽屉时一屏能看到两家多.
+/// 一家店, 排成精选榜单的一项. 发现页的推荐带菜, 一家店压在约 230 高, 展开抽屉时一屏能看到两家多;
+/// 附近页的列表只要店名一栏 ([dishes] 为 false), 菜在店铺页里看, 店名一栏右边放一张门头小图.
 ///
 /// - 店名前面一个浅色的大号序号 (01, 02), 对应转盘上 "这一批的第几家", 让列表读起来是挑过的, 不是搜出来的. 抽屉保持白底, 不用颜色.
 /// - 店名下面一行: 推荐率的比例条和 "86% 推荐", 后面跟距离, 品类和商圈, 各带一个和舞台信息相同的图标, 一层比一层弱.
@@ -27,7 +29,8 @@ class ShopEntry extends ConsumerWidget {
     required this.shop,
     required this.index,
     required this.onTap,
-    required this.onDishTap,
+    this.onDishTap,
+    this.dishes = true,
   });
 
   final Shop shop;
@@ -35,7 +38,10 @@ class ShopEntry extends ConsumerWidget {
   /// 在列表中的位置, 从 0 开始. 用于序号和入场的错开.
   final int index;
   final VoidCallback onTap;
-  final ValueChanged<ShopDish> onDishTap;
+  final ValueChanged<ShopDish>? onDishTap;
+
+  /// 是否在店名下面排一行菜.
+  final bool dishes;
 
   /// 最多排几道菜, 与推荐卡片返回的代表菜上限一致.
   static const dishesMax = 3;
@@ -51,7 +57,9 @@ class ShopEntry extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dishes = shop.signatures.take(dishesMax).toList();
+    final dishes = this.dishes
+        ? shop.signatures.take(dishesMax).toList()
+        : const <ShopDish>[];
     final content = MediaQuery.sizeOf(context).width - EatSpace.s20 * 2;
     final unit =
         (content - _dishGap * (dishes.length - 1)) /
@@ -68,6 +76,7 @@ class ShopEntry extends ConsumerWidget {
               shop: shop,
               index: index,
               distance: ref.watch(distanceToProvider(shop.point)),
+              storefront: !this.dishes,
               onTap: onTap,
             ),
             if (dishes.isNotEmpty)
@@ -75,7 +84,7 @@ class ShopEntry extends ConsumerWidget {
                 [final dish] => _SoloDish(
                   dish: dish,
                   width: (content - EatSpace.s14) / 2,
-                  onTap: () => onDishTap(dish),
+                  onTap: () => onDishTap?.call(dish),
                 ),
                 _ => Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +96,7 @@ class ShopEntry extends ConsumerWidget {
                         child: _DishTile(
                           dish: dish,
                           width: unit * (i == 0 ? _heroFlex : 1),
-                          onTap: () => onDishTap(dish),
+                          onTap: () => onDishTap?.call(dish),
                         ),
                       ),
                   ],
@@ -122,19 +131,24 @@ class ShopEntryDivider extends StatelessWidget {
   );
 }
 
-/// 店名一栏: 序号和店名, 下面一行推荐理由, 距离和要点.
+/// 店名一栏: 序号和店名, 下面一行推荐理由, 距离和要点; [storefront] 时右边加门头小图.
 class _Header extends StatelessWidget {
   const new({
     required this.shop,
     required this.index,
     required this.distance,
+    required this.storefront,
     required this.onTap,
   });
 
   final Shop shop;
   final int index;
   final String? distance;
+  final bool storefront;
   final VoidCallback onTap;
+
+  /// 门头小图的边长, 和店名加信息行差不多高.
+  static const storefrontSize = EatSize.thumb;
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +208,11 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
+          if (storefront)
+            ListThumb(
+              image: networkImage(shop.photo, width: storefrontSize),
+              size: storefrontSize,
+            ),
         ],
       ),
     );
@@ -543,11 +562,12 @@ class _RevealState extends State<_Reveal> with SingleTickerProviderStateMixin {
   );
 }
 
-/// [ShopEntry] 列表的加载占位: 序号和店名两行, 下面一行主图和两张小图的形状.
+/// [ShopEntry] 列表的加载占位: 序号和店名两行, 带菜时下面一行主图和两张小图的形状.
 class ShopEntryPlaceholder extends StatelessWidget {
-  const new({super.key, this.count = 3});
+  const new({super.key, this.count = 3, this.dishes = true});
 
   final int count;
+  final bool dishes;
 
   @override
   Widget build(BuildContext context) => LoadingArea(
@@ -555,44 +575,57 @@ class ShopEntryPlaceholder extends StatelessWidget {
       children: [
         for (var i = 0; i < count; i++) ...[
           if (i > 0) const ShopEntryDivider(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: EatSpace.s20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: EatSpace.s10,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: EatSpace.s8,
-                  children: [
-                    Skeleton.line(width: 140, fontSize: 20),
-                    Skeleton.line(width: 200, fontSize: 13),
-                  ],
-                ),
                 Row(
-                  spacing: ShopEntry._dishGap,
                   children: [
-                    Expanded(
-                      flex: ShopEntry._heroFlex,
-                      child: Skeleton(
-                        height: ShopEntry.photoHeight,
-                        radius: EatRadius.thumbLg,
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: EatSpace.s8,
+                        children: [
+                          Skeleton.line(width: 140, fontSize: 20),
+                          Skeleton.line(width: 200, fontSize: 13),
+                        ],
                       ),
                     ),
-                    Expanded(
-                      child: Skeleton(
-                        height: ShopEntry.photoHeight,
-                        radius: EatRadius.thumbLg,
+                    if (!dishes)
+                      const Skeleton(
+                        width: _Header.storefrontSize,
+                        height: _Header.storefrontSize,
+                        radius: EatRadius.thumb,
                       ),
-                    ),
-                    Expanded(
-                      child: Skeleton(
-                        height: ShopEntry.photoHeight,
-                        radius: EatRadius.thumbLg,
-                      ),
-                    ),
                   ],
                 ),
+                if (dishes)
+                  const Row(
+                    spacing: ShopEntry._dishGap,
+                    children: [
+                      Expanded(
+                        flex: ShopEntry._heroFlex,
+                        child: Skeleton(
+                          height: ShopEntry.photoHeight,
+                          radius: EatRadius.thumbLg,
+                        ),
+                      ),
+                      Expanded(
+                        child: Skeleton(
+                          height: ShopEntry.photoHeight,
+                          radius: EatRadius.thumbLg,
+                        ),
+                      ),
+                      Expanded(
+                        child: Skeleton(
+                          height: ShopEntry.photoHeight,
+                          radius: EatRadius.thumbLg,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),
