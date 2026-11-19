@@ -2,7 +2,7 @@
 abstract final class ProfileRules {
   static const nicknameMin = 2;
   static const nicknameMax = 12;
-  static const signatureMax = 30;
+  static const signatureMax = 100;
   static const myTagMax = 10;
 
   /// 按字数计算长度, 一个汉字算一个字.

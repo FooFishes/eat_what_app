@@ -14,10 +14,10 @@ void main() {
     });
   });
 
-  test('签名最多 30 个字，可以不填', () {
+  test('签名最多 100 个字，可以不填', () {
     expect(ProfileRules.signatureError(''), isNull);
-    expect(ProfileRules.signatureError('字' * 30), isNull);
-    expect(ProfileRules.signatureError('字' * 31), '签名最多 30 个字');
+    expect(ProfileRules.signatureError('字' * 100), isNull);
+    expect(ProfileRules.signatureError('字' * 101), '签名最多 100 个字');
   });
 
   test('我的标签：不能为空，最多 10 个字，不能和其他标签重名', () {

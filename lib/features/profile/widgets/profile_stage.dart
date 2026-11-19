@@ -115,7 +115,7 @@ class ProfileStage extends ConsumerWidget {
         EatSize.sheetOverlap;
   }
 
-  /// 签名排出来占几行 (最多两行), 宽度是舞台左边让出盘子之后剩下的.
+  /// 签名排出来占几行, 签名全部写出来不截断, 宽度是舞台左边让出盘子之后剩下的.
   static int _signatureLines(BuildContext context, String text) {
     final width =
         MediaQuery.sizeOf(context).width - EatSpace.s20 * 2 - _textRightInset;
@@ -123,11 +123,10 @@ class ProfileStage extends ConsumerWidget {
       text: TextSpan(text: text, style: context.eat.text.body),
       textDirection: TextDirection.ltr,
       textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 2,
     )..layout(maxWidth: width);
     final lines = painter.computeLineMetrics().length;
     painter.dispose();
-    return lines.clamp(1, 2);
+    return lines < 1 ? 1 : lines;
   }
 
   /// 头像到签名这几行右边让出盘子露出的宽度.
@@ -239,8 +238,6 @@ class ProfileStage extends ConsumerWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           signature,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                           style: eat.text.body.copyWith(
                             color: palette.secondaryForeground,
                           ),

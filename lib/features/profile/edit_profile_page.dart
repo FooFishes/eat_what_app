@@ -27,7 +27,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Source { camera, gallery }
 
-/// 编辑个人资料页, 包含头像, 昵称 (2–12 个字) 和签名 (选填, 最多 30 个字).
+/// 编辑个人资料页, 包含头像, 昵称 (2–12 个字) 和签名 (选填, 最多 100 个字).
 ///
 /// - 换头像: 支持拍照或从相册选择, 裁切取景后输出 512×512 图片上传.
 /// - 退出确认: 内容发生变更后返回时弹窗确认是否放弃.
@@ -309,17 +309,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 26),
-                EatFormField(
+                EatFormField.multiline(
                   label: '签名，选填',
                   controller: _signature,
                   hintText: '一句话介绍自己',
-                  textInputAction: TextInputAction.done,
                   errorText: _signatureError,
                   trailing: count(_signature.text, ProfileRules.signatureMax),
                   inputFormatters: [
                     LengthLimitingTextInputFormatter(ProfileRules.signatureMax),
                   ],
-                  onSubmitted: (_) => _save(),
                 ),
                 const SizedBox(height: EatSpace.s24),
               ],
