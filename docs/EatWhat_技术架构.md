@@ -1304,12 +1304,13 @@ class PushNotice({
   1. 读分组号（首次随机生成 1–100，存 `prefs`）。
   2. 远程配置里取当前版本的补丁放量比例。分组号 ≤ 比例走 `beta` 轨道，否则走 `stable`。
   3. `checkForUpdate(track:)` 有新补丁就 `update(track:)` 静默下载。下次启动生效，不提示（产品 12.1）。
+- 设置里点「检查更新」时也查一次补丁，和远程配置的版本检查一起做：商店没有新版本但有新补丁时下载，提示「更新已下载，重新打开 App 后生效」。
 - 放量：新补丁先发 `beta` 轨道，比例从 5% 开始调；没问题后发到 `stable`，比例清零。
 - 回退：控制台回滚补丁；补丁启动就崩时 Shorebird 在设备端自动退回上一个补丁（需要实测确认）。
 - 远程配置上线前，所有设备都检查 `stable` 轨道，补丁不能按比例放，发出即全量。CI 的补丁工作流默认发到 `stable`。
 - 「关于」页显示「版本 0.3.0（30）补丁 2」：版本名、构建号来自 `package_info_plus`，补丁号来自 `readCurrentPatch()`。崩溃上报和埋点都带补丁号。
 - 范围：只修问题和不改变功能范围的小改动；新功能、新权限、新的数据收集都发新版本（产品 12.1）。发布清单里加这一条检查。
-- CI：打 tag 发版时用 `shorebird release android` / `shorebird release ios` 代替 `flutter build`，补丁用手动触发的工作流 `shorebird patch`。Flutter 版本必须和 `.fvmrc` 一致。需要 `SHOREBIRD_TOKEN`。
+- CI：打 tag 发版时用 `shorebird release android` / `shorebird release ios` 代替 `flutter build`（iOS 要有签名证书），补丁用 `patch.yml`（`shorebird patch android` / `shorebird patch ios`，补丁 tag 触发时两个平台都打，手动触发可以只选一个）。Flutter 版本必须和 `.fvmrc` 一致。需要 `SHOREBIRD_TOKEN`。
 - 新版本（商店版本）按比例发布受商店能力限制，见待确认 A11。
 
 ### 16.3 Web 新版提示

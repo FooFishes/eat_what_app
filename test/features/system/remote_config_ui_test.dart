@@ -10,6 +10,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../support/app.dart';
@@ -296,6 +297,30 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.widget<Text>(find.text('0.1.0')).style?.color, warn);
       expect(find.text('构建 25  有新版本'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('商店没有新版本但有新补丁时下载补丁，提示重新打开后生效', (tester) async {
+      env.updater
+        ..isAvailable = true
+        ..status = UpdateStatus.outdated;
+      final (container, _) = await openSettings(tester);
+      env.adapter.on('GET /remote-config', [
+        FakeAdapter.ok(
+          clientConfigJson(
+            announcements: const [],
+            maintenance: _noMaintenance,
+            versions: _noVersions,
+          ),
+        ),
+      ]);
+      final updates = env.updater.updates;
+      await tester.tap(find.text('检查更新'));
+      await tester.pumpAndSettle();
+      expect(env.updater.updates, updates + 1);
+      expect(find.text('更新已下载，重新打开 App 后生效'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
       await unmountApp(tester, container);
     });
 

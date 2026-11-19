@@ -30,15 +30,44 @@ class HotUpdate {
   ///
   /// 失败时不重试, 等下次启动再检查.
   Future<void> downloadIfAvailable() async {
-    if (!_updater.isAvailable) return;
+    await check();
+  }
+
+  /// 检查并下载新补丁, 返回结果. 设置里点 "检查更新" 时用, 结果提示给用户.
+  Future<PatchCheck> check() async {
+    if (!_updater.isAvailable) return PatchCheck.unavailable;
     try {
-      if (await _updater.checkForUpdate() == UpdateStatus.outdated) {
-        await _updater.update();
+      switch (await _updater.checkForUpdate()) {
+        case UpdateStatus.outdated:
+          await _updater.update();
+          return PatchCheck.ready;
+        case UpdateStatus.restartRequired:
+          return PatchCheck.ready;
+        case UpdateStatus.upToDate:
+          return PatchCheck.upToDate;
+        case UpdateStatus.unavailable:
+          return PatchCheck.unavailable;
       }
     } on Object catch (e) {
       debugPrint('hot update failed: $e');
+      return PatchCheck.failed;
     }
   }
+}
+
+/// 检查补丁的结果.
+enum PatchCheck {
+  /// 这个包收不到补丁: Web, 调试构建, 或不是用 `shorebird release` 打的包.
+  unavailable,
+
+  /// 已经是最新的补丁.
+  upToDate,
+
+  /// 新补丁已下载好 (这次刚下载, 或之前已下载), 重新打开 App 后生效.
+  ready,
+
+  /// 检查或下载失败.
+  failed,
 }
 
 @Riverpod(keepAlive: true)

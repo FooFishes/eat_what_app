@@ -1,4 +1,5 @@
 import 'package:eat/core/platform/app_info.dart';
+import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
@@ -214,7 +215,10 @@ class _Profile extends StatelessWidget {
   }
 }
 
-/// "检查更新": 重新请求远程配置后对比版本线, 有新版本时弹 "有新版本" 对话框, 否则提示已是最新, 请求失败时提示重试.
+/// "检查更新": 同时重新请求远程配置和检查热更新补丁.
+/// - 商店有新版本时弹 "有新版本" 对话框.
+/// - 否则有新补丁时下载好, 提示重新打开 App 后生效.
+/// - 都没有时提示已是最新; 任一请求失败时提示重试.
 /// 请求期间右边写 "正在检查", 不重复请求. 本机版本已低于最新版本时右边写 "有新版本".
 class _CheckUpdateRow extends ConsumerStatefulWidget {
   const new();
@@ -229,19 +233,24 @@ class _CheckUpdateRowState extends ConsumerState<_CheckUpdateRow> {
   Future<void> _check() async {
     if (_checking) return;
     setState(() => _checking = true);
-    final ok = await ref.read(remoteConfigProvider.notifier).refresh();
+    final (ok, patch) = await (
+      ref.read(remoteConfigProvider.notifier).refresh(),
+      ref.read(hotUpdateProvider).check(),
+    ).wait;
     if (!mounted) return;
     setState(() => _checking = false);
-    if (!ok) {
-      showToast(context, '检查更新失败，请重试');
+    final line = ref.read(currentVersionLineProvider);
+    if (ok &&
+        line != null &&
+        ref.read(appUpdateProvider) != UpdateDecision.none) {
+      await showUpdatePrompt(context, line);
       return;
     }
-    final line = ref.read(currentVersionLineProvider);
-    if (line != null && ref.read(appUpdateProvider) != UpdateDecision.none) {
-      await showUpdatePrompt(context, line);
-    } else {
-      showToast(context, '已是最新版本');
-    }
+    showToast(context, switch ((ok, patch)) {
+      (_, PatchCheck.ready) => '更新已下载，重新打开 App 后生效',
+      (false, _) || (_, PatchCheck.failed) => '检查更新失败，请重试',
+      _ => '已是最新版本',
+    });
   }
 
   @override
