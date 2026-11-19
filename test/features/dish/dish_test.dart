@@ -43,12 +43,12 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('招牌 · 主食'), findsOneWidget);
+    expect(find.text('招牌  主食'), findsOneWidget);
     expect(find.text('鲜虾蟹\n籽云吞'), findsOneWidget);
     expect(find.text('¥ 18'), findsOneWidget);
     expect(find.text('袁记云饺'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
-    expect(find.text('辣 · 麻'), findsOneWidget);
+    expect(find.text('辣、麻'), findsOneWidget);
     expect(find.bySemanticsLabel('评分，还没人评分，点了打分'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('小林'),
@@ -195,12 +195,12 @@ void main() {
     );
 
     expect(find.text('4.3'), findsOneWidget);
-    expect(find.text('评分 · 12 人'), findsOneWidget);
-    await tester.tap(find.text('评分 · 12 人'));
+    expect(find.text('12 人评分'), findsOneWidget);
+    await tester.tap(find.text('12 人评分'));
     await tester.pumpAndSettle();
     expect(find.text('给这道菜打分'), findsOneWidget);
     expect(find.text('点选即提交，之后可修改'), findsOneWidget);
-    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
+    expect(find.text('4.3 分，12 人评过'), findsOneWidget);
     await expectAccessible(tester);
 
     await tester.tap(find.bySemanticsLabel('4 分'));
@@ -208,14 +208,14 @@ void main() {
     expect(env.adapter.sent('PUT /foods/1/rating').single.body, {'score': 4});
     expect(find.text('已选「4 分」，再点一次取消'), findsOneWidget);
     expect(find.text('好吃'), findsOneWidget, reason: '星星下面写这个分数的说法');
-    expect(find.text('4.3 分 · 13 人评过'), findsOneWidget);
-    expect(find.text('评分 · 13 人'), findsOneWidget, reason: '卡片下面的数字条跟着更新');
+    expect(find.text('4.3 分，13 人评过'), findsOneWidget);
+    expect(find.text('13 人评分'), findsOneWidget, reason: '卡片下面的数字条跟着更新');
 
     await tester.tap(find.bySemanticsLabel('4 分'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /foods/1/rating'), hasLength(1));
     expect(find.text('点选即提交，之后可修改'), findsOneWidget);
-    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
+    expect(find.text('4.3 分，12 人评过'), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('关闭'));
     await tester.pumpAndSettle();
@@ -223,7 +223,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('评分不满 3 人不写平均分；打过分时写自己的分，面板里选中原来的分数', (tester) async {
+  testWidgets('评分不满 3 人也写平均分；打过分时写自己的分，评分卡里选中原来的分数', (tester) async {
     env.adapter.on('GET /foods/detail/1', [
       FakeAdapter.ok({
         ...foodJson(),
@@ -238,9 +238,8 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('5.0'), findsNothing);
-    expect(find.bySemanticsLabel('评分，2 人评过，你打了 5 分'), findsOneWidget);
-    await tester.tap(find.text('评分 · 2 人'));
+    expect(find.text('5.0'), findsOneWidget);
+    await tester.tap(find.text('2 人评分'));
     await tester.pumpAndSettle();
     expect(find.text('已选「5 分」，再点一次取消'), findsOneWidget);
     await unmountApp(tester, container);
@@ -269,10 +268,10 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('辣 · 麻'), findsOneWidget);
+    expect(find.text('辣、麻'), findsOneWidget);
     expect(find.text('加标签'), findsNothing);
     expect(find.text('待接入'), findsNothing);
-    await tester.tap(find.text('辣 · 麻'), warnIfMissed: false);
+    await tester.tap(find.text('辣、麻'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.text('该功能即将上线'), findsNothing);
     expect(

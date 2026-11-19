@@ -562,7 +562,7 @@ void main() {
     await tester.tap(find.text('确定'));
     await tester.pumpAndSettle();
 
-    expect(find.text('在 软件园 吃 ${_mealLabel()} · 外卖'), findsOneWidget);
+    expect(find.text('在 软件园 吃 ${_mealLabel()}（外卖）'), findsOneWidget);
     final scenes = env.adapter
         .sent('GET /recommend')
         .map((r) => r.query['scene']);

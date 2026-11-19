@@ -516,7 +516,7 @@ class _StageContent extends ConsumerWidget {
         [for (final c in shop.categories) c.label].join('、'),
       if (shop.tastes.isNotEmpty)
         [for (final t in shop.tastes) t.label].join('、'),
-    ].join(' · ');
+    ].join('  ');
     final address = shop.address;
     return LayoutBuilder(
       builder: (context, constraints) {

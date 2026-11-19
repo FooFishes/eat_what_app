@@ -120,7 +120,7 @@ void main() {
     );
 
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.text('粉面 · 辣、酸'), findsOneWidget);
+    expect(find.text('粉面  辣、酸'), findsOneWidget);
     expect(find.text('万达金街 1 层'), findsOneWidget);
     expect(find.text('万达金街'), findsOneWidget, reason: '商圈写在距离下面');
     expect(find.bySemanticsLabel('13 道菜'), findsOneWidget);
@@ -193,7 +193,7 @@ void main() {
     });
   }
 
-  testWidgets('菜单方块上写平均分，评分不满 3 人的不写', (tester) async {
+  testWidgets('菜单方块上写平均分，不满 3 人也写', (tester) async {
     final env = shopEnv();
     env.adapter.on('GET /foods/list', [
       FakeAdapter.ok(
@@ -219,7 +219,8 @@ void main() {
     await scrollTo(tester, '全部菜品');
     await scrollTo(tester, '4.6 分');
     expect(find.text('4.6 分'), findsOneWidget);
-    expect(find.text('5.0 分'), findsNothing);
+    await scrollTo(tester, '5.0 分');
+    expect(find.text('5.0 分'), findsOneWidget);
     await unmountApp(tester, container);
   });
 

@@ -56,7 +56,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 封面, 招牌标记和分类, 菜名, 价格.
 /// - 顶栏右边: 编辑, 收藏, 分享.
-/// - 抽屉: 依次为数字条 (评分, 赞, 口味), 店, 上传者卡片, "吃过的人说", 页底的 "修改记录".
+/// - 抽屉: 依次为数字条 (口味, 赞, 评分), 店, 上传者卡片, "吃过的人说", 页底的 "修改记录".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -309,10 +309,7 @@ class _StageContent extends ConsumerWidget {
     final lines = DishRules.stageLines(dish.name);
     final nameSize = layout.stageNameSize(lines);
     final price = DishRules.priceText(dish.price);
-    final kicker = [
-      if (dish.signature) '招牌',
-      ?dish.category?.label,
-    ].join(' · ');
+    final kicker = [if (dish.signature) '招牌', ?dish.category?.label].join('  ');
     return LayoutBuilder(
       builder: (context, constraints) {
         // 手机上舞台只有半屏: 盘子按舞台高度定大小, 圆心在顶栏和抽屉之间, 右边探出屏幕一点.
@@ -426,9 +423,9 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
   await Navigator.of(context).push(PhotoViewer.route(photos: photos));
 }
 
-/// 抽屉顶部的数字条: 评分, 赞, 口味.
+/// 抽屉顶部的数字条: 口味, 赞, 评分.
 ///
-/// - 评分: 平均分满 [DishRules.ratingMinCount] 人才写, 不足时写 "—"; 上面写人数, 下面一排小星是自己打的分, 没打过是空星.
+/// - 评分: 有人评过就写平均分, 没人评过写 "—"; 上面写人数, 下面一排小星是自己打的分, 没打过是空星.
 ///   点了从这一格展开评分卡.
 /// - 赞: 心形加赞数, 点了赞或取消, 赞上时心形弹一下, 数字往上翻一格.
 /// - 口味: 这道菜的口味, 最多 3 个, 只读. 口味投票没有接口, 不放入口.
@@ -463,7 +460,7 @@ class _StatsState extends ConsumerState<_Stats> {
     late final StatCell ratingCell;
     ratingCell = StatCell(
       key: _ratingCell,
-      label: rating.count == 0 ? '评分' : '评分 · ${rating.count} 人',
+      label: rating.count == 0 ? '评分' : '${rating.count} 人评分',
       value: DishRules.scoreText(rating) == null
           ? '—'
           : rating.score!.toStringAsFixed(1),
@@ -485,7 +482,11 @@ class _StatsState extends ConsumerState<_Stats> {
       ),
     );
     return StatStrip([
-      ratingCell,
+      StatCell(
+        label: '口味',
+        value: !widget.loaded || tastes.isEmpty ? '—' : tastes.join('、'),
+        note: widget.loaded && tastes.isEmpty ? '还没标口味' : null,
+      ),
       StatCell(
         label: '赞',
         value: '${interaction.likes}',
@@ -501,11 +502,7 @@ class _StatsState extends ConsumerState<_Stats> {
         toggled: interaction.liked,
         onTap: _toggleLike,
       ),
-      StatCell(
-        label: '口味',
-        value: !widget.loaded || tastes.isEmpty ? '—' : tastes.join(' · '),
-        note: widget.loaded && tastes.isEmpty ? '还没标口味' : null,
-      ),
+      ratingCell,
     ]);
   }
 

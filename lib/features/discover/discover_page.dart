@@ -236,7 +236,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 
 /// 舞台顶栏.
 ///
-/// - 左侧: 当前地点和饭点, 点外卖时后接 "· 外卖". 点击打开选择面板.
+/// - 左侧: 当前地点和饭点, 点外卖时后接 "（外卖）". 点击打开选择面板.
 /// - 右侧: 搜索和消息. 舞台上是各自带文字的胶囊, 吸顶后收成纯图标. 有未读消息时铃铛上显示圆点.
 class _TopBar extends ConsumerWidget {
   const new();
@@ -281,7 +281,7 @@ class _TopBar extends ConsumerWidget {
                               TextSpan(text: where),
                               TextSpan(text: ' 吃 ', style: strong),
                               TextSpan(text: what),
-                              if (delivery) const TextSpan(text: ' · 外卖'),
+                              if (delivery) const TextSpan(text: '（外卖）'),
                             ],
                           ),
                           maxLines: 1,

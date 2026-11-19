@@ -80,7 +80,7 @@ class MyFeedbackPage extends ConsumerWidget {
                   if (item.kind != CaseKind.feedback && note.isNotEmpty)
                     Text(note, maxLines: 1, overflow: TextOverflow.ellipsis),
                   Text(
-                    '${FeedbackCaseRules.statusLabel(item)} · '
+                    '${FeedbackCaseRules.statusLabel(item)}  '
                     '${TimeFormat.date(item.createdAt, now)}',
                     style: eat.text.meta.copyWith(
                       color: eat.colors.inkMuted,

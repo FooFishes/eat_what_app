@@ -63,19 +63,16 @@ abstract final class DishRules {
   /// 1 到 5 分各自的说法, 打分时写在星星下面.
   static const scoreWords = ['不好吃', '一般', '还行', '好吃', '必吃'];
 
-  /// 平均分的显示门槛: 评分满该人数才显示平均分, 与店铺推荐率的门槛相同, 免得一两个人的分数代表一道菜.
-  static const ratingMinCount = 3;
-
-  /// 平均分的文字, 如 "4.3 分". 人数不足 [ratingMinCount] 或没有平均分时返回 null.
+  /// 平均分的文字, 如 "4.3 分". 有人评过就写, 没人评过 (没有平均分) 时返回 null.
   static String? scoreText(DishRating rating) {
     final score = rating.score;
-    if (score == null || rating.count < ratingMinCount) return null;
+    if (score == null || rating.count == 0) return null;
     return '${score.toStringAsFixed(1)} 分';
   }
 
-  /// 菜品评分统计的说明, 如 "4.3 分 · 12 人评过"; 人数不足门槛时只写人数, 没人评过时写 "还没人评分".
+  /// 菜品评分统计的说明, 如 "4.3 分，12 人评过"; 没人评过时写 "还没人评分".
   static String ratingSummary(DishRating rating) => switch (scoreText(rating)) {
-    final score? => '$score · ${rating.count} 人评过',
+    final score? => '$score，${rating.count} 人评过',
     null when rating.count == 0 => '还没人评分',
     null => '${rating.count} 人评过',
   };
