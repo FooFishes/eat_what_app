@@ -8,6 +8,8 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -46,8 +48,14 @@ class MePage extends ConsumerStatefulWidget {
   ConsumerState<MePage> createState() => _MePageState();
 }
 
+/// 吸顶后顶栏里头像的边长.
+const _barAvatar = 28.0;
+
 class _MePageState extends ConsumerState<MePage> {
   int _tab = 0;
+
+  /// 抽屉里的分栏, 滚到顶栏下方时吸顶.
+  final _tabsKey = GlobalKey();
 
   /// 收藏分栏当前展示店铺还是菜品, 默认为 false (展示菜品), 由顶部 "菜" 和 "店" 标签切换.
   bool _favoriteShops = false;
@@ -92,13 +100,44 @@ class _MePageState extends ConsumerState<MePage> {
       uploads.value?.pages.items ?? const <Dish>[],
       count: 1,
     ).firstOrNull;
+    final tabs = EatTabs(
+      tabs: [
+        EatTabItem(
+          '上传',
+          icon: EatIcons.upload,
+          count: uploads.value?.pages.total,
+        ),
+        const EatTabItem('收藏', icon: EatIcons.bookmark),
+        const EatTabItem('赞过', icon: EatIcons.heart),
+        const EatTabItem('评论', icon: EatIcons.comment),
+      ],
+      selected: _tab,
+      onSelected: (tab) => setState(() => _tab = tab),
+      padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    );
     return StageScaffold(
       stage: top?.stage ?? StageColor.mango,
       onRefresh: () => _refresh(user?.id),
+      // 和首页一样: 舞台固定在底层, 上滑时抽屉盖上来; 分栏滚到顶栏下方后吸顶.
+      fixedStage: true,
+      pinnedBottom: tabs,
+      pinnedAnchor: _tabsKey,
       topBar: Row(
         children: [
           const SizedBox(width: 12),
-          Expanded(child: StageBarTitle(user?.nickname ?? '我的')),
+          Expanded(
+            child: StageBarTitle(
+              user?.nickname ?? '我的',
+              leading: user == null
+                  ? null
+                  : EatAvatar(
+                      name: user.nickname,
+                      color: avatarColorOf(user.id),
+                      image: networkImage(user.avatarUrl, width: _barAvatar),
+                      size: _barAvatar,
+                    ),
+            ),
+          ),
           StageBarActions(
             children: [
               StageBarAction(
@@ -144,21 +183,7 @@ class _MePageState extends ConsumerState<MePage> {
         const SliverToBoxAdapter(child: _Shortcuts()),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
         SliverToBoxAdapter(
-          child: EatTabs(
-            tabs: [
-              EatTabItem(
-                '上传',
-                icon: EatIcons.upload,
-                count: uploads.value?.pages.total,
-              ),
-              const EatTabItem('收藏', icon: EatIcons.bookmark),
-              const EatTabItem('赞过', icon: EatIcons.heart),
-              const EatTabItem('评论', icon: EatIcons.comment),
-            ],
-            selected: _tab,
-            onSelected: (tab) => setState(() => _tab = tab),
-            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-          ),
+          child: KeyedSubtree(key: _tabsKey, child: tabs),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         SliverPadding(

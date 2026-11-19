@@ -1,3 +1,5 @@
+import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -74,6 +76,46 @@ void main() {
 
     expect(find.bySemanticsLabel(RegExp('^等级')), findsNothing);
     expect(find.textContaining('Lv.'), findsNothing);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('往上翻到分栏时分栏吸顶，顶栏左边出现头像和昵称', (tester) async {
+    final env = TestEnv();
+    env.adapter
+      ..on('GET /user/userInfo', [
+        FakeAdapter.ok({'id': 42, 'displayName': '天凉被破王'}),
+      ])
+      ..on('GET /foods/my', [
+        FakeAdapter.ok(
+          pageJson([for (var i = 1; i <= 12; i++) foodJson(id: i)]),
+        ),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.me,
+    );
+
+    expect(find.byType(EatTabs), findsOneWidget);
+    expect(find.byType(EatAvatar), findsOneWidget, reason: '只有舞台上的头像');
+    await tester.drag(find.byType(EatTabs), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    // ignore: avoid_print
+    // 抽屉里的分栏已经滚出屏幕, 屏幕上的是接在顶栏下面的吸顶副本.
+    expect(find.byType(EatTabs), findsOneWidget);
+    final barTabs = tester.getRect(find.byType(EatTabs));
+    expect(barTabs.top, lessThan(150));
+    final avatars = find
+        .byType(EatAvatar)
+        .evaluate()
+        .map((e) => tester.getRect(find.byWidget(e.widget)));
+    expect(
+      avatars.where((r) => r.bottom <= barTabs.top && r.left < 40),
+      hasLength(1),
+      reason: '顶栏左边的头像',
+    );
+    expect(find.text(verifiedUser.nickname), findsWidgets);
     await unmountApp(tester, container);
   });
 

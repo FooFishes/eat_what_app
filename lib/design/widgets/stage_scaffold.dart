@@ -40,6 +40,7 @@ class StageScaffold extends StatefulWidget {
     this.sheetSlivers = const [],
     this.topBar,
     this.pinnedBottom,
+    this.pinnedAnchor,
     this.onRefresh,
     this.fixedStage = false,
     this.stageHeight,
@@ -55,6 +56,7 @@ class StageScaffold extends StatefulWidget {
   }) : stage = null,
        stageContent = null,
        pinnedBottom = null,
+       pinnedAnchor = null,
        fixedStage = false,
        stageHeight = null;
 
@@ -70,6 +72,10 @@ class StageScaffold extends StatefulWidget {
   ///
   /// 传入时须与 [sheetSlivers] 的第一项保持完全一致, 其显现时机也依据该首项位置计算.
   final Widget? pinnedBottom;
+
+  /// 抽屉里和 [pinnedBottom] 对应的那一行的 key. 不传时那一行是抽屉第一行;
+  /// 前面还有别的内容 (如 "我的" 页分栏上面的提示和入口) 时传入, 按这一行的实际位置决定何时吸顶.
+  final GlobalKey? pinnedAnchor;
 
   /// 下拉刷新回调, 未传入时禁用下拉刷新.
   final Future<void> Function()? onRefresh;
@@ -119,6 +125,9 @@ class _StageScaffoldState extends State<StageScaffold>
   bool _row = false;
   double _sheetTop = double.infinity;
 
+  /// [StageScaffold.pinnedAnchor] 那一行离抽屉内容顶边 (把手下方) 的距离, 没有时为 0.
+  double _anchorDepth = 0;
+
   /// 顶栏的实时交互状态.
   ///
   /// - `lift`: 0 为透明无底色, 1 为完全铺满舞台色.
@@ -158,7 +167,8 @@ class _StageScaffoldState extends State<StageScaffold>
     final sheetTop = stageHeight - EatSize.sheetOverlap - offset;
     // 舞台固定时没有内容从顶栏下方穿过, 不需要垫舞台色.
     _lift = widget.fixedStage ? 0.0 : (offset / _liftSpan).clamp(0.0, 1.0);
-    _row = sheetTop + _handleExtent <= _barBottom;
+    _measureAnchor();
+    _row = sheetTop + _handleExtent + _anchorDepth <= _barBottom;
     _sheetTop = sheetTop;
     final gap = sheetTop - _barBottom;
     final pinned = _pinned ? gap <= _pinLead + _pinHysteresis : gap <= _pinLead;
@@ -179,6 +189,24 @@ class _StageScaffoldState extends State<StageScaffold>
       }
     }
     _publish();
+  }
+
+  /// 量出 [StageScaffold.pinnedAnchor] 那一行在抽屉里的深度. 前面的内容 (如提示) 会变高变矮, 所以每次滚动和重建后都量.
+  ///
+  /// 用那一行滚到视口顶边时的滚动位置算, 和当前滚到哪里无关: 滚动监听里拿到的屏幕位置还是上一帧的, 一次滚得远时会差很多.
+  void _measureAnchor() {
+    final stageHeight = _stageHeight;
+    final anchor = widget.pinnedAnchor?.currentContext?.findRenderObject();
+    if (stageHeight == null || anchor is! RenderBox || !anchor.attached) {
+      return;
+    }
+    final viewport = RenderAbstractViewport.maybeOf(anchor);
+    if (viewport == null) return;
+    final reveal = viewport.getOffsetToReveal(anchor, 0).offset;
+    _anchorDepth = math.max(
+      0,
+      reveal - (stageHeight - EatSize.sheetOverlap) - _handleExtent,
+    );
   }
 
   void _publish() => _bar.value = (
@@ -293,9 +321,22 @@ class _StageScaffoldState extends State<StageScaffold>
       final barTop = safe.top + 4;
       _stageHeight = height;
       _barBottom = barTop + _barHeight;
-      // 抽屉第一行刚好滚到顶栏下方时的滚动位置.
+      // 吸顶的那一行 (默认抽屉第一行) 刚好滚到顶栏下方时的滚动位置.
       final rowPinOffset =
-          height - EatSize.sheetOverlap + _handleExtent - _barBottom;
+          height -
+          EatSize.sheetOverlap +
+          _handleExtent +
+          _anchorDepth -
+          _barBottom;
+      if (widget.pinnedAnchor != null) {
+        // 第一次布局后才量得到那一行; 量到的深度变了就按新位置重建吸附点.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final before = _anchorDepth;
+          _measureAnchor();
+          if ((_anchorDepth - before).abs() > 0.5) setState(() {});
+        });
+      }
       body = Stack(
         children: [
           // 仅在 iOS 等平台触发顶部弹性回弹时露出, 避免舞台上方出现白色空隙.
@@ -548,25 +589,38 @@ class _StageBarPin extends InheritedWidget {
 /// - 顶栏过渡为白底样式时随进度淡入, 在舞台滚出屏幕后标明当前所在页面.
 /// - 宽屏布局下舞台固定不滚动, 该标题始终保持隐藏.
 class StageBarTitle extends StatelessWidget {
-  const new(this.text, {super.key});
+  const new(this.text, {super.key, this.leading});
 
   final String text;
+
+  /// 标题前面的小图, 如 "我的" 页的头像. 和标题一起淡入.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
     final pin = StageScaffold.barPinOf(context);
     if (pin == 0) return const SizedBox();
+    final title = Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textScaler: TextScaler.noScaling,
+      style: context.eat.text.subhead,
+    );
     return IgnorePointer(
       child: ExcludeSemantics(
         child: Opacity(
           opacity: pin,
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textScaler: TextScaler.noScaling,
-            style: context.eat.text.subhead,
-          ),
+          child: switch (leading) {
+            final leading? => Row(
+              spacing: EatSpace.s8,
+              children: [
+                leading,
+                Flexible(child: title),
+              ],
+            ),
+            null => title,
+          },
         ),
       ),
     );
