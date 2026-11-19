@@ -108,7 +108,7 @@ void main() {
       );
     });
 
-    test('改资料、看足迹和账号设置：没认证也能做', () {
+    test('改资料、看历史和账号设置：没认证也能做', () {
       const accountOnly = [
         Capability.editProfile,
         Capability.deleteComment,

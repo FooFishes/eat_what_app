@@ -94,7 +94,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
             const SizedBox(height: EatSpace.s20),
             section(
               '会删除',
-              '资料、认证信息、收藏、我的标签、足迹、关注关系、屏蔽列表。'
+              '资料、认证信息、收藏、我的标签、历史、关注关系、屏蔽列表。'
                   '你点过的赞、口味标签与店铺评价也会一并清除。',
             ),
             section('会保留', '你上传的菜品与新建的店铺将作为菜单的一部分保留，上传者显示为「已注销用户」。'),

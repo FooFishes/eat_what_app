@@ -130,7 +130,7 @@ enum Capability {
     editShop => '编辑店铺',
     deleteComment => '删除评论',
     editProfile => '编辑资料',
-    viewHistory => '查看足迹',
+    viewHistory => '查看历史',
     viewFollows => '查看粉丝和关注',
     viewGrowth => '查看等级',
     unfollow => '取消关注',

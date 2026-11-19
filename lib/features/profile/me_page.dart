@@ -1,5 +1,4 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/theme/eat_motion.dart';
@@ -12,7 +11,6 @@ import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
-import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/stage_bar_action.dart';
@@ -38,8 +36,10 @@ import 'package:go_router/go_router.dart';
 /// "我的" 页面.
 ///
 /// - 舞台: 我获赞最多的菜, 头像, 昵称和等级, 签名和四项统计.
-/// - 抽屉: "我的标签" 和 "足迹" 两个入口, 以及上传, 收藏, 赞过, 评论四个分栏.
-/// - 右上角: 编辑资料和设置.
+/// - 抽屉: 上传, 收藏, 赞过, 评论四个分栏.
+/// - 右上角: 历史 (浏览历史), 编辑资料和设置.
+///
+/// 后端 v2 不提供我的标签接口, 不放 "我的标签" 入口.
 ///
 /// 游客看到的是 [_GuestMe].
 class MePage extends ConsumerStatefulWidget {
@@ -142,6 +142,17 @@ class _MePageState extends ConsumerState<MePage> {
           StageBarActions(
             children: [
               StageBarAction(
+                icon: EatIcons.history,
+                text: '历史',
+                label: '浏览历史',
+                onTap: () async {
+                  if (await guardAction(context, ref, Capability.viewHistory) &&
+                      context.mounted) {
+                    await context.push(Paths.history);
+                  }
+                },
+              ),
+              StageBarAction(
                 icon: EatIcons.edit,
                 text: '编辑',
                 label: '编辑资料',
@@ -186,8 +197,6 @@ class _MePageState extends ConsumerState<MePage> {
       ),
       sheetSlivers: [
         const SliverToBoxAdapter(child: _StatusNotice()),
-        const SliverToBoxAdapter(child: _Shortcuts()),
-        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
         SliverToBoxAdapter(
           child: KeyedSubtree(key: _tabsKey, child: tabs),
         ),
@@ -468,83 +477,5 @@ class _StatusNotice extends ConsumerWidget {
       ),
       _ => const SizedBox(),
     };
-  }
-}
-
-// TODO: 后端 v2 不提供我的标签接口, 不放 "我的标签" 入口. 接口上线后和 "足迹" 并排放回来.
-/// "足迹" 入口.
-class _Shortcuts extends ConsumerWidget {
-  const new();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-    child: _Shortcut(
-      icon: EatIcons.history,
-      title: '足迹',
-      subtitle: '最近看过的菜和店',
-      onTap: () async {
-        if (await guardAction(context, ref, Capability.viewHistory) &&
-            context.mounted) {
-          await context.push(Paths.history);
-        }
-      },
-    ),
-  );
-}
-
-class _Shortcut extends StatelessWidget {
-  const new({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final EatIcons icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    final c = eat.colors;
-    return EatTappable(
-      onTap: onTap,
-      focusShape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(EatRadius.thumb),
-      ),
-      builder: (context, _) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: c.mist,
-          borderRadius: const BorderRadius.all(EatRadius.thumb),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(EatSpace.s14),
-          child: Row(
-            spacing: EatSpace.s10,
-            children: [
-              EatIcon(icon, size: 22, color: c.ink),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 2,
-                  children: [
-                    Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: eat.text.caption.copyWith(color: c.inkMuted),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

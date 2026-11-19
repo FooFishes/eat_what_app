@@ -207,7 +207,7 @@ void main() {
 
       expect(find.text('登录后看你的收藏、评论和发布'), findsOneWidget);
       expect(find.text('上传'), findsNothing);
-      expect(find.text('足迹'), findsNothing);
+      expect(find.text('历史'), findsNothing);
       expect(find.bySemanticsLabel('编辑资料'), findsNothing);
       await expectAccessible(tester);
       _expectNoSignedInRequests(env.adapter);

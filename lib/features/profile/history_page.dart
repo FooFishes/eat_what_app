@@ -21,7 +21,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 浏览足迹页, 按浏览时间倒序展示最近看过的菜品和店铺, 仅自己可见.
+/// 浏览历史页 ("历史"), 按浏览时间倒序展示最近看过的菜品和店铺, 仅自己可见.
 ///
 /// 点击右上角 "清空" 可清除当前分栏的记录.
 class HistoryPage extends ConsumerStatefulWidget {
@@ -41,7 +41,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     final value = ref.watch(provider);
     final empty = value.value?.pages.items.isEmpty ?? true;
     return PlainScaffold(
-      title: '足迹',
+      title: '历史',
       titleNote: '仅自己可见',
       onRefresh: () => pullToRefresh(
         context,

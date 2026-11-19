@@ -16,7 +16,7 @@ void main() {
 
   setUp(() => env = TestEnv());
 
-  testWidgets('「我的」上有编辑资料和足迹的入口，没有我的标签', (tester) async {
+  testWidgets('「我的」右上角有历史和编辑资料，没有我的标签', (tester) async {
     env.adapter.on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
     await pumpApp(
       tester,
@@ -28,7 +28,7 @@ void main() {
     expect(find.text('我的标签'), findsNothing);
     expect(env.adapter.sent('GET /foods/tags/my'), isEmpty);
 
-    await tester.tap(find.text('足迹'));
+    await tester.tap(find.text('历史'));
     await tester.pumpAndSettle();
     expect(find.byType(HistoryPage), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('返回'));
@@ -185,7 +185,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('足迹：菜和店分栏，菜带赞数，店带门头照，清空当前分栏', (tester) async {
+  testWidgets('历史：菜和店分栏，菜带赞数，店带门头照，清空当前分栏', (tester) async {
     final viewed = DateTime.now()
         .subtract(const Duration(minutes: 12))
         .millisecondsSinceEpoch;
