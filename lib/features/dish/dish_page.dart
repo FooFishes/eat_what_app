@@ -54,9 +54,9 @@ import 'package:go_router/go_router.dart';
 
 /// 菜品详情页.
 ///
-/// - 舞台: 封面, 招牌标记和分类, 菜名, 价格.
+/// - 舞台: 封面, 招牌和分类的小胶囊, 菜名, 价格.
 /// - 顶栏右边: 编辑, 收藏, 分享.
-/// - 抽屉: 依次为数字条 (口味, 赞, 评分), 店, 上传者卡片, "吃过的人说", 页底的 "修改记录".
+/// - 抽屉: 依次为数字条 (评分, 赞, 口味), 上传者卡片, 店, "吃过的人说", 页底的 "修改记录".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -125,10 +125,10 @@ class DishPage extends ConsumerWidget {
                   onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
                 ),
               ],
-              const SizedBox(height: EatSpace.s16),
-              _ShopRow(dish: dish),
-              const SizedBox(height: EatSpace.s16),
+              const SizedBox(height: EatSpace.s10),
               _Uploader(dish: dish),
+              const SizedBox(height: EatSpace.s10),
+              _ShopRow(dish: dish),
               const SizedBox(height: _groupGap),
               _Comments(dishId: dishId, focus: focusComment),
               const SizedBox(height: EatSpace.s16),
@@ -293,7 +293,7 @@ Future<void> _toggleFavorite(
 /// 菜品详情的舞台内容.
 ///
 /// - 右侧: 封面盘子, 点击查看大图.
-/// - 左下: 招牌标记和分类, 菜名, 价格.
+/// - 左下: 招牌和分类的小胶囊, 菜名, 价格.
 class _StageContent extends ConsumerWidget {
   const new({required this.dish});
 
@@ -309,7 +309,7 @@ class _StageContent extends ConsumerWidget {
     final lines = DishRules.stageLines(dish.name);
     final nameSize = layout.stageNameSize(lines);
     final price = DishRules.priceText(dish.price);
-    final kicker = [if (dish.signature) '招牌', ?dish.category?.label].join('  ');
+    final kicker = [if (dish.signature) '招牌', ?dish.category?.label];
     return LayoutBuilder(
       builder: (context, constraints) {
         // 手机上舞台只有半屏: 盘子按舞台高度定大小, 圆心在顶栏和抽屉之间, 右边探出屏幕一点.
@@ -352,13 +352,32 @@ class _StageContent extends ConsumerWidget {
                     children: [
                       if (kicker.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            kicker,
-                            style: eat.text.meta.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: palette.secondaryForeground,
-                            ),
+                          padding: const EdgeInsets.only(bottom: EatSpace.s8),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              for (final label in kicker)
+                                DecoratedBox(
+                                  decoration: ShapeDecoration(
+                                    color: palette.ghost,
+                                    shape: const StadiumBorder(),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 3,
+                                    ),
+                                    child: Text(
+                                      label,
+                                      style: eat.text.meta.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: palette.foreground,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       Semantics(
@@ -423,7 +442,7 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
   await Navigator.of(context).push(PhotoViewer.route(photos: photos));
 }
 
-/// 抽屉顶部的数字条: 口味, 赞, 评分.
+/// 抽屉顶部的数字条: 评分, 赞, 口味.
 ///
 /// - 评分: 有人评过就写平均分, 没人评过写 "—"; 上面写人数, 下面一排小星是自己打的分, 没打过是空星.
 ///   点了从这一格展开评分卡.
@@ -482,11 +501,7 @@ class _StatsState extends ConsumerState<_Stats> {
       ),
     );
     return StatStrip([
-      StatCell(
-        label: '口味',
-        value: !widget.loaded || tastes.isEmpty ? '—' : tastes.join('、'),
-        note: widget.loaded && tastes.isEmpty ? '还没标口味' : null,
-      ),
+      ratingCell,
       StatCell(
         label: '赞',
         value: '${interaction.likes}',
@@ -502,7 +517,11 @@ class _StatsState extends ConsumerState<_Stats> {
         toggled: interaction.liked,
         onTap: _toggleLike,
       ),
-      ratingCell,
+      StatCell(
+        label: '口味',
+        value: !widget.loaded || tastes.isEmpty ? '—' : tastes.join('、'),
+        note: widget.loaded && tastes.isEmpty ? '还没标口味' : null,
+      ),
     ]);
   }
 
@@ -572,7 +591,7 @@ class _RollingCountState extends State<_RollingCount> {
   }
 }
 
-/// 这道菜在哪家店: 门头照, 店名, 距离, 商圈和地址, 点了进餐厅详情. 导航只放在餐厅详情里.
+/// 这道菜在哪家店, 放在上传者卡片下面, 和上传者卡片一样带 `mist` 底: 小圆角的门头照, 店名, 距离, 商圈和地址, 点了进餐厅详情. 导航只放在餐厅详情里.
 class _ShopRow extends ConsumerWidget {
   const new({required this.dish});
 
@@ -586,24 +605,47 @@ class _ShopRow extends ConsumerWidget {
     final hub = ref.watch(hubNameProvider(shop?.hubId));
     final meta = [?distance, ?hub, ?shop?.address].join('  ');
     final photo = shop?.photo;
-    return EatListRow(
+    final row = EatListRow(
       leading: photo == null
           ? Container(
               width: EatSize.thumb,
               height: EatSize.thumb,
               decoration: BoxDecoration(
                 color: c.mist,
-                borderRadius: const BorderRadius.all(EatRadius.thumb),
+                borderRadius: const BorderRadius.all(EatRadius.photo),
               ),
               child: Center(
                 child: EatIcon(EatIcons.store, size: 24, color: c.ink),
               ),
             )
-          : ListThumb(image: networkImage(photo, width: EatSize.thumb)),
+          : ListThumb(
+              image: networkImage(photo, width: EatSize.thumb),
+              radius: EatRadius.photo,
+            ),
       title: Text(dish.shopName ?? '这家店'),
       lines: [if (meta.isNotEmpty) Text(meta)],
       trailing: EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
+    );
+    return EatTappable(
       onTap: () => context.push(Paths.shop(dish.shopId)),
+      focusShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(EatRadius.tile),
+      ),
+      builder: (context, _) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.mist,
+          borderRadius: const BorderRadius.all(EatRadius.tile),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            EatSpace.s10,
+            EatSpace.s10,
+            EatSpace.s14,
+            EatSpace.s10,
+          ),
+          child: row,
+        ),
+      ),
     );
   }
 }

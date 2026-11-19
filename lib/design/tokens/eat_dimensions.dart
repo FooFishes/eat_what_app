@@ -43,6 +43,9 @@ abstract final class EatRadius {
 
   /// 48–56px 缩略图的圆角.
   static const thumb = Radius.circular(16);
+
+  /// 要看得出是方图的小圆角缩略图, 如菜品页里店铺的门头照.
+  static const photo = Radius.circular(10);
 }
 
 /// 尺寸令牌.

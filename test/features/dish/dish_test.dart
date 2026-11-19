@@ -35,7 +35,7 @@ void main() {
     (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
   );
 
-  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是数字条（评分、赞、口味）、店、评论和上传者', (tester) async {
+  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是数字条（评分、赞、口味）、上传者、店和评论', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -43,7 +43,8 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('招牌  主食'), findsOneWidget);
+    expect(find.text('招牌'), findsOneWidget);
+    expect(find.text('主食'), findsOneWidget);
     expect(find.text('鲜虾蟹\n籽云吞'), findsOneWidget);
     expect(find.text('¥ 18'), findsOneWidget);
     expect(find.text('袁记云饺'), findsOneWidget);

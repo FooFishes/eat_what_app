@@ -159,17 +159,25 @@ class ListGroupTitle extends StatelessWidget {
 ///
 /// 尺寸不小于 [EatSize.thumbLg] 时使用 `radius-thumb-lg`, 其余使用 `radius-thumb`.
 class ListThumb extends StatelessWidget {
-  const new({super.key, required this.image, this.size = EatSize.thumb});
+  const new({
+    super.key,
+    required this.image,
+    this.size = EatSize.thumb,
+    this.radius,
+  });
 
   final ImageProvider? image;
 
   /// 缩略图边长. 消息页用 48, 选店页用 52, 足迹页用 56, 附近页用 64.
   final double size;
 
+  /// 圆角, 不传时按 [size] 取 `radius-thumb` 或 `radius-thumb-lg`.
+  final Radius? radius;
+
   @override
   Widget build(BuildContext context) => ClipRRect(
     borderRadius: BorderRadius.all(
-      size >= EatSize.thumbLg ? EatRadius.thumbLg : EatRadius.thumb,
+      radius ?? (size >= EatSize.thumbLg ? EatRadius.thumbLg : EatRadius.thumb),
     ),
     child: SizedBox.square(
       dimension: size,
