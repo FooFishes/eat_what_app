@@ -35,7 +35,6 @@ void main() {
       Paths.shopHistoryPattern: AnalyticsPage.restaurant,
       Paths.dishPattern: AnalyticsPage.food,
       Paths.commentsPattern: AnalyticsPage.food,
-      Paths.writeCommentPattern: AnalyticsPage.food,
       Paths.inbox: AnalyticsPage.message,
       Paths.me: AnalyticsPage.profile,
       Paths.history: AnalyticsPage.profile,

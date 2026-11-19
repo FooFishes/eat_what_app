@@ -138,31 +138,6 @@ abstract final class Paths {
   static const commentsPattern = '/dishes/:dishId/comments';
   static String comments(int dishId) => '/dishes/$dishId/comments';
 
-  /// 发表评论或回复页路径.
-  ///
-  /// - 回复时 [reply] 是所属评论的 id, [to] 是被回复的那条回复的 id, [name] 是被回复人的昵称.
-  ///   昵称放在地址中, 刷新页面后 "回复 小林" 仍能显示.
-  /// - [photo] 为 true 时打开页面后立即选择照片, 入口是全部评论底部的相机按钮.
-  static const writeCommentPattern = '/dishes/:dishId/comments/new';
-  static String writeComment(
-    int dishId, {
-    int? reply,
-    int? to,
-    String? name,
-    bool photo = false,
-  }) {
-    final query = {
-      'reply': ?reply?.toString(),
-      'to': ?to?.toString(),
-      if (reply != null) 'name': ?name,
-      if (photo) 'photo': '1',
-    };
-    return Uri(
-      path: '/dishes/$dishId/comments/new',
-      queryParameters: query.isEmpty ? null : query,
-    ).toString();
-  }
-
   /// 店铺详情页路径.
   static const shopPattern = '/shops/:shopId';
   static String shop(int id) => '/shops/$id';

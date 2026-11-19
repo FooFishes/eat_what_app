@@ -1,4 +1,3 @@
-import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/features/dish/dish_history_page.dart';
@@ -36,7 +35,7 @@ void main() {
     (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
   );
 
-  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是店卡、赞、评分、口味和上传者', (tester) async {
+  testWidgets('舞台上是招牌、分类、菜名和价格，抽屉里是数字条（评分、赞、口味）、店、评论和上传者', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -49,9 +48,8 @@ void main() {
     expect(find.text('¥ 18'), findsOneWidget);
     expect(find.text('袁记云饺'), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
-    expect(find.text('辣'), findsOneWidget);
-    expect(find.text('麻'), findsOneWidget);
-    expect(find.text('还没人评分'), findsOneWidget);
+    expect(find.text('辣 · 麻'), findsOneWidget);
+    expect(find.bySemanticsLabel('评分，还没人评分，点了打分'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('小林'),
       200,
@@ -196,34 +194,36 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('吃过的话，打个分'),
-      200,
-      scrollable: scrollable(),
-    );
-    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
-    await tester.tap(find.text('评分'));
+    expect(find.text('4.3'), findsOneWidget);
+    expect(find.text('评分 · 12 人'), findsOneWidget);
+    await tester.tap(find.text('评分 · 12 人'));
     await tester.pumpAndSettle();
     expect(find.text('给这道菜打分'), findsOneWidget);
     expect(find.text('点选即提交，之后可修改'), findsOneWidget);
+    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
     await expectAccessible(tester);
 
-    await tester.tap(find.text('4 分'));
+    await tester.tap(find.bySemanticsLabel('4 分'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /foods/1/rating').single.body, {'score': 4});
     expect(find.text('已选「4 分」，再点一次取消'), findsOneWidget);
-    expect(find.text('4.3 分 · 13 人评过'), findsWidgets);
-    expect(find.text('你打了 4 分'), findsOneWidget);
+    expect(find.text('好吃'), findsOneWidget, reason: '星星下面写这个分数的说法');
+    expect(find.text('4.3 分 · 13 人评过'), findsOneWidget);
+    expect(find.text('评分 · 13 人'), findsOneWidget, reason: '卡片下面的数字条跟着更新');
 
-    await tester.tap(find.text('4 分'));
+    await tester.tap(find.bySemanticsLabel('4 分'));
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /foods/1/rating'), hasLength(1));
     expect(find.text('点选即提交，之后可修改'), findsOneWidget);
-    expect(find.text('吃过的话，打个分'), findsOneWidget);
+    expect(find.text('4.3 分 · 12 人评过'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('关闭'));
+    await tester.pumpAndSettle();
+    expect(find.text('给这道菜打分'), findsNothing);
     await unmountApp(tester, container);
   });
 
-  testWidgets('评分不满 3 人只写人数；打过分时按钮是「改评分」，面板里选中原来的分数', (tester) async {
+  testWidgets('评分不满 3 人不写平均分；打过分时写自己的分，面板里选中原来的分数', (tester) async {
     env.adapter.on('GET /foods/detail/1', [
       FakeAdapter.ok({
         ...foodJson(),
@@ -238,13 +238,9 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('你打了 5 分'),
-      200,
-      scrollable: scrollable(),
-    );
-    expect(find.text('2 人评过'), findsOneWidget);
-    await tester.tap(find.text('改评分'));
+    expect(find.text('5.0'), findsNothing);
+    expect(find.bySemanticsLabel('评分，2 人评过，你打了 5 分'), findsOneWidget);
+    await tester.tap(find.text('评分 · 2 人'));
     await tester.pumpAndSettle();
     expect(find.text('已选「5 分」，再点一次取消'), findsOneWidget);
     await unmountApp(tester, container);
@@ -258,11 +254,6 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('还没人评分'),
-      200,
-      scrollable: scrollable(),
-    );
     await tester.tap(find.text('评分'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能评分'), findsOneWidget);
@@ -270,7 +261,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「大家怎么说」只读：口味词点不了，没有「加标签」和待接入', (tester) async {
+  testWidgets('口味只读：点了没有反应，没有「加标签」和待接入', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -278,10 +269,10 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('辣'), findsOneWidget);
+    expect(find.text('辣 · 麻'), findsOneWidget);
     expect(find.text('加标签'), findsNothing);
     expect(find.text('待接入'), findsNothing);
-    await tester.tap(find.text('辣'), warnIfMissed: false);
+    await tester.tap(find.text('辣 · 麻'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.text('该功能即将上线'), findsNothing);
     expect(
@@ -291,7 +282,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('没有口味时写「还没有标注口味」', (tester) async {
+  testWidgets('没有口味时写「还没标口味」', (tester) async {
     env.adapter.on('GET /foods/detail/1', [FakeAdapter.ok(foodJson())]);
     final (container, _) = await pumpApp(
       tester,
@@ -300,12 +291,12 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.textContaining('还没有标注口味'), findsOneWidget);
+    expect(find.text('还没标口味'), findsOneWidget);
     expect(find.text('主食'), findsOneWidget, reason: '不是招牌菜时只写分类');
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点「编辑」弹拦截；「修改记录」谁都能看', (tester) async {
+  testWidgets('没认证时点顶栏的「编辑」弹拦截；页底的「修改记录」谁都能看', (tester) async {
     env.adapter.on('GET /foods/1/history', [FakeAdapter.ok(pageJson([]))]);
     final (container, router) = await pumpApp(
       tester,
@@ -314,18 +305,18 @@ void main() {
       location: Paths.dish(1),
     );
 
-    await tester.scrollUntilVisible(
-      find.text('修改记录'),
-      200,
-      scrollable: scrollable(),
-    );
-    await tester.tap(find.text('编辑'));
+    await tester.tap(find.bySemanticsLabel('编辑'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能编辑'), findsOneWidget);
     expect(locationOf(router), Paths.dish(1));
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('修改记录'),
+      200,
+      scrollable: scrollable(),
+    );
     await tester.tap(find.text('修改记录'));
     await tester.pumpAndSettle();
     expect(find.byType(DishHistoryPage), findsOneWidget);
@@ -348,8 +339,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('分享和导航去店里成功后各记一次统计，打不开地图不记', (tester) async {
-    final maps = FakeExternalMaps(opens: false);
+  testWidgets('分享成功后记一次统计；菜品页不放「导航去店里」', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -357,25 +347,20 @@ void main() {
       location: Paths.dish(1),
       overrides: [
         recordAnalytics,
-        externalMapsProvider.overrideWithValue(maps),
         linkSharerProvider.overrideWithValue(FakeLinkSharer()),
       ],
     );
 
+    expect(find.text('导航去店里'), findsNothing, reason: '导航只在餐厅详情里');
     await tester.tap(find.bySemanticsLabel('分享'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('分享给朋友'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('导航去店里'));
-    await tester.pumpAndSettle();
-    expect(maps.opened, hasLength(1));
-    expect(find.text('无法打开地图，请重试'), findsOneWidget);
 
     final recorded = recordedIn(container);
     expect(recorded.propertiesOf<ShareEvent>(), [
       {'event': 'share', 'targetType': 'FOOD', 'targetId': 1},
     ]);
-    expect(recorded.propertiesOf<NavigateShopEvent>(), isEmpty);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

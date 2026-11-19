@@ -62,6 +62,18 @@ abstract final class EatMotion {
 
   static const dialogScale = 0.96;
 
+  /// 用于从一格展开成卡片 (如数字条的评分格展开成评分卡): 位置, 大小和底色一起过渡, 内容先出后进.
+  static const EatTransition morph = (
+    duration: Duration(milliseconds: 420),
+    curve: Curves.easeInOutCubicEmphasized,
+  );
+
+  /// 用于点赞和打分时图形弹一下: 先略微压扁, 再放大越过原大小, 最后落回.
+  static const EatTransition pop = (
+    duration: Duration(milliseconds: 520),
+    curve: Curves.linear,
+  );
+
   /// 换深浅色: 旧界面的截图在新界面上淡出.
   static const EatTransition themeSwitch = (
     duration: Duration(milliseconds: 300),

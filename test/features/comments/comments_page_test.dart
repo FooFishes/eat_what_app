@@ -1,7 +1,7 @@
-import 'package:eat/features/comments/write_comment_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../support/app.dart';
 import '../../support/comment_fixtures.dart';
@@ -54,7 +54,7 @@ void main() {
       ]);
   });
 
-  testWidgets('先露出最早的 2 条回复，回复别人的回复写「回复 某某」，展开看全部', (tester) async {
+  testWidgets('先露出最早的 2 条回复，回复别人的回复写成「A ▸ B」，展开看全部', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -70,16 +70,37 @@ void main() {
     expect(find.textContaining('炸蛋要早点说'), findsNothing);
     expect(find.text('展开 1 条回复'), findsOneWidget);
     await expectAccessible(tester);
-    // 回复的文字另起一行, 占满回复区的宽度, 不和右边的赞, "更多" 挤在一起.
+    // 回复挂在评论下面, 和评论的正文对齐.
+    final rootText = tester.getRect(find.text('酸笋给得很大方'));
     final replyText = tester.getRect(find.text('同意，加个炸蛋更香'));
-    final more = tester.getRect(find.bySemanticsLabel('更多').at(1));
-    expect(replyText.top, greaterThanOrEqualTo(more.bottom - 1));
-    expect(replyText.left, lessThan(more.left));
+    expect(replyText.left, greaterThan(rootText.left - 1));
+    expect(replyText.top, greaterThan(rootText.bottom));
 
     await tester.tap(find.text('展开 1 条回复'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('回复 阿哲'), findsOneWidget);
+    expect(find.textContaining('阿哲'), findsNWidgets(2));
     expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('点正文是回复，长按打开「更多」的菜单', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.comments(1),
+    );
+
+    await tester.tap(find.text('酸笋给得很大方'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditableText), findsOneWidget);
+    await tester.tapAt(const Offset(5, 200));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditableText), findsNothing);
+
+    await tester.longPress(find.text('酸笋给得很大方'));
+    await tester.pumpAndSettle();
+    expect(find.text('这条评论'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -211,7 +232,7 @@ void main() {
     await tester.tap(find.text('先逛逛'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('回复').first);
+    await tester.tap(find.bySemanticsLabel('回复').first);
     await tester.pumpAndSettle();
     expect(find.text('认证后才能回复'), findsOneWidget);
     expect(env.adapter.sent('PUT /comments/12/like'), isEmpty);
@@ -285,33 +306,6 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('底部输入栏进入写评论，相机按钮先选照片', (tester) async {
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.comments(1),
-    );
-
-    await tester.tap(find.text('吃过的话，说两句'));
-    await tester.pumpAndSettle();
-    final plain = tester.widget<WriteCommentPage>(
-      find.byType(WriteCommentPage),
-    );
-    expect((plain.dishId, plain.rootId, plain.pickOnOpen), (1, null, false));
-    await tester.tap(find.bySemanticsLabel('返回'));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.bySemanticsLabel('带照片写一条'));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<WriteCommentPage>(find.byType(WriteCommentPage)).pickOnOpen,
-      isTrue,
-    );
-    expect(find.text('从相册选'), findsOneWidget);
-    await unmountApp(tester, container);
-  });
-
   testWidgets('没有评论时说明下一步', (tester) async {
     env.adapter.on('GET /foods/1/comments', [
       FakeAdapter.ok(commentPageJson(const [])),
@@ -364,6 +358,9 @@ void main() {
       expect(find.bySemanticsLabel('好吃，2'), findsOneWidget);
       await expectAccessible(tester);
 
+      // 胶囊排在最下面一行, 放不下的要横着滑过去.
+      await tester.ensureVisible(find.bySemanticsLabel('好吃，2'));
+      await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('好吃，2'));
       await tester.pumpAndSettle();
       expect(
@@ -397,7 +394,7 @@ void main() {
       await unmountApp(tester, container);
     });
 
-    testWidgets('「回应」打开面板选一种；回复在「更多」里回应', (tester) async {
+    testWidgets('「回应」从按钮展开成卡片选一种，卡片不关；回复也有「回应」', (tester) async {
       env.adapter
         ..on('PUT /comments/11/reactions/SURPRISED', [
           FakeAdapter.ok([
@@ -415,26 +412,28 @@ void main() {
         location: Paths.comments(1),
       );
 
-      await tester.tap(find.text('回应'));
+      await tester.tap(find.text('回应').first);
       await tester.pumpAndSettle();
       expect(find.text('回应这条评论'), findsOneWidget);
       await expectAccessible(tester);
-      await tester.tap(find.bySemanticsLabel('惊讶'));
+      await tester.tap(find.bySemanticsLabel('惊讶，0'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsLabel('惊讶，1'), findsOneWidget);
+      expect(find.text('回应这条评论'), findsOneWidget, reason: '选完卡片不关');
+      expect(find.bySemanticsLabel('惊讶，1'), findsWidgets);
+      await tester.tap(find.bySemanticsLabel('关闭'));
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsNothing);
 
-      await tester.tap(find.bySemanticsLabel('更多').last);
-      await tester.pumpAndSettle();
       await tester.tap(find.text('回应').last);
       await tester.pumpAndSettle();
       expect(find.text('回应这条回复'), findsOneWidget);
-      await tester.tap(find.bySemanticsLabel('笑哭'));
+      await tester.tap(find.bySemanticsLabel('笑哭，0'));
       await tester.pumpAndSettle();
       expect(
         env.adapter.sent('PUT /comments/21/reactions/LAUGH'),
         hasLength(1),
       );
-      expect(find.bySemanticsLabel('笑哭，1'), findsOneWidget);
+      expect(find.bySemanticsLabel('笑哭，1'), findsWidgets);
       await unmountApp(tester, container);
     });
 
@@ -446,7 +445,7 @@ void main() {
         location: Paths.comments(1),
       );
 
-      await tester.tap(find.text('回应'));
+      await tester.tap(find.text('回应').first);
       await tester.pumpAndSettle();
       expect(find.text('认证后才能回应'), findsOneWidget);
       expect(find.text('回应这条评论'), findsNothing);

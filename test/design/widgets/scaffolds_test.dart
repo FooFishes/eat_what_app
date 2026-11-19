@@ -58,37 +58,38 @@ void main() {
     var taps = <String>[];
     setUp(() => taps = []);
 
-    Widget page({bool fixedStage = false, double sheetHeight = 2000}) =>
-        StageScaffold(
-          stage: StageColor.broth,
-          fixedStage: fixedStage,
-          stageContent: Stack(
-            children: [
-              Positioned(
-                left: 20,
-                bottom: 32 + 8,
-                child: EatButton.stageSolid(
-                  '就它了',
-                  onPressed: () => taps.add('露出'),
-                ),
-              ),
-              Positioned(
-                right: 20,
-                bottom: 0,
-                child: EatButton.stageGhost(
-                  '压住',
-                  height: 30,
-                  onPressed: () => taps.add('压住'),
-                ),
-              ),
-            ],
+    Widget page({
+      bool fixedStage = false,
+      double sheetHeight = 2000,
+      bool pinned = false,
+    }) => StageScaffold(
+      stage: StageColor.broth,
+      fixedStage: fixedStage,
+      pinnedBottom: pinned ? const Text('今日推荐') : null,
+      stageContent: Stack(
+        children: [
+          Positioned(
+            left: 20,
+            bottom: 32 + 8,
+            child: EatButton.stageSolid('就它了', onPressed: () => taps.add('露出')),
           ),
-          sheetSlivers: [
-            SliverToBoxAdapter(
-              child: SizedBox(height: sheetHeight, child: const Text('今日推荐')),
+          Positioned(
+            right: 20,
+            bottom: 0,
+            child: EatButton.stageGhost(
+              '压住',
+              height: 30,
+              onPressed: () => taps.add('压住'),
             ),
-          ],
-        );
+          ),
+        ],
+      ),
+      sheetSlivers: [
+        SliverToBoxAdapter(
+          child: SizedBox(height: sheetHeight, child: const Text('今日推荐')),
+        ),
+      ],
+    );
 
     testWidgets('抽屉画在舞台上面：露出来的按钮点得到，被压住的点不到', (tester) async {
       useScreen(tester, const Size(390, 844));
@@ -131,11 +132,14 @@ void main() {
     });
 
     for (final fixedStage in [false, true]) {
-      testWidgets('内容很少时抽屉也能拖到第一行吸顶的位置，下面铺满白底 (fixedStage: $fixedStage)', (
+      testWidgets('有吸顶行时内容很少也能拖到吸顶的位置，下面铺满白底 (fixedStage: $fixedStage)', (
         tester,
       ) async {
         useScreen(tester, const Size(390, 844));
-        await _pump(tester, page(fixedStage: fixedStage, sheetHeight: 100));
+        await _pump(
+          tester,
+          page(fixedStage: fixedStage, sheetHeight: 100, pinned: true),
+        );
         await tester.pumpAndSettle();
 
         await tester.dragFrom(const Offset(195, 700), const Offset(0, -600));
@@ -151,6 +155,23 @@ void main() {
           EatColors.light.paper,
           reason: '内容下面到屏幕底边都是白底, 不露出舞台',
         );
+      });
+
+      testWidgets('没有吸顶行时内容滚到底就停，不补白底 (fixedStage: $fixedStage)', (
+        tester,
+      ) async {
+        useScreen(tester, const Size(390, 844));
+        await _pump(tester, page(fixedStage: fixedStage, sheetHeight: 400));
+        await tester.pumpAndSettle();
+
+        await tester.dragFrom(const Offset(195, 700), const Offset(0, -600));
+        await tester.pumpAndSettle();
+        final position = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        // 舞台 520 - 32, 把手区 28, 内容 400, 底部间距 24, 一共比一屏多 96.
+        expect(position.maxScrollExtent, 520 - 32 + 28 + 400 + 24 - 844);
+        expect(position.pixels, position.maxScrollExtent);
       });
     }
 

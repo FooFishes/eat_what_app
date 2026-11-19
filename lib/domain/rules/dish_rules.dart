@@ -60,6 +60,9 @@ abstract final class DishRules {
   /// 评分的可选分值, 从低到高.
   static const scores = [1, 2, 3, 4, 5];
 
+  /// 1 到 5 分各自的说法, 打分时写在星星下面.
+  static const scoreWords = ['不好吃', '一般', '还行', '好吃', '必吃'];
+
   /// 平均分的显示门槛: 评分满该人数才显示平均分, 与店铺推荐率的门槛相同, 免得一两个人的分数代表一道菜.
   static const ratingMinCount = 3;
 

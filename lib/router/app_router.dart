@@ -4,7 +4,6 @@ import 'package:eat/features/auth/password_login_page.dart';
 import 'package:eat/features/auth/phone_login_page.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/features/comments/comments_page.dart';
-import 'package:eat/features/comments/write_comment_page.dart';
 import 'package:eat/features/discover/discover_page.dart';
 import 'package:eat/features/dish/dish_history_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
@@ -385,22 +384,6 @@ GoRouter appRouter(Ref ref) {
             initial: state.extra is Dish ? state.extra! as Dish : null,
           ),
           null => const NotFoundPage(),
-        },
-      ),
-      GoRoute(
-        path: Paths.writeCommentPattern,
-        builder: (_, state) {
-          final query = state.uri.queryParameters;
-          return switch (_idOf(state, 'dishId')) {
-            final id? => WriteCommentPage(
-              dishId: id,
-              rootId: int.tryParse(query['reply'] ?? ''),
-              replyToId: int.tryParse(query['to'] ?? ''),
-              replyToName: query['name'],
-              pickOnOpen: query['photo'] == '1',
-            ),
-            null => const NotFoundPage(),
-          };
         },
       ),
       GoRoute(

@@ -55,8 +55,13 @@ void main() {
     return env;
   }
 
+  /// 滚到 [text] 能点到为止. 抽屉里的内容在屏幕外也会提前建好, 只等它出现会停在屏幕下沿外面.
   Future<void> scrollTo(WidgetTester tester, String text) =>
-      tester.scrollUntilVisible(find.text(text), 200, scrollable: downward);
+      tester.scrollUntilVisible(
+        find.text(text).hitTestable(),
+        200,
+        scrollable: downward,
+      );
 
   testWidgets('选了地图导航去店里、复制了链接后各记一次统计，关掉选择面板不记', (tester) async {
     final env = shopEnv();
@@ -105,7 +110,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('舞台写店名、商圈、菜数和堂食推荐率；招牌单独请求，菜单按菜单顺序', (tester) async {
+  testWidgets('舞台写品类口味、店名和地址，盘子是招牌菜；数字条写堂食推荐率、菜数和商圈；菜单按分类分组', (tester) async {
     final env = shopEnv();
     final (container, _) = await pumpApp(
       tester,
@@ -115,12 +120,14 @@ void main() {
     );
 
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.text('万达金街  万达金街 1 层'), findsOneWidget);
-    expect(find.text('13 道菜'), findsOneWidget);
-    expect(find.text('86% 推荐'), findsOneWidget);
+    expect(find.text('粉面 · 辣、酸'), findsOneWidget);
+    expect(find.text('万达金街 1 层'), findsOneWidget);
+    expect(find.text('万达金街'), findsOneWidget, reason: '商圈写在距离下面');
+    expect(find.bySemanticsLabel('13 道菜'), findsOneWidget);
+    expect(find.text('86%'), findsOneWidget);
     expect(find.text('32 人评过'), findsOneWidget);
-    expect(find.text('招牌'), findsOneWidget);
     expect(find.bySemanticsLabel('招牌菜 虾仁云吞'), findsOneWidget);
+    expect(find.bySemanticsLabel('招牌菜 牛肉饺子'), findsOneWidget);
     final queries = [
       for (final r in env.adapter.sent('GET /foods/list')) r.query,
     ];
@@ -133,13 +140,12 @@ void main() {
     expect(menu, containsPair('sort', 'MENU'));
     await expectAccessible(tester);
 
-    await scrollTo(tester, '辣、酸');
-    expect(find.text('品类和口味'), findsOneWidget);
-    expect(find.text('粉面'), findsOneWidget);
+    await scrollTo(tester, '牛肉饺子');
+    expect(find.bySemanticsLabel('主食 2 道'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
-  testWidgets('堂食评价不满 3 条、外卖满 3 条时，舞台写外卖的推荐率', (tester) async {
+  testWidgets('堂食评价不满 3 条、外卖满 3 条时，写外卖的推荐率', (tester) async {
     final env = shopEnv(
       details: [
         FakeAdapter.ok(
@@ -154,7 +160,8 @@ void main() {
       location: Paths.shop(7),
     );
 
-    expect(find.text('外卖 80% 推荐'), findsOneWidget);
+    expect(find.text('外卖推荐率'), findsOneWidget);
+    expect(find.text('80%'), findsOneWidget);
     expect(find.text('5 人评过'), findsOneWidget);
     await unmountApp(tester, container);
   });
@@ -181,7 +188,7 @@ void main() {
       );
 
       expect(find.text(text), findsOneWidget);
-      expect(find.textContaining('% 推荐'), findsNothing);
+      expect(find.textContaining('%'), findsNothing);
       await unmountApp(tester, container);
     });
   }
@@ -238,8 +245,7 @@ void main() {
       location: Paths.shop(7),
     );
 
-    await scrollTo(tester, '吃过的话，说说推不推荐');
-    await tester.tap(find.text('评价'));
+    await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
     expect(find.text('评价这家店'), findsOneWidget);
     expect(find.text('先选在店里吃的还是点的外卖'), findsOneWidget);
@@ -256,7 +262,7 @@ void main() {
       'rating': 'RECOMMEND',
     });
     expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
-    expect(find.text('你的评价：外卖推荐'), findsWidgets);
+    expect(find.text('你：外卖推荐'), findsOneWidget);
     expect(
       env.adapter.sent('GET /restaurant/detail/7'),
       hasLength(2),
@@ -272,7 +278,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('已评价时页面写出两个场景的评价，面板里选中已有的评价', (tester) async {
+  testWidgets('已评价时数字条写出两个场景的评价，面板里选中已有的评价', (tester) async {
     final env = shopEnv(
       details: [
         FakeAdapter.ok(
@@ -287,8 +293,8 @@ void main() {
       location: Paths.shop(7),
     );
 
-    await scrollTo(tester, '你的评价：堂食推荐，外卖不推荐');
-    await tester.tap(find.text('改评价'));
+    expect(find.text('你：堂食推荐，外卖不推荐'), findsOneWidget);
+    await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('堂食'));
     await tester.pumpAndSettle();
@@ -309,8 +315,7 @@ void main() {
       location: Paths.shop(7),
     );
 
-    await scrollTo(tester, '吃过的话，说说推不推荐');
-    await tester.tap(find.text('评价'));
+    await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('堂食'));
     await tester.pumpAndSettle();
@@ -365,8 +370,7 @@ void main() {
     await tester.tap(find.text('先逛逛'));
     await tester.pumpAndSettle();
 
-    await scrollTo(tester, '吃过的话，说说推不推荐');
-    await tester.tap(find.text('评价'));
+    await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能评价'), findsOneWidget);
     expect(find.text('评价这家店'), findsNothing);
@@ -385,11 +389,7 @@ void main() {
 
   group('信息有误', () {
     Future<void> openPanel(WidgetTester tester) async {
-      await tester.scrollUntilVisible(
-        find.text('信息有误'),
-        200,
-        scrollable: downward,
-      );
+      await scrollTo(tester, '信息有误');
       await tester.tap(find.text('信息有误'));
       await tester.pumpAndSettle();
     }

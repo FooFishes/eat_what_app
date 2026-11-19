@@ -43,10 +43,12 @@ class BackFallback extends InheritedWidget {
   final VoidCallback fallback;
 
   /// 返回上一页, 若导航栈无可退页面则执行后备行为.
+  ///
+  /// 和系统返回一样走 [Navigator.maybePop], 页面里的 [PopScope] (如没发出的评论) 能先拦下来确认.
   static void back(BuildContext context) {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
-      navigator.pop();
+      navigator.maybePop();
       return;
     }
     context.getInheritedWidgetOfExactType<BackFallback>()?.fallback();

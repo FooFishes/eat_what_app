@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/format/time_format.dart';
@@ -16,24 +18,33 @@ import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/like_heart.dart';
+import 'package:eat/design/widgets/morph_card.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/widgets/photo_viewer.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/report.dart';
 import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/features/system/comment_composer.dart';
+import 'package:eat/features/system/comment_composer_providers.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/report_panel.dart';
-import 'package:eat/router/paths.dart';
 import 'package:eat/state/comments.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-/// 评论卡片组件, 展示评论者头像, 昵称, 时间, 正文, 附图, 表情回应, 点赞, 回复与回应入口及其下方的回复列表.
+/// 一条评论, 照抖音评论区的排法: 左边头像; 右边一行灰色的昵称 (上传者自己的评论带 "上传者" 小标), 下面是正文, 附图,
+/// 表情回应, 最下面一行是时间, "回复" "回应", 这一行右边是赞和 "更多".
+///
+/// - 点昵称或正文也是回复, 长按打开 "更多" 的菜单.
+/// - 回复挂在正文下面, 和正文对齐, 头像小一号, 写成 "A 回复 B".
+/// - 回复在屏幕最下面的横条里写 ([showReplyBar]); "回应" 从按钮展开成卡片 ([showMorphCard]).
+/// - 条与条之间不画线, 只靠留白 ([CommentGap]).
 ///
 /// 由菜品详情页与全部评论页共用 (为避免功能模块间相互导入而置于 `system` 目录).
-/// 右上角 "更多" 菜单对本人评论提供 "删除", 对他人评论提供 "举报".
+/// "更多" 菜单对本人评论提供 "删除", 对他人评论提供 "举报".
 class CommentCard extends ConsumerWidget {
   const new({super.key, required this.comment, this.highlighted = false});
 
@@ -42,81 +53,39 @@ class CommentCard extends ConsumerWidget {
   /// 从消息或 "我的评论" 进入时, 以底色标出目标评论.
   final bool highlighted;
 
+  /// 评论头像的直径.
+  static const avatar = 32.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final c = eat.colors;
-    final now = clock.now();
     final reactions = _reactionsOf(ref, comment);
     final body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 12,
+      spacing: EatSpace.s10,
       children: [
         EatAvatar(
           name: comment.authorName,
           color: avatarColorOf(comment.authorId),
-          image: networkImage(comment.authorAvatar, width: 36),
-          size: 36,
+          image: networkImage(comment.authorAvatar, width: avatar),
+          size: avatar,
         ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 6,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          comment.authorName,
-                          style: eat.text.body.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: c.ink,
-                          ),
-                        ),
-                        Text(
-                          TimeFormat.relative(comment.createdAt, now),
-                          style: eat.text.caption.copyWith(color: c.inkMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Transform.translate(
-                    offset: const Offset(12, 0),
-                    child: EatIconButton(
-                      EatIcons.more,
-                      label: '更多',
-                      color: c.inkMuted,
-                      onPressed: () => showCommentMenu(context, ref, comment),
-                    ),
-                  ),
-                ],
+              _Text(
+                comment: comment,
+                onReply: () => _reply(context, ref, comment, to: null),
               ),
-              if (comment.text.isNotEmpty)
-                Text(comment.text, style: eat.text.body.copyWith(color: c.ink)),
               if (comment.images.isNotEmpty)
-                _Photos(urls: comment.images, author: comment.authorName),
-              if (reactions.isNotEmpty)
-                _ReactionBar(comment: comment, reactions: reactions),
-              Transform.translate(
-                offset: const Offset(-10, 0),
-                child: Row(
-                  spacing: 8,
-                  children: [
-                    CommentLikeButton(comment: comment),
-                    _TextAction(
-                      '回复',
-                      onTap: () => _reply(context, ref, comment, to: null),
-                    ),
-                    _TextAction(
-                      '回应',
-                      onTap: () => _showReactionPanel(context, ref, comment),
-                    ),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.only(top: EatSpace.s8),
+                  child: _Photos(
+                    urls: comment.images,
+                    author: comment.authorName,
+                  ),
                 ),
-              ),
+              _Actions(comment: comment, reactions: reactions),
               _Replies(comment: comment),
             ],
           ),
@@ -124,15 +93,269 @@ class CommentCard extends ConsumerWidget {
       ],
     );
     if (!highlighted) return body;
+    return _Highlight(child: body);
+  }
+}
+
+/// 从消息或 "我的评论" 进来时标出目标评论: 底色先亮着, 停一会儿再褪掉. 底色画在评论外面一圈, 不挪动评论本身.
+class _Highlight extends StatefulWidget {
+  const new({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_Highlight> createState() => _HighlightState();
+}
+
+class _HighlightState extends State<_Highlight> {
+  var _shown = true;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _shown = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.eat.colors;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: -EatSpace.s10,
+          right: -EatSpace.s10,
+          top: -EatSpace.s8,
+          bottom: 0,
+          child: AnimatedContainer(
+            duration: context.motion(EatMotion.reveal) * 3,
+            decoration: BoxDecoration(
+              color: _shown ? c.mist : c.mist.withValues(alpha: 0),
+              borderRadius: const BorderRadius.all(EatRadius.thumb),
+            ),
+          ),
+        ),
+        widget.child,
+      ],
+    );
+  }
+}
+
+/// 两条评论之间的留白. 评论最下面一行本身带着一段空, 合起来比评论里面的间距大得多, 不用画线.
+class CommentGap extends StatelessWidget {
+  const new({super.key});
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(height: EatSpace.s10);
+}
+
+/// 昵称和正文, 右边是 "回复" 和一个大箭头: 点它或文字都是回复, 长按文字打开 "更多" 的菜单. 读屏走箭头按钮, 文字只读不点.
+class _Text extends ConsumerWidget {
+  const new({required this.comment, required this.onReply});
+
+  final Comment comment;
+  final VoidCallback onReply;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.eat.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onReply,
+            onLongPress: () => showCommentMenu(context, ref, comment),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 2,
+              children: [
+                _Byline(comment: comment),
+                if (comment.text.isNotEmpty) _Body(comment.text),
+              ],
+            ),
+          ),
+        ),
+        EatTappable(
+          onTap: onReply,
+          label: '回复',
+          focusShape: const StadiumBorder(),
+          builder: (context, _) => ExcludeSemantics(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: EatSize.touch,
+                minHeight: EatSize.touch,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(left: EatSpace.s8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '回复',
+                      style: context.eat.text.meta.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: c.inkSoft,
+                      ),
+                    ),
+                    EatIcon(EatIcons.chevronRight, size: 22, color: c.inkMuted),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 昵称一行: 灰色细字. 上传者自己的评论后面带 "上传者" 小标; 回复写成 "A 回复 B".
+class _Byline extends ConsumerWidget {
+  const new({required this.comment});
+
+  final Comment comment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final uploader = ref.watch(
+      commentedDishProvider(comment.dishId).select((d) => d.value?.uploaderId),
+    );
+    final style = eat.text.meta.copyWith(color: c.inkMuted);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: comment.authorName),
+          if (uploader != null && uploader == comment.authorId) ...[
+            const TextSpan(text: ' '),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: _UploaderTag(),
+            ),
+          ],
+          if (comment.replyToName case final toName?) ...[
+            TextSpan(
+              text: ' 回复 ',
+              style: TextStyle(color: c.inkSoft),
+            ),
+            TextSpan(text: toName),
+          ],
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    );
+  }
+}
+
+/// "上传者" 小标: 浅底小字.
+class _UploaderTag extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: c.mist,
-        borderRadius: const BorderRadius.all(EatRadius.thumb),
+        borderRadius: const BorderRadius.all(Radius.circular(4)),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 4),
-        child: body,
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        child: Text(
+          '上传者',
+          style: eat.text.meta.copyWith(
+            fontSize: 10,
+            height: 1.4,
+            fontWeight: FontWeight.w600,
+            color: c.inkSoft,
+          ),
+        ),
       ),
+    );
+  }
+}
+
+/// 正文: 正文字号, 行距放宽一点, 读起来不挤.
+class _Body extends StatelessWidget {
+  const new(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return Text(
+      text,
+      style: eat.text.body.copyWith(color: eat.colors.ink, height: 1.45),
+    );
+  }
+}
+
+/// 最下面一行: 时间, "回应", 有人回应过时接着是各种回应的胶囊 (放不下时横着滑); 右边是赞和 "更多".
+/// 回复在正文右边的箭头上.
+class _Actions extends ConsumerWidget {
+  const new({required this.comment, required this.reactions});
+
+  final Comment comment;
+  final List<ReactionCount> reactions;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final c = eat.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  TimeFormat.relative(comment.createdAt, clock.now()),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: eat.text.meta.copyWith(
+                    fontSize: 12,
+                    color: c.inkMuted,
+                  ),
+                ),
+              ),
+              const SizedBox(width: EatSpace.s8),
+              _ReactButton(comment: comment),
+              if (reactions.isNotEmpty)
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _ReactionBar(comment: comment, reactions: reactions),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        CommentLikeButton(comment: comment),
+        Transform.translate(
+          offset: const Offset(12, 0),
+          child: EatIconButton(
+            EatIcons.more,
+            label: '更多',
+            size: 18,
+            color: c.inkMuted,
+            onPressed: () => showCommentMenu(context, ref, comment),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -141,7 +364,7 @@ class CommentCard extends ConsumerWidget {
 StageColor avatarColorOf(int userId) =>
     StageColor.values[userId % StageColor.values.length];
 
-/// 回复主评论 [comment], 若针对某条楼中楼回复进行回复, 则通过 [to] 指定目标回复.
+/// 回复主评论 [comment], 若针对某条楼中楼回复进行回复, 则通过 [to] 指定目标回复. 在屏幕最下面弹出回复横条.
 Future<void> _reply(
   BuildContext context,
   WidgetRef ref,
@@ -151,28 +374,28 @@ Future<void> _reply(
   if (!await guardAction(context, ref, Capability.reply) || !context.mounted) {
     return;
   }
-  await context.push(
-    Paths.writeComment(
-      comment.dishId,
-      reply: comment.id,
-      to: to?.id,
+  await showReplyBar(
+    context,
+    dishId: comment.dishId,
+    target: ReplyTarget(
+      rootId: comment.id,
+      replyToId: to?.id,
       name: (to ?? comment).authorName,
     ),
   );
 }
 
-/// 评论点赞按钮, 展示心形图标与赞数. 已点赞时呈实心图标并向读屏工具报告为已选中状态.
+/// 评论的赞: 心形加赞数, 放在评论最下面一行的右边. 赞上时心形弹一下.
+/// 已点赞时呈实心图标并向读屏工具报告为已选中状态.
 class CommentLikeButton extends ConsumerWidget {
-  const new({super.key, required this.comment, this.compact = false});
+  const new({super.key, required this.comment});
 
   final Comment comment;
-
-  /// 是否使用回复行内的紧凑小号样式.
-  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
+    final c = eat.colors;
     final like =
         ref.watch(commentLikesProvider.select((m) => m[comment.id])) ??
         CommentLike(liked: comment.liked ?? false, likes: comment.likes);
@@ -180,6 +403,8 @@ class CommentLikeButton extends ConsumerWidget {
       onTap: () => _toggle(context, ref, like),
       label: '赞，${like.likes}',
       toggled: like.liked,
+      dimOnPress: false,
+      focusShape: const StadiumBorder(),
       builder: (context, _) => ExcludeSemantics(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -187,20 +412,21 @@ class CommentLikeButton extends ConsumerWidget {
             minHeight: EatSize.touch,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              spacing: 6,
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: EatSpace.s4,
               children: [
-                EatIconSwap(
-                  like.liked ? EatIcons.heartOn : EatIcons.heart,
-                  size: compact ? 16 : 18,
-                  color: like.liked ? null : eat.colors.ink,
-                ),
-                Text(
-                  '${like.likes}',
-                  style: eat.text.count.copyWith(color: eat.colors.ink),
-                ),
+                LikeHeart(liked: like.liked, size: 18, color: c.inkMuted),
+                if (like.likes > 0)
+                  Text(
+                    '${like.likes}',
+                    style: eat.text.count.copyWith(
+                      fontSize: 13,
+                      color: like.liked ? c.ink : c.inkMuted,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -266,67 +492,171 @@ Future<void> _react(
   }
 }
 
-/// 选表情回应的底部面板, 六种排成一行, 自己选过的那种带底色, 再点一次是取消.
-Future<void> _showReactionPanel(
-  BuildContext context,
-  WidgetRef ref,
-  Comment comment,
-) async {
-  if (!await guardAction(context, ref, Capability.react) || !context.mounted) {
-    return;
+/// "回应" 按钮: 点了从按钮展开成回应卡片, 和评分卡一样.
+class _ReactButton extends ConsumerStatefulWidget {
+  const new({required this.comment});
+
+  final Comment comment;
+
+  @override
+  ConsumerState<_ReactButton> createState() => _ReactButtonState();
+}
+
+class _ReactButtonState extends ConsumerState<_ReactButton> {
+  final _origin = GlobalKey();
+
+  Future<void> _open() async {
+    if (!await guardAction(context, ref, Capability.react) || !mounted) {
+      return;
+    }
+    final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4);
+    await showMorphCard<void>(
+      context,
+      origin: _origin,
+      from: context.eat.colors.paper,
+      height: 148 * scale,
+      barrierLabel: widget.comment.isReply ? '回应这条回复' : '回应这条评论',
+      face: (_) => const _TextActionFace('回应'),
+      builder: (_) => _ReactionCard(comment: widget.comment),
+    );
   }
-  final current =
-      ref.read(commentReactionsProvider)[comment.id] ?? comment.reactions;
-  final mine = current.where((r) => r.selected).firstOrNull?.reaction;
-  final picked = await showPanel<CommentReaction>(
-    context,
-    builder: (panel) => EatPanel(
-      title: comment.isReply ? '回应这条回复' : '回应这条评论',
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+  @override
+  Widget build(BuildContext context) =>
+      _TextAction('回应', key: _origin, onTap: _open);
+}
+
+/// 回应卡片: 六种表情排成一行, 下面是各自的人数, 自己选的那种带底色. 点一种就选上 (再点取消), 卡片不关.
+class _ReactionCard extends ConsumerWidget {
+  const new({required this.comment});
+
+  final Comment comment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final current = _reactionsOf(ref, comment);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        EatSpace.s20,
+        EatSpace.s14,
+        EatSpace.s8,
+        EatSpace.s14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final reaction in CommentReaction.values)
-            _ReactionOption(
-              reaction: reaction,
-              selected: reaction == mine,
-              onTap: () => Navigator.of(panel).pop(reaction),
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    comment.isReply ? '回应这条回复' : '回应这条评论',
+                    style: eat.text.heading.copyWith(color: c.ink),
+                  ),
+                ),
+              ),
+              EatIconButton(
+                EatIcons.close,
+                label: '关闭',
+                color: c.inkMuted,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: EatSpace.s8),
+          Padding(
+            padding: const EdgeInsets.only(right: EatSpace.s10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final reaction in CommentReaction.values)
+                  _ReactionOption(
+                    reaction: reaction,
+                    count:
+                        current
+                            .where((r) => r.reaction == reaction)
+                            .firstOrNull
+                            ?.count ??
+                        0,
+                    selected: current.any(
+                      (r) => r.reaction == reaction && r.selected,
+                    ),
+                    onTap: () => _react(context, ref, comment, reaction),
+                  ),
+              ],
             ),
+          ),
         ],
       ),
-    ),
-  );
-  if (picked == null || !context.mounted) return;
-  await _react(context, ref, comment, picked);
+    );
+  }
 }
 
 class _ReactionOption extends StatelessWidget {
   const new({
     required this.reaction,
+    required this.count,
     required this.selected,
     required this.onTap,
   });
 
   final CommentReaction reaction;
+  final int count;
   final bool selected;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => EatTappable(
-    onTap: onTap,
-    label: reaction.label,
-    toggled: selected,
-    focusShape: const CircleBorder(),
-    builder: (context, _) => DecoratedBox(
-      decoration: ShapeDecoration(
-        shape: const CircleBorder(),
-        color: selected ? context.eat.colors.mist : null,
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final duration = context.motion(EatMotion.select) * 2;
+    return EatTappable(
+      onTap: onTap,
+      label: '${reaction.label}，$count',
+      toggled: selected,
+      dimOnPress: false,
+      focusShape: const CircleBorder(),
+      builder: (context, _) => ExcludeSemantics(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 2,
+          children: [
+            DecoratedBox(
+              decoration: ShapeDecoration(
+                shape: const CircleBorder(),
+                color: selected ? c.mist : null,
+              ),
+              child: SizedBox.square(
+                dimension: 48,
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    key: ValueKey(selected),
+                    tween: Tween(begin: selected ? 1.35 : 1, end: 1),
+                    duration: duration,
+                    curve: Curves.easeOutBack,
+                    builder: (context, scale, child) =>
+                        Transform.scale(scale: scale, child: child),
+                    child: ReactionEmojiImage(_emojiOf(reaction), size: 28),
+                  ),
+                ),
+              ),
+            ),
+            Text(
+              count > 0 ? '$count' : ' ',
+              style: eat.text.count.copyWith(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                color: selected ? c.ink : c.inkMuted,
+              ),
+            ),
+          ],
+        ),
       ),
-      child: SizedBox.square(
-        dimension: 48,
-        child: Center(child: ReactionEmojiImage(_emojiOf(reaction), size: 28)),
-      ),
-    ),
-  );
+    );
+  }
 }
 
 /// 有人选过的表情回应, 每种一个 "表情 人数" 胶囊, 自己选的那种描边, 人数加粗. 点胶囊选上或取消这一种.
@@ -398,31 +728,42 @@ class _ReactionBar extends ConsumerWidget {
   }
 }
 
-/// 通用文字操作按钮 (如 "回复"), 保证点击热区不小于 44px.
+/// 最下面一行的文字按钮 (如 "回复"), 灰色加粗小字, 点击热区不小于 44px.
 class _TextAction extends StatelessWidget {
-  const new(this.label, {required this.onTap});
+  const new(this.label, {super.key, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
 
   @override
+  Widget build(BuildContext context) => EatTappable(
+    onTap: onTap,
+    builder: (context, _) => _TextActionFace(label),
+  );
+}
+
+/// [_TextAction] 的样子, 回应卡片展开和收回时也画它.
+class _TextActionFace extends StatelessWidget {
+  const new(this.label);
+
+  final String label;
+
+  @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    return EatTappable(
-      onTap: onTap,
-      builder: (context, _) => ConstrainedBox(
-        constraints: const BoxConstraints(
-          minWidth: EatSize.touch,
-          minHeight: EatSize.touch,
-        ),
-        child: Center(
-          widthFactor: 1,
-          child: Text(
-            label,
-            style: eat.text.meta.copyWith(
-              fontWeight: FontWeight.w600,
-              color: eat.colors.ink,
-            ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minWidth: EatSize.touch,
+        minHeight: EatSize.touch,
+      ),
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          label,
+          style: eat.text.meta.copyWith(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: eat.colors.inkSoft,
           ),
         ),
       ),
@@ -492,8 +833,6 @@ class _RepliesState extends ConsumerState<_Replies> {
   @override
   Widget build(BuildContext context) {
     if (widget.comment.replyCount <= 0) return const SizedBox.shrink();
-    final eat = context.eat;
-    final c = eat.colors;
     final replies = ref.watch(commentRepliesProvider(widget.comment.id));
     final list = replies.value;
     if (list == null) {
@@ -511,41 +850,42 @@ class _RepliesState extends ConsumerState<_Replies> {
         ? list.items
         : list.items.take(CommentRules.replyPreview).toList();
     final hidden = list.data.total - shown.length;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: c.hairline, width: 2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final reply in shown)
-              _ReplyLine(root: widget.comment, reply: reply),
-            if (!_expanded && hidden > 0)
-              _ExpandButton(
-                label: '展开 $hidden 条回复',
-                onTap: () => setState(() => _expanded = true),
-              )
-            else if (_expanded && list.data.page.hasNext)
-              _ExpandButton(
-                label: list.moreError == null ? '更多回复' : '加载失败，重试',
-                onTap: () => ref
-                    .read(commentRepliesProvider(widget.comment.id).notifier)
-                    .loadMore(),
-              ),
-          ],
-        ),
-      ),
+    final more = _expanded && list.data.page.hasNext;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final reply in shown)
+          _ReplyLine(root: widget.comment, reply: reply),
+        if (!_expanded && hidden > 0)
+          _ExpandButton(
+            label: '展开 $hidden 条回复',
+            onTap: () => setState(() => _expanded = true),
+          )
+        else if (more)
+          _ExpandButton(
+            label: list.moreError == null ? '展开更多' : '加载失败，重试',
+            onTap: () => ref
+                .read(commentRepliesProvider(widget.comment.id).notifier)
+                .loadMore(),
+          )
+        else if (_expanded && list.items.length > CommentRules.replyPreview)
+          _ExpandButton(
+            label: '收起',
+            up: true,
+            onTap: () => setState(() => _expanded = false),
+          ),
+      ],
     );
   }
 }
 
+/// "—— 展开 N 条回复 ⌄": 前面一小段横线, 灰色加粗小字. [up] 时箭头朝上, 用于 "收起".
 class _ExpandButton extends StatelessWidget {
-  const new({required this.label, required this.onTap});
+  const new({required this.label, required this.onTap, this.up = false});
 
   final String label;
   final VoidCallback onTap;
+  final bool up;
 
   @override
   Widget build(BuildContext context) {
@@ -556,8 +896,13 @@ class _ExpandButton extends StatelessWidget {
         height: EatSize.touch,
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          spacing: 2,
+          spacing: EatSpace.s8,
           children: [
+            SizedBox(
+              width: 20,
+              height: 1,
+              child: ColoredBox(color: eat.colors.inkMuted),
+            ),
             Text(
               label,
               style: eat.text.meta.copyWith(
@@ -565,7 +910,14 @@ class _ExpandButton extends StatelessWidget {
                 color: eat.colors.ink,
               ),
             ),
-            EatIcon(EatIcons.chevronDown, size: 16, color: eat.colors.ink),
+            RotatedBox(
+              quarterTurns: up ? 2 : 0,
+              child: EatIcon(
+                EatIcons.chevronDown,
+                size: 16,
+                color: eat.colors.inkMuted,
+              ),
+            ),
           ],
         ),
       ),
@@ -573,106 +925,49 @@ class _ExpandButton extends StatelessWidget {
   }
 }
 
-/// 单条回复行, 首行展示昵称与被回复对象并在右侧放置点赞和 "更多" 按钮, 正文另起一行占满回复区宽度.
-///
-/// 若正文与右侧操作按钮同行排布, 可用宽度仅容七八个字会导致短句频繁折行, 因此将正文单独换行.
-/// 点击昵称或正文区域可触发回复.
+/// 一条回复: 和评论同样的排法, 头像小一号, 写成 "A 回复 B".
 class _ReplyLine extends ConsumerWidget {
   const new({required this.root, required this.reply});
 
   final Comment root;
   final Comment reply;
 
-  /// 昵称行右侧为点赞与 "更多" 按钮预留的宽度.
-  static const _actionsWidth = 116.0;
+  static const _avatar = 24.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final c = eat.colors;
-    final style = eat.text.body.copyWith(color: c.ink);
     final reactions = _reactionsOf(ref, reply);
-    final line = Stack(
-      children: [
-        EatTappable(
-          onTap: () => _reply(context, ref, root, to: reply),
-          label: '回复${reply.authorName}',
-          focusShape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(EatRadius.thumb),
+    void onReply() => _reply(context, ref, root, to: reply);
+    return Padding(
+      padding: const EdgeInsets.only(top: EatSpace.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: EatSpace.s8,
+        children: [
+          EatAvatar(
+            name: reply.authorName,
+            color: avatarColorOf(reply.authorId),
+            image: networkImage(reply.authorAvatar, width: _avatar),
+            size: _avatar,
           ),
-          builder: (context, _) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: _actionsWidth),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: EatSize.touch),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: reply.authorName,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          if (reply.replyToName case final toName?)
-                            TextSpan(
-                              text: ' 回复 $toName',
-                              style: TextStyle(color: c.inkMuted),
-                            ),
-                        ],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: style,
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(reply.text, style: style),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Text(comment: reply, onReply: onReply),
+                _Actions(comment: reply, reactions: reactions),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CommentLikeButton(comment: reply, compact: true),
-              EatIconButton(
-                EatIcons.more,
-                label: '更多',
-                color: c.inkMuted,
-                onPressed: () => showCommentMenu(context, ref, reply),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-    if (reactions.isEmpty) return line;
-    // 回应放在整行的点击区域外面, 点胶囊不会触发回复.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        line,
-        Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: _ReactionBar(comment: reply, reactions: reactions),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-enum _MenuAction { react, delete, report }
+enum _MenuAction { delete, report }
 
-/// 打开评论操作面板, 本人评论显示 "删除", 他人评论显示 "举报". 回复另有 "回应", 根评论的回应入口在操作行里.
+/// 打开评论操作面板, 本人评论显示 "删除", 他人评论显示 "举报".
 Future<void> showCommentMenu(
   BuildContext context,
   WidgetRef ref,
@@ -687,12 +982,6 @@ Future<void> showCommentMenu(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (comment.isReply)
-            EatPanelAction(
-              icon: EatIcons.emoji,
-              label: '回应',
-              onTap: () => Navigator.of(panel).pop(_MenuAction.react),
-            ),
           if (mine)
             EatPanelAction(
               icon: EatIcons.delete,
@@ -711,8 +1000,6 @@ Future<void> showCommentMenu(
   );
   if (!context.mounted) return;
   switch (action) {
-    case _MenuAction.react:
-      await _showReactionPanel(context, ref, comment);
     case _MenuAction.report:
       await showReportPanel(
         context,

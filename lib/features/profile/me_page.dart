@@ -2,14 +2,15 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/icons/illustrations.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/eat_segment_slider.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -160,7 +161,12 @@ class _MePageState extends ConsumerState<MePage> {
           ),
         ],
       ),
-      stageHeight: ProfileStage.heightOf(context),
+      stageHeight: ProfileStage.heightOf(
+        context,
+        known: true,
+        username: user?.username,
+        signature: user?.signature,
+      ),
       stageContent: ProfileStage(
         userId: user?.id ?? 0,
         name: user?.nickname ?? '同学',
@@ -217,47 +223,42 @@ class _MePageState extends ConsumerState<MePage> {
             1 => SliverMainAxisGroup(
               slivers: [
                 SliverToBoxAdapter(
-                  child: Wrap(
-                    spacing: EatSpace.s8,
-                    children: [
-                      EatChip.choice(
-                        '菜',
-                        selected: !_favoriteShops,
-                        onTap: () => setState(() => _favoriteShops = false),
-                      ),
-                      EatChip.choice(
-                        '店',
-                        selected: _favoriteShops,
-                        onTap: () => setState(() => _favoriteShops = true),
-                      ),
-                    ],
+                  child: EatSegmentSlider(
+                    semanticsLabel: '收藏的类型',
+                    labels: const ['菜', '店'],
+                    selected: _favoriteShops ? 1 : 0,
+                    compact: true,
+                    onChanged: (i) => setState(() => _favoriteShops = i == 1),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s10)),
-                if (_favoriteShops)
-                  const _FavoriteShops()
-                // 受限会话不能调用 `/foods/favorites`, 封禁中不请求.
-                else if (banned)
-                  const SliverToBoxAdapter(
-                    child: EmptyState(
-                      icon: EatIcons.block,
-                      title: '账号封禁中',
-                      message: '封禁期间暂时不能查看收藏的菜。',
-                    ),
-                  )
-                else
-                  DishGridSliver(
-                    value: ref.watch(myFavoritesProvider),
-                    showShop: true,
-                    onRetry: () => ref.invalidate(myFavoritesProvider),
-                    onLoadMore: () =>
-                        ref.read(myFavoritesProvider.notifier).loadMore(),
-                    empty: const EmptyState(
-                      icon: EatIcons.bookmark,
-                      title: '还没收藏过菜',
-                      message: '在菜品右上角点收藏，想吃的菜都在这里。',
-                    ),
-                  ),
+                // 换类型时新列表淡入, 不是一下子跳过去.
+                _FadeIn(
+                  key: ValueKey(_favoriteShops),
+                  sliver: _favoriteShops
+                      ? const _FavoriteShops()
+                      // 受限会话不能调用 `/foods/favorites`, 封禁中不请求.
+                      : banned
+                      ? const SliverToBoxAdapter(
+                          child: EmptyState(
+                            icon: EatIcons.block,
+                            title: '账号封禁中',
+                            message: '封禁期间暂时不能查看收藏的菜。',
+                          ),
+                        )
+                      : DishGridSliver(
+                          value: ref.watch(myFavoritesProvider),
+                          showShop: true,
+                          onRetry: () => ref.invalidate(myFavoritesProvider),
+                          onLoadMore: () =>
+                              ref.read(myFavoritesProvider.notifier).loadMore(),
+                          empty: const EmptyState(
+                            icon: EatIcons.bookmark,
+                            title: '还没收藏过菜',
+                            message: '在菜品右上角点收藏，想吃的菜都在这里。',
+                          ),
+                        ),
+                ),
               ],
             ),
             // 受限会话不能调用 `/foods/likes`, 封禁中不请求.
@@ -421,6 +422,23 @@ class _FavoriteShops extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// 第一次出现时淡入的 sliver. 换 [key] 就重新淡入一次; 系统开启减少动态效果时直接显示.
+class _FadeIn extends StatelessWidget {
+  const new({super.key, required this.sliver});
+
+  final Widget sliver;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: context.motion(EatMotion.select),
+    curve: EatMotion.select.curve,
+    builder: (context, value, child) =>
+        SliverOpacity(opacity: value, sliver: child),
+    child: sliver,
+  );
 }
 
 /// 账号状态提示. 未认证时提示认证并提供 "去认证", 封禁中时显示封禁原因.

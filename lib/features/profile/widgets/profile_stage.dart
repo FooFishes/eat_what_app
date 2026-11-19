@@ -76,8 +76,16 @@ class ProfileStage extends ConsumerWidget {
   /// 舞台内容离抽屉顶边的距离.
   static const _bottomGap = 24.0;
 
-  /// 手机布局下的舞台高度: 顶栏下面留一点空, 放下头像到统计这几行 (用户名和两行签名都按有算, 加载前后高度不跳), 再加抽屉压住的部分.
-  static double heightOf(BuildContext context) {
+  /// 手机布局下的舞台高度: 顶栏下面放下头像到统计这几行, 再加抽屉压住的部分.
+  ///
+  /// 他人主页的资料要等加载, 用户名和两行签名都按有算, 加载前后高度不跳.
+  /// "我的" 一进来就有资料, 传 [known] 按实际的用户名和签名行数算, 不留空白, 抽屉能高一些.
+  static double heightOf(
+    BuildContext context, {
+    bool known = false,
+    String? username,
+    String? signature,
+  }) {
     final text = MediaQuery.textScalerOf(context);
     final eat = context.eat.text;
     double line(TextStyle style, [int lines = 1]) =>
@@ -85,21 +93,46 @@ class ProfileStage extends ConsumerWidget {
     final stats = EatSize.touch > 32 + line(eat.caption)
         ? EatSize.touch
         : 32 + line(eat.caption);
+    final double usernameLine = !known || username != null ? line(eat.meta) : 0;
+    final double signatureLines = !known
+        ? 4 + line(eat.body, 2)
+        : signature == null
+        ? 0
+        : 4 + line(eat.body, _signatureLines(context, signature));
     final content =
         72 +
         EatSpace.s14 +
         EatSize.touch +
-        line(eat.meta) +
-        4 +
-        line(eat.body, 2) +
+        usernameLine +
+        signatureLines +
         EatSpace.s10 +
         stats;
+    // 头像和右边的盘子一样, 紧挨着顶栏下面.
     return StageScaffold.barBottomOf(context) +
-        EatSpace.s14 +
+        4 +
         content +
         _bottomGap +
         EatSize.sheetOverlap;
   }
+
+  /// 签名排出来占几行 (最多两行), 宽度是舞台左边让出盘子之后剩下的.
+  static int _signatureLines(BuildContext context, String text) {
+    final width =
+        MediaQuery.sizeOf(context).width - EatSpace.s20 * 2 - _textRightInset;
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: context.eat.text.body),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 2,
+    )..layout(maxWidth: width);
+    final lines = painter.computeLineMetrics().length;
+    painter.dispose();
+    return lines.clamp(1, 2);
+  }
+
+  /// 头像到签名这几行右边让出盘子露出的宽度.
+  static const _textRightInset =
+      plateSize * (1 - plateBleed) + EatSpace.s10 - EatSpace.s20;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,9 +191,7 @@ class ProfileStage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(
-                  right: plate * (1 - plateBleed) + EatSpace.s10 - EatSpace.s20,
-                ),
+                padding: const EdgeInsets.only(right: _textRightInset),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

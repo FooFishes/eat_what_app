@@ -70,6 +70,9 @@ lib/
                             StageColorPicker、MapPin 也放这里。EatTappable 是它们共用的点击、焦点和语义外壳。
                             CropViewport、CropZoomSlider 是圆形取景的拖动、缩放和滑条，「调整照片」和换头像共用；
                             PhotoViewer（photo_viewer.dart）是看大图，菜品详情和评论卡片共用
+                            StarRating（star_rating.dart）是五颗星，打分和展示共用；LikeHeart（like_heart.dart）是带弹跳的赞；
+                            showMorphCard（morph_card.dart）让一格长大成浮在遮罩上的卡片，也能展开到全屏；评分卡、评论的回应卡片、加照片卡片和全屏写评论用它
+                            StatStrip（stat_strip.dart）是抽屉顶部一行三格的数字条，FootLinks（foot_links.dart）是页底一行小字链接，菜品详情和餐厅详情共用
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
     models/                 Dish、DishCategory、DishRevision、Shop、ShopKind、ShopCategory、RatingScene、
                             ShopRevision、Taste（菜、店、推荐共用的五个口味）、MealTime、Campus、Hub、
@@ -92,7 +95,7 @@ lib/
     search/                 搜索
     topic/                  专题、往期专题（待接入，页面保留，入口不进入）
     dish/                   菜品详情、修改记录、加标签面板（待接入）
-    comments/               全部评论、写评论和回复
+    comments/               全部评论
     shop/                   餐厅详情、店铺评价面板、编辑店铺、修改记录、信息有误面板
     nearby/                 附近、地图、筛选面板
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
@@ -133,7 +136,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `features` | 以上全部；`router/paths.dart`（只为路径常量） | 别的功能目录的内部文件、`router` 的其余文件 |
 | `router` | `features`（页面构造）、`state` | — |
 
-- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、发现页推荐、附近页列表和「我的」收藏的店共用的榜单条目（`shop_entry.dart` 的 `ShopEntry`，附近和收藏不带菜，右边加门头小图；左右边距由列表加）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、隐私政策的同意对话框（`consent_dialog.dart` 的 `showConsentDialog` 和 `ConsentHost`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
+- 功能之间不互相 import，唯一的例外是 `features/system/`：拦截对话框（`guard.dart` 的 `guardAction`）、「导航去店里」和分享面板（`shop_actions.dart`）、店铺行（`shop_row.dart`）、发现页推荐、附近页列表和「我的」收藏的店共用的榜单条目（`shop_entry.dart` 的 `ShopEntry`，附近和收藏不带菜，右边加门头小图；左右边距由列表加）、附近页和新建店共用的地图部分（`base_map.dart`：`GcjPoint` 和 `MapLatLng` 互转、店铺标记的位图 `PinImages`，14.4）、菜品详情和全部评论共用的评论卡片（`comment_card.dart` 的 `CommentCard`）和写评论、回复的输入框（`comment_composer.dart` 的 `CommentComposer`，回复时由 `showReplyBar` 放在屏幕最下面的横条里；草稿在 `comment_composer_providers.dart`）、举报和信息有误共用的原因面板（`report_panel.dart` 的 `ReasonPanel`，举报的入口是 `showReportPanel`）、隐私政策的同意对话框（`consent_dialog.dart` 的 `showConsentDialog` 和 `ConsentHost`，9.5）这些各页都用、又要读账号状态、配置或业务数据的东西放在这里，所有功能都能导入它。跳到别的页面用 `router/paths.dart` 里的路径常量；共享的状态放 `state/`；两个功能都要用的组件，没有业务数据的放 `design/widgets/`，有业务数据的放进被依赖较多的那个功能，并在本文登记。
 - `design/widgets` 的组件只收基本类型和令牌（图片地址、裁切参数、`StageColor`、文字），不收 `Dish`。
 - 用一个测试守住依赖方向：`test/architecture_test.dart` 扫描 `lib/` 下每个文件的 import，按上表报错。同一个测试还检查：`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 和 `package:flutter_localizations`（用 `material_ui`，见依赖选型第 2 节）；包内跨目录的导入都用 `package:eat/...`。
 
@@ -201,7 +204,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `followsProvider` | 关注关系的本地覆盖值，按对方 id；关注按钮先改它，所有显示这个人的地方一起变，失败退回 | 他人主页、粉丝和关注列表的关注按钮 |
 | `dishCommentsProvider(dishId, sort)` | 一道菜的评论，分页；菜品详情只显示「最有用」的前几条，全部评论两种排序都用。离开后保留 5 分钟 | 滚到底 `loadMore`；删除后 `removeLocal`，发表后重新拉 |
 | `commentRepliesProvider(commentId)` | 一条评论下的回复，分页，接口按时间正序给。`replyCount` 为 0 时不请求 | 同上 |
-| `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表和 `myCommentsProvider`。发布即公开，发表后总是刷新 | 写评论页、评论的「更多」 |
+| `commentWriterProvider` | 发表评论、回复和删除；成功后更新上面两个列表和 `myCommentsProvider`。发布即公开，发表后总是刷新 | 评论输入框、评论的「更多」 |
 | `commentLikesProvider` | 评论赞的本地覆盖值，按评论 id，初值是评论自带的 `isLiked`；详情和全部评论同一条一起变，失败退回。接口成功只返回 null，成功后保留本地值 | 评论的赞按钮 |
 | `commentReactionsProvider` | 评论表情回应的本地覆盖值，按评论 id，初值是评论自带的 `reactions`；先按 `CommentRules.toggleReaction` 改，成功后换成接口返回的计数，失败退回 | 评论的回应胶囊和回应面板 |
 | `myCommentsProvider` | 「我的」里的评论分栏，分页 | 发表、删除后重新拉 |
@@ -239,7 +242,6 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 邮箱认证 | `/verify/email?token=`（认证邮件里的链接；不挂在 `/verify` 下面，否则返回时先回到认证页，18.2） | 根 | 否 | 无画板，按白底页规则 |
 | 菜品详情 | `/dishes/:dishId`；从消息、「我的评论」进来时带 `comment=<评论 id>`，滚到并标出这条评论 | 根 | 游客 | `G-Dish` |
 | 全部评论 | `/dishes/:dishId/comments` | 根 | 游客 | `G-Comments` |
-| 写评论、回复 | `/dishes/:dishId/comments/new`；回复时带 `reply=<所属评论 id>`，回复某条回复时再带 `to=<那条回复的 id>`，`name` 是被回复人的昵称（刷新后「回复 小林」还在）；`photo=1` 打开后先选照片 | 根 | 否 | `G-WriteComment` |
 | 编辑菜品 | `/dishes/:dishId/edit`（复用加菜页；从详情进入时 `extra` 带菜品，刷新后按 id 读取） | 根 | 否 | `G-AddDish` |
 | 菜品修改记录 | `/dishes/:dishId/history` | 根 | 游客 | 无画板，按白底页规则 |
 | 餐厅详情 | `/shops/:shopId` | 根 | 游客 | `G-Detail` |
@@ -275,7 +277,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | 停服维护 | `/maintenance` | 根 | 是 | `G-Maintenance` |
 
 - 标「待接入」的页面（8.5）路由和页面保留，入口点了只提示「待接入」，不进入。直接输入地址还能打开，页面会请求已经删除的接口、显示加载失败；接口补上前不另做拦截。
-- 地址看着有层级，路由不一定嵌套：嵌套的子路由打开时，下面会先叠一层父页面。全部评论、写评论是和菜品详情并列的顶层路由；专题 `/topics/:topicId` 也不挂在往期专题下面，否则从菜品详情或消息打开专题，返回时会先回到往期专题。
+- 地址看着有层级，路由不一定嵌套：嵌套的子路由打开时，下面会先叠一层父页面。全部评论是和菜品详情并列的顶层路由；写评论和回复不单独成页，写评论在评论区就地写，回复在屏幕最下面的横条里写；专题 `/topics/:topicId` 也不挂在往期专题下面，否则从菜品详情或消息打开专题，返回时会先回到往期专题。
 
 **不进路由表的**：
 
@@ -338,7 +340,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 用 path 策略（`usePathUrlStrategy()`），地址形如 `https://<域名>/dishes/123`，和分享链接、App Links 共用一套路径。
 - 服务器把所有非静态文件的路径回落到 `index.html`；`/.well-known/` 下的文件和 `/api` 不回落。
 - 浏览器后退等于路由后退。`GoRouter.optionURLReflectsImperativeAPIs` 打开：`push` 打开的页面也写进地址栏，刷新、复制链接都回到同一页。
-- 返回的兜底：页面左上角的 `EatBackButton` 调 `BackFallback.back`，有上一页就回去，没有（直接打开的链接、刷新后的 Web 页面）就走 App 根部给的兜底，回到 `/discover`。`design/` 不知道兜底去哪，由 `app.dart` 提供。
+- 返回的兜底：页面左上角的 `EatBackButton` 调 `BackFallback.back`，有上一页就回去（和系统返回一样走 `maybePop`，页面里的 `PopScope` 能先拦下来确认，如没发出的评论），没有（直接打开的链接、刷新后的 Web 页面）就走 App 根部给的兜底，回到 `/discover`。`design/` 不知道兜底去哪，由 `app.dart` 提供。
 - `/` 重定向到 `/discover`；对不上任何路由的地址显示「页面不存在」（`features/system/not_found_page.dart`）。
 - 组件页 `/kit` 只在 debug 构建里注册（`kDebugMode`），发布构建里没有这个地址。
 
@@ -897,7 +899,7 @@ extension RefCache on Ref {
 - 盘子和转盘按 `H / 520` 等比缩放。
 - 舞台内容（菜名、价格、按钮）贴着舞台底部排，底部留出被抽屉压住的 32px 加间距，保证不被盖住。
 - 高屏多出来的高度自然给了抽屉。
-- 例外：我的和他人主页的舞台上没有主角菜，舞台按内容定高（`ProfileStage.heightOf`：顶栏下面放下头像到统计这几行，再加抽屉压住的 32px 和间距），通过 `StageScaffold` 的 `stageHeight` 传入，抽屉默认多露出一截。右上角的盘子固定 168，紧挨顶栏下面，头像、昵称、签名那几行右边让出盘子的宽度。
+- 例外：我的和他人主页的舞台上没有主角菜，舞台按内容定高（`ProfileStage.heightOf`：顶栏下面放下头像到统计这几行，再加抽屉压住的 32px 和间距；他人主页的资料要等加载，用户名和两行签名按有算，加载前后高度不跳；「我的」一进来就有资料，按实际的用户名和签名行数算，抽屉更高），通过 `StageScaffold` 的 `stageHeight` 传入，抽屉默认多露出一截。右上角的盘子固定 168，和头像一样紧挨顶栏下面，头像、昵称、签名那几行右边让出盘子的宽度。
 
 ### 12.5 StageScaffold
 
@@ -906,7 +908,7 @@ extension RefCache on Ref {
 - 参数：舞台色、舞台内容（盘子、文字、按钮）、抽屉内容（一组 sliver）、可选的顶栏。
 - 结构：一个 `CustomScrollView`。第一个 sliver 是舞台，它的布局高度是 `H - 32`、绘制高度是 `H`（自定义一个很小的 `RenderSliver`，`layoutExtent < paintExtent`），后面的抽屉 sliver 从 `H - 32` 开始画，正好压住舞台底部 32px；抽屉用 `DecoratedSliver` 画白底和顶部 `radius-sheet` 圆角，压在舞台色上不加阴影。
 - 抽屉跟着页面一起滚（规范 `Sheet`）。附近页例外，用自己的可拖动面板。
-- 抽屉能拖多高不看内容多少：内容少时在抽屉后面补一段白底，把滚动范围补到抽屉第一行正好贴在顶栏下方、白底仍铺到屏幕底边；内容够长时补的高度是 0，滚动和原来一样。
+- 有吸顶行（`pinnedBottom`）的页面，抽屉能拖多高不看内容多少：内容少时在抽屉后面补一段白底，把滚动范围补到吸顶行正好贴在顶栏下方、白底仍铺到屏幕底边；内容够长时补的高度是 0，滚动和原来一样。没有吸顶行的页面（菜品、店铺详情）不补，内容滚到底就停，最后一行下面只留底部间距。
 - 发现页传 `fixedStage`：舞台固定在底层、不随滚动移动，上滑时推荐流从下面盖住转盘；滑到头没有 Android 默认的拉伸效果，改用只在底部回弹的滚动物理（顶部滑到头就停，下拉交给刷新；底部越界时整块抽屉跟着手指上移，松手回弹）；顶栏不再垫舞台色，因为没有内容从它下面穿过。其他舞台页暂时保持一起滚。
 - 有 Widget 测试保证：舞台高度按 12.4 计算；抽屉顶部在 `H - 32`；舞台按钮不被抽屉盖住。
 - 顶栏固定在屏幕顶部（手机）：顶栏不放在舞台里跟着滚走，而是叠在滚动视图上面，返回和右上角的操作始终点得到。

@@ -403,8 +403,10 @@ class _StageScaffoldState extends State<StageScaffold>
                     ],
                   ),
                 ),
-                // 内容少时在抽屉下面补白底, 抽屉照样能拖到第一行吸顶的位置, 不在页面中间断开.
-                _SheetFloor(reach: rowPinOffset, color: eat.colors.paper),
+                // 有吸顶行时, 内容少也要在抽屉下面补白底, 抽屉照样能拖到那一行吸顶的位置, 不在页面中间断开.
+                // 没有吸顶行的页面 (菜品, 店铺) 不补, 内容滚到底就停, 下面不留一大片空白.
+                if (widget.pinnedBottom != null)
+                  _SheetFloor(reach: rowPinOffset, color: eat.colors.paper),
               ],
             ),
           ),

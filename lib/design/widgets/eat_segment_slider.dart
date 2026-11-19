@@ -22,6 +22,7 @@ enum _Look { pill, route, coins }
 ///
 /// 造型:
 /// - 默认: 胶囊轨道上压一块 `ink` 实心滑块, 滑块上是选中项的文字.
+///   [compact] 时轨道矮一些, 底色用 `mist`, 放在白底上铺满一行当开关用; 点击区域仍是 [height].
 /// - [EatSegmentSlider.route]: 一条从 "我" 出发的路线, 每段是路上一站, 选中的那站是一个大圆点, 走过的路用记号笔涂实.
 ///   传了 [icons] 时圆点上方站着当前那段的图标 (如步行, 骑车, 开车), 换段时淡入淡出. 给距离用.
 /// - [EatSegmentSlider.coins]: 每段一摞硬币, 越往右越多, 选中的那摞亮起来并微微跳起; [allIndex] 那段是三小摞, 选中时全部亮起, 表示 "都可以". 给价位用.
@@ -34,6 +35,7 @@ class EatSegmentSlider extends StatefulWidget {
     required this.selected,
     required this.onChanged,
     required this.semanticsLabel,
+    this.compact = false,
   }) : _look = _Look.pill,
        allIndex = null,
        icons = null;
@@ -46,7 +48,8 @@ class EatSegmentSlider extends StatefulWidget {
     required this.semanticsLabel,
     this.icons,
   }) : _look = _Look.route,
-       allIndex = null;
+       allIndex = null,
+       compact = false;
 
   const new coins({
     super.key,
@@ -56,7 +59,8 @@ class EatSegmentSlider extends StatefulWidget {
     required this.semanticsLabel,
     this.allIndex,
   }) : _look = _Look.coins,
-       icons = null;
+       icons = null,
+       compact = false;
 
   /// 每一段的文字, 从左到右.
   final List<String> labels;
@@ -76,6 +80,9 @@ class EatSegmentSlider extends StatefulWidget {
   /// 路线造型里每一段的图标, 和 [labels] 一一对应, 站在指示器上方.
   final List<EatIcons>? icons;
 
+  /// 胶囊造型画得矮一些, 轨道用 `mist`.
+  final bool compact;
+
   final _Look _look;
 
   /// 胶囊造型的高度, 同时是点击区域的高度.
@@ -83,6 +90,9 @@ class EatSegmentSlider extends StatefulWidget {
 
   /// 路线和硬币造型的高度: 上面画图, 下面一行字.
   static const tallHeight = 76.0;
+
+  /// [compact] 胶囊画出来的高度, 在 [height] 的点击区域里上下居中.
+  static const compactHeight = 32.0;
 
   /// 滑块和轨道边缘之间的空隙.
   static const _inset = 3.0;
@@ -207,52 +217,60 @@ class _EatSegmentSliderState extends State<EatSegmentSlider>
   Widget _pill(BuildContext context, double segment) {
     final eat = context.eat;
     final c = eat.colors;
+    final compact = widget.compact;
     return SizedBox(
       height: EatSegmentSlider.height,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: c.paper,
-          borderRadius: const BorderRadius.all(EatRadius.pill),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          vertical: compact
+              ? (EatSegmentSlider.height - EatSegmentSlider.compactHeight) / 2
+              : 0,
         ),
-        child: Stack(
-          children: [
-            Row(
-              children: [
-                for (final label in widget.labels)
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        style: eat.text.meta.copyWith(color: c.inkMuted),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: compact ? c.mist : c.paper,
+            borderRadius: const BorderRadius.all(EatRadius.pill),
+          ),
+          child: Stack(
+            children: [
+              Row(
+                children: [
+                  for (final label in widget.labels)
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: eat.text.meta.copyWith(color: c.inkMuted),
+                        ),
                       ),
                     ),
+                ],
+              ),
+              Positioned(
+                left: _position.value * segment + EatSegmentSlider._inset,
+                top: EatSegmentSlider._inset,
+                bottom: EatSegmentSlider._inset,
+                width: segment - EatSegmentSlider._inset * 2,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: c.ink,
+                    borderRadius: const BorderRadius.all(EatRadius.pill),
                   ),
-              ],
-            ),
-            Positioned(
-              left: _position.value * segment + EatSegmentSlider._inset,
-              top: EatSegmentSlider._inset,
-              bottom: EatSegmentSlider._inset,
-              width: segment - EatSegmentSlider._inset * 2,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: c.ink,
-                  borderRadius: const BorderRadius.all(EatRadius.pill),
-                ),
-                child: Center(
-                  child: Text(
-                    widget.labels[_nearest],
-                    maxLines: 1,
-                    style: eat.text.meta.copyWith(
-                      color: c.paper,
-                      fontWeight: FontWeight.w600,
+                  child: Center(
+                    child: Text(
+                      widget.labels[_nearest],
+                      maxLines: 1,
+                      style: eat.text.meta.copyWith(
+                        color: c.paper,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

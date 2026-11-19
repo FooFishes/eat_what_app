@@ -77,7 +77,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('一条评论都没有时写「吃过的话，说两句」', (tester) async {
+  testWidgets('一条评论都没有时请大家写第一条，上面就是输入框', (tester) async {
     env.adapter.on('GET /foods/1/comments', [
       FakeAdapter.ok(commentPageJson(const [])),
     ]);
@@ -89,16 +89,17 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('吃过的话，说两句'),
+      find.text('还没有人说过，来写第一条'),
       200,
       scrollable: scrollable,
     );
+    expect(find.text('吃过的话，说两句'), findsOneWidget);
     expect(find.textContaining('看全部'), findsNothing);
     await expectAccessible(tester);
     await unmountApp(tester, container);
   });
 
-  testWidgets('没认证时点「写一条」弹拦截对话框；认证后进写评论', (tester) async {
+  testWidgets('评论区顶部就是输入框，没认证时点了弹拦截对话框，不展开', (tester) async {
     final (container, router) = await pumpApp(
       tester,
       env,
@@ -107,15 +108,14 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      find.text('写一条'),
+      find.text('吃过的话，说两句').hitTestable(),
       200,
       scrollable: scrollable,
     );
-    await tester.ensureVisible(find.text('写一条'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('写一条'));
+    await tester.tap(find.text('吃过的话，说两句'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能评论'), findsOneWidget);
+    expect(find.byType(EditableText), findsNothing);
     expect(locationOf(router), Paths.dish(1));
     await unmountApp(tester, container);
   });

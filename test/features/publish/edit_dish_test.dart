@@ -87,12 +87,7 @@ void main() {
       location: Paths.dish(1),
       overrides: [recordAnalytics],
     );
-    await tester.scrollUntilVisible(
-      find.text('修改记录'),
-      200,
-      scrollable: _page(),
-    );
-    await tester.tap(find.text('编辑'));
+    await tester.tap(find.bySemanticsLabel('编辑'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AddDishPage), findsOneWidget);

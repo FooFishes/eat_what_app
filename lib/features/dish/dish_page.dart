@@ -8,6 +8,7 @@ import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/layout/eat_layout.dart';
+import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -15,15 +16,19 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_haptics.dart';
-import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/foot_links.dart';
 import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/like_heart.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/photo_viewer.dart';
+import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
+import 'package:eat/design/widgets/star_rating.dart';
+import 'package:eat/design/widgets/stat_strip.dart';
 import 'package:eat/data/comment/comment_repository.dart';
 import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/dish.dart';
@@ -32,8 +37,9 @@ import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/dish/dish_providers.dart';
-import 'package:eat/features/dish/rating_panel.dart';
+import 'package:eat/features/dish/rating_card.dart';
 import 'package:eat/features/system/comment_card.dart';
+import 'package:eat/features/system/comment_composer.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/shop_actions.dart';
 import 'package:eat/router/paths.dart';
@@ -49,7 +55,8 @@ import 'package:go_router/go_router.dart';
 /// 菜品详情页.
 ///
 /// - 舞台: 封面, 招牌标记和分类, 菜名, 价格.
-/// - 抽屉: 依次为店卡, 赞和导航, 评分, "大家怎么说", 上传者, 编辑和修改记录, "吃过的人说".
+/// - 顶栏右边: 编辑, 收藏, 分享.
+/// - 抽屉: 依次为数字条 (评分, 赞, 口味), 店, 上传者卡片, "吃过的人说", 页底的 "修改记录".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -69,6 +76,7 @@ class DishPage extends ConsumerWidget {
     if (dish == null) {
       return StageScaffold(
         stage: StageColor.broth,
+        stageHeight: _stageHeightOf(context),
         topBar: const _TopBar(dish: null),
         stageContent: detail.hasError && !detail.isLoading
             ? const SizedBox()
@@ -95,35 +103,41 @@ class DishPage extends ConsumerWidget {
     final loaded = detail.value != null;
     return StageScaffold(
       stage: dish.stage,
+      stageHeight: _stageHeightOf(context),
       topBar: _TopBar(dish: dish),
       onRefresh: () => _refresh(context, ref, dish),
       stageContent: _StageContent(dish: dish),
       sheetSlivers: [
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+          padding: const EdgeInsets.fromLTRB(
+            EatSpace.s20,
+            EatSpace.s8,
+            EatSpace.s20,
+            0,
+          ),
           sliver: SliverList.list(
             children: [
-              _ShopCard(dish: dish),
-              const SizedBox(height: EatSpace.s16),
-              _Actions(dish: dish),
-              const SizedBox(height: 28),
-              _Rating(dish: dish),
-              const SizedBox(height: 28),
-              if (loaded)
-                _TasteSection(dish: dish)
-              else if (detail.hasError)
+              _Stats(dish: dish, loaded: loaded),
+              if (!loaded && detail.hasError) ...[
+                const SizedBox(height: EatSpace.s16),
                 FailureState(
                   error: detail.error,
                   onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
-                )
-              else
-                const RowListPlaceholder(count: 2),
-              const SizedBox(height: 28),
-              _Uploader(dish: dish),
+                ),
+              ],
               const SizedBox(height: EatSpace.s16),
-              _EditActions(dish: dish),
-              const SizedBox(height: 28),
+              _ShopRow(dish: dish),
+              const SizedBox(height: EatSpace.s16),
+              _Uploader(dish: dish),
+              const SizedBox(height: _groupGap),
               _Comments(dishId: dishId, focus: focusComment),
+              const SizedBox(height: EatSpace.s16),
+              FootLinks([
+                (
+                  label: '修改记录',
+                  onTap: () => context.push(Paths.dishHistory(dish.id)),
+                ),
+              ]),
             ],
           ),
         ),
@@ -131,6 +145,13 @@ class DishPage extends ConsumerWidget {
     );
   }
 }
+
+/// 抽屉里大分组之间的留白: 店和评论之间, 评论和上传者之间.
+const _groupGap = 32.0;
+
+/// 舞台只占半屏, 抽屉一打开就看得到数字条和店, 评论也露出开头.
+double _stageHeightOf(BuildContext context) =>
+    (MediaQuery.sizeOf(context).height * 0.5).clamp(360.0, 460.0);
 
 /// 下拉刷新菜品详情, 评论与所属店铺信息; 若详情请求失败则保留现有内容并提示原因.
 Future<void> _refresh(BuildContext context, WidgetRef ref, Dish dish) async {
@@ -199,27 +220,43 @@ class _TopBar extends ConsumerWidget {
         Expanded(
           child: dish == null ? const SizedBox() : StageBarTitle(dish.name),
         ),
-        if (dish != null && interaction != null) ...[
-          EatIconButton(
-            interaction.favorite ? EatIcons.bookmarkOn : EatIcons.bookmark,
-            label: interaction.favorite ? '取消收藏' : '收藏',
-            onPressed: () => _toggleFavorite(context, ref, dish),
+        if (dish != null && interaction != null)
+          StageBarActions(
+            children: [
+              StageBarAction(
+                icon: EatIcons.edit,
+                text: '编辑',
+                onTap: () async {
+                  if (await guardAction(context, ref, Capability.editDish) &&
+                      context.mounted) {
+                    await context.push(Paths.dishEdit(dish.id), extra: dish);
+                  }
+                },
+              ),
+              StageBarAction(
+                icon: interaction.favorite
+                    ? EatIcons.bookmarkOn
+                    : EatIcons.bookmark,
+                text: interaction.favorite ? '已收藏' : '收藏',
+                label: interaction.favorite ? '取消收藏' : '收藏',
+                onTap: () => _toggleFavorite(context, ref, dish),
+              ),
+              StageBarAction(
+                icon: EatIcons.share,
+                text: '分享',
+                onTap: () => showSharePanel(
+                  context,
+                  ref,
+                  path: Paths.dish(dish.id),
+                  title: dish.name,
+                  target: (type: AnalyticsTarget.food, id: dish.id),
+                  reportTarget: dish.uploaderId == me
+                      ? null
+                      : ReportTarget.dish(dish.id),
+                ),
+              ),
+            ],
           ),
-          EatIconButton(
-            EatIcons.share,
-            label: '分享',
-            onPressed: () => showSharePanel(
-              context,
-              ref,
-              path: Paths.dish(dish.id),
-              title: dish.name,
-              target: (type: AnalyticsTarget.food, id: dish.id),
-              reportTarget: dish.uploaderId == me
-                  ? null
-                  : ReportTarget.dish(dish.id),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -267,8 +304,8 @@ class _StageContent extends ConsumerWidget {
     final eat = context.eat;
     final palette = StageTheme.of(context);
     final layout = EatLayout.of(context);
-    final scale = layout.stageScale;
     final textScale = layout.stageTextScale;
+    final barBottom = StageScaffold.barBottomOf(context);
     final lines = DishRules.stageLines(dish.name);
     final nameSize = layout.stageNameSize(lines);
     final price = DishRules.priceText(dish.price);
@@ -278,15 +315,17 @@ class _StageContent extends ConsumerWidget {
     ].join(' · ');
     return LayoutBuilder(
       builder: (context, constraints) {
+        // 手机上舞台只有半屏: 盘子按舞台高度定大小, 圆心在顶栏和抽屉之间, 右边探出屏幕一点.
+        final height = constraints.maxHeight;
         final plate = layout.isWide
-            ? (constraints.maxHeight * 440 / 800).clamp(260.0, 520.0)
-            : 296 * scale;
+            ? (height * 440 / 800).clamp(260.0, 520.0)
+            : (height * 0.56).clamp(200.0, 280.0);
         final center = layout.isWide
-            ? Offset(
-                constraints.maxWidth - plate * 0.3,
-                constraints.maxHeight / 2,
-              )
-            : Offset(constraints.maxWidth - 72 * scale, 260 * scale);
+            ? Offset(constraints.maxWidth - plate * 0.3, height / 2)
+            : Offset(
+                constraints.maxWidth - plate * 0.26,
+                barBottom + (height - EatSize.sheetOverlap - barBottom) / 2 + 6,
+              );
         return Stack(
           children: [
             Positioned(
@@ -307,7 +346,7 @@ class _StageContent extends ConsumerWidget {
             ),
             Positioned(
               left: EatSpace.s20,
-              bottom: EatSize.sheetOverlap + (layout.isWide ? 40 : 28),
+              bottom: EatSize.sheetOverlap + (layout.isWide ? 40 : 20),
               child: IgnorePointer(
                 child: SizedBox(
                   width: layout.isWide ? 260 : 200 * textScale,
@@ -345,7 +384,7 @@ class _StageContent extends ConsumerWidget {
                             price,
                             textScaler: TextScaler.noScaling,
                             style: eat.text.priceHero.copyWith(
-                              fontSize: 56 * textScale,
+                              fontSize: (layout.isWide ? 56 : 48) * textScale,
                               color: palette.foreground,
                             ),
                           ),
@@ -387,90 +426,96 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
   await Navigator.of(context).push(PhotoViewer.route(photos: photos));
 }
 
-/// 所属店铺卡片, 展示店名, 距离, 商圈和地址, 点击进入餐厅详情.
-class _ShopCard extends ConsumerWidget {
-  const new({required this.dish});
+/// 抽屉顶部的数字条: 评分, 赞, 口味.
+///
+/// - 评分: 平均分满 [DishRules.ratingMinCount] 人才写, 不足时写 "—"; 上面写人数, 下面一排小星是自己打的分, 没打过是空星.
+///   点了从这一格展开评分卡.
+/// - 赞: 心形加赞数, 点了赞或取消, 赞上时心形弹一下, 数字往上翻一格.
+/// - 口味: 这道菜的口味, 最多 3 个, 只读. 口味投票没有接口, 不放入口.
+class _Stats extends ConsumerStatefulWidget {
+  const new({required this.dish, required this.loaded});
 
   final Dish dish;
 
+  /// 详情是否已加载. 列表带来的菜没有口味, 加载完之前口味先空着.
+  final bool loaded;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.eat.colors;
-    final shop = ref.watch(shopProvider(dish.shopId)).value;
-    final distance = ref.watch(distanceToProvider(shop?.point));
-    final hub = ref.watch(hubNameProvider(shop?.hubId));
-    final meta = [?distance, ?hub, ?shop?.address].join('  ');
-    return EatListRow(
-      leading: Container(
-        width: EatSize.thumb,
-        height: EatSize.thumb,
-        decoration: BoxDecoration(
-          color: c.mist,
-          borderRadius: const BorderRadius.all(EatRadius.thumb),
-        ),
-        child: Center(child: EatIcon(EatIcons.store, size: 24, color: c.ink)),
-      ),
-      title: Text(dish.shopName ?? '这家店'),
-      lines: [if (meta.isNotEmpty) Text(meta)],
-      trailing: EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
-      onTap: () => context.push(Paths.shop(dish.shopId)),
-    );
-  }
+  ConsumerState<_Stats> createState() => _StatsState();
 }
 
-/// 赞按钮和 "导航去店里" 按钮. 赞按钮显示心形和赞数, 已赞时显示为按下状态.
-class _Actions extends ConsumerWidget {
-  const new({required this.dish});
+class _StatsState extends ConsumerState<_Stats> {
+  /// 评分格, 评分卡从这里展开.
+  final _ratingCell = GlobalKey();
 
-  final Dish dish;
+  Dish get dish => widget.dish;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
     final interaction =
         ref.watch(dishInteractionsProvider.select((m) => m[dish.id])) ??
         DishInteraction.of(dish);
-    final shop = ref.watch(shopProvider(dish.shopId)).value;
-    final point = shop?.point;
-    return Row(
-      spacing: EatSpace.s10,
-      children: [
-        Expanded(
-          child: Semantics(
-            toggled: interaction.liked,
-            child: (interaction.liked ? EatButton.mist : EatButton.outline)(
-              '${interaction.likes}',
-              icon: interaction.liked ? EatIcons.heartOn : EatIcons.heart,
-              onPressed: () => _toggleLike(context, ref),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: EatButton.solid(
-            '导航去店里',
-            icon: EatIcons.navigate,
-            onPressed: point == null
-                ? null
-                : () => navigateToShop(
-                    context,
-                    ref,
-                    shopId: dish.shopId,
-                    name: shop?.name ?? dish.shopName ?? dish.name,
-                    point: point,
-                  ),
-          ),
-        ),
-      ],
+    final rating = interaction.rating;
+    final mine = interaction.myRating;
+    final tastes = dish.tags.take(3).map((t) => t.label).toList();
+    late final StatCell ratingCell;
+    ratingCell = StatCell(
+      key: _ratingCell,
+      label: rating.count == 0 ? '评分' : '评分 · ${rating.count} 人',
+      value: DishRules.scoreText(rating) == null
+          ? '—'
+          : rating.score!.toStringAsFixed(1),
+      footer: Align(
+        alignment: Alignment.centerLeft,
+        child: StarRating(value: mine, size: 15),
+      ),
+      semanticsLabel: [
+        '评分',
+        DishRules.ratingSummary(rating),
+        if (mine != null) '你打了 $mine 分' else '点了打分',
+      ].join('，'),
+      onTap: () => showDishRatingCard(
+        context,
+        ref,
+        dish,
+        origin: _ratingCell,
+        face: (_) => StatStrip.face(ratingCell),
+      ),
     );
+    return StatStrip([
+      ratingCell,
+      StatCell(
+        label: '赞',
+        value: '${interaction.likes}',
+        valueWidget: Row(
+          spacing: EatSpace.s8,
+          children: [
+            LikeHeart(liked: interaction.liked, size: 22, color: c.ink),
+            _RollingCount(interaction.likes),
+          ],
+        ),
+        note: interaction.liked ? '你赞过' : '点一下赞',
+        semanticsLabel: '赞，${interaction.likes}',
+        toggled: interaction.liked,
+        onTap: _toggleLike,
+      ),
+      StatCell(
+        label: '口味',
+        value: !widget.loaded || tastes.isEmpty ? '—' : tastes.join(' · '),
+        note: widget.loaded && tastes.isEmpty ? '还没标口味' : null,
+      ),
+    ]);
   }
 
-  Future<void> _toggleLike(BuildContext context, WidgetRef ref) async {
+  Future<void> _toggleLike() async {
     if (!await guardAction(context, ref, Capability.like)) return;
     EatHaptics.light();
     final failure = await ref
         .read(dishInteractionsProvider.notifier)
         .toggleLike(dish);
-    if (failure != null && context.mounted) {
+    if (failure != null && mounted) {
       await reportActionFailure(
         context,
         ref,
@@ -482,110 +527,92 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-/// 评分区: 平均分和评分人数, 当前用户打的分, 以及打开评分面板的按钮.
-///
-/// 平均分满 [DishRules.ratingMinCount] 人才显示, 不足时只写人数. 打分后的结果来自 [dishInteractionsProvider].
-class _Rating extends ConsumerWidget {
+/// 赞数: 变多时新数字从下面翻上来, 变少时从上面翻下来.
+class _RollingCount extends StatefulWidget {
+  const new(this.count);
+
+  final int count;
+
+  @override
+  State<_RollingCount> createState() => _RollingCountState();
+}
+
+class _RollingCountState extends State<_RollingCount> {
+  var _up = true;
+
+  @override
+  void didUpdateWidget(_RollingCount old) {
+    super.didUpdateWidget(old);
+    if (old.count != widget.count) _up = widget.count > old.count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final style = eat.text.stat.copyWith(
+      fontSize: 24,
+      height: 30 / 24,
+      color: eat.colors.ink,
+    );
+    return ClipRect(
+      child: AnimatedSwitcher(
+        duration: context.motion(EatMotion.select),
+        transitionBuilder: (child, animation) {
+          final incoming = child.key == ValueKey(widget.count);
+          final from = Offset(0, (_up == incoming) ? 0.6 : -0.6);
+          return SlideTransition(
+            position: Tween(begin: from, end: Offset.zero).animate(animation),
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+        child: Text(
+          '${widget.count}',
+          key: ValueKey(widget.count),
+          style: style,
+        ),
+      ),
+    );
+  }
+}
+
+/// 这道菜在哪家店: 门头照, 店名, 距离, 商圈和地址, 点了进餐厅详情. 导航只放在餐厅详情里.
+class _ShopRow extends ConsumerWidget {
   const new({required this.dish});
 
   final Dish dish;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eat = context.eat;
-    final interaction =
-        ref.watch(dishInteractionsProvider.select((m) => m[dish.id])) ??
-        DishInteraction.of(dish);
-    final mine = interaction.myRating;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: EatSpace.s8,
-      children: [
-        Semantics(
-          header: true,
-          child: Text('吃过觉得怎么样', style: eat.text.heading),
-        ),
-        Row(
-          spacing: EatSpace.s14,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    DishRules.ratingSummary(interaction.rating),
-                    style: eat.text.body.copyWith(color: eat.colors.ink),
-                  ),
-                  Text(
-                    mine == null ? '吃过的话，打个分' : '你打了 $mine 分',
-                    style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
-                  ),
-                ],
+    final c = context.eat.colors;
+    final shop = ref.watch(shopProvider(dish.shopId)).value;
+    final distance = ref.watch(distanceToProvider(shop?.point));
+    final hub = ref.watch(hubNameProvider(shop?.hubId));
+    final meta = [?distance, ?hub, ?shop?.address].join('  ');
+    final photo = shop?.photo;
+    return EatListRow(
+      leading: photo == null
+          ? Container(
+              width: EatSize.thumb,
+              height: EatSize.thumb,
+              decoration: BoxDecoration(
+                color: c.mist,
+                borderRadius: const BorderRadius.all(EatRadius.thumb),
               ),
-            ),
-            EatButton.outline(
-              mine == null ? '评分' : '改评分',
-              icon: EatIcons.edit,
-              height: 36,
-              onPressed: () => showDishRatingPanel(context, ref, dish),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-// TODO: 后端 v2 的口味是菜品自身的属性, 没有投票接口. 投票接口上线后恢复点词投票和加标签面板.
-/// "大家怎么说": 菜品自身的口味, 由编辑者设置, 只读.
-///
-/// 口味投票和 "加标签" 没有接口, 不放入口.
-class _TasteSection extends StatelessWidget {
-  const new({required this.dish});
-
-  final Dish dish;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: EatSpace.s8,
-      children: [
-        Semantics(header: true, child: Text('大家怎么说', style: eat.text.heading)),
-        if (dish.tags.isEmpty)
-          Text(
-            '还没有标注口味，编辑菜品时可以添加',
-            style: eat.text.body.copyWith(color: eat.colors.inkMuted),
-          )
-        else
-          Wrap(
-            spacing: EatSpace.s8,
-            children: [
-              for (final (i, taste) in dish.tags.indexed) ...[
-                if (i > 0)
-                  ExcludeSemantics(
-                    child: Text(
-                      '·',
-                      style: eat.text.subhead.copyWith(
-                        color: eat.colors.inkMuted,
-                      ),
-                    ),
-                  ),
-                Text(
-                  taste.label,
-                  style: eat.text.subhead.copyWith(color: eat.colors.ink),
-                ),
-              ],
-            ],
-          ),
-      ],
+              child: Center(
+                child: EatIcon(EatIcons.store, size: 24, color: c.ink),
+              ),
+            )
+          : ListThumb(image: networkImage(photo, width: EatSize.thumb)),
+      title: Text(dish.shopName ?? '这家店'),
+      lines: [if (meta.isNotEmpty) Text(meta)],
+      trailing: EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
+      onTap: () => context.push(Paths.shop(dish.shopId)),
     );
   }
 }
 
 // TODO: 菜品响应没有上传者昵称, `/user/userInfo` 需要登录, 游客看到的上传者是 "同学". 后端在菜品响应中提供上传者摘要后改为读取接口字段.
-/// 上传者信息区, 展示头像, 昵称, 上传日期及上传者说明, 点击可进入上传者主页.
+/// 上传者卡片: 上面是这道菜的说明, 下面一行头像, 昵称和上传日期, 点击进上传者主页.
 ///
 /// 登录用户按 [Dish.uploaderId] 请求上传者资料, 游客不发起请求; 资料未就绪时显示 "同学", 若账号已注销则显示 "已注销用户" 且不可点击.
 class _Uploader extends ConsumerWidget {
@@ -593,9 +620,13 @@ class _Uploader extends ConsumerWidget {
 
   final Dish dish;
 
+  /// 卡片里头像的直径.
+  static const _avatar = 28.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
+    final c = eat.colors;
     final id = dish.uploaderId;
     final signedIn = ref.watch(sessionProvider.select((s) => s is SignedIn));
     final profile = id != null && signedIn
@@ -603,78 +634,70 @@ class _Uploader extends ConsumerWidget {
         : null;
     final name = id == null ? '已注销用户' : profile?.nickname ?? '同学';
     final created = dish.createdAt;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: EatSpace.s10,
-      children: [
-        EatListRow(
-          leading: EatAvatar(
-            name: name,
-            color: StageColor.values[(id ?? 0) % StageColor.values.length],
-            image: networkImage(profile?.avatarUrl, width: EatSize.avatar),
-          ),
-          title: Text(name),
-          lines: [
-            if (created != null)
-              Text('${TimeFormat.date(created, clock.now())}上传'),
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: c.mist,
+        borderRadius: const BorderRadius.all(EatRadius.tile),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(EatSpace.s16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: EatSpace.s14,
+          children: [
+            if (dish.description case final description?)
+              Text(description, style: eat.text.body.copyWith(color: c.ink)),
+            Row(
+              spacing: EatSpace.s8,
+              children: [
+                EatAvatar(
+                  name: name,
+                  color:
+                      StageColor.values[(id ?? 0) % StageColor.values.length],
+                  image: networkImage(profile?.avatarUrl, width: _avatar),
+                  size: _avatar,
+                ),
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: eat.text.meta.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: c.ink,
+                    ),
+                  ),
+                ),
+                if (created != null)
+                  Text(
+                    '${TimeFormat.date(created, clock.now())}上传',
+                    style: eat.text.meta.copyWith(color: c.inkMuted),
+                  ),
+              ],
+            ),
           ],
-          onTap: switch (id) {
-            final id? => () async {
-              if (await guardAction(context, ref, Capability.viewProfile) &&
-                  context.mounted) {
-                await context.push(Paths.user(id));
-              }
-            },
-            null => null,
-          },
         ),
-        if (dish.description case final description?)
-          Text(
-            description,
-            style: eat.text.body.copyWith(color: eat.colors.ink),
-          ),
-      ],
+      ),
     );
+    return switch (id) {
+      final id? => EatTappable(
+        onTap: () async {
+          if (await guardAction(context, ref, Capability.viewProfile) &&
+              context.mounted) {
+            await context.push(Paths.user(id));
+          }
+        },
+        focusShape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(EatRadius.tile),
+        ),
+        builder: (context, _) => card,
+      ),
+      null => card,
+    };
   }
 }
 
-/// "编辑" 和 "修改记录" 两个入口.
-///
-/// - 认证用户都能编辑任何一道菜, 未认证时点 "编辑" 弹拦截.
-/// - 修改记录公开, 游客也能看.
-class _EditActions extends ConsumerWidget {
-  const new({required this.dish});
-
-  final Dish dish;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) => Row(
-    spacing: EatSpace.s10,
-    children: [
-      Expanded(
-        child: EatButton.outline(
-          '编辑',
-          icon: EatIcons.edit,
-          onPressed: () async {
-            if (await guardAction(context, ref, Capability.editDish) &&
-                context.mounted) {
-              await context.push(Paths.dishEdit(dish.id), extra: dish);
-            }
-          },
-        ),
-      ),
-      Expanded(
-        child: EatButton.outline(
-          '修改记录',
-          icon: EatIcons.history,
-          onPressed: () => context.push(Paths.dishHistory(dish.id)),
-        ),
-      ),
-    ],
-  );
-}
-
-/// "吃过的人说" 评论区: 标题后跟评论条数, 右侧 "写一条". 显示最有用的 3 条, 其下为 "看全部 N 条".
+/// "吃过的人说" 评论区: 标题后跟评论条数, 下面就是写评论的输入框 ([CommentComposer]), 再下面是最有用的 3 条, 最后 "看全部 N 条".
 ///
 /// [focus] 是要滚动到的评论. 该评论在前 3 条中时滚动到该条并以底色标出, 否则滚动到评论区标题.
 class _Comments extends ConsumerStatefulWidget {
@@ -711,13 +734,6 @@ class _CommentsState extends ConsumerState<_Comments> {
     });
   }
 
-  Future<void> _write() async {
-    if (!await guardAction(context, ref, Capability.comment) || !mounted) {
-      return;
-    }
-    await context.push(Paths.writeComment(widget.dishId));
-  }
-
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
@@ -737,32 +753,27 @@ class _CommentsState extends ConsumerState<_Comments> {
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: EatSpace.s10,
       children: [
         Row(
           key: _header,
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          spacing: EatSpace.s8,
           children: [
             Semantics(
               header: true,
               child: Text('吃过的人说', style: eat.text.heading),
             ),
-            if (total > 0) ...[
-              const SizedBox(width: EatSpace.s8),
+            if (total > 0)
               Text(
                 '$total',
-                style: eat.text.count.copyWith(color: eat.colors.ink),
+                style: eat.text.count.copyWith(color: eat.colors.inkMuted),
               ),
-            ],
-            const Spacer(),
-            EatButton.outline(
-              '写一条',
-              icon: EatIcons.edit,
-              height: 36,
-              onPressed: _write,
-            ),
           ],
         ),
+        const SizedBox(height: EatSpace.s14),
+        CommentComposer(dishId: widget.dishId),
+        const SizedBox(height: EatSpace.s20),
         if (list == null)
           comments.hasError && !comments.isLoading
               ? FailureState(
@@ -772,29 +783,25 @@ class _CommentsState extends ConsumerState<_Comments> {
               : const RowListPlaceholder(count: 2, thumbSize: 36)
         else if (shown.isEmpty)
           Text(
-            '吃过的话，说两句',
-            style: eat.text.body.copyWith(color: eat.colors.inkMuted),
+            '还没有人说过，来写第一条',
+            style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
           )
         else ...[
-          for (final comment in shown)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: CommentCard(
-                key: comment.id == focus ? _focused : null,
-                comment: comment,
-                highlighted: comment.id == focus,
-              ),
+          for (final (i, comment) in shown.indexed) ...[
+            if (i > 0) const CommentGap(),
+            CommentCard(
+              key: comment.id == focus ? _focused : null,
+              comment: comment,
+              highlighted: comment.id == focus,
             ),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: EatButton.mist(
-              '看全部 $total 条',
-              height: 48,
-              onPressed: () => context.push(Paths.comments(widget.dishId)),
-            ),
+          ],
+          const SizedBox(height: EatSpace.s8),
+          EatButton.mist(
+            '看全部 $total 条',
+            height: 48,
+            onPressed: () => context.push(Paths.comments(widget.dishId)),
           ),
         ],
-        const SizedBox(height: 12),
       ],
     );
   }

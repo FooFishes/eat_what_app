@@ -7,26 +7,28 @@ import 'package:eat/domain/rules/comment_rules.dart';
 import 'package:eat/state/comments.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'write_comment_providers.g.dart';
+part 'comment_composer_providers.g.dart';
 
-/// 写评论页的一张照片. [key] 是上传完成后的存储 key, 上传前为 null.
+/// 评论输入框里的一张照片. [key] 是上传完成后的存储 key, 上传前为 null.
 class const ComposerPhoto({
   required final int id,
   required final PickedPhoto photo,
   final String? key,
 });
 
-/// 写评论页的照片列表与发送状态; 文本内容由页面的输入框控制器管理.
+/// 评论输入框的照片列表与发送状态; 文本内容由输入框的控制器管理.
 class const Composer({
   final List<ComposerPhoto> photos = const [],
   final bool sending = false,
 });
 
-/// 写评论页草稿状态管理器. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
+/// 评论输入框的草稿状态. 照片在提交时上传, 发送失败后重试时已上传成功的照片会复用存储 key 而不重复上传.
+///
+/// 按菜和 [rootId] 区分: 写评论的那一个 ([rootId] 为 null) 和每条评论下面回复用的互不影响.
 @riverpod
-class CommentComposer extends _$CommentComposer {
+class CommentDraft extends _$CommentDraft {
   @override
-  Composer build(int dishId) => const Composer();
+  Composer build(int dishId, int? rootId) => const Composer();
 
   var _nextId = 0;
 
@@ -44,6 +46,9 @@ class CommentComposer extends _$CommentComposer {
     );
   }
 
+  /// 发送成功后清空草稿.
+  void clear() => state = const Composer();
+
   void removePhoto(int id) => state = Composer(
     photos: [
       for (final p in state.photos)
@@ -55,7 +60,7 @@ class CommentComposer extends _$CommentComposer {
   /// 上传照片并提交内容. 当 [rootId] 非空时表示回复该评论, 此时不携带照片.
   ///
   /// 失败时抛出 [AppFailure].
-  Future<CommentPosted> send(String text, {int? rootId, int? replyToId}) async {
+  Future<CommentPosted> send(String text, {int? replyToId}) async {
     state = Composer(photos: state.photos, sending: true);
     try {
       final keys = <String>[];
@@ -97,3 +102,10 @@ class CommentComposer extends _$CommentComposer {
     sending: state.sending,
   );
 }
+
+/// 正在回复的对象: 回复哪条评论 ([rootId]), 回复的是其中哪条回复 ([replyToId], 回复评论本身时为 null), 对方叫什么.
+class const ReplyTarget({
+  required final int rootId,
+  final int? replyToId,
+  required final String name,
+});
