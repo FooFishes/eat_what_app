@@ -3,6 +3,7 @@ import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/joined_group.dart';
 import 'package:eat/design/widgets/morph_card.dart';
 import 'package:flutter/widgets.dart';
 
@@ -53,6 +54,7 @@ class StatCell {
 }
 
 /// 一行等宽的数字格, 放在抽屉顶部概括这道菜或这家店. 底色 `mist`, 格子之间一道细线.
+/// 放进 [JoinedGroup] 时圆角跟着所在位置走.
 class StatStrip extends StatelessWidget {
   const new(this.cells, {super.key});
 
@@ -64,11 +66,7 @@ class StatStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.eat.colors;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.mist,
-        borderRadius: const BorderRadius.all(EatRadius.tile),
-      ),
+    return JoinedSurface(
       child: IntrinsicHeight(
         child: Row(
           children: [

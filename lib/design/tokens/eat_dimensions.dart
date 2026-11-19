@@ -44,6 +44,9 @@ abstract final class EatRadius {
   /// 48–56px 缩略图的圆角.
   static const thumb = Radius.circular(16);
 
+  /// 连成一组的卡片 (`JoinedGroup`) 在相邻接缝处的小圆角.
+  static const joined = Radius.circular(6);
+
   /// 要看得出是方图的小圆角缩略图, 如菜品页里店铺的门头照.
   static const photo = Radius.circular(10);
 }

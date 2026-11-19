@@ -22,6 +22,7 @@ import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/foot_links.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/like_heart.dart';
+import 'package:eat/design/widgets/joined_group.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/photo_viewer.dart';
@@ -56,7 +57,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 封面, 招牌和分类的小胶囊, 菜名, 价格.
 /// - 顶栏右边: 编辑, 收藏, 分享.
-/// - 抽屉: 依次为数字条 (评分, 赞, 口味), 上传者卡片, 店, "吃过的人说", 页底的 "修改记录".
+/// - 抽屉: 数字条 (评分, 赞, 口味), 上传者卡片, 店三张卡片连成一组 ([JoinedGroup]), 然后 "吃过的人说", 页底的 "修改记录".
 ///
 /// 从列表进入时先用 [initial] 绘制舞台, 抽屉内容等待接口返回.
 class DishPage extends ConsumerWidget {
@@ -117,7 +118,11 @@ class DishPage extends ConsumerWidget {
           ),
           sliver: SliverList.list(
             children: [
-              _Stats(dish: dish, loaded: loaded),
+              JoinedGroup([
+                _Stats(dish: dish, loaded: loaded),
+                _Uploader(dish: dish),
+                _ShopRow(dish: dish),
+              ]),
               if (!loaded && detail.hasError) ...[
                 const SizedBox(height: EatSpace.s16),
                 FailureState(
@@ -125,10 +130,6 @@ class DishPage extends ConsumerWidget {
                   onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
                 ),
               ],
-              const SizedBox(height: EatSpace.s10),
-              _Uploader(dish: dish),
-              const SizedBox(height: EatSpace.s10),
-              _ShopRow(dish: dish),
               const SizedBox(height: _groupGap),
               _Comments(dishId: dishId, focus: focusComment),
               const SizedBox(height: EatSpace.s16),
@@ -146,7 +147,7 @@ class DishPage extends ConsumerWidget {
   }
 }
 
-/// 抽屉里大分组之间的留白: 店和评论之间, 评论和上传者之间.
+/// 抽屉里卡片组和评论之间的留白.
 const _groupGap = 32.0;
 
 /// 舞台只占半屏, 抽屉一打开就看得到数字条和店, 评论也露出开头.
@@ -631,11 +632,8 @@ class _ShopRow extends ConsumerWidget {
       focusShape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(EatRadius.tile),
       ),
-      builder: (context, _) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: c.mist,
-          borderRadius: const BorderRadius.all(EatRadius.tile),
-        ),
+      builder: (context, pressed) => JoinedSurface(
+        pressed: pressed,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             EatSpace.s10,
@@ -673,11 +671,8 @@ class _Uploader extends ConsumerWidget {
         : null;
     final name = id == null ? '已注销用户' : profile?.nickname ?? '同学';
     final created = dish.createdAt;
-    final card = DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.mist,
-        borderRadius: const BorderRadius.all(EatRadius.tile),
-      ),
+    Widget card(bool pressed) => JoinedSurface(
+      pressed: pressed,
       child: Padding(
         padding: const EdgeInsets.all(EatSpace.s16),
         child: Column(
@@ -729,9 +724,9 @@ class _Uploader extends ConsumerWidget {
         focusShape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(EatRadius.tile),
         ),
-        builder: (context, _) => card,
+        builder: (context, pressed) => card(pressed),
       ),
-      null => card,
+      null => card(false),
     };
   }
 }
