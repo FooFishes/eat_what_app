@@ -70,7 +70,7 @@ void main() {
       location: Paths.settingsDelete,
     );
 
-    expect(find.text('若不删除，内容将保留，作者显示为「已注销用户」'), findsOneWidget);
+    expect(find.text('不删除时保留，作者显示为「已注销用户」'), findsOneWidget);
     expect(
       tester.widget<EatButton>(_button('申请注销')).onPressed,
       isNull,

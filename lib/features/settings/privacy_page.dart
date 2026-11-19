@@ -100,7 +100,7 @@ class PrivacyPage extends ConsumerWidget {
                 if (personalized.value case final on?)
                   EatSwitch(
                     label: '个性化推荐',
-                    description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
+                    description: '参考你的赞和收藏；关闭后按大众口碑推荐',
                     value: on,
                     onChanged: (on) async => report(
                       !await allowed()
@@ -130,11 +130,7 @@ class PrivacyPage extends ConsumerWidget {
                 if (usage.value case final stats?)
                   EatSwitch(
                     label: '使用统计',
-                    description: [
-                      '记录你用了哪些功能，用来改进体验',
-                      if (stats.retentionDays case final days?) '保存 $days 天',
-                      '关闭后删除已收集的记录',
-                    ].join('，'),
+                    description: '用于改进体验，关闭后删除已上传数据',
                     value: stats.enabled,
                     onChanged: (on) async => report(
                       await ref

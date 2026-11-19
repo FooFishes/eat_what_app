@@ -103,7 +103,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
               label: '同时删除我的评论和回复',
               description: form.deleteComments
                   ? '评论和回复会一起删除'
-                  : '若不删除，内容将保留，作者显示为「已注销用户」',
+                  : '不删除时保留，作者显示为「已注销用户」',
               value: form.deleteComments,
               onChanged: form.submitting
                   ? null

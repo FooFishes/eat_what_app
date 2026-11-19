@@ -102,7 +102,7 @@ void main() {
     });
 
     final usage = find.widgetWithText(EatSwitch, '使用统计');
-    expect(find.textContaining('保存 7 天'), findsOneWidget);
+    expect(find.text('用于改进体验，关闭后删除已上传数据'), findsOneWidget);
     expect(tester.widget<EatSwitch>(usage).value, isTrue);
     await tester.ensureVisible(usage);
     await tester.pumpAndSettle();
