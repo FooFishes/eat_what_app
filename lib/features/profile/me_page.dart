@@ -1,4 +1,3 @@
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -421,43 +420,24 @@ class _StatusNotice extends ConsumerWidget {
   }
 }
 
-/// "我的标签" 和 "足迹" 两个入口, 并排显示.
+// TODO: 后端 v2 不提供我的标签接口, 不放 "我的标签" 入口. 接口上线后和 "足迹" 并排放回来.
+/// "足迹" 入口.
 class _Shortcuts extends ConsumerWidget {
   const new();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-    child: IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: EatSpace.s10,
-        children: [
-          Expanded(
-            // TODO: 后端 v2 不提供我的标签接口, 入口标 "待接入", 不进入我的标签页. 接口上线后去掉标记并进入我的标签页.
-            child: _Shortcut(
-              icon: EatIcons.tag,
-              title: '我的标签',
-              subtitle: '用来给菜分类',
-              pending: true,
-              onTap: () => showPending(context, PendingFeature.myTags),
-            ),
-          ),
-          Expanded(
-            child: _Shortcut(
-              icon: EatIcons.history,
-              title: '足迹',
-              subtitle: '最近看过的菜和店',
-              onTap: () async {
-                if (await guardAction(context, ref, Capability.viewHistory) &&
-                    context.mounted) {
-                  await context.push(Paths.history);
-                }
-              },
-            ),
-          ),
-        ],
-      ),
+    child: _Shortcut(
+      icon: EatIcons.history,
+      title: '足迹',
+      subtitle: '最近看过的菜和店',
+      onTap: () async {
+        if (await guardAction(context, ref, Capability.viewHistory) &&
+            context.mounted) {
+          await context.push(Paths.history);
+        }
+      },
     ),
   );
 }
@@ -468,16 +448,12 @@ class _Shortcut extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.pending = false,
   });
 
   final EatIcons icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-
-  /// 为 true 时标题旁显示 "待接入".
-  final bool pending;
 
   @override
   Widget build(BuildContext context) {
@@ -504,18 +480,7 @@ class _Shortcut extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   spacing: 2,
                   children: [
-                    Row(
-                      spacing: EatSpace.s4,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            title,
-                            style: eat.text.subhead.copyWith(color: c.ink),
-                          ),
-                        ),
-                        if (pending) const PendingTag(),
-                      ],
-                    ),
+                    Text(title, style: eat.text.subhead.copyWith(color: c.ink)),
                     Text(
                       subtitle,
                       maxLines: 1,

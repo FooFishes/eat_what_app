@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
@@ -1378,10 +1377,8 @@ class _Group extends StatelessWidget {
   }
 }
 
-// TODO: 后端 v2 暂未提供自定义标签接口, "自己写" 目前仅保留入口. 接口上线后恢复自定义标签输入并随发布提交, 同时移除 "待接入" 标记.
+// TODO: 后端 v2 暂未提供自定义标签接口, 不放 "自己写" 入口. 接口上线后加回自定义标签输入并随发布提交.
 /// 口味多选组件, 最多可选 [DishOptions.tagsMax] 个口味.
-///
-/// "自己写" 为自定义标签入口, 当前标注为 "待接入" 且点击不发起请求.
 class _Tastes extends StatelessWidget {
   const new({
     required this.tastes,
@@ -1405,11 +1402,6 @@ class _Tastes extends StatelessWidget {
           selected: selected.contains(taste),
           onTap: () => onToggle(taste),
         ),
-      EatChip.add(
-        '自己写',
-        onTap: () => showPending(context, PendingFeature.myTags),
-      ),
-      const PendingTag(),
     ],
   );
 }

@@ -343,7 +343,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('分类 6 个；口味最多选 3 个；「自己写」待接入，点了不发请求', (tester) async {
+  testWidgets('分类 6 个；口味最多选 3 个；没有「自己写」', (tester) async {
     final env = TestEnv();
     _routes(env, {'id': 99});
     final (container, _) = await pumpApp(
@@ -369,12 +369,7 @@ void main() {
     expect(find.text('口味最多选 3 个'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
 
-    final before = env.adapter.requests.length;
-    await _tapText(tester, '自己写');
-    expect(find.text('该功能即将上线'), findsOneWidget);
-    expect(find.text('待接入'), findsOneWidget);
-    expect(find.text('自己写一个标签'), findsNothing);
-    expect(env.adapter.requests, hasLength(before));
+    expect(find.text('自己写'), findsNothing);
 
     await tester.scrollUntilVisible(_field('菜名'), -200, scrollable: _page());
     await tester.enterText(_field('菜名'), '鲜虾云吞');

@@ -270,7 +270,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('「大家怎么说」只读：点口味词和「加标签」都提示待接入，不发请求', (tester) async {
+  testWidgets('「大家怎么说」只读：口味词点不了，没有「加标签」和待接入', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -278,22 +278,16 @@ void main() {
       location: Paths.dish(1),
     );
 
-    expect(find.text('待接入'), findsOneWidget);
-    await tester.tap(find.text('辣'));
+    expect(find.text('辣'), findsOneWidget);
+    expect(find.text('加标签'), findsNothing);
+    expect(find.text('待接入'), findsNothing);
+    await tester.tap(find.text('辣'), warnIfMissed: false);
     await tester.pumpAndSettle();
-    expect(find.text('该功能即将上线'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('加标签'));
-    await tester.pumpAndSettle();
-    expect(find.text('该功能即将上线'), findsOneWidget);
-    expect(find.text('自己写'), findsNothing, reason: '不打开加标签面板');
+    expect(find.text('该功能即将上线'), findsNothing);
     expect(
       env.adapter.requests.where((r) => r.path.contains('/tags')),
       isEmpty,
     );
-    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 
@@ -413,7 +407,7 @@ void main() {
       location: Paths.dish(1),
     );
 
-    // 详情页的入口已标待接入, 面板本身保留, 直接打开.
+    // 详情页没有入口, 面板本身保留, 直接打开.
     showTagPanel(tester.element(find.byType(DishPage)), dishId: 1).ignore();
     await tester.pumpAndSettle();
     await tester.tap(find.text('自己写'));

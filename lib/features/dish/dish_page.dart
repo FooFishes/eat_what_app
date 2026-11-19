@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
@@ -15,7 +14,6 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_button.dart';
-import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
@@ -538,10 +536,10 @@ class _Rating extends ConsumerWidget {
   }
 }
 
-// TODO: 后端 v2 的口味是菜品自身的属性, 没有投票接口. 投票接口上线后恢复点词投票和加标签面板, 并去掉 "待接入".
+// TODO: 后端 v2 的口味是菜品自身的属性, 没有投票接口. 投票接口上线后恢复点词投票和加标签面板.
 /// "大家怎么说": 菜品自身的口味, 由编辑者设置, 只读.
 ///
-/// 点口味词投票和 "加标签" 保留入口, 标 "待接入", 点击不发请求.
+/// 口味投票和 "加标签" 没有接口, 不放入口.
 class _TasteSection extends StatelessWidget {
   const new({required this.dish});
 
@@ -550,7 +548,6 @@ class _TasteSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    void pending() => showPending(context, PendingFeature.tasteVote);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: EatSpace.s8,
@@ -560,46 +557,28 @@ class _TasteSection extends StatelessWidget {
           Text(
             '还没有标注口味，编辑菜品时可以添加',
             style: eat.text.body.copyWith(color: eat.colors.inkMuted),
-          ),
-        Wrap(
-          spacing: EatSpace.s8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            for (final (i, taste) in dish.tags.indexed) ...[
-              if (i > 0)
-                ExcludeSemantics(
-                  child: Text(
-                    '·',
-                    style: eat.text.subhead.copyWith(
-                      color: eat.colors.inkMuted,
-                    ),
-                  ),
-                ),
-              EatTappable(
-                onTap: pending,
-                label: '${taste.label}，投票待接入',
-                focusShape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                ),
-                builder: (context, _) => ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: EatSize.touch,
-                    minHeight: EatSize.touch,
-                  ),
-                  child: Center(
-                    widthFactor: 1,
+          )
+        else
+          Wrap(
+            spacing: EatSpace.s8,
+            children: [
+              for (final (i, taste) in dish.tags.indexed) ...[
+                if (i > 0)
+                  ExcludeSemantics(
                     child: Text(
-                      taste.label,
-                      style: eat.text.subhead.copyWith(color: eat.colors.ink),
+                      '·',
+                      style: eat.text.subhead.copyWith(
+                        color: eat.colors.inkMuted,
+                      ),
                     ),
                   ),
+                Text(
+                  taste.label,
+                  style: eat.text.subhead.copyWith(color: eat.colors.ink),
                 ),
-              ),
+              ],
             ],
-            EatChip.add('加标签', onTap: pending),
-            const PendingTag(),
-          ],
-        ),
+          ),
       ],
     );
   }

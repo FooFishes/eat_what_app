@@ -540,13 +540,13 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 - 设计要求没有接口的功能照样画出来，旁边放「待接入」（8.2 第 1 行）。页面照常写，数据也走 Provider，只是 Provider 先返回放在功能目录里的示例数据（插画和示例文字），不发请求；写操作的按钮点了也不发请求。
 - 示例数据只用于演示，插画不能冒充用户上传的照片。
 - 接口上线后只换 Provider 的实现、补 `data/` 里的接口类，页面不用改；同时改 `pending_features.dart`、去掉「待接入」，删掉现状差距里对应的一行。
-- 后端 v2 删掉的功能（2026-11-13）：已经写好的页面、Provider、数据层和它们自己的测试原样保留，只做让它们继续编译的最小改动；入口照常显示并标「待接入」（`PendingTag`、`EatTabItem` 和 `EatSwitch` 的 `pending`、`SettingsRow(pending: true)`），点了调 `showPending`，不发请求、不进入背后的页面。任何用户能点到的路径都不能请求已删除的接口。`PendingFeature` 现有这几项：
+- 后端 v2 删掉的功能（2026-11-13）：已经写好的页面、Provider、数据层和它们自己的测试原样保留，只做让它们继续编译的最小改动；不放入口，背后的页面进不去。任何用户能点到的路径都不能请求已删除的接口。`PendingFeature` 现有这几项：
 
   | 项 | 入口 | 保留的代码 |
   | --- | --- | --- |
   | `topics` | 不放（原在发现页分类栏） | `data/topic/`、`features/topic/`、`/topics*` 路由 |
-  | `myTags` | 「我的」的快捷入口「我的标签」、加菜页的「自己写」 | `my_tags_page.dart`、`tag_dishes_page.dart`、`/me/tags*` 路由 |
-  | `tasteVote` | 菜品详情「大家怎么说」的点词和「＋ 加标签」 | `tag_panel.dart`、`tasteVocabularyProvider` |
+  | `myTags` | 不放（原是「我的」的快捷入口「我的标签」、加菜页的「自己写」） | `my_tags_page.dart`、`tag_dishes_page.dart`、`/me/tags*` 路由 |
+  | `tasteVote` | 不放（原是菜品详情「大家怎么说」的点词和「＋ 加标签」） | `tag_panel.dart`、`tasteVocabularyProvider` |
 
 - 审核没有入口要保留：`moderationStatus`、「已提交审核」和待审核的分支都已删除（产品 9.10）。
 

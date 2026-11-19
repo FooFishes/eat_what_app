@@ -1,7 +1,6 @@
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/features/profile/edit_profile_page.dart';
 import 'package:eat/features/profile/history_page.dart';
-import 'package:eat/features/profile/my_tags_page.dart';
 import 'package:eat/features/profile/tag_dishes_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -17,7 +16,7 @@ void main() {
 
   setUp(() => env = TestEnv());
 
-  testWidgets('「我的」上有编辑资料、我的标签和足迹的入口，我的标签待接入', (tester) async {
+  testWidgets('「我的」上有编辑资料和足迹的入口，没有我的标签', (tester) async {
     env.adapter.on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
     await pumpApp(
       tester,
@@ -26,14 +25,8 @@ void main() {
       location: Paths.me,
     );
 
-    expect(find.text('待接入'), findsWidgets);
-    await tester.tap(find.text('我的标签'));
-    await tester.pumpAndSettle();
-    expect(find.byType(MyTagsPage), findsNothing);
-    expect(find.text('该功能即将上线'), findsOneWidget);
+    expect(find.text('我的标签'), findsNothing);
     expect(env.adapter.sent('GET /foods/tags/my'), isEmpty);
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
 
     await tester.tap(find.text('足迹'));
     await tester.pumpAndSettle();
