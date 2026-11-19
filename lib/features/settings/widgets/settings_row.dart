@@ -17,6 +17,7 @@ class SettingsRow extends StatelessWidget {
     required this.label,
     this.value,
     this.numericValue = false,
+    this.warnValue = false,
     this.pending = false,
     this.onTap,
   });
@@ -28,6 +29,9 @@ class SettingsRow extends StatelessWidget {
 
   /// 当值为版本号或脱敏手机号等数字内容时, 设为 true 以使用数字字体.
   final bool numericValue;
+
+  /// 值用 `warn` 色, 用于提示用户该做什么 (如版本过旧). 值本身要是能看懂的文字.
+  final bool warnValue;
   final bool pending;
   final VoidCallback? onTap;
 
@@ -41,9 +45,10 @@ class SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
+    final valueColor = warnValue ? c.warn : c.inkMuted;
     final valueStyle = numericValue
-        ? eat.text.count.copyWith(fontSize: 15, color: c.inkMuted)
-        : eat.text.body.copyWith(color: c.inkMuted);
+        ? eat.text.count.copyWith(fontSize: 15, color: valueColor)
+        : eat.text.body.copyWith(color: valueColor);
     final row = SizedBox(
       height: 56,
       child: LayoutBuilder(

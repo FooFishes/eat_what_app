@@ -30,7 +30,7 @@ class RemoteConfig extends _$RemoteConfig {
   var _fallback = ClientConfig.empty;
   String? _etag;
   DateTime? _fetchedAt;
-  Future<void>? _fetching;
+  Future<bool>? _fetching;
 
   /// 是否已开始获取远程配置. 同意隐私政策之前不请求, 因此回到前台和切换校区时也不请求.
   var _started = false;
@@ -56,8 +56,8 @@ class RemoteConfig extends _$RemoteConfig {
     state = snapshot?.config ?? _fallback;
   }
 
-  /// 请求最新配置. 并发调用共用同一次请求, 失败时保留当前配置.
-  Future<void> refresh() {
+  /// 请求最新配置. 并发调用共用同一次请求, 失败时保留当前配置. 请求成功 (含配置没有变化) 时返回 true.
+  Future<bool> refresh() {
     _started = true;
     return _fetching ??= _fetch().whenComplete(() => _fetching = null);
   }
@@ -72,7 +72,7 @@ class RemoteConfig extends _$RemoteConfig {
     await refresh();
   }
 
-  Future<void> _fetch() async {
+  Future<bool> _fetch() async {
     try {
       final result = await _repository
           .fetch(
@@ -84,14 +84,16 @@ class RemoteConfig extends _$RemoteConfig {
             etag: _etag,
           )
           .timeout(timeout);
-      if (!ref.mounted) return;
+      if (!ref.mounted) return false;
       if (result case RemoteConfigFetched(:final snapshot)) {
         _etag = snapshot.etag;
         state = snapshot.config;
       }
       _fetchedAt = clock.now();
+      return true;
     } on Object catch (e) {
       debugPrint('remote config fetch failed: $e');
+      return false;
     }
   }
 

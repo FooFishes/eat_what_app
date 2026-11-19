@@ -8,14 +8,18 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/domain/rules/remote_config_rules.dart';
 import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/notices.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,7 +27,8 @@ import 'package:go_router/go_router.dart';
 
 /// 设置页, 展示头像与昵称 (点击进入编辑资料), 各子页面入口以及底部的 "退出登录" 按钮.
 ///
-/// 游客模式下仅显示 "个性化" 和 "关于与反馈" 两项.
+/// 游客模式下仅显示 "个性化", "检查更新" 和 "关于与反馈" 三项.
+/// 本机版本低于最新版本时, "关于与反馈" 右边的版本号和 "检查更新" 右边的 "有新版本" 用 `warn` 色.
 class SettingsPage extends ConsumerWidget {
   const new({super.key});
 
@@ -31,6 +36,7 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(sessionProvider);
     final version = ref.watch(appVersionProvider).value;
+    final outdated = ref.watch(appUpdateProvider) != UpdateDecision.none;
     final personalize = SettingsRow(
       icon: EatIcons.eye,
       label: '个性化',
@@ -41,8 +47,10 @@ class SettingsPage extends ConsumerWidget {
       label: '关于与反馈',
       value: version,
       numericValue: true,
+      warnValue: outdated,
       onTap: () => context.push(Paths.settingsAbout),
     );
+    const checkUpdate = _CheckUpdateRow();
     final user = switch (session) {
       SignedIn(:final user) => user,
       SignedOut() || Guest() => null,
@@ -52,7 +60,7 @@ class SettingsPage extends ConsumerWidget {
         title: '设置',
         slivers: [
           SliverToBoxAdapter(
-            child: SettingsGroup(children: [personalize, about]),
+            child: SettingsGroup(children: [personalize, checkUpdate, about]),
           ),
         ],
       );
@@ -99,7 +107,7 @@ class SettingsPage extends ConsumerWidget {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
         SliverToBoxAdapter(
-          child: SettingsGroup(children: [personalize, about]),
+          child: SettingsGroup(children: [personalize, checkUpdate, about]),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 28)),
         SliverToBoxAdapter(
@@ -202,6 +210,53 @@ class _Profile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "检查更新": 重新请求远程配置后对比版本线, 有新版本时弹 "有新版本" 对话框, 否则提示已是最新, 请求失败时提示重试.
+/// 请求期间右边写 "正在检查", 不重复请求. 本机版本已低于最新版本时右边写 "有新版本".
+class _CheckUpdateRow extends ConsumerStatefulWidget {
+  const new();
+
+  @override
+  ConsumerState<_CheckUpdateRow> createState() => _CheckUpdateRowState();
+}
+
+class _CheckUpdateRowState extends ConsumerState<_CheckUpdateRow> {
+  var _checking = false;
+
+  Future<void> _check() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    final ok = await ref.read(remoteConfigProvider.notifier).refresh();
+    if (!mounted) return;
+    setState(() => _checking = false);
+    if (!ok) {
+      showToast(context, '检查更新失败，请重试');
+      return;
+    }
+    final line = ref.read(currentVersionLineProvider);
+    if (line != null && ref.read(appUpdateProvider) != UpdateDecision.none) {
+      await showUpdatePrompt(context, line);
+    } else {
+      showToast(context, '已是最新版本');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final outdated = ref.watch(appUpdateProvider) != UpdateDecision.none;
+    return SettingsRow(
+      icon: EatIcons.download,
+      label: '检查更新',
+      value: _checking
+          ? '正在检查'
+          : outdated
+          ? '有新版本'
+          : null,
+      warnValue: !_checking && outdated,
+      onTap: _check,
     );
   }
 }

@@ -157,6 +157,23 @@ void main() {
       findsOneWidget,
     );
     await expectAccessible(tester);
+
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      },
+    );
+    await tester.tap(find.text('复制'));
+    await tester.pump();
+    expect(copied, ['版本 0.1.0，构建 1，补丁 2']);
+    expect(find.text('版本号已复制'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('关于页分别进开发团队和开源声明，开源声明里点一项看许可证全文', (tester) async {

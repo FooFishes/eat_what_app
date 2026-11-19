@@ -5,12 +5,17 @@ import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/domain/rules/remote_config_rules.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/remote_config.dart';
 import 'package:eat/features/settings/widgets/settings_group.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +23,7 @@ import 'package:go_router/go_router.dart';
 /// 关于页面: 最上面是放大的版本号, 下面是反馈与我的反馈, 再下面一组不带图标的隐私政策, 用户协议, 开发团队, 开源声明.
 ///
 /// 允许游客访问, 游客点击 "反馈" 或 "我的反馈" 时会弹出登录拦截对话框.
-/// 版本名用大号数字写在最上面, 右边小字写构建号与热更新补丁号 ("构建 30  补丁 2"), 无补丁时省略补丁号; 下面一句提醒转述时把这些都说全.
+/// 版本名用大号数字写在最上面, 右边一个 "复制" 按钮, 复制 "版本 0.3.0，构建 30，补丁 2" 这样的完整版本号; 低于最新版本时用 `warn` 色并在右边写 "有新版本", 右边小字写构建号与热更新补丁号 ("构建 30  补丁 2"), 无补丁时省略补丁号; 下面一句提醒转述时把这些都说全.
 class AboutPage extends ConsumerWidget {
   const new({super.key});
 
@@ -31,6 +36,7 @@ class AboutPage extends ConsumerWidget {
     final build = ref.watch(appBuildNumberProvider).value;
     final hasBuild = build != null && build.isNotEmpty;
     final patch = ref.watch(currentPatchProvider).value;
+    final outdated = ref.watch(appUpdateProvider) != UpdateDecision.none;
     void open(String url) {
       if (url.isNotEmpty) ref.read(browserProvider).open(Uri.parse(url));
     }
@@ -48,52 +54,85 @@ class AboutPage extends ConsumerWidget {
                     '版本 $version',
                     if (hasBuild) '构建 $build',
                     if (patch != null) '补丁 $patch',
+                    if (outdated) '有新版本',
                   ].join('，'),
                   '如需要向他人提供版本号，请将所有内容进行转述。',
                 ].join('。'),
-                child: ExcludeSemantics(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 2,
-                    children: [
-                      Text(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
+                  children: [
+                    ExcludeSemantics(
+                      child: Text(
                         '版本',
                         style: eat.text.meta.copyWith(color: c.inkMuted),
                       ),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        spacing: EatSpace.s10,
-                        children: [
-                          Text(
-                            version,
-                            style: eat.text.stat.copyWith(
-                              fontSize: 40,
-                              height: 48 / 40,
-                              color: c.ink,
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      spacing: EatSpace.s10,
+                      children: [
+                        Expanded(
+                          child: ExcludeSemantics(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              spacing: EatSpace.s10,
+                              children: [
+                                Text(
+                                  version,
+                                  style: eat.text.stat.copyWith(
+                                    fontSize: 40,
+                                    height: 48 / 40,
+                                    color: outdated ? c.warn : c.ink,
+                                  ),
+                                ),
+                                if (hasBuild || patch != null || outdated)
+                                  Flexible(
+                                    child: Text(
+                                      [
+                                        if (hasBuild) '构建 $build',
+                                        if (patch != null) '补丁 $patch',
+                                        if (outdated) '有新版本',
+                                      ].join('  '),
+                                      style: eat.text.count.copyWith(
+                                        color: c.inkMuted,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          if (hasBuild || patch != null)
-                            Flexible(
-                              child: Text(
-                                [
+                        ),
+                        EatButton.mist(
+                          '复制',
+                          icon: EatIcons.copy,
+                          height: EatSize.touch,
+                          onPressed: () async {
+                            await Clipboard.setData(
+                              ClipboardData(
+                                text: [
+                                  '版本 $version',
                                   if (hasBuild) '构建 $build',
                                   if (patch != null) '补丁 $patch',
-                                ].join('  '),
-                                style: eat.text.count.copyWith(
-                                  color: c.inkMuted,
-                                ),
+                                ].join('，'),
                               ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: EatSpace.s4),
-                      Text(
+                            );
+                            if (context.mounted) {
+                              showToast(context, '版本号已复制');
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: EatSpace.s4),
+                    ExcludeSemantics(
+                      child: Text(
                         '如需要向他人提供版本号，请将所有内容进行转述。',
                         style: eat.text.caption.copyWith(color: c.inkMuted),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             const SizedBox(height: EatSpace.s24),

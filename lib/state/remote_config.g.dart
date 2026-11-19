@@ -56,7 +56,7 @@ final class RemoteConfigProvider
   }
 }
 
-String _$remoteConfigHash() => r'25939971e22cc34371cac988959c03ff9da1d48d';
+String _$remoteConfigHash() => r'3a735cc698bb7947b0cf4ed48f4a95a16cab5757';
 
 /// 远程配置快照 (技术架构第 17 节).
 ///

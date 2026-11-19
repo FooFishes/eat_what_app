@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:eat/core/platform/app_info.dart';
 import 'package:eat/core/platform/app_store.dart';
 import 'package:eat/data/remote_config/remote_config_repository.dart';
+import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -245,5 +247,81 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('有新版本'), findsNothing);
     await unmountApp(tester, container);
+  });
+
+  group('设置里检查更新', () {
+    const newer = {
+      'android': {
+        'minBuild': 0,
+        'latestBuild': 30,
+        'latestVersionName': '1.2.0',
+        'storeUrl': 'market://details?id=you.v50to.eat',
+        'releaseNotes': null,
+      },
+    };
+
+    Future<(ProviderContainer, GoRouter)> openSettings(
+      WidgetTester tester,
+    ) async {
+      final (container, router) = await launch(tester);
+      router.go(Paths.settings);
+      await tester.pumpAndSettle();
+      return (container, router);
+    }
+
+    testWidgets('有新版本时弹「有新版本」，版本号和「有新版本」用提醒色', (tester) async {
+      final (container, router) = await openSettings(tester);
+      expect(find.text('有新版本'), findsNothing);
+
+      env.adapter.on('GET /remote-config', [
+        FakeAdapter.ok(
+          clientConfigJson(
+            announcements: const [],
+            maintenance: _noMaintenance,
+            versions: newer,
+          ),
+        ),
+      ]);
+      await tester.tap(find.text('检查更新'));
+      await tester.pumpAndSettle();
+      expect(find.text('0.1.0 升到 1.2.0'), findsOneWidget);
+      await tester.tap(find.text('下次再说'));
+      await tester.pumpAndSettle();
+
+      final warn = tester.element(find.text('检查更新')).eat.colors.warn;
+      expect(tester.widget<Text>(find.text('有新版本')).style?.color, warn);
+      expect(tester.widget<Text>(find.text('0.1.0')).style?.color, warn);
+
+      router.go(Paths.settingsAbout);
+      await tester.pumpAndSettle();
+      expect(tester.widget<Text>(find.text('0.1.0')).style?.color, warn);
+      expect(find.text('构建 25  有新版本'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('已是最新时提示，请求失败时提示重试', (tester) async {
+      final (container, _) = await openSettings(tester);
+      env.adapter.on('GET /remote-config', [
+        FakeAdapter.ok(
+          clientConfigJson(
+            announcements: const [],
+            maintenance: _noMaintenance,
+            versions: _noVersions,
+          ),
+        ),
+        const FakeResponse.offline(),
+      ]);
+      await tester.tap(find.text('检查更新'));
+      await tester.pumpAndSettle();
+      expect(find.text('已是最新版本'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('检查更新'));
+      await tester.pumpAndSettle();
+      expect(find.text('检查更新失败，请重试'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
   });
 }
