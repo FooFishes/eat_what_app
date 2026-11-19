@@ -2,7 +2,8 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show ProviderOrFamily;
+import 'package:flutter_riverpod/misc.dart'
+    show ProviderListenable, ProviderOrFamily;
 
 /// 页面下拉刷新的统一封装, 先将 [invalidate] 中的 Provider 置为失效, 再等待 [wait] 完成新数据加载.
 ///
@@ -25,3 +26,17 @@ Future<void> pullToRefresh(
     if (context.mounted) showToast(context, e.message);
   }
 }
+
+/// 先显示缓存的页面用: [provider] 带着旧数据重新请求失败时弹出轻提示, 页面继续显示旧数据.
+///
+/// 没有旧数据时不提示, 页面自己显示 "加载失败". 一个页面的几项数据常常一起失败, 同一条提示还在屏幕上时不再弹.
+void toastStaleFailure<T>(
+  BuildContext context,
+  WidgetRef ref,
+  ProviderListenable<AsyncValue<T>> provider,
+) => ref.listen(provider, (previous, next) {
+  if (!(previous?.isLoading ?? false) || next.isLoading) return;
+  if (!next.hasValue || next.error is! AppFailure) return;
+  final message = (next.error! as AppFailure).message;
+  if (context.mounted && !isToastShowing(message)) showToast(context, message);
+});

@@ -108,19 +108,19 @@ abstract class _$AccountCode extends $Notifier<AccountCodeState> {
 
 /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 
 @ProviderFor(Privacy)
 final privacyProvider = PrivacyProvider._();
 
 /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 final class PrivacyProvider
     extends $AsyncNotifierProvider<Privacy, PrivacySettings> {
   /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
   ///
-  /// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
+  /// 修改时先乐观更新本地状态, 若请求失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
   PrivacyProvider._()
     : super(
         from: null,
@@ -140,11 +140,11 @@ final class PrivacyProvider
   Privacy create() => Privacy();
 }
 
-String _$privacyHash() => r'9a2cee4f15e05327e3678d1fd594951c8547d4d8';
+String _$privacyHash() => r'1f35f5bb3af4d706b18e1d510ff5dc02f4ea48ef';
 
 /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 
 abstract class _$Privacy extends $AsyncNotifier<PrivacySettings> {
   FutureOr<PrivacySettings> build();
@@ -164,15 +164,15 @@ abstract class _$Privacy extends $AsyncNotifier<PrivacySettings> {
   }
 }
 
-/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录. 进入页面时先显示本地缓存, 再在后台请求.
 
 @ProviderFor(Personalized)
 final personalizedProvider = PersonalizedProvider._();
 
-/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录. 进入页面时先显示本地缓存, 再在后台请求.
 final class PersonalizedProvider
     extends $AsyncNotifierProvider<Personalized, bool> {
-  /// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
+  /// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录. 进入页面时先显示本地缓存, 再在后台请求.
   PersonalizedProvider._()
     : super(
         from: null,
@@ -192,9 +192,9 @@ final class PersonalizedProvider
   Personalized create() => Personalized();
 }
 
-String _$personalizedHash() => r'c9ef78eb2a326f0d92ddca12a5086469ba9648bc';
+String _$personalizedHash() => r'1532d6185a07f783613ab721c0e68ade7229467a';
 
-/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录. 进入页面时先显示本地缓存, 再在后台请求.
 
 abstract class _$Personalized extends $AsyncNotifier<bool> {
   FutureOr<bool> build();
@@ -214,15 +214,15 @@ abstract class _$Personalized extends $AsyncNotifier<bool> {
   }
 }
 
-/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录. 进入页面时先显示本机记下的开关, 再在后台请求.
 
 @ProviderFor(UsageStatsSetting)
 final usageStatsSettingProvider = UsageStatsSettingProvider._();
 
-/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录. 进入页面时先显示本机记下的开关, 再在后台请求.
 final class UsageStatsSettingProvider
     extends $AsyncNotifierProvider<UsageStatsSetting, UsageStats> {
-  /// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
+  /// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录. 进入页面时先显示本机记下的开关, 再在后台请求.
   UsageStatsSettingProvider._()
     : super(
         from: null,
@@ -242,9 +242,9 @@ final class UsageStatsSettingProvider
   UsageStatsSetting create() => UsageStatsSetting();
 }
 
-String _$usageStatsSettingHash() => r'a5a61a1513c375c0b0b1af6531a8a2003a3e866e';
+String _$usageStatsSettingHash() => r'e06c48bc887d1a96f6035302c1f6d560d969e707';
 
-/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录. 进入页面时先显示本机记下的开关, 再在后台请求.
 
 abstract class _$UsageStatsSetting extends $AsyncNotifier<UsageStats> {
   FutureOr<UsageStats> build();
@@ -448,15 +448,15 @@ abstract class _$DeviceSessions extends $AsyncNotifier<List<DeviceSession>> {
   }
 }
 
-/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 
 @ProviderFor(PushSettings)
 final pushSettingsProvider = PushSettingsProvider._();
 
-/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 final class PushSettingsProvider
     extends $AsyncNotifierProvider<PushSettings, List<PushSetting>> {
-  /// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
+  /// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
   PushSettingsProvider._()
     : super(
         from: null,
@@ -476,9 +476,9 @@ final class PushSettingsProvider
   PushSettings create() => PushSettings();
 }
 
-String _$pushSettingsHash() => r'666de3623ecf3cd3438a1db3e9131efbc64c4d31';
+String _$pushSettingsHash() => r'1aef89bc86b3e0866ed8e0275fd6895eee37828a';
 
-/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 
 abstract class _$PushSettings extends $AsyncNotifier<List<PushSetting>> {
   FutureOr<List<PushSetting>> build();

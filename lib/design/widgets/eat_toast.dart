@@ -23,6 +23,7 @@ void showToast(BuildContext context, String message) {
   final key = GlobalKey<_ToastState>();
   late final _ToastEntry entry;
   entry = _ToastEntry(
+    message,
     OverlayEntry(
       builder: (context) => _Toast(key: key, message: message, bottom: bottom),
     ),
@@ -45,9 +46,13 @@ const _stay = Duration(seconds: 2);
 
 _ToastEntry? _current;
 
-class _ToastEntry {
-  _ToastEntry(this.overlay);
+/// 屏幕上是否正显示着内容为 [message] 的轻提示.
+bool isToastShowing(String message) => _current?.message == message;
 
+class _ToastEntry {
+  _ToastEntry(this.message, this.overlay);
+
+  final String message;
   final OverlayEntry overlay;
   Timer? timer;
   var _removed = false;

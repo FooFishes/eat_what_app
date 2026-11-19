@@ -80,7 +80,7 @@ class AccountCode extends _$AccountCode {
 
 /// 用户的隐私设置状态, 控制是否公开关注列表和粉丝列表.
 ///
-/// 修改时先乐观更新本地状态, 若请求失败则恢复原值.
+/// 修改时先乐观更新本地状态, 若请求失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 @riverpod
 class Privacy extends _$Privacy {
   @override
@@ -89,9 +89,11 @@ class Privacy extends _$Privacy {
       sessionProvider.select((s) => s is SignedIn ? s.user?.id : null),
     );
     if (me == null) return const PrivacySettings();
-    return ref
-        .watch(userRepositoryProvider)
-        .privacy(me, cancelToken: ref.cancelToken());
+    final users = ref.watch(userRepositoryProvider);
+    return ref.cacheFirst(
+      users.cachedPrivacy,
+      () => users.privacy(me, cancelToken: ref.cancelToken()),
+    );
   }
 
   /// 成功时返回 null, 失败时恢复原值并返回失败原因.
@@ -109,13 +111,17 @@ class Privacy extends _$Privacy {
   }
 }
 
-/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录.
+/// 个性化推荐开关状态. 关闭后推荐结果不再参考当前用户的个人记录. 进入页面时先显示本地缓存, 再在后台请求.
 @riverpod
 class Personalized extends _$Personalized {
   @override
-  Future<bool> build() => ref
-      .watch(userRepositoryProvider)
-      .personalized(cancelToken: ref.cancelToken());
+  Future<bool> build() {
+    final users = ref.watch(userRepositoryProvider);
+    return ref.cacheFirst(
+      users.cachedPersonalized,
+      () => users.personalized(cancelToken: ref.cancelToken()),
+    );
+  }
 
   /// 成功时返回 null, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set({required bool personalized}) async {
@@ -134,16 +140,20 @@ class Personalized extends _$Personalized {
   }
 }
 
-/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录.
+/// 使用统计开关状态. 关闭后停止采集, 服务端会删除已收集的记录. 进入页面时先显示本机记下的开关, 再在后台请求.
 @riverpod
 class UsageStatsSetting extends _$UsageStatsSetting {
   @override
-  Future<UsageStats> build() => ref
-      .watch(analyticsProvider)
-      .loadConsent(
+  Future<UsageStats> build() {
+    final analytics = ref.watch(analyticsProvider);
+    return ref.cacheFirst(
+      analytics.cachedConsent,
+      () => analytics.loadConsent(
         signedIn: ref.read(sessionProvider) is SignedIn,
         cancelToken: ref.cancelToken(),
-      );
+      ),
+    );
+  }
 
   /// 成功时返回 null 并采用服务端返回的开关状态, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set({required bool enabled}) async {
@@ -272,13 +282,17 @@ class DeviceSessions extends _$DeviceSessions {
   }
 }
 
-/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值.
+/// 各推送栏目的开关状态. 修改时先乐观更新本地值, 若保存失败则恢复原值. 进入页面时先显示本地缓存, 再在后台请求.
 @riverpod
 class PushSettings extends _$PushSettings {
   @override
-  Future<List<PushSetting>> build() => ref
-      .watch(pushRepositoryProvider)
-      .settings(cancelToken: ref.cancelToken());
+  Future<List<PushSetting>> build() {
+    final push = ref.watch(pushRepositoryProvider);
+    return ref.cacheFirst(
+      push.cachedSettings,
+      () => push.settings(cancelToken: ref.cancelToken()),
+    );
+  }
 
   /// 成功时返回 null 并采用服务端返回的全部开关状态, 失败时恢复原值并返回失败原因.
   Future<AppFailure?> set(

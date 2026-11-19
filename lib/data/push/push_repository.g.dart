@@ -48,4 +48,4 @@ final class PushRepositoryProvider
   }
 }
 
-String _$pushRepositoryHash() => r'1072803d9200ecb15a10b297ff1549a4182f7f99';
+String _$pushRepositoryHash() => r'50ead466fc559761e47c617719d07f08d274bec8';

@@ -22,6 +22,7 @@ import 'package:eat/features/profile/my_comments.dart';
 import 'package:eat/features/profile/profile_providers.dart';
 import 'package:eat/features/profile/widgets/profile_stage.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/comments.dart';
@@ -67,7 +68,8 @@ class _MePageState extends ConsumerState<MePage> {
         ref.read(myUploadsProvider.future),
       ]);
     } on AppFailure catch (e) {
-      if (mounted) showToast(context, e.message);
+      // 资料和上传失败时 toastStaleFailure 已经提示过, 不再重复播报.
+      if (mounted && !isToastShowing(e.message)) showToast(context, e.message);
     }
   }
 
@@ -77,6 +79,10 @@ class _MePageState extends ConsumerState<MePage> {
     // 游客不请求上传和收藏等要求登录的接口, 因此在读取这些 Provider 之前返回.
     if (session is! SignedIn) return const _GuestMe();
     final user = session.user;
+    if (user != null) {
+      toastStaleFailure(context, ref, userProfileProvider(user.id));
+    }
+    toastStaleFailure(context, ref, myUploadsProvider);
     final profile = user == null
         ? null
         : ref.watch(userProfileProvider(user.id)).value;

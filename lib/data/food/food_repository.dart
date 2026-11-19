@@ -30,6 +30,7 @@ class FoodRepository {
 
   static const _detailGroup = 'dish';
   static const _detailMaxAge = Duration(days: 7);
+  static const _mineGroup = 'mine';
 
   Future<Dish> detail(int id, {CancelToken? cancelToken}) async {
     final dto = await _api.detail(id, cancelToken: cancelToken);
@@ -96,8 +97,48 @@ class FoodRepository {
       _map(await _api.likes(page: page, cancelToken: cancelToken));
 
   /// 获取当前用户首次发布的菜品列表, 按发布时间倒序排列.
-  Future<Paged<Dish>> mine({int page = 1, CancelToken? cancelToken}) async =>
-      _map(await _api.mine(page: page, cancelToken: cancelToken));
+  /// 当前用户上传的菜品. 传入 [cacheAs] 时把第一页存入本地缓存, 键为该用户的 id, 每个账号存一份.
+  Future<Paged<Dish>> mine({
+    int page = 1,
+    int? cacheAs,
+    CancelToken? cancelToken,
+  }) async {
+    final result = await _api.mine(page: page, cancelToken: cancelToken);
+    if (cacheAs != null && page == 1) {
+      await _cache.write(
+        _mineGroup,
+        '$cacheAs',
+        jsonEncode({
+          'items': [for (final dto in result.items) dto.toJson()],
+          'hasNext': result.hasNext,
+          'total': result.total,
+        }),
+        maxEntries: 1,
+      );
+    }
+    return _map(result);
+  }
+
+  /// 读取本地缓存的上传第一页, 没有缓存或缓存无法解析时返回 null.
+  Future<Paged<Dish>?> cachedMine(int userId) async {
+    final raw = await _cache.read(_mineGroup, '$userId');
+    if (raw == null) return null;
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return _map(
+        Paged(
+          items: [
+            for (final item in json['items'] as List<dynamic>)
+              FoodDto.fromJson(item as Map<String, dynamic>),
+          ],
+          hasNext: json['hasNext'] as bool,
+          total: json['total'] as int?,
+        ),
+      );
+    } on Object {
+      return null;
+    }
+  }
 
   /// 发布菜品, 返回新菜品的 id. 发布后即公开, 不经审核.
   ///

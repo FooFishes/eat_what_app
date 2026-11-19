@@ -38,6 +38,24 @@ UserProfileDto _$UserProfileDtoFromJson(Map<String, dynamic> json) =>
       blocked: json['blocked'] as bool?,
     );
 
+Map<String, dynamic> _$UserProfileDtoToJson(UserProfileDto instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'displayName': instance.displayName,
+      'avatar': instance.avatar,
+      'signature': instance.signature,
+      'level': instance.level,
+      'title': instance.title,
+      'earnedLikes': instance.earnedLikes,
+      'fansCount': instance.fansCount,
+      'followingsCount': instance.followingsCount,
+      'fansVisible': instance.fansVisible,
+      'followingsVisible': instance.followingsVisible,
+      'isFollowingMe': instance.isFollowingMe,
+      'isFollowingHim': instance.isFollowingHim,
+      'blocked': instance.blocked,
+    };
+
 UserInfoDto _$UserInfoDtoFromJson(Map<String, dynamic> json) => UserInfoDto(
   id: (json['id'] as num?)?.toInt(),
   displayName: json['displayName'] as String?,

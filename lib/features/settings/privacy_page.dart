@@ -10,6 +10,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/settings/settings_providers.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
@@ -27,6 +28,9 @@ class PrivacyPage extends ConsumerWidget {
     final privacy = ref.watch(privacyProvider);
     final personalized = ref.watch(personalizedProvider);
     final usage = ref.watch(usageStatsSettingProvider);
+    toastStaleFailure(context, ref, privacyProvider);
+    toastStaleFailure(context, ref, personalizedProvider);
+    toastStaleFailure(context, ref, usageStatsSettingProvider);
     Future<bool> allowed() =>
         guardAction(context, ref, Capability.changePrivacy);
     void report(AppFailure? failure) {

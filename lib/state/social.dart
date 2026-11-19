@@ -17,18 +17,21 @@ int? _myId(Ref ref) =>
 ///
 /// - 他人资料在离开页面后保留 5 分钟, 从列表点击进入他人主页时可直接复用.
 /// - 当前登录用户的资料保持常驻, 切换回 "我的" 页面时不重新请求, 仅在发布成功后重新请求.
+/// - 当前登录用户的资料另存本地缓存. 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
 /// - 关注和屏蔽成功后, 由 [Follows] 触发重新请求双方的资料以更新统计.
 @riverpod
-Future<UserProfile> userProfile(Ref ref, int userId) {
-  if (userId == _myId(ref)) {
-    ref.keepAlive();
-    ref.watch(publishedCountProvider);
-  } else {
+Future<UserProfile> userProfile(Ref ref, int userId) async {
+  final users = ref.watch(userRepositoryProvider);
+  if (userId != _myId(ref)) {
     ref.cacheFor(const Duration(minutes: 5));
+    return users.profile(userId, cancelToken: ref.cancelToken());
   }
-  return ref
-      .watch(userRepositoryProvider)
-      .profile(userId, cancelToken: ref.cancelToken());
+  ref.keepAlive();
+  ref.watch(publishedCountProvider);
+  return ref.cacheFirst(
+    () => users.cachedProfile(userId),
+    () => users.profile(userId, cache: true, cancelToken: ref.cancelToken()),
+  );
 }
 
 /// 关注关系的本地覆盖值, 以对方的 id 为键, 用于乐观更新.

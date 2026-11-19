@@ -65,16 +65,19 @@ int? _myId(Ref ref) =>
 ///
 /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
 /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
+/// 第一页另存本地缓存: 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
 @Riverpod(keepAlive: true)
 class MyUploads extends _$MyUploads {
   @override
   Future<DishPages> build() async {
-    _myId(ref);
+    final myId = _myId(ref);
     ref.watch(publishedCountProvider);
+    final foods = ref.watch(foodRepositoryProvider);
     return DishPages(
-      pages: await ref
-          .watch(foodRepositoryProvider)
-          .mine(cancelToken: ref.cancelToken()),
+      pages: await ref.cacheFirst(
+        () async => myId == null ? null : foods.cachedMine(myId),
+        () => foods.mine(cacheAs: myId, cancelToken: ref.cancelToken()),
+      ),
     );
   }
 

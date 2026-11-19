@@ -12,6 +12,7 @@ part of 'profile_providers.dart';
 ///
 /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
 /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
+/// 第一页另存本地缓存: 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
 
 @ProviderFor(MyUploads)
 final myUploadsProvider = MyUploadsProvider._();
@@ -20,12 +21,14 @@ final myUploadsProvider = MyUploadsProvider._();
 ///
 /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
 /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
+/// 第一页另存本地缓存: 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
 final class MyUploadsProvider
     extends $AsyncNotifierProvider<MyUploads, DishPages> {
   /// 当前用户上传的菜品列表, 发布成功后会自动刷新.
   ///
   /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
   /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
+  /// 第一页另存本地缓存: 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
   MyUploadsProvider._()
     : super(
         from: null,
@@ -45,12 +48,13 @@ final class MyUploadsProvider
   MyUploads create() => MyUploads();
 }
 
-String _$myUploadsHash() => r'e6438957c369fc385180727cea0b1512a712322a';
+String _$myUploadsHash() => r'306b9cd85e3d25a68588473c026c152831b74bd9';
 
 /// 当前用户上传的菜品列表, 发布成功后会自动刷新.
 ///
 /// "我的" 为常驻主页面, 切换到其他主页面后保留已加载结果而不会重新请求.
 /// 账号封禁期间改用他人主页接口读取, 因为受限会话无法调用 `/foods/my`, 但可调用 `/foods/by-user/{id}`.
+/// 第一页另存本地缓存: 第一次读取时有缓存就先给缓存, 再在后台请求新的; 请求失败时保留缓存.
 
 abstract class _$MyUploads extends $AsyncNotifier<DishPages> {
   FutureOr<DishPages> build();

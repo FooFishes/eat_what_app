@@ -148,6 +148,10 @@ class Analytics {
     return stats;
   }
 
+  /// 本机记下的开关, 进入隐私设置时先显示. 登录状态下每次读取服务端开关后都会同步到本机.
+  Future<UsageStats> cachedConsent() async =>
+      UsageStats(enabled: await _kv.read(enabledKey) != 'false');
+
   /// 开启或关闭使用统计, 返回服务端确认后的状态. 失败时抛出 [AppFailure], 本机开关不变.
   ///
   /// 关闭时先停止采集并清空待发事件, 再请求服务端删除已收集的事件.

@@ -8,6 +8,7 @@ import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/client_config.dart';
 import 'package:eat/features/settings/settings_providers.dart';
+import 'package:eat/features/system/refresh.dart';
 import 'package:eat/features/system/remote_gate.dart';
 import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
@@ -23,6 +24,7 @@ class NotifyPage extends ConsumerWidget {
     final eat = context.eat;
     final note = eat.text.meta.copyWith(color: eat.colors.inkMuted);
     final value = ref.watch(pushSettingsProvider);
+    toastStaleFailure(context, ref, pushSettingsProvider);
     final settings = value.value;
     return PlainScaffold(
       title: '通知',

@@ -221,8 +221,8 @@ class const BlockedUserDto({final int? userId, final String? displayName}) {
 
 /// `/user/userInfo` 返回的公开用户资料 (`UserDtos.OtherInfo`), 包含个人资料, 统计数据及与当前用户的关系.
 ///
-/// 应用不收集性别信息, 因此忽略接口中的 `gender` 字段.
-@JsonSerializable(createToJson: false)
+/// 应用不收集性别信息, 因此忽略接口中的 `gender` 字段. 本人的资料会原样存入本地缓存, 因此需支持 `toJson`.
+@JsonSerializable()
 class const UserProfileDto({
   final int? id,
   final String? displayName,
@@ -253,6 +253,8 @@ class const UserProfileDto({
 }) {
   factory UserProfileDto.fromJson(Map<String, dynamic> json) =>
       _$UserProfileDtoFromJson(json);
+
+  Map<String, dynamic> toJson() => _$UserProfileDtoToJson(this);
 }
 
 /// `/user/info` 返回的当前用户信息; 按接口声明全部设为可空, 并在转换为领域模型时填充默认值.

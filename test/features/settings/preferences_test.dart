@@ -39,6 +39,10 @@ void main() {
   setUp(() {
     env = TestEnv();
     env.adapter
+      // 隐私页先显示本机记下的使用统计开关, 后台请求失败会弹提示, 所以这里都要给响应.
+      ..on('GET /telemetry/consent', [
+        FakeAdapter.ok({'enabled': true, 'retentionDays': 7}),
+      ])
       ..on('GET /user/recommendation-settings', [
         FakeAdapter.ok({'personalized': true}),
       ])
