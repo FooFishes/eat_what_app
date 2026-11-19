@@ -652,6 +652,8 @@ protocol MapViewHostApi {
   /// 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距.
   func fitPoints(points: [LatLngMessage], margin: InsetsMessage, animated: Bool) throws
   func getCamera() throws -> CameraMessage
+  /// 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回百度默认样式.
+  func setCustomStyle(asset: String?) throws
   /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   func isLoaded() throws -> Bool
 }
@@ -759,6 +761,22 @@ class MapViewHostApiSetup {
       }
     } else {
       getCameraChannel.setMessageHandler(nil)
+    }
+    /// 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回百度默认样式.
+    let setCustomStyleChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setCustomStyle\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setCustomStyleChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let assetArg: String? = nilOrValue(args[0])
+        do {
+          try api.setCustomStyle(asset: assetArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      setCustomStyleChannel.setMessageHandler(nil)
     }
     /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
     let isLoadedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.isLoaded\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)

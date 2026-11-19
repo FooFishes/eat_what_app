@@ -20,7 +20,7 @@ abstract final class EatPalette {
   static const disabledFg = Color(0xFFB0ADA9);
   static const warn = Color(0xFFA8321C);
 
-  /// 深色模式的界面颜色, 和上面同名的浅色值一一对应. 地图和 "调整照片" 页的颜色不分深浅.
+  /// 深色模式的界面颜色, 和上面同名的浅色值一一对应. "调整照片" 页的颜色不分深浅.
   static const darkInk = Color(0xFFF2ECE7);
   static const darkInkMuted = Color(0xFFA89D95);
   static const darkInkSoft = Color(0xFFD2C7BF);
@@ -40,6 +40,11 @@ abstract final class EatPalette {
   static const mapGround = Color(0xFFECE5D8);
   static const mapBlock = Color(0xFFE2D9C8);
   static const mapPark = Color(0xFFD2E1C2);
+
+  /// 深色模式的地图颜色, 和深色底图样式 (`assets/map/dark_style.json`) 的陆地, 人造区域, 绿地一致.
+  static const mapGroundDark = Color(0xFF1C1C1E);
+  static const mapBlockDark = Color(0xFF222224);
+  static const mapParkDark = Color(0xFF1F2420);
 
   static const stageBroth = Color(0xFFF3C46E);
   static const stageMango = Color(0xFFFFCB45);

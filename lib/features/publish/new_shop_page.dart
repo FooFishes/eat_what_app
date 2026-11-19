@@ -687,6 +687,7 @@ class _PickMap extends StatelessWidget {
               minZoom: 13,
               // 地图容器四角被圆角裁剪, 通过四边相等的内边距将 logo 与比例尺向内推移, 同时保持地图中心不变.
               insets: const EdgeInsets.all(EatSpace.s10),
+              dark: eat.colors.isDark,
               onCameraIdle: (camera, _) => onMoved(gcjOf(camera.center)),
               onFailed: onFailed,
               semanticLabel: '地图选点',

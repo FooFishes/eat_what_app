@@ -163,6 +163,7 @@ class EatMap extends ConsumerWidget {
     this.minZoom = 11,
     this.maxZoom = 18,
     this.insets = EdgeInsets.zero,
+    this.dark = false,
     this.markers = const [],
     this.polygons = const [],
     this.onCameraIdle,
@@ -177,6 +178,9 @@ class EatMap extends ConsumerWidget {
   final double minZoom;
   final double maxZoom;
   final EdgeInsets insets;
+
+  /// 用深灰的底图样式. 页面按深浅模式传入, 改了原地换样式, 不重建地图.
+  final bool dark;
   final List<MapMarker> markers;
   final List<MapPolygon> polygons;
 

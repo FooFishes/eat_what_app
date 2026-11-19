@@ -146,6 +146,9 @@ abstract class MapViewHostApi {
 
   CameraMessage getCamera();
 
+  /// 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回百度默认样式.
+  void setCustomStyle(String? asset);
+
   /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   bool isLoaded();
 }

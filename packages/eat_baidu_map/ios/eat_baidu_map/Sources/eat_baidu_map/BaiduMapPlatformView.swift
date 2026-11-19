@@ -71,6 +71,10 @@ private final class WeakHostApi: MapViewHostApi {
   func isLoaded() throws -> Bool {
     target?.loaded ?? false
   }
+
+  func setCustomStyle(asset: String?) throws {
+    target?.setCustomStyle(asset)
+  }
 }
 
 /// 一张百度地图.
@@ -95,6 +99,7 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
     events = MapViewFlutterApi(binaryMessenger: messenger, messageChannelSuffix: suffix)
     mapView = BMKMapView(frame: frame)
     super.init()
+    setCustomStyle(params["customStyle"] as? String)
     mapView.delegate = self
     mapView.isRotateEnabled = false
     mapView.isOverlookEnabled = false
@@ -193,6 +198,18 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
     )
     let status = mapView.getMapStatus(from: region, edgePadding: padding)
     mapView.setMapStatus(status, withAnimation: animated)
+  }
+
+  /// SDK 只认文件路径; Flutter 资源在 App 包里就是普通文件, 直接给包内路径.
+  func setCustomStyle(_ asset: String?) {
+    guard let asset,
+      let path = Bundle.main.path(forResource: FlutterDartProject.lookupKey(forAsset: asset), ofType: nil)
+    else {
+      mapView.setCustomMapStyleEnable(false)
+      return
+    }
+    mapView.setCustomMapStylePath(path)
+    mapView.setCustomMapStyleEnable(true)
   }
 
   func camera() -> CameraMessage {

@@ -665,6 +665,8 @@ interface MapViewHostApi {
   /** 缩放至刚好完整显示 [points], 四周各留出 [margin] 边距. */
   fun fitPoints(points: List<LatLngMessage>, margin: InsetsMessage, animated: Boolean)
   fun getCamera(): CameraMessage
+  /** 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回百度默认样式. */
+  fun setCustomStyle(asset: String?)
   /** 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded]. */
   fun isLoaded(): Boolean
 
@@ -778,6 +780,24 @@ interface MapViewHostApi {
           channel.setMessageHandler { _, reply ->
             val wrapped: List<Any?> = try {
               listOf(api.getCamera())
+            } catch (exception: Throwable) {
+              MessagesPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setCustomStyle$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val assetArg = args[0] as String?
+            val wrapped: List<Any?> = try {
+              api.setCustomStyle(assetArg)
+              listOf(null)
             } catch (exception: Throwable) {
               MessagesPigeonUtils.wrapError(exception)
             }

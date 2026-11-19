@@ -100,6 +100,9 @@ class BaiduMapController {
 
   Future<CameraMessage> getCamera() => _api.getCamera();
 
+  /// 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回默认样式.
+  Future<void> setCustomStyle(String? asset) => _api.setCustomStyle(asset);
+
   Future<bool> isLoaded() => _api.isLoaded();
 }
 
@@ -113,6 +116,7 @@ class BaiduMapView extends StatefulWidget {
     required this.initialZoom,
     required this.minZoom,
     required this.maxZoom,
+    this.customStyle,
     required this.listener,
     required this.onCreated,
   });
@@ -121,6 +125,10 @@ class BaiduMapView extends StatefulWidget {
   final double initialZoom;
   final double minZoom;
   final double maxZoom;
+
+  /// 创建时用的个性化样式, 是 Flutter 资源里的 `.sty` 文件; 为 null 时用默认样式.
+  /// 只在创建时读取, 之后换样式用 [BaiduMapController.setCustomStyle], 免得首帧先画默认样式.
+  final String? customStyle;
 
   /// 仅在视图创建时读取一次; 若需动态响应状态变化, 应让回调内部读取最新状态.
   final BaiduMapListener listener;
@@ -145,6 +153,7 @@ class _BaiduMapViewState extends State<BaiduMapView> {
     'zoom': widget.initialZoom,
     'minZoom': widget.minZoom,
     'maxZoom': widget.maxZoom,
+    'customStyle': ?widget.customStyle,
   };
 
   @override

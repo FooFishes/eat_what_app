@@ -21,10 +21,12 @@ import com.baidu.mapapi.map.Stroke
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
+import io.flutter.FlutterInjector
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.StandardMessageCodec
 import io.flutter.plugin.platform.PlatformView
 import io.flutter.plugin.platform.PlatformViewFactory
+import java.io.File
 import java.util.IdentityHashMap
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
@@ -55,7 +57,7 @@ class BaiduMapViewFactory(
  * 相机的中心总是可见区域的中心: 移动时把 `targetScreen` 设成它, 读取时按屏幕点反算坐标.
  */
 class BaiduMapPlatformView(
-    context: Context,
+    private val context: Context,
     viewId: Int,
     params: Map<String, Any?>,
     private val messenger: BinaryMessenger,
@@ -98,6 +100,7 @@ class BaiduMapPlatformView(
             isOverlookingGesturesEnabled = false
             isCompassEnabled = false
         }
+        (params["customStyle"] as? String)?.let { setCustomStyle(it) }
         listen()
         mapView.addOnLayoutChangeListener { _, l, t, r, b, ol, ot, or, ob ->
             if (r - l != or - ol || b - t != ob - ot) applyTargetScreen()
@@ -232,6 +235,18 @@ class BaiduMapPlatformView(
 
     override fun getCamera(): CameraMessage = camera(map.mapStatus)
 
+    override fun setCustomStyle(asset: String?) {
+        if (asset == null) {
+            mapView.setMapCustomStyleEnable(false)
+            return
+        }
+        val path = runCatching { styleFile(context, asset) }
+            .onFailure { Log.w(EatBaiduMapPlugin.TAG, "custom style not loaded: $asset", it) }
+            .getOrNull() ?: return
+        mapView.setMapCustomStylePath(path)
+        mapView.setMapCustomStyleEnable(true)
+    }
+
     override fun isLoaded(): Boolean = loaded
 
     private fun update(update: MapStatusUpdate, animated: Boolean) {
@@ -281,6 +296,21 @@ class BaiduMapPlatformView(
             runCatching { block() }.onFailure { Log.w(EatBaiduMapPlugin.TAG, "event not delivered", it) }
         }
     }
+}
+
+/** 已复制出来的样式文件, 按 Flutter 资源名记. 每个进程复制一次, App 升级后换了样式也能用上新的. */
+private val styleFiles = HashMap<String, String>()
+
+/**
+ * SDK 只认文件路径, 而 Flutter 资源在 APK 里, 先复制到应用私有目录.
+ * 文件 1.5 MB 左右, 复制只要几毫秒, 在主线程做, 换来地图第一帧就是对的样式.
+ */
+private fun styleFile(context: Context, asset: String): String = styleFiles.getOrPut(asset) {
+    val key = FlutterInjector.instance().flutterLoader().getLookupKeyForAsset(asset)
+    val file = File(File(context.filesDir, "baidu_map_style"), asset.replace('/', '_'))
+    file.parentFile?.mkdirs()
+    context.assets.open(key).use { input -> file.outputStream().use { input.copyTo(it) } }
+    file.absolutePath
 }
 
 private fun LatLngMessage.toLatLng() = LatLng(lat, lng)

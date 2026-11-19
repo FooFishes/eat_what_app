@@ -61,10 +61,11 @@ void main() {
     expect(seen.colors, same(EatColors.dark));
   });
 
-  test('地图和调整照片页的颜色不分深浅', () {
+  test('地图底色跟着深浅变成深灰; 我的位置和调整照片页的颜色不分深浅', () {
     const l = EatColors.light;
     const d = EatColors.dark;
-    expect(d.mapGround, l.mapGround);
+    expect(d.mapGround, isNot(l.mapGround));
+    expect(d.mapGround.computeLuminance(), lessThan(0.02));
     expect(d.mapMe, l.mapMe);
     expect(d.cropGround, l.cropGround);
     expect(d.cropPanel, l.cropPanel);

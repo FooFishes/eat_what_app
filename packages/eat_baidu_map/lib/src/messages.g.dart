@@ -755,6 +755,27 @@ class MapViewHostApi {
     return pigeonVar_replyValue! as CameraMessage;
   }
 
+  /// 换成 Flutter 资源 [asset] 里的个性化样式 (`.sty`); 为 null 时换回百度默认样式.
+  Future<void> setCustomStyle(String? asset) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.eat_baidu_map.MapViewHostApi.setCustomStyle$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[asset],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
   /// 底图是否已加载完成. Dart 端在平台视图创建后才开始监听事件, 可能错过 [MapViewFlutterApi.onLoaded].
   Future<bool> isLoaded() async {
     final pigeonVar_channelName =

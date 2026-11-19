@@ -1,3 +1,5 @@
+import 'dart:ui' show Brightness;
+
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -140,6 +142,14 @@ void main() {
 
     expect(find.bySemanticsLabel('地图，附近 2 家店'), findsOneWidget);
     expect(map.last!.initialCenter, const MapLatLng(36.667382, 117.140109));
+    expect(map.last!.dark, isFalse);
+
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    await tester.pumpAndSettle();
+    expect(map.last!.dark, isTrue, reason: '深色模式下底图换成深灰');
+    tester.platformDispatcher.clearPlatformBrightnessTestValue();
+    await tester.pumpAndSettle();
 
     map.last!.onFailed!();
     await tester.pump();

@@ -75,6 +75,9 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
   List<MapPolygon>? _sentPolygons;
   EdgeInsets? _sentInsets;
 
+  /// 视图创建参数里已经带上了当时的深浅, 之后只在变化时同步.
+  late bool _sentDark = _map.dark;
+
   EatMap get _map => widget.map;
 
   @override
@@ -124,6 +127,10 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
   void _sync() {
     final c = _controller;
     if (c == null) return;
+    if (_map.dark != _sentDark) {
+      _sentDark = _map.dark;
+      unawaited(c.setCustomStyle(_style(_map.dark)));
+    }
     if (_map.insets != _sentInsets) {
       _sentInsets = _map.insets;
       unawaited(c.setInsets(_insets(_map.insets)));
@@ -174,13 +181,16 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
     builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done ||
           snapshot.hasError) {
-        return const ColoredBox(color: EatPalette.mapGround);
+        return ColoredBox(
+          color: _map.dark ? EatPalette.mapGroundDark : EatPalette.mapGround,
+        );
       }
       return BaiduMapView(
         initialCenter: _latLng(_map.initialCenter),
         initialZoom: _map.initialZoom,
         minZoom: _map.minZoom,
         maxZoom: _map.maxZoom,
+        customStyle: _style(_sentDark),
         onCreated: _created,
         listener: BaiduMapListener(
           onLoaded: () {
@@ -196,6 +206,9 @@ class _NativeMapState extends State<_NativeMap> implements MapHandle {
     },
   );
 }
+
+/// 深色底图样式, 由百度个性化地图编辑器导出. 浅色用 SDK 默认样式. 见技术架构 14.4.
+String? _style(bool dark) => dark ? 'assets/map/dark.sty' : null;
 
 LatLngMessage _latLng(MapLatLng p) => LatLngMessage(lat: p.lat, lng: p.lng);
 

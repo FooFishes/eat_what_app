@@ -90,6 +90,11 @@ flutter:
     - path: assets/fonts/OFL-NotoSansSC.txt
       platforms: [android]
     - assets/config/remote_defaults.json
+    # 深色地图样式: 正本是 JSON (Web 直接用), App 用百度个性化地图编辑器从它导出的 .sty. 见技术架构 14.4.
+    - path: assets/map/dark_style.json
+      platforms: [web]
+    - path: assets/map/dark.sty
+      platforms: [android, ios]
     - shorebird.yaml
 
   # 可变字体, 单个文件覆盖全部字重. 由 tool/subset_fonts.py 子集化生成.

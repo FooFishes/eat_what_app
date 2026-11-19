@@ -429,9 +429,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       );
     }
     final height = screen.height;
-    // 地图底图不分深浅, 状态栏压在地图上, 图标固定用深色.
+    // 状态栏压在地图上, 底图跟着深浅变, 图标也跟着变.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: context.eat.colors.isDark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: ColoredBox(
         color: context.eat.colors.paper,
         child: Stack(
@@ -821,6 +823,7 @@ class _NearbyMap extends StatelessWidget {
       controller: controller,
       initialCenter: mapPoint(initialCenter),
       insets: insets,
+      dark: eat.colors.isDark,
       markers: markers,
       polygons: [
         if (hub case final hub?)
@@ -829,8 +832,8 @@ class _NearbyMap extends StatelessWidget {
               id: 'hub-${hub.id}-$i',
               points: [for (final p in ring) mapPoint(p)],
               fill: StageColor.broth.color.withValues(alpha: 0.24),
-              // 地图底图不分深浅, 描边固定用深色.
-              stroke: eat.colors.shade,
+              // 描边要和底图拉开: 浅色底图上用深色, 深灰底图上用浅色.
+              stroke: eat.colors.isDark ? eat.colors.inkSoft : eat.colors.shade,
               dashed: true,
             ),
       ],

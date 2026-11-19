@@ -8,6 +8,7 @@ import 'package:eat/core/platform/map/bd09.dart';
 import 'package:eat/core/platform/map/eat_map.dart';
 import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
@@ -148,6 +149,9 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
   final _polygons = <_BPolygon>[];
   List<MapPolygon>? _sentPolygons;
 
+  /// 地图刚创建时是默认样式, 即浅色.
+  var _sentDark = false;
+
   EatMap get _map => widget.map;
 
   @override
@@ -262,6 +266,10 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
         _movingByCode = true;
         bmap.panBy(dx, dy, {'noAnimation': true}.jsify()! as JSObject);
       }
+    }
+    if (_map.dark != _sentDark) {
+      _sentDark = _map.dark;
+      unawaited(_applyStyle(bmap, dark: _sentDark));
     }
     final diff = diffMarkers([
       for (final (_, m) in _markers.values) m,
@@ -385,15 +393,38 @@ class _WebMapState extends State<_WebMap> implements MapHandle {
     );
   }
 
+  /// 深色用 `assets/map/dark_style.json`, 浅色传空样式换回默认. 读文件时深浅又变了就不再应用.
+  Future<void> _applyStyle(_BMap bmap, {required bool dark}) async {
+    final List<Object?> styleJson;
+    try {
+      styleJson = dark ? await (_darkStyle ??= _loadDarkStyle()) : [];
+    } on Object {
+      // 读不到样式就留在当前样式, 下次切换再试.
+      _darkStyle = null;
+      return;
+    }
+    if (_sentDark != dark || !identical(_bmap, bmap)) return;
+    bmap.setMapStyleV2({'styleJson': styleJson}.jsify()! as JSObject);
+  }
+
   @override
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
     children: [
-      const ColoredBox(color: EatPalette.mapGround),
+      ColoredBox(
+        color: _map.dark ? EatPalette.mapGroundDark : EatPalette.mapGround,
+      ),
       HtmlElementView.fromTagName(tagName: 'div', onElementCreated: _created),
     ],
   );
 }
+
+/// 深色底图样式, 和 App 的 `.sty` 出自同一份配置. 见技术架构 14.4.
+Future<List<Object?>>? _darkStyle;
+
+Future<List<Object?>> _loadDarkStyle() async =>
+    jsonDecode(await rootBundle.loadString('assets/map/dark_style.json'))
+        as List<Object?>;
 
 _BPoint _point(MapLatLng gcj) {
   final bd = Bd09.fromGcj(gcj);
@@ -433,6 +464,7 @@ extension type _BMap._(JSObject _) implements JSObject {
   external void panBy(num x, num y, JSObject options);
   external num getZoom();
   external void enableScrollWheelZoom(bool enable);
+  external void setMapStyleV2(JSObject style);
   external void setViewport(JSArray<_BPoint> points, JSObject options);
   external _BPixel pointToPixel(_BPoint point);
   external _BPoint pixelToPoint(_BPixel pixel);
