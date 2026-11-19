@@ -225,30 +225,91 @@ void main() {
     expect(opacities, [0, 1, 1]);
   });
 
-  testWidgets('轻提示停留 2 秒后退场，新提示直接替换旧提示', (tester) async {
+  group('轻提示', () {
     late BuildContext context;
-    await pumpEat(
-      tester,
-      Builder(
-        builder: (c) {
-          context = c;
-          return const SizedBox();
-        },
-      ),
-    );
+    var taps = 0;
 
-    showToast(context, '已收藏');
-    await tester.pump();
-    showToast(context, '已取消收藏');
-    await tester.pump();
-    expect(find.text('已收藏'), findsNothing);
-    expect(find.text('已取消收藏'), findsOneWidget);
+    Future<void> pump(WidgetTester tester) async {
+      taps = 0;
+      await pumpEat(
+        tester,
+        Builder(
+          builder: (c) {
+            context = c;
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => taps++,
+                child: const SizedBox(width: 300, height: 200),
+              ),
+            );
+          },
+        ),
+      );
+    }
 
-    await tester.pump(const Duration(milliseconds: 1900));
-    expect(find.text('已取消收藏'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 100));
-    await tester.pumpAndSettle();
-    expect(find.text('已取消收藏'), findsNothing);
+    testWidgets('停留 2 秒后退场', (tester) async {
+      await pump(tester);
+      showToast(context, '已收藏');
+      await tester.pumpAndSettle();
+      expect(find.text('已收藏'), findsOneWidget);
+      expect(isToastShowing('已收藏'), isTrue);
+
+      await tester.pump(const Duration(milliseconds: 1900));
+      expect(find.text('已收藏'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+      expect(find.text('已收藏'), findsNothing);
+      expect(isToastShowing('已收藏'), isFalse);
+    });
+
+    testWidgets('接连出现时叠起来，最多 3 条，旧的往上露出一截', (tester) async {
+      await pump(tester);
+      for (final m in ['一', '二', '三', '四']) {
+        showToast(context, m);
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('一'), findsNothing, reason: '第 4 条来时最旧的先走');
+      expect(find.text('二'), findsOneWidget);
+      expect(find.text('四'), findsOneWidget);
+      expect(
+        tester.getBottomLeft(find.text('三')).dy,
+        lessThan(tester.getBottomLeft(find.text('四')).dy),
+      );
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('同样的提示不再叠一条，重新计时', (tester) async {
+      await pump(tester);
+      showToast(context, '已收藏');
+      await tester.pump(const Duration(milliseconds: 1500));
+      showToast(context, '已收藏');
+      await tester.pumpAndSettle();
+      expect(find.text('已收藏'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1000));
+      expect(find.text('已收藏'), findsOneWidget, reason: '从第二次算起还没到 2 秒');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(find.text('已收藏'), findsNothing);
+    });
+
+    testWidgets('往下拖就收起，点击穿过提示落到下面', (tester) async {
+      await pump(tester);
+      showToast(context, '已收藏');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('已收藏'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(taps, 1);
+      expect(find.text('已收藏'), findsOneWidget);
+
+      await tester.drag(find.text('已收藏'), const Offset(0, 80));
+      await tester.pumpAndSettle();
+      expect(find.text('已收藏'), findsNothing);
+    });
   });
 
   testWidgets('面板里的操作行：圆底图标加文字，整行可点，行高不小于 44', (tester) async {

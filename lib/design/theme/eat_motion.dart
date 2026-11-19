@@ -80,6 +80,20 @@ abstract final class EatMotion {
     curve: Curves.easeOut,
   );
 
+  /// 弹簧: 快速的位移, 带一点回弹 (Material 3 的 expressive fast spatial). 用于轻提示进场和抖一下.
+  static final springBouncy = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: 800,
+    ratio: 0.6,
+  );
+
+  /// 弹簧: 快速的位移, 几乎不回弹 (Material 3 的 standard fast spatial). 用于轻提示退场和拖动后回位.
+  static final springSnappy = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: 1400,
+    ratio: 0.9,
+  );
+
   /// 登录页转盘匀速旋转一周的时间. 这是应用中唯一自动播放的动画.
   static const loginSpinPeriod = Duration(seconds: 90);
 }
