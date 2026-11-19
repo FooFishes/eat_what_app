@@ -137,6 +137,84 @@ void main() {
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 
+    testWidgets('放得下时等分整行、字在格里居中，未选中的小一号；记号笔从左往右画到选中项下面', (tester) async {
+      var selected = 0;
+      await pumpEat(
+        tester,
+        StatefulBuilder(
+          builder: (context, setState) => SizedBox(
+            width: 360,
+            child: EatTabs(
+              tabs: const [
+                EatTabItem('上传'),
+                EatTabItem('收藏'),
+                EatTabItem('赞过'),
+              ],
+              selected: selected,
+              onSelected: (i) => setState(() => selected = i),
+            ),
+          ),
+        ),
+      );
+      final strip = tester.getRect(find.byType(EatTabs));
+      final column = strip.width / 3;
+      for (final (i, name) in ['上传', '收藏', '赞过'].indexed) {
+        expect(
+          tester.getCenter(find.text(name)).dx,
+          closeTo(strip.left + column * (i + 0.5), 0.5),
+          reason: '每项等分一格, 字在格里居中',
+        );
+      }
+      expect(tester.widget<Text>(find.text('上传')).style!.fontSize, 18);
+      expect(tester.widget<Text>(find.text('收藏')).style!.fontSize, 15);
+
+      Finder marker(String text) => find.descendant(
+        of: find.ancestor(of: find.text(text), matching: find.byType(Stack)),
+        matching: find.byType(ClipRect),
+      );
+      expect(marker('上传'), findsOneWidget);
+      expect(marker('收藏'), findsNothing);
+
+      await tester.tap(find.text('收藏'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      final drawing = tester.getSize(marker('收藏')).width;
+      await tester.pumpAndSettle();
+      expect(drawing, lessThan(tester.getSize(marker('收藏')).width));
+      expect(marker('上传'), findsNothing);
+    });
+
+    testWidgets('等分整行时切换分类，外面的页面不跟着滚', (tester) async {
+      var selected = 0;
+      final page = ScrollController(initialScrollOffset: 300);
+      addTearDown(page.dispose);
+      await pumpEat(
+        tester,
+        SizedBox(
+          height: 400,
+          child: StatefulBuilder(
+            builder: (context, setState) => ListView(
+              controller: page,
+              children: [
+                const SizedBox(height: 500),
+                EatTabs(
+                  tabs: const [EatTabItem('上传'), EatTabItem('收藏')],
+                  selected: selected,
+                  onSelected: (i) => setState(() => selected = i),
+                ),
+                const SizedBox(height: 800),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('收藏'));
+      await tester.pumpAndSettle();
+      expect(selected, 1);
+      expect(page.offset, 300);
+    });
+
     testWidgets('选中露出一半的分类后，分类栏把它滚到中间', (tester) async {
       var selected = 0;
       const names = ['今日推荐', '主食', '小吃', '饮品', '甜品', '汤', '火锅'];

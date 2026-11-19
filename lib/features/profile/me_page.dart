@@ -141,10 +141,14 @@ class _MePageState extends ConsumerState<MePage> {
         SliverToBoxAdapter(
           child: EatTabs(
             tabs: [
-              EatTabItem('上传', count: uploads.value?.pages.total),
-              const EatTabItem('收藏'),
-              const EatTabItem('赞过'),
-              const EatTabItem('评论'),
+              EatTabItem(
+                '上传',
+                icon: EatIcons.upload,
+                count: uploads.value?.pages.total,
+              ),
+              const EatTabItem('收藏', icon: EatIcons.bookmark),
+              const EatTabItem('赞过', icon: EatIcons.heart),
+              const EatTabItem('评论', icon: EatIcons.comment),
             ],
             selected: _tab,
             onSelected: (tab) => setState(() => _tab = tab),

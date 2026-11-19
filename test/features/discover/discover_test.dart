@@ -296,13 +296,14 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('分类栏：「甜点饮品」只换抽屉列表；专题待接入，不请求专题', (tester) async {
+  testWidgets('分类栏：「甜点饮品」只换抽屉列表；没有「专题」', (tester) async {
     final (container, _) = await pumpApp(
       tester,
       env,
       session: const SignedIn(user: verifiedUser),
     );
     expect(find.text('美食'), findsOneWidget);
+    expect(find.text('专题'), findsNothing);
     final turntable = env.adapter
         .sent('GET /recommend')
         .where((r) => r.query['pageSize'] == 8)
@@ -325,16 +326,6 @@ void main() {
       env.adapter.sent('GET /recommend').where((r) => r.query['pageSize'] == 8),
       hasLength(turntable),
     );
-
-    await tester.tap(find.text('专题'));
-    await tester.pumpAndSettle();
-    expect(find.text('该功能即将上线'), findsOneWidget);
-    expect(find.text('一点点'), findsOneWidget, reason: '专题没有接入，列表不变');
-    expect(
-      env.adapter.requests.where((r) => r.path.startsWith('/topics')),
-      isEmpty,
-    );
-    await _waitToast(tester);
     await unmountApp(tester, container);
   });
 

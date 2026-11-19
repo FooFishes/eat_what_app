@@ -107,7 +107,7 @@ void main() {
     );
 
     await tester.tap(find.text('最新'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     final sorts = [
       for (final r in env.adapter.sent('GET /foods/1/comments'))
         r.query['sort'],

@@ -544,7 +544,7 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 
   | 项 | 入口 | 保留的代码 |
   | --- | --- | --- |
-  | `topics` | 发现页分类栏的「专题」 | `data/topic/`、`features/topic/`、`/topics*` 路由 |
+  | `topics` | 不放（原在发现页分类栏） | `data/topic/`、`features/topic/`、`/topics*` 路由 |
   | `myTags` | 「我的」的快捷入口「我的标签」、加菜页的「自己写」 | `my_tags_page.dart`、`tag_dishes_page.dart`、`/me/tags*` 路由 |
   | `tasteVote` | 菜品详情「大家怎么说」的点词和「＋ 加标签」 | `tag_panel.dart`、`tasteVocabularyProvider` |
 
@@ -791,7 +791,8 @@ extension RefCache on Ref {
 - `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
 - Inter 和 Noto 都由 `tool/subset_fonts.py` 生成，许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。Inter 三端都在 `pubspec.yaml` 的 `fonts` 里声明。Noto 只在安卓用：`fonts` 里的字体 Web 会在首帧前全部下载，所以它作为普通资源声明并限定 `platforms: [android]`，`bootstrap` 里和读取本地数据并行调用 `EatFonts.loadSans` 注册，首帧前完成；加载失败时上报错误，文字回落到系统字体。
 - Web 上 Flutter 用不了浏览器的系统字体，中文由引擎的回落字体（Noto Sans SC 的分片）按需下载显示，回落地址要指向自托管副本（依赖选型 9.1）。
-- 选中态靠字重，不靠颜色：分类标签选中 600，未选中 400。
+- 选中态靠字重，不靠颜色：分类标签选中 18 号 600（介于 `subhead` 和 `heading` 之间），未选中 15 号 400，行高都是 26；文字前可带和字一样大的图标，图标中心对在汉字的视觉中心（基线上方约 0.38em）。
+- 分类栏（`EatTabs`）的选中项在字的下半截压一道记号笔：略向右斜、两头圆角不同；颜色取 `StageTheme` 的舞台色，深色舞台 40% 不透明、浅色舞台 85%，没有舞台的白底页面用芒果黄。选中时从左往右画出、取消时从右往左收回，用 `EatMotion.select`。放得下时各项等分整行宽度、字在格里居中，底下一条 `hairline`；放不下时（分类多，或带「待接入」小标）按固定间距从左排、横向滚动。
 
 ### 11.6 图标
 

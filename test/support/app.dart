@@ -44,8 +44,19 @@ Future<(ProviderContainer, GoRouter)> pumpApp(
   );
   final router = container.read(appRouterProvider);
   if (location != null) router.go(location);
-  await tester.pumpAndSettle();
+  await settle(tester);
   return (container, router);
+}
+
+/// 等界面和请求都停下来.
+///
+/// Dio 用定时器发请求, 界面上没有动画时 `pumpAndSettle` 可能在请求发出前就返回,
+/// 所以先 `pump` 一帧放行到期的定时器, 再等界面停下; 请求链 (列表回来再请求回复) 多走一轮.
+Future<void> settle(WidgetTester tester) async {
+  for (var i = 0; i < 2; i++) {
+    await tester.pump();
+    await tester.pumpAndSettle();
+  }
 }
 
 /// 当前路由地址, 对应 Web 地址栏中的内容.

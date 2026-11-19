@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
-import 'package:eat/core/env/pending_features.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
@@ -52,7 +51,7 @@ import 'package:go_router/go_router.dart';
 /// 发现页.
 ///
 /// - 舞台: 美食店推荐转盘, 支持拖动或点击 "换一个" 切换店铺, 点击 "就它了" 进入餐厅详情, 或标记 "不想去这家".
-/// - 抽屉: 包含分类栏 ("美食", "甜点饮品", "自助" 及待接入的专题) 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
+/// - 抽屉: 包含分类栏 ("美食", "甜点饮品", "自助") 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
 /// - 顶栏: 左侧显示当前地点, 饭点与用餐场景, 右侧为搜索和消息入口.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -181,17 +180,18 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
 
     final tabs = EatTabs(
       tabs: [
-        for (final kind in ShopKind.values) EatTabItem(kind.label),
-        const EatTabItem('专题', icon: EatIcons.topic, pending: true),
+        for (final kind in ShopKind.values)
+          EatTabItem(
+            kind.label,
+            icon: switch (kind) {
+              ShopKind.food => EatIcons.bowl,
+              ShopKind.drink => EatIcons.drink,
+              ShopKind.buffet => EatIcons.buffet,
+            },
+          ),
       ],
       selected: ShopKind.values.indexOf(_kind),
-      onSelected: (i) {
-        if (i >= ShopKind.values.length) {
-          showPending(context, PendingFeature.topics);
-          return;
-        }
-        setState(() => _kind = ShopKind.values[i]);
-      },
+      onSelected: (i) => setState(() => _kind = ShopKind.values[i]),
       padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
     );
 

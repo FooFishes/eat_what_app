@@ -119,7 +119,7 @@ RemoteGate remoteGate(
 
 /// 受限操作所属的可远程关闭的功能, 不属于任何开关时返回 null.
 ///
-/// 专题入口目前标为待接入 (`PendingFeature.topics`), 待接入优先于远程开关, 因此 [RemoteFeature.topic] 暂无对应操作.
+/// 专题暂缓 (`PendingFeature.topics`), 发现页没有专题入口, 因此 [RemoteFeature.topic] 暂无对应操作.
 /// 推送开关不对应受限操作, 由通知设置页单独判断.
 RemoteFeature? remoteFeatureOf(Capability capability) => switch (capability) {
   Capability.publishDish || Capability.editDish => RemoteFeature.publish,
