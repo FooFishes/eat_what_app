@@ -819,7 +819,7 @@ class _BrowseCornerState extends State<_BrowseCorner>
                 painter: _CurlPainter(
                   paper: c.paper,
                   back: stage,
-                  shadow: c.ink,
+                  shadow: c.shade,
                 ),
                 child: ClipPath(
                   clipper: const _RevealClipper(),

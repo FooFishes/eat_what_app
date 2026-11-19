@@ -10,6 +10,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -59,37 +60,41 @@ class AboutPage extends ConsumerWidget {
                 style: eat.text.meta.copyWith(color: c.inkMuted),
               ),
             const SizedBox(height: EatSpace.s20),
-            SettingsRow(
-              icon: EatIcons.feedback,
-              label: '反馈',
-              value: '问题反馈与建议',
-              onTap: () async {
-                if (await guardAction(context, ref, Capability.feedback) &&
-                    context.mounted) {
-                  await context.push(Paths.feedback());
-                }
-              },
-            ),
-            SettingsRow(
-              icon: EatIcons.history,
-              label: '我的反馈',
-              value: '提交记录与处理结果',
-              onTap: () async {
-                if (await guardAction(context, ref, Capability.feedback) &&
-                    context.mounted) {
-                  await context.push(Paths.myFeedback);
-                }
-              },
-            ),
-            SettingsRow(
-              icon: EatIcons.document,
-              label: '隐私政策',
-              onTap: () => open(config.privacyUrl),
-            ),
-            SettingsRow(
-              icon: EatIcons.document,
-              label: '用户协议',
-              onTap: () => open(config.termsUrl),
+            SettingsGroup(
+              children: [
+                SettingsRow(
+                  icon: EatIcons.feedback,
+                  label: '反馈',
+                  value: '问题反馈与建议',
+                  onTap: () async {
+                    if (await guardAction(context, ref, Capability.feedback) &&
+                        context.mounted) {
+                      await context.push(Paths.feedback());
+                    }
+                  },
+                ),
+                SettingsRow(
+                  icon: EatIcons.history,
+                  label: '我的反馈',
+                  value: '提交记录与处理结果',
+                  onTap: () async {
+                    if (await guardAction(context, ref, Capability.feedback) &&
+                        context.mounted) {
+                      await context.push(Paths.myFeedback);
+                    }
+                  },
+                ),
+                SettingsRow(
+                  icon: EatIcons.document,
+                  label: '隐私政策',
+                  onTap: () => open(config.privacyUrl),
+                ),
+                SettingsRow(
+                  icon: EatIcons.document,
+                  label: '用户协议',
+                  onTap: () => open(config.termsUrl),
+                ),
+              ],
             ),
             const SizedBox(height: EatSpace.s16),
             Text(

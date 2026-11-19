@@ -171,7 +171,7 @@ class _CropPageState extends State<CropPage> {
       child: Material(
         color: c.cropGround,
         child: DefaultTextStyle.merge(
-          style: TextStyle(color: c.paper),
+          style: TextStyle(color: c.white),
           child: Column(
             children: [
               SizedBox(height: safe.top),
@@ -191,7 +191,7 @@ class _CropPageState extends State<CropPage> {
               Text(
                 '拖动或缩放，将主菜移入圆框内',
                 style: eat.text.meta.copyWith(
-                  color: c.paper.withValues(alpha: 0.7),
+                  color: c.white.withValues(alpha: 0.7),
                 ),
               ),
               CropZoomSlider(
@@ -261,7 +261,7 @@ class _TopBar extends StatelessWidget {
                   label,
                   style: eat.text.subhead.copyWith(
                     fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
-                    color: eat.colors.paper,
+                    color: eat.colors.white,
                   ),
                 ),
               ),
@@ -277,7 +277,7 @@ class _TopBar extends StatelessWidget {
             child: Text(
               '调整照片',
               textAlign: TextAlign.center,
-              style: eat.text.subhead.copyWith(color: eat.colors.paper),
+              style: eat.text.subhead.copyWith(color: eat.colors.white),
             ),
           ),
         ),

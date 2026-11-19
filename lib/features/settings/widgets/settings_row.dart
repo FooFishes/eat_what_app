@@ -4,9 +4,10 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
 
-/// 设置页的列表行组件, 左侧展示图标与名称, 右侧展示当前值, 可点击时最右侧附带右箭头.
+/// 设置页的列表行组件, 放在 [SettingsGroup] 的卡片里. 左侧是图标与名称, 右侧展示当前值, 可点击时最右侧附带右箭头.
 ///
 /// 尚未接入接口的功能同样列出, 当 [pending] 为 true 时在名称旁显示 "待接入" 标签.
 class SettingsRow extends StatelessWidget {
@@ -29,6 +30,12 @@ class SettingsRow extends StatelessWidget {
   final bool pending;
   final VoidCallback? onTap;
 
+  static const _icon = 22.0;
+  static const _gap = EatSpace.s14;
+
+  /// 名称离行左边的距离, [SettingsGroup] 的分隔线从这里开始.
+  static const textInset = _icon + _gap;
+
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
@@ -40,9 +47,9 @@ class SettingsRow extends StatelessWidget {
       height: 56,
       child: LayoutBuilder(
         builder: (context, constraints) => Row(
-          spacing: EatSpace.s14,
+          spacing: _gap,
           children: [
-            EatIcon(icon, size: 22, color: c.ink),
+            EatIcon(icon, size: _icon, color: c.ink),
             Expanded(
               child: Row(
                 spacing: EatSpace.s8,

@@ -9,6 +9,7 @@ import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/client_config.dart';
 import 'package:eat/features/settings/settings_providers.dart';
 import 'package:eat/features/system/remote_gate.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,53 +29,69 @@ class NotifyPage extends ConsumerWidget {
       slivers: [
         SliverList.list(
           children: [
-            const ListGroupTitle('推送哪些'),
-            Text('只告诉你和你有关的事，不推饭点提醒和活动', style: note),
-            const SizedBox(height: EatSpace.s8),
-            if (settings == null)
-              value.hasError && !value.isLoading
-                  ? FailureState(
-                      error: value.error,
-                      onRetry: () => ref.invalidate(pushSettingsProvider),
-                    )
-                  : const RowListPlaceholder(count: 4)
-            else
-              for (final setting in settings)
-                EatSwitch(
-                  label: setting.category.label,
-                  description: setting.category.description,
-                  value: setting.enabled,
-                  onChanged: (on) async {
-                    if (!guardRemote(
-                      context,
-                      ref,
-                      feature: RemoteFeature.push,
-                    )) {
-                      return;
-                    }
-                    final failure = await ref
-                        .read(pushSettingsProvider.notifier)
-                        .set(setting.category, enabled: on);
-                    if (failure != null && context.mounted) {
-                      showToast(
-                        context,
-                        failure.kind == FailureKind.unknown
-                            ? '保存失败，请重试'
-                            : failure.message,
-                      );
-                    }
-                  },
-                ),
-            const SizedBox(height: 18),
-            const ListGroupTitle('免打扰'),
-            Text.rich(
-              TextSpan(
+            SettingsGroup(
+              title: '推送哪些',
+              note: const Text('只告诉你和你有关的事，不推饭点提醒和活动'),
+              dividerIndent: 0,
+              rowPadding: EatSpace.s8,
+              children: [
+                if (settings == null)
+                  value.hasError && !value.isLoading
+                      ? FailureState(
+                          error: value.error,
+                          onRetry: () => ref.invalidate(pushSettingsProvider),
+                        )
+                      : const RowListPlaceholder(count: 4)
+                else
+                  for (final setting in settings)
+                    EatSwitch(
+                      label: setting.category.label,
+                      description: setting.category.description,
+                      value: setting.enabled,
+                      onChanged: (on) async {
+                        if (!guardRemote(
+                          context,
+                          ref,
+                          feature: RemoteFeature.push,
+                        )) {
+                          return;
+                        }
+                        final failure = await ref
+                            .read(pushSettingsProvider.notifier)
+                            .set(setting.category, enabled: on);
+                        if (failure != null && context.mounted) {
+                          showToast(
+                            context,
+                            failure.kind == FailureKind.unknown
+                                ? '保存失败，请重试'
+                                : failure.message,
+                          );
+                        }
+                      },
+                    ),
+              ],
+            ),
+            const SizedBox(height: EatSpace.s20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: EatSpace.s8,
                 children: [
-                  TextSpan(text: '23:00–08:00', style: eat.text.count),
-                  const TextSpan(text: ' 不推送，这段时间的消息只进消息页。网页版没有推送，消息都在消息页里。'),
+                  const ListGroupTitle('免打扰'),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: '23:00–08:00', style: eat.text.count),
+                        const TextSpan(
+                          text: ' 不推送，这段时间的消息只进消息页。网页版没有推送，消息都在消息页里。',
+                        ),
+                      ],
+                    ),
+                    style: note,
+                  ),
                 ],
               ),
-              style: note,
             ),
             const SizedBox(height: EatSpace.s24),
           ],

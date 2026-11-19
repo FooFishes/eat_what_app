@@ -1,7 +1,6 @@
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
-import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/design/widgets/eat_switch.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/load_states.dart';
@@ -12,6 +11,7 @@ import 'package:eat/features/settings/settings_providers.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,91 +47,118 @@ class PrivacyPage extends ConsumerWidget {
       slivers: [
         SliverList.list(
           children: [
-            const ListGroupTitle('别人能看到什么'),
-            if (privacy.value case final settings?) ...[
-              EatSwitch(
-                label: '公开我的关注列表',
-                description: '关闭后他人查看时将显示「对方未公开」',
-                value: settings.followingsPublic,
-                onChanged: (on) async => report(
-                  !await allowed()
-                      ? null
-                      : await ref
-                            .read(privacyProvider.notifier)
-                            .set(
-                              PrivacySettings(
-                                followingsPublic: on,
-                                fansPublic: settings.fansPublic,
-                              ),
-                            ),
-                ),
-              ),
-              EatSwitch(
-                label: '公开我的粉丝列表',
-                description: '关闭后他人查看时将显示「对方未公开」',
-                value: settings.fansPublic,
-                onChanged: (on) async => report(
-                  !await allowed()
-                      ? null
-                      : await ref
-                            .read(privacyProvider.notifier)
-                            .set(
-                              PrivacySettings(
-                                followingsPublic: settings.followingsPublic,
-                                fansPublic: on,
-                              ),
-                            ),
-                ),
-              ),
-            ] else
-              loading(privacy, () => ref.invalidate(privacyProvider)),
-            const SizedBox(height: 18),
-            const ListGroupTitle('推荐'),
-            if (personalized.value case final on?)
-              EatSwitch(
-                label: '个性化推荐',
-                description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
-                value: on,
-                onChanged: (on) async => report(
-                  !await allowed()
-                      ? null
-                      : await ref
-                            .read(personalizedProvider.notifier)
-                            .set(personalized: on),
-                ),
-              )
-            else
-              loading(personalized, () => ref.invalidate(personalizedProvider)),
-            SettingsRow(
-              icon: EatIcons.filter,
-              label: '推荐偏好',
-              onTap: () => context.push(Paths.settingsPreferences),
+            SettingsGroup(
+              title: '别人能看到什么',
+              dividerIndent: 0,
+              rowPadding: EatSpace.s8,
+              children: [
+                if (privacy.value case final settings?) ...[
+                  EatSwitch(
+                    label: '公开我的关注列表',
+                    description: '关闭后他人查看时将显示「对方未公开」',
+                    value: settings.followingsPublic,
+                    onChanged: (on) async => report(
+                      !await allowed()
+                          ? null
+                          : await ref
+                                .read(privacyProvider.notifier)
+                                .set(
+                                  PrivacySettings(
+                                    followingsPublic: on,
+                                    fansPublic: settings.fansPublic,
+                                  ),
+                                ),
+                    ),
+                  ),
+                  EatSwitch(
+                    label: '公开我的粉丝列表',
+                    description: '关闭后他人查看时将显示「对方未公开」',
+                    value: settings.fansPublic,
+                    onChanged: (on) async => report(
+                      !await allowed()
+                          ? null
+                          : await ref
+                                .read(privacyProvider.notifier)
+                                .set(
+                                  PrivacySettings(
+                                    followingsPublic: settings.followingsPublic,
+                                    fansPublic: on,
+                                  ),
+                                ),
+                    ),
+                  ),
+                ] else
+                  loading(privacy, () => ref.invalidate(privacyProvider)),
+              ],
             ),
-            const SizedBox(height: 18),
-            const ListGroupTitle('使用统计'),
-            if (usage.value case final stats?)
-              EatSwitch(
-                label: '使用统计',
-                description: [
-                  '记录你用了哪些功能，用来改进体验',
-                  if (stats.retentionDays case final days?) '保存 $days 天',
-                  '关闭后删除已收集的记录',
-                ].join('，'),
-                value: stats.enabled,
-                onChanged: (on) async => report(
-                  await ref
-                      .read(usageStatsSettingProvider.notifier)
-                      .set(enabled: on),
+            const SizedBox(height: EatSpace.s20),
+            SettingsGroup(
+              title: '推荐',
+              dividerIndent: 0,
+              rowPadding: EatSpace.s8,
+              children: [
+                if (personalized.value case final on?)
+                  EatSwitch(
+                    label: '个性化推荐',
+                    description: '结合你的点赞与收藏为你推荐。关闭后仅按大众口碑推荐',
+                    value: on,
+                    onChanged: (on) async => report(
+                      !await allowed()
+                          ? null
+                          : await ref
+                                .read(personalizedProvider.notifier)
+                                .set(personalized: on),
+                    ),
+                  )
+                else
+                  loading(
+                    personalized,
+                    () => ref.invalidate(personalizedProvider),
+                  ),
+                SettingsRow(
+                  icon: EatIcons.filter,
+                  label: '推荐偏好',
+                  onTap: () => context.push(Paths.settingsPreferences),
                 ),
-              )
-            else
-              loading(usage, () => ref.invalidate(usageStatsSettingProvider)),
-            const SizedBox(height: 18),
-            const ListGroupTitle('屏蔽'),
-            SettingsRow(
-              icon: EatIcons.block,
-              label: '屏蔽的人',
-              onTap: () => context.push(Paths.settingsBlocked),
+              ],
+            ),
+            const SizedBox(height: EatSpace.s20),
+            SettingsGroup(
+              title: '使用统计',
+              rowPadding: EatSpace.s8,
+              children: [
+                if (usage.value case final stats?)
+                  EatSwitch(
+                    label: '使用统计',
+                    description: [
+                      '记录你用了哪些功能，用来改进体验',
+                      if (stats.retentionDays case final days?) '保存 $days 天',
+                      '关闭后删除已收集的记录',
+                    ].join('，'),
+                    value: stats.enabled,
+                    onChanged: (on) async => report(
+                      await ref
+                          .read(usageStatsSettingProvider.notifier)
+                          .set(enabled: on),
+                    ),
+                  )
+                else
+                  loading(
+                    usage,
+                    () => ref.invalidate(usageStatsSettingProvider),
+                  ),
+              ],
+            ),
+            const SizedBox(height: EatSpace.s20),
+            SettingsGroup(
+              title: '屏蔽',
+              children: [
+                SettingsRow(
+                  icon: EatIcons.block,
+                  label: '屏蔽的人',
+                  onTap: () => context.push(Paths.settingsBlocked),
+                ),
+              ],
             ),
             const SizedBox(height: EatSpace.s24),
           ],

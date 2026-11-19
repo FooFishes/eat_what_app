@@ -5,21 +5,54 @@ import 'package:eat/design/tokens/eat_palette.dart';
 /// 舞台可用的全部颜色.
 ///
 /// 每个枚举值自带整套配色, 深浅固定声明在枚举上, 不在运行时按亮度推断.
+///
+/// 系统深色模式下舞台底色换成压暗的 [darkColor], 文字色和舞台的深浅分类不变; 照片取色只和 [color] 比较.
 enum StageColor {
-  broth(EatPalette.stageBroth, '汤色', isDark: false),
-  mango(EatPalette.stageMango, '芒果黄', isDark: false),
-  bamboo(EatPalette.stageBamboo, '竹屉', isDark: false),
-  chili(EatPalette.stageChili, '辣橙', isDark: false),
-  porcelain(EatPalette.stagePorcelain, '青花蓝', isDark: false),
-  matcha(EatPalette.stageMatcha, '抹茶绿', isDark: false),
-  tomato(EatPalette.stageTomato, '番茄红', isDark: true),
-  redoil(EatPalette.stageRedoil, '红油', isDark: true),
-  soy(EatPalette.stageSoy, '酱色', isDark: true);
+  broth(EatPalette.stageBroth, EatPalette.stageBrothDark, '汤色', isDark: false),
+  mango(EatPalette.stageMango, EatPalette.stageMangoDark, '芒果黄', isDark: false),
+  bamboo(
+    EatPalette.stageBamboo,
+    EatPalette.stageBambooDark,
+    '竹屉',
+    isDark: false,
+  ),
+  chili(EatPalette.stageChili, EatPalette.stageChiliDark, '辣橙', isDark: false),
+  porcelain(
+    EatPalette.stagePorcelain,
+    EatPalette.stagePorcelainDark,
+    '青花蓝',
+    isDark: false,
+  ),
+  matcha(
+    EatPalette.stageMatcha,
+    EatPalette.stageMatchaDark,
+    '抹茶绿',
+    isDark: false,
+  ),
+  tomato(
+    EatPalette.stageTomato,
+    EatPalette.stageTomatoDark,
+    '番茄红',
+    isDark: true,
+  ),
+  redoil(
+    EatPalette.stageRedoil,
+    EatPalette.stageRedoilDark,
+    '红油',
+    isDark: true,
+  ),
+  soy(EatPalette.stageSoy, EatPalette.stageSoyDark, '酱色', isDark: true);
 
-  const new(this.color, this.label, {required this.isDark});
+  const new(this.color, this.darkColor, this.label, {required this.isDark});
 
   /// 舞台底色.
   final Color color;
+
+  /// 系统深色模式下的舞台底色.
+  final Color darkColor;
+
+  /// 按界面深浅取舞台底色.
+  Color colorIn({required bool dark}) => dark ? darkColor : color;
 
   /// 界面上显示的颜色名, 出现在 "调整照片" 的色圆下方.
   final String label;

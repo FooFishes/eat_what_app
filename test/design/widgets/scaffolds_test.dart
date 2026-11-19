@@ -8,6 +8,7 @@ import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/keyboard_inset.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -33,12 +34,24 @@ Future<Color> _pixel(WidgetTester tester, Offset at) async {
   }))!;
 }
 
-Future<void> _pump(WidgetTester tester, Widget page) => tester.pumpWidget(
+Future<void> _pump(
+  WidgetTester tester,
+  Widget page, {
+  Brightness brightness = Brightness.light,
+}) => tester.pumpWidget(
   MaterialApp(
-    theme: eatThemeData(),
+    theme: eatThemeData(brightness),
     home: BackFallback(fallback: () {}, child: page),
   ),
 );
+
+/// 树里最深的一层状态栏样式, 即实际生效的那一层.
+SystemUiOverlayStyle _overlay(WidgetTester tester) => tester
+    .widgetList<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byWidgetPredicate((w) => w is AnnotatedRegion<SystemUiOverlayStyle>),
+    )
+    .last
+    .value;
 
 void main() {
   group('StageScaffold', () {
@@ -322,6 +335,25 @@ void main() {
       expect(barColor(), EatColors.light.ink);
     });
 
+    testWidgets('深色模式下抽屉滚到顶栏下面后, 顶栏换成深色 paper 底, 浅色 ink 和浅色状态栏图标', (
+      tester,
+    ) async {
+      useScreen(tester, const Size(390, 844));
+      await _pump(tester, barPage(onBack: () {}), brightness: Brightness.dark);
+      await tester.pumpAndSettle();
+      Color? barColor() =>
+          DefaultTextStyle.of(tester.element(find.bySemanticsLabel('返回')))
+              .style
+              .color;
+
+      expect(barColor(), StageColor.tomato.foreground);
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -600));
+      await tester.pumpAndSettle();
+      expect(barColor(), EatColors.dark.ink);
+      expect(_overlay(tester).statusBarIconBrightness, Brightness.light);
+      expect(await _pixel(tester, const Offset(195, 30)), EatColors.dark.paper);
+    });
+
     testWidgets('顶栏换样式按 300ms 过渡，不跟着滚动距离突变；拉回去同样过渡', (tester) async {
       useScreen(tester, const Size(390, 844));
       await _pump(tester, barPage(onBack: () {}));
@@ -441,6 +473,19 @@ void main() {
   });
 
   group('PlainScaffold', () {
+    testWidgets('状态栏图标跟着 paper 的深浅: 浅色底用深色图标, 深色底用浅色图标', (tester) async {
+      const page = PlainScaffold(
+        title: '设置',
+        slivers: [SliverToBoxAdapter(child: Text('内容'))],
+      );
+      await _pump(tester, page);
+      expect(_overlay(tester).statusBarIconBrightness, Brightness.dark);
+
+      await _pump(tester, page, brightness: Brightness.dark);
+      await tester.pumpAndSettle();
+      expect(_overlay(tester).statusBarIconBrightness, Brightness.light);
+    });
+
     testWidgets('titleNote 紧跟在标题后面，内容从标题行下方开始', (tester) async {
       useScreen(tester, const Size(390, 844));
       await _pump(

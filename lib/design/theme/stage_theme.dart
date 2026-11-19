@@ -1,10 +1,11 @@
 import 'package:eat/design/theme/eat_motion.dart';
+import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:flutter/widgets.dart';
 
 /// 舞台使用的整套颜色, 由 [StageColor] 计算得出.
 ///
-/// 切换舞台色时整套颜色同步插值.
+/// 切换舞台色或系统深浅时整套颜色同步插值.
 @immutable
 class const StagePalette({
   required final Color background,
@@ -23,17 +24,19 @@ class const StagePalette({
   /// 插值时在进度过半处切换.
   required final bool isDark,
 }) {
-  factory StagePalette.of(StageColor stage) => StagePalette(
-    background: stage.color,
-    foreground: stage.foreground,
-    secondaryForeground: stage.secondaryForeground,
-    ghost: stage.ghost,
-    table: stage.table,
-    tableRing: stage.tableRing,
-    solid: stage.solid,
-    solidForeground: stage.color,
-    isDark: stage.isDark,
-  );
+  /// [dark] 为 true 时取系统深色模式下压暗的舞台底色, 次按钮和转盘桌面是半透明的白, 叠在底色上跟着变.
+  factory StagePalette.of(StageColor stage, {bool dark = false}) =>
+      StagePalette(
+        background: stage.colorIn(dark: dark),
+        foreground: stage.foreground,
+        secondaryForeground: stage.secondaryForeground,
+        ghost: stage.ghost,
+        table: stage.table,
+        tableRing: stage.tableRing,
+        solid: stage.solid,
+        solidForeground: stage.colorIn(dark: dark),
+        isDark: stage.isDark,
+      );
 
   static StagePalette lerp(StagePalette a, StagePalette b, double t) =>
       StagePalette(
@@ -113,7 +116,9 @@ class AnimatedStageTheme extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<StagePalette>(
-    tween: _StagePaletteTween(end: StagePalette.of(stage)),
+    tween: _StagePaletteTween(
+      end: StagePalette.of(stage, dark: context.eat.colors.isDark),
+    ),
     duration: context.motion(EatMotion.stageColor),
     curve: EatMotion.stageColor.curve,
     builder: (context, palette, _) => StageTheme(

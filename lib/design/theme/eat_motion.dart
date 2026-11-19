@@ -62,6 +62,12 @@ abstract final class EatMotion {
 
   static const dialogScale = 0.96;
 
+  /// 换深浅色: 旧界面的截图在新界面上淡出.
+  static const EatTransition themeSwitch = (
+    duration: Duration(milliseconds: 300),
+    curve: Curves.easeOut,
+  );
+
   /// 登录页转盘匀速旋转一周的时间. 这是应用中唯一自动播放的动画.
   static const loginSpinPeriod = Duration(seconds: 90);
 }

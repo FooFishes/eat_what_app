@@ -56,7 +56,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
                   label,
                   style: eat.text.subhead.copyWith(
                     fontWeight: strong ? FontWeight.w600 : FontWeight.w400,
-                    color: c.paper,
+                    color: c.white,
                   ),
                 ),
               ),
@@ -80,7 +80,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
                     child: Text(
                       '调整头像',
                       textAlign: TextAlign.center,
-                      style: eat.text.subhead.copyWith(color: c.paper),
+                      style: eat.text.subhead.copyWith(color: c.white),
                     ),
                   ),
                 ),
@@ -103,7 +103,7 @@ class _AvatarCropPageState extends State<AvatarCropPage> {
             Text(
               '拖动或缩放，将头像移入圆框内',
               style: eat.text.meta.copyWith(
-                color: c.paper.withValues(alpha: 0.7),
+                color: c.white.withValues(alpha: 0.7),
               ),
             ),
             CropZoomSlider(

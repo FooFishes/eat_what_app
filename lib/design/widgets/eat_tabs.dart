@@ -50,7 +50,10 @@ class EatTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final marker = _markerColor(StageTheme.maybeOf(context));
+    final marker = _markerColor(
+      StageTheme.maybeOf(context),
+      darkSheet: eat.colors.isDark,
+    );
     final inset = padding.resolve(Directionality.of(context)).horizontal;
     Widget tabAt(int i, {required bool fill}) => _Tab(
       tab: tabs[i],
@@ -156,9 +159,12 @@ class EatTabs extends StatelessWidget {
   }
 
   /// 记号笔的颜色: 舞台色叠一层透明度. 深色舞台本身就重, 淡一些; 浅色舞台要浓一些才看得出来.
-  static Color _markerColor(StagePalette? palette) {
-    final background = palette?.background ?? StageColor.mango.color;
-    final dark = palette?.isDark ?? StageColor.mango.isDark;
+  ///
+  /// 深色模式下抽屉是深色, 字是浅色, 一律取 40%: 叠在 `paper` 上得到偏暗的色块, 浅色字压在上面对比度都在 5:1 以上.
+  static Color _markerColor(StagePalette? palette, {required bool darkSheet}) {
+    final background =
+        palette?.background ?? StageColor.mango.colorIn(dark: darkSheet);
+    final dark = darkSheet || (palette?.isDark ?? StageColor.mango.isDark);
     return background.withValues(alpha: dark ? 0.4 : 0.85);
   }
 }

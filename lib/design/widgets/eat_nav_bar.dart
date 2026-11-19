@@ -111,8 +111,8 @@ class EatNavBar extends StatelessWidget {
 /// 因此模糊度按不透明度的平方衰减: 透明度 70% 时模糊度降至约 1, 下方轮廓仍清晰可辨;
 /// 100% 时则不着色也不模糊, 仅由边缘的折射与高光勾勒轮廓.
 ///
-/// 降低不透明度会使导航文字对比度下降: 文字和图标均采用 `ink`, 透明度不高于 35% 时叠加在纯黑背景上仍不低于 4.5:1;
-/// 更高的透明度由用户在设置中主动选择.
+/// 降低不透明度会使导航文字对比度下降: 文字和图标均采用 `ink`, 浅色下透明度不高于 35% 时叠加在纯黑背景上仍不低于 4.5:1,
+/// 深色下透明度不高于 25% 时叠加在纯白背景上仍不低于 4.5:1; 更高的透明度由用户在设置中主动选择.
 LiquidGlassSettings _barGlass(Color tint, double transparency) {
   final opacity = 1 - transparency;
   return LiquidGlassSettings(
@@ -126,7 +126,7 @@ LiquidGlassSettings _barGlass(Color tint, double transparency) {
   );
 }
 
-/// 选中指示块的液态玻璃配置, 以 7% 透明度的 `ink` 着色, 在偏白的胶囊内呈现为略深的色块.
+/// 选中指示块的液态玻璃配置, 以 7% 透明度的 `ink` 着色, 在胶囊内呈现为和底色略有区别的色块.
 LiquidGlassSettings _indicatorGlass(Color tint) => LiquidGlassSettings(
   bodyMode: GlassBodyMode.clear,
   glassColor: tint.withValues(alpha: 0.07),

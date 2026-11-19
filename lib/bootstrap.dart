@@ -3,6 +3,7 @@ import 'package:eat/core/network/api_client.dart';
 import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/api_hooks.dart';
+import 'package:eat/state/appearance.dart';
 import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
@@ -30,6 +31,8 @@ Future<void> bootstrap() async {
     retry: retryOnNetworkFailure,
   );
   await container.read(sessionProvider.notifier).restore();
+  // 首帧就要按用户选的深浅色画.
+  await container.read(appearancePreferenceProvider.notifier).restore();
   // 首帧的路由守卫需要强制更新和停服维护状态, 因此先读出本机的远程配置快照. 最新配置由下方的服务启动后获取.
   await container.read(remoteConfigProvider.notifier).restore();
   // 崩溃上报需在首帧前启动, 才能捕获启动过程中的错误. 若本机尚无同意记录则不启动.
@@ -42,7 +45,7 @@ Future<void> bootstrap() async {
   runApp(
     UncontrolledProviderScope(
       container: container,
-      // 液态玻璃默认跟随系统深浅色. 由于应用固定浅色主题, 此处改为读取应用主题亮度, 避免系统开启深色模式时玻璃变暗.
+      // 液态玻璃默认跟随系统深浅色. 个性化里可以固定深浅色, 因此改为读取应用主题的亮度, 和界面保持一致.
       child: LiquidGlassWidgets.wrap(
         brightnessResolver: Theme.maybeBrightnessOf,
         child: const EatApp(),

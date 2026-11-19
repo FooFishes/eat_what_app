@@ -49,7 +49,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
     final width = screen.width;
     final credit = widget.photos[_index].credit;
     return ColoredBox(
-      color: eat.colors.ink,
+      color: eat.colors.shade,
       child: Stack(
         children: [
           PageView.builder(
@@ -74,7 +74,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
             child: EatIconButton(
               EatIcons.close,
               label: '关闭',
-              color: eat.colors.paper,
+              color: eat.colors.white,
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
@@ -87,7 +87,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
                 '${_index + 1} / ${widget.photos.length}',
                 if (credit != null) '$credit 拍的',
               ].join('  '),
-              style: eat.text.meta.copyWith(color: eat.colors.paper),
+              style: eat.text.meta.copyWith(color: eat.colors.white),
             ),
           ),
         ],

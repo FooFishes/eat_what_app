@@ -1099,12 +1099,12 @@ class _PhotoThumb extends StatelessWidget {
       UploadStatus.failed => EatIcon(
         EatIcons.warning,
         size: 22,
-        color: c.paper,
+        color: c.white,
       ),
       UploadStatus.waiting => null,
       UploadStatus.uploading => Text(
         '${(photo.progress * 100).round()}%',
-        style: eat.text.count.copyWith(color: c.paper),
+        style: eat.text.count.copyWith(color: c.white),
       ),
     };
     return EatTappable(
@@ -1130,7 +1130,7 @@ class _PhotoThumb extends StatelessWidget {
                 ColoredBox(
                   color: photo.status == UploadStatus.failed
                       ? c.warn.withValues(alpha: 0.7)
-                      : c.ink.withValues(alpha: 0.45),
+                      : c.shade.withValues(alpha: 0.45),
                   child: Center(child: overlay),
                 ),
               if (cover) const _CoverBadge(),
@@ -1155,11 +1155,11 @@ class _CoverBadge extends StatelessWidget {
       right: 0,
       bottom: 0,
       child: ColoredBox(
-        color: c.ink.withValues(alpha: 0.6),
+        color: c.shade.withValues(alpha: 0.6),
         child: Text(
           '封面',
           textAlign: TextAlign.center,
-          style: eat.text.caption.copyWith(color: c.paper),
+          style: eat.text.caption.copyWith(color: c.white),
         ),
       ),
     );

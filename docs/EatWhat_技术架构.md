@@ -83,7 +83,7 @@ lib/
                             comment/ 是评论、回复、评论的赞和照片；feedback/ 是信息有误、举报和意见反馈。
                             topic/ 的后端接口已删除，代码保留、没有调用方（8.5）；growth/ 是本人的等级和经验明细（`/user/level*`），cancellation/ 是注销和撤销注销；telemetry/ 是使用统计开关；device/ 是设备注册（9.4）
   state/                    跨页面共享的状态：登录态、账号状态、同意记录、远程配置、功能状态、
-                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度、菜的赞和收藏、未读数、网络状态、设备注册、埋点上报；
+                            当前位置、地点饭点和堂食外卖、导航玻璃的透明度和界面深浅色、菜的赞和收藏、未读数、网络状态、设备注册、埋点上报；
                             评论（comments.dart：评论列表、回复、赞、发表和删除、我的评论）
   features/                 按页面分组：页面、页面私有组件、页面的 Provider
     auth/                   登录、手机号登录、密码登录
@@ -749,7 +749,7 @@ extension RefCache on Ref {
 | 令牌 | 形式 | 读法 | 理由 |
 | --- | --- | --- | --- |
 | 颜色、文字样式、阴影 | `EatTheme extends ThemeExtension<EatTheme>` | `context.eat.colors.ink` | 按设计规范做成主题扩展，组件从上下文取，测试时可替换 |
-| 间距、圆角、尺寸 | 编译期常量 | `EatSpace.s20`、`EatRadius.pill` | 只有一套浅色主题，这些值不随主题变；常量才能写进 `const EdgeInsets` |
+| 间距、圆角、尺寸 | 编译期常量 | `EatSpace.s20`、`EatRadius.pill` | 这些值不分深浅；常量才能写进 `const EdgeInsets` |
 | 动效 | 编译期常量 | `EatMotion.snap`（680 ms，`Cubic(0.2, 0.9, 0.25, 1.1)`） | 同上 |
 
 设计规范写「tokens 做成 ThemeExtension（颜色、间距、圆角、阴影）」。间距和圆角改成常量是实现上的取舍，值和名字不变。
@@ -758,22 +758,25 @@ extension RefCache on Ref {
 
 `StageColor` 是 9 个值的枚举，每个值带着自己的配色，深浅写死，不在运行时去猜：
 
-| 值 | 颜色 | 深浅 | 文字 | 次级文字 | 次按钮底 | 转盘桌面 / 细边 | 实心按钮 | 菜品分类默认 | 店铺默认 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `broth` | `#f3c46e` | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 | 汤粥、日韩料理；没有品类 |
-| `mango` | `#ffcb45` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品甜品；「我的」默认 | 粉面 |
-| `bamboo` | `#d8b27a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤 | 面点快餐 |
-| `chili` | `#d9632b` | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 | 烧烤炸串 |
-| `porcelain` | `#9db8d9` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | — | 甜点饮品店 |
-| `matcha` | `#9dbf7a` | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 特色 | — |
-| `tomato` | `#c9442b` | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 底，舞台色字 | — | — |
-| `redoil` | `#a8321c` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | — | 火锅麻辣烫 |
-| `soy` | `#8f5b24` | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 菜 | 米饭炒菜 |
+| 值 | 颜色 | 深色模式 | 深浅 | 文字 | 次级文字 | 次按钮底 | 转盘桌面 / 细边 | 实心按钮 | 菜品分类默认 | 店铺默认 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `broth` | `#f3c46e` | `#cfa75e`（压暗 15%；`ink` 7.5:1，`ink-soft` 4.7:1） | 浅 | `ink` | `ink-soft` | `stage-ghost-light` | `table-light` / `table-ring-light` | `ink` 底，舞台色字 | 主食 | 汤粥、日韩料理；没有品类 |
+| `mango` | `#ffcb45` | `#d9ad3b`（15%；8.0:1，5.0:1） | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 饮品甜品；「我的」默认 | 粉面 |
+| `bamboo` | `#d8b27a` | `#c7a470`（8%；7.2:1，4.5:1） | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 汤 | 面点快餐 |
+| `chili` | `#d9632b` | `#d9632b`（不变，`ink` 只有 4.6:1，再暗就不够） | 浅 | `ink` | `ink`（`ink-soft` 只有 2.9:1） | 同上 | 同上 | 同上 | 小吃 | 烧烤炸串 |
+| `porcelain` | `#9db8d9` | `#94adcc`（6%；7.3:1，4.6:1） | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | — | 甜点饮品店 |
+| `matcha` | `#9dbf7a` | `#94b473`（6%；7.2:1，4.6:1） | 浅 | `ink` | `ink-soft` | 同上 | 同上 | 同上 | 特色 | — |
+| `tomato` | `#c9442b` | `#ab3a25`（15%；`paper` 6.2:1） | 深 | `paper` | `paper`（85% 只有 3.9:1，不够 4.5:1） | `stage-ghost-dark` | `table-dark` / `table-ring-dark` | `paper` 底，舞台色字 | — | — |
+| `redoil` | `#a8321c` | `#8f2a18`（15%；`paper` 8.4:1，85% 6.5:1） | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | — | 火锅麻辣烫 |
+| `soy` | `#8f5b24` | `#7a4d1f`（15%；`paper` 7.2:1，85% 5.7:1） | 深 | `paper` | `paper` 85% | 同上 | 同上 | 同上 | 菜 | 米饭炒菜 |
 
 - 菜品分类的默认色（产品 4.4）写在 `domain/rules/dish_rules.dart` 的 `DishRules.defaultStage`；`DishCategory` 的 `api` 是后端的中文原值（主食、菜、小吃、汤、饮品甜品、特色）。
 - 店铺的舞台色（产品 4.7）写在 `domain/rules/shop_rules.dart` 的 `ShopRules.stageOf`：甜点饮品店用 `porcelain`，美食店和自助店按第一个品类映射，没有品类用 `broth`。纯函数，餐厅详情、推荐卡片和各端一致。
 - `test/design/stage_color_test.dart` 检查每个舞台色上的主文字和次级文字都不低于 4.5:1。
 - 状态栏图标跟着舞台深浅切换（`AnnotatedRegion<SystemUiOverlayStyle>`）。
+- 系统深色模式下舞台底色换成「深色模式」一列的值（`StageColor.darkColor`，原值在 `EatPalette` 的 `stage*Dark`）：在原色里混入黑色压暗，浅色舞台最多 15%，以 `ink` 和 `ink-soft` 仍不低于 4.5:1 为限，深色舞台 15%。括号里依次是主文字、次级文字的对比度。9 个值和各自的深浅分类不变，照片取色只和浅色值比，吸附到的枚举值不受深浅影响；文字色、次按钮底和转盘桌面都不变，次按钮底和桌面是半透明的白，叠在压暗的底色上跟着变。`StagePalette.of(stage, dark: ...)` 按 `EatColors.isDark` 取值，`AnimatedStageTheme` 在系统切换深浅时同样按 500 ms 过渡。
+- 表里的 `ink`、`paper` 指舞台用的浅色值（`EatPalette.ink`、`EatPalette.paper`），不是深色模式下的 `EatColors.dark`。
+- 深色舞台上 `paper` 叠在次按钮底（`stage-ghost-dark`）上的对比度：`tomato` 浅色 3.6:1、深色 4.4:1，`soy` 3.9:1、4.7:1，`redoil` 4.7:1、5.6:1。
 
 ### 11.4 舞台换色
 
@@ -792,7 +795,7 @@ extension RefCache on Ref {
 - Inter 和 Noto 都由 `tool/subset_fonts.py` 生成，许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。Inter 三端都在 `pubspec.yaml` 的 `fonts` 里声明。Noto 只在安卓用：`fonts` 里的字体 Web 会在首帧前全部下载，所以它作为普通资源声明并限定 `platforms: [android]`，`bootstrap` 里和读取本地数据并行调用 `EatFonts.loadSans` 注册，首帧前完成；加载失败时上报错误，文字回落到系统字体。
 - Web 上 Flutter 用不了浏览器的系统字体，中文由引擎的回落字体（Noto Sans SC 的分片）按需下载显示，回落地址要指向自托管副本（依赖选型 9.1）。
 - 选中态靠字重，不靠颜色：分类标签选中 18 号 600（介于 `subhead` 和 `heading` 之间），未选中 15 号 400，行高都是 26；文字前可带和字一样大的图标，图标中心对在汉字的视觉中心（基线上方约 0.38em）。
-- 分类栏（`EatTabs`）的选中项在字的下半截压一道记号笔：略向右斜、两头圆角不同；颜色取 `StageTheme` 的舞台色，深色舞台 40% 不透明、浅色舞台 85%，没有舞台的白底页面用芒果黄。选中时从左往右画出、取消时从右往左收回，用 `EatMotion.select`。放得下时各项等分整行宽度、字在格里居中，底下一条 `hairline`；放不下时（分类多，或带「待接入」小标）按固定间距从左排、横向滚动。
+- 分类栏（`EatTabs`）的选中项在字的下半截压一道记号笔：略向右斜、两头圆角不同；颜色取 `StageTheme` 的舞台色，深色舞台 40% 不透明、浅色舞台 85%，没有舞台的白底页面用芒果黄；深色模式下抽屉是深色，一律 40% 不透明，叠出来的色块上浅色字都在 5:1 以上。选中时从左往右画出、取消时从右往左收回，用 `EatMotion.select`。放得下时各项等分整行宽度、字在格里居中，底下一条 `hairline`；放不下时（分类多，或带「待接入」小标）按固定间距从左排、横向滚动。
 
 ### 11.6 图标
 
@@ -802,9 +805,34 @@ extension RefCache on Ref {
 
 ### 11.7 Material 的使用范围
 
-- 用 `material_ui` 的 `MaterialApp.router`、本地化、文本选择菜单、输入框。`ThemeData` 只做最少设置：浅色、关掉水波纹（`NoSplash`）、背景 `paper`、挂上 `EatTheme`。
+- 用 `material_ui` 的 `MaterialApp.router`、本地化、文本选择菜单、输入框。`ThemeData` 只做最少设置：按深浅各建一份（`eatThemeData(brightness)`）、关掉水波纹（`NoSplash`）、背景 `paper`、挂上对应的 `EatTheme`。
 - 按钮、标签、开关、面板、列表行全部用 `design/widgets/` 里自己的组件，不用 Material 的视觉组件，避免 M3 默认样式混进来。
-- 不跟随系统深色模式：`themeMode` 固定浅色（产品 11.2、5.2）。
+- 深浅色：`theme` 和 `darkTheme` 各挂一份，`themeMode` 取 `appearancePreferenceProvider`（跟随系统、浅色、深色，默认跟随系统，存在本机），启动时首帧前读出（产品 11.2、6.12）。切换时不用 `MaterialApp` 的主题渐变（`themeAnimationDuration` 为 0，渐变要每帧重建整棵树，会卡），改由 `ThemeCrossFade` 过渡：换之前截下当前画面盖在最上面，底下一次换成新主题，截图按 `EatMotion.themeSwitch`（300ms）淡出；系统切换和个性化里切换都这样，减少动态效果时直接换。个性化里点了先打勾，等 `EatMotion.select` 播完再换主题。
+- 深色令牌（`EatColors.dark`，原值在 `EatPalette` 的 `dark*`）：
+
+  | 令牌 | 浅色 | 深色 | 深色下对比度 |
+  | --- | --- | --- | --- |
+  | `paper` | `#ffffff` | `#171210` | — |
+  | `mist` | `#f3f2f0` | `#282220` | — |
+  | `ink` | `#231c18` | `#f2ece7` | `paper` 上 15.9:1，`mist` 上 13.4:1 |
+  | `ink-muted` | `#6e625b` | `#a89d95` | `paper` 上 7.0:1，`mist` 上 5.9:1 |
+  | `ink-soft` | `#4a3c31` | `#d2c7bf` | `paper` 上 11.2:1 |
+  | `ink-top` | `#3b312b` | `#ffffff` | — |
+  | `tag-selected` | `#fbefd9` | `#3a2e1c` | `ink` 在上面 11.3:1 |
+  | `hairline` | `#efe9e4` | `#2c2623` | — |
+  | `handle` | `#e6ded8` | `#3e3632` | — |
+  | `line-strong` | `#9a8b80` | `#847770` | — |
+  | `disabled-bg` / `disabled-fg` | `#efeeec` / `#b0ada9` | `#26211e` / `#5f5853` | — |
+  | `warn` | `#a8321c` | `#e35b3f` | `paper` 上 5.2:1 |
+  | `scrim` | `ink` 45% | 黑 60% | — |
+
+  地图（`map-*`）、「调整照片」页（`crop-*`）的颜色两套相同。另有两个不分深浅的令牌：`white`（白色，用于照片、大图查看器和「调整照片」页上的文字和图标）和 `shade`（`#231c18`，用于压在照片上的遮罩和画出来的投影，透明度由使用处决定）。
+- `ink` 实心底上的字仍用 `paper`，所以深色模式下主操作是浅色胶囊、深色字；Toast、单选圆、开关打开时同理。`EatShadows.dark` 只把雾面按钮的 `handle` 描边和描边按钮的 `ink` 描边换成深色值，投影不变。
+- 不跟着深浅变的部件：
+  - `DishPlate` 的盘沿和加载前的空盘固定取浅色的 `paper` 和 `mist`，白瓷盘不跟着深浅变。
+  - 地图底图不变深，`MapPin`、`MyLocationDot` 固定用浅色主题绘制；附近页压在地图上的状态栏固定深色图标。浮在地图上的搜索框、商圈标签和定位按钮跟着深浅变。
+  - 大图查看器底色用 `shade`，「调整照片」「调整头像」页的文字和取景圈用 `white`。
+- 状态栏图标：白底页面（`PlainScaffold`）和吸顶后的顶栏按 `EatColors.isDark` 切换，深色模式下是浅色图标。
 - 键盘焦点：自定义组件的焦点样式统一画「2px `paper` 内圈 + 2px `ink` 外圈」（规范「状态」）。
 
 ### 11.8 组件约定
@@ -883,7 +911,7 @@ extension RefCache on Ref {
 - 顶栏固定在屏幕顶部（手机）：顶栏不放在舞台里跟着滚走，而是叠在滚动视图上面，返回和右上角的操作始终点得到。
   - 页面没滚动时顶栏没有底色，图标用舞台文字色，和以前一样。
   - 页面滚过 16px 后顶栏铺上舞台色，舞台上的盘子和文字从它下面穿过，不和图标叠在一起。
-  - 抽屉滚到顶栏下面时，顶栏换成 `paper` 底、`ink` 图标，底边一条 `hairline`；状态栏图标跟着换成深色。顶栏里的 `StageTheme` 和默认文字色随进度插值，页面写的顶栏不用自己处理颜色。文字、图标和按钮的颜色按时间过渡而不是跟着滚动距离：抽屉顶边离顶栏底边不到 8px 时开始，按 `EatMotion.barPin`（300ms `easeInOutCubic`）过渡过去，往回要再离开 8px 才退回，往上甩时也不会突变。顶栏的底色分两段：抽屉顶边以下画一块和抽屉一样带圆角的 `paper`，跟着抽屉的实际位置走，抽屉滑到顶栏下面时那里立刻是白的，不会在白底上再播一遍舞台色褪掉的过程；抽屉顶边以上露出舞台的那一段（状态栏和顶栏上部）随同一个动画从舞台色过渡到 `paper`。顶栏里的组件用 `StageScaffold.barPinOf` 读这个进度，发现页的搜索和消息按它从带字的胶囊收成图标。
+  - 抽屉滚到顶栏下面时，顶栏换成 `paper` 底、`ink` 图标，底边一条 `hairline`；状态栏图标跟着 `paper` 的深浅换（浅色模式深色图标，深色模式浅色图标）。顶栏里的 `StageTheme` 和默认文字色随进度插值，页面写的顶栏不用自己处理颜色。文字、图标和按钮的颜色按时间过渡而不是跟着滚动距离：抽屉顶边离顶栏底边不到 8px 时开始，按 `EatMotion.barPin`（300ms `easeInOutCubic`）过渡过去，往回要再离开 8px 才退回，往上甩时也不会突变。顶栏的底色分两段：抽屉顶边以下画一块和抽屉一样带圆角的 `paper`，跟着抽屉的实际位置走，抽屉滑到顶栏下面时那里立刻是白的，不会在白底上再播一遍舞台色褪掉的过程；抽屉顶边以上露出舞台的那一段（状态栏和顶栏上部）随同一个动画从舞台色过渡到 `paper`。顶栏里的组件用 `StageScaffold.barPinOf` 读这个进度，发现页的搜索和消息按它从带字的胶囊收成图标。
   - `StageBarTitle` 是顶栏里的标题（菜名、店名、昵称），放在返回和右侧按钮之间。舞台还在时不显示，换成白底样式时淡入。
   - `pinnedBottom` 是抽屉第一行内容的副本（发现页的分类栏）。这一行滚到顶栏下面时，副本接在顶栏下方，看起来像停在那里；往下翻推荐流时随时能换分类。传了它，`sheetSlivers` 的第一项必须是同一行内容。
   - 宽屏不变：顶栏在左侧面板顶部，舞台不滚走。

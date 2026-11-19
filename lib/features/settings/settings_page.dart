@@ -12,6 +12,7 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/current_user.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
+import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:eat/features/settings/widgets/settings_row.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/router/paths.dart';
@@ -50,7 +51,9 @@ class SettingsPage extends ConsumerWidget {
       return PlainScaffold(
         title: '设置',
         slivers: [
-          SliverList.list(children: [personalize, about]),
+          SliverToBoxAdapter(
+            child: SettingsGroup(children: [personalize, about]),
+          ),
         ],
       );
     }
@@ -58,37 +61,45 @@ class SettingsPage extends ConsumerWidget {
       title: '设置',
       slivers: [
         SliverToBoxAdapter(
-          child: _Profile(
-            user: user,
-            onTap: () async {
-              if (await guardAction(context, ref, Capability.editProfile) &&
-                  context.mounted) {
-                await context.push(Paths.meEdit);
-              }
-            },
+          child: SettingsGroup(
+            children: [
+              _Profile(
+                user: user,
+                onTap: () async {
+                  if (await guardAction(context, ref, Capability.editProfile) &&
+                      context.mounted) {
+                    await context.push(Paths.meEdit);
+                  }
+                },
+              ),
+            ],
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
-        SliverList.list(
-          children: [
-            SettingsRow(
-              icon: EatIcons.shield,
-              label: '账号与安全',
-              onTap: () => context.push(Paths.settingsAccount),
-            ),
-            SettingsRow(
-              icon: EatIcons.lock,
-              label: '隐私',
-              onTap: () => context.push(Paths.settingsPrivacy),
-            ),
-            SettingsRow(
-              icon: EatIcons.bell,
-              label: '通知',
-              onTap: () => context.push(Paths.settingsNotify),
-            ),
-            personalize,
-            about,
-          ],
+        SliverToBoxAdapter(
+          child: SettingsGroup(
+            children: [
+              SettingsRow(
+                icon: EatIcons.shield,
+                label: '账号与安全',
+                onTap: () => context.push(Paths.settingsAccount),
+              ),
+              SettingsRow(
+                icon: EatIcons.lock,
+                label: '隐私',
+                onTap: () => context.push(Paths.settingsPrivacy),
+              ),
+              SettingsRow(
+                icon: EatIcons.bell,
+                label: '通知',
+                onTap: () => context.push(Paths.settingsNotify),
+              ),
+            ],
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s20)),
+        SliverToBoxAdapter(
+          child: SettingsGroup(children: [personalize, about]),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 28)),
         SliverToBoxAdapter(
@@ -150,43 +161,46 @@ class _Profile extends StatelessWidget {
       focusShape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(EatRadius.thumb),
       ),
-      builder: (context, _) => Row(
-        spacing: EatSpace.s14,
-        children: [
-          EatAvatar(
-            name: name,
-            color:
-                StageColor.values[(user?.id ?? 0) % StageColor.values.length],
-            image: networkImage(avatar, width: 56),
-            size: 56,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 2,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: eat.text.heading.copyWith(color: c.ink),
-                ),
-                Row(
-                  spacing: 4,
-                  children: [
-                    if (verified)
-                      EatIcon(EatIcons.verify, size: 16, color: c.inkMuted),
-                    Text(
-                      verified ? '已认证' : '未认证',
-                      style: eat.text.meta.copyWith(color: c.inkMuted),
-                    ),
-                  ],
-                ),
-              ],
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: EatSpace.s14),
+        child: Row(
+          spacing: EatSpace.s14,
+          children: [
+            EatAvatar(
+              name: name,
+              color:
+                  StageColor.values[(user?.id ?? 0) % StageColor.values.length],
+              image: networkImage(avatar, width: 56),
+              size: 56,
             ),
-          ),
-          EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
-        ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 2,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: eat.text.heading.copyWith(color: c.ink),
+                  ),
+                  Row(
+                    spacing: 4,
+                    children: [
+                      if (verified)
+                        EatIcon(EatIcons.verify, size: 16, color: c.inkMuted),
+                      Text(
+                        verified ? '已认证' : '未认证',
+                        style: eat.text.meta.copyWith(color: c.inkMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            EatIcon(EatIcons.chevronRight, size: 20, color: c.inkMuted),
+          ],
+        ),
       ),
     );
   }

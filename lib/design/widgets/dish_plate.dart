@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:eat/design/theme/eat_colors.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:flutter/widgets.dart';
@@ -63,6 +64,8 @@ class DishPlate extends StatelessWidget {
       plate = SizedBox.square(dimension: size, child: illustration);
     } else {
       final eat = context.eat;
+      // 白瓷盘不跟着深浅变, 盘沿和空盘底色固定取浅色的 `paper` 和 `mist`.
+      const plateColors = EatColors.light;
       final scale = math.max(size / EatSize.plate, 0.35);
       final drop = eat.shadows.plate.outer.first;
       plate = Container(
@@ -70,7 +73,7 @@ class DishPlate extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: eat.colors.mist,
+          color: plateColors.mist,
           boxShadow: [
             if (shadow)
               BoxShadow(
@@ -78,7 +81,7 @@ class DishPlate extends StatelessWidget {
                 blurRadius: drop.blurRadius * scale,
                 color: drop.color,
               ),
-            BoxShadow(spreadRadius: rimFor(size), color: eat.colors.paper),
+            BoxShadow(spreadRadius: rimFor(size), color: plateColors.paper),
           ],
         ),
         child: switch (image) {

@@ -34,6 +34,7 @@ import 'package:eat/features/system/shop_row.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -372,124 +373,136 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final navInset = NavBarInset.of(context);
     if (!_hasMap) {
       // 没有地图时整页显示列表, 不保留空白的地图区域. 搜索, 商圈和筛选的行为不变.
-      return ColoredBox(
-        color: context.eat.colors.paper,
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                EatSpace.s16,
-                safe.top + 8,
-                EatSpace.s16,
-                EatSpace.s10,
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: context.eat.colors.isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+        child: ColoredBox(
+          color: context.eat.colors.paper,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  EatSpace.s16,
+                  safe.top + 8,
+                  EatSpace.s16,
+                  EatSpace.s10,
+                ),
+                child: search,
               ),
-              child: search,
-            ),
-            chips,
-            Expanded(
-              child: RemovePadding(
-                removeTop: true,
-                child: EatRefresh(
-                  onRefresh: () => pullToRefresh(
-                    context,
-                    ref,
-                    invalidate: [nearbyShopsProvider(query)],
-                    wait: () => ref.read(nearbyShopsProvider(query).future),
-                  ),
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: EatSpace.s10),
-                      ),
-                      SliverToBoxAdapter(child: header),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: EatSpace.s20,
+              chips,
+              Expanded(
+                child: RemovePadding(
+                  removeTop: true,
+                  child: EatRefresh(
+                    onRefresh: () => pullToRefresh(
+                      context,
+                      ref,
+                      invalidate: [nearbyShopsProvider(query)],
+                      wait: () => ref.read(nearbyShopsProvider(query).future),
+                    ),
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: EatSpace.s10),
                         ),
-                        sliver: rows,
-                      ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: navInset > 0 ? navInset : 24),
-                      ),
-                    ],
+                        SliverToBoxAdapter(child: header),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: EatSpace.s20,
+                          ),
+                          sliver: rows,
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: navInset > 0 ? navInset : 24),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     }
     final height = screen.height;
-    return ColoredBox(
-      color: context.eat.colors.paper,
-      child: Stack(
-        children: [
-          Positioned.fill(child: map),
-          Positioned(
-            left: EatSpace.s16,
-            right: EatSpace.s16,
-            top: safe.top + 8,
-            child: search,
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: safe.top + 8 + 48 + EatSpace.s10,
-            child: chips,
-          ),
-          Positioned(
-            right: EatSpace.s16,
-            bottom: height * _sheetExtent + EatSpace.s14,
-            child: locate,
-          ),
-          NotificationListener<DraggableScrollableNotification>(
-            onNotification: (n) {
-              _onSheetMoved(n.extent);
-              return false;
-            },
-            child: DraggableScrollableSheet(
-              controller: _sheet,
-              initialChildSize: _sheetInitial,
-              minChildSize: 0.2,
-              maxChildSize: 0.88,
-              snap: true,
-              snapSizes: const [_sheetInitial],
-              builder: (context, scroll) {
-                _list = scroll;
-                return DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: context.eat.colors.paper,
-                    borderRadius: const BorderRadius.vertical(
-                      top: EatRadius.sheet,
-                    ),
-                    boxShadow: context.eat.shadows.sheet.outer,
-                  ),
-                  child: CustomScrollView(
-                    controller: scroll,
-                    slivers: [
-                      const SliverPadding(
-                        padding: EdgeInsets.only(top: 10, bottom: EatSpace.s14),
-                        sliver: SliverToBoxAdapter(child: SheetHandle()),
-                      ),
-                      SliverToBoxAdapter(child: header),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: EatSpace.s20,
-                        ),
-                        sliver: rows,
-                      ),
-                      SliverToBoxAdapter(
-                        child: SizedBox(height: navInset > 0 ? navInset : 24),
-                      ),
-                    ],
-                  ),
-                );
-              },
+    // 地图底图不分深浅, 状态栏压在地图上, 图标固定用深色.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: ColoredBox(
+        color: context.eat.colors.paper,
+        child: Stack(
+          children: [
+            Positioned.fill(child: map),
+            Positioned(
+              left: EatSpace.s16,
+              right: EatSpace.s16,
+              top: safe.top + 8,
+              child: search,
             ),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              top: safe.top + 8 + 48 + EatSpace.s10,
+              child: chips,
+            ),
+            Positioned(
+              right: EatSpace.s16,
+              bottom: height * _sheetExtent + EatSpace.s14,
+              child: locate,
+            ),
+            NotificationListener<DraggableScrollableNotification>(
+              onNotification: (n) {
+                _onSheetMoved(n.extent);
+                return false;
+              },
+              child: DraggableScrollableSheet(
+                controller: _sheet,
+                initialChildSize: _sheetInitial,
+                minChildSize: 0.2,
+                maxChildSize: 0.88,
+                snap: true,
+                snapSizes: const [_sheetInitial],
+                builder: (context, scroll) {
+                  _list = scroll;
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: context.eat.colors.paper,
+                      borderRadius: const BorderRadius.vertical(
+                        top: EatRadius.sheet,
+                      ),
+                      boxShadow: context.eat.shadows.sheet.outer,
+                    ),
+                    child: CustomScrollView(
+                      controller: scroll,
+                      slivers: [
+                        const SliverPadding(
+                          padding: EdgeInsets.only(
+                            top: 10,
+                            bottom: EatSpace.s14,
+                          ),
+                          sliver: SliverToBoxAdapter(child: SheetHandle()),
+                        ),
+                        SliverToBoxAdapter(child: header),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: EatSpace.s20,
+                          ),
+                          sliver: rows,
+                        ),
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: navInset > 0 ? navInset : 24),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -821,7 +834,8 @@ class _NearbyMap extends StatelessWidget {
               id: 'hub-${hub.id}-$i',
               points: [for (final p in ring) mapPoint(p)],
               fill: StageColor.broth.color.withValues(alpha: 0.24),
-              stroke: eat.colors.ink,
+              // 地图底图不分深浅, 描边固定用深色.
+              stroke: eat.colors.shade,
               dashed: true,
             ),
       ],

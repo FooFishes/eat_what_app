@@ -64,4 +64,34 @@ void main() {
 
     expect(container.read(navGlassTransparencyProvider), 0.7);
   });
+
+  group('AppearancePreference', () {
+    test('没选过时跟随系统', () async {
+      final container = await env.container();
+      addTearDown(container.dispose);
+      await container.read(appearancePreferenceProvider.notifier).restore();
+
+      expect(container.read(appearancePreferenceProvider), Appearance.system);
+    });
+
+    test('选过的深浅色记在本机，下次启动读出来；认不出的值按跟随系统', () async {
+      final container = await env.container();
+      addTearDown(container.dispose);
+      await container
+          .read(appearancePreferenceProvider.notifier)
+          .select(Appearance.dark);
+      expect(env.kv.values[AppearancePreference.key], 'dark');
+
+      final again = await env.container();
+      addTearDown(again.dispose);
+      await again.read(appearancePreferenceProvider.notifier).restore();
+      expect(again.read(appearancePreferenceProvider), Appearance.dark);
+
+      env.kv.values[AppearancePreference.key] = 'sepia';
+      final third = await env.container();
+      addTearDown(third.dispose);
+      await third.read(appearancePreferenceProvider.notifier).restore();
+      expect(third.read(appearancePreferenceProvider), Appearance.system);
+    });
+  });
 }

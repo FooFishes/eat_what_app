@@ -171,7 +171,9 @@ class _PlainScaffoldState extends State<PlainScaffold>
       scroll = EatRefresh(onRefresh: onRefresh, child: scroll);
     }
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: eat.colors.isDark
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: ColoredBox(
         color: eat.colors.paper,
         child: DefaultTextStyle.merge(

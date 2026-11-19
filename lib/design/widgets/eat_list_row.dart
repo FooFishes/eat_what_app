@@ -203,7 +203,7 @@ class EatAvatar extends StatelessWidget {
           child: image != null
               ? CoverImage(image: image)
               : ColoredBox(
-                  color: color.color,
+                  color: color.colorIn(dark: eat.colors.isDark),
                   child: Center(
                     child: Text(
                       name.characters.firstOrNull ?? '',

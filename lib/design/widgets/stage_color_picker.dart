@@ -1,7 +1,6 @@
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
-import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -9,7 +8,7 @@ import 'package:flutter/widgets.dart';
 
 /// 位于 "调整照片" 底部面板的舞台色选择器, 展示从照片中推荐的三个舞台色并提供首页效果的实时预览.
 ///
-/// - 渲染在 `crop-panel` 深色底上, 文字固定使用 `paper` 色.
+/// - 渲染在 `crop-panel` 深色底上, 文字固定使用白色.
 /// - 仅允许从 [candidates] 中点选, 不开放任意取色的调色盘.
 class StageColorPicker extends StatelessWidget {
   const new({
@@ -42,7 +41,8 @@ class StageColorPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final paper = eat.colors.paper;
+    final white = eat.colors.white;
+    final dark = eat.colors.isDark;
     final duration = context.motion(EatMotion.stageColor);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -54,14 +54,14 @@ class StageColorPicker extends StatelessWidget {
               '舞台颜色',
               style: eat.text.body.copyWith(
                 fontWeight: FontWeight.w600,
-                color: paper,
+                color: white,
               ),
             ),
             const SizedBox(width: EatSpace.s8),
             Text(
               '从照片里推荐',
               style: eat.text.caption.copyWith(
-                color: paper.withValues(alpha: 0.7),
+                color: white.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -92,16 +92,13 @@ class StageColorPicker extends StatelessWidget {
                           height: _swatch,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: color.color,
+                            color: color.colorIn(dark: dark),
                             boxShadow: [
                               if (color == selected) ...[
-                                const BoxShadow(
-                                  spreadRadius: 5,
-                                  color: EatPalette.paper,
-                                ),
-                                const BoxShadow(
+                                BoxShadow(spreadRadius: 5, color: white),
+                                BoxShadow(
                                   spreadRadius: 3,
-                                  color: EatPalette.cropPanel,
+                                  color: eat.colors.cropPanel,
                                 ),
                               ],
                             ],
@@ -113,7 +110,7 @@ class StageColorPicker extends StatelessWidget {
                             fontWeight: color == selected
                                 ? FontWeight.w600
                                 : FontWeight.w400,
-                            color: paper,
+                            color: white,
                           ),
                         ),
                       ],
@@ -126,7 +123,7 @@ class StageColorPicker extends StatelessWidget {
         const SizedBox(height: EatSpace.s16),
         Text(
           '首页会是这样',
-          style: eat.text.caption.copyWith(color: paper.withValues(alpha: 0.7)),
+          style: eat.text.caption.copyWith(color: white.withValues(alpha: 0.7)),
         ),
         const SizedBox(height: EatSpace.s8),
         ExcludeSemantics(
@@ -135,7 +132,7 @@ class StageColorPicker extends StatelessWidget {
             curve: EatMotion.stageColor.curve,
             height: 84,
             decoration: BoxDecoration(
-              color: selected.color,
+              color: selected.colorIn(dark: dark),
               borderRadius: const BorderRadius.all(EatRadius.tile),
             ),
             clipBehavior: Clip.hardEdge,

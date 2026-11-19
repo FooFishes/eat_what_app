@@ -407,7 +407,7 @@ class _StageScaffoldState extends State<StageScaffold>
       tableRing: c.hairline,
       solid: c.ink,
       solidForeground: c.paper,
-      isDark: false,
+      isDark: c.isDark,
     );
     return ValueListenableBuilder(
       valueListenable: _bar,

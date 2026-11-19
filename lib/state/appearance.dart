@@ -42,3 +42,30 @@ class NavGlassTransparency extends _$NavGlassTransparency {
 
   Future<void> save() => ref.read(kvStoreProvider).write(key, '$state');
 }
+
+/// 界面深浅色的选择. 在设置 → 个性化中切换.
+enum Appearance { system, light, dark }
+
+/// 界面深浅色: 跟随系统, 或固定浅色, 深色. 默认跟随系统.
+///
+/// 和 [NavGlassTransparency] 一样是设备级偏好, 游客也能切换, 退出登录时不清除.
+/// 启动时在首帧前调用 [restore] 读出, 避免先按系统深浅画一帧再跳.
+@Riverpod(keepAlive: true)
+class AppearancePreference extends _$AppearancePreference {
+  static const key = 'prefs.appearance.theme';
+
+  @override
+  Appearance build() => Appearance.system;
+
+  /// 读出本机保存的选择. 没存过或值认不出时保持跟随系统.
+  Future<void> restore() async {
+    final saved = await ref.read(kvStoreProvider).read(key);
+    if (!ref.mounted) return;
+    state = Appearance.values.asNameMap()[saved] ?? state;
+  }
+
+  Future<void> select(Appearance value) async {
+    state = value;
+    await ref.read(kvStoreProvider).write(key, value.name);
+  }
+}

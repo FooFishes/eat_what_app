@@ -118,7 +118,7 @@ class _CropViewportState extends State<CropViewport> {
                         center: center,
                         radius: circle / 2,
                         scrim: c.cropScrim,
-                        ring: c.paper,
+                        ring: c.white,
                       ),
                     ),
                   ),
@@ -199,16 +199,16 @@ class CropZoomSlider extends StatelessWidget {
       child: Row(
         children: [
           ExcludeSemantics(
-            child: EatIcon(EatIcons.image, size: 16, color: c.paper),
+            child: EatIcon(EatIcons.image, size: 16, color: c.white),
           ),
           Expanded(
             child: Slider(
               value: (1 / crop.diameter).clamp(1.0, max),
               min: 1,
               max: max,
-              activeColor: c.paper,
-              inactiveColor: c.paper.withValues(alpha: 0.25),
-              thumbColor: c.paper,
+              activeColor: c.white,
+              inactiveColor: c.white.withValues(alpha: 0.25),
+              thumbColor: c.white,
               semanticFormatterCallback: (v) => '放大 ${v.toStringAsFixed(1)} 倍',
               onChanged: (zoom) => onChanged(
                 clampCircleCrop(
@@ -224,7 +224,7 @@ class CropZoomSlider extends StatelessWidget {
             ),
           ),
           ExcludeSemantics(
-            child: EatIcon(EatIcons.image, size: 22, color: c.paper),
+            child: EatIcon(EatIcons.image, size: 22, color: c.white),
           ),
         ],
       ),

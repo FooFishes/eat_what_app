@@ -12,8 +12,11 @@ import 'package:eat/state/appearance.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/services.dart';
+import 'package:eat/design/theme/eat_motion.dart';
+import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_slider.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart' show Theme;
 
 import '../../support/app.dart';
 import '../../support/eat_test_app.dart';
@@ -172,5 +175,47 @@ void main() {
     expect(find.text('20%'), findsOneWidget);
     expect(env.kv.values[NavGlassTransparency.key], '0.2');
     await expectAccessible(tester);
+  });
+
+  testWidgets('个性化里选深色，整个界面换深色并记在本机；再选跟随系统就回到系统的浅色', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const Guest(),
+      location: Paths.settingsPersonalize,
+    );
+    bool dark() =>
+        Theme.of(tester.element(find.byType(PersonalizePage))).brightness ==
+        Brightness.dark;
+
+    expect(dark(), isFalse);
+    await tester.tap(find.text('深色'));
+    await tester.pump();
+    expect(
+      tester
+          .widget<EatTappable>(
+            find.ancestor(
+              of: find.text('深色'),
+              matching: find.byType(EatTappable),
+            ),
+          )
+          .checked,
+      isTrue,
+      reason: '勾先打上',
+    );
+    expect(dark(), isFalse, reason: '等勾的动画播完再换主题');
+    await tester.pump(EatMotion.select.duration);
+    await tester.pumpAndSettle();
+    expect(container.read(appearancePreferenceProvider), Appearance.dark);
+    expect(env.kv.values[AppearancePreference.key], 'dark');
+    expect(dark(), isTrue);
+    await expectAccessible(tester);
+
+    await tester.tap(find.text('跟随系统'));
+    await tester.pump();
+    await tester.pump(EatMotion.select.duration);
+    await tester.pumpAndSettle();
+    expect(env.kv.values[AppearancePreference.key], 'system');
+    expect(dark(), isFalse);
   });
 }

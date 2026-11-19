@@ -3,7 +3,7 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
-import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// 附近页地图上的店铺标记, 在白色小圆盘中展示招牌菜的圆形图片.
 ///
@@ -31,7 +31,9 @@ class MapPin extends StatelessWidget {
   static const size = Size(160, 110);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _OnMap(child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
     final outer = selected ? 72.0 : EatSize.touch;
@@ -102,7 +104,9 @@ class MyLocationDot extends StatelessWidget {
   static const size = 48.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _OnMap(child: Builder(builder: _build));
+
+  Widget _build(BuildContext context) {
     final c = context.eat.colors;
     return Semantics(
       label: '我的位置',
@@ -124,6 +128,22 @@ class MyLocationDot extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 地图底图不分深浅, 标记固定用浅色主题绘制, 深色模式下也是白色小圆盘和 `ink` 店名胶囊.
+class _OnMap extends StatelessWidget {
+  const new({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!context.eat.colors.isDark) return child;
+    return Theme(
+      data: Theme.of(context).copyWith(extensions: [EatTheme.light]),
+      child: child,
     );
   }
 }

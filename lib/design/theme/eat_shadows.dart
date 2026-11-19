@@ -1,4 +1,4 @@
-import 'package:eat/design/tokens/eat_palette.dart';
+import 'package:eat/design/theme/eat_colors.dart';
 import 'package:flutter/painting.dart';
 
 /// 阴影令牌, 外阴影和内阴影分别存放.
@@ -52,7 +52,12 @@ class const EatShadows({
   /// 用于压在地图上的抽屉及登录页的抽屉; 其他压在舞台色上的抽屉不加阴影.
   required final EatShadow sheet,
 }) {
-  static const standard = EatShadows(
+  static final light = EatShadows._of(EatColors.light);
+
+  /// 深色模式下雾面按钮和描边按钮的描边换成深色的 `handle` 和 `ink`, 投影不变.
+  static final dark = EatShadows._of(EatColors.dark);
+
+  factory EatShadows._of(EatColors c) => EatShadows(
     plate: EatShadow(
       outer: [
         BoxShadow(
@@ -102,11 +107,11 @@ class const EatShadows({
           offset: Offset(0, -3),
           color: Color.fromRGBO(35, 28, 24, 0.06),
         ),
-        BoxShadow(spreadRadius: 1, color: EatPalette.handle),
+        BoxShadow(spreadRadius: 1, color: c.handle),
       ],
     ),
     buttonLightPressed: EatShadow(
-      inset: [BoxShadow(spreadRadius: 1, color: EatPalette.handle)],
+      inset: [BoxShadow(spreadRadius: 1, color: c.handle)],
     ),
     buttonOutline: EatShadow(
       outer: [
@@ -117,7 +122,7 @@ class const EatShadows({
           color: Color.fromRGBO(35, 28, 24, 0.25),
         ),
       ],
-      inset: [BoxShadow(spreadRadius: 1.5, color: EatPalette.ink)],
+      inset: [BoxShadow(spreadRadius: 1.5, color: c.ink)],
     ),
     buttonOnStage: EatShadow(
       outer: [
