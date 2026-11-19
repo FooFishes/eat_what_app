@@ -36,7 +36,7 @@ class EatSearchField extends StatefulWidget {
   /// 筛选按钮的回调, 不为 null 时在胶囊右端显示圆形筛选按钮.
   final VoidCallback? onFilter;
 
-  /// 已选的筛选项数, 大于 0 时在筛选按钮右上角显示该数字.
+  /// 已选的筛选项数, 大于 0 时在筛选按钮右上角显示该数字. 筛选按钮是带 "筛选" 两个字的胶囊.
   final int filterCount;
 
   @override
@@ -124,19 +124,32 @@ class _EatSearchFieldState extends State<EatSearchField> {
             EatTappable(
               onTap: onFilter,
               label: filterCount > 0 ? '筛选，已选 $filterCount 项' : '筛选',
-              focusShape: const CircleBorder(),
+              focusShape: const StadiumBorder(),
               builder: (context, _) => Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: EatSize.touch,
                     height: EatSize.touch,
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.only(left: 12, right: 16),
+                    decoration: ShapeDecoration(
                       color: c.mist,
-                      shape: BoxShape.circle,
+                      shape: const StadiumBorder(),
                     ),
-                    child: Center(
-                      child: EatIcon(EatIcons.filter, size: 18, color: c.ink),
+                    child: ExcludeSemantics(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        spacing: EatSpace.s4,
+                        children: [
+                          EatIcon(EatIcons.filter, size: 18, color: c.ink),
+                          Text(
+                            '筛选',
+                            style: eat.text.meta.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: c.ink,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   if (filterCount > 0)

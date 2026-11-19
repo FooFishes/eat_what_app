@@ -79,13 +79,12 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   var _mapFailed = false;
 
   /// 抽屉高度占屏幕高度的比例. "回到我的位置" 按钮随抽屉上沿移动.
+  ///
+  /// 地图的下内边距固定按抽屉的初始高度算, 不跟着抽屉变: 内边距一变, 地图引擎会把视野挪一下, 拖抽屉时地图跟着动.
   var _sheetExtent = _sheetInitial;
 
-  /// 抽屉静止后的高度比例, 用作地图的下内边距.
-  ///
-  /// 拖动过程中不实时更新该值, 因为每次变更都会触发平台通道调用, 需等待停稳防抖后再同步.
-  var _sheetRest = _sheetInitial;
-  Timer? _sheetDebounce;
+  /// 上一次查到的店. 换了查询条件 (如拖动地图) 后新结果回来之前先接着显示它, 列表上面走一条加载条.
+  List<Shop>? _lastShops;
 
   static const _sheetInitial = 0.42;
 
@@ -96,7 +95,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   @override
   void dispose() {
     _moveDebounce?.cancel();
-    _sheetDebounce?.cancel();
     _pins.dispose();
     _sheet.dispose();
     _keywordInput.dispose();
@@ -120,13 +118,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     });
   }
 
-  void _onSheetMoved(double extent) {
-    setState(() => _sheetExtent = extent);
-    _sheetDebounce?.cancel();
-    _sheetDebounce = Timer(const Duration(milliseconds: 200), () {
-      if (mounted) setState(() => _sheetRest = _sheetExtent);
-    });
-  }
+  void _onSheetMoved(double extent) => setState(() => _sheetExtent = extent);
 
   void _moveTo(GcjPoint point, {double zoom = _zoom}) {
     if (!_hasMap) {
@@ -190,12 +182,30 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     });
   }
 
-  void _tapShop(Shop shop, List<Shop> shops) {
-    if (_selectedShopId == shop.id) {
+  /// 点地图标记或列表行: 第一次选中这家, 第二次进餐厅详情.
+  ///
+  /// - 从列表点: 地图移到这家店 (不重新查附近的店), 抽屉拉得太高时先落回初始高度, 让地图露出来.
+  /// - 从地图点: 列表滚到这家.
+  /// - 没有地图时列表行直接进餐厅详情.
+  void _tapShop(Shop shop, List<Shop> shops, {bool fromList = false}) {
+    if (_selectedShopId == shop.id || (fromList && !_hasMap)) {
       context.push(Paths.shop(shop.id));
       return;
     }
     setState(() => _selectedShopId = shop.id);
+    if (fromList) {
+      unawaited(_map.moveTo(mapPoint(shop.point)));
+      if (_sheet.isAttached && _sheet.size > _sheetInitial) {
+        unawaited(
+          _sheet.animateTo(
+            _sheetInitial,
+            duration: const Duration(milliseconds: 360),
+            curve: Curves.easeOutCubic,
+          ),
+        );
+      }
+      return;
+    }
     final index = shops.indexOf(shop);
     final list = _list;
     if (index >= 0 && list != null && list.hasClients) {
@@ -244,7 +254,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       filter: _filter,
     );
     final shops = ref.watch(nearbyShopsProvider(query));
-    final list = shops.value ?? const <Shop>[];
+    if (shops.hasValue && !shops.isLoading) _lastShops = shops.value;
+    final last = _lastShops;
+    // 新结果回来之前接着显示上一次的店, 不退回骨架.
+    final stale = !shops.hasValue && shops.isLoading && last != null;
+    final list = shops.value ?? (stale ? last : const <Shop>[]);
     final selectedHub = hubs.where((h) => h.id == hubId).firstOrNull;
 
     final safe = MediaQuery.viewPaddingOf(context);
@@ -257,7 +271,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           )
         : EdgeInsets.only(
             top: safe.top + 8 + 48 + EatSpace.s10 + EatSize.touch,
-            bottom: screen.height * _sheetRest,
+            bottom: screen.height * _sheetInitial,
           );
     final map = _hasMap
         ? _NearbyMap(
@@ -335,8 +349,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
         ),
       ),
     );
-    final header = _ListHeader(count: shops.value?.length);
-    final rows = _rows(shops, list);
+    final header = _ListHeader(
+      count: shops.hasValue || stale ? list.length : null,
+      loading: shops.isLoading && (shops.hasValue || stale),
+    );
+    final rows = _rows(shops, list, stale: stale);
 
     if (layout.isWide) {
       final top = MediaQuery.paddingOf(context).top;
@@ -443,11 +460,14 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
               top: safe.top + 8 + 48 + EatSpace.s10,
               child: chips,
             ),
-            Positioned(
-              right: EatSpace.s16,
-              bottom: height * _sheetExtent + EatSpace.s14,
-              child: locate,
-            ),
+            // 抽屉拉高后按钮放不下 (会压到搜索框和商圈胶囊), 就收起来.
+            if (height * (1 - _sheetExtent) - EatSpace.s14 - 48 >
+                safe.top + 8 + 48 + EatSpace.s10 + EatSize.touch + EatSpace.s10)
+              Positioned(
+                right: EatSpace.s16,
+                bottom: height * _sheetExtent + EatSpace.s14,
+                child: locate,
+              ),
             NotificationListener<DraggableScrollableNotification>(
               onNotification: (n) {
                 _onSheetMoved(n.extent);
@@ -498,22 +518,43 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   }
 
   /// 店铺列表, 连同加载, 失败和空列表, 左右留页面边距.
-  Widget _rows(AsyncValue<List<Shop>> shops, List<Shop> list) => SliverPadding(
+  Widget _rows(
+    AsyncValue<List<Shop>> shops,
+    List<Shop> list, {
+    required bool stale,
+  }) => SliverPadding(
     padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-    sliver: _shopList(shops, list),
+    sliver: _shopList(shops, list, stale: stale),
   );
 
-  Widget _shopList(AsyncValue<List<Shop>> shops, List<Shop> list) {
-    if (list.isEmpty || !shops.hasValue) return _states(shops, list);
+  Widget _shopList(
+    AsyncValue<List<Shop>> shops,
+    List<Shop> list, {
+    required bool stale,
+  }) {
+    if (list.isEmpty || !(shops.hasValue || stale)) {
+      return _states(shops, list);
+    }
     return SliverList.separated(
       itemCount: list.length,
       separatorBuilder: (_, _) => const ShopEntryDivider(),
-      itemBuilder: (context, i) => ShopEntry(
-        shop: list[i],
-        index: i,
-        dishes: false,
-        onTap: () => context.push(Paths.shop(list[i].id)),
-      ),
+      itemBuilder: (context, i) {
+        final shop = list[i];
+        final selected = _hasMap && shop.id == _selectedShopId;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShopEntry(
+              shop: shop,
+              index: i,
+              dishes: false,
+              onTap: () => _tapShop(shop, list, fromList: true),
+            ),
+            if (selected)
+              _EnterHint(onTap: () => context.push(Paths.shop(shop.id))),
+          ],
+        );
+      },
     );
   }
 
@@ -563,9 +604,12 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
 
 /// 列表头: 店铺数量. 店铺只按距离排列, 不提供排序选项.
 class _ListHeader extends StatelessWidget {
-  const new({required this.count});
+  const new({required this.count, this.loading = false});
 
   final int? count;
+
+  /// 正在按新的查询条件加载, 列表里还是上一次的店. 标题下面走一条加载条.
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -575,26 +619,141 @@ class _ListHeader extends StatelessWidget {
         EatSpace.s20,
         0,
         EatSpace.s20,
-        EatSpace.s10,
+        EatSpace.s8,
       ),
-      child: SizedBox(
-        height: EatSize.touch,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Semantics(
-            header: true,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: '附近 '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: EatSize.touch,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Semantics(
+                header: true,
+                child: Text.rich(
                   TextSpan(
-                    text: count == null ? '' : '$count',
-                    style: eat.text.stat.copyWith(fontSize: 20, height: 1),
+                    children: [
+                      const TextSpan(text: '附近 '),
+                      TextSpan(
+                        text: count == null ? '' : '$count',
+                        style: eat.text.stat.copyWith(fontSize: 20, height: 1),
+                      ),
+                      TextSpan(text: count == null ? '' : ' 家'),
+                    ],
                   ),
-                  TextSpan(text: count == null ? '' : ' 家'),
-                ],
+                  style: eat.text.heading,
+                ),
               ),
-              style: eat.text.heading,
+            ),
+          ),
+          SizedBox(height: 2, child: loading ? const _LoadingBar() : null),
+        ],
+      ),
+    );
+  }
+}
+
+/// 加载条: 一道细的底线上来回滑一段 `ink`. 系统开启减少动态效果时只画底线和一段不动的 `ink`.
+class _LoadingBar extends StatefulWidget {
+  const new();
+
+  @override
+  State<_LoadingBar> createState() => _LoadingBarState();
+}
+
+class _LoadingBarState extends State<_LoadingBar>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      unawaited(_controller.repeat());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.eat.colors;
+    return Semantics(
+      label: '正在加载',
+      liveRegion: true,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.all(EatRadius.pill),
+        child: ColoredBox(
+          color: c.hairline,
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) => FractionallySizedBox(
+              widthFactor: 0.3,
+              alignment: Alignment(
+                Curves.easeInOut.transform(_controller.value) * 2.6 - 1.3,
+                0,
+              ),
+              child: ColoredBox(color: c.ink),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 选中的那家下面的引导: "再点一次进店", 点它也进餐厅详情.
+class _EnterHint extends StatelessWidget {
+  const new({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    return Padding(
+      padding: const EdgeInsets.only(top: EatSpace.s8),
+      child: EatTappable(
+        onTap: onTap,
+        label: '在地图上了，再点一次进店',
+        focusShape: const StadiumBorder(),
+        builder: (context, _) => SizedBox(
+          height: EatSize.touch,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            widthFactor: 1,
+            child: DecoratedBox(
+              decoration: ShapeDecoration(
+                color: c.mist,
+                shape: const StadiumBorder(),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 2,
+                  children: [
+                    Text(
+                      '在地图上了，再点一次进店',
+                      style: eat.text.meta.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: c.ink,
+                      ),
+                    ),
+                    EatIcon(EatIcons.chevronRight, size: 16, color: c.ink),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -1,8 +1,10 @@
 import 'dart:ui' show Brightness;
 
 import 'package:eat/core/platform/map/eat_map.dart';
+import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
@@ -295,6 +297,76 @@ void main() {
     await _settle(tester);
     expect(find.bySemanticsLabel('筛选'), findsOneWidget, reason: '没有选上任何一项');
     await unmountApp(tester, container);
+  });
+
+  group('有地图时', () {
+    late TestEnv env;
+    late FakeMapEngine map;
+
+    Future<ProviderContainer> open(WidgetTester tester) async {
+      env = TestEnv();
+      map = FakeMapEngine();
+      env.adapter
+        ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+        ..on('GET /hub/list', [FakeAdapter.ok(pageJson([]))])
+        ..on('GET /restaurant/browse', [
+          FakeAdapter.ok(
+            pageJson([
+              restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
+              restaurantJson(id: 2, name: '近一点的店', lat: 36.6680),
+            ]),
+          ),
+          FakeAdapter.ok(
+            pageJson([restaurantJson(id: 3, name: '新地方的店', lat: 36.6700)]),
+          ),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.nearby,
+        overrides: [mapEngineProvider.overrideWithValue(map)],
+      );
+      return container;
+    }
+
+    testWidgets('点列表里的店先在地图上选中并给出引导，再点一次进店', (tester) async {
+      final container = await open(tester);
+
+      await tester.tap(find.text('近一点的店'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShopPage), findsNothing);
+      expect(find.text('在地图上了，再点一次进店'), findsOneWidget);
+      expect(
+        env.adapter.sent('GET /restaurant/browse'),
+        hasLength(1),
+        reason: '地图移到这家店不重新查附近的店',
+      );
+
+      await tester.tap(find.text('近一点的店'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShopPage), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('拖动地图后重新加载时先留着上一次的店，结果回来再换', (tester) async {
+      final container = await open(tester);
+      expect(find.text('近一点的店'), findsOneWidget);
+
+      map.last!.onCameraIdle!(
+        const MapCamera(center: MapLatLng(36.67, 117.14), zoom: 16),
+        true,
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('近一点的店'), findsOneWidget, reason: '新结果回来之前不退回骨架');
+      expect(find.bySemanticsLabel('正在加载'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('近一点的店'), findsNothing);
+      expect(find.text('新地方的店'), findsOneWidget);
+      expect(find.bySemanticsLabel('正在加载'), findsNothing);
+      await unmountApp(tester, container);
+    });
   });
 }
 
