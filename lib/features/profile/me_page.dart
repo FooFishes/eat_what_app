@@ -23,7 +23,7 @@ import 'package:eat/features/profile/profile_providers.dart';
 import 'package:eat/features/profile/widgets/profile_stage.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/refresh.dart';
-import 'package:eat/features/system/shop_row.dart';
+import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/comments.dart';
 import 'package:eat/state/session.dart';
@@ -336,7 +336,7 @@ class _GuestPlate extends StatelessWidget {
   }
 }
 
-/// 收藏分栏的 "店": 与附近页抽屉相同的店铺行, 点击进入餐厅详情.
+/// 收藏分栏的 "店": 和附近页一样的榜单条目, 店名一栏加门头小图. 收藏接口不带招牌菜, 所以不排菜. 点击进入餐厅详情.
 ///
 /// 封禁中仍然请求, 因为受限会话可以调用 `/restaurant/favorites`.
 class _FavoriteShops extends ConsumerWidget {
@@ -356,7 +356,7 @@ class _FavoriteShops extends ConsumerWidget {
         );
       }
       return const SliverToBoxAdapter(
-        child: RowListPlaceholder(thumbSize: EatSize.thumbLg),
+        child: ShopEntryPlaceholder(dishes: false),
       );
     }
     final shops = data.pages.items;
@@ -376,9 +376,11 @@ class _FavoriteShops extends ConsumerWidget {
       slivers: [
         SliverList.separated(
           itemCount: shops.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 18),
-          itemBuilder: (context, i) => ShopRow(
+          separatorBuilder: (_, _) => const ShopEntryDivider(),
+          itemBuilder: (context, i) => ShopEntry(
             shop: shops[i],
+            index: i,
+            dishes: false,
             onTap: () => context.push(Paths.shop(shops[i].id)),
           ),
         ),

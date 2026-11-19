@@ -14,7 +14,7 @@ import 'package:eat/state/shops.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 一家店, 排成精选榜单的一项. 发现页的推荐带菜, 一家店压在约 230 高, 展开抽屉时一屏能看到两家多;
+/// 一家店, 排成精选榜单的一项. 左右边距由列表加, 条目, 分隔线和占位都不带. 发现页的推荐带菜, 一家店压在约 230 高, 展开抽屉时一屏能看到两家多;
 /// 附近页的列表只要店名一栏 ([dishes] 为 false), 菜在店铺页里看, 店名一栏右边放一张门头小图.
 ///
 /// - 店名前面一个浅色的大号序号 (01, 02), 对应转盘上 "这一批的第几家", 让列表读起来是挑过的, 不是搜出来的. 抽屉保持白底, 不用颜色.
@@ -60,56 +60,54 @@ class ShopEntry extends ConsumerWidget {
     final dishes = this.dishes
         ? shop.signatures.take(dishesMax).toList()
         : const <ShopDish>[];
+    // 列表左右各留页面边距, 菜按这个宽度解码.
     final content = MediaQuery.sizeOf(context).width - EatSpace.s20 * 2;
     final unit =
         (content - _dishGap * (dishes.length - 1)) /
         (dishes.length - 1 + _heroFlex);
     return _Reveal(
       order: index,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: EatSpace.s10,
-          children: [
-            _Header(
-              shop: shop,
-              index: index,
-              distance: ref.watch(distanceToProvider(shop.point)),
-              storefront: !this.dishes,
-              onTap: onTap,
-            ),
-            if (dishes.isNotEmpty)
-              switch (dishes) {
-                [final dish] => _SoloDish(
-                  dish: dish,
-                  width: (content - EatSpace.s14) / 2,
-                  onTap: () => onDishTap?.call(dish),
-                ),
-                _ => Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: _dishGap,
-                  children: [
-                    for (final (i, dish) in dishes.indexed)
-                      Expanded(
-                        flex: i == 0 ? _heroFlex : 1,
-                        child: _DishTile(
-                          dish: dish,
-                          width: unit * (i == 0 ? _heroFlex : 1),
-                          onTap: () => onDishTap?.call(dish),
-                        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: EatSpace.s10,
+        children: [
+          _Header(
+            shop: shop,
+            index: index,
+            distance: ref.watch(distanceToProvider(shop.point)),
+            storefront: !this.dishes,
+            onTap: onTap,
+          ),
+          if (dishes.isNotEmpty)
+            switch (dishes) {
+              [final dish] => _SoloDish(
+                dish: dish,
+                width: (content - EatSpace.s14) / 2,
+                onTap: () => onDishTap?.call(dish),
+              ),
+              _ => Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: _dishGap,
+                children: [
+                  for (final (i, dish) in dishes.indexed)
+                    Expanded(
+                      flex: i == 0 ? _heroFlex : 1,
+                      child: _DishTile(
+                        dish: dish,
+                        width: unit * (i == 0 ? _heroFlex : 1),
+                        onTap: () => onDishTap?.call(dish),
                       ),
-                  ],
-                ),
-              },
-          ],
-        ),
+                    ),
+                ],
+              ),
+            },
+        ],
       ),
     );
   }
 }
 
-/// 两家店之间的分隔: 一条 `hairline` 细线, 上下留白.
+/// 两家店之间的分隔: 一条 `hairline` 细线, 上下留白. 和条目一样不带左右边距.
 ///
 /// 上一家以菜名和价格的小字结尾, 下一家以店名开头, 只靠留白时两段文字连在一起读. 细线只画在左右边距之内, 和照片共用左边线, 读起来还是同一张榜单.
 class ShopEntryDivider extends StatelessWidget {
@@ -120,10 +118,7 @@ class ShopEntryDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: EatSpace.s20,
-      vertical: space,
-    ),
+    padding: const EdgeInsets.symmetric(vertical: space),
     child: SizedBox(
       height: 1,
       child: ColoredBox(color: context.eat.colors.hairline),
@@ -575,59 +570,56 @@ class ShopEntryPlaceholder extends StatelessWidget {
       children: [
         for (var i = 0; i < count; i++) ...[
           if (i > 0) const ShopEntryDivider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: EatSpace.s10,
-              children: [
-                Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: EatSpace.s10,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: EatSpace.s8,
+                      children: [
+                        Skeleton.line(width: 140, fontSize: 20),
+                        Skeleton.line(width: 200, fontSize: 13),
+                      ],
+                    ),
+                  ),
+                  if (!dishes)
+                    const Skeleton(
+                      width: _Header.storefrontSize,
+                      height: _Header.storefrontSize,
+                      radius: EatRadius.thumb,
+                    ),
+                ],
+              ),
+              if (dishes)
+                const Row(
+                  spacing: ShopEntry._dishGap,
                   children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: EatSpace.s8,
-                        children: [
-                          Skeleton.line(width: 140, fontSize: 20),
-                          Skeleton.line(width: 200, fontSize: 13),
-                        ],
+                    Expanded(
+                      flex: ShopEntry._heroFlex,
+                      child: Skeleton(
+                        height: ShopEntry.photoHeight,
+                        radius: EatRadius.thumbLg,
                       ),
                     ),
-                    if (!dishes)
-                      const Skeleton(
-                        width: _Header.storefrontSize,
-                        height: _Header.storefrontSize,
-                        radius: EatRadius.thumb,
+                    Expanded(
+                      child: Skeleton(
+                        height: ShopEntry.photoHeight,
+                        radius: EatRadius.thumbLg,
                       ),
+                    ),
+                    Expanded(
+                      child: Skeleton(
+                        height: ShopEntry.photoHeight,
+                        radius: EatRadius.thumbLg,
+                      ),
+                    ),
                   ],
                 ),
-                if (dishes)
-                  const Row(
-                    spacing: ShopEntry._dishGap,
-                    children: [
-                      Expanded(
-                        flex: ShopEntry._heroFlex,
-                        child: Skeleton(
-                          height: ShopEntry.photoHeight,
-                          radius: EatRadius.thumbLg,
-                        ),
-                      ),
-                      Expanded(
-                        child: Skeleton(
-                          height: ShopEntry.photoHeight,
-                          radius: EatRadius.thumbLg,
-                        ),
-                      ),
-                      Expanded(
-                        child: Skeleton(
-                          height: ShopEntry.photoHeight,
-                          radius: EatRadius.thumbLg,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
+            ],
           ),
         ],
       ],

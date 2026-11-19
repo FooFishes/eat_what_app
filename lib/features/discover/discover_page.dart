@@ -938,7 +938,12 @@ class _ShopList extends ConsumerWidget {
           ),
         );
       }
-      return const SliverToBoxAdapter(child: ShopEntryPlaceholder());
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: EatSpace.s20),
+          child: ShopEntryPlaceholder(),
+        ),
+      );
     }
     if (feed.shops.isEmpty) {
       return SliverToBoxAdapter(
@@ -961,14 +966,17 @@ class _ShopList extends ConsumerWidget {
     }
     return SliverMainAxisGroup(
       slivers: [
-        SliverList.separated(
-          itemCount: feed.shops.length,
-          separatorBuilder: (_, _) => const ShopEntryDivider(),
-          itemBuilder: (context, i) => ShopEntry(
-            shop: feed.shops[i],
-            index: i,
-            onTap: () => context.push(Paths.shop(feed.shops[i].id)),
-            onDishTap: (dish) => context.push(Paths.dish(dish.id)),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+          sliver: SliverList.separated(
+            itemCount: feed.shops.length,
+            separatorBuilder: (_, _) => const ShopEntryDivider(),
+            itemBuilder: (context, i) => ShopEntry(
+              shop: feed.shops[i],
+              index: i,
+              onTap: () => context.push(Paths.shop(feed.shops[i].id)),
+              onDishTap: (dish) => context.push(Paths.dish(dish.id)),
+            ),
           ),
         ),
         if (feed.hasMore || feed.moreError != null)

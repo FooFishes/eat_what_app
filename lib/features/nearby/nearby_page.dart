@@ -497,19 +497,14 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     );
   }
 
-  /// 店铺列表. 店铺条目自带左右边距, 其他状态在这里加.
-  Widget _rows(AsyncValue<List<Shop>> shops, List<Shop> list) {
-    if (!shops.hasValue && !(shops.hasError && !shops.isLoading)) {
-      return const SliverToBoxAdapter(
-        child: ShopEntryPlaceholder(count: 5, dishes: false),
-      );
-    }
-    if (list.isEmpty || !shops.hasValue) {
-      return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
-        sliver: _states(shops, list),
-      );
-    }
+  /// 店铺列表, 连同加载, 失败和空列表, 左右留页面边距.
+  Widget _rows(AsyncValue<List<Shop>> shops, List<Shop> list) => SliverPadding(
+    padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    sliver: _shopList(shops, list),
+  );
+
+  Widget _shopList(AsyncValue<List<Shop>> shops, List<Shop> list) {
+    if (list.isEmpty || !shops.hasValue) return _states(shops, list);
     return SliverList.separated(
       itemCount: list.length,
       separatorBuilder: (_, _) => const ShopEntryDivider(),
@@ -522,14 +517,19 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     );
   }
 
-  /// 加载失败和空列表.
+  /// 加载中, 失败和空列表.
   Widget _states(AsyncValue<List<Shop>> shops, List<Shop> list) {
     if (!shops.hasValue) {
-      return SliverToBoxAdapter(
-        child: FailureState(
-          error: shops.error,
-          onRetry: () => ref.invalidate(nearbyShopsProvider),
-        ),
+      if (shops.hasError && !shops.isLoading) {
+        return SliverToBoxAdapter(
+          child: FailureState(
+            error: shops.error,
+            onRetry: () => ref.invalidate(nearbyShopsProvider),
+          ),
+        );
+      }
+      return const SliverToBoxAdapter(
+        child: ShopEntryPlaceholder(count: 5, dishes: false),
       );
     }
     if (list.isEmpty && _keyword.isEmpty && _filter.count > 0) {
