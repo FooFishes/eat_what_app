@@ -1,13 +1,14 @@
 name: Patch
 
-# 给已发布的 Android 版本推 Shorebird 补丁. 补丁只修 Dart 代码的问题.
+# 给已发布的 Android 和 iOS 版本推 Shorebird 补丁. 补丁只修 Dart 代码的问题.
 # 新功能, 新权限, 新的数据收集, 原生代码和插件的改动都发新版本.
+# 只有用 shorebird release 打出来的版本能打补丁 (见 build.yml); iOS 在改用 shorebird release 之前发的版本打不了.
 #
 # 两种触发方式:
-# - 推送补丁 tag, 写作 v<版本名>+<构建号>[-后缀]-p<N>, 如 v1.2.3+62-p1, v1.2.3+62-beta-p1. 直接推送, 不试跑.
+# - 推送补丁 tag, 写作 v<版本名>+<构建号>[-后缀]-p<N>, 如 v1.2.3+62-p1, v1.2.3+62-beta-p1. 直接推送, 不试跑, 两个平台都打.
 #   发版 tag 里没有构建号, 构建号看发版构建的运行摘要或 R2 路径 (release/1.2.3-62).
 #   目标版本取 tag 里的 1.2.3+62. 后缀为 beta 时推到 beta 轨道, 否则推到 stable.
-# - 手动触发, 选择与该版本对应的 tag 运行, 默认只试跑.
+# - 手动触发, 选择与该版本对应的 tag 运行, 默认只试跑, 可以只打一个平台.
 on:
   push:
     tags: ["v*-p[0-9]*"]
@@ -16,6 +17,11 @@ on:
       release-version:
         description: 要打补丁的版本, 写作 版本名+构建号, 如 0.1.0+42
         required: true
+      platform:
+        description: 给哪个平台打
+        type: choice
+        options: [both, android, ios]
+        default: both
       track:
         description: 发布到的轨道. 客户端目前只检查 stable
         type: choice
@@ -30,13 +36,71 @@ permissions:
   contents: read
 
 jobs:
+  resolve:
+    name: Resolve target
+    runs-on: ubuntu-latest
+    outputs:
+      release-version: ${{ steps.target.outputs.release-version }}
+      track: ${{ steps.target.outputs.track }}
+      dry-run: ${{ steps.target.outputs.dry-run }}
+      label: ${{ steps.target.outputs.label }}
+      android: ${{ steps.target.outputs.android }}
+      ios: ${{ steps.target.outputs.ios }}
+    steps:
+      - id: target
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.release-version }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_TRACK: ${{ inputs.track }}
+          INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          if [ "${{ github.event_name }}" = push ]; then
+            pattern='^v([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)(-([A-Za-z0-9.]+))?-p([0-9]+)$'
+            if ! [[ "$REF_NAME" =~ $pattern ]]; then
+              echo "::error::补丁 tag 应写作 v<版本名>+<构建号>[-后缀]-p<N>, 如 v1.2.3+62-beta-p1. 当前为 $REF_NAME"
+              exit 1
+            fi
+            version="${BASH_REMATCH[1]}"
+            track=stable
+            if [ "${BASH_REMATCH[3]}" = beta ]; then track=beta; fi
+            dry=false
+            label="${BASH_REMATCH[3]:+${BASH_REMATCH[3]}-}p${BASH_REMATCH[4]}"
+            platform=both
+          else
+            version="$INPUT_VERSION"
+            track="$INPUT_TRACK"
+            dry="$INPUT_DRY_RUN"
+            label="run${{ github.run_number }}"
+            platform="$INPUT_PLATFORM"
+          fi
+          android=false
+          ios=false
+          if [ "$platform" != ios ]; then android=true; fi
+          if [ "$platform" != android ]; then ios=true; fi
+          {
+            echo "release-version=$version"
+            echo "track=$track"
+            echo "dry-run=$dry"
+            echo "label=$label"
+            echo "android=$android"
+            echo "ios=$ios"
+          } >> "$GITHUB_OUTPUT"
+          echo "目标 $version, 平台 $platform, 轨道 $track, 试跑 $dry" >> "$GITHUB_STEP_SUMMARY"
+
   android:
     name: Android patch
+    needs: resolve
+    if: needs.resolve.outputs.android == 'true'
     runs-on: ubuntu-latest
     environment: Cloudflare R2
     env:
       APP_CONFIG: ${{ secrets.APP_CONFIG }}
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      RELEASE_VERSION: ${{ needs.resolve.outputs.release-version }}
+      TRACK: ${{ needs.resolve.outputs.track }}
+      DRY_RUN: ${{ needs.resolve.outputs.dry-run }}
+      R2_LABEL: ${{ needs.resolve.outputs.label }}
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
       AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -57,38 +121,6 @@ jobs:
       - uses: shorebirdtech/setup-shorebird@v1
         with:
           cache: true
-
-      - name: Resolve target
-        env:
-          REF_NAME: ${{ github.ref_name }}
-          INPUT_VERSION: ${{ inputs.release-version }}
-          INPUT_TRACK: ${{ inputs.track }}
-          INPUT_DRY_RUN: ${{ inputs.dry-run }}
-        run: |
-          if [ "${{ github.event_name }}" = push ]; then
-            pattern='^v([0-9]+\.[0-9]+\.[0-9]+\+[0-9]+)(-([A-Za-z0-9.]+))?-p([0-9]+)$'
-            if ! [[ "$REF_NAME" =~ $pattern ]]; then
-              echo "::error::补丁 tag 应写作 v<版本名>+<构建号>[-后缀]-p<N>, 如 v1.2.3+62-beta-p1. 当前为 $REF_NAME"
-              exit 1
-            fi
-            version="${BASH_REMATCH[1]}"
-            track=stable
-            if [ "${BASH_REMATCH[3]}" = beta ]; then track=beta; fi
-            dry=false
-            label="${BASH_REMATCH[3]:+${BASH_REMATCH[3]}-}p${BASH_REMATCH[4]}"
-          else
-            version="$INPUT_VERSION"
-            track="$INPUT_TRACK"
-            dry="$INPUT_DRY_RUN"
-            label="run${{ github.run_number }}"
-          fi
-          {
-            echo "RELEASE_VERSION=$version"
-            echo "TRACK=$track"
-            echo "DRY_RUN=$dry"
-            echo "R2_PREFIX=patch/${version/+/-}/$label"
-          } >> "$GITHUB_ENV"
-          echo "目标 $version, 轨道 $track, 试跑 $dry" >> "$GITHUB_STEP_SUMMARY"
 
       # 补丁沿用发版时的 Flutter 版本. 环境配置和混淆选项与发版构建保持一致.
       - name: Patch
@@ -112,10 +144,68 @@ jobs:
         if: env.DRY_RUN != 'true' && env.R2_BUCKET != ''
         run: |
           set -euo pipefail
+          prefix="patch/${RELEASE_VERSION/+/-}/$R2_LABEL"
           out=upload
           mkdir -p "$out"
           cp build/app/outputs/bundle/release/app-release.aab "$out/eat-patch.aab"
           tar -czf "$out/symbols.tar.gz" -C build symbols
-          aws s3 cp "$out" "s3://$R2_BUCKET/$R2_PREFIX/" --recursive \
+          aws s3 cp "$out" "s3://$R2_BUCKET/$prefix/" --recursive \
             --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
-          echo "R2: $R2_PREFIX/" >> "$GITHUB_STEP_SUMMARY"
+          echo "R2: $prefix/" >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: iOS patch
+    needs: resolve
+    if: needs.resolve.outputs.ios == 'true'
+    runs-on: macos-latest
+    env:
+      APP_CONFIG: ${{ secrets.APP_CONFIG }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      RELEASE_VERSION: ${{ needs.resolve.outputs.release-version }}
+      TRACK: ${{ needs.resolve.outputs.track }}
+      DRY_RUN: ${{ needs.resolve.outputs.dry-run }}
+      IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+      IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+      IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+      # 和发版构建 (build.yml 的 iOS) 一致, 原生部分不一样时 Shorebird 会拒绝打补丁.
+      BYPASS_PERMISSION_LOCATION_ALWAYS: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      # 百度地图 iOS SDK 不入库, 和发版构建一样下载并转成 xcframework.
+      - uses: actions/cache@v4
+        with:
+          path: packages/eat_baidu_map/ios/eat_baidu_map/Frameworks
+          key: baidu-ios-sdk-${{ hashFiles('tool/baidu_ios_sdk.sh') }}
+      - run: tool/baidu_ios_sdk.sh
+
+      - name: Prepare signing
+        if: env.IOS_DIST_CERT_P12_BASE64 != ''
+        run: |
+          tool/ios_signing.sh setup
+          echo "SIGNED=true" >> "$GITHUB_ENV"
+
+      # 发版构建的 iOS 不混淆, 补丁也不混淆. 没有证书时不签名, 补丁照样能打.
+      - name: Patch
+        run: |
+          defines=""
+          if [ -n "$APP_CONFIG" ]; then
+            printf '%s' "$APP_CONFIG" > config/ci.json
+            defines="--dart-define-from-file=config/ci.json"
+          fi
+          dry=""
+          if [ "$DRY_RUN" = true ]; then dry="--dry-run"; fi
+          sign="--no-codesign"
+          if [ "$SIGNED" = true ]; then sign="--export-options-plist=build/ios/ExportOptions.plist"; fi
+          shorebird patch ios $dry $sign \
+            --release-version="$RELEASE_VERSION" \
+            --track="$TRACK" \
+            -- $defines
+
+      - name: Clean up signing
+        if: always()
+        run: tool/ios_signing.sh cleanup

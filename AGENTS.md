@@ -99,7 +99,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 **iOS**
 
 - Bundle ID `you.v50to.eat`（测试 target 为 `you.v50to.eat.RunnerTests`），最低 iOS 15.0。
-- CI 只做未签名构建；签名、描述文件、TestFlight 上传另行配置，证书不入库。
+- CI 有发布证书和描述文件时签名打 IPA 并上传 TestFlight，没有时只做未签名构建（见下文 CI）；证书和描述文件不入库，从 Secrets 还原。
 
 **Web**
 
@@ -159,9 +159,11 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 | 类型 | 触发 | 版本名和构建号 | R2 目录 | 保留 |
 | --- | --- | --- | --- | --- |
-| Release | 推送发版 tag `v<版本名>+<构建号>[-后缀]`，如 `v1.2.3+62`、`v1.2.3+62-beta`；或在这样的 tag 上手动运行 `build.yml` | 取自 tag | `release/1.2.3-62-beta/` | 32 天 |
-| Patch | 推送补丁 tag，即发版 tag 加 `-p<N>`，如 `v1.2.3+62-beta-p1`；或手动运行 `patch.yml` | 补丁目标取自 tag，后缀为 `beta` 推到 beta 轨道，否则推到 stable | `patch/1.2.3-62/beta-p1/` | 32 天 |
-| Nightly | `main` 的 push，和不在发版 tag 上的手动运行（可选任意分支） | `pubspec.yaml` 的版本名，构建号取 `github.run_number` | `nightly/<版本名>-<构建号>-<短 SHA>/` | 2 天 |
+| Release | 推送发版 tag `v<版本名>[-后缀]`，如 `v1.2.3`、`v1.2.3-beta`，版本名必须和 `pubspec.yaml` 一致；或在这样的 tag 上手动运行 `build.yml` | 版本名取自 tag，构建号见下 | `release/1.2.3-62-beta/` | 32 天 |
+| Patch | 推送补丁 tag `v<版本名>+<构建号>[-后缀]-p<N>`，如 `v1.2.3+62-beta-p1`（发版 tag 里没有构建号，看发版构建的运行摘要或 R2 路径）；或手动运行 `patch.yml` | 补丁目标取自 tag，后缀为 `beta` 推到 beta 轨道，否则推到 stable | `patch/1.2.3-62/beta-p1/` | 32 天 |
+| Nightly | `main` 的 push，和不在发版 tag 上的手动运行（可选任意分支） | `pubspec.yaml` 的版本名，构建号见下 | `nightly/<版本名>-<构建号>-<短 SHA>/` | 2 天 |
+
+构建号由 `tool/build_number.sh` 从 App Store Connect 查出：这个 App 用过的最大构建号加 1，所有平台共用，Android 的 versionCode 也用它；`pubspec.yaml` 里的 `+1` 只是本地构建的占位。没有 App Store Connect 密钥时（如来自 fork 的 PR）用这个占位，这样的构建不上传 TestFlight。`main` 和发版 tag 的构建共用一个并发组，一次只跑一个，避免两次构建拿到同一个号。
 
 PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
 
@@ -170,12 +172,12 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 1. `check`（ubuntu）：读取 `.fvmrc` 版本，按 tag 定出构建类型、版本名和构建号；生成文件检查（`build_runner build --only-check` 和 Pigeon 重新生成比对）、`dart format` 检查、`flutter analyze`、`dart analyze --fatal-infos`、`flutter test`。
 2. 通过后并行构建，GitHub 上的产物只保留 1 天，用来在 job 之间传递：
    - `android`（ubuntu，JDK 17）：release APK 与 AAB，只含 arm64-v8a 和 armeabi-v7a（`--target-platform`），不打 x86_64；再从通用 APK 拆出这两种架构各一个 APK（`tool/split_apk.sh`，Shorebird 不支持 `--split-per-abi`）。配了上传密钥用它签名，否则 debug 签名。
-   - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存），再出未签名的 `Runner.app`，打包为 zip。
+   - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存）。有发布证书和描述文件时签名打 IPA（`tool/ios_signing.sh`），`main` 和发版 tag 的 IPA 上传 TestFlight（`tool/testflight_upload.sh`）；没有证书时出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
-3. Release 构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`。
-4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
+3. Release 构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
+4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
 
-`.github/workflows/patch.yml` 给已发布的 Android 版本推 Shorebird 补丁。补丁 tag 触发时直接推送；手动触发时默认只试跑。正式推送后把构建出的 AAB 和符号表上传到 R2。
+`.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁 tag 触发时两个平台都直接推送；手动触发时可以只选一个平台，默认只试跑。Android 正式推送后把构建出的 AAB 和符号表上传到 R2。iOS 只能给用 `shorebird release` 发的版本打补丁。
 
 用到的凭据和配置都在 GitHub 上，缺了就跳过对应步骤：
 
@@ -186,6 +188,9 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 | `SENTRY_AUTH_TOKEN` | Secret | 上传符号表和 source map |
 | `SENTRY_URL`、`SENTRY_ORG`、`SENTRY_PROJECT` | Variable | Sentry 服务地址、组织和项目 |
 | `SHOREBIRD_TOKEN` | Secret | `shorebird release` 和 `shorebird patch` |
+| `ASC_KEY_ID`、`ASC_ISSUER_ID`、`ASC_KEY_P8` | Secret | App Store Connect API 密钥（App Manager 权限即可），用来查构建号和上传 TestFlight |
+| `ASC_APP_ID` | Variable | App 的 Apple ID（数字） |
+| `IOS_DIST_CERT_P12_BASE64`、`IOS_DIST_CERT_PASSWORD`、`IOS_PROFILE_BASE64` | Secret | iOS 发布证书（.p12）和 App Store 描述文件，都是 base64；缺了 iOS 只做未签名构建，也不能用 Shorebird 发版 |
 | `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET` | 环境 `Cloudflare R2` 的 Secret | 产物上传到 R2 |
 
-还没有部署 Web 和上传商店的步骤；R2 上的 Web 产物只是 zip 包，不能直接访问。
+还没有部署 Web 和上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight；R2 上的 Web 产物只是 zip 包，不能直接访问。

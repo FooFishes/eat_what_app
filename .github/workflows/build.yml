@@ -32,7 +32,7 @@ permissions:
 # - ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD:
 #   上传密钥. 缺省时 release 回落到 debug 签名.
 # - SENTRY_AUTH_TOKEN 和 Variables 中的 SENTRY_URL, SENTRY_ORG, SENTRY_PROJECT: 发版时上传符号表和 source map.
-# - SHOREBIRD_TOKEN: 发版时 Android 改用 shorebird release. 还需要仓库里有 shorebird.yaml.
+# - SHOREBIRD_TOKEN: 发版时 Android 和 iOS 改用 shorebird release. 还需要仓库里有 shorebird.yaml; iOS 另外要有签名证书.
 # - 环境 Cloudflare R2 的 R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET: 产物上传到 R2. 缺省时不上传.
 # - ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 和 Variables 中的 ASC_APP_ID: App Store Connect API 密钥 (App Manager 权限即可)
 #   和 App 的 Apple ID. 用来查构建号和上传 TestFlight. 缺省时构建号用 pubspec.yaml 里的占位, 不上传.
@@ -289,6 +289,7 @@ jobs:
       IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
       IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
       IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
       # 去掉 geolocator 里的 requestAlwaysAuthorization 调用. App 只申请使用期间定位,
       # 留着这个调用会被 App Store 的静态扫描判成缺少「始终定位」用途说明 (ITMS-90683).
       BYPASS_PERMISSION_LOCATION_ALWAYS: "1"
@@ -315,29 +316,47 @@ jobs:
 
       - name: Prepare build arguments
         run: |
-          args="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER"
+          # RELEASE_FLAGS 是 flutter build 和 shorebird release 都认的选项, shorebird release 要求写在 -- 之前;
+          # DEFINES 交给 flutter build, 用 shorebird 时写在 -- 之后.
+          flags="--build-name=$BUILD_NAME --build-number=$BUILD_NUMBER"
+          defines=""
           if [ -n "$APP_CONFIG" ]; then
             printf '%s' "$APP_CONFIG" > config/ci.json
-            args="$args --dart-define-from-file=config/ci.json"
+            defines="--dart-define-from-file=config/ci.json"
           fi
-          echo "BUILD_ARGS=$args" >> "$GITHUB_ENV"
+          echo "RELEASE_FLAGS=$flags" >> "$GITHUB_ENV"
+          echo "DEFINES=$defines" >> "$GITHUB_ENV"
 
       # 有证书和描述文件时签名打 IPA, 没有时只做未签名构建, 验证能否编译.
-      # TODO: 不混淆, 也不上传 Dart 符号表. 发版改用 shorebird release ios 后才能给 iOS 推补丁.
+      # TODO: 不混淆, 也不上传 Dart 符号表. 补丁 (patch.yml) 的选项要和这里保持一致.
       - name: Prepare signing
         if: env.IOS_DIST_CERT_P12_BASE64 != ''
         run: |
           tool/ios_signing.sh setup
           echo "SIGNED=true" >> "$GITHUB_ENV"
+          # 发版且配了 Shorebird 时用 Shorebird 的引擎打 IPA, 之后才能对这个版本推补丁. 需要签名, 所以放在这一步之后判断.
+          if [ "$IS_RELEASE" = true ] && [ -n "$SHOREBIRD_TOKEN" ] && [ -f shorebird.yaml ]; then
+            echo "USE_SHOREBIRD=true" >> "$GITHUB_ENV"
+          fi
 
       - name: Build IPA
-        if: env.SIGNED == 'true'
-        run: flutter build ipa --release --export-options-plist=build/ios/ExportOptions.plist $BUILD_ARGS
+        if: env.SIGNED == 'true' && env.USE_SHOREBIRD != 'true'
+        run: flutter build ipa --release --export-options-plist=build/ios/ExportOptions.plist $RELEASE_FLAGS $DEFINES
+
+      # Flutter 版本必须和 .fvmrc 一致. 产物和 flutter build ipa 一样在 build/ios/ipa/ 下, 后面的上传步骤不用分开写.
+      - uses: shorebirdtech/setup-shorebird@v1
+        if: env.USE_SHOREBIRD == 'true'
+        with:
+          cache: true
+      - name: Build IPA with Shorebird
+        if: env.USE_SHOREBIRD == 'true'
+        run: |
+          shorebird release ios             --flutter-version=${{ needs.check.outputs.flutter-version }}             --export-options-plist=build/ios/ExportOptions.plist             $RELEASE_FLAGS -- $DEFINES
 
       - name: Build unsigned
         if: env.SIGNED != 'true'
         run: |
-          flutter build ios --release --no-codesign $BUILD_ARGS
+          flutter build ios --release --no-codesign $RELEASE_FLAGS $DEFINES
           ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
 
       # 上传是同步的, 命令返回时 App Store Connect 的上传记录里已经有这个构建, 下一次构建查号能看到它.
