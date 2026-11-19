@@ -71,7 +71,7 @@ lib/
                             CropViewport、CropZoomSlider 是圆形取景的拖动、缩放和滑条，「调整照片」和换头像共用；
                             PhotoViewer（photo_viewer.dart）是看大图，菜品详情和评论卡片共用
                             StarRating（star_rating.dart）是五颗星，打分和展示共用；LikeHeart（like_heart.dart）是带弹跳的赞；
-                            showMorphCard（morph_card.dart）让一格长大成浮在遮罩上的卡片，也能展开到全屏；评分卡、评论的回应卡片、加照片卡片和全屏写评论用它
+                            showMorphCard（morph_card.dart）让一格长大成浮在遮罩上的卡片，也能展开到全屏；菜品评分卡、店铺评价卡、评论的回应卡片、加照片卡片和全屏写评论用它
                             StatStrip（stat_strip.dart）是抽屉顶部一行三格的数字条，FootLinks（foot_links.dart）是页底一行小字链接，菜品详情和餐厅详情共用
   domain/                   领域模型和产品规则，纯 Dart，不做 IO
     models/                 Dish、DishCategory、DishRevision、Shop、ShopKind、ShopCategory、RatingScene、
@@ -96,7 +96,7 @@ lib/
     topic/                  专题、往期专题（待接入，页面保留，入口不进入）
     dish/                   菜品详情、修改记录、加标签面板（待接入）
     comments/               全部评论
-    shop/                   餐厅详情、店铺评价面板、编辑店铺、修改记录、信息有误面板
+    shop/                   餐厅详情、店铺评价卡、编辑店铺、修改记录、信息有误面板
     nearby/                 附近、地图、筛选面板
     publish/                选店、新建店、加菜、调整照片、上传队列、编辑菜品
     profile/                我的、他人主页、编辑资料、足迹、粉丝和关注；等级；我的标签、标签下的菜（待接入，页面保留）

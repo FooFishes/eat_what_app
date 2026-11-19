@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/features/shop/shop_edit_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -110,7 +111,9 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('舞台写品类口味、店名和地址，盘子是招牌菜；数字条写堂食推荐率、菜数和商圈；菜单按分类分组', (tester) async {
+  testWidgets('舞台写店名和地址，盘子是招牌菜；数字条写堂食推荐率、菜数和商圈，下面是品类和口味；菜单按分类分组', (
+    tester,
+  ) async {
     final env = shopEnv();
     final (container, _) = await pumpApp(
       tester,
@@ -120,7 +123,8 @@ void main() {
     );
 
     expect(find.text('袁记云饺'), findsOneWidget);
-    expect(find.text('粉面  辣、酸'), findsOneWidget);
+    expect(find.text('粉面'), findsOneWidget);
+    expect(find.text('辣、酸'), findsOneWidget);
     expect(find.text('万达金街 1 层'), findsOneWidget);
     expect(find.text('万达金街'), findsOneWidget, reason: '商圈写在距离下面');
     expect(find.bySemanticsLabel('13 道菜'), findsOneWidget);
@@ -249,33 +253,29 @@ void main() {
     await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
     expect(find.text('评价这家店'), findsOneWidget);
-    expect(find.text('先选在店里吃的还是点的外卖'), findsOneWidget);
-    expect(find.text('推荐'), findsNothing, reason: '选场景之前不显示评价');
+    expect(find.text('还没评价过'), findsOneWidget);
+    expect(find.text('推荐'), findsNWidgets(2), reason: '堂食和外卖各一行');
     await expectAccessible(tester);
 
-    await tester.tap(find.text('外卖'));
-    await tester.pumpAndSettle();
-    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
-    await tester.tap(find.text('推荐'));
+    await tester.tap(find.text('推荐').last);
     await tester.pumpAndSettle();
     expect(env.adapter.sent('PUT /restaurant/7/rating').single.body, {
       'scene': 'delivery',
       'rating': 'RECOMMEND',
     });
-    expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
-    expect(find.text('你：外卖推荐'), findsOneWidget);
+    expect(find.text('你：外卖推荐'), findsNWidgets(2), reason: '卡片和数字条都写出来');
     expect(
       env.adapter.sent('GET /restaurant/detail/7'),
       hasLength(2),
       reason: '评价后重新请求店铺详情，更新推荐率',
     );
 
-    await tester.tap(find.text('推荐'));
+    await tester.tap(find.text('推荐').last);
     await tester.pumpAndSettle();
     expect(env.adapter.sent('DELETE /restaurant/7/rating').single.query, {
       'scene': 'delivery',
     });
-    expect(find.text('你还没评价过这家店'), findsOneWidget);
+    expect(find.text('还没评价过'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -297,12 +297,8 @@ void main() {
     expect(find.text('你：堂食推荐，外卖不推荐'), findsOneWidget);
     await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('堂食'));
-    await tester.pumpAndSettle();
-    expect(find.text('已选「推荐」，再点一次取消'), findsOneWidget);
-    await tester.tap(find.text('外卖'));
-    await tester.pumpAndSettle();
-    expect(find.text('已选「不推荐」，再点一次取消'), findsOneWidget);
+    expect(_chip(tester, find.text('推荐').first).selected, isTrue);
+    expect(_chip(tester, find.text('不推荐').last).selected, isTrue);
     await unmountApp(tester, container);
   });
 
@@ -318,13 +314,11 @@ void main() {
 
     await tester.tap(find.text('推荐率'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('堂食'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('不推荐'));
+    await tester.tap(find.text('不推荐').first);
     await tester.pumpAndSettle();
     expect(find.text('网络连接失败，请重试'), findsOneWidget);
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text('点选即提交，之后可修改'), findsOneWidget);
+    expect(find.text('还没评价过'), findsOneWidget);
     await unmountApp(tester, container);
   });
 
@@ -378,8 +372,7 @@ void main() {
     await tester.tap(find.text('先逛逛'));
     await tester.pumpAndSettle();
 
-    await scrollTo(tester, '编辑店铺');
-    await tester.tap(find.text('编辑店铺'));
+    await tester.tap(find.bySemanticsLabel('编辑店铺'));
     await tester.pumpAndSettle();
     expect(find.text('认证后才能编辑店铺'), findsOneWidget);
     expect(locationOf(router), Paths.shop(7));
@@ -482,8 +475,7 @@ void main() {
         session: const SignedIn(user: verifiedUser),
         location: Paths.shop(7),
       );
-      await scrollTo(tester, '编辑店铺');
-      await tester.tap(find.text('编辑店铺'));
+      await tester.tap(find.bySemanticsLabel('编辑店铺'));
       await tester.pumpAndSettle();
       expect(find.byType(ShopEditPage), findsOneWidget);
       return container;
@@ -647,3 +639,8 @@ void main() {
     });
   });
 }
+
+/// [text] 所在的标签.
+EatChip _chip(WidgetTester tester, Finder text) => tester.widget<EatChip>(
+  find.ancestor(of: text, matching: find.byType(EatChip)),
+);

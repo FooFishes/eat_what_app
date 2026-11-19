@@ -16,7 +16,9 @@ import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/foot_links.dart';
+import 'package:eat/design/widgets/fact_list.dart';
 import 'package:eat/design/widgets/images.dart';
+import 'package:eat/design/widgets/joined_group.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/stage_bar_action.dart';
@@ -27,7 +29,7 @@ import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
-import 'package:eat/features/shop/rating_panel.dart';
+import 'package:eat/features/shop/rating_card.dart';
 import 'package:eat/features/shop/shop_error_panel.dart';
 import 'package:eat/features/shop/shop_providers.dart';
 import 'package:eat/features/system/guard.dart';
@@ -41,8 +43,8 @@ import 'package:go_router/go_router.dart';
 
 /// 餐厅详情页, 分为顶部舞台与下方抽屉两部分. 菜品页看的是一道菜, 这里看的是一份菜单.
 ///
-/// - 舞台: 招牌菜的盘子扇形排开 (最多 3 只, 没有招牌时是一只装门头照的盘子), 左下是品类和口味, 店名和地址.
-/// - 抽屉: 数字条 (推荐率, 菜数, 距离), 导航和加菜, 按分类分组的全部菜品, 页底的资料维护链接.
+/// - 舞台: 招牌菜的盘子扇形排开 (最多 3 只, 没有招牌时是一只装门头照的盘子), 左下是店名和地址.
+/// - 抽屉: 数字条 (推荐率, 菜数, 距离) 和品类口味卡片连成一组 ([JoinedGroup]), 导航和加菜, 按分类分组的全部菜品, 页底的资料维护链接.
 ///
 /// 店铺详情接口不返回招牌菜与菜品总数, 因此招牌菜需单独请求, 菜品数取自全部菜品分页的总数.
 /// 舞台背景色根据店铺的类型与品类自动映射.
@@ -92,7 +94,11 @@ class ShopPage extends ConsumerWidget {
             ),
             sliver: SliverList.list(
               children: [
-                _Stats(shop: shop),
+                JoinedGroup([
+                  _Stats(shop: shop),
+                  if (shop.categories.isNotEmpty || shop.tastes.isNotEmpty)
+                    _Tags(shop: shop),
+                ]),
                 const SizedBox(height: EatSpace.s16),
                 _Actions(shop: shop),
               ],
@@ -174,16 +180,25 @@ class _Deleted extends StatelessWidget {
 
 /// 抽屉顶部的数字条: 推荐率, 菜数, 距离.
 ///
-/// - 推荐率: 规则见 [ShopRules.rateOf], 堂食不满门槛而外卖满时写外卖的. 下面写评价人数; 自己评过时写自己的评价. 点了打开店铺评价面板.
-/// - 菜单: 全部菜品的总数.
+/// - 推荐率: 规则见 [ShopRules.rateOf], 堂食不满门槛而外卖满时写外卖的. 下面写评价人数; 自己评过时写自己的评价. 点了从这一格展开评价卡.
+/// - 菜单: 全部菜品的总数, 写成 "3 道菜".
 /// - 距离: 离我多远, 下面写商圈.
-class _Stats extends ConsumerWidget {
+class _Stats extends ConsumerStatefulWidget {
   const new({required this.shop});
 
   final Shop shop;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Stats> createState() => _StatsState();
+}
+
+class _StatsState extends ConsumerState<_Stats> {
+  /// 推荐率格, 评价卡从这里展开.
+  final _rateCell = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    final shop = widget.shop;
     final rate = ShopRules.rateOf(shop);
     final count = shop.dineIn.count + shop.delivery.count;
     final mine = myRatingsText(
@@ -198,23 +213,32 @@ class _Stats extends ConsumerWidget {
       null when count == 0 => '还没人评价',
       null => '$count 条评价',
     };
-    return StatStrip([
-      StatCell(
-        label: rate?.scene == RatingScene.delivery ? '外卖推荐率' : '推荐率',
-        value: rate == null ? '—' : '${rate.percent}%',
-        note: mine == null ? summary : '你：$mine',
-        semanticsLabel: [
-          '评价',
-          if (rate != null) ShopRules.rateText(rate),
-          summary,
-          if (mine != null) '你的评价：$mine',
-        ].join('，'),
-        onTap: () => showRatingPanel(context, ref, shop),
+    late final StatCell rateCell;
+    rateCell = StatCell(
+      key: _rateCell,
+      label: rate?.scene == RatingScene.delivery ? '外卖推荐率' : '推荐率',
+      value: rate == null ? '—' : '${rate.percent}%',
+      note: mine == null ? summary : '你：$mine',
+      semanticsLabel: [
+        '评价',
+        if (rate != null) ShopRules.rateText(rate),
+        summary,
+        if (mine != null) '你的评价：$mine',
+      ].join('，'),
+      onTap: () => showShopRatingCard(
+        context,
+        ref,
+        shop,
+        origin: _rateCell,
+        face: (_) => StatStrip.face(rateCell),
       ),
+    );
+    return StatStrip([
+      rateCell,
       StatCell(
         label: '菜单',
         value: total == null ? '—' : '$total',
-        note: '道菜',
+        unit: total == null ? null : '道菜',
         semanticsLabel: total == null ? null : '$total 道菜',
       ),
       StatCell(
@@ -225,6 +249,34 @@ class _Stats extends ConsumerWidget {
       ),
     ]);
   }
+}
+
+/// 品类和口味, 接在数字条下面, 和数字条连成一组. 左边小字写 "品类" "口味", 右边用顿号连起来.
+class _Tags extends StatelessWidget {
+  const new({required this.shop});
+
+  final Shop shop;
+
+  @override
+  Widget build(BuildContext context) => JoinedSurface(
+    child: Padding(
+      padding: const EdgeInsets.all(EatSpace.s16),
+      child: FactList([
+        if (shop.categories.isNotEmpty)
+          (
+            label: '品类',
+            value: [for (final c in shop.categories) c.label].join('、'),
+            strong: false,
+          ),
+        if (shop.tastes.isNotEmpty)
+          (
+            label: '口味',
+            value: [for (final t in shop.tastes) t.label].join('、'),
+            strong: false,
+          ),
+      ]),
+    ),
+  );
 }
 
 /// 全部菜品, 按菜单顺序分页, 标题右侧附带菜品总数.
@@ -405,6 +457,17 @@ class _TopBar extends ConsumerWidget {
         if (shop != null)
           StageBarActions(
             children: [
+              StageBarAction(
+                icon: EatIcons.edit,
+                text: '编辑',
+                label: '编辑店铺',
+                onTap: () async {
+                  if (await guardAction(context, ref, Capability.editShop) &&
+                      context.mounted) {
+                    await context.push(Paths.shopEdit(shop.id));
+                  }
+                },
+              ),
               _favoriteAction(context, ref, shop.id),
               StageBarAction(
                 icon: EatIcons.share,
@@ -511,12 +574,6 @@ class _StageContent extends ConsumerWidget {
                 .select((m) => m.value?.pages.items.firstOrNull),
           )
         : null;
-    final kicker = [
-      if (shop.categories.isNotEmpty)
-        [for (final c in shop.categories) c.label].join('、'),
-      if (shop.tastes.isNotEmpty)
-        [for (final t in shop.tastes) t.label].join('、'),
-    ].join('  ');
     final address = shop.address;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -602,19 +659,6 @@ class _StageContent extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (kicker.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          kicker,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: eat.text.meta.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: palette.secondaryForeground,
-                          ),
-                        ),
-                      ),
                     SizedBox(
                       width: nameWidth,
                       child: Semantics(
@@ -720,9 +764,7 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-/// 页面底部的资料维护链接: "编辑店铺", "修改记录" 和 "信息有误".
-///
-/// "编辑店铺" 需要已认证权限并在点击时校验, "修改记录" 对所有用户开放.
+/// 页面底部的资料维护链接: "修改记录" 和 "信息有误". 编辑在右上角.
 class _Links extends ConsumerWidget {
   const new({required this.shop});
 
@@ -730,15 +772,6 @@ class _Links extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => FootLinks([
-    (
-      label: '编辑店铺',
-      onTap: () async {
-        if (await guardAction(context, ref, Capability.editShop) &&
-            context.mounted) {
-          unawaited(context.push(Paths.shopEdit(shop.id)));
-        }
-      },
-    ),
     (label: '修改记录', onTap: () => context.push(Paths.shopHistory(shop.id))),
     (label: '信息有误', onTap: () => showShopErrorPanel(context, ref, shop)),
   ]);

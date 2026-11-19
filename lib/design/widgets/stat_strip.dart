@@ -13,6 +13,7 @@ class StatCell {
     required this.label,
     required this.value,
     this.leading,
+    this.unit,
     this.note,
     this.onTap,
     this.semanticsLabel,
@@ -30,6 +31,9 @@ class StatCell {
 
   /// 写在 [value] 前面的图标, 如赞的心形.
   final EatIcons? leading;
+
+  /// 紧跟在 [value] 后面的小字单位, 如 "3 道菜" 里的 "道菜".
+  final String? unit;
 
   /// 补充说明, 如 "12 人评过".
   final String? note;
@@ -100,7 +104,7 @@ class _Cell extends StatelessWidget {
         cell.semanticsLabel ??
         [
           cell.label,
-          cell.value,
+          cell.value + (cell.unit == null ? '' : ' ${cell.unit}'),
           ?cell.note,
         ].where((s) => s.isNotEmpty).join('，');
     if (cell.onTap case final onTap?) {
@@ -179,8 +183,20 @@ class _Face extends StatelessWidget {
                     if (cell.leading case final icon?)
                       EatIcon(icon, size: 20, color: c.ink),
                     Flexible(
-                      child: Text(
-                        cell.value,
+                      child: Text.rich(
+                        TextSpan(
+                          text: cell.value,
+                          children: [
+                            if (cell.unit case final unit?)
+                              TextSpan(
+                                text: ' $unit',
+                                style: eat.text.meta.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: c.ink,
+                                ),
+                              ),
+                          ],
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: valueStyle,
