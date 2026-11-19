@@ -21,19 +21,21 @@ abstract final class EatPalette {
   static const warn = Color(0xFFA8321C);
 
   /// 深色模式的界面颜色, 和上面同名的浅色值一一对应. "调整照片" 页的颜色不分深浅.
-  static const darkInk = Color(0xFFF2ECE7);
-  static const darkInkMuted = Color(0xFFA89D95);
-  static const darkInkSoft = Color(0xFFD2C7BF);
-  static const darkPaper = Color(0xFF171210);
-  static const darkMist = Color(0xFF282220);
+  ///
+  /// 底色, 卡片, 线和文字用不带色相的灰: 浅色模式的暖灰压暗后发棕, 看着脏. 选中标签的底色和提醒色照旧带色.
+  static const darkInk = Color(0xFFF2F2F3);
+  static const darkInkMuted = Color(0xFFA0A0A5);
+  static const darkInkSoft = Color(0xFFCFCFD3);
+  static const darkPaper = Color(0xFF161618);
+  static const darkMist = Color(0xFF262629);
   static const darkInkTop = Color(0xFFFFFFFF);
   static const darkTagSelected = Color(0xFF3A2E1C);
-  static const darkHairline = Color(0xFF2C2623);
-  static const darkHandle = Color(0xFF3E3632);
+  static const darkHairline = Color(0xFF2C2C30);
+  static const darkHandle = Color(0xFF3D3D42);
   static const darkScrim = Color.fromRGBO(0, 0, 0, 0.6);
-  static const darkLineStrong = Color(0xFF847770);
-  static const darkDisabledBg = Color(0xFF26211E);
-  static const darkDisabledFg = Color(0xFF5F5853);
+  static const darkLineStrong = Color(0xFF808086);
+  static const darkDisabledBg = Color(0xFF232326);
+  static const darkDisabledFg = Color(0xFF5C5C62);
   static const darkWarn = Color(0xFFE35B3F);
 
   static const mapMe = Color(0xFF2F6FEB);

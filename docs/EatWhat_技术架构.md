@@ -814,22 +814,22 @@ extension RefCache on Ref {
 - 用 `material_ui` 的 `MaterialApp.router`、本地化、文本选择菜单、输入框。`ThemeData` 只做最少设置：按深浅各建一份（`eatThemeData(brightness)`）、关掉水波纹（`NoSplash`）、背景 `paper`、挂上对应的 `EatTheme`。
 - 按钮、标签、开关、面板、列表行全部用 `design/widgets/` 里自己的组件，不用 Material 的视觉组件，避免 M3 默认样式混进来。
 - 深浅色：`theme` 和 `darkTheme` 各挂一份，`themeMode` 取 `appearancePreferenceProvider`（跟随系统、浅色、深色，默认跟随系统，存在本机），启动时首帧前读出（产品 11.2、6.12）。切换时不用 `MaterialApp` 的主题渐变（`themeAnimationDuration` 为 0，渐变要每帧重建整棵树，会卡），改由 `ThemeCrossFade` 过渡：换之前截下当前画面盖在最上面，底下一次换成新主题，截图按 `EatMotion.themeSwitch`（300ms）淡出；系统切换和个性化里切换都这样，减少动态效果时直接换。个性化里点了先打勾，等 `EatMotion.select` 播完再换主题。
-- 深色令牌（`EatColors.dark`，原值在 `EatPalette` 的 `dark*`）：
+- 深色令牌（`EatColors.dark`，原值在 `EatPalette` 的 `dark*`）。底色、卡片、线和文字用不带色相的灰（2026-11-20 改，原来的暖灰压暗后发棕），`tag-selected` 和 `warn` 照旧带色：
 
   | 令牌 | 浅色 | 深色 | 深色下对比度 |
   | --- | --- | --- | --- |
-  | `paper` | `#ffffff` | `#171210` | — |
-  | `mist` | `#f3f2f0` | `#282220` | — |
-  | `ink` | `#231c18` | `#f2ece7` | `paper` 上 15.9:1，`mist` 上 13.4:1 |
-  | `ink-muted` | `#6e625b` | `#a89d95` | `paper` 上 7.0:1，`mist` 上 5.9:1 |
-  | `ink-soft` | `#4a3c31` | `#d2c7bf` | `paper` 上 11.2:1 |
+  | `paper` | `#ffffff` | `#161618` | — |
+  | `mist` | `#f3f2f0` | `#262629` | — |
+  | `ink` | `#231c18` | `#f2f2f3` | `paper` 上 16.2:1，`mist` 上 13.5:1 |
+  | `ink-muted` | `#6e625b` | `#a0a0a5` | `paper` 上 6.9:1，`mist` 上 5.8:1 |
+  | `ink-soft` | `#4a3c31` | `#cfcfd3` | `paper` 上 11.6:1 |
   | `ink-top` | `#3b312b` | `#ffffff` | — |
-  | `tag-selected` | `#fbefd9` | `#3a2e1c` | `ink` 在上面 11.3:1 |
-  | `hairline` | `#efe9e4` | `#2c2623` | — |
-  | `handle` | `#e6ded8` | `#3e3632` | — |
-  | `line-strong` | `#9a8b80` | `#847770` | — |
-  | `disabled-bg` / `disabled-fg` | `#efeeec` / `#b0ada9` | `#26211e` / `#5f5853` | — |
-  | `warn` | `#a8321c` | `#e35b3f` | `paper` 上 5.2:1 |
+  | `tag-selected` | `#fbefd9` | `#3a2e1c` | `ink` 在上面 11.8:1 |
+  | `hairline` | `#efe9e4` | `#2c2c30` | — |
+  | `handle` | `#e6ded8` | `#3d3d42` | — |
+  | `line-strong` | `#9a8b80` | `#808086` | — |
+  | `disabled-bg` / `disabled-fg` | `#efeeec` / `#b0ada9` | `#232326` / `#5c5c62` | — |
+  | `warn` | `#a8321c` | `#e35b3f` | `paper` 上 5.0:1 |
   | `scrim` | `ink` 45% | 黑 60% | — |
 
   地图（`map-*`）的深色值是深灰，和深色底图（14.4「底图样式」）一致：`map-ground` `#1c1c1e`、`map-block` `#222224`、`map-park` `#1f2420`；`map-me` 两套相同。「调整照片」页（`crop-*`）的颜色两套相同。另有两个不分深浅的令牌：`white`（白色，用于照片、大图查看器和「调整照片」页上的文字和图标）和 `shade`（`#231c18`，用于压在照片上的遮罩和画出来的投影，透明度由使用处决定）。
