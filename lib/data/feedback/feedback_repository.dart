@@ -46,12 +46,14 @@ class FeedbackRepository {
   /// 提交意见反馈. [screenshotKeys] 为已上传截图的存储 key; 从菜品或店铺页进入时传入 [dishId] 或 [shopId].
   Future<void> sendFeedback({
     required String text,
+    required FeedbackCategory category,
     List<String> screenshotKeys = const [],
     int? dishId,
     int? shopId,
   }) => _api.submitFeedback(
     FeedbackMessageDto(
       text: text.trim(),
+      category: category.api,
       screenshotKeys: screenshotKeys.isEmpty ? null : screenshotKeys,
       context: switch ((dishId, shopId)) {
         (final id?, _) => FeedbackContextDto(type: 'FOOD', id: id),
@@ -97,6 +99,9 @@ class FeedbackRepository {
     return FeedbackCase(
       id: id,
       kind: kind,
+      category: kind == CaseKind.feedback
+          ? FeedbackCategory.fromApi(dto.category)
+          : null,
       closed: dto.status == 'CLOSED',
       subject: _subject(dto.target),
       reasonCode: dto.reason,

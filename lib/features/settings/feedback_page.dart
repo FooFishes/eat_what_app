@@ -1,25 +1,27 @@
 import 'package:eat/core/failure/app_failure.dart';
-import 'package:eat/core/platform/app_info.dart';
-import 'package:eat/core/platform/hot_update.dart';
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/domain/models/report.dart';
 import 'package:eat/features/settings/settings_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// TODO: 反馈接口暂不支持接收版本号, 补丁号与设备型号, 页面目前仅作展示以供用户自行填写. 后端补充对应字段后改为随反馈请求一并提交.
-/// 问题反馈与建议提交页面, 要求填写最多 500 字的反馈正文并支持选填最多 3 张截图.
+/// 问题反馈与建议提交页面: 先选分类 ([FeedbackCategory], 必选), 再写最多 500 字的正文, 截图选填, 最多 3 张.
+///
+/// - 选了分类后, 输入框的提示换成这一类该写什么.
+/// - 设备型号, 系统和 App 版本由服务端按登录会话自动记下, 页面只说明会附上, 不让用户自己写.
 ///
 /// - 从菜品详情或店铺详情进入时, 顶部显示对应主题名称并在提交时关联该菜品或店铺 id.
 /// - 提交成功后提示处理结果将通过消息通知并自动返回上一页; 失败重试时已上传的截图不会重复上传.
@@ -39,6 +41,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
 
   final _text = TextEditingController();
   final _shots = <PickedPhoto>[];
+  FeedbackCategory? _category;
 
   /// 缓存已上传截图对应的存储 key, 避免失败重试时重复上传.
   final _uploaded = <Uint8List, String>{};
@@ -50,12 +53,15 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
   }
 
   Future<void> _submit() async {
+    final category = _category;
+    if (category == null) return;
     FocusScope.of(context).unfocus();
     try {
       await ref
           .read(feedbackSenderProvider.notifier)
           .send(
             text: _text.text,
+            category: category,
             screenshots: [for (final shot in _shots) shot.bytes],
             uploaded: _uploaded,
             dishId: widget.dishId,
@@ -109,8 +115,6 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
           feedbackSubjectProvider(dishId: widget.dishId, shopId: widget.shopId),
         )
         .value;
-    final version = ref.watch(appVersionProvider).value;
-    final patch = ref.watch(currentPatchProvider).value;
     final counter = eat.text.count.copyWith(color: c.inkMuted);
     final length = _text.text.trim().runes.length;
     final sending = ref.watch(feedbackSenderProvider);
@@ -134,10 +138,27 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
               ),
               const SizedBox(height: EatSpace.s14),
             ],
+            Semantics(
+              container: true,
+              label: '分类',
+              child: Wrap(
+                spacing: EatSpace.s8,
+                runSpacing: EatSpace.s8,
+                children: [
+                  for (final category in FeedbackCategory.values)
+                    EatChip.choice(
+                      category.label,
+                      selected: _category == category,
+                      onTap: () => setState(() => _category = category),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: EatSpace.s14),
             EatFormField.multiline(
               label: '反馈内容',
               controller: _text,
-              hintText: '遇到的问题、改进建议，或对处理结果的疑问',
+              hintText: _category?.hint ?? '先选一类，再写反馈内容',
               inputFormatters: [LengthLimitingTextInputFormatter(_maxLength)],
             ),
             const SizedBox(height: 6),
@@ -195,25 +216,15 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
               ],
             ),
             const SizedBox(height: 28),
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(text: '现在的版本是 '),
-                  TextSpan(text: version ?? '–', style: eat.text.count),
-                  if (patch != null) ...[
-                    const TextSpan(text: '、补丁 '),
-                    TextSpan(text: '$patch', style: eat.text.count),
-                  ],
-                  const TextSpan(text: '，反馈问题时附上设备型号，方便我们更快排查'),
-                ],
-              ),
+            Text(
+              '提交时会附上设备型号、系统版本和 App 版本，方便排查问题',
               style: eat.text.caption.copyWith(color: c.inkMuted),
             ),
             const SizedBox(height: EatSpace.s14),
             EatButton.solid(
               '提交',
               loading: sending,
-              onPressed: length == 0 ? null : _submit,
+              onPressed: length == 0 || _category == null ? null : _submit,
             ),
             const SizedBox(height: EatSpace.s24),
           ],

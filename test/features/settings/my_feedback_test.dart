@@ -72,6 +72,32 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('意见反馈的详情写分类', (tester) async {
+    env.adapter.on('GET /feedback/mine/6', [
+      FakeAdapter.ok({
+        'id': 6,
+        'kind': 'FEEDBACK',
+        'category': 'PROBLEM',
+        'status': 'OPEN',
+        'target': null,
+        'text': '收藏后列表没刷新',
+        'screenshots': <Object>[],
+        'reply': '',
+        'createdAt': 1700000000000,
+      }),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.myFeedbackCase(6),
+    );
+
+    expect(find.text('分类'), findsOneWidget);
+    expect(find.text('遇到问题'), findsOneWidget);
+    await unmountApp(tester, container);
+  });
+
   testWidgets('没有提交过时显示空状态，加载失败时可以重试', (tester) async {
     env.adapter.on('GET /feedback/mine', [
       const FakeResponse.offline(),

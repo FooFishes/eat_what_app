@@ -10,6 +10,7 @@ FeedbackCaseDto _$FeedbackCaseDtoFromJson(Map<String, dynamic> json) =>
     FeedbackCaseDto(
       id: (json['id'] as num?)?.toInt(),
       kind: json['kind'] as String?,
+      category: json['category'] as String?,
       status: json['status'] as String?,
       target: json['target'] == null
           ? null
@@ -57,6 +58,7 @@ Map<String, dynamic> _$ReportDtoToJson(ReportDto instance) => <String, dynamic>{
 Map<String, dynamic> _$FeedbackMessageDtoToJson(FeedbackMessageDto instance) =>
     <String, dynamic>{
       'text': instance.text,
+      'category': instance.category,
       'screenshotKeys': ?instance.screenshotKeys,
       'context': ?instance.context?.toJson(),
     };

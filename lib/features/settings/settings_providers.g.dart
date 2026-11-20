@@ -593,7 +593,7 @@ final class FeedbackSenderProvider
   }
 }
 
-String _$feedbackSenderHash() => r'e372742605b93e0047d927da422e90bc79c95108';
+String _$feedbackSenderHash() => r'67ffd7fd6bf568ca20bf8cdf07f5315430cfede9';
 
 /// 意见反馈提交控制器, 上传未上传过的截图并提交反馈内容.
 

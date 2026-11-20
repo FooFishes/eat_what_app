@@ -211,6 +211,8 @@ class _CaseDetail extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FactList([
+          if (item.category case final category?)
+            (label: '分类', value: category.label, strong: false),
           if (noun != null) (label: '对象', value: noun, strong: false),
           if (reason != null) (label: '原因', value: reason, strong: false),
           (

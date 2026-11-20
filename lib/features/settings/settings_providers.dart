@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
+import 'package:eat/domain/models/report.dart';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
@@ -419,6 +420,7 @@ class FeedbackSender extends _$FeedbackSender {
   /// [uploaded] 以截图字节为键缓存已上传的存储 key, 重试时复用该 key 而不再重复上传.
   Future<void> send({
     required String text,
+    required FeedbackCategory category,
     required List<Uint8List> screenshots,
     required Map<Uint8List, String> uploaded,
     int? dishId,
@@ -442,6 +444,7 @@ class FeedbackSender extends _$FeedbackSender {
           .read(feedbackRepositoryProvider)
           .sendFeedback(
             text: text,
+            category: category,
             screenshotKeys: keys,
             dishId: dishId,
             shopId: shopId,

@@ -321,7 +321,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('反馈：截图先上传，再带着菜提交；重试时截图不重复上传，成功后返回', (tester) async {
+  testWidgets('反馈：先选分类，截图先上传，再带着菜提交；重试时截图不重复上传，成功后返回', (tester) async {
     env.photos.next = [
       PickedPhoto(bytes: transparentImage, width: 1, height: 1),
     ];
@@ -361,8 +361,17 @@ void main() {
     expect(find.text('提交'), findsOneWidget);
     await expectAccessible(tester);
 
+    expect(find.text('提交时会附上设备型号、系统版本和 App 版本，方便排查问题'), findsOneWidget);
     await tester.enterText(find.byType(EditableText), '找不到想要的口味词');
     await tester.pump();
+    expect(
+      tester.widget<EatButton>(_button('提交')).onPressed,
+      isNull,
+      reason: '没选分类不能提交',
+    );
+    await tester.tap(find.text('提个建议'));
+    await tester.pump();
+    expect(find.text('想做到什么，现在哪里不方便'), findsOneWidget);
     await tester.tap(find.bySemanticsLabel('添加截图'));
     await tester.pumpAndSettle();
     await tester.tap(_button('提交'));
@@ -380,6 +389,7 @@ void main() {
     expect(sent, hasLength(2));
     expect(sent.last.body, {
       'text': '找不到想要的口味词',
+      'category': 'SUGGESTION',
       'screenshotKeys': ['feedback/42/a.jpg'],
       'context': {'type': 'FOOD', 'id': 1},
     });

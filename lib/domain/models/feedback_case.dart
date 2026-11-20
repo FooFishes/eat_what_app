@@ -20,9 +20,11 @@ enum CaseOutcome {
 /// [reasonCode] 是信息有误的错误类型或举报原因的接口取值, 意见反馈为 null.
 /// [text] 是意见反馈的正文, 或信息有误和举报的补充说明, 没写时为空串.
 /// [reply] 是管理员的公开回复, 没有时为空串.
+/// [category] 是意见反馈的分类, 信息有误和举报为 null.
 class const FeedbackCase({
   required final int id,
   required final CaseKind kind,
+  final FeedbackCategory? category,
   required final bool closed,
   final CaseSubject? subject,
   final String? reasonCode,

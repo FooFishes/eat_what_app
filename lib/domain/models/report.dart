@@ -59,6 +59,24 @@ enum ShopErrorType {
   final String label;
 }
 
+/// 意见反馈的分类, 提交时必选. [hint] 是选了这一类后输入框的提示, 告诉用户写什么方便排查.
+///
+/// 旧版本提交的意见反馈没有分类, 服务端按 [other] 返回.
+enum FeedbackCategory {
+  problem('PROBLEM', '遇到问题', '做了什么操作，想要什么结果，实际发生了什么'),
+  suggestion('SUGGESTION', '提个建议', '想做到什么，现在哪里不方便'),
+  other('OTHER', '其他反馈', '想说的都可以写在这里');
+
+  const new(this.api, this.label, this.hint);
+
+  final String api;
+  final String label;
+  final String hint;
+
+  static FeedbackCategory? fromApi(String? value) =>
+      values.where((c) => c.api == value).firstOrNull;
+}
+
 /// 反馈, 信息有误或举报所关联的对象类型.
 enum CaseSubjectKind { dish, shop, comment, user }
 

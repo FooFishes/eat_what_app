@@ -65,6 +65,9 @@ class const FeedbackCaseDto({
   /// `FEEDBACK`, `CATALOG_ERROR` 或 `REPORT`.
   final String? kind,
 
+  /// 意见反馈的分类: `PROBLEM`, `SUGGESTION` 或 `OTHER`. 没分类的旧记录返回 `OTHER`, 信息有误和举报为 null.
+  final String? category,
+
   /// `OPEN` 或 `CLOSED`.
   final String? status,
 
@@ -125,9 +128,11 @@ class const ReportDto({
   Map<String, dynamic> toJson() => _$ReportDtoToJson(this);
 }
 
-/// 意见反馈的请求体 (`FeedbackInput`). [text] 最多 500 字.
+/// 意见反馈的请求体 (`FeedbackDtos.MessageRequest`). [text] 最多 500 字.
 ///
-/// [screenshotKeys] 为用途 `feedback` 的上传存储 key, 最多 3 个; 从菜品或店铺页进入时, [context] 指向对应对象.
+/// - [category] 为 `PROBLEM`, `SUGGESTION` 或 `OTHER`, 服务端允许省略 (归入 `OTHER`), 客户端要求必选.
+/// - [screenshotKeys] 为用途 `feedback` 的上传存储 key, 最多 3 个; 从菜品或店铺页进入时, [context] 指向对应对象.
+/// - 设备型号, 系统和 App 版本不在请求里: 服务端按登录会话的安装 ID 取设备登记时上报的档案.
 @JsonSerializable(
   createFactory: false,
   includeIfNull: false,
@@ -135,6 +140,7 @@ class const ReportDto({
 )
 class const FeedbackMessageDto({
   required final String text,
+  required final String category,
   final List<String>? screenshotKeys,
   final FeedbackContextDto? context,
 }) {
