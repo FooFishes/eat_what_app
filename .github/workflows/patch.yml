@@ -97,6 +97,10 @@ jobs:
     env:
       APP_CONFIG: ${{ secrets.APP_CONFIG }}
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_URL: ${{ vars.SENTRY_URL }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
       RELEASE_VERSION: ${{ needs.resolve.outputs.release-version }}
       TRACK: ${{ needs.resolve.outputs.track }}
       DRY_RUN: ${{ needs.resolve.outputs.dry-run }}
@@ -123,6 +127,8 @@ jobs:
           cache: true
 
       # 补丁沿用发版时的 Flutter 版本. 环境配置和混淆选项与发版构建保持一致.
+      # Shorebird 按发版的混淆映射给补丁命名, 但不存补丁自己的映射, 补丁新增的名字只在补丁构建时才有,
+      # 所以另存一份给 Sentry. 试跑也存, 推送前就能确认生成得了.
       - name: Patch
         run: |
           defines=""
@@ -132,13 +138,18 @@ jobs:
           fi
           dry=""
           if [ "$DRY_RUN" = true ]; then dry="--dry-run"; fi
+          mkdir -p build/app
           shorebird patch android $dry \
             --release-version="$RELEASE_VERSION" \
             --track="$TRACK" \
             --obfuscate --split-debug-info=build/symbols \
-            -- $defines
+            -- $defines --extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json
+          if [ ! -s build/app/obfuscation.map.json ]; then
+            echo "::error::补丁没有生成混淆映射 build/app/obfuscation.map.json"
+            exit 1
+          fi
 
-      # 补丁本身由 Shorebird 分发. R2 上留一份构建出的 AAB 和符号表, 用于对照和还原堆栈,
+      # 补丁本身由 Shorebird 分发. R2 上留一份构建出的 AAB, 符号表和混淆映射, 用于对照和还原堆栈,
       # 放在 patch/ 下, 由 R2 的生命周期规则保留 32 天. 试跑不上传.
       - name: Upload to R2
         if: env.DRY_RUN != 'true' && env.R2_BUCKET != ''
@@ -149,9 +160,29 @@ jobs:
           mkdir -p "$out"
           cp build/app/outputs/bundle/release/app-release.aab "$out/eat-patch.aab"
           tar -czf "$out/symbols.tar.gz" -C build symbols
+          cp build/app/obfuscation.map.json "$out/obfuscation.map.json"
           aws s3 cp "$out" "s3://$R2_BUCKET/$prefix/" --recursive \
             --endpoint-url "https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com" --only-show-errors
           echo "R2: $prefix/" >> "$GITHUB_STEP_SUMMARY"
+
+      # 补丁的 libapp.so 是完整的新快照, debug id 和发版不同, 每个补丁都要传自己的符号表和映射.
+      # 事件的 release 是发版的 eat@版本名+构建号, 补丁号只在 dist 里, 所以传到同一个 release 下. 试跑不上传.
+      # Shorebird 自带的 Flutter 不在 PATH 上, 另装 .fvmrc 的版本来跑 sentry_dart_plugin.
+      - name: Read Flutter version
+        id: fvm
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        with:
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          channel: stable
+          cache: true
+      - name: Upload symbols to Sentry
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          flutter pub get
+          tool/sentry_symbols.sh "eat@$RELEASE_VERSION" build/symbols build/app/obfuscation.map.json
 
   ios:
     name: iOS patch
@@ -167,6 +198,10 @@ jobs:
       IOS_DIST_CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
       IOS_DIST_CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
       IOS_PROFILE_BASE64: ${{ secrets.IOS_PROFILE_BASE64 }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_URL: ${{ vars.SENTRY_URL }}
+      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
       # 和发版构建 (build.yml 的 iOS) 一致, 原生部分不一样时 Shorebird 会拒绝打补丁.
       BYPASS_PERMISSION_LOCATION_ALWAYS: "1"
     steps:
@@ -189,7 +224,8 @@ jobs:
           tool/ios_signing.sh setup
           echo "SIGNED=true" >> "$GITHUB_ENV"
 
-      # 发版构建的 iOS 不混淆, 补丁也不混淆. 没有证书时不签名, 补丁照样能打.
+      # 混淆选项和发版构建保持一致. 没有证书时不签名, 补丁照样能打.
+      # 补丁的符号表写在 build/symbols/app.ios-arm64.symbols, 试跑也检查, 推送前就能确认生成得了.
       - name: Patch
         run: |
           defines=""
@@ -204,8 +240,31 @@ jobs:
           shorebird patch ios $dry $sign \
             --release-version="$RELEASE_VERSION" \
             --track="$TRACK" \
+            --obfuscate --split-debug-info=build/symbols \
             -- $defines
+          if [ ! -s build/symbols/app.ios-arm64.symbols ]; then
+            echo "::error::补丁没有生成符号表 build/symbols/app.ios-arm64.symbols"
+            exit 1
+          fi
 
       - name: Clean up signing
         if: always()
         run: tool/ios_signing.sh cleanup
+
+      # 补丁改动的代码在 Shorebird 的解释器里跑, 这部分堆栈还原不了; 没改的部分靠发版的 dSYM 和映射.
+      # 补丁没有自己的 dSYM, 链接时也存不出混淆映射, 只上传补丁自己的符号表. release 的写法和安卓补丁一样. 试跑不上传.
+      - name: Read Flutter version
+        id: fvm
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@v2
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        with:
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          channel: stable
+          cache: true
+      - name: Upload symbols to Sentry
+        if: env.DRY_RUN != 'true' && env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          flutter pub get
+          tool/sentry_symbols.sh "eat@$RELEASE_VERSION" build/symbols

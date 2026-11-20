@@ -174,10 +174,10 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
    - `android`（ubuntu，JDK 17）：release APK 与 AAB，只含 arm64-v8a 和 armeabi-v7a（`--target-platform`），不打 x86_64；再从通用 APK 拆出这两种架构各一个 APK（`tool/split_apk.sh`，Shorebird 不支持 `--split-per-abi`）。配了上传密钥用它签名，否则 debug 签名。
    - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存）。有发布证书和描述文件时签名打 IPA（`tool/ios_signing.sh`），`main` 和发版 tag 的 IPA 上传 TestFlight（`tool/testflight_upload.sh`）；没有证书时出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
-3. Release 构建另外：Android 混淆 Dart 代码，Web 生成 source map，两者都上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
+3. Release 构建另外：Android 和 iOS 混淆 Dart 代码，符号表和混淆映射上传到 Sentry，iOS 另传 dSYM（`tool/sentry_symbols.sh`，缺了就失败；未签名的 iOS 构建不传），Web 生成 source map 上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
 4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
 
-`.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁 tag 触发时两个平台都直接推送；手动触发时可以只选一个平台，默认只试跑。Android 正式推送后把构建出的 AAB 和符号表上传到 R2。iOS 只能给用 `shorebird release` 发的版本打补丁。
+`.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁 tag 触发时两个平台都直接推送；手动触发时可以只选一个平台，默认只试跑。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
 
 用到的凭据和配置都在 GitHub 上，缺了就跳过对应步骤：
 
@@ -185,7 +185,7 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 | --- | --- | --- |
 | `APP_CONFIG` | Secret | `config/*.json` 的内容，构建时写成 `config/ci.json` 传入；缺了产物调不了接口 |
 | `ANDROID_KEYSTORE_BASE64`、`ANDROID_KEYSTORE_PASSWORD`、`ANDROID_KEY_ALIAS`、`ANDROID_KEY_PASSWORD` | Secret | 安卓上传密钥（keystore 文件经 base64 编码） |
-| `SENTRY_AUTH_TOKEN` | Secret | 上传符号表和 source map |
+| `SENTRY_AUTH_TOKEN` | Secret | 上传符号表、混淆映射和 source map |
 | `SENTRY_URL`、`SENTRY_ORG`、`SENTRY_PROJECT` | Variable | Sentry 服务地址、组织和项目 |
 | `SHOREBIRD_TOKEN` | Secret | `shorebird release` 和 `shorebird patch` |
 | `ASC_KEY_ID`、`ASC_ISSUER_ID`、`ASC_KEY_P8` | Secret | App Store Connect API 密钥（App Manager 权限即可），用来查构建号和上传 TestFlight |

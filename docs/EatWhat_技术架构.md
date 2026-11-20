@@ -1533,7 +1533,7 @@ class PushNotice({
 - 配置：`environment` 取 `ENV_NAME`；`release` 为 `eat@<版本名>+<构建号>`，`dist` 为补丁号；`sendDefaultPii: false`；不开会话回放，不截屏，不记录界面结构和点击；性能追踪先关（不设采样率）。
 - `beforeSend` 去掉请求头、Cookie、请求体和 URL 的查询参数；用户信息只放账号 id。
 - 面包屑：路由跳转（挂在 GoRouter 的观察者上，去掉路由参数）、网络请求（`sentry_dio` 记录地址和状态码，去掉查询参数；`ApiClient` 对失败的请求另记方法、路径和业务码）。`sentry_dio` 不把失败的请求作为错误上报。
-- 安卓、iOS 发版构建加 `--obfuscate --split-debug-info`，CI 用 `sentry_dart_plugin` 上传符号表；Web 构建生成 source map 并上传，`.map` 文件不部署到线上。`SENTRY_AUTH_TOKEN` 只在 CI Secrets。
+- 安卓、iOS 发版构建加 `--obfuscate --split-debug-info`，CI 用 `sentry_dart_plugin`（`tool/sentry_symbols.sh`）上传 Dart 符号表和混淆映射，iOS 另传 xcarchive 里的 dSYM，用 `shorebird release` 时也一样，缺了任何一样就让构建失败；补丁也上传自己的符号表，传到发版的 `release` 下，安卓补丁另传自己的映射（iOS 补丁改动的代码在 Shorebird 的解释器里跑，这部分堆栈还原不了，也没有补丁自己的 dSYM 和映射）；Web 构建生成 source map 并上传，`.map` 文件不部署到线上。`SENTRY_AUTH_TOKEN` 只在 CI Secrets。
 - 反馈页自动带上版本号和补丁号，方便对上崩溃记录。
 
 ## 20. 多平台差异
@@ -1596,8 +1596,9 @@ class PushNotice({
 ### 21.3 CI 里跑什么
 
 - `check` 任务：`build_runner build --only-check`（生成文件忘了提交或过期就失败）、`dart format --set-exit-if-changed`、`flutter analyze`、`dart analyze --fatal-infos`（`riverpod_lint` 这类分析器插件的结果由它报告）、`flutter test`。契约、依赖方向测试都在 `flutter test` 里，不单独加任务。
-- `android`、`ios`、`web` 任务都带 `--build-number=<run_number>`，配了 `APP_CONFIG` 时写成 `config/ci.json` 用 `--dart-define-from-file` 传入；`web` 另带 `--no-web-resources-cdn`。安卓配了上传密钥时还原 `android/key.properties`，否则 debug 签名。
-- 打 tag 的发版构建：安卓加混淆，上传符号表；Web 生成 source map，上传后从产物里删掉。配了 `SHOREBIRD_TOKEN` 且有 `shorebird.yaml` 时安卓改用 `shorebird release`（第 16.2 节）。iOS 签名前只做未签名构建，不混淆。补丁用手动触发的 `patch.yml`。凭据都缺省可跳过，清单见 AGENTS.md「CI」。
+- `android`、`ios`、`web` 任务都带同一个 `--build-number`，由 `check` 任务用 `tool/build_number.sh` 从 App Store Connect 查出（这个 App 用过的最大构建号加 1）；配了 `APP_CONFIG` 时写成 `config/ci.json` 用 `--dart-define-from-file` 传入；`web` 另带 `--no-web-resources-cdn`。安卓配了上传密钥时还原 `android/key.properties`，否则 debug 签名。
+- iOS 有发布证书和描述文件时签名打 IPA，`main` 和发版 tag 的 IPA 上传 TestFlight；没有时只做未签名构建。
+- 打 tag 的发版构建：安卓、iOS 加混淆，上传符号表和混淆映射，iOS 另传 dSYM（未签名的 iOS 构建不传）；Web 生成 source map，上传后从产物里删掉。配了 `SHOREBIRD_TOKEN` 且有 `shorebird.yaml` 时安卓改用 `shorebird release`，iOS 在有签名证书时也改用（第 16.2 节）。补丁用 `patch.yml`，推送补丁 tag 或手动触发。凭据都缺省可跳过，清单见 AGENTS.md「CI」。
 - 带原生代码的新依赖：单独一个 PR。Android 可以在本地构建和测试，iOS 看 CI 的 `ios` 任务能否编过。
 - `packages/eat_baidu_map/`、`packages/eat_number_auth/` 的 Pigeon 生成文件：`check` 任务重新生成一遍，`git diff --exit-code` 检查是否最新（依赖选型 7.1）。
 

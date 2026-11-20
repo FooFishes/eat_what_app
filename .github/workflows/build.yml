@@ -217,7 +217,8 @@ jobs:
       - name: Prepare Flutter build arguments
         if: env.USE_SHOREBIRD != 'true'
         run: |
-          # 混淆映射让 Sentry 还原错误标题中的类名.
+          # 混淆映射让 Sentry 还原错误标题中的类名. shorebird release 带 --obfuscate 时自己把映射存到
+          # build/shorebird/obfuscation_map.json (补丁按它保持命名不变), 不能再另加 --save-obfuscation-map, 所以这步只给 flutter build.
           if [ "$IS_RELEASE" = true ]; then
             echo "OBFUSCATION_MAP=--extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json" >> "$GITHUB_ENV"
           fi
@@ -252,19 +253,12 @@ jobs:
       - name: Split APK per ABI
         run: tool/split_apk.sh build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk app arm64-v8a armeabi-v7a
 
+      # 两条构建路径都上传符号表和混淆映射, 只是映射的位置不同. 缺了任何一样都失败, 不跳过.
       - name: Upload symbols to Sentry
         if: env.IS_RELEASE == 'true' && env.SENTRY_AUTH_TOKEN != ''
-        run: |
-          dart run sentry_dart_plugin \
-            --sentry-define=url="$SENTRY_URL" \
-            --sentry-define=org="$SENTRY_ORG" \
-            --sentry-define=project="$SENTRY_PROJECT" \
-            --sentry-define=release="eat@$BUILD_NAME+$BUILD_NUMBER" \
-            --sentry-define=upload_debug_symbols=true \
-            --sentry-define=upload_source_maps=false \
-            --sentry-define=symbols_path=build/symbols \
-            --sentry-define=dart_symbol_map_path=build/app/obfuscation.map.json \
-            --sentry-define=ignore_missing=true
+        env:
+          DART_SYMBOL_MAP: ${{ env.USE_SHOREBIRD == 'true' && 'build/shorebird/obfuscation_map.json' || 'build/app/obfuscation.map.json' }}
+        run: tool/sentry_symbols.sh "eat@$BUILD_NAME+$BUILD_NUMBER" build/symbols "$DART_SYMBOL_MAP"
 
       - uses: actions/upload-artifact@v7
         with:
@@ -324,11 +318,14 @@ jobs:
             printf '%s' "$APP_CONFIG" > config/ci.json
             defines="--dart-define-from-file=config/ci.json"
           fi
+          # 发版构建混淆 Dart 代码, 和安卓一样. 补丁 (patch.yml) 的选项要和这里保持一致, 否则 Shorebird 拒绝打补丁.
+          if [ "$IS_RELEASE" = true ]; then
+            flags="$flags --obfuscate --split-debug-info=build/symbols"
+          fi
           echo "RELEASE_FLAGS=$flags" >> "$GITHUB_ENV"
           echo "DEFINES=$defines" >> "$GITHUB_ENV"
 
       # 有证书和描述文件时签名打 IPA, 没有时只做未签名构建, 验证能否编译.
-      # TODO: 不混淆, 也不上传 Dart 符号表. 补丁 (patch.yml) 的选项要和这里保持一致.
       - name: Prepare signing
         if: env.IOS_DIST_CERT_P12_BASE64 != ''
         run: |
@@ -339,9 +336,15 @@ jobs:
             echo "USE_SHOREBIRD=true" >> "$GITHUB_ENV"
           fi
 
+      # 混淆映射的用处和安卓一样. shorebird release 自己存映射, 所以只在这里加.
       - name: Build IPA
         if: env.SIGNED == 'true' && env.USE_SHOREBIRD != 'true'
-        run: flutter build ipa --release --export-options-plist=build/ios/ExportOptions.plist $RELEASE_FLAGS $DEFINES
+        run: |
+          map=""
+          if [ "$IS_RELEASE" = true ]; then
+            map="--extra-gen-snapshot-options=--save-obfuscation-map=build/ios/obfuscation.map.json"
+          fi
+          flutter build ipa --release --export-options-plist=build/ios/ExportOptions.plist $RELEASE_FLAGS $DEFINES $map
 
       # Flutter 版本必须和 .fvmrc 一致. 产物和 flutter build ipa 一样在 build/ios/ipa/ 下, 后面的上传步骤不用分开写.
       - uses: shorebirdtech/setup-shorebird@v1
@@ -358,6 +361,15 @@ jobs:
         run: |
           flutter build ios --release --no-codesign $RELEASE_FLAGS $DEFINES
           ditto -c -k --keepParent build/ios/iphoneos/Runner.app build/ios/Runner.app.zip
+
+      # 符号表, 混淆映射和 xcarchive 里的 dSYM 都上传, 缺了任何一样都失败. 未签名的包装不到手机上, 不传.
+      - name: Upload symbols to Sentry
+        if: env.IS_RELEASE == 'true' && env.SIGNED == 'true' && env.SENTRY_AUTH_TOKEN != ''
+        env:
+          DART_SYMBOL_MAP: ${{ env.USE_SHOREBIRD == 'true' && 'build/shorebird/obfuscation_map.json' || 'build/ios/obfuscation.map.json' }}
+        run: |
+          tool/sentry_symbols.sh "eat@$BUILD_NAME+$BUILD_NUMBER" build/symbols "$DART_SYMBOL_MAP" \
+            build/ios/archive/Runner.xcarchive/dSYMs
 
       # 上传是同步的, 命令返回时 App Store Connect 的上传记录里已经有这个构建, 下一次构建查号能看到它.
       - name: Upload to TestFlight
