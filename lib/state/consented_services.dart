@@ -25,9 +25,7 @@ class ConsentedServices extends _$ConsentedServices {
   /// 单项服务失败不会影响应用正常使用.
   Future<void> start() async {
     if (state) return;
-    if (await ref.read(privacyConsentStoreProvider).agreedVersion() == null) {
-      return;
-    }
+    if (!await ref.read(privacyConsentStoreProvider).agreed()) return;
     state = true;
     final reporter = ref.read(crashReporterProvider);
     try {

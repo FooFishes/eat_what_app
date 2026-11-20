@@ -159,7 +159,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 写入同意记录并补启动崩溃上报等服务后再切换为游客状态; 路由守卫不重定向已位于登录页的游客, 因此由本页主动跳转.
   Future<void> _browse() async {
     if (!await _ensureAgreed() || !mounted) return;
-    await ref.read(privacyConsentStoreProvider).record();
+    // 先逛逛时没有请求服务端的政策版本, 同意记录只记时间.
+    await ref.read(privacyConsentStoreProvider).record(null);
     unawaited(ref.read(consentedServicesProvider.notifier).start());
     ref.read(sessionProvider.notifier).browse();
     if (mounted) context.go(widget.browseTarget);

@@ -50,7 +50,7 @@ final class ConsentedServicesProvider
   }
 }
 
-String _$consentedServicesHash() => r'1fc02926b0cdd8bbf87fe58662e66a3d75e9c1bd';
+String _$consentedServicesHash() => r'4c1a65bc085210af9326c329141f2ceadca37508';
 
 /// 管理须在同意隐私政策后方可启动的服务 (崩溃上报, 远程配置, 热更新检查, 设备注册和使用统计), 状态值表示是否已启动.
 ///

@@ -92,10 +92,9 @@ void main() {
       expect(container.read(loginAgreementProvider), isTrue);
       expect(locationOf(router), Paths.discover);
       expect(find.byType(DiscoverPage), findsOneWidget);
-      expect(
-        await container.read(privacyConsentStoreProvider).agreedVersion(),
-        PrivacyConsentStore.currentVersion,
-      );
+      final store = container.read(privacyConsentStoreProvider);
+      expect(await store.agreed(), isTrue);
+      expect(await store.agreedVersion(), isNull, reason: '先逛逛时没有服务端版本');
       _expectNoSignedInRequests(env.adapter);
     });
 
