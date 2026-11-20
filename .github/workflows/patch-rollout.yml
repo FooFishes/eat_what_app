@@ -1,0 +1,49 @@
+name: Patch rollout
+
+# 提高一个灰度补丁的放量比例, 如 10 -> 50 -> 100. 补丁由 patch.yml 发出, 补丁号写在那次运行的摘要里.
+# 比例只能调高, 填的比当前低时 Shorebird 拒绝. 要撤下补丁在 Shorebird 控制台回滚, 不在这里.
+# 两个平台的补丁号不同, 各运行一次.
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: 补丁所属的版本, 写作 版本名+构建号, 如 0.1.0+42
+        required: true
+      patch-number:
+        description: 补丁号
+        required: true
+      rollout:
+        description: 新的放量比例, 1 到 100 的整数, 100 为全量
+        type: number
+        default: 100
+
+permissions:
+  contents: read
+
+jobs:
+  rollout:
+    name: Raise rollout
+    runs-on: ubuntu-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      RELEASE_VERSION: ${{ inputs.release-version }}
+      PATCH_NUMBER: ${{ inputs.patch-number }}
+      ROLLOUT: ${{ inputs.rollout }}
+    steps:
+      # 应用 ID 从 shorebird.yaml 读.
+      - uses: actions/checkout@v7
+
+      - uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - run: |
+          if ! [[ "$ROLLOUT" =~ ^[0-9]+$ ]] || [ "$ROLLOUT" -lt 1 ] || [ "$ROLLOUT" -gt 100 ]; then
+            echo "::error::放量比例应为 1 到 100 的整数. 当前为 $ROLLOUT"
+            exit 1
+          fi
+          shorebird patches rollout \
+            --release-version="$RELEASE_VERSION" \
+            --patch-number="$PATCH_NUMBER" \
+            --percentage="$ROLLOUT"
+          echo "$RELEASE_VERSION 补丁 $PATCH_NUMBER 放量提高到 $ROLLOUT%" >> "$GITHUB_STEP_SUMMARY"

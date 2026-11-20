@@ -160,7 +160,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 | 类型 | 触发 | 版本名和构建号 | R2 目录 | 保留 |
 | --- | --- | --- | --- | --- |
 | Release | 推送发版 tag `v<版本名>[-后缀]`，如 `v1.2.3`、`v1.2.3-beta`，版本名必须和 `pubspec.yaml` 一致；或在这样的 tag 上手动运行 `build.yml` | 版本名取自 tag，构建号见下 | `release/1.2.3-62-beta/` | 32 天 |
-| Patch | 推送补丁 tag `v<版本名>+<构建号>[-后缀]-p<N>`，如 `v1.2.3+62-beta-p1`（发版 tag 里没有构建号，看发版构建的运行摘要或 R2 路径）；或手动运行 `patch.yml` | 补丁目标取自 tag，后缀为 `beta` 推到 beta 轨道，否则推到 stable | `patch/1.2.3-62/beta-p1/` | 32 天 |
+| Patch | 推送补丁 tag `v<版本名>+<构建号>-p<N>`，如 `v1.2.3+62-p1`，`-p<N>` 前不带后缀（发版 tag 里没有构建号，看发版构建的运行摘要或 R2 路径）；或手动运行 `patch.yml` | 补丁目标取自 tag，都推到 stable 轨道 | `patch/1.2.3-62/p1/` | 32 天 |
 | Nightly | `main` 的 push，和不在发版 tag 上的手动运行（可选任意分支） | `pubspec.yaml` 的版本名，构建号见下 | `nightly/<版本名>-<构建号>-<短 SHA>/` | 2 天 |
 
 构建号由 `tool/build_number.sh` 从 App Store Connect 查出：这个 App 用过的最大构建号加 1，所有平台共用，Android 的 versionCode 也用它；`pubspec.yaml` 里的 `+1` 只是本地构建的占位。没有 App Store Connect 密钥时（如来自 fork 的 PR）用这个占位，这样的构建不上传 TestFlight。`main` 和发版 tag 的构建共用一个并发组，一次只跑一个，避免两次构建拿到同一个号。
@@ -177,7 +177,7 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 3. Release 构建另外：Android 和 iOS 混淆 Dart 代码，符号表和混淆映射上传到 Sentry，iOS 另传 dSYM（`tool/sentry_symbols.sh`，缺了就失败；未签名的 iOS 构建不传），Web 生成 source map 上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
 4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
 
-`.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁 tag 触发时两个平台都直接推送；手动触发时可以只选一个平台，默认只试跑。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
+`.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁都发到 stable 轨道，用 Shorebird 的按比例放量（`--rollout`）分灰度和全量：补丁 tag 触发时两个平台都直接全量推送；手动触发时可以只选一个平台，默认只试跑，放量比例默认 10%。灰度补丁之后用 `.github/workflows/patch-rollout.yml`（或本地 `shorebird patches rollout`）按补丁号提高比例，比例只能调高，有问题的补丁在 Shorebird 控制台回滚。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
 
 用到的凭据和配置都在 GitHub 上，缺了就跳过对应步骤：
 

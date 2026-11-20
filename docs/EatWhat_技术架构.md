@@ -575,7 +575,6 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 | 上一次的舞台色 | `prefs.*` | 设备 | 留 |
 | 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
 | 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | `prefs.*` | 设备 | 留 |
-| 热更新分组号（1–100） | `prefs.*` | 设备 | 留 |
 | 底部导航液态玻璃的透明度（`prefs.appearance.navGlass`） | `prefs.*` | 设备 | 留 |
 | 最近搜过的词（最多 10 个；游客不存） | `cache.search.<用户 id>` | 账号 | 删（随 `cache.*` 一起） |
 | 接口缓存（第 10 节） | `cache.*`，键带用户 id | 账号 | `cache.*` 全部删掉 |
@@ -1302,18 +1301,14 @@ class PushNotice({
 
 方案待确认 D3（依赖选型第 12 节）。下面按推荐的 Shorebird 写。
 
-- `shorebird.yaml` 里 `auto_update: false`，由我们决定什么时候检查、检查哪个轨道。
-- 同意隐私政策、拿到远程配置之后：
-  1. 读分组号（首次随机生成 1–100，存 `prefs`）。
-  2. 远程配置里取当前版本的补丁放量比例。分组号 ≤ 比例走 `beta` 轨道，否则走 `stable`。
-  3. `checkForUpdate(track:)` 有新补丁就 `update(track:)` 静默下载。下次启动生效，不提示（产品 12.1）。
+- `shorebird.yaml` 里 `auto_update: false`，由我们决定什么时候检查。
+- 同意隐私政策之后 `checkForUpdate()`，有新补丁就 `update()` 静默下载。下次启动生效，不提示（产品 12.1）。只检查 `stable` 轨道。
 - 设置里点「检查更新」时也查一次补丁，和远程配置的版本检查一起做：商店没有新版本但有新补丁时下载，提示「更新已下载，重新打开 App 后生效」。
-- 放量：新补丁先发 `beta` 轨道，比例从 5% 开始调；没问题后发到 `stable`，比例清零。
-- 回退：控制台回滚补丁；补丁启动就崩时 Shorebird 在设备端自动退回上一个补丁（需要实测确认）。
-- `/remote-config` 已有，但还没有补丁放量比例，已请后端加上（后端反馈第 44 条）。加上之前所有设备都检查 `stable` 轨道，补丁不能按比例放，发出即全量。CI 的补丁工作流默认发到 `stable`。
+- 放量：补丁都发到 `stable`，用 Shorebird 的 `--rollout` 按比例放。先发小比例，没问题再用 `shorebird patches rollout` 提高，直到 100%。哪些设备在比例内由 Shorebird 服务端按安装 ID 的哈希决定，不在比例内的设备拿 `stable` 上最新的已到 100% 的补丁。比例只能调高。
+- 回退：有问题的补丁在控制台回滚；补丁启动就崩时 Shorebird 在设备端自动退回上一个补丁（需要实测确认）。
 - 「关于」页显示「版本 0.3.0（30）补丁 2」：版本名、构建号来自 `package_info_plus`，补丁号来自 `readCurrentPatch()`。崩溃上报和埋点都带补丁号。
 - 范围：只修问题和不改变功能范围的小改动；新功能、新权限、新的数据收集都发新版本（产品 12.1）。发布清单里加这一条检查。
-- CI：打 tag 发版时用 `shorebird release android` / `shorebird release ios` 代替 `flutter build`（iOS 要有签名证书），补丁用 `patch.yml`（`shorebird patch android` / `shorebird patch ios`，补丁 tag 触发时两个平台都打，手动触发可以只选一个）。Flutter 版本必须和 `.fvmrc` 一致。需要 `SHOREBIRD_TOKEN`。
+- CI：打 tag 发版时用 `shorebird release android` / `shorebird release ios` 代替 `flutter build`（iOS 要有签名证书），补丁用 `patch.yml`（`shorebird patch android` / `shorebird patch ios`，补丁 tag 触发时两个平台都打、直接全量，手动触发可以只选一个、按填的比例放，默认 10%），提高比例用 `patch-rollout.yml`。Flutter 版本必须和 `.fvmrc` 一致。需要 `SHOREBIRD_TOKEN`。
 - 新版本（商店版本）按比例发布受商店能力限制，见待确认 A11。
 
 ### 16.3 Web 新版提示
@@ -1328,7 +1323,7 @@ class PushNotice({
 
 ### 17.1 接口
 
-后端 v2 已有 `GET /remote-config?platform=&build=&campusId=`，客户端已接入（`data/remote_config/`、`state/remote_config.dart`），按后端的实际契约（`configVersion`；`flags` 里 `publish`、`newShop`、`comment`、`push`、`topic` 各 `{on, reason}`；`params`；`announcements[{id, level: NORMAL|IMPORTANT, title, content, linkUrl, startsAt, endsAt}]`；`maintenance{mode: NONE|READ_ONLY|DOWN, message, until}`；`versions{<平台>: {minBuild, latestBuild, latestVersionName, storeUrl, releaseNotes}}`；`update`），时间是毫秒。它带 `ETag` 和 60 秒公共缓存，`If-None-Match` 命中时返回 HTTP 304、没有响应体，Dio 默认把 304 当错误，接入时要处理。补丁放量、实验分组、校区、隐私政策版本 v2 里没有。下面是最初建议的形状，留作对照：
+后端 v2 已有 `GET /remote-config?platform=&build=&campusId=`，客户端已接入（`data/remote_config/`、`state/remote_config.dart`），按后端的实际契约（`configVersion`；`flags` 里 `publish`、`newShop`、`comment`、`push`、`topic` 各 `{on, reason}`；`params`；`announcements[{id, level: NORMAL|IMPORTANT, title, content, linkUrl, startsAt, endsAt}]`；`maintenance{mode: NONE|READ_ONLY|DOWN, message, until}`；`versions{<平台>: {minBuild, latestBuild, latestVersionName, storeUrl, releaseNotes}}`；`update`），时间是毫秒。它带 `ETag` 和 60 秒公共缓存，`If-None-Match` 命中时返回 HTTP 304、没有响应体，Dio 默认把 304 当错误，接入时要处理。实验分组、校区、隐私政策版本 v2 里没有；补丁放量不走远程配置（16.2）。下面是最初建议的形状，留作对照：
 
 ```json
 {
@@ -1358,7 +1353,6 @@ class PushNotice({
     "android": { "latestBuild": 30, "minBuild": 20, "storeUrl": "" },
     "ios": { "latestBuild": 30, "minBuild": 20, "storeUrl": "" }
   },
-  "patchRollout": { "30": 5 },
   "experiments": { "turntable_cta": "b" },
   "privacyPolicyVersion": "2026-10-22"
 }
@@ -1390,7 +1384,6 @@ class PushNotice({
 | 重要公告 | 打开 App 时弹窗，看过一次不再弹 |
 | 维护 | 只读：写操作被拦（第 8 节）；停服：进 `/maintenance`，写预计恢复时间 |
 | 版本线 | 第 16 节 |
-| 补丁放量 | 第 16.2 节 |
 | 实验分组 | 17.4 |
 
 ### 17.4 A/B 测试
@@ -1583,7 +1576,7 @@ class PushNotice({
 
 | 类型 | 覆盖什么 | 位置 |
 | --- | --- | --- |
-| 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、放量分组、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
+| 单元测试 | 纯函数：权限表、守卫、饭点、取色、撞色、坐标转换、距离和价格格式、菜名断行、消息 → 跳转、业务码 → 提示、版本比较、远程配置校验、接口 JSON 解析 | `test/` 与 `lib/` 同构 |
 | Widget 测试 | 设计组件的各状态（按钮按下和不可用、标签选中、面板）；页面用假仓库跑通主要状态（加载、成功、失败、空、没网、待接入、拦截） | 同上 |
 | 无障碍检查 | 组件和主要页面跑 `iOSTapTargetGuideline`（44px）、`labeledTapTargetGuideline`、`textContrastGuideline`（`test/support/eat_test_app.dart` 的 `expectAccessible`）；2 倍字号下不溢出。不跑 `androidTapTargetGuideline`：它要求 48px，设计规范定的是 44px（`size-touch`） | 同上 |
 | 依赖方向测试 | `lib/` 的 import 符合第 2.2 节的规则 | `test/architecture_test.dart` |
@@ -1617,7 +1610,7 @@ class PushNotice({
 | A2 | 后端的业务码和约定 | v2 已对齐：沿用旧码值，客户端码表见 7.4。还差：功能已关闭、只读维护、操作受限、内容违规（后端还没做这些功能）；推送附带数据里的 `link` 字段格式（推送还不投递） | 后端 |
 | A3 | 后端数据格式和存储 | 已定：GeoJSON 是 GCJ-02（14.1）；图片字段是公开的稳定地址（7.7）；菜的舞台色、备选色和封面裁切随菜保存，推荐卡片的招牌菜带封面裁切（13.6）。还差：图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT`，图片返回长缓存头 | 后端 |
 | A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，成功、失败都跳回预设链接，成功带 `ticket`，由发起账号 `POST /auth/sdu/confirm`（18.1）。还差：部署时把 App、Web 的回跳地址配对（后端反馈「部署配置」） | 后端 |
-| A5 | 远程配置接口的形状 | v2 已有 `/remote-config`（17.1）。已定：请后端加上补丁放量比例（后端反馈第 44 条），客户端按 16.2 用本机的分组号选轨道。还差：实验分组，要不要补还没定 | 后端、产品负责人 |
+| A5 | 远程配置接口的形状 | v2 已有 `/remote-config`（17.1）。已定（2026-11-20）：补丁放量用 Shorebird 自带的按比例放量（16.2），远程配置里不要放量字段。还差：实验分组，要不要补还没定 | 后端、产品负责人 |
 | A6 | 轻提示的样式 | 已定（2026-11-20）：页面底部、`NavBar` 上方的 `ink` 底胶囊，停留 2 秒，照 Material 3 Expressive 的 snackbar 做（自己实现，不用第三方包，`design/widgets/eat_toast.dart`）：弹簧弹上来、滑下去，接连出现时叠成一叠（最多 3 条），同样的提示抖一下重新计时，往下拖收起，点击穿过提示不挡底部按钮（11.8） | — |
 | A7 | 隐私政策、用户协议更新后的重新同意 | 已登录用户由服务端返回 20009，弹对话框重新同意（9.5）。本地同意记录只管 SDK 初始化，用户协议单独更新时怎么让已登录用户重新确认还没定 | 产品负责人 |
 | A8 | 宽屏时 `NavBar` 放哪 | 已定：放在左侧面板底部，发现、附近、我的一致（12.2，画板 `G-WideHome`、`G-WideNearby`） | — |

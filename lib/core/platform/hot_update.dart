@@ -8,6 +8,7 @@ part 'hot_update.g.dart';
 ///
 /// 仅通过 `shorebird release` 构建的 Android 与 iOS 安装包可用.
 /// Web, 调试构建及普通 `flutter build` 产物均不可用, 此时补丁号为 null 且检查更新为空操作.
+/// 只检查 `stable` 轨道, 补丁发给哪些设备由 Shorebird 服务端按放量比例决定.
 class HotUpdate {
   HotUpdate([ShorebirdUpdater? updater])
     : _updater = updater ?? ShorebirdUpdater();
@@ -25,7 +26,6 @@ class HotUpdate {
     }
   }
 
-  // TODO: 远程配置还没有补丁放量比例, 所有设备都检查 stable 轨道, 补丁无法按比例放量. 后端在远程配置里加上放量比例后, 按本机的分组号和比例选择 beta 或 stable 轨道.
   /// 有新补丁时在后台下载, 下次启动生效. 不提示用户.
   ///
   /// 失败时不重试, 等下次启动再检查.
