@@ -645,6 +645,7 @@ final class DishToEditFamily extends $Family
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+/// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 
 @ProviderFor(Draft)
 final draftProvider = DraftFamily._();
@@ -656,6 +657,7 @@ final draftProvider = DraftFamily._();
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+/// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
   ///
@@ -664,6 +666,7 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
   /// - 一次添加多张照片时一次申请这些照片的上传地址.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+  /// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
   DraftProvider._({
     required DraftFamily super.from,
     required Dish? super.argument,
@@ -708,7 +711,7 @@ final class DraftProvider extends $NotifierProvider<Draft, PublishDraft> {
   }
 }
 
-String _$draftHash() => r'bcf2907d404070802b71c1b4a568eb38aa696469';
+String _$draftHash() => r'7cfc326c4d0138765bb3db8411c7428df5f49e71';
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
@@ -717,6 +720,7 @@ String _$draftHash() => r'bcf2907d404070802b71c1b4a568eb38aa696469';
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+/// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 
 final class DraftFamily extends $Family
     with
@@ -743,6 +747,7 @@ final class DraftFamily extends $Family
   /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
   /// - 一次添加多张照片时一次申请这些照片的上传地址.
   /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+  /// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 
   DraftProvider call({Dish? original}) =>
       DraftProvider._(argument: original, from: this);
@@ -758,6 +763,7 @@ final class DraftFamily extends $Family
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+/// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 
 abstract class _$Draft extends $Notifier<PublishDraft> {
   late final _$args = ref.$arg as Dish?;

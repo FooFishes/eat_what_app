@@ -183,6 +183,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(
+      onHide: () => ref.read(_draft.notifier).enterBackground(),
       onResume: () => ref.read(_draft.notifier).retryFailedOnce(),
     );
   }
