@@ -8,16 +8,20 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 不传饭点时, 服务端只返回当前饭点的菜.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 不传饭点时, 服务端只返回当前饭点的菜.
 
 final class DishSearchProvider
     extends
@@ -27,9 +31,11 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
   ///
-  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+  /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+  ///
+  /// 不传饭点时, 服务端只返回当前饭点的菜.
   DishSearchProvider._({
     required DishSearchFamily super.from,
     required String super.argument,
@@ -73,11 +79,13 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'ec86a862df1cd4593476a9b2e73b80e8ca5a73ef';
+String _$dishSearchHash() => r'a5b8090d42d75a4b2d0eed1c03aa8d81d44339fd';
 
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 不传饭点时, 服务端只返回当前饭点的菜.
 
 final class DishSearchFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
@@ -90,9 +98,11 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
   ///
-  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+  /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+  ///
+  /// 不传饭点时, 服务端只返回当前饭点的菜.
 
   DishSearchProvider call(String keyword) =>
       DishSearchProvider._(argument: keyword, from: this);

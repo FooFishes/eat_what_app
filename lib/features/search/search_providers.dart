@@ -18,10 +18,12 @@ part 'search_providers.g.dart';
 /// 防抖期间关键词变化时, 旧的 Provider 已被释放. 等待结束后检查 `ref.mounted`, 已释放的不再发请求.
 const _debounce = Duration(milliseconds: 300);
 
-// TODO: `/foods/list` 接口暂不返回商圈和距离. 后端支持后在菜品方块上补充商圈与距离.
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+// TODO: `/foods/list` 还不收坐标. 后端支持后带上 `scope.point` 的坐标, 在菜品方块上补充距离.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 不传饭点时, 服务端只返回当前饭点的菜.
 @riverpod
 Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
   await Future<void>.delayed(_debounce);
@@ -33,6 +35,7 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
       .list(
         keyword: keyword,
         sort: FoodSort.newest,
+        scene: RatingScene.dineIn,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );

@@ -39,6 +39,11 @@ void main() {
     expect(dishQuery, containsPair('keyword', '袁记'));
     expect(dishQuery.containsKey('campusId'), isFalse, reason: '后端搜菜不按校区筛选');
     expect(dishQuery.containsKey('mealTime'), isFalse);
+    expect(
+      dishQuery,
+      containsPair('scene', 'dine_in'),
+      reason: '带场景时服务端才排除已关门的店',
+    );
     expect(find.text('袁记云饺'), findsOneWidget);
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
