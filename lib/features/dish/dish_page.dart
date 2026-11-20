@@ -23,6 +23,7 @@ import 'package:eat/design/widgets/foot_links.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/like_heart.dart';
 import 'package:eat/design/widgets/joined_group.dart';
+import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
 import 'package:eat/design/widgets/photo_viewer.dart';
@@ -102,47 +103,52 @@ class DishPage extends ConsumerWidget {
       );
     }
     final loaded = detail.value != null;
-    return StageScaffold(
-      stage: dish.stage,
-      stageHeight: _stageHeightOf(context),
-      topBar: _TopBar(dish: dish),
-      onRefresh: () => _refresh(context, ref, dish),
-      stageContent: _StageContent(dish: dish),
-      sheetSlivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            EatSpace.s20,
-            EatSpace.s8,
-            EatSpace.s20,
-            0,
-          ),
-          sliver: SliverList.list(
-            children: [
-              JoinedGroup([
-                _Stats(dish: dish, loaded: loaded),
-                _Uploader(dish: dish),
-                _ShopRow(dish: dish),
-              ]),
-              if (!loaded && detail.hasError) ...[
+    // 抽屉里有写评论的输入框. 页面自己不避让键盘, 滚动区域会伸到键盘下面, 输入框被盖住时不会自动滚上来;
+    // 这里按键盘高度收短页面, 键盘后面铺白底 (iOS 26 半透明的圆角键盘后面会透出黑色).
+    return KeyboardInset(
+      color: context.eat.colors.paper,
+      child: StageScaffold(
+        stage: dish.stage,
+        stageHeight: _stageHeightOf(context),
+        topBar: _TopBar(dish: dish),
+        onRefresh: () => _refresh(context, ref, dish),
+        stageContent: _StageContent(dish: dish),
+        sheetSlivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              EatSpace.s20,
+              EatSpace.s8,
+              EatSpace.s20,
+              0,
+            ),
+            sliver: SliverList.list(
+              children: [
+                JoinedGroup([
+                  _Stats(dish: dish, loaded: loaded),
+                  _Uploader(dish: dish),
+                  _ShopRow(dish: dish),
+                ]),
+                if (!loaded && detail.hasError) ...[
+                  const SizedBox(height: EatSpace.s16),
+                  FailureState(
+                    error: detail.error,
+                    onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
+                  ),
+                ],
+                const SizedBox(height: _groupGap),
+                _Comments(dishId: dishId, focus: focusComment),
                 const SizedBox(height: EatSpace.s16),
-                FailureState(
-                  error: detail.error,
-                  onRetry: () => ref.invalidate(dishDetailProvider(dishId)),
-                ),
+                FootLinks([
+                  (
+                    label: '修改记录',
+                    onTap: () => context.push(Paths.dishHistory(dish.id)),
+                  ),
+                ]),
               ],
-              const SizedBox(height: _groupGap),
-              _Comments(dishId: dishId, focus: focusComment),
-              const SizedBox(height: EatSpace.s16),
-              FootLinks([
-                (
-                  label: '修改记录',
-                  onTap: () => context.push(Paths.dishHistory(dish.id)),
-                ),
-              ]),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

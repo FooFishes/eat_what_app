@@ -49,7 +49,8 @@ class CommentComposer extends ConsumerStatefulWidget {
   ConsumerState<CommentComposer> createState() => _CommentComposerState();
 }
 
-class _CommentComposerState extends ConsumerState<CommentComposer> {
+class _CommentComposerState extends ConsumerState<CommentComposer>
+    with WidgetsBindingObserver {
   final _text = TextEditingController();
   final _focus = FocusNode();
 
@@ -75,6 +76,7 @@ class _CommentComposerState extends ConsumerState<CommentComposer> {
     super.initState();
     _text.addListener(() => setState(() {}));
     _focus.addListener(_onFocus);
+    WidgetsBinding.instance.addObserver(this);
     if (_isReply) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focus.requestFocus();
@@ -84,11 +86,31 @@ class _CommentComposerState extends ConsumerState<CommentComposer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _text.dispose();
     _focus
       ..removeListener(_onFocus)
       ..dispose();
     super.dispose();
+  }
+
+  /// 键盘升起或变高时, 把展开的整个框 (连同照片和下面的 "发送") 滚到键盘上方.
+  ///
+  /// 输入框自己只把光标所在的那一行滚出来, 框的下半截和工具行仍可能压在键盘下面.
+  /// 回复横条自己贴着键盘, 不用滚.
+  @override
+  void didChangeMetrics() {
+    if (_isReply || !_open || !_focus.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final box = _box.currentContext;
+      if (box == null || !box.mounted || !_focus.hasFocus) return;
+      unawaited(
+        Scrollable.ensureVisible(
+          box,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        ),
+      );
+    });
   }
 
   bool get _empty =>

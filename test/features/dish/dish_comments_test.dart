@@ -120,6 +120,40 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('展开写评论后键盘弹起盖住输入框时，整个框滚到键盘上方', (tester) async {
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('吃过的话，说两句').hitTestable(),
+      200,
+      scrollable: scrollable,
+    );
+    await tester.tap(find.text('吃过的话，说两句'));
+    await tester.pumpAndSettle();
+    final screen =
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+    final field = tester.getRect(find.byType(EditableText));
+    // 键盘顶边压在输入框中间.
+    final keyboard = screen - field.center.dy;
+    tester.view.viewInsets = FakeViewPadding(
+      bottom: keyboard * tester.view.devicePixelRatio,
+    );
+    addTearDown(tester.view.resetViewInsets);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getRect(find.text('发送')).bottom,
+      lessThanOrEqualTo(screen - keyboard),
+      reason: '整个框连同下面的「发送」都在键盘上方, 不只是光标那一行',
+    );
+    await unmountApp(tester, container);
+  });
+
   testWidgets('从消息跳来时滚到那条评论', (tester) async {
     final (container, _) = await pumpApp(
       tester,
