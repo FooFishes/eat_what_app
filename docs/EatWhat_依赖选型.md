@@ -49,7 +49,7 @@
 | 打开链接、外部地图、认证页 | `url_launcher` | `^6.3.3` | 2026-10-02 | ✅ | ✅ | ✅ | 已引入（阶段二） |
 | 人机验证容器 | `webview_flutter` | `^4.14.1` | 2026-07-07 | ✅ | ✅ | —（Web 直接加载 JS） | 已引入（阶段二）。只用于人机验证，见第 15 节；统一认证用 `flutter_web_auth_2` 的系统认证会话，不用 WebView（技术架构 18.1） |
 | 可注入时钟 | `clock` | `^1.1.3` | 2026-08-28 | ✅ | ✅ | ✅ | 已引入（阶段二：验证码倒计时；阶段三还用于饭点、「12 分钟前」） |
-| Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 已引入（阶段二：Web 上加载人机验证的 JS；阶段三还用于判断微信内置浏览器） |
+| Web 互操作 | `web` | `^1.1.1` | 2025-02-26 | — | — | ✅ | 已引入（阶段二：Web 上加载人机验证的 JS） |
 | 网络图片与缓存 | `cached_network_image` | `^4.0.5` | 2026-10-21 | ✅ | ✅ | ✅ | 已引入（阶段三） |
 | 定位 | `geolocator` | `^14.1.2` | 2026-10-19 | ✅ | ✅ | ✅（仅 HTTPS） | 已引入（阶段三） |
 | 地图（App） | 本地插件 `packages/eat_baidu_map/`（自己写的原生桥），内含百度地图 SDK：Android `com.baidu.lbsyun:BaiduMapSDK_Map`（Maven Central）、iOS `BaiduMapKit` 的 Base 和 Map（自己转成 xcframework，见第 7.1 节） | `8.2.0`、`7.2.0`，原生依赖锁死版本 | 2026-08-17、2026-07-27 | ✅ | ✅ | — | 换掉 `flutter_map`（D1 确认后），见第 7.1 节 |
@@ -204,7 +204,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 存什么 | 选 | 说明 |
 | --- | --- | --- |
-| 登录 token、`tokenName`、安装 ID | `flutter_secure_storage ^11.2.0` | Android Keystore、iOS Keychain；Web 用 WebCrypto 加密后存 localStorage（密钥也在浏览器里，挡不住 XSS，见技术架构待确认 A10） |
+| 登录 token、`tokenName`、安装 ID | `flutter_secure_storage ^11.2.0` | Android Keystore、iOS Keychain；Web 用 WebCrypto 加密后存 localStorage（密钥也在浏览器里，挡不住 XSS；Web 不上线，见技术架构待确认 A10） |
 | 偏好设置、接口缓存、埋点队列 | `shared_preferences ^2.5.6` | 用 `SharedPreferencesAsync`，键加前缀分组（`prefs.*`、`cache.*`、`analytics.queue`，见技术架构 9.1）；值是基本类型或 JSON 字符串。安卓走 DataStore，iOS 走 NSUserDefaults，Web 走 localStorage |
 
 **为什么是 `shared_preferences`**
@@ -344,7 +344,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | --- | --- | --- | --- | --- |
 | Noto Sans SC | 安卓上的全部中文 | Google Fonts，OFL | 可变字体 `NotoSansSC[wght].ttf` 17.8 MB | 子集化到 GB 2312 和常用标点，改写字重映射后只打进安卓包，3.9 MB |
 | 系统字体 | iOS 的中文 | 系统自带 | — | 苹方，不内置 |
-| 回落字体 | Web 的中文 | 引擎按需下载 Noto Sans SC 的分片 | — | 不内置，回落地址指向自托管副本 |
+| 回落字体 | Web 的中文 | 引擎按需下载 Noto Sans SC 的分片 | — | 不内置，用引擎默认的回落地址 |
 | Inter | 价格、距离、计数等数字 | Google Fonts，OFL | 可变字体 `Inter[opsz,wght].ttf` 876,576 字节 | 子集化到数字、拉丁字母和 `¥` 后内置 |
 
 - 中文原先内置 Noto Sans SC，2026-11-11 改用系统字体，2026-11-17 安卓又改回内置：安卓各厂商的系统中文字体不同（小米 MiSans、华为 HarmonyOS Sans、原生 Noto 等），汉字的视觉大小和字重差别明显，同一字号在不同机型上观感不一。iOS 的苹方效果好，继续用系统字体。代价是安卓包大 3.9 MB，子集外的生僻字由系统字体显示，字形会不同。
@@ -355,7 +355,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 - Inter 用**可变字体**，一份文件覆盖所有字重。Flutter 3.47 的 `FontWeight` 直接设置可变字体的 `wght` 轴，文字样式里写 `fontWeight` 就行；另按字号设 `opsz`（技术架构 11.5）。
 - 数字原先用设计稿里的 Bricolage Grotesque，字形个性强，小字号下 `6 8 9`、`3 5` 不好认，换成为屏幕小字号设计的 Inter。Inter 字形开口大，带等宽数字 `tnum`。
 - `tool/subset_fonts.py` 把 Noto Sans SC 裁到 GB 2312 和常用标点并改写字重映射，把 Inter 裁到 ASCII 和 `¥` 等几个符号，保留全部 OpenType 特性，173,704 字节。子集化用 fonttools 4.60.2（支持 Python 3.9 的最后一版）。
-- **Web 的问题**：Flutter Web（CanvasKit、skwasm）用不了浏览器的系统字体，缺字时默认去 `fonts.gstatic.com` 按需下载 Noto 系列回落字体的分片（中文、emoji 都是），大陆访问不到。构建时用 `--no-web-resources-cdn`，并把 `fontFallbackBaseUrl` 指向我们自己托管的回落字体副本，否则 Web 上的中文会显示成方块。
+- **Web 的问题**：Flutter Web（CanvasKit、skwasm）用不了浏览器的系统字体，缺字时默认去 `fonts.gstatic.com` 按需下载 Noto 系列回落字体的分片（中文、emoji 都是），大陆访问不到，Web 上的中文会显示成方块。Web 不上线（2026-11-21），先不自托管回落字体，不设 `fontFallbackBaseUrl`。
 - 不用 `google_fonts`（运行时从境外下载）。
 - 字体文件放项目 `assets/fonts/`，在 `pubspec.yaml` 声明；`prototype/` 里的资源不直接引用。子集化脚本放 `tool/`，输出入库，CI 不跑。
 
@@ -371,14 +371,14 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 | 用途 | 选 | 说明 |
 | --- | --- | --- |
-| 系统分享面板 | `share_plus ^13.3.1` | 安卓、iOS 弹系统分享；Web 在支持 Web Share API 的浏览器上调起系统分享。微信内置浏览器不支持，改为复制链接 |
+| 系统分享面板 | `share_plus ^13.3.1` | 安卓、iOS 弹系统分享；Web 在支持 Web Share API 的浏览器上调起系统分享，不支持时复制链接 |
 | 复制链接 | SDK 的 `Clipboard` | 不用包 |
 | 深链（App Links、Universal Links） | `app_links ^7.2.2` | 冷启动和运行中收到的链接都从它拿，统一交给我们自己的深链处理器 |
 | 统一认证回跳 | `flutter_web_auth_2 ^6.0.0-alpha.9` | iOS `ASWebAuthenticationSession`，安卓 Chrome Auth Tab（不支持时退回 Custom Tabs），在会话里拦截 `you.v50to.eat://` 回跳并返回给调用方 |
 
 **为什么要 `app_links`，而不是 Flutter 自带的深链**：统一用 `app_links` 接收、自己分发，分享链接、通知点击只有一个入口，方便做白名单和埋点。另外，极光等推送的 README 写明，Flutter 3.29 起安卓厂商通道的离线推送点开会被 Flutter 当成深链处理而白屏，要在 `AndroidManifest.xml` 关掉 `flutter_deeplinking_enabled`；现在就关掉、自己接，以后接远程推送不用再改深链。iOS 同样关掉 `FlutterDeepLinkingEnabled`，保持两端一致。
 
-**不选**：微信 JS-SDK（自定义分享卡片需要认证公众号和备案域名，见技术架构待确认 A9）。
+**不选**：微信 JS-SDK（Web 不上线，见技术架构待确认 A9）。
 
 **统一认证为什么用 `flutter_web_auth_2`，不用 App Links**（2026-11-05 改）：原先用 `url_launcher` 的应用内浏览器打开、后端 302 到 `https://eat.v50to.you/app/auth/callback`、靠 App Links / Universal Links 唤起 App。国内安卓机上 App Links 的域名校验经常过不了（GMS 要访问 Google 的接口，没有 GMS 的机型各家自己处理），Custom Tabs 里没有用户点击的 302 也常常不唤起 App，用户会停在浏览器里。认证会话在会话里直接拦截回跳地址，不依赖域名校验。没装 Chrome 的国产机上插件退回 Custom Tabs，自定义 Scheme 交给 `CallbackActivity`；万一也没回来，回到前台时刷新状态兜底（技术架构 18.1）。
 
@@ -552,5 +552,5 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | D4 | 崩溃上报的 Sentry 放哪、谁维护 | 沿用自建 Sentry（legacy 的 `sentry.orbithy.com` 或新部署），数据和业务一起在境外，写进隐私政策。要确认谁维护、大陆访问速度 | 产品负责人、后端 |
 | D5 | 统计埋点自建还是用第三方 | 已定（2026-11-02）：自建，上报到后端 `/telemetry`；崩溃仍用 Sentry | — |
 | D6 | 人机验证服务商 | 已定：腾讯云验证码国际站，后端已接（第 15 节）。还要实测国际站 JS 在大陆网络下的表现，确认验证数据的存放地写进隐私政策 | 产品负责人、后端 |
-| D7 | 中文字体怎么内置 | 已定（2026-11-17）：安卓内置 Noto Sans SC 子集并校正字重，iOS 用苹方，Web 用自托管的回落字体；数字仍内置 Inter（第 9.1 节） | — |
+| D7 | 中文字体怎么内置 | 已定（2026-11-17）：安卓内置 Noto Sans SC 子集并校正字重，iOS 用苹方，Web 用引擎的回落字体（2026-11-21：Web 不上线，先不自托管）；数字仍内置 Inter（第 9.1 节） | — |
 | D8 | 自动去背景放哪做 | 已定（2026-11-14）：不做 | — |

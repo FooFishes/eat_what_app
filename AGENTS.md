@@ -1,6 +1,6 @@
 # AGENTS.md
 
-沙软今天吃什么（EatWhat）：校园觅食 App 的 Flutter 客户端，目标平台 Android、iOS、Web。应用 ID `you.v50to.eat`，Dart 包名 `eat`。
+沙软今天吃什么（EatWhat）：校园觅食 App 的 Flutter 客户端，目标平台 Android、iOS；Web 只作开发和适配的目标，不上线。应用 ID `you.v50to.eat`，Dart 包名 `eat`。
 
 `main` 上是重写后的 App，开发计划的阶段一到四和阶段六已基本完成，阶段五在进行中；旧实现归档在 `legacy` 分支。
 
@@ -195,4 +195,4 @@ iOS 构建必须带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`：geolocat
 | `IOS_DIST_CERT_P12_BASE64`、`IOS_DIST_CERT_PASSWORD`、`IOS_PROFILE_BASE64` | Secret | iOS 发布证书（.p12）和 App Store 描述文件，都是 base64；缺了 iOS 只做未签名构建，也不能用 Shorebird 发版 |
 | `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET` | 环境 `Cloudflare R2` 的 Secret | 产物上传到 R2 |
 
-还没有部署 Web 和上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight；R2 上的 Web 产物只是 zip 包，不能直接访问。
+还没有上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight。Web 不上线，先不做部署；R2 上的 Web 产物只是 zip 包，不能直接访问。

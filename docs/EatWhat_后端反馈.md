@@ -50,8 +50,8 @@
 | # | 配置 | 要求 | 不配的后果 |
 | --- | --- | --- | --- |
 | 27 | `APP_OAUTH_APP_SUCCESS_REDIRECT` | 必须是 `you.v50to.eat://auth/callback`。`deploy/.env.example` 现在写的是 `https://eat.v50to.you/app/auth/callback`。如果对这个配置做了 http(s) 校验，要放开自定义 Scheme | App 用系统认证会话（iOS `ASWebAuthenticationSession`、安卓 Auth Tab）等回跳，收不到自定义 Scheme 就永远完成不了统一认证 |
-| 28 | `APP_OAUTH_SUCCESS_REDIRECT` | 改成 `/app/auth/callback`；Web 和 API 不在同一个域名时写完整地址 `https://<Web 域名>/app/auth/callback`（相对路径按 API 的域名解析） | 默认值 `/home` 在 Flutter Web 里不存在，Web 认证完显示「页面不存在」，`ticket` 也确认不了 |
-| 29 | `APP_EMAIL_VERIFY_URL` | `https://<Web 域名>/verify/email`。客户端只做了 Web 落地页，登录后提交 `token` | 邮件里的链接打不开落地页，邮箱认证完成不了 |
+| 28 | `APP_OAUTH_SUCCESS_REDIRECT` | 正式部署不再要求（2026-11-21）：Web 不上线。原要求是改成 `/app/auth/callback` | 默认值 `/home` 在 Flutter Web 里不存在，Web 认证完显示「页面不存在」，`ticket` 也确认不了 |
+| 29 | `APP_EMAIL_VERIFY_URL` | 待定（2026-11-21）：原要求是 `https://<Web 域名>/verify/email`，客户端只做了 Web 落地页，登录后提交 `token`；Web 不上线，链接指向哪里待定，以后加引导，正在和后端沟通 | 邮件里的链接打不开落地页，邮箱认证完成不了 |
 | 30 | 隐私政策版本 | 上线前先发布第一个版本。客户端的政策正文用托管网页（`PRIVACY_URL`、`TERMS_URL`、`CROSS_BORDER_URL`），不读 `privacyText`、`crossBorderText`；发布新版本时同步更新托管网页 | 没发布时登录不要求同意；版本和网页对不上时，用户同意的不是他看到的文本 |
 | 31 | 对象存储 | 允许 Web 域名跨域 `PUT`（照片直传），图片返回长缓存头 | Web 上传不了照片；图片每次重新下载 |
 
@@ -93,7 +93,7 @@
 | 21 | 图墙不带拍摄者 | 已解决 |
 | 22 | 评论消息没有来源，`kind` 未确认 | 已解决；跳转缺的字段见第 11 条 |
 | 23 | Apifox 文档过时 | 已解决：客户端从 v2 模块同步。新出的结构重名见第 32 条 |
-| 旧第 3 节 | App、Web 的统一认证回跳地址 | 仍要配置，见第 27、28 条；v2 多了 `ticket` 和确认接口 |
+| 旧第 3 节 | App、Web 的统一认证回跳地址 | App 的仍要配置，见第 27 条；Web 的（第 28 条）2026-11-21 起正式部署不再要求；v2 多了 `ticket` 和确认接口 |
 | 旧第 4 节 | 客户端按未部署源码编码的部分（跨站同意、审核、幂等键等） | 不再适用：v2 都删了 |
 | 旧第 5 节 | 统计埋点、推荐的去重范围 | `/telemetry/events` 已有，同意即开启，客户端还没接；推荐的去重见第 14 条 |
 

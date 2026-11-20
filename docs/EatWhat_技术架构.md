@@ -355,16 +355,16 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 6.1 链接格式
 
-- 分享链接就是 Web 地址：`https://<Web 域名>/dishes/<id>`、`/shops/<id>`、`/topics/<id>`。域名待确认 A1。
+- 分享链接是 HTTPS 地址：`https://<域名>/dishes/<id>`、`/shops/<id>`、`/topics/<id>`。域名待确认 A1。
 - 自定义 Scheme `you.v50to.eat://` 只用于统一认证回跳（18.1），由认证会话直接收下，不经过 `DeepLinkHandler`，不对外分享。
 
-### 6.2 装了 App 打开 App，否则打开 Web
+### 6.2 装了 App 打开 App
 
 | 平台 | 做法 |
 | --- | --- |
-| Android | App Links：`AndroidManifest.xml` 里给分享路径加 `autoVerify` 的 intent-filter；Web 域名下放 `/.well-known/assetlinks.json`，写正式签名证书的 SHA-256（商店重签名时把商店的证书也写上） |
-| iOS | Universal Links：开启 Associated Domains（`applinks:<域名>`）；Web 域名下放 `/.well-known/apple-app-site-association`，限定分享路径 |
-| 没装 App | 系统直接在浏览器打开同一个地址，就是 Web 版 |
+| Android | App Links：`AndroidManifest.xml` 里给分享路径加 `autoVerify` 的 intent-filter；分享链接的域名下放 `/.well-known/assetlinks.json`，写正式签名证书的 SHA-256（商店重签名时把商店的证书也写上） |
+| iOS | Universal Links：开启 Associated Domains（`applinks:<域名>`）；分享链接的域名下放 `/.well-known/apple-app-site-association`，限定分享路径 |
+| 没装 App | 系统在浏览器打开同一个地址，打开一个轻量的分享页面 |
 
 需要正式签名密钥和 Apple 开发者账号，见待确认 A1。
 
@@ -373,20 +373,17 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 - 关闭 Flutter 自带的深链处理（安卓 `flutter_deeplinking_enabled=false`、iOS `FlutterDeepLinkingEnabled=false`），所有外部来的链接由 `app_links` 收下，交给 `router/deep_links.dart` 的 `DeepLinkHandler`。原因：统一入口方便做白名单和埋点；以后接远程推送时，安卓厂商通道的离线推送点开会被 Flutter 当成深链而白屏，现在关掉可以提前避开（依赖选型第 10 节）。
 - 来源：App Links / Universal Links、通知点击。链接从 `linkSourceProvider` 来（App 上是 `app_links`，Web 上为空，地址直接由路由表解析），测试里换成假的来源。
 - 处理：
-  1. 只接受 `https://<Web 域名>/...`，取出路径和参数。
+  1. 只接受 `https://<分享链接的域名>/...`，取出路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
      - 白名单目前是空的，随分享链接一起接（安卓清单的 intent-filter、iOS 的 Associated Domains 和 `Runner.entitlements` 也那时再加）。统一认证回跳原先走这里（`https://eat.v50to.you/app/auth/callback`），2026-11-05 改成认证会话加自定义 Scheme（18.1），因为国内机型上 App Links 的域名校验靠不住。Web 上 `/app/auth/callback` 仍是一条路由，转成 `/verify?sso=..&code=..&ticket=..`。以后做 App Links 时把邮箱认证的 `/verify/email` 也加进白名单（18.2）。
-     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）放在链接所在的主机名上（根域名上的文件不起作用），接分享链接时再请后端放。国内的安卓机上 App Links 校验经常过不了：装了 GMS 的手机由 GMS 访问 `digitalassetlinks.googleapis.com` 校验，大陆访问不到；没有 GMS 的手机各家厂商自己处理。分享链接校验失败只是退回浏览器打开 Web 版，可以接受；需要必达的跳转不能依赖它。
+     - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）放在链接所在的主机名上（根域名上的文件不起作用），接分享链接时再请后端放。国内的安卓机上 App Links 校验经常过不了：装了 GMS 的手机由 GMS 访问 `digitalassetlinks.googleapis.com` 校验，大陆访问不到；没有 GMS 的手机各家厂商自己处理。分享链接校验失败时和没装 App 一样，在浏览器里打开轻量的分享页面（6.2）；需要必达的跳转不能依赖它。
   3. App 在运行：`push` 到目标，返回回到原来的页面；当前页和目标都是认证页时换掉当前页，保留 `onboarding` 和 `from`。冷启动：等首帧后再 `push`，返回去 `/discover`。
   4. 没登录：守卫先去登录页，登录后回到目标（5.4）。
 - 消息的「点了去哪」由 `domain/rules/notice_rules.dart` 的 `NoticeRules.targetOf` 把消息卡片的类型、对象和附加数据转成跳转目标（`DishTarget`、`UserTarget`、`ShopTarget`、`CaseTarget`、`MyFansTarget`、`NoTarget`，产品 10.2 那张表；`CaseTarget` 是反馈结果，消息页先取案件再决定去哪，15.5），单元测试覆盖每种类型。消息页按目标直接 `push` 站内路径，不经过 `DeepLinkHandler`（15.5）。
 
 ### 6.4 微信内置浏览器
 
-- Web 启动时用 `navigator.userAgent` 判断是否包含 `MicroMessenger`。
-- 是微信：顶部常驻一条「在 App 里打开」。点了盖一层引导，箭头指向右上角，写「点右上角，选在浏览器打开」（产品 11.1）。微信里不尝试唤起 App。
-- 微信里分享：`navigator.share` 不可用，分享面板只有「复制链接」，复制后提示一句。
-- 微信里打开分享链接时显示的标题和缩略图，见待确认 A9。
+先不做，Web 不上线（2026-11-21）。
 
 ## 7. 网络层
 
@@ -398,7 +395,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | `ENV_NAME` | `dev` / `staging` / `prod` | `prod` |
 | `API_BASE_URL` | 业务接口前缀，对应接口文档 `servers` 第一项的反代 `/api` | `https://<域名>/api` |
-| `WEB_BASE_URL` | Web 版和分享链接的地址 | `https://<域名>` |
+| `WEB_BASE_URL` | 分享链接的地址 | `https://<域名>` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
 | `NUMBER_AUTH_KEY_ANDROID`、`NUMBER_AUTH_KEY_IOS` | 阿里云号码认证的方案密钥，各端只读自己那个（依赖选型 15.1）。为空时没有一键登录，「手机注册 / 登录」直接去手机号登录页（18.4） | — |
@@ -407,7 +404,6 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 - 仓库只放 `config/example.json`；`config/` 下其余的 `*.json` 加进 `.gitignore`。本地复制一份改名为 `dev.json` 再填值；CI 从 Secrets 写出文件再构建。
 - 这些值会编进安装包，只放公开的值。
-- 推荐 Web 和接口同源（`https://<域名>/` 放 Web，`/api` 反代到业务网关）：Web 不用处理 CORS，以后改用 Cookie 也方便。待确认 A1。
 
 ### 7.2 两个客户端
 
@@ -801,7 +797,7 @@ extension RefCache on Ref {
 - Inter 还有光学尺寸轴 `opsz`，范围 14 到 32：数字样式把 `opsz` 设成字号，超出范围的取两端，大字号的价格用的是显示用的紧凑字形。
 - `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
 - Inter 和 Noto 都由 `tool/subset_fonts.py` 生成，许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。Inter 三端都在 `pubspec.yaml` 的 `fonts` 里声明。Noto 只在安卓用：`fonts` 里的字体 Web 会在首帧前全部下载，所以它作为普通资源声明并限定 `platforms: [android]`，`bootstrap` 里和读取本地数据并行调用 `EatFonts.loadSans` 注册，首帧前完成；加载失败时上报错误，文字回落到系统字体。
-- Web 上 Flutter 用不了浏览器的系统字体，中文由引擎的回落字体（Noto Sans SC 的分片）按需下载显示，回落地址要指向自托管副本（依赖选型 9.1）。
+- Web 上 Flutter 用不了浏览器的系统字体，中文由引擎的回落字体（Noto Sans SC 的分片）按需下载显示。Web 不上线，回落地址用引擎默认的，先不自托管（依赖选型 9.1）。
 - 选中态靠字重，不靠颜色：分类标签选中 18 号 600（介于 `subhead` 和 `heading` 之间），未选中 15 号 400，行高都是 26；文字前可带和字一样大的图标，图标中心对在汉字的视觉中心（基线上方约 0.38em）。
 - 分类栏（`EatTabs`）的选中项在字的下半截压一道记号笔：略向右斜、两头圆角不同；颜色取 `StageTheme` 的舞台色，深色舞台 40% 不透明、浅色舞台 85%，没有舞台的白底页面用芒果黄；深色模式下抽屉是深色，一律 40% 不透明，叠出来的色块上浅色字都在 5:1 以上。选中时从左往右画出、取消时从右往左收回，用 `EatMotion.select`。放得下时各项等分整行宽度、字在格里居中，底下一条 `hairline`；放不下时（分类多，或带「待接入」小标）按固定间距从左排、横向滚动。
 
@@ -1053,7 +1049,7 @@ extension RefCache on Ref {
 - 第一次进发现页：先弹说明「允许定位后，能看到离你多远」，用户点了再申请系统权限（产品 6.13）。拒绝后记下来，不再反复弹。
 - 只在需要时定位（进发现页、附近页、发布选店、新建店），不后台定位、不记录轨迹，位置不落盘（产品 7.6）。
 - 没有权限，或离校区中心超过 5 km（阈值来自远程配置）：不显示距离，改显示商圈名；附近以校区中心为准。
-- Web 只在 HTTPS 下能定位；微信内置浏览器走同样的浏览器定位。
+- Web 只在 HTTPS 下能定位。
 
 ### 14.3 校区和商圈
 
@@ -1313,11 +1309,7 @@ class PushNotice({
 
 ### 16.3 Web 新版提示
 
-- 每次 Web 构建都带 `--build-number`，产物里的 `version.json` 有构建号；启动时 `package_info_plus` 读到的就是它。
-- 回到前台（`visibilitychange`）和每 30 分钟，请求一次 `version.json?t=<时间戳>`，构建号变大就在顶部提示「有新版本，请刷新页面」。点了才刷新，不强制，正在填的内容不丢（产品 12.1）。
-- 不用 Service Worker（Flutter 的 Service Worker 已经标为过时），避免旧版本被缓存住。
-- 托管的缓存头：`index.html`、`flutter_bootstrap.js`、`main.dart.js`、`version.json`、`assets/` 下的清单文件都设 `no-cache`（带 ETag 协商）；开 gzip 或 brotli。
-- 构建用 `--no-web-resources-cdn`，CanvasKit 从我们自己的域名加载（默认的 `www.gstatic.com` 大陆访问不到）。
+先不做，Web 不上线（2026-11-21）。
 
 ## 17. 远程配置与 A/B 测试
 
@@ -1425,7 +1417,7 @@ class PushNotice({
   | 其他 | 认证未完成，请重新认证 |
   | 成功但账号还没显示已认证 | 认证结果尚未同步，请稍后刷新状态 |
 
-- Web：`client=web` 时后端跳回 `APP_OAUTH_SUCCESS_REDIRECT`，默认是 `/home`，Flutter 里没有这个路径。部署时要设成 `/app/auth/callback`（Web 和 API 不同域时写完整地址 `https://<Web 域名>/app/auth/callback`，见 `docs/EatWhat_后端反馈.md`）。这条路由把参数转成 `/verify?sso=..&code=..&ticket=..`，认证页读到结果后马上从地址里去掉 `sso`、`code`、`ticket`，避免路由重建时重复处理。
+- Web：`client=web` 时后端跳回 `APP_OAUTH_SUCCESS_REDIRECT`，默认是 `/home`，Flutter 里没有这个路径。设成 `/app/auth/callback` 才会回到 Web 的这条路由；Web 不上线，正式部署不要求这项配置（`docs/EatWhat_后端反馈.md` 第 28 条）。这条路由把参数转成 `/verify?sso=..&code=..&ticket=..`，认证页读到结果后马上从地址里去掉 `sso`、`code`、`ticket`，避免路由重建时重复处理。
 - 未登录时收到回跳：守卫先去登录页，登录后回到认证页。
 - 不用 WebView 打开学校页面：认证页写着「我们看不到你的统一认证密码」，用系统浏览器页更站得住；也不需要像 legacy 那样把 `satoken` 放进 WebView 请求头。
 - 不把登录 token 放进 URL。
@@ -1433,9 +1425,9 @@ class PushNotice({
 ### 18.2 邮箱认证
 
 - 发链接：`POST /auth/sendEmail {email}`（请求体，不是 query），要登录，发之前要过人机验证（18.3）。客户端先校验邮箱后缀（`@mail.sdu.edu.cn`、`@sdu.edu.cn`），服务端也会限制。同一邮箱 60 秒一封，每个账号每小时 5 封。
-- 邮件里的链接是 `APP_EMAIL_VERIFY_URL?token=`，部署时配成 `https://<Web 域名>/verify/email`。链接在网页上打开，落到 Web 的邮箱认证页（`features/verify/verify_email_page.dart`，路由 `/verify/email`，只给登录用户）：没登录时守卫先去登录页，登录后回到这里；页面带着登录态调 `POST /auth/verifyEmail {token}`，显示结果后进认证页。
+- 邮件里的链接是 `APP_EMAIL_VERIFY_URL?token=`。Web 不上线，这个链接在手机上打开后去哪待定：以后加引导，正在和后端沟通（后端反馈第 29 条）。Web 上的邮箱认证页（`features/verify/verify_email_page.dart`，路由 `/verify/email`，只给登录用户）：没登录时守卫先去登录页，登录后回到这里；页面带着登录态调 `POST /auth/verifyEmail {token}`，显示结果后进认证页。
 - 令牌属于别的账号或已失效返回 30008，不消耗令牌，提示「链接无效或已过期，请在发起认证的账号上打开」；已认证返回 30006。
-- App 不接管这个链接：要配 App Links 和 Universal Links，和分享链接一起做（6.3）。手机上点链接会打开网页版，要在网页上登录同一个账号。
+- App 不接管这个链接：要配 App Links 和 Universal Links，和分享链接一起做（6.3）。
 - 回到 App 时同样自动刷新认证状态。
 
 ### 18.3 人机验证
@@ -1449,7 +1441,7 @@ class PushNotice({
   2. 用这组参数新建腾讯的验证实例，拿到 `ticket` 和 `randstr`。
   3. 发验证码的请求带上 `X-Captcha-Ticket`、`X-Captcha-Randstr` 两个请求头。返回 30015、30016 时回到第 1 步重新验证；50004 时提示「人机验证暂不可用，请稍后再试」；用户关掉验证就不发。
 - 票据只放请求头，不进 URL、日志和本地存储；由后端校验，客户端不判断真假。
-- `HumanVerifier` 接口（`core/platform/captcha/`）：App 盖一层全屏页，`webview_flutter` 用 `loadHtmlString` 加载内置在 App 里的一小段验证页，`baseUrl` 设成 `WEB_BASE_URL`（腾讯按来源校验域名时看到的是我们自己的域名，也不用等 Web 版部署一个单独的验证页）；验证页和第 1 步的参数同时加载（`CaptchaGate` 把还没回来的参数交给 `verify`），两者都好了再经 `runJavaScript` 把参数传进去（不放进 URL），按 `scriptUrl` 加载腾讯的 JS，结果经 `JavaScriptChannel` 回传。脚本 20 秒加载不出来按失败处理，加载出来后不再计时。Web 用条件导入，在页面里直接加载同一份 JS（`dart:js_interop` + `web`）。
+- `HumanVerifier` 接口（`core/platform/captcha/`）：App 盖一层全屏页，`webview_flutter` 用 `loadHtmlString` 加载内置在 App 里的一小段验证页，`baseUrl` 设成 `WEB_BASE_URL`（腾讯按来源校验域名时看到的是我们自己的域名，也不用另外部署一个验证页）；验证页和第 1 步的参数同时加载（`CaptchaGate` 把还没回来的参数交给 `verify`），两者都好了再经 `runJavaScript` 把参数传进去（不放进 URL），按 `scriptUrl` 加载腾讯的 JS，结果经 `JavaScriptChannel` 回传。脚本 20 秒加载不出来按失败处理，加载出来后不再计时。Web 用条件导入，在页面里直接加载同一份 JS（`dart:js_interop` + `web`）。
 - 加载期间不盖遮罩：验证页（Web 是浮层）先完全透明，只挡住点击，用户看到的是原页面和发送按钮的加载状态；验证组件的容器有了实际尺寸（`ResizeObserver`）后遮罩和组件一起淡入，时长同对话框进出，减少动态效果时直接出现。无风险时腾讯什么都不画，容器一直是 0×0，遮罩就不出现；腾讯的 `ready` 回调这时也会触发（`sdkView` 为 0×0），所以不拿它判断。参数是 `enabled: false` 时 `verify` 返回 `CaptchaSkipped`，不带票据发送。
 - `TJNCaptcha-global.js` 的构造函数是 `new TencentCaptcha(容器, appId, 回调, options)`，第一个参数必须是 DOM 容器，照旧版只传 appId 会直接抛错。控制台目前配的是「我是人类」勾选框，渲染在容器里、没有关闭按钮：App 的验证页和 Web 的浮层都是遮罩加居中容器，点遮罩空白处算用户关掉。
 - 腾讯回调 `ret` 为 0 且票据不是 `trerror_` 开头的容灾票据才算通过（后端不收容灾票据），2 是用户关掉，其余按失败提示「人机验证未通过，请重试」。
@@ -1544,8 +1536,8 @@ class PushNotice({
 | 压缩 | 原生编码 | 原生编码 | 浏览器 Canvas 编码 | 同上 |
 | 导航去店里 | 已装的高德、百度、腾讯 | Apple 地图 + 已装的三家 | 高德网页版 | `core/platform/external_maps.dart` |
 | 地图（附近、新建店） | 百度地图 SDK（基于 SurfaceView 的 `MapView`，`AndroidView`，14.4），本地插件 `eat_baidu_map` | 百度地图 SDK，`UiKitView`，同一个本地插件 | 百度地图 JS API GL，`HtmlElementView` | `core/platform/map/` |
-| 分享 | 系统分享面板 | 系统分享面板 | 支持 Web Share 时用系统分享，否则复制链接；微信里复制链接 | `core/platform/share.dart` |
-| 打开分享链接 | App Links | Universal Links | 直接打开；微信里顶部「在 App 里打开」 | `router/deep_links.dart` |
+| 分享 | 系统分享面板 | 系统分享面板 | 支持 Web Share 时用系统分享，否则复制链接 | `core/platform/share.dart` |
+| 打开分享链接 | App Links | Universal Links | 直接打开 | `router/deep_links.dart` |
 | 推送 | 本地通知，App 在后台存活时 | 本地通知，基本只在刚退到后台时 | 没有，只看消息页 | 还没写（15.2） |
 | 一键登录 | 阿里云号码认证 SDK，本地插件 `eat_number_auth` | 同一个本地插件 | 没有，只用验证码和密码登录 | `core/platform/number_auth/` |
 
@@ -1553,21 +1545,23 @@ class PushNotice({
 
 | 项 | Android | iOS | Web |
 | --- | --- | --- | --- |
-| 热更新 | Shorebird | Shorebird | 不需要，提示「有新版本，请刷新页面」 |
+| 热更新 | Shorebird | Shorebird | 不需要 |
 | 登录态 | Keystore | Keychain（卸载重装后残留，首次启动清理） | localStorage 加密存储（A10） |
 | 安装 ID（9.4） | 安全存储，卸载重装会变 | Keychain，卸载重装后大概率不变（首次启动清理登录态时不清它） | localStorage，可被清 |
 | 硬件标识 | ANDROID_ID（按签名和用户隔离，卸载重装不变） | `identifierForVendor`（同厂商 App 全部卸载后才变） | 没有 |
 | 本地存储 | `shared_preferences`（DataStore） | `shared_preferences`（NSUserDefaults） | localStorage，同一浏览器的标签页共用一份 |
 | 图片缓存 | 磁盘 | 磁盘 | 浏览器 HTTP 缓存 |
 | 人机验证 | WebView 加载 H5 | WebView 加载 H5 | 页面里直接加载 JS |
-| 字体 | 中文 Noto Sans SC 内置（校正字重），数字 Inter 内置 | 中文苹方，数字 Inter 内置 | 数字 Inter 内置，中文用自托管的回落字体 |
+| 字体 | 中文 Noto Sans SC 内置（校正字重），数字 Inter 内置 | 中文苹方，数字 Inter 内置 | 数字 Inter 内置，中文用引擎的回落字体 |
 | 方向 | 手机竖屏 | 手机竖屏，iPad 横竖 | 不锁 |
 | 返回 | 返回键：主页面先回发现再退出 | 侧滑返回 | 浏览器后退 |
-| 资源加载 | 安装包内 | 安装包内 | `--no-web-resources-cdn`，CanvasKit 和字体从自己的域名加载 |
+| 资源加载 | 安装包内 | 安装包内 | `--no-web-resources-cdn`，CanvasKit 随产物加载；回落字体从引擎的默认地址下载 |
 
 - Android 的安全存储（`FlutterSecureStorage.xml`、`FlutterSecureKeyStorage.xml`）排除出自动备份和设备迁移（`res/xml/backup_rules.xml`、`data_extraction_rules.xml`），Keystore 密钥不随备份走。
 - 平台判断只在 `core/platform/` 里做。需要 `dart:io` 或 `package:web` 的代码用条件导入拆成 `_io.dart` 和 `_web.dart`，Web 构建不能引用 `webview_flutter`、`flutter_local_notifications` 这类没有 Web 实现的包的平台代码路径（编译能过，但运行时会抛异常）。
-- Web 支持近两年的 Chrome、Safari、Edge、Firefox 和微信内置浏览器（产品 11.1）。微信里首屏要下载的东西（CanvasKit 压缩后约 2–3 MB、主程序、字体）见待确认 A14。
+- Web 只作开发和适配的目标，不上线（2026-11-21，产品 11.1）。
+- Web 构建带 `--build-number`，构建号写进产物的 `version.json`，启动时由 `package_info_plus` 读出，作为 Sentry 的 `release`（19 节）。
+- Web 构建带 `--no-web-resources-cdn`，CanvasKit 随产物加载：默认的 `www.gstatic.com` 在大陆访问不到。
 - 渲染器先用默认的 CanvasKit（JS 编译）；临时工程里 Wasm 预检通过，等主流程稳定后再评估 `--wasm`。
 
 ## 21. 测试策略
@@ -1600,24 +1594,24 @@ class PushNotice({
 
 ### 21.4 手动检查
 
-每次发测试包前，按清单在三端各走一遍主流程（登录、换菜、看详情、发布、导航去店里），另在微信内置浏览器里打开一次分享链接，用读屏软件走一遍登录和换菜（产品 11.3）。
+每次发测试包前，按清单在三端各走一遍主流程（登录、换菜、看详情、发布、导航去店里），用读屏软件走一遍登录和换菜（产品 11.3）。
 
 ## 22. 待确认
 
 | 编号 | 事项 | 推荐 | 需要谁 |
 | --- | --- | --- | --- |
-| A1 | Web 和分享链接的域名、托管位置 | 一个 HTTPS 域名同时放 Web、反代 `/api`、放 `/.well-known/` 的 App Links / Universal Links 文件。要确认：域名；有没有 ICP 备案（境内 CDN 需要备案，境外托管在大陆首屏慢）；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
+| A1 | 分享链接的域名 | 一个 HTTPS 域名放 `/.well-known/` 的 App Links / Universal Links 文件。Web 不上线（2026-11-21），不托管 Web。要确认：域名；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
 | A2 | 后端的业务码和约定 | v2 已对齐：沿用旧码值，客户端码表见 7.4。还差：功能已关闭、只读维护、操作受限、内容违规（后端还没做这些功能）；推送附带数据里的 `link` 字段格式（推送还不投递） | 后端 |
 | A3 | 后端数据格式和存储 | 已定：GeoJSON 是 GCJ-02（14.1）；图片字段是公开的稳定地址（7.7）；菜的舞台色、备选色和封面裁切随菜保存，推荐卡片的招牌菜带封面裁切（13.6）。还差：图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT`，图片返回长缓存头 | 后端 |
-| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，成功、失败都跳回预设链接，成功带 `ticket`，由发起账号 `POST /auth/sdu/confirm`（18.1）。还差：部署时把 App、Web 的回跳地址配对（后端反馈「部署配置」） | 后端 |
+| A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，成功、失败都跳回预设链接，成功带 `ticket`，由发起账号 `POST /auth/sdu/confirm`（18.1）。还差：部署时配好 App 的回跳地址（后端反馈第 27 条） | 后端 |
 | A5 | 远程配置接口的形状 | v2 已有 `/remote-config`（17.1）。已定（2026-11-20）：补丁放量用 Shorebird 自带的按比例放量（16.2），远程配置里不要放量字段。还差：实验分组，要不要补还没定 | 后端、产品负责人 |
 | A6 | 轻提示的样式 | 已定（2026-11-20）：页面底部、`NavBar` 上方的 `ink` 底胶囊，停留 2 秒，照 Material 3 Expressive 的 snackbar 做（自己实现，不用第三方包，`design/widgets/eat_toast.dart`）：弹簧弹上来、滑下去，接连出现时叠成一叠（最多 3 条），同样的提示抖一下重新计时，往下拖收起，点击穿过提示不挡底部按钮（11.8） | — |
 | A7 | 隐私政策、用户协议更新后的重新同意 | 已定（2026-11-20）：版本只以服务端为准。本地同意记录只记同意时间和同意的服务端版本，不设客户端版本常量（9.4）；用户协议单独更新也走服务端 20009，弹对话框重新同意（9.5，已请后端写明，后端反馈第 45 条） | — |
 | A8 | 宽屏时 `NavBar` 放哪 | 已定：放在左侧面板底部，发现、附近、我的一致（12.2，画板 `G-WideHome`、`G-WideNearby`） | — |
-| A9 | 微信里的分享卡片 | 自定义标题和缩略图要用微信 JS-SDK，需要认证的公众号和备案域名。推荐先不做，微信里分享出去就是链接；其他 App 的链接预览可以由服务端给 `/dishes/:id` 这类地址输出带标题和图片的 meta | 产品负责人 |
-| A10 | Web 登录态存在哪 | Web 上 token 只能存在浏览器里（加密的密钥也在浏览器），页面被注入脚本时能被读走。推荐先这样做并给 Web 配内容安全策略（CSP）；更安全的是后端改用 httpOnly Cookie，需要同源部署（A1） | 后端、产品负责人 |
+| A9 | 微信里的分享卡片 | 已定（2026-11-21）：先不做，Web 不上线 | — |
+| A10 | Web 登录态存在哪 | 已定（2026-11-21）：先不做，Web 不上线 | — |
 | A12 | 安卓分发渠道 | 上哪些应用商店，还是官网下载 APK。影响「去更新」跳哪里、商店是否重签名（App Links 指纹）、厂商推送开通、APP 备案 | 产品负责人 |
 | A13 | 「后台上传」的范围 | 已定（2026-11-21）：在发布页填表的同时并行上传；App 切到后台时不保证继续，回到前台后每张失败的照片自动重试一次（13.3） | — |
-| A14 | Web 在微信里的首屏 | Flutter Web 首屏要下载 CanvasKit（压缩后约 2–3 MB）、主程序和字体，在微信里打开分享链接会等几秒。推荐先做出来实测；不满意再考虑由服务端给分享链接输出一个轻量的菜品预览页，再进完整 Web 版 | 产品负责人 |
+| A14 | Web 在微信里的首屏 | 已定（2026-11-21）：先不做，Web 不上线 | — |
 | A15 | 舞台菜名断行 | 已定（2026-11-21）：客户端按字数均分，每行不超过四个字，各行字数尽量相等，标点不出现在行首或行尾，不分词，也不由后端分词 | — |
-| A16 | 首次启动的隐私弹窗 | 现在的做法是在登录页勾选协议，没勾时点「手机注册 / 登录」或「先逛逛」弹协议对话框（产品 6.2）。iOS 和 Web 够用；国内安卓商店常按「首次启动弹窗提示隐私政策」审核，上这些商店时推荐改成第一次打开先弹同意对话框，同意后登录页不再勾选。和 A12 一起定 | 产品负责人 |
+| A16 | 首次启动的隐私弹窗 | 现在的做法是在登录页勾选协议，没勾时点「手机注册 / 登录」或「先逛逛」弹协议对话框（产品 6.2）。iOS 够用；国内安卓商店常按「首次启动弹窗提示隐私政策」审核，上这些商店时推荐改成第一次打开先弹同意对话框，同意后登录页不再勾选。和 A12 一起定 | 产品负责人 |
