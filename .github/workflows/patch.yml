@@ -137,6 +137,8 @@ jobs:
           cache: true
 
       # 补丁沿用发版时的 Flutter 版本. 环境配置和混淆选项与发版构建保持一致.
+      # 版本名和构建号也和发版一致. 不传时用 pubspec.yaml 里的占位 +1, iOS 的可执行文件会和发版不同,
+      # Shorebird 当成原生改动, 拒绝打补丁.
       # Shorebird 按发版的混淆映射给补丁命名, 但不存补丁自己的映射, 补丁新增的名字只在补丁构建时才有,
       # 所以另存一份给 Sentry. 试跑也存, 推送前就能确认生成得了.
       - name: Patch
@@ -155,7 +157,8 @@ jobs:
             --release-version="$RELEASE_VERSION" \
             --track=stable --rollout="$ROLLOUT" \
             --obfuscate --split-debug-info=build/symbols \
-            -- $defines --extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json \
+            -- --build-name="${RELEASE_VERSION%+*}" --build-number="${RELEASE_VERSION#*+}" \
+            $defines --extra-gen-snapshot-options=--save-obfuscation-map=build/app/obfuscation.map.json \
             2>&1 | tee "$RUNNER_TEMP/patch.log"
           if number=$(grep -o 'Published Patch [0-9]*' "$RUNNER_TEMP/patch.log" | grep -o '[0-9]*$'); then
             echo "Android 补丁号 $number, 放量 $ROLLOUT%" >> "$GITHUB_STEP_SUMMARY"
@@ -241,7 +244,7 @@ jobs:
           tool/ios_signing.sh setup
           echo "SIGNED=true" >> "$GITHUB_ENV"
 
-      # 混淆选项和发版构建保持一致. 没有证书时不签名, 补丁照样能打.
+      # 混淆选项, 版本名和构建号和发版构建保持一致 (见安卓补丁的说明). 没有证书时不签名, 补丁照样能打.
       # 补丁的符号表写在 build/symbols/app.ios-arm64.symbols, 试跑也检查, 推送前就能确认生成得了.
       - name: Patch
         run: |
@@ -260,7 +263,7 @@ jobs:
             --release-version="$RELEASE_VERSION" \
             --track=stable --rollout="$ROLLOUT" \
             --obfuscate --split-debug-info=build/symbols \
-            -- $defines \
+            -- --build-name="${RELEASE_VERSION%+*}" --build-number="${RELEASE_VERSION#*+}" $defines \
             2>&1 | tee "$RUNNER_TEMP/patch.log"
           if number=$(grep -o 'Published Patch [0-9]*' "$RUNNER_TEMP/patch.log" | grep -o '[0-9]*$'); then
             echo "iOS 补丁号 $number, 放量 $ROLLOUT%" >> "$GITHUB_STEP_SUMMARY"
