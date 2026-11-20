@@ -12,7 +12,7 @@
 >
 > 2026-11-16：加运营商一键登录，用阿里云号码认证 SDK，App 用自己写的原生桥 `packages/eat_number_auth/`（总表、第 15.1、17、18 节）。
 >
-> 2026-11-16：按《设备标识与风控》加安装 ID 和设备注册，`device_info_plus` 改为引入，加 `uuid`、`android_id`（总表）。
+> 2026-11-16：按设备标识的方案（技术架构 9.4）加安装 ID 和设备注册，`device_info_plus` 改为引入，加 `uuid`、`android_id`（总表）。
 
 本文记录装哪个包、锁哪条版本线、为什么不选另一个。新增依赖前先查这里，表里没有的先提出来，确定后补进本文再改 `pubspec.yaml`。这些包在代码里怎么用，见 `EatWhat_技术架构.md`。
 
@@ -122,8 +122,8 @@
 Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起可以改用独立的 `material_ui` 包，框架内的版本计划在之后的稳定版标为过时。我们阶段一就用 `material_ui`，原因：
 
 - `go_router` 18.0.0 起已经迁到 `material_ui`。它判断「是不是 Material App」时找的是 `material_ui` 里的 `MaterialApp`（`go_router-18.1.1/lib/src/pages/material.dart`）。如果我们还用框架里的 `MaterialApp`，类型对不上，页面过渡会走非 Material 的分支。
-- 迟早要迁，现在 `lib/` 只有两个文件，最便宜。
-- 迁移命令：`fvm dart fix --apply --code=migrate_design_widgets`。现有 `lib/app.dart` 还引用 `package:flutter/material.dart`，搭架构时一起迁。
+- 迟早要迁，越早越便宜。现在已经迁完，`lib/` 和 `test/` 里没有直接导入 `package:flutter/material.dart` 的地方，`test/architecture_test.dart` 守着这条。
+- 迁移命令：`fvm dart fix --apply --code=migrate_design_widgets`。
 
 我们几乎不用 Material 的视觉组件（见技术架构「设计令牌落地」），用它主要是 `MaterialApp.router`、本地化、文本选择菜单和输入框。
 
@@ -279,7 +279,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
   - 同时可能有两张地图（附近、新建店），每个平台视图用自己的 `messageChannelSuffix`。
   - 标记列表的差异一次传过去，在原生侧逐个增删改；PNG 用 `Uint8List` 传。
   - CI 的 `check` 任务重新生成一遍，`git diff --exit-code` 检查生成文件是否最新。
-- **Android 视图**：用百度的 `TextureMapView`（基于 TextureView），Flutter 能用纹理合成，叠组件、圆角裁切都正常；普通 `MapView` 基于 SurfaceView，会逼 Flutter 退回更慢的混合合成。
+- **Android 视图**：用百度基于 SurfaceView 的 `MapView`，Flutter 见到 SurfaceView 自动改用虚拟显示器，画面照样作为纹理合成，叠组件、圆角裁切都正常。不用 `TextureMapView`：纹理合成靠视图树的重绘通知，华为 EMUI 10 上收不到，拖动时画面停住（技术架构 14.4）。
 - **AK**：两端都在运行时传入，Android 用 `SDKInitializer.setApiKey`（8.2.0 起有），iOS 用 `BMKMapManager start:`。不写进 `AndroidManifest.xml`，配置只有 `config/*.json` 一处。
 - **初始化**：同意隐私政策以后、第一次要显示地图时，Dart 调一次 `init`：Android `SDKInitializer.setAgreePrivacy(context, true)` → `setApiKey` → `setCoordType(GCJ02)` → `initialize(context)`；iOS `BMKMapManager setAgreePrivacy:YES` → 设坐标类型 → `start:AK`。鉴权结果回调给 Dart，失败时地图退回列表。
 - **iOS 的 SDK 来源：xcframework，工程继续只用 SPM**（2026-11-09 定）。
@@ -435,7 +435,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 **不选**：`firebase_remote_config` 7.0.0（大陆不可用）；GrowthBook、Unleash、Flagsmith 这类开关服务（多部署一个服务或多一个境外处理方）；火山引擎 A/B（多一个境内 SDK 和数据处理方）。
 
-接口形状和默认值兜底见技术架构「远程配置与 A/B 测试」。接口在现状差距里是 P1，没好之前用内置默认值。
+接口形状和默认值兜底见技术架构「远程配置与 A/B 测试」。接口 `/remote-config` 已接上，拿不到时用内置默认值 `assets/config/remote_defaults.json`。
 
 ## 14. 统计埋点、监控与崩溃上报
 

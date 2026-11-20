@@ -2,7 +2,7 @@
 
 沙软今天吃什么（EatWhat）：校园觅食 App 的 Flutter 客户端，目标平台 Android、iOS、Web。应用 ID `you.v50to.eat`，Dart 包名 `eat`。
 
-项目处于重写起点：`main` 上只有一个能编译的空壳，旧实现归档在 `legacy` 分支。
+`main` 上是重写后的 App，开发计划的阶段一到四和阶段六已基本完成，阶段五在进行中；旧实现归档在 `legacy` 分支。
 
 ## 先读文档
 
@@ -16,8 +16,8 @@
 | `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 初稿 |
 | `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
+| `docs/EatWhat_后端反馈.md` | 客户端对后端的反馈：要修的问题、希望调整的接口、部署配置、文档问题，以及每次同步接口后各条的处理 | 持续更新 |
 | `docs/EatWhat_设计与实现.md` | 设计稿和 App 的关系：设计稿是方向不是规格，正本在 App 里，哪些要守、哪些 App 自己定 | 初稿 |
-| `docs/EatWhat_设备标识与风控.md` | 设备标识：自报的设备信息和平台签发的证据分开，同意后注册一次，不加请求头；第 2 节自包含地写给后端看，不含服务端设计 | 方案稿，确认后拆进架构与选型 |
 | `docs/guideline/COMMENT-STYLE.md` | 代码注释风格：What 与 Why 各写在哪、篇幅、语体、格式、不要写的东西 | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 快照（2026-10-22），不再更新 |
 | `prototype/screens/*.dc.html` | 「G 定稿」各页面画板 | 快照（2026-10-22），不再更新 |
@@ -37,8 +37,8 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
-assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图；reactions/ 是评论的表情回应，取自 @twemoji/svg 15.0.0；署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）
-tool/                只在开发机上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）
+assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图；reactions/ 是评论的表情回应，取自 @twemoji/svg 15.0.0；署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）、illustrations/（菜品插画，复制自 prototype/assets/dishes/，只用于空状态、引导和演示）、config/（remote_defaults.json，远程配置拿不到时的内置默认值）、map/（深色底图样式：dark.sty 给 App 的百度 SDK，dark_style.json 给 Web 的 JS API）
+tool/                开发机和 CI 上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）、build_number.sh（从 App Store Connect 查出下一个构建号，所有平台共用）、asc_api.sh（App Store Connect API 的公共部分，供 build_number.sh 和 testflight_upload.sh 引入）、ios_signing.sh（在 CI 上导入 iOS 发布证书和描述文件，生成签名配置）、testflight_upload.sh（把签好名的 IPA 上传到 TestFlight）、sentry_symbols.sh（把 Dart 符号表、混淆映射和 iOS 的 dSYM 上传到 Sentry，缺文件或没传上就失败，CI 的发版构建和补丁会调用）
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
   eat_number_auth/   本地插件：运营商一键登录的原生桥（Kotlin、Swift），包着阿里云号码认证 SDK，SDK 的二进制随插件入库，见技术架构 18.4
@@ -111,7 +111,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 - 依据是 `docs/api.openapi.yml`（`info.version` 标明版本）。它对应后端当前源码的完整契约，包含尚未部署的接口，客户端不手改；发现与实际行为不一致时记下来反馈给后端，再同步新版文件。同步用 `APIFOX_TOKEN=<API 访问令牌> tool/sync_api.sh`，从 Apifox 业务模块导出 OpenAPI 3.1 YAML 覆盖该文件；令牌只放环境变量，不入库。同步后看 `git diff`，字段改名或结构变化要连同受影响的 DTO 一起改。
 - 客户端按后端最新源码开发，不为已部署的旧版本写兼容分支。字段、校验、业务码有疑问时直接读后端源码（分支 `feat/eatwhat-v2`，DTO 以 Java 源码为准）和后端的 `AGENTS.md`、`docs/legacy-api/README.md`。
-- 主要分组（后端 v2）：账号（Auth、OneClickAuth、Consent、DeviceSession、Verification、Contact）、User、Restaurant、Campus、Hub、Food、Recommend、Preference、Taste、Comment、Notification、Push、Feedback、History、Upload、RemoteConfig、Telemetry；`AdminUser`、`AdminConsent`、`AdminAi`、`AdminRemoteConfig` 是管理接口，客户端不调用。openapi 里不同模块的同名结构会互相覆盖，这些 DTO 照后端 Java 源码写，见技术架构 7.6。
+- 主要分组（后端 v2）：账号（Auth、OneClickAuth、WebOneClickAuth、PhoneVerification、Consent、DeviceSession、Verification、Contact）、Device、User、Restaurant、Campus、Hub、Food、Recommend、RecommendSettings、Preference、Taste、Comment、Notification、Push、Feedback、History、Upload、RemoteConfig、Telemetry；`AdminUser`、`AdminConsent`、`AdminAi`、`AdminRemoteConfig`、`AdminContent` 是管理接口，客户端不调用。openapi 里不同模块的同名结构会互相覆盖，这些 DTO 照后端 Java 源码写，见技术架构 7.6。
 - 鉴权：请求头 `satoken: Bearer <tokenValue>`，头名以登录接口返回的 `tokenName` 为准，不要写死。
 - HTTP 200 也可能带非零业务 `code`，每个响应都要检查业务 `code`；角色、认证状态、同意状态等由服务端判断，客户端只做展示层面的拦截。
 - 隐私政策、用户协议和数据存放在境外由用户在登录页的勾选框里一起同意，验证码登录和密码登录都带服务端当前的 `policyVersion`；政策更新后服务端返回 20005 或 20009，弹一个最简的同意对话框，用户点同意后重试。客户端不代用户同意，不做单独的同意页面（`G-RegisterConfirm`、`G-DataNotice`、`G-Reconsent` 只作文案参考），见技术架构 9.5。
@@ -122,8 +122,8 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 下面是产品的风格原则，写界面前读这里就够了；想知道为什么这样，看 `prototype/design-system/README.md`，构思页面时看相关画板。这些原则要守住，其余的具体数值和排布由 App 按实际效果定。
 
 - **令牌**：颜色、间距、圆角、阴影、动效都用 `lib/design/` 里的令牌（`ThemeExtension` 和常量），正本在 Dart 里，初值来自设计快照。业务代码不写裸色值和魔法数字。
-- **页面结构**：有主角菜的页面用「舞台 + 抽屉」（`Stage` + `Sheet`，抽屉上压舞台 32px）；消息、选店、搜索、评论、设置等列表页用白底；临时的选择和填写用底部面板（`Panel`），只回答一个问题的确认、拦截和同意用居中的对话框（`EatDialog`），背后都是一层 `scrim`，不跳新页面。附近页以地图当舞台。页面左右边距 `space-20`。
-- **舞台色**：只有 9 个 `stage-*`，做成枚举，每个值自带文字色和次按钮色，深浅写死。从照片取色只看圆形取景内的像素，按饱和度加权后吸附到最近的 `stage-*`，不可靠时用分类默认色。
+- **页面结构**：有主角（菜、店或人）的页面用「舞台 + 抽屉」（`Stage` + `Sheet`，抽屉上压舞台 32px），即发现、菜品详情、餐厅详情、我的、他人主页、加菜页；消息、选店、搜索、评论、设置等列表页用白底；临时的选择和填写用底部面板（`Panel`），只回答一个问题的确认、拦截和同意用居中的对话框（`EatDialog`），背后都是一层 `scrim`，不跳新页面。附近页以地图当舞台。页面左右边距 `space-20`。
+- **舞台色**：舞台跟着主角换色：菜按取色，店按品类（类型加第一个品类，见产品文档 4.7）。只有 9 个 `stage-*`，做成枚举，每个值自带文字色和次按钮色，深浅写死。菜从照片取色只看圆形取景内的像素，按饱和度加权后吸附到最近的 `stage-*`，不可靠时用分类默认色。
 - **导航**：`NavBar` 只出现在发现、附近、我的三个主页面，悬浮在内容上方；滚动列表底部留出约 100px。
 - **颜色**：没有品牌主色，主操作用 `ink` 实心；`warn` 只用于提示用户该做什么，且必须配文字。
 - **字体**：中文在安卓上用内置的 Noto Sans SC（各厂商系统字体的大小和字重差别大，内置后各机型一致），iOS 用系统的苹方，Web 用引擎按需下载的回落字体；Inter 只用于数字（价格、距离、计数），三端内置。字号用 `EatTextStyles` 的预设，偏差不大的地方先用预设；字重只用 400、600、700、800，800 只给舞台上的主角。选中态靠字重，不靠颜色；分类栏的选中项另在字的下半截压一道舞台色的淡色记号笔（白底页面用芒果黄）。
