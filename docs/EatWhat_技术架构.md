@@ -727,7 +727,7 @@ extension RefCache on Ref {
 
 推荐的单位是店（产品第 8 节）。数据层在 `data/recommend/`（`RecommendApi`、`RecommendRepository`），发现页的转盘队列和抽屉列表在 `features/discover/discover_providers.dart`。
 
-- **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`，「自助」栏传 `buffet`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。不传校区：后端不按校区筛选，`campusId` 只用来区分本地的上一批缓存。`mealTime` 总是显式传，按产品 4.5 的时间段算（后端不传时的默认边界是 10、15、21 点，和产品不同，已反馈）。位置用定位；没有定位，或离校区中心超过 5 km 时，改用校区中心的坐标。
+- **接口**：`GET /recommend`，参数 `scene`（`dine_in`、`delivery`，来自 `currentPlaceProvider`）、`mealTime`、`kind`（转盘和「美食」栏传 `food`，「甜点饮品」栏传 `drink`，「自助」栏传 `buffet`）、`gcjLat`/`gcjLng`、`page`、`pageSize`。不传校区：后端不按校区筛选，`campusId` 只用来区分本地的上一批缓存。`mealTime` 总是显式传，按产品 4.5 的时间段算（和后端不传时的默认边界一致）。位置用定位；没有定位，或离校区中心超过 5 km 时，改用校区中心的坐标。
 - **卡片**：店铺详情的子集加 `signatureFoods`（最多 3 道）和 `distanceMeters`，用店铺的转换（`PlaceRepository.shopFromJson`）变成 `Shop`，招牌菜在 `signatures`（带封面的 `coverCrop`，转盘的盘子按它取景），距离在 `distance`。缺 id 或坐标的卡片丢弃。舞台色用 `ShopRules.stageOf`（11.3）。
 - **分批**：转盘每批 8 家，少于 5 家不用转盘，仍可拖动换店。下一批一律请求 `page + 1`。游客按页码翻页，同一天的顺序不变；登录用户由后端按「用户 + 日期」去重，每次给当天还没推过的店，页码只回显，转盘、抽屉列表和不同场景、校区共用这一份记录，当天推完了从头再来。客户端按 id 去重，一批全是已经拿到过的店就当没有下一批。
 - **上一批**：每次拿到的非空结果按「校区 + 场景 + 饭点 + 类型」存一份（10.1），请求失败时先用它。
@@ -1329,7 +1329,7 @@ class PushNotice({
     "autoCutout": { "on": false }
   },
   "params": {
-    "mealWindows": { "breakfast": "05:00-10:30", "lunch": "10:30-14:30", "dinner": "14:30-20:30", "night": "20:30-05:00" },
+    "mealWindows": { "breakfast": "05:00-10:00", "lunch": "10:00-15:00", "dinner": "15:00-21:00", "night": "21:00-05:00" },
     "batchSize": 8,
     "shopRateMinVotes": 3,
     "distanceHideKm": 5

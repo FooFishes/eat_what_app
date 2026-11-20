@@ -6,7 +6,9 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
@@ -578,12 +580,9 @@ Future<void> _waitToast(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-String _mealLabel() {
-  final now = DateTime.now();
-  final minute = now.hour * 60 + now.minute;
-  if (minute < 300) return '夜宵';
-  if (minute < 630) return '早饭';
-  if (minute < 870) return '午饭';
-  if (minute < 1230) return '晚饭';
-  return '夜宵';
-}
+String _mealLabel() => switch (MealRules.at(DateTime.now())) {
+  MealTime.breakfast => '早饭',
+  MealTime.lunch => '午饭',
+  MealTime.dinner => '晚饭',
+  MealTime.night => '夜宵',
+};

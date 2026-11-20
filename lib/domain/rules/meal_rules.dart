@@ -1,13 +1,16 @@
 import 'package:eat/domain/models/meal_time.dart';
 
 /// 按时刻划分饭点. 每个饭点从 [_starts] 中的时刻开始, 到下一个饭点开始时结束.
+///
+/// 边界和后端不传 `mealTime` 时的默认划分 (`RestaurantTraits.slotAt`) 一致,
+/// 都是整点 5、10、15、21 点, 起点归后一顿; 产品文档 4.5 也按这套写.
 abstract final class MealRules {
   /// 各饭点的起始时刻, 以一天中的分钟数表示.
   static const _starts = {
     MealTime.breakfast: 5 * 60,
-    MealTime.lunch: 10 * 60 + 30,
-    MealTime.dinner: 14 * 60 + 30,
-    MealTime.night: 20 * 60 + 30,
+    MealTime.lunch: 10 * 60,
+    MealTime.dinner: 15 * 60,
+    MealTime.night: 21 * 60,
   };
 
   static MealTime at(DateTime time) {
