@@ -6,6 +6,7 @@ import 'package:eat/data/food/food_api.dart';
 import 'package:eat/data/food/food_repository.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/dish.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/session.dart';
@@ -19,13 +20,14 @@ part 'search_providers.g.dart';
 const _debounce = Duration(milliseconds: 300);
 
 // TODO: `/foods/list` 还不收坐标. 后端支持后带上 `scope.point` 的坐标, 在菜品方块上补充距离.
+// TODO: 不传 `mealTime` 时, 服务端仍按北京时间的当前饭点筛菜, 默认不限饭点目前做不到. 后端改为不传即不按饭点筛后删除本条; 若后端改为提供表示全部的取值, 则不选饭点时传该取值.
 /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
 /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
 ///
-/// 不传饭点时, 服务端只返回当前饭点的菜.
+/// 选了 [meal] 时只搜这一顿的菜.
 @riverpod
-Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
+Future<List<Dish>> dishSearch(Ref ref, String keyword, MealTime? meal) async {
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return const [];
   final scope = await shopSearchScope(ref);
@@ -36,6 +38,7 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword) async {
         keyword: keyword,
         sort: FoodSort.newest,
         scene: RatingScene.dineIn,
+        mealTime: meal,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );

@@ -226,4 +226,97 @@ void main() {
 
     expect(find.text('有「鲜虾云吞」 ¥ 18'), findsOneWidget);
   });
+
+  testWidgets('按饭点筛菜：默认不带饭点，选中后带上，再点取消后不带', (tester) async {
+    env.adapter
+      ..on('GET /foods/list', [
+        FakeAdapter.ok(pageJson([foodJson()])),
+      ])
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.search,
+    );
+
+    await tester.enterText(find.byType(EditableText), '云吞');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    Map<String, dynamic> lastDishQuery() =>
+        env.adapter.sent('GET /foods/list').last.query;
+    expect(lastDishQuery().containsKey('mealTime'), isFalse);
+    expect(find.bySemanticsLabel('筛选'), findsOneWidget);
+
+    await tester.tap(find.text('筛选'));
+    await tester.pumpAndSettle();
+    expect(find.text('吃哪顿'), findsOneWidget);
+    for (final label in ['早饭', '午饭', '晚饭', '夜宵']) {
+      expect(find.text(label), findsOneWidget);
+    }
+    await expectAccessible(tester);
+    await tester.tap(find.text('午饭'));
+    await tester.pump();
+    await tester.tap(find.text('看结果'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('吃哪顿'), findsNothing);
+    expect(lastDishQuery(), containsPair('mealTime', 'lunch'));
+    expect(lastDishQuery(), containsPair('keyword', '云吞'));
+    expect(find.bySemanticsLabel('筛选，已选 1 项'), findsOneWidget);
+    final sent = env.adapter.sent('GET /foods/list').length;
+
+    await tester.tap(find.text('筛选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('午饭'));
+    await tester.pump();
+    await tester.tap(find.text('看结果'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('GET /foods/list').length, greaterThan(sent));
+    expect(lastDishQuery().containsKey('mealTime'), isFalse);
+    expect(find.bySemanticsLabel('筛选'), findsOneWidget);
+  });
+
+  testWidgets('筛选面板：关掉不改筛选，重置清空草稿', (tester) async {
+    env.adapter
+      ..on('GET /foods/list', [
+        FakeAdapter.ok(pageJson([foodJson()])),
+      ])
+      ..on('GET /restaurant/search', [FakeAdapter.ok(pageJson([]))]);
+    await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.search,
+    );
+    await tester.enterText(find.byType(EditableText), '云吞');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    final sent = env.adapter.sent('GET /foods/list').length;
+
+    await tester.tap(find.text('筛选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('晚饭'));
+    await tester.pump();
+    await tester.tap(find.bySemanticsLabel('关闭'));
+    await tester.pumpAndSettle();
+    expect(find.text('吃哪顿'), findsNothing);
+    expect(env.adapter.sent('GET /foods/list').length, sent);
+    expect(find.bySemanticsLabel('筛选'), findsOneWidget);
+
+    await tester.tap(find.text('筛选'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('夜宵'));
+    await tester.pump();
+    await tester.tap(find.text('重置'));
+    await tester.pump();
+    await tester.tap(find.text('看结果'));
+    await tester.pumpAndSettle();
+    expect(env.adapter.sent('GET /foods/list').length, sent);
+  });
 }

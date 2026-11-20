@@ -7,6 +7,7 @@ import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -14,6 +15,7 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/search/search_providers.dart';
@@ -31,6 +33,7 @@ import 'package:go_router/go_router.dart';
 /// - 未输入关键词时展示最近搜索记录, 若无历史记录则显示可搜索范围说明.
 /// - 搜索结果分为 "菜" 与 "店" 两个分栏: 默认展示 "菜", 仅店铺存在结果时自动切至 "店".
 /// - "菜" 按发布时间倒序排列且不显示距离; "店" 按距离升序排列, 已关门店铺排至末尾并标注状态.
+/// - 搜索框右端的 "筛选" 按饭点筛菜, 只作用于 "菜" 栏, 默认不选. 改了筛选后按新的结果重新决定停在哪一栏.
 /// - 无匹配结果时展示 "没找到" 空状态, 认证用户额外展示 "新建一家店" 入口.
 class SearchPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -45,6 +48,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   /// 记录用户手动切换的分栏索引; 非 null 时停止根据结果数量自动切换分栏.
   int? _tab;
+
+  /// 筛选面板里选的饭点, null 表示不选.
+  MealTime? _meal;
 
   @override
   void dispose() {
@@ -65,6 +71,18 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     unawaited(ref.read(searchHistoryProvider.notifier).add(value));
   }
 
+  Future<void> _openFilter() async {
+    final result = await showPanel<({MealTime? meal})>(
+      context,
+      builder: (_) => _FilterPanel(meal: _meal),
+    );
+    if (!mounted || result == null || result.meal == _meal) return;
+    setState(() {
+      _meal = result.meal;
+      _tab = null;
+    });
+  }
+
   void _useHistory(String word) {
     _input.text = word;
     _submit(word);
@@ -82,6 +100,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         autofocus: true,
         onChanged: _search,
         onSubmitted: _submit,
+        onFilter: _openFilter,
+        filterCount: _meal == null ? 0 : 1,
       ),
       slivers: [
         if (keyword.isEmpty)
@@ -93,7 +113,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   List<Widget> _results(String keyword) {
-    final dishes = ref.watch(dishSearchProvider(keyword));
+    final dishes = ref.watch(dishSearchProvider(keyword, _meal));
     final shops = ref.watch(shopSearchProvider(keyword));
     final dishCount = dishes.value?.length;
     final shopCount = shops.value?.length;
@@ -120,7 +140,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _resultSliver(
           dishes,
           keyword,
-          retry: () => ref.invalidate(dishSearchProvider(keyword)),
+          retry: () => ref.invalidate(dishSearchProvider(keyword, _meal)),
           // 搜菜接口未返回店铺位置与商圈信息, 因此菜品卡片仅展示店名.
           builder: (items) => SliverTileGrid(
             count: items.length,
@@ -233,6 +253,78 @@ class _History extends ConsumerWidget {
                   word,
                   selected: false,
                   onTap: () => onPick(word),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 搜菜的筛选面板, 只有一组饭点单选, 点选中的那项取消选择.
+///
+/// 面板内的选择先写入草稿, 点 "看结果" 后才生效.
+class _FilterPanel extends StatefulWidget {
+  const new({required this.meal});
+
+  /// 面板打开时已选的饭点, 作为草稿的初值.
+  final MealTime? meal;
+
+  @override
+  State<_FilterPanel> createState() => _FilterPanelState();
+}
+
+class _FilterPanelState extends State<_FilterPanel> {
+  late var _meal = widget.meal;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return EatPanel(
+      title: '筛选',
+      actions: Row(
+        spacing: EatSpace.s10,
+        children: [
+          Expanded(
+            child: EatButton.mist(
+              '重置',
+              onPressed: _meal == null
+                  ? null
+                  : () => setState(() => _meal = null),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: EatButton.solid(
+              '看结果',
+              onPressed: () => Navigator.of(context).pop((meal: _meal)),
+            ),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: EatSpace.s8, bottom: 4),
+            child: Text(
+              '吃哪顿',
+              style: eat.text.meta.copyWith(
+                fontWeight: FontWeight.w600,
+                color: eat.colors.inkMuted,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: EatSpace.s8,
+            children: [
+              for (final meal in MealTime.values)
+                EatChip.choice(
+                  meal.label,
+                  selected: _meal == meal,
+                  onTap: () =>
+                      setState(() => _meal = _meal == meal ? null : meal),
                 ),
             ],
           ),

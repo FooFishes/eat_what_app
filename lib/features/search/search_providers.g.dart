@@ -12,7 +12,7 @@ part of 'search_providers.dart';
 ///
 /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
 ///
-/// 不传饭点时, 服务端只返回当前饭点的菜.
+/// 选了 [meal] 时只搜这一顿的菜.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
@@ -21,7 +21,7 @@ final dishSearchProvider = DishSearchFamily._();
 ///
 /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
 ///
-/// 不传饭点时, 服务端只返回当前饭点的菜.
+/// 选了 [meal] 时只搜这一顿的菜.
 
 final class DishSearchProvider
     extends
@@ -35,10 +35,10 @@ final class DishSearchProvider
   ///
   /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
   ///
-  /// 不传饭点时, 服务端只返回当前饭点的菜.
+  /// 选了 [meal] 时只搜这一顿的菜.
   DishSearchProvider._({
     required DishSearchFamily super.from,
-    required String super.argument,
+    required (String, MealTime?) super.argument,
   }) : super(
          retry: null,
          name: r'dishSearchProvider',
@@ -54,7 +54,7 @@ final class DishSearchProvider
   String toString() {
     return r'dishSearchProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -64,8 +64,8 @@ final class DishSearchProvider
 
   @override
   FutureOr<List<Dish>> create(Ref ref) {
-    final argument = this.argument as String;
-    return dishSearch(ref, argument);
+    final argument = this.argument as (String, MealTime?);
+    return dishSearch(ref, argument.$1, argument.$2);
   }
 
   @override
@@ -79,16 +79,16 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'a5b8090d42d75a4b2d0eed1c03aa8d81d44339fd';
+String _$dishSearchHash() => r'4cb32076e9643d277cd8ad42b468ef4950ca71ff';
 
 /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
 /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
 ///
-/// 不传饭点时, 服务端只返回当前饭点的菜.
+/// 选了 [meal] 时只搜这一顿的菜.
 
 final class DishSearchFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<List<Dish>>, (String, MealTime?)> {
   DishSearchFamily._()
     : super(
         retry: null,
@@ -102,10 +102,10 @@ final class DishSearchFamily extends $Family
   ///
   /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
   ///
-  /// 不传饭点时, 服务端只返回当前饭点的菜.
+  /// 选了 [meal] 时只搜这一顿的菜.
 
-  DishSearchProvider call(String keyword) =>
-      DishSearchProvider._(argument: keyword, from: this);
+  DishSearchProvider call(String keyword, MealTime? meal) =>
+      DishSearchProvider._(argument: (keyword, meal), from: this);
 
   @override
   String toString() => r'dishSearchProvider';
