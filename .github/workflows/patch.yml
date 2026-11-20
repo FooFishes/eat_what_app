@@ -218,6 +218,7 @@ jobs:
       SENTRY_URL: ${{ vars.SENTRY_URL }}
       SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+      # 去掉 geolocator 里的 requestAlwaysAuthorization 调用, 否则 App Store 判成缺少「始终定位」用途说明 (ITMS-90683).
       # 和发版构建 (build.yml 的 iOS) 一致, 原生部分不一样时 Shorebird 会拒绝打补丁.
       BYPASS_PERMISSION_LOCATION_ALWAYS: "1"
     steps:

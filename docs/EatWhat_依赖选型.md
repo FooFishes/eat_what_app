@@ -301,7 +301,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 ### 7.2 定位：`geolocator ^14.1.2`
 
 - 安卓：README 写明用 FusedLocationProviderClient，没有时退回系统的 LocationManager，所以没装 GMS 的国产机也能定位。精度只要能算「320 m」就够。
-- iOS：CoreLocation，只要「使用期间」权限，不要后台定位（产品 7.6）。
+- iOS：CoreLocation，只要「使用期间」权限，不要后台定位（产品 7.6）。构建时要带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`，去掉申请「始终定位」的代码，否则 App Store 按缺少始终定位的用途说明拒收（ITMS-90683）。它只从构建时的环境变量读，xcconfig 和 Xcode 的构建设置都设不了，CI 的 iOS 任务已设（AGENTS.md「CI」）。
 - Web：浏览器定位，**只在 HTTPS 下可用**；`getLastKnownPosition`、`openAppSettings` 在 Web 上会抛 `UnsupportedError`，调用前判断平台。
 - 返回 WGS-84，转 GCJ-02 后再给接口（接口参数是 `gcjLng`、`gcjLat`）。
 - 权限申请用它自带的 `checkPermission` / `requestPermission`，不另装权限库。

@@ -179,6 +179,8 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
 
 `.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁都发到 stable 轨道，用 Shorebird 的按比例放量（`--rollout`）分灰度和全量：补丁 tag 触发时两个平台都直接全量推送；手动触发时可以只选一个平台，默认只试跑，放量比例默认 10%。灰度补丁之后用 `.github/workflows/patch-rollout.yml`（或本地 `shorebird patches rollout`）按补丁号提高比例，比例只能调高，有问题的补丁在 Shorebird 控制台回滚。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
 
+iOS 构建必须带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`：geolocator 只在构建时从环境变量读它，用来去掉申请「始终定位」的代码，留着这段代码会因 Info.plist 没有始终定位的用途说明被 App Store 拒收（ITMS-90683）。`build.yml` 和 `patch.yml` 的 iOS 任务都设了；补丁要和发版的原生部分一致，否则 Shorebird 拒绝打补丁，所以新加的 iOS 构建路径也要设。
+
 用到的凭据和配置都在 GitHub 上，缺了就跳过对应步骤：
 
 | 名字 | 类型 | 用途 |
