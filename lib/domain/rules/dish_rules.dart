@@ -6,56 +6,86 @@ abstract final class DishRules {
   /// 舞台菜名每行的最大字数.
   static const lineLength = 4;
 
-  /// 断行时不拆开的常见结尾词.
-  static const _tails = [
-    '煎饼果子',
-    '螺蛳粉',
-    '酸辣粉',
-    '麻辣烫',
-    '肉夹馍',
-    '排骨汤',
-    '云吞',
-    '馄饨',
-    '米线',
-    '拉面',
-    '盖饭',
-    '炒饭',
-    '套餐',
-  ];
-
-  // TODO: 客户端缺少中文分词能力无法按词断行, 目前按字数均分. 后端在发布接口返回断行位置后改用该结果, 并删除 [_tails].
   /// 把菜名断成每行不超过 [lineLength] 个字的若干行.
   ///
-  /// 各行字数尽量相等. 菜名以 [_tails] 中的词结尾时, 该词不拆到两行.
+  /// 按字数均分, 不分词: 各行字数尽量相等, 除不尽时多出的字放在前面几行. 标点的处理见 [splitEvenly].
   static List<String> stageLines(String name) {
     final chars = name.trim().runes.map(String.fromCharCode).toList();
     if (chars.length <= lineLength) return [chars.join()];
-    final lines = (chars.length / lineLength).ceil();
-    final base = chars.length ~/ lines;
-    var extra = chars.length % lines;
-    final sizes = [
-      for (var i = 0; i < lines; i++) base + (extra-- > 0 ? 1 : 0),
-    ];
-    // 结尾词被拆到两行时, 把整个结尾词移到最后一行: 最后一行增加相应字数, 倒数第二行减少相应字数.
-    final text = chars.join();
-    for (final tail in _tails) {
-      if (!text.endsWith(tail) || tail.length > lineLength) continue;
-      final last = sizes.last;
-      if (last >= tail.length) break;
-      final need = tail.length - last;
-      if (sizes[sizes.length - 2] - need < 1) break;
-      sizes[sizes.length - 2] -= need;
-      sizes[sizes.length - 1] += need;
-      break;
+    return splitEvenly(
+      chars,
+      (chars.length / lineLength).ceil(),
+      maxLength: lineLength,
+    );
+  }
+
+  /// 把 [chars] 均分成 [count] 行, 再让闭合标点不在行首, 开启标点不在行尾.
+  ///
+  /// 均分后检查行与行的分界, 落在标点上的分界只向前或向后移动一个字. 闭合标点优先并到上一行,
+  /// 开启标点优先移到下一行, 若不满足则向另一边移动. 移动后有一行超过 [maxLength] 字,
+  /// 或新分界仍落在标点上, 这个分界保持均分的位置.
+  ///
+  /// 只移动一个字是为了不引入分词, 断行仍接近均分. 一个分界移动后, 相邻分界可能因此腾出字数,
+  /// 所以重复检查直到没有分界变化. 移动过的分界已不落在标点上, 之后不再移动, 循环一定结束.
+  ///
+  /// 行数不变. 店名超长时调用方传入均分后的最长行作 [maxLength], 页面的字号不变.
+  static List<String> splitEvenly(
+    List<String> chars,
+    int count, {
+    required int maxLength,
+  }) {
+    final base = chars.length ~/ count;
+    final extra = chars.length % count;
+    final ends = <int>[];
+    var end = 0;
+    for (var i = 0; i < count - 1; i++) {
+      end += base + (i < extra ? 1 : 0);
+      ends.add(end);
+    }
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (var i = 0; i < ends.length; i++) {
+        final at = ends[i];
+        if (_canBreakAt(chars, at)) continue;
+        final previous = i == 0 ? 0 : ends[i - 1];
+        final next = i == ends.length - 1 ? chars.length : ends[i + 1];
+        final shifts = _closing.contains(chars[at])
+            ? const [1, -1]
+            : const [-1, 1];
+        for (final shift in shifts) {
+          final moved = at + shift;
+          final before = moved - previous;
+          final after = next - moved;
+          if (before < 1 || before > maxLength) continue;
+          if (after < 1 || after > maxLength) continue;
+          if (!_canBreakAt(chars, moved)) continue;
+          ends[i] = moved;
+          changed = true;
+          break;
+        }
+      }
     }
     final result = <String>[];
     var start = 0;
-    for (final size in sizes) {
-      result.add(chars.sublist(start, start + size).join());
-      start += size;
+    for (final end in [...ends, chars.length]) {
+      result.add(chars.sublist(start, end).join());
+      start = end;
     }
     return result;
   }
+
+  /// 在第 [at] 个字之前断行时, 下一行不以闭合标点开头, 上一行不以开启标点结尾.
+  static bool _canBreakAt(List<String> chars, int at) =>
+      !_closing.contains(chars[at]) && !_opening.contains(chars[at - 1]);
+
+  /// 不放在行首的闭合标点, 中英文都算. 每个字符是一个标点.
+  ///
+  /// 直引号 `"` `'` 分不出开闭, 不收录.
+  static const _closing = ')]}）］｝】」』》〉〕〗”’、，。．！？：；％…,.!?:;%';
+
+  /// 不放在行尾的开启标点, 中英文都算. 每个字符是一个标点.
+  static const _opening = '([{（［｛【「『《〈〔〖“‘';
 
   /// 评分的可选分值, 从低到高.
   static const scores = [1, 2, 3, 4, 5];

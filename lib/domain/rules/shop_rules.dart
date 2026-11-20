@@ -18,20 +18,17 @@ abstract final class ShopRules {
   /// 计算店名在舞台上的断行结果, 最多 [nameMaxLines] 行.
   ///
   /// 若按菜名规则 (`DishRules.stageLines`) 断行不超过 [nameMaxLines] 行则直接沿用; 更长的店名均分为 [nameMaxLines] 行 (每行最多 5 字), 超出 4 字时由页面缩小字号.
+  ///
+  /// 两种情况的标点处理相同, 见 `DishRules.splitEvenly`. 更长的店名移动标点时不超过均分后的最长行, 页面的字号不变.
   static List<String> stageLines(String name) {
     final lines = DishRules.stageLines(name);
     if (lines.length <= nameMaxLines) return lines;
     final chars = name.trim().runes.map(String.fromCharCode).toList();
-    final base = chars.length ~/ nameMaxLines;
-    final extra = chars.length % nameMaxLines;
-    final result = <String>[];
-    var start = 0;
-    for (var i = 0; i < nameMaxLines; i++) {
-      final size = base + (i < extra ? 1 : 0);
-      result.add(chars.sublist(start, start + size).join());
-      start += size;
-    }
-    return result;
+    return DishRules.splitEvenly(
+      chars,
+      nameMaxLines,
+      maxLength: (chars.length / nameMaxLines).ceil(),
+    );
   }
 
   /// 推荐率的显示门槛: 一个场景的评价满该条数才显示推荐率.

@@ -24,17 +24,54 @@ void main() {
       expect(DishRules.stageLines('红烧排骨'), ['红烧排骨']);
     });
 
-    test('每行不超过四个字，尽量一样长', () {
+    test('按字数均分，每行不超过四个字，多出的字放在前面', () {
       expect(DishRules.stageLines('黄焖鸡米饭'), ['黄焖鸡', '米饭']);
-      final lines = DishRules.stageLines('秘制酱香鸡腿饭加蛋套餐');
-      expect(lines, hasLength(3));
-      expect(lines.every((l) => l.length <= 4), isTrue);
+      expect(DishRules.stageLines('柳州螺蛳粉'), ['柳州螺', '蛳粉']);
+      expect(DishRules.stageLines('鲜虾蟹籽云吞'), ['鲜虾蟹', '籽云吞']);
+      expect(DishRules.stageLines('番茄牛腩焖面条'), ['番茄牛腩', '焖面条']);
+      expect(DishRules.stageLines('秘制酱香鸡腿饭加蛋'), ['秘制酱', '香鸡腿', '饭加蛋']);
+      expect(DishRules.stageLines('秘制酱香鸡腿饭加蛋套餐'), ['秘制酱香', '鸡腿饭加', '蛋套餐']);
+      expect(DishRules.stageLines('老坛酸菜牛肉面加蛋加肠粉'), ['老坛酸菜', '牛肉面加', '蛋加肠粉']);
     });
 
-    test('常见结尾词不拆开', () {
-      expect(DishRules.stageLines('柳州螺蛳粉'), ['柳州', '螺蛳粉']);
-      expect(DishRules.stageLines('玉米排骨汤'), ['玉米', '排骨汤']);
-      expect(DishRules.stageLines('鲜虾蟹籽云吞'), ['鲜虾蟹', '籽云吞']);
+    test('首尾空白不算字数', () {
+      expect(DishRules.stageLines('  红烧排骨  '), ['红烧排骨']);
+    });
+
+    test('闭合标点不在行首，并到上一行', () {
+      expect(DishRules.stageLines('山东大学(软件园校区)食堂'), [
+        '山东大学',
+        '(软件',
+        '园校区)',
+        '食堂',
+      ]);
+      expect(DishRules.stageLines('山东大学（软件园校区）食堂'), [
+        '山东大学',
+        '（软件',
+        '园校区）',
+        '食堂',
+      ]);
+      expect(DishRules.stageLines('酸辣粉，加蛋'), ['酸辣粉，', '加蛋']);
+    });
+
+    test('开启标点不在行尾，推到下一行', () {
+      expect(DishRules.stageLines('黄焖鸡(大份)'), ['黄焖鸡', '(大份)']);
+      expect(DishRules.stageLines('黄焖鸡（大份）'), ['黄焖鸡', '（大份）']);
+      expect(DishRules.stageLines('香辣鸡「微辣」'), ['香辣鸡', '「微辣」']);
+    });
+
+    test('后一个分界移动腾出字数后，前一个分界再移动', () {
+      expect(DishRules.stageLines('鸡腿饭(加蛋加肠)套餐'), ['鸡腿饭', '(加蛋加', '肠)套餐']);
+    });
+
+    test('挪动标点会超过每行字数上限时保持均分', () {
+      expect(DishRules.stageLines('鸡腿饭(大)加蛋'), ['鸡腿饭(', '大)加蛋']);
+      expect(DishRules.stageLines('红烧排骨)加蛋饭'), ['红烧排骨', ')加蛋饭']);
+    });
+
+    test('splitEvenly 按传入的上限挪动标点', () {
+      final chars = '鸡腿饭(大)加蛋'.split('');
+      expect(DishRules.splitEvenly(chars, 2, maxLength: 5), ['鸡腿饭', '(大)加蛋']);
     });
   });
 
