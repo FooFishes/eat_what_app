@@ -65,7 +65,7 @@ prototype/
 
 ## 环境与命令
 
-Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.47.8 stable，附带 Dart 3.13.7）。CI 从 `.fvmrc` 读取版本，升级 Flutter 只改这一个文件。一律用 `fvm flutter` / `fvm dart`，不要用全局的 `flutter`。
+Flutter 由 FVM 管理，版本只写在 `.fvmrc`（当前 3.50.0 stable，附带 Dart 3.14.0）。CI 从 `.fvmrc` 读取版本，升级 Flutter 只改这一个文件。一律用 `fvm flutter` / `fvm dart`，不要用全局的 `flutter`。
 
 ```bash
 fvm install                              # 安装 .fvmrc 指定的 SDK
@@ -92,7 +92,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 **Android**
 
 - `applicationId` 与 `namespace` 都是 `you.v50to.eat`，入口 `android/app/src/main/kotlin/you/v50to/eat/MainActivity.kt`。
-- Gradle 用 Kotlin DSL：AGP 9.1.0、Gradle 9.3.1、Kotlin 2.4.0，Java / JVM target 17。`targetSdk` 跟随 Flutter 默认值；`minSdk` 取 Flutter 默认值和 26 中较大的一个（`sentry_flutter` 要求 26）。
+- Gradle 用 Kotlin DSL：AGP 9.1.1、Gradle 9.3.1、Kotlin 2.4.20，Java / JVM target 17。`targetSdk` 跟随 Flutter 默认值；`minSdk` 取 Flutter 默认值和 26 中较大的一个（`sentry_flutter` 要求 26）。
 - release 用 `android/key.properties` 指向的上传密钥签名，文件不存在时回落 debug 签名。密钥和 `key.properties` 不入库，CI 从 Secrets 还原（见下文 CI）。
 - 明文 HTTP 只对一键登录要用的两个运营商网关放行，写在 `android/app/src/main/res/xml/network_security_config.xml`，见技术架构 18.4。
 

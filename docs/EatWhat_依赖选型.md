@@ -108,12 +108,12 @@
 
 ## 2. 基础：Flutter / Dart 版本与升级策略
 
-**现状**：Flutter 3.47.8 stable，Dart 3.13.7，只写在 `.fvmrc`，CI 从它读版本。
+**现状**：Flutter 3.50.0 stable，Dart 3.14.0，只写在 `.fvmrc`，CI 从它读版本。
 
 **规则**
 
 - `pubspec.yaml` 的 `environment` 保持 `sdk: ^3.13.5`，再加 `flutter: '>=3.47.0'`：`material_ui` 和 `go_router` 18 都要求 Flutter 3.47 / 3.44 以上，写明下限可以让过旧的本地 SDK 直接报错。
-- **补丁版本**（3.47.x）：出了就升，单独一个提交，CI 三端通过即可。
+- **补丁版本**（3.50.x）：出了就升，单独一个提交，CI 三端通过即可。
 - **小版本**（3.48 等季度版本）：发布后等 2–4 周再升。升之前确认四件事：`material_ui`、`go_router`、`flutter_riverpod`、`sentry_flutter` 已发布兼容版本；Shorebird 已支持该 Flutter 版本（它的文档写季度版本一般 5 个工作日内支持，补丁版本 1 个工作日内）。
 - 升级只改 `.fvmrc`，提交标题 `build(deps): 升级 Flutter 至 x.y.z`。升完跑 `fvm dart format .`、`fvm flutter analyze`、`fvm flutter test`、`fvm flutter build web --release`，并在 Chrome 和手机 Safari 上点一遍主流程。
 
@@ -412,7 +412,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 
 **推荐**：Shorebird，`shorebird_code_push ^2.0.7` + Shorebird CLI。
 
-- `shorebird flutter versions list` 列出当前支持 Flutter 3.47.8（Dart 3.13.7），且是默认版本。
+- `shorebird flutter versions list` 列出当前支持 Flutter 3.50.0（Dart 3.14.0），且是默认版本。
 - 只更新 Dart 代码，下载后**下次启动生效**，没有提示，和产品 12.1 一致。
 - 控制台可以回滚补丁（远程卸载，退回上一个补丁或原始版本）。补丁启动就崩时设备端自动退回，这一点只在 Shorebird 博客里看到，具体条件要验证。
 - 按比例放量：官方指南的做法是关掉自动更新（`shorebird.yaml` 里 `auto_update: false`），设备第一次启动时随机分组 1–100，比例从我们自己的远程配置读，组号不大于比例的走 `beta` 轨道，其余走 `stable`。不需要 Firestore。
