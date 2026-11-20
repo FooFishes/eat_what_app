@@ -12,7 +12,7 @@ enum DevicePlatform {
 
 /// 已登录设备的会话信息, [current] 表示是否为当前设备.
 ///
-/// [name] 为设备名称 (如 "Pixel 8", "Chrome · macOS"), 服务端未识别时为 null.
+/// [name] 为服务端登记的设备型号 (如 "Pixel 8"). 服务端返回 "未知设备" 或空白时, 数据层的 deviceNameOf 将其转为 null, 界面改用平台名.
 /// [signedInAt] 为登录时间, [lastActiveAt] 为最近活跃时间.
 class const DeviceSession({
   required final String id,
