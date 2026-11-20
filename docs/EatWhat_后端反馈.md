@@ -47,6 +47,7 @@
 | 45 | 同意的政策版本只写了覆盖隐私政策和数据跨境说明（`/auth/consent/policy`、`/auth/consent/grant` 的说明，发布接口只有 `privacyText`、`crossBorderText`），没有说用户协议 | 客户端按「用户协议单独更新也走服务端 20009」处理：只认服务端的版本号，本机不另设版本。只改用户协议时如果不发新版本，已登录用户不会被要求重新同意 | 在接口说明里写明这个版本也覆盖用户协议，只改用户协议时也发布新版本，让没同意新版本的账号收到 20009 |
 | 46 | `/foods/list` 不收坐标，不返回距离 | 搜菜不限校区（产品 6.8，2026-11-21），结果里看不出菜离人多远 | 像 `/restaurant/search` 一样收 `gcjLng`、`gcjLat`，带坐标时每道菜返回到所在店的距离 |
 | 47 | `/foods/list` 不传 `restaurantId` 时，不传 `mealTime` 就按北京时间的当前饭点筛（`FoodService.search` 调 `RestaurantTraits.currentMealTime()`），没有不按饭点筛的取值 | 搜菜默认不限饭点（产品 6.8，2026-11-21）做不到，默认只能搜到当前饭点的菜 | 不传 `mealTime` 时不按饭点筛。目前不传 `mealTime`、不传 `restaurantId` 的只有搜菜，店内菜单带 `restaurantId`，本来就不按饭点筛，不受影响；如果要保留按当前饭点筛，就提供一个表示「全部」的取值 |
+| 48 | 搜菜带 `scene` 时，先用 `RestaurantService.scopeIds` 查出所有没关门的店，再以 `restaurant_id IN (...)` 长列表筛菜；按饭点筛时（不传 `mealTime` 时按当前饭点）同样先用 `restaurants.mealTimeIds(meal)` 查出这一顿营业的店，作为 `inheritedMealRestaurantIds` 长列表传进查菜的 SQL，给没单独设饭点的菜继承店铺饭点 | 店越多，这两个列表越长，每次搜菜都要先查一遍再传一长串参数。按目前校园规模不急 | 在查菜的 SQL 里直接关联 `restaurants` 表：按 `permanently_closed` 过滤没关门的店，按店铺的 `meal_times` 判断继承的饭点 |
 
 ## 3. 部署配置
 
