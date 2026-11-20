@@ -5,6 +5,7 @@ import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';
+import '../../support/comment_fixtures.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 import '../../support/topic_json.dart';
@@ -416,6 +417,77 @@ void main() {
     final reply = tester.widget<DishPage>(find.byType(DishPage));
     expect(reply.dishId, 7);
     expect(reply.focusComment, 301);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('评论赞的消息先读评论再进菜品详情，回复滚到根评论', (tester) async {
+    env.adapter
+      ..on('GET /notification/cards', [
+        FakeAdapter.ok(
+          pageJson([
+            noticeCardJson(
+              id: _likeId,
+              kind: 'comment_like',
+              domain: 'comments',
+              targetId: 302,
+            ),
+          ]),
+        ),
+      ])
+      ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()])
+      ..on('GET /comments/302', [
+        FakeAdapter.ok(commentJson(id: 302, foodId: 7, root: 300)),
+      ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.inbox,
+    );
+
+    await tester.tap(find.textContaining('赞了你的评论', findRichText: true));
+    await tester.tap(find.textContaining('赞了你的评论', findRichText: true));
+    await tester.pumpAndSettle();
+    expect(
+      env.adapter.sent('GET /comments/302'),
+      hasLength(1),
+      reason: '读取期间再点不重复请求',
+    );
+    final page = tester.widget<DishPage>(find.byType(DishPage));
+    expect(page.dishId, 7);
+    expect(page.focusComment, 300);
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('评论赞的评论已删除或不可见：提示后留在消息页', (tester) async {
+    env.adapter
+      ..on('GET /notification/cards', [
+        FakeAdapter.ok(
+          pageJson([
+            noticeCardJson(
+              id: _likeId,
+              kind: 'comment_like',
+              domain: 'comments',
+              targetId: 302,
+            ),
+          ]),
+        ),
+      ])
+      ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()])
+      ..on('GET /comments/302', [FakeAdapter.fail(10001)]);
+    final (container, router) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.inbox,
+    );
+
+    await tester.tap(find.textContaining('赞了你的评论', findRichText: true));
+    await tester.pumpAndSettle();
+    expect(find.text('这条评论已删除或不可见'), findsOneWidget);
+    expect(locationOf(router), Paths.inbox);
+    expect(find.byType(DishPage), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 

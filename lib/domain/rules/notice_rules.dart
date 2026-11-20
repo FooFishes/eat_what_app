@@ -14,6 +14,13 @@ final class DishTarget extends NoticeTarget {
   final int? comment;
 }
 
+/// 卡片只带评论 id 时的目标: 页面先按 id 读取评论, 再进它所在菜品的详情并滚到这条评论.
+final class CommentTarget extends NoticeTarget {
+  const CommentTarget(this.commentId);
+
+  final int commentId;
+}
+
 final class UserTarget extends NoticeTarget {
   const UserTarget(this.userId);
 
@@ -87,9 +94,11 @@ abstract final class NoticeRules {
           ),
           _ => const NoTarget(),
         };
-      // TODO: 评论赞的卡片只带评论 id, 不带菜 id, 后端也没有按 id 读取评论的接口, 因此无法跳到菜品详情. 卡片带上菜 id 后跳到菜品详情并滚动到该评论.
+      // 评论赞的卡片只带评论 id, 不带菜 id, 由页面读取评论后再跳转.
       case NoticeKind.commentLike:
-        return const NoTarget();
+        return notice.targetDomain == 'comments'
+            ? CommentTarget(notice.targetId)
+            : const NoTarget();
       case NoticeKind.newDeviceLogin:
         return const DevicesTarget();
       case NoticeKind.announcement ||

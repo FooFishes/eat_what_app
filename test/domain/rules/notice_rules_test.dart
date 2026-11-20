@@ -97,7 +97,12 @@ void main() {
       targetId: 300,
     );
     expect(NoticeRules.sentenceOf(like), '赞了你的评论');
-    expect(NoticeRules.targetOf(like), isA<NoTarget>());
+    expect(
+      NoticeRules.targetOf(like),
+      isA<CommentTarget>().having((t) => t.commentId, 'commentId', 300),
+    );
+    final oddLike = _notice(NoticeKind.commentLike, domain: 'foods');
+    expect(NoticeRules.targetOf(oddLike), isA<NoTarget>());
   });
 
   test('处理结果按类型和结论写，带上运营的回复，点击先取提交记录', () {

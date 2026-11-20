@@ -5,6 +5,7 @@ import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/format/time_format.dart';
 import 'package:eat/core/network/ref_extensions.dart';
+import 'package:eat/data/comment/comment_repository.dart';
 import 'package:eat/data/notification/notification_api.dart';
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
@@ -19,6 +20,7 @@ import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
+import 'package:eat/domain/models/comment.dart';
 import 'package:eat/domain/models/notice.dart';
 import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/people.dart';
@@ -27,6 +29,7 @@ import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/refresh.dart';
 import 'package:eat/router/paths.dart';
+import 'package:eat/state/comments.dart';
 import 'package:eat/state/session.dart';
 import 'package:eat/state/social.dart';
 import 'package:eat/state/unread_count.dart';
@@ -311,7 +314,9 @@ class _NoticeList extends StatelessWidget {
 }
 
 /// 单条消息行. 有互动者的消息用 [_InteractionRow], 系统消息用 [_SystemRow].
-class _NoticeRow extends ConsumerWidget {
+///
+/// 评论赞的卡片只带评论 id, 点击后先读取这条评论再进菜品详情; 读取期间再点不重复请求.
+class _NoticeRow extends ConsumerStatefulWidget {
   const new({required this.column, required this.notice, required this.now});
 
   final NoticeColumn column;
@@ -319,25 +324,30 @@ class _NoticeRow extends ConsumerWidget {
   final DateTime now;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NoticeRow> createState() => _NoticeRowState();
+}
+
+class _NoticeRowState extends ConsumerState<_NoticeRow> {
+  var _resolving = false;
+
+  @override
+  Widget build(BuildContext context) {
     void open(NoticeTarget target) {
-      ref.read(inboxProvider(column).notifier).markRead(notice);
-      unawaited(_open(context, ref, target));
+      ref.read(inboxProvider(widget.column).notifier).markRead(widget.notice);
+      unawaited(_open(target));
     }
 
-    return notice.actors.isEmpty
-        ? _SystemRow(notice: notice, now: now, onOpen: open)
-        : _InteractionRow(notice: notice, now: now, onOpen: open);
+    return widget.notice.actors.isEmpty
+        ? _SystemRow(notice: widget.notice, now: widget.now, onOpen: open)
+        : _InteractionRow(notice: widget.notice, now: widget.now, onOpen: open);
   }
 
-  static Future<void> _open(
-    BuildContext context,
-    WidgetRef ref,
-    NoticeTarget target,
-  ) async {
+  Future<void> _open(NoticeTarget target) async {
     switch (target) {
       case DishTarget(:final dishId, :final comment):
         await context.push(Paths.dish(dishId, comment: comment));
+      case CommentTarget(:final commentId):
+        await _openComment(commentId);
       case UserTarget(:final userId):
         await context.push(Paths.user(userId));
       case ShopTarget(:final shopId):
@@ -353,6 +363,30 @@ class _NoticeRow extends ConsumerWidget {
         }
       case NoTarget():
     }
+  }
+
+  /// 菜品详情只能滚到根评论, 因此回复取其根评论.
+  Future<void> _openComment(int commentId) async {
+    if (_resolving) return;
+    _resolving = true;
+    final Comment comment;
+    try {
+      comment = await ref.read(commentRepositoryProvider).detail(commentId);
+    } on AppFailure catch (e) {
+      if (!mounted) return;
+      if (isCommentGone(e)) {
+        showToast(context, '这条评论已删除或不可见');
+      } else if (e.kind != FailureKind.cancelled) {
+        showToast(context, e.message);
+      }
+      return;
+    } finally {
+      _resolving = false;
+    }
+    if (!mounted) return;
+    await context.push(
+      Paths.dish(comment.dishId, comment: comment.rootId ?? comment.id),
+    );
   }
 }
 

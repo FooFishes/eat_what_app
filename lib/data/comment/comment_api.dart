@@ -108,6 +108,18 @@ class CommentApi {
     ),
   );
 
+  /// 按 id 获取一条评论或回复, 字段与列表中的条目相同.
+  ///
+  /// 评论已删除, 不可见, 或其作者 (回复时还包括根评论的作者) 被当前用户屏蔽时, 服务端返回业务码 10001.
+  Future<CommentDto> detail(int commentId, {CancelToken? cancelToken}) async =>
+      decodeJson(
+        await _client.get(
+          CommentEndpoints.comment(commentId),
+          cancelToken: cancelToken,
+        ),
+        CommentDto.fromJson,
+      );
+
   /// 删除自己的评论或回复. 删除根评论时, 其下的回复会一并删除.
   Future<void> delete(int commentId) =>
       _client.delete(CommentEndpoints.comment(commentId));

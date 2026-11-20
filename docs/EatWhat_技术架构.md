@@ -1277,7 +1277,7 @@ class PushNotice({
 - 点一行：先在本地标为已读、未读数减 1，再请求标为已读（失败不退回，下次进来以服务端为准）；有跳转目标的行同时跳过去（6.3）。没有目标的行读屏朗读为「标为已读」（`tapHint`，11.8），已读后不能再点。
   - `like`、`favorite`、`comment`：菜品详情。`comment` 不带评论 id，滚不到这条。
   - `reply`：卡片的目标是根评论 id，`data.foodId` 是菜 id，进菜品详情并带 `comment=<根评论 id>`，滚到这条评论；没有 `foodId` 的旧卡片不跳。
-  - `comment_like`：卡片的目标是评论 id，没有菜 id，后端也没有按 id 读评论的接口，暂时不跳（TODO，已反馈后端）。
+  - `comment_like`：卡片的目标是评论 id，没有菜 id。点了先用 `GET /comments/{id}`（`CommentRepository.detail`）读这条评论，再进菜品详情并带 `comment=<根评论 id>`（被赞的是回复时取 `rootId`），读取期间再点不重复请求。评论已删除、不可见或作者被屏蔽时服务端返回 10001，提示「这条评论已删除或不可见」，留在消息页；其他失败按失败类别提示。
   - `follow`：只有一人时进他人主页，多人时进我的粉丝。
   - `case_result`：先用 `caseId` 调 `GET /feedback/mine/{id}` 取 `target{type, id}`，是菜或店才跳，取不到就不跳。
   - `announcement`：显示标题和正文，不跳。

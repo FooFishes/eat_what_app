@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/data/comment/comment_api.dart';
 import 'package:eat/data/comment/comment_dto.dart';
 import 'package:eat/data/common/convert.dart';
@@ -66,6 +67,14 @@ class CommentRepository {
           ),
     ];
   }
+
+  /// 按 id 获取一条评论或回复. 缺少 id, 菜品 id 或作者 id 时按未归类的失败处理.
+  Future<Comment> detail(int commentId, {CancelToken? cancelToken}) async =>
+      _comment(await _api.detail(commentId, cancelToken: cancelToken)) ??
+      (throw const AppFailure(
+        FailureKind.unknown,
+        serverMessage: 'incomplete comment',
+      ));
 
   Future<CommentPosted> create(
     int dishId, {
