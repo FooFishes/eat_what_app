@@ -1302,6 +1302,7 @@ class PushNotice({
 方案待确认 D3（依赖选型第 12 节）。下面按推荐的 Shorebird 写。
 
 - `shorebird.yaml` 里 `auto_update: false`，由我们决定什么时候检查。
+- `shorebird.yaml` 里 `base_url: https://update.v50to.you`：更新器连我们的反代，反代转发到 `api.shorebird.dev`。Shorebird CLI 也读这个地址，CI 的发版和补丁同样走反代。这个文件在发版时打进安装包，从 0.3.0 起生效，0.2.0 仍直连 `api.shorebird.dev`。
 - 同意隐私政策之后 `checkForUpdate()`，有新补丁就 `update()` 静默下载。下次启动生效，不提示（产品 12.1）。只检查 `stable` 轨道。
 - 设置里点「检查更新」时也查一次补丁，和远程配置的版本检查一起做：商店没有新版本但有新补丁时下载，提示「更新已下载，重新打开 App 后生效」。
 - 放量：补丁都发到 `stable`，用 Shorebird 的 `--rollout` 按比例放。先发小比例，没问题再用 `shorebird patches rollout` 提高，直到 100%。哪些设备在比例内由 Shorebird 服务端按安装 ID 的哈希决定，不在比例内的设备拿 `stable` 上最新的已到 100% 的补丁。比例只能调高。

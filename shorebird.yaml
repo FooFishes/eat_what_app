@@ -12,3 +12,7 @@ app_id: 0caa6429-5c11-476b-bb13-0e5bb8348303
 # https://pub.dev/packages/shorebird_code_push
 # Uncomment the following line to disable automatic updates.
 auto_update: false
+
+# 更新器检查补丁时走我们的反代 update.v50to.you (转发到 api.shorebird.dev).
+# 这个文件在发版时打进安装包, 改了只对之后的发版生效.
+base_url: https://update.v50to.you
