@@ -1,5 +1,6 @@
 import 'package:eat/app.dart';
 import 'package:eat/core/network/api_client.dart';
+import 'package:eat/core/platform/orientation.dart';
 import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:eat/state/analytics.dart';
 import 'package:eat/state/api_hooks.dart';
@@ -23,6 +24,8 @@ Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Web 使用路径形式的地址 (/dishes/123) 而非 #/dishes/123, 与分享链接和 App Links 保持一致.
   usePathUrlStrategy();
+  // 安卓手机锁竖屏, 折叠屏展开或合上时重新判断. 首帧前锁好, 否则横握启动时首帧会按横屏排一次再转回来.
+  await OrientationLock.start();
   LicenseRegistry.addLicense(_assetLicenses);
   // 中文字体约 4 MB, 与下方读取本地数据并行加载, 首帧前完成.
   final fonts = EatFonts.loadSans();

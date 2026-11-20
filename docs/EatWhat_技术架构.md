@@ -148,13 +148,13 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 
 | 步骤 | 做什么 | 等不等 |
 | --- | --- | --- |
-| 1 | `WidgetsFlutterBinding.ensureInitialized()`；Web 上 `usePathUrlStrategy()` | 等 |
+| 1 | `WidgetsFlutterBinding.ensureInitialized()`；Web 上 `usePathUrlStrategy()`；安卓手机锁竖屏（12.6） | 等 |
 | 2 | 读 `AppConfig`（编译期常量） | 立即 |
 | 3 | 读本地存储（`shared_preferences`）里的偏好；读安全存储里的 token | 等，几十毫秒 |
 | 4 | iOS 卸载重装检测：本地存储里没有「已安装」标记而 Keychain 里有 token，就清掉 Keychain 里的登录态，安装 ID 不清（Keychain 卸载后会残留，`shared_preferences` 不会） | 等 |
 | 5 | 读本地同意记录、缓存的远程配置（没有就用内置默认值）、缓存的当前用户 | 等 |
 | 6 | 已同意隐私政策：先初始化 Sentry，再 `runApp`；没同意：直接 `runApp` | — |
-| 7 | 首帧：有登录态进 `/discover`（先显示缓存），没有进 `/login`；舞台先用上一次的舞台色 | — |
+| 7 | 首帧：有登录态进 `/discover`（先显示缓存），没有进 `/login` | — |
 | 8 | 首帧后、已同意：拉远程配置 → 版本检查 → 热更新检查 → `GET /user/info` 校验登录态 → 初始化推送（已登录时）；注册设备（9.4） | 后台 |
 
 第一次写入同意记录后（登录成功，或在登录页点「先逛逛」并同意），补做第 6、8 步里还没做的初始化；游客不校验登录态、不初始化推送。第 7 步对游客不变：游客不落盘，冷启动没有登录态就进 `/login`（产品 7.4）。
@@ -568,7 +568,6 @@ v2 不再返回 20003、20006、20008、20010 和集群会话的字符串码，�
 | 上次注册成功的设备档案摘要（`prefs.device.registered`，9.4） | `prefs.*` | 设备 | 留 |
 | 当前校区；堂食还是外卖（`prefs.scene`，`dine_in` 或 `delivery`） | `prefs.*` | 设备 | 留 |
 | 手动选的饭点和到期时间 | `prefs.*` | 设备 | 留 |
-| 上一次的舞台色 | `prefs.*` | 设备 | 留 |
 | 定位说明是否展示过、推送是否问过 | `prefs.*` | 设备 | 留 |
 | 关掉的普通公告、看过的重要公告、提示过的建议更新版本 | `prefs.*` | 设备 | 留 |
 | 底部导航液态玻璃的透明度（`prefs.appearance.navGlass`） | `prefs.*` | 设备 | 留 |
@@ -928,7 +927,10 @@ extension RefCache on Ref {
 ### 12.6 安全区、方向、键盘
 
 - 顶部栏在状态栏下面；舞台色延伸到状态栏后面。`NavBar` 底部是 24px 加系统底部安全区。
-- 方向：手机（最短边 < 600）启动时锁竖屏；平板和 Web 不锁，按宽屏规则排。iOS 的 `Info.plist` 允许 iPad 横屏。
+- 方向：手机竖屏，平板和 Web 不锁，按宽屏规则排。
+  - 安卓在 `bootstrap.dart` 里、首帧之前调 `OrientationLock.start`（`core/platform/orientation.dart`）：整块屏幕的最短边小于 600 逻辑像素时用 `SystemChrome.setPreferredOrientations` 锁成 `portraitUp`。按屏幕而不是 App 窗口判断，分屏时窗口比屏幕小；引擎还没报告屏幕尺寸时退回窗口尺寸，都拿不到时不锁。启动时判断，屏幕尺寸变化（如折叠屏展开、合上）时重新判断，不需要锁时恢复所有方向；结果没变时不发平台调用。不用 `AndroidManifest` 的 `screenOrientation`，它分不出手机和平板。
+  - iOS 不发平台调用，由 `Info.plist` 定：iPhone 只有竖屏，iPad 四个方向都允许。
+  - Web 不发平台调用；`web/manifest.json` 的 `orientation` 是 `any`。
 - 键盘：输入框获得焦点时滚到可见；底部主按钮（下一步、发布、发送）跟着 `viewInsets.bottom` 浮在键盘上方。
 - 避让键盘用 `KeyboardInset`（`design/widgets/keyboard_inset.dart`）：只有它订阅 `viewInsets`，页面其余部分作为 child 传进去，键盘升降动画的每一帧只重建这层留白。外层没有底色的页面（加菜页）给它传 `color`：iOS 26 的键盘是半透明圆角面板，键盘后面没画东西时圆角处会透出原生视图的黑底。`EatApp` 的根组件底下也铺了一层 `paper` 兜底。
 - 读屏幕信息只订阅用到的那一项（`MediaQuery.sizeOf`、`paddingOf` 等），不用 `MediaQuery.of`，否则键盘动画的每一帧都会整个重建。`MediaQuery.removePadding(context: context, …)` 也会让传进去的 `context` 订阅整份屏幕信息，去掉安全区一律用 `RemovePadding`（`design/widgets/remove_padding.dart`），它在自己的 context 里读。不需要避让键盘的地方（舞台骨架、主页面外壳、附近页、裁切页）读安全区用 `viewPaddingOf`：键盘升起时 `padding` 的底边会从安全区缩到 0，`viewPadding` 不变。
