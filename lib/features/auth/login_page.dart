@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:eat/core/config/app_config.dart';
 import 'package:eat/core/failure/app_failure.dart';
@@ -27,6 +28,8 @@ import 'package:eat/state/consented_services.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +52,7 @@ class LoginPage extends ConsumerStatefulWidget {
     super.key,
     this.query = const {},
     this.browseTarget = Paths.discover,
+    this.preloadBrowseTarget,
   });
 
   final Map<String, String> query;
@@ -56,11 +60,29 @@ class LoginPage extends ConsumerStatefulWidget {
   /// 点击 "先逛逛" 后的目标路由, 由路由表根据 `from` 计算传入; 游客无权访问的地址已替换为发现页.
   final String browseTarget;
 
+  final VoidCallback? preloadBrowseTarget;
+
   @override
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
+  final _pageKey = GlobalKey();
+
+  /// 试拉时只预取已同意过的目标页数据, 以免触发页面的权限提示或提前切换会话.
+  Future<void> _prepareDrag() async {
+    if (widget.preloadBrowseTarget == null ||
+        !ref.read(loginAgreementProvider)) {
+      return;
+    }
+    final version = await ref.read(privacyConsentStoreProvider).agreedVersion();
+    if (mounted &&
+        version == PrivacyConsentStore.currentVersion &&
+        ref.read(loginAgreementProvider)) {
+      widget.preloadBrowseTarget?.call();
+    }
+  }
+
   /// 确认用户已同意协议. 若尚未勾选则弹出协议对话框, 同意后自动勾选并返回 true.
   Future<bool> _ensureAgreed() async {
     if (ref.read(loginAgreementProvider)) return true;
@@ -157,12 +179,49 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   /// 以游客身份进入应用. 由于浏览同样会采集设备信息和使用记录, 游客也须先同意隐私政策.
   ///
   /// 写入同意记录并补启动崩溃上报等服务后再切换为游客状态; 路由守卫不重定向已位于登录页的游客, 因此由本页主动跳转.
-  Future<void> _browse() async {
-    if (!await _ensureAgreed() || !mounted) return;
+  Future<bool> _browse(
+    _CurlPainter fold,
+    _BrowseHint hint,
+    double releaseVelocity,
+  ) async {
+    if (!await _ensureAgreed() || !mounted) return false;
     await ref.read(privacyConsentStoreProvider).record();
+    if (!mounted) return false;
+    widget.preloadBrowseTarget?.call();
+    ui.Image? image;
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      final boundary = _pageKey.currentContext?.findRenderObject();
+      if (boundary is RenderRepaintBoundary && !boundary.debugNeedsPaint) {
+        try {
+          image = boundary.toImageSync(
+            pixelRatio: MediaQuery.devicePixelRatioOf(context).clamp(1.0, 2.0),
+          );
+        } on Object {
+          image = null;
+        }
+      }
+    }
+    if (image != null) {
+      final captured = image;
+      late final OverlayEntry entry;
+      entry = OverlayEntry(
+        builder: (_) => _PagePeel(
+          image: captured,
+          fold: fold,
+          hint: hint,
+          releaseVelocity: releaseVelocity,
+          onFinished: () {
+            entry.remove();
+            entry.dispose();
+          },
+        ),
+      );
+      Overlay.of(context, rootOverlay: true).insert(entry);
+    }
     unawaited(ref.read(consentedServicesProvider.notifier).start());
     ref.read(sessionProvider.notifier).browse();
-    if (mounted) context.go(widget.browseTarget);
+    context.go(widget.browseTarget);
+    return true;
   }
 
   @override
@@ -217,11 +276,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     // 禁用越界回弹与拉伸, 避免拖动改变 SliverFillRemaining 高度而导致转盘变形.
     return EatStage(
       stage: StageColor.broth,
-      child: Stack(
-        children: [
-          Positioned.fill(child: _content(context, sheet)),
-          Positioned(top: 0, right: 0, child: _BrowseCorner(onTap: _browse)),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) => _BrowseCorner(
+          pageSize: constraints.biggest,
+          onDragStart: _prepareDrag,
+          onTap: _browse,
+          page: RepaintBoundary(
+            key: _pageKey,
+            child: ColoredBox(
+              color: StageTheme.of(context).background,
+              child: _content(context, sheet),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -679,17 +746,19 @@ class _AgreementDialogState extends ConsumerState<_AgreementDialog> {
   }
 }
 
-/// 登录页右上角的 "先逛逛" 卷角入口: 页角向左下卷起, 露出下层纸色区域与 "先逛逛" 文案, 下方伴随从屏幕右侧探出的眼睛 ([Emoji.eyes]).
-///
-/// 进入页面时页角以减速曲线卷起且不回弹, 接近完成时眼睛从右侧滑入; 按下时页角进一步卷起.
-/// 随后每隔 [_idlePeriod] 触发一次轻幅掀动与回落动画, 眼睛同步小幅探出.
-/// 系统开启减少动态效果时直接呈现最终静止状态. 该入口为登录页专用样式, 不采用胶囊按钮.
-///
-/// 交互热区为紧贴右上角的矩形, 对角线右上方显示下层纸色, 左下方绘制卷起的页角 (详见 [_CurlPainter]), 卷边会略微超出矩形边界.
+/// 登录页的游客入口. 拖动和换页共用同一张纸的折痕与卷边.
 class _BrowseCorner extends StatefulWidget {
-  const new({required this.onTap});
+  const new({
+    required this.pageSize,
+    required this.onDragStart,
+    required this.onTap,
+    required this.page,
+  });
 
-  final VoidCallback onTap;
+  final Size pageSize;
+  final VoidCallback onDragStart;
+  final Future<bool> Function(_CurlPainter, _BrowseHint, double) onTap;
+  final Widget page;
 
   @override
   State<_BrowseCorner> createState() => _BrowseCornerState();
@@ -697,275 +766,692 @@ class _BrowseCorner extends StatefulWidget {
 
 class _BrowseCornerState extends State<_BrowseCorner>
     with TickerProviderStateMixin {
-  late final _curl = AnimationController(vsync: this, duration: _curlDuration);
-
-  /// 页角卷动不发生过冲回弹, 因此不采用转盘的回弹曲线.
-  late final _curve = CurvedAnimation(
-    parent: _curl,
-    curve: Curves.easeOutCubic,
-  );
-
-  /// 眼睛滑入的动画进度, 在页角卷动过半后启动.
-  late final _peek = CurvedAnimation(
-    parent: _curl,
-    curve: const Interval(0.55, 1, curve: Curves.easeOutCubic),
-  );
-
-  static const _curlDuration = Duration(milliseconds: 900);
-
-  /// 静置后周期性掀动页角的循环动画, 数值代表单轮周期进度.
-  late final _idle = AnimationController(vsync: this, duration: _idlePeriod);
-
-  static const _idlePeriod = Duration(seconds: 6);
-
-  /// 周期性掀动时页角额外卷起的长度.
-  static const _liftExtra = 8.0;
-
-  /// 静止状态下纸色三角右侧边的长度 (不含状态栏高度), 需保证 "先逛逛" 文案完整落入三角区域内.
   static const _rest = 106.0;
-
-  /// 按下态时页角额外卷起的长度.
+  static const _entranceDuration = Duration(milliseconds: 480);
+  static const _maxEntranceFrame = Duration(milliseconds: 32);
   static const _pressExtra = 16.0;
-
-  /// "先逛逛" 与页面右边和状态栏的距离.
-  static const _labelInset = 14.0;
-  static const _labelTop = 10.0;
-
-  /// 眼睛图片的边长. 图里两只眼睛约占宽的八成, 高的六成.
-  static const _eyesSize = 44.0;
-
-  /// 眼睛在屏幕内的露出宽度及掀动时的额外探出宽度, 右侧边缘保留在屏幕外.
+  static const _liftExtra = 8.0;
+  static const _dragRevealExtra = 64.0;
+  static const _dragThreshold = 56.0;
   static const _eyesShown = 34.0;
   static const _eyesPeek = 5.0;
 
-  /// 眼睛图片顶部距状态栏的距离, 位于 "先逛逛" 下方 (图片本身顶部含透明留白).
-  static const _eyesTop = 30.0;
+  final _entrance = ValueNotifier(0.0);
+  late final _entranceTicker = createTicker(_advanceEntrance);
+  Duration _lastEntranceTick = Duration.zero;
+  Animation<double>? _routeTransition;
+  bool _reduceMotion = false;
+  late final _idle = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 6),
+  );
+  late final _return = AnimationController(vsync: this);
+  late final _press = AnimationController(vsync: this);
 
-  /// 眼睛图片的逆时针倾角.
-  static const _eyesTilt = -12 * math.pi / 180;
+  _CurlPose? _held;
+  Offset? _dragOrigin;
+  late _CurlPose _dragStart;
+  late _CurlPainter _paintedFold;
+  late _BrowseHint _paintedHint;
+  double _pull = 0;
+  bool _committing = false;
 
-  /// "先逛逛" 文本跟随系统字号放大的上限, 超过该倍率会溢出纸色三角区域.
-  static const _maxTextScale = 1.2;
-
-  /// 计算单个静置周期内 [t] 时刻的页角掀动幅度, 仅在 [_liftSpan] 区间内缓起缓落, 取值范围 0 到 1.
-  static double _liftAt(double t) {
-    final x = (t - _liftStart) / _liftSpan;
-    if (x <= 0 || x >= 1) return 0;
-    return math.pow(math.sin(math.pi * x), 2).toDouble();
+  double get _lift {
+    final t = (_idle.value - 0.55) / 0.2;
+    if (t <= 0 || t >= 1) return 0;
+    final wave = math.sin(math.pi * t);
+    return wave * wave;
   }
 
-  static const _liftStart = 0.55;
-  static const _liftSpan = 0.2;
+  void _dragBegin(DragStartDetails details) {
+    if (_committing) return;
+    widget.onDragStart();
+    _return.stop();
+    _idle.stop();
+    _dragStart = _paintedFold.pose;
+    _dragOrigin = details.globalPosition;
+    setState(() => _held = _dragStart);
+  }
+
+  void _dragUpdate(DragUpdateDetails details) {
+    final origin = _dragOrigin;
+    if (origin == null) return;
+    final delta = details.globalPosition - origin;
+    _pull = (delta.dy - delta.dx) / math.sqrt2;
+    final restingReveal = _CurlPose.rest(
+      MediaQuery.paddingOf(context).top + _rest,
+    ).revealSize;
+    final limit = Size(
+      restingReveal.width + _dragRevealExtra,
+      restingReveal.height + _dragRevealExtra,
+    );
+    setState(() => _held = _dragStart.follow(delta, limit));
+  }
+
+  void _settle() {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      setState(() => _held = null);
+      return;
+    }
+    _return
+        .animateWith(
+          SpringSimulation(
+            const SpringDescription(mass: 1, stiffness: 260, damping: 25),
+            0,
+            1,
+            0,
+          ),
+        )
+        .then((_) {
+          if (!mounted) return;
+          setState(() => _held = null);
+          if (!MediaQuery.disableAnimationsOf(context)) _idle.repeat();
+        });
+  }
+
+  void _dragEnd(DragEndDetails details) {
+    if (_dragOrigin == null) return;
+    final screenVelocity = details.velocity.pixelsPerSecond;
+    final velocity = (screenVelocity.dy - screenVelocity.dx) / math.sqrt2;
+    final accepted =
+        _pull >= _dragThreshold ||
+        (_pull > _dragThreshold * 0.55 && velocity > 800);
+    setState(() {
+      _dragOrigin = null;
+      _pull = 0;
+    });
+    if (accepted) {
+      _activate(release: _held, velocity: velocity);
+    } else {
+      _settle();
+    }
+  }
+
+  void _dragCancel() {
+    if (_dragOrigin == null) return;
+    setState(() {
+      _dragOrigin = null;
+      _pull = 0;
+    });
+    _settle();
+  }
+
+  Future<void> _activate({_CurlPose? release, double velocity = 0}) async {
+    if (_committing) return;
+    _return.stop();
+    _idle.stop();
+    final pose = release ?? _paintedFold.pose;
+    final fold = _paintedFold.withPose(pose);
+    final hint = _paintedHint;
+    setState(() {
+      _committing = true;
+      _held = fold.pose;
+    });
+    final accepted = await widget.onTap(fold, hint, velocity);
+    if (!mounted || accepted) return;
+    setState(() => _committing = false);
+    _settle();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
-      _curl.value = 1;
+    final transition = ModalRoute.of(context)?.animation;
+    if (!identical(transition, _routeTransition)) {
+      _routeTransition?.removeStatusListener(_onRouteTransition);
+      _routeTransition = transition;
+      transition?.addStatusListener(_onRouteTransition);
+    }
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_reduceMotion) {
+      _entranceTicker.stop();
+      _entrance.value = 1;
       _idle
         ..stop()
         ..value = 0;
       return;
     }
-    if (_curl.isDismissed) _curl.forward();
-    if (!_idle.isAnimating) _idle.repeat();
+    _startCornerMotion();
+  }
+
+  void _onRouteTransition(AnimationStatus status) {
+    if (status == AnimationStatus.forward && _entrance.value == 0) {
+      /// 声明式导航可能先构建页面, 再启动路由进场. 此时取消已排队的卷角首帧.
+      _entranceTicker.stop();
+      _idle.stop();
+    }
+    if (status == AnimationStatus.completed) _startCornerMotion();
+  }
+
+  /// 等路由进场结束后再掀开右上角, 以免卷角从屏幕外开始播放.
+  void _startCornerMotion() {
+    if (_reduceMotion ||
+        (_routeTransition?.status ?? AnimationStatus.completed) !=
+            AnimationStatus.completed) {
+      return;
+    }
+    if (_entrance.value == 0 && !_entranceTicker.isActive) {
+      _lastEntranceTick = Duration.zero;
+      _entranceTicker.start();
+    }
+    if (_held == null && !_idle.isAnimating) _idle.repeat();
+  }
+
+  /// 限制单帧推进的入场时间, 避免首屏长帧让卷角直接跳到展开状态.
+  void _advanceEntrance(Duration elapsed) {
+    final frame = elapsed - _lastEntranceTick;
+    _lastEntranceTick = elapsed;
+    final step = math.min(
+      frame.inMicroseconds,
+      _maxEntranceFrame.inMicroseconds,
+    );
+    _entrance.value = math.min(
+      1.0,
+      _entrance.value + step / _entranceDuration.inMicroseconds,
+    );
+    if (_entrance.value == 1) _entranceTicker.stop();
   }
 
   @override
   void dispose() {
+    _routeTransition?.removeStatusListener(_onRouteTransition);
+    _press.dispose();
+    _return.dispose();
     _idle.dispose();
-    _peek.dispose();
-    _curve.dispose();
-    _curl.dispose();
+    _entranceTicker.dispose();
+    _entrance.dispose();
     super.dispose();
+  }
+
+  void _setPressed(bool pressed) {
+    _press.animateTo(
+      pressed ? 1 : 0,
+      duration: context.motion(EatMotion.press),
+      curve: EatMotion.press.curve,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final eat = context.eat;
-    final c = eat.colors;
-    final stage = StageTheme.of(context).background;
     final top = MediaQuery.paddingOf(context).top;
-    final rest = top + _rest;
-    final label = Text(
-      '先逛逛？',
-      textScaler: MediaQuery.textScalerOf(context)
-          .clamp(maxScaleFactor: _maxTextScale),
-      style: eat.text.subhead.copyWith(color: c.inkMuted),
-    );
-    return EatTappable(
-      onTap: widget.onTap,
-      label: '先逛逛',
-      tapHint: '不登录先看看',
-      focusShape: const RoundedRectangleBorder(),
-      dimOnPress: false,
-      builder: (context, pressed) => TweenAnimationBuilder<double>(
-        tween: Tween(end: pressed ? 1 : 0),
-        duration: context.motion(EatMotion.press),
-        curve: EatMotion.press.curve,
-        builder: (context, press, _) => AnimatedBuilder(
-          animation: Listenable.merge([_curve, _idle]),
-          builder: (context, _) {
-            final lift = _liftAt(_idle.value);
-            final extent = math.max(
-              0.0,
-              rest * _curve.value + _pressExtra * press + _liftExtra * lift,
-            );
-            final shown = (_eyesShown + _eyesPeek * lift) * _peek.value;
-            return SizedBox(
-              width: extent * _CurlPainter.aspect,
-              height: extent,
-              child: CustomPaint(
-                painter: _CurlPainter(
-                  paper: c.paper,
-                  back: stage,
-                  shadow: c.shade,
+    final stage = StageTheme.of(context).background;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_entrance, _idle, _return, _press]),
+      child: widget.page,
+      builder: (context, page) {
+        final lift = _lift;
+        final restingHeight = top + _rest;
+        final rest = _CurlPose.rest(restingHeight + _liftExtra * lift);
+        final entrance = _entrance.value;
+        final held = _held;
+        final pose = held == null
+            ? _CurlPose.rest(
+                restingHeight * Curves.easeOutCubic.transform(entrance) +
+                    _pressExtra * _press.value +
+                    _liftExtra * lift,
+              )
+            : _return.isAnimating
+            ? held.lerp(rest, _return.value)
+            : held;
+        final hint = _committing
+            ? _paintedHint
+            : _BrowseHint(
+                top: top,
+                opacity: const Interval(0.18, 0.75).transform(entrance),
+                eyesShown:
+                    (_eyesShown + _eyesPeek * lift) *
+                    const Interval(
+                      0.18,
+                      1,
+                      curve: Curves.easeOutCubic,
+                    ).transform(entrance),
+                label: Text(
+                  _pull >= _dragThreshold ? '松手进入' : '先逛逛？',
+                  textScaler: MediaQuery.textScalerOf(context)
+                      .clamp(maxScaleFactor: 1.2),
+                  style: eat.text.subhead.copyWith(color: eat.colors.inkMuted),
                 ),
-                child: ClipPath(
-                  clipper: const _RevealClipper(),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        top: top + _labelTop,
-                        right: _labelInset,
-                        child: label,
-                      ),
-                      Positioned(
-                        top: top + _eyesTop,
-                        right: shown - _eyesSize,
-                        child: Transform.rotate(
-                          angle: _eyesTilt,
-                          child: const EmojiImage(Emoji.eyes, size: _eyesSize),
-                        ),
-                      ),
-                    ],
+              );
+        final fold = _CurlPainter(
+          pose: pose,
+          paper: eat.colors.paper,
+          front: stage,
+          shadow: eat.colors.shade,
+        );
+        _paintedFold = fold;
+        _paintedHint = hint;
+        final revealed = pose.revealSize;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            _BrowseMask(paper: fold.paper, hint: hint),
+            _LoginPaper(fold: fold, child: page!),
+            Align(
+              alignment: Alignment.topRight,
+              child: SizedBox(
+                key: const ValueKey('browse-corner-hit-area'),
+                width: revealed.width.clamp(
+                  math.min(EatSize.touch, widget.pageSize.width),
+                  widget.pageSize.width,
+                ),
+                height: revealed.height.clamp(
+                  math.min(EatSize.touch, widget.pageSize.height),
+                  widget.pageSize.height,
+                ),
+                child: Listener(
+                  onPointerDown: (_) => _setPressed(true),
+                  onPointerUp: (_) => _setPressed(false),
+                  onPointerCancel: (_) {
+                    _setPressed(false);
+                    _dragCancel();
+                  },
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    excludeFromSemantics: true,
+                    dragStartBehavior: DragStartBehavior.down,
+                    onPanStart: _committing ? null : _dragBegin,
+                    onPanUpdate: _dragUpdate,
+                    onPanEnd: _dragEnd,
+                    onPanCancel: _dragCancel,
+                    child: EatTappable(
+                      onTap: _committing ? null : _activate,
+                      label: '先逛逛',
+                      tapHint: '不登录先看看',
+                      focusShape: const RoundedRectangleBorder(),
+                      dimOnPress: false,
+                      builder: (_, _) => const SizedBox.expand(),
+                    ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-/// 对角线右上方露出的纸色三角. 矩形的右上角是原来的页角.
-class _RevealClipper extends CustomClipper<Path> {
-  const new();
+class _BrowseHint extends StatelessWidget {
+  const new({
+    required this.top,
+    required this.opacity,
+    required this.eyesShown,
+    required this.label,
+    this.labelShift = 0,
+  });
+
+  final double top;
+  final double opacity;
+  final double eyesShown;
+  final Widget label;
+  final double labelShift;
+
+  static const _eyesSize = 44.0;
+
+  _BrowseHint exiting(double progress) {
+    final exit = const Interval(
+      0,
+      0.65,
+      curve: Curves.easeInCubic,
+    ).transform(progress);
+    return _BrowseHint(
+      top: top,
+      opacity: opacity * (1 - exit),
+      eyesShown: ui.lerpDouble(eyesShown, -8, exit)!,
+      labelShift: 16 * exit,
+      label: label,
+    );
+  }
 
   @override
-  Path getClip(Size size) => Path()
-    ..moveTo(0, 0)
-    ..lineTo(size.width, 0)
-    ..lineTo(size.width, size.height)
-    ..close();
-
-  @override
-  bool shouldReclip(_RevealClipper oldClipper) => false;
+  Widget build(BuildContext context) => Opacity(
+    opacity: opacity,
+    child: Stack(
+      children: [
+        Positioned(top: top + 10, right: 14 - labelShift, child: label),
+        Positioned(
+          top: top + 30,
+          right: eyesShown - _eyesSize,
+          child: Transform.rotate(
+            angle: -12 * math.pi / 180,
+            child: const EmojiImage(Emoji.eyes, size: _eyesSize),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
-/// 绘制卷起的页角: 模拟页角绕圆柱卷过半圈后平铺覆盖在页面上方, 从正上方俯视的几何投影.
-///
-/// 以页角为坐标原点, p 轴沿卷起方向指向页面内部, w 轴与之垂直. 卷起方向相对对角线偏移 [_lean], 使翻折后的页角呈倾斜状.
-/// 设圆柱半径为 r, 页面在 p = a 处离开桌面, 原位于 p = t 的线段展开长度 u = a - t, 卷起后坐标为:
-///
-/// - 圆柱段 (u <= πr): p = a - r·sin(u/r).
-/// - 覆盖平面段 (u > πr): p = a + u - πr.
-///
-/// 线段宽度保持不变, 页面原有的两条直边在圆柱段上投影为曲线.
-/// 整体采用扁平色块绘制, 不加高光与模糊阴影, 图层由下至上依次为:
-///
-/// 1. 纸色底区: p < a 的三角区域, 可见部分为画布对角线右上方的一半.
-/// 2. 阴影色块: 卷起部分向页面内侧偏移的硬边投影, 仅落在舞台底色上.
-/// 3. 圆柱下半圈: 页面正面向上弯曲的部分, 因比上半圈宽而在两端露出.
-/// 4. 圆柱上半圈与翻折页角: 朝上的一面为页面背面, 圆柱上缘向内绘制渐变过渡到页角背面的颜色.
-class _CurlPainter extends CustomPainter {
-  const new({required this.paper, required this.back, required this.shadow});
+/// 纸色与提示共用整屏遮罩. 遮罩变透明时一起露出实际目标页.
+class _BrowseMask extends StatelessWidget {
+  const new({required this.paper, required this.hint, this.opacity = 1});
 
   final Color paper;
+  final Widget hint;
+  final double opacity;
 
-  /// 舞台色, 即页面正面的颜色.
-  final Color back;
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: ExcludeSemantics(
+      child: Opacity(
+        opacity: opacity,
+        child: ColoredBox(color: paper, child: hint),
+      ),
+    ),
+  );
+}
+
+/// 登录页沿当前折痕裁掉已掀开的区域, 卷边绘制在纸面上方.
+class _LoginPaper extends StatelessWidget {
+  const new({required this.fold, required this.child});
+
+  final _CurlPainter fold;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    foregroundPainter: fold,
+    child: ClipPath(clipper: _LoginPaperClipper(fold.pose), child: child),
+  );
+}
+
+/// 目标页先在底层绘制, 登录页再从松手时的折痕继续卷动.
+class _PagePeel extends StatefulWidget {
+  const new({
+    required this.image,
+    required this.fold,
+    required this.hint,
+    required this.releaseVelocity,
+    required this.onFinished,
+  });
+
+  final ui.Image image;
+  final _CurlPainter fold;
+  final _BrowseHint hint;
+  final double releaseVelocity;
+  final VoidCallback onFinished;
+
+  @override
+  State<_PagePeel> createState() => _PagePeelState();
+}
+
+class _PagePeelState extends State<_PagePeel>
+    with SingleTickerProviderStateMixin {
+  static const _duration = Duration(milliseconds: 700);
+
+  late final _animation = AnimationController(vsync: this, duration: _duration);
+
+  @override
+  void initState() {
+    super.initState();
+    _animation.forward().then((_) {
+      if (mounted) widget.onFinished();
+    });
+  }
+
+  /// 沿用松手速度继续推动折痕, 并在终点减速至静止.
+  double _peelProgress(double distance) {
+    final t = _animation.value;
+    final remaining = 1 - t;
+    final durationSeconds = _duration.inMilliseconds / 1000;
+    final initialSlope =
+        (widget.releaseVelocity *
+                durationSeconds /
+                (2 * math.max(1.0, distance)))
+            .clamp(0.65, 2.5);
+    return t * (t * (3 - 2 * t) + initialSlope * remaining * remaining);
+  }
+
+  @override
+  void dispose() {
+    _animation.dispose();
+    widget.image.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Positioned.fill(
+    child: AbsorbPointer(
+      child: ExcludeSemantics(
+        child: LayoutBuilder(
+          builder: (context, constraints) => AnimatedBuilder(
+            animation: _animation,
+            child: RawImage(image: widget.image, fit: BoxFit.fill),
+            builder: (context, page) {
+              final size = constraints.biggest;
+              final start = widget.fold.pose;
+              final end = math.max(
+                start.reach,
+                start.farthestPoint(size) + math.pi * start.radius,
+              );
+              final progress = _peelProgress(end - start.reach);
+              final reach = ui.lerpDouble(start.reach, end, progress)!;
+              final pose = _animation.value == 0
+                  ? start
+                  : _CurlPose(reach, start.radius, start.lean);
+              final remaining = 1 - progress;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  _BrowseMask(
+                    paper: widget.fold.paper,
+                    opacity: remaining * remaining,
+                    hint: widget.hint.exiting(_animation.value),
+                  ),
+                  _LoginPaper(fold: widget.fold.withPose(pose), child: page!),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// 折痕由距右上角的垂直距离、圆柱半径及卷起方向确定.
+class _CurlPose {
+  const new(this.reach, this.radius, this.lean);
+
+  factory _CurlPose.rest(double height) {
+    const lean = 53 * math.pi / 180;
+    final reach = height * math.sin(lean);
+    return _CurlPose(reach, reach * 0.16, lean);
+  }
+
+  final double reach;
+  final double radius;
+  final double lean;
+
+  Offset get axis => Offset(-math.cos(lean), math.sin(lean));
+
+  Size get revealSize => Size(reach / -axis.dx, reach / axis.dy);
+
+  double farthestPoint(Size size) =>
+      -size.width * axis.dx + size.height * axis.dy;
+
+  _CurlPose lerp(_CurlPose other, double t) => _CurlPose(
+    ui.lerpDouble(reach, other.reach, t)!,
+    ui.lerpDouble(radius, other.radius, t)!,
+    ui.lerpDouble(lean, other.lean, t)!,
+  );
+
+  /// 用纸角落点反推折痕. 展平的纸角移动两倍折痕的距离.
+  _CurlPose follow(Offset delta, Size revealLimit) {
+    final rollOffset = (math.pi - 2) * radius;
+    final tip = axis * (2 * reach - rollOffset) + delta;
+    final inward = math.max(0.0, -tip.dx);
+    final downward = math.max(0.0, tip.dy);
+    final angle = math
+        .atan2(downward, inward)
+        .clamp(math.pi / 15, math.pi * 13 / 30);
+    final distance = inward * math.cos(angle) + downward * math.sin(angle);
+    final maxReach = math.min(
+      revealLimit.width * math.cos(angle),
+      revealLimit.height * math.sin(angle),
+    );
+    return _CurlPose(
+      math.min(maxReach, math.max(radius, (distance + rollOffset) / 2)),
+      radius,
+      angle,
+    );
+  }
+
+  Path paperPath(Size size) {
+    if (reach == 0) return Path()..addRect(Offset.zero & size);
+    final corner = Offset(size.width, 0);
+    final normal = axis;
+    final tangent = Offset(-normal.dy, normal.dx);
+    final span = size.width + size.height;
+    final line = corner + normal * reach;
+    final across = tangent * span;
+    final depth = normal * span;
+    return Path()..addPolygon([
+      line - across,
+      line + across,
+      line + across + depth,
+      line - across + depth,
+    ], true);
+  }
+}
+
+class _LoginPaperClipper extends CustomClipper<Path> {
+  const new(this.pose);
+
+  final _CurlPose pose;
+
+  @override
+  Path getClip(Size size) => pose.paperPath(size);
+
+  @override
+  bool shouldReclip(_LoginPaperClipper oldClipper) => oldClipper.pose != pose;
+}
+
+/// 从俯视角绘制绕圆柱翻过半圈的纸. 每段先裁到原纸边界, 再投影到屏幕.
+class _CurlPainter extends CustomPainter {
+  const new({
+    required this.pose,
+    required this.paper,
+    required this.front,
+    required this.shadow,
+  });
+
+  final _CurlPose pose;
+  final Color paper;
+  final Color front;
   final Color shadow;
 
-  /// 卷起方向与页面顶边的夹角. 若取 45° 则页角沿对角线翻折, 翻折后的两条边呈水平和垂直方向, 视觉较呆板.
-  static const _lean = 53 * math.pi / 180;
-
-  /// 画布的宽高比.
-  static final double aspect = math.tan(_lean);
-
-  /// 圆柱半径与纸色三角高度之比.
-  static const _radiusRatio = 0.16;
-
-  /// 每四分之一圈的采样段数.
-  static const _steps = 12;
+  _CurlPainter withPose(_CurlPose next) =>
+      _CurlPainter(pose: next, paper: paper, front: front, shadow: shadow);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final visible = size.height * math.sin(_lean);
-    final r = visible * _radiusRatio;
-    final a = visible + r;
+    final r = pose.radius;
+    if (r <= 0) return;
+    final a = pose.reach + r;
     final half = math.pi * r / 2;
-    final tip = 2 * a - math.pi * r;
-    final topSlope = math.tan(_lean);
-    final rightSlope = -1 / topSlope;
+    final axis = pose.axis;
+    final tangent = Offset(-axis.dy, axis.dx);
+    Offset project(Offset point) => Offset(
+      point.dx * axis.dx + point.dy * axis.dy,
+      point.dx * tangent.dx + point.dy * tangent.dy,
+    );
 
-    Offset onRoll(double u, double slope) =>
-        Offset(a - r * math.sin(u / r), slope * (a - u));
-
-    final under = Path()..moveTo(a, a * topSlope);
-    final over = Path()..moveTo(a - r, (a - half) * topSlope);
-    for (var i = 1; i <= _steps; i++) {
-      final u = half * i / _steps;
-      final lower = onRoll(u, topSlope);
-      final upper = onRoll(half + u, topSlope);
-      under.lineTo(lower.dx, lower.dy);
-      over.lineTo(upper.dx, upper.dy);
-    }
-    over.lineTo(tip, 0);
-    for (var i = _steps; i >= 0; i--) {
-      final u = half * i / _steps;
-      final lower = onRoll(u, rightSlope);
-      final upper = onRoll(half + u, rightSlope);
-      under.lineTo(lower.dx, lower.dy);
-      over.lineTo(upper.dx, upper.dy);
-    }
-    under.close();
-    over.close();
-
-    final reveal = Path()
-      ..moveTo(0, 0)
-      ..lineTo(a, a * topSlope)
-      ..lineTo(a, a * rightSlope)
-      ..close();
-    final shade = Paint()..color = Color.lerp(back, shadow, 0.14)!;
-    final flap = Color.lerp(back, paper, 0.95)!;
+    final original = [
+      Offset.zero,
+      project(Offset(0, size.height)),
+      project(Offset(-size.width, size.height)),
+      project(Offset(-size.width, 0)),
+    ];
+    double onRoll(double p) => a - r * math.sin((a - p) / r);
+    final under = _projectBand(original, a - half, a, onRoll, 12);
+    final over = _projectBand(original, a - 2 * half, a - half, onRoll, 12)
+      ..addPath(
+        _projectBand(original, 0, a - 2 * half, (p) => 2 * a - 2 * half - p, 1),
+        Offset.zero,
+      );
+    final shade = Paint()..color = Color.lerp(front, shadow, 0.14)!;
+    final flap = Color.lerp(front, paper, 0.95)!;
 
     canvas
       ..save()
+      ..clipRect(Offset.zero & size)
       ..translate(size.width, 0)
-      ..rotate(math.pi - _lean)
-      ..drawPath(reveal, Paint()..color = paper)
+      ..rotate(math.pi - pose.lean)
       ..drawPath(over.shift(Offset(r * 0.3, 0)), shade)
       ..drawPath(under, shade)
-      ..drawPath(over, Paint()..color = flap)
-      ..clipRect(Rect.fromLTRB(a - r, a * rightSlope, a, a * topSlope))
       ..drawPath(
         over,
         Paint()
           ..shader = LinearGradient(
-            colors: [Color.lerp(flap, back, 0.3)!, flap],
+            colors: [Color.lerp(flap, front, 0.3)!, flap],
           ).createShader(Rect.fromLTRB(a - r, 0, a, 1)),
       )
       ..restore();
   }
 
+  static List<Offset> _clipAt(
+    List<Offset> polygon,
+    double p, {
+    required bool keepRight,
+  }) {
+    if (polygon.isEmpty) return polygon;
+    bool inside(Offset point) => keepRight ? point.dx >= p : point.dx <= p;
+    final clipped = <Offset>[];
+    var previous = polygon.last;
+    for (final point in polygon) {
+      if (inside(previous) != inside(point)) {
+        clipped.add(
+          Offset(
+            p,
+            ui.lerpDouble(
+              previous.dy,
+              point.dy,
+              (p - previous.dx) / (point.dx - previous.dx),
+            )!,
+          ),
+        );
+      }
+      if (inside(point)) clipped.add(point);
+      previous = point;
+    }
+    return clipped;
+  }
+
+  static Path _projectBand(
+    List<Offset> original,
+    double start,
+    double end,
+    double Function(double) project,
+    int steps,
+  ) {
+    final path = Path();
+    if (start >= end) return path;
+    final band = _clipAt(
+      _clipAt(original, start, keepRight: true),
+      end,
+      keepRight: false,
+    );
+    if (band.length < 3) return path;
+    var previous = band.last;
+    path.moveTo(project(previous.dx), previous.dy);
+    for (final point in band) {
+      for (var i = 1; i <= steps; i++) {
+        final sample = Offset.lerp(previous, point, i / steps)!;
+        path.lineTo(project(sample.dx), sample.dy);
+      }
+      previous = point;
+    }
+    return path..close();
+  }
+
   @override
   bool shouldRepaint(_CurlPainter oldDelegate) =>
+      oldDelegate.pose != pose ||
       oldDelegate.paper != paper ||
-      oldDelegate.back != back ||
+      oldDelegate.front != front ||
       oldDelegate.shadow != shadow;
 }
 
