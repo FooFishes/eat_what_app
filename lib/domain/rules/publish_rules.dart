@@ -24,20 +24,21 @@ abstract final class PublishRules {
     return price <= priceMax ? price : null;
   }
 
-  /// 价格已填写但不合法时的提示文字. 未填写或合法时返回 null.
-  static String? priceError(String text) =>
-      text.trim().isEmpty || parsePrice(text) != null
-      ? null
-      : '请输入 0 到 999 的价格，最多一位小数';
+  /// 价格不合法时的提示文字, 合法时返回 null.
+  ///
+  /// 价格选填, 未填写是合法的. 编辑已有价格的菜时 [keep] 为 true, 这时清空也不合法: 编辑接口不传价格表示不改, 没法删掉原价.
+  static String? priceError(String text, {bool keep = false}) {
+    if (text.trim().isEmpty) return keep ? '价格不能清空' : null;
+    return parsePrice(text) == null ? '请输入 0 到 999 的价格，最多一位小数' : null;
+  }
 
-  /// 发布按钮上方的必填项提示, 如 "请填写价格和分类". 必填项都已填写时返回 null.
+  /// 发布按钮上方的必填项提示, 如 "请填写菜名和分类". 必填项都已填写时返回 null. 价格选填, 不在其中.
   static String? missingText({
     required bool photo,
     required bool name,
-    required bool price,
     required bool category,
   }) {
-    final fields = [if (!name) '菜名', if (!price) '价格', if (!category) '分类'];
+    final fields = [if (!name) '菜名', if (!category) '分类'];
     final fill = fields.isEmpty ? null : '填写${_join(fields)}';
     return switch ((photo, fill)) {
       (true, null) => null,

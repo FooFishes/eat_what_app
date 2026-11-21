@@ -201,6 +201,14 @@ class _DishFormState extends ConsumerState<_DishForm> {
   /// 价格在编辑模式下是否保持未改动.
   bool get _priceUnchanged => _editing && _price.text == _initialPrice;
 
+  /// 价格输入框的错误提示, 合法时为 null. 未改动的原价不校验.
+  String? get _priceError => _priceUnchanged
+      ? null
+      : PublishRules.priceError(
+          _price.text,
+          keep: widget.original?.price != null,
+        );
+
   /// 计算编辑模式下相对原菜品的变更内容, 无改动或处于发布模式时返回 null.
   DishChange? _change(PublishDraft draft) {
     final original = widget.original;
@@ -363,7 +371,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     final draft = ref.read(_draft);
     final price = PublishRules.parsePrice(_price.text);
     final category = draft.category;
-    if (price == null || category == null || draft.uploading) return;
+    if (_priceError != null || category == null || draft.uploading) return;
     if (draft.hasFailedUpload) {
       showToast(context, '有照片未上传成功，请重试或删除');
       return;
@@ -410,7 +418,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
       return;
     }
     final draft = ref.read(_draft);
-    if (draft.uploading) return;
+    if (_priceError != null || draft.uploading) return;
     if (draft.hasFailedUpload) {
       showToast(context, '有照片未上传成功，请重试或删除');
       return;
@@ -556,7 +564,6 @@ class _DishFormState extends ConsumerState<_DishForm> {
     final missing = PublishRules.missingText(
       photo: original != null || draft.photos.isNotEmpty,
       name: name.isNotEmpty,
-      price: price != null || _priceUnchanged,
       category:
           draft.category != null ||
           (original != null && original.category == null),
@@ -570,8 +577,12 @@ class _DishFormState extends ConsumerState<_DishForm> {
       final original? => () => unawaited(_save(original)),
       null => _publish,
     };
+    final priceError = _priceError;
     if (missing != null) {
       note = missing;
+      onPressed = null;
+    } else if (priceError != null) {
+      note = priceError;
       onPressed = null;
     } else if (duplicateId != null) {
       note = original == null ? '这家店已有这道菜，去看看再说两句' : '这家店已有同名的菜，换个菜名';
@@ -683,12 +694,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
                             ),
                           const SizedBox(height: EatSpace.s16),
                           EatFormField.price(
-                            label: '价格',
+                            label: '价格，选填',
                             controller: _price,
                             hintText: '0',
-                            errorText: _priceUnchanged
-                                ? null
-                                : PublishRules.priceError(_price.text),
+                            errorText: priceError,
                             textInputAction: TextInputAction.done,
                             onChanged: (_) => setState(() {}),
                           ),

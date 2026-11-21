@@ -81,8 +81,8 @@ Future<void> _enterName(WidgetTester tester, String name) async {
 }
 
 Future<void> _enterPrice(WidgetTester tester, String price) async {
-  await tester.scrollUntilVisible(_field('价格'), 200, scrollable: _page());
-  await tester.enterText(_field('价格'), price);
+  await tester.scrollUntilVisible(_field('价格，选填'), 200, scrollable: _page());
+  await tester.enterText(_field('价格，选填'), price);
   await tester.pumpAndSettle();
 }
 
@@ -112,7 +112,7 @@ void main() {
       overrides: [recordAnalytics],
     );
 
-    expect(find.text('请添加照片并填写菜名、价格和分类'), findsOneWidget);
+    expect(find.text('请添加照片并填写菜名和分类'), findsOneWidget);
 
     await _fillAndPublish(tester);
     await tester.pumpAndSettle();
@@ -172,6 +172,58 @@ void main() {
       lessThanOrEqualTo(844 - 300),
       reason: '内容停在键盘上方',
     );
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('价格选填：不填也能发布，不发送价格；填错时拦下', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    await tester.enterText(_field('菜名'), '鲜虾云吞');
+    await _enterPrice(tester, '12.55');
+    await _tapText(tester, '小吃');
+    expect(find.text('请输入 0 到 999 的价格，最多一位小数'), findsWidgets);
+    expect(
+      tester.widget<EatButton>(find.widgetWithText(EatButton, '发布')).onPressed,
+      isNull,
+    );
+
+    await _enterPrice(tester, '');
+    await tester.tap(find.text('发布'));
+    await tester.pumpAndSettle();
+
+    expect(_published(env).containsKey('price'), isFalse);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('照片被服务端拒收时写出服务端给的原因', (tester) async {
+    final env = TestEnv();
+    _routes(env, {'id': 99});
+    env.adapter.on('POST /upload/complete', [
+      FakeAdapter.fail(10001, '这张照片未通过内容检查：照片里有二维码，请更换'),
+    ]);
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.publishDish(7),
+    );
+
+    await _addPhoto(tester);
+    await tester.enterText(_field('菜名'), '鲜虾云吞');
+    await _tapText(tester, '小吃');
+
+    expect(find.text('这张照片未通过内容检查：照片里有二维码，请更换'), findsOneWidget);
+    expect(find.text('提交的内容有误，请检查后重试'), findsNothing);
+    await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });
 
@@ -516,7 +568,7 @@ void main() {
       expect(env.adapter.sent('POST /foods/suggest-tags'), hasLength(1));
       expect(find.text('没能识别这道菜，请手动选择'), findsNothing);
       expect(find.text('按照片预选，可以改'), findsNothing);
-      expect(find.text('请填写价格和分类'), findsOneWidget);
+      expect(find.text('请填写分类'), findsOneWidget);
       await unmountApp(tester, container);
     });
 

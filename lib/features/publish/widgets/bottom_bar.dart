@@ -6,12 +6,14 @@ import 'package:flutter/widgets.dart';
 /// 发布流程页面底部的固定操作栏, 包含主操作按钮及其上方的状态说明.
 ///
 /// 软键盘弹出时自动隐藏, 避免操作栏被挤压在输入框与键盘之间; 收起键盘后恢复展示并允许点击主按钮.
+///
+/// 底部留白在安全区之外另加 `space-24`, 没有底部安全区 (Web, 三键导航) 时按钮也不贴着屏幕底边.
 class PublishBottomBar extends StatelessWidget {
   const new({super.key, required this.child, this.note});
 
   final Widget child;
 
-  /// 显示在按钮上方的警示说明文案 (使用 `warn` 色), 例如 "请填写价格和分类".
+  /// 显示在按钮上方的警示说明文案 (使用 `warn` 色), 例如 "请填写菜名和分类".
   final String? note;
 
   @override
@@ -26,9 +28,9 @@ class PublishBottomBar extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           padding,
-          EatSpace.s10,
+          EatSpace.s16,
           padding,
-          safe.bottom + EatSpace.s16,
+          safe.bottom + EatSpace.s24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

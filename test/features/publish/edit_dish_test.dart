@@ -97,13 +97,13 @@ void main() {
       reason: '详情页带入了菜品，编辑页不再读取',
     );
     expect(_textOf(tester, _field('菜名')), '鲜虾蟹籽云吞');
-    expect(_textOf(tester, _field('价格')), '18');
+    expect(_textOf(tester, _field('价格，选填')), '18');
     expect(find.text('所在的店 袁记云饺', findRichText: true), findsOneWidget);
     expect(find.text('换一家'), findsNothing);
     expect(find.text('2 / 2'), findsNothing);
     expect(_save(tester), isNull, reason: '没有改动时不能保存');
 
-    await _enter(tester, _field('价格'), '20');
+    await _enter(tester, _field('价格，选填'), '20');
     await _tapText(tester, '辣');
     await _enter(tester, find.byType(TextField).last, '');
     expect(_save(tester), isNotNull);
@@ -127,6 +127,24 @@ void main() {
       isEmpty,
       reason: '编辑不算发布',
     );
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
+  testWidgets('已有的价格不能清空', (tester) async {
+    final env = _env();
+    final (container, _) = await pumpApp(
+      tester,
+      env,
+      session: const SignedIn(user: verifiedUser),
+      location: Paths.dish(1),
+    );
+    await tester.tap(find.bySemanticsLabel('编辑'));
+    await tester.pumpAndSettle();
+
+    await _enter(tester, _field('价格，选填'), '');
+    expect(find.text('价格不能清空'), findsWidgets);
+    expect(_save(tester), isNull);
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
   });

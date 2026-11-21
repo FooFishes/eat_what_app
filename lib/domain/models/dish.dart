@@ -128,7 +128,9 @@ class const NewDish({
   required final int shopId,
   required final String name,
   required final List<String> imageKeys,
-  required final double price,
+
+  /// 价格选填, 为 null 时不发送.
+  final double? price,
   required final DishCategory category,
   required final StageColor stage,
   required final List<StageColor> stageAlternates,
