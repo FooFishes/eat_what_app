@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
+import 'package:eat/data/place/place_api.dart';
+import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/data/recommend/recommend_repository.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/geo.dart';
+import 'package:eat/domain/models/paged.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
@@ -362,6 +365,119 @@ class DiscoverShops extends _$DiscoverShops {
         moreError: feed.moreError,
       ),
     );
+  }
+}
+
+/// 抽屉列表的排序, [label] 是分类栏筛选里的选项. 三个分类共用一个排序.
+enum DiscoverOrder {
+  /// 推荐接口的顺序, 按饭点和场景推荐.
+  recommend('推荐', null),
+
+  /// 按顶栏所选场景 (堂食或外卖) 的推荐率倒序.
+  rating('推荐率', ShopSort.rating),
+
+  /// 按离查询位置的距离升序.
+  distance('离我近', ShopSort.distance),
+
+  /// 按新建时间倒序.
+  newest('最新', ShopSort.newest);
+
+  const new(this.label, this.sort);
+
+  final String label;
+
+  /// 逛店接口的排序; [recommend] 不走逛店接口, 为 null.
+  final ShopSort? sort;
+}
+
+// TODO: 逛店接口不排除已关门的店, 也不按饭点筛. 后端提供排除参数后改用参数, 不再在客户端过滤.
+/// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+///
+/// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+/// - 顶栏选了外卖时只列能点外卖的店.
+/// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+@riverpod
+class SortedShops extends _$SortedShops {
+  static const _pageSize = 20;
+
+  /// 一次最多连着取几页, 防止一直遇到整页都是已关门的店.
+  static const _maxSkip = 3;
+
+  @override
+  Future<ShopFeed> build(ShopKind kind, DiscoverOrder order) async {
+    final place = ref.watch(currentPlaceProvider);
+    if (!place.ready) return Completer<ShopFeed>().future;
+    final first = await _fetch(place, 1, cancellable: true);
+    return ShopFeed(
+      shops: first.items,
+      page: first.page,
+      hasMore: first.hasNext,
+    );
+  }
+
+  Future<Paged<Shop>> _fetch(
+    CurrentPlace place,
+    int page, {
+    bool cancellable = false,
+  }) async {
+    final repo = ref.read(placeRepositoryProvider);
+    final cancelToken = cancellable ? ref.cancelToken() : null;
+    final near = _near(ref, place);
+    var next = page;
+    for (var i = 0; ; i++) {
+      final result = await repo.searchShops(
+        near: near,
+        kind: kind,
+        sort: order.sort,
+        scene: place.scene,
+        delivery: place.scene == RatingScene.delivery,
+        page: next,
+        pageSize: _pageSize,
+        cancelToken: cancelToken,
+      );
+      final open = [
+        for (final shop in result.items)
+          if (!shop.closed) shop,
+      ];
+      if (open.isNotEmpty || !result.hasNext || i + 1 >= _maxSkip) {
+        return Paged(
+          items: open,
+          page: result.page,
+          hasNext: result.hasNext,
+          total: result.total,
+        );
+      }
+      next = result.page + 1;
+    }
+  }
+
+  Future<void> loadMore() async {
+    final feed = state.value;
+    if (feed == null || !feed.hasMore || feed.loadingMore) return;
+    state = AsyncData(
+      ShopFeed(shops: feed.shops, page: feed.page, loadingMore: true),
+    );
+    try {
+      final more = await _fetch(ref.read(currentPlaceProvider), feed.page + 1);
+      if (!ref.mounted) return;
+      final known = {for (final s in feed.shops) s.id};
+      state = AsyncData(
+        ShopFeed(
+          shops: [
+            ...feed.shops,
+            for (final s in more.items)
+              if (!known.contains(s.id)) s,
+          ],
+          page: more.page,
+          hasMore: more.hasNext,
+        ),
+      );
+    } on AppFailure catch (e) {
+      if (!ref.mounted) return;
+      state = AsyncData(
+        ShopFeed(shops: feed.shops, page: feed.page, moreError: e),
+      );
+    }
   }
 }
 

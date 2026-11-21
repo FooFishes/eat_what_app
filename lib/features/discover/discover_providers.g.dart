@@ -176,3 +176,127 @@ abstract class _$DiscoverShops extends $AsyncNotifier<ShopFeed> {
     return element.handleCreate(ref, () => build(_$args));
   }
 }
+
+/// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+///
+/// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+/// - 顶栏选了外卖时只列能点外卖的店.
+/// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+
+@ProviderFor(SortedShops)
+final sortedShopsProvider = SortedShopsFamily._();
+
+/// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+///
+/// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+/// - 顶栏选了外卖时只列能点外卖的店.
+/// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+final class SortedShopsProvider
+    extends $AsyncNotifierProvider<SortedShops, ShopFeed> {
+  /// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+  ///
+  /// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+  /// - 顶栏选了外卖时只列能点外卖的店.
+  /// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+  SortedShopsProvider._({
+    required SortedShopsFamily super.from,
+    required (ShopKind, DiscoverOrder) super.argument,
+  }) : super(
+         retry: null,
+         name: r'sortedShopsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$sortedShopsHash();
+
+  @override
+  String toString() {
+    return r'sortedShopsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  SortedShops create() => SortedShops();
+
+  @override
+  bool operator ==(Object other) {
+    return other is SortedShopsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$sortedShopsHash() => r'92627e2f5ed1a64ba54fee121e6acbbdf9a833bc';
+
+/// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+///
+/// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+/// - 顶栏选了外卖时只列能点外卖的店.
+/// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+
+final class SortedShopsFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          SortedShops,
+          AsyncValue<ShopFeed>,
+          ShopFeed,
+          FutureOr<ShopFeed>,
+          (ShopKind, DiscoverOrder)
+        > {
+  SortedShopsFamily._()
+    : super(
+        retry: null,
+        name: r'sortedShopsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+  ///
+  /// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+  /// - 顶栏选了外卖时只列能点外卖的店.
+  /// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+
+  SortedShopsProvider call(ShopKind kind, DiscoverOrder order) =>
+      SortedShopsProvider._(argument: (kind, order), from: this);
+
+  @override
+  String toString() => r'sortedShopsProvider';
+}
+
+/// 抽屉里 [kind] 一栏按 [order] 排的店, 走逛店接口, 向下滚动时按页追加. 地点或场景变化时重新请求.
+///
+/// - 查询位置和推荐一样 (见 [_near]); 推荐率按顶栏的场景排.
+/// - 顶栏选了外卖时只列能点外卖的店.
+/// - 抽屉不列已关门的店, 在客户端去掉; 一页全是已关门的店时接着取下一页.
+
+abstract class _$SortedShops extends $AsyncNotifier<ShopFeed> {
+  late final _$args = ref.$arg as (ShopKind, DiscoverOrder);
+  ShopKind get kind => _$args.$1;
+  DiscoverOrder get order => _$args.$2;
+
+  FutureOr<ShopFeed> build(ShopKind kind, DiscoverOrder order);
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<ShopFeed>, ShopFeed>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<ShopFeed>, ShopFeed>,
+              AsyncValue<ShopFeed>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(_$args.$1, _$args.$2));
+  }
+}

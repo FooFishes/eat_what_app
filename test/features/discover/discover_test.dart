@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
+import 'package:eat/design/widgets/eat_choice_group.dart';
+import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
@@ -580,6 +582,158 @@ void main() {
     expect(env.kv.values['prefs.scene'], 'delivery');
   });
 
+  group('分类栏的排序', () {
+    setUp(() {
+      env.adapter.on('GET /restaurant/browse', [
+        FakeAdapter.ok(pageJson([restaurantJson(id: 22, name: '杨国福麻辣烫')])),
+      ]);
+    });
+
+    /// 浮层里的选项, 和页面别处的同名文字分开.
+    Finder option(String label) => find.descendant(
+      of: find.byType(EatChoiceGroup<DiscoverOrder>),
+      matching: find.text(label),
+    );
+
+    Future<void> chooseDelivery(WidgetTester tester) async {
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('点外卖'));
+      await tester.tap(find.text('点外卖'));
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('再点一次选中的分类长出排序；开着时换分类，浮层跟过去，排序不变', (tester) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      expect(find.text('排序'), findsNothing);
+
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget);
+      for (final label in ['推荐', '推荐率', '离我近', '最新']) {
+        expect(option(label), findsOneWidget);
+      }
+      expect(
+        tester.getTopLeft(find.text('排序')).dy,
+        greaterThan(tester.getBottomLeft(find.text('美食')).dy),
+      );
+      await expectAccessible(tester);
+
+      await tester.tap(find.text('甜点饮品'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget, reason: '浮层开着时换分类不收起');
+      expect(
+        env.adapter.sent('GET /recommend').map((r) => r.query['kind']),
+        contains('drink'),
+      );
+
+      await tester.tap(option('最新'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsNothing);
+      expect(
+        env.adapter.sent('GET /restaurant/browse').last.query,
+        allOf(containsPair('kind', 'drink'), containsPair('sort', 'NEWEST')),
+      );
+      expect(find.bySemanticsLabel(RegExp('最新')), findsOneWidget);
+
+      await tester.tap(find.text('自助'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('GET /restaurant/browse').last.query,
+        allOf(containsPair('kind', 'buffet'), containsPair('sort', 'NEWEST')),
+        reason: '三个分类共用一个排序',
+      );
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('外卖时选推荐率：逛店按外卖推荐率排、只列能点外卖的店，不列已关门的；选回推荐走推荐', (tester) async {
+      env.adapter.on('GET /restaurant/browse', [
+        FakeAdapter.ok(
+          pageJson([
+            {...restaurantJson(id: 21, name: '老店'), 'permanentlyClosed': true},
+            restaurantJson(id: 22, name: '杨国福麻辣烫'),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      await chooseDelivery(tester);
+
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      await tester.tap(option('推荐率'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      final query = env.adapter.sent('GET /restaurant/browse').last.query;
+      expect(query, containsPair('kind', 'food'));
+      expect(query, containsPair('sort', 'RATING'));
+      expect(query, containsPair('scene', 'delivery'));
+      expect(query, containsPair('delivery', true));
+      expect(query.containsKey('gcjLat'), isTrue, reason: '和推荐用同一个位置');
+      expect(find.text('杨国福麻辣烫'), findsOneWidget);
+      expect(find.text('老店'), findsNothing);
+
+      final recommends = env.adapter.sent('GET /recommend').length;
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      await tester.tap(option('推荐'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter
+            .sent('GET /recommend')
+            .skip(recommends)
+            .map((r) => r.query['kind']),
+        contains('food'),
+      );
+      expect(find.text('杨国福麻辣烫'), findsNothing);
+      expect(find.text('一碗面'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('分类栏吸顶时从顶上那份长出来；滑动抽屉收起', (tester) async {
+      env.adapter.on('GET /recommend', [
+        FakeAdapter.ok(
+          feedJson([
+            for (var i = 1; i <= 10; i++) cardJson(id: i, name: '店$i'),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -560));
+      await tester.pumpAndSettle();
+      final pinned = find.text('美食').hitTestable();
+      final top = tester.getBottomLeft(pinned.first).dy;
+      expect(top, lessThan(120));
+
+      await tester.tap(pinned.first);
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget);
+      final y = tester.getTopLeft(find.text('排序')).dy;
+      expect(y, greaterThan(top));
+      expect(y, lessThan(top + 60), reason: '挂在吸顶的那份分类栏下面');
+
+      await tester.dragFrom(const Offset(195, 600), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsNothing);
+      await unmountApp(tester, container);
+    });
+  });
   group('在哪吃面板的校区', () {
     setUp(() {
       env.adapter.on('GET /campus/list', [FakeAdapter.ok(_twoCampuses)]);

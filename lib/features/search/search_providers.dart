@@ -4,6 +4,7 @@ import 'package:eat/core/network/ref_extensions.dart';
 import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/food/food_api.dart';
 import 'package:eat/data/food/food_repository.dart';
+import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -45,11 +46,34 @@ Future<List<Dish>> dishSearch(Ref ref, String keyword, MealTime? meal) async {
   return page.items;
 }
 
-/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+/// 搜店的排序, [label] 是搜索页 "店" 栏筛选里的选项.
+enum ShopOrder {
+  /// 按与当前定位的距离升序, 无定位时按与校区中心的距离; 两者都没有时服务端按新建时间倒序.
+  distance('离我近', ShopSort.distance),
+
+  /// 按堂食推荐率倒序.
+  dineIn('堂食推荐率', ShopSort.rating, RatingScene.dineIn),
+
+  /// 按外卖推荐率倒序.
+  delivery('外卖推荐率', ShopSort.rating, RatingScene.delivery),
+
+  /// 按新建时间倒序.
+  newest('最新', ShopSort.newest);
+
+  const new(this.label, this.sort, [this.scene]);
+
+  final String label;
+  final ShopSort sort;
+
+  /// [ShopSort.rating] 按哪个场景的推荐率排.
+  final RatingScene? scene;
+}
+
+/// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
 ///
-/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+/// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
 @riverpod
-Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
+Future<List<Shop>> shopSearch(Ref ref, String keyword, ShopOrder order) async {
   await Future<void>.delayed(_debounce);
   if (!ref.mounted) return const [];
   final scope = await shopSearchScope(ref);
@@ -59,6 +83,8 @@ Future<List<Shop>> shopSearch(Ref ref, String keyword) async {
       .searchShops(
         keyword: keyword,
         near: scope.point,
+        sort: order.sort,
+        scene: order.scene,
         pageSize: 40,
         cancelToken: ref.cancelToken(),
       );

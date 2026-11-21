@@ -6,13 +6,14 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_choice_group.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
-import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/morph_popover.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/domain/models/account_status.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -32,8 +33,11 @@ import 'package:go_router/go_router.dart';
 /// - 顶部搜索框替代页面标题与返回按钮同行固定, 不随结果列表滚动.
 /// - 未输入关键词时展示最近搜索记录, 若无历史记录则显示可搜索范围说明.
 /// - 搜索结果分为 "菜" 与 "店" 两个分栏: 默认展示 "菜", 仅店铺存在结果时自动切至 "店".
-/// - "菜" 按发布时间倒序排列且不显示距离; "店" 按距离升序排列, 已关门店铺排至末尾并标注状态.
-/// - 搜索框右端的 "筛选" 按饭点筛菜, 只作用于 "菜" 栏, 默认不选. 改了筛选后按新的结果重新决定停在哪一栏.
+/// - "菜" 按发布时间倒序排列且不显示距离; "店" 默认按距离升序排列, 已关门店铺不论哪种排序都排至末尾并标注状态.
+/// - 再点一次选中的分栏, 从那一栏长出一个小浮层, 放这一栏的筛选: "菜" 按饭点筛, 默认不限;
+///   "店" 换排序, 默认离我近. 浮层开着时点另一栏, 浮层跟过去换成那一栏的选项. 选了就生效并收起.
+///   两栏的筛选各自保留, 不是默认值时分栏文字旁带小圆点.
+/// - 改了筛选后停在当前这一栏, 不再按结果自动切换; 改关键词后重新按结果决定停在哪一栏.
 /// - 无匹配结果时展示 "没找到" 空状态, 认证用户额外展示 "新建一家店" 入口.
 class SearchPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -49,8 +53,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   /// 记录用户手动切换的分栏索引; 非 null 时停止根据结果数量自动切换分栏.
   int? _tab;
 
-  /// 筛选面板里选的饭点, null 表示不选.
+  /// "菜" 栏筛的饭点, null 表示不限.
   MealTime? _meal;
+
+  /// "店" 栏的排序.
+  var _order = ShopOrder.distance;
+
+  /// 筛选浮层是否开着; 开着时挂在当前选中的分栏上.
+  var _filterOpen = false;
+
+  /// 两个分栏文字的位置, 筛选浮层从这里长出来.
+  final _anchors = [GlobalKey(), GlobalKey()];
 
   @override
   void dispose() {
@@ -63,6 +76,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     setState(() {
       _keyword = keyword;
       _tab = null;
+      _filterOpen = false;
     });
   }
 
@@ -71,17 +85,15 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     unawaited(ref.read(searchHistoryProvider.notifier).add(value));
   }
 
-  Future<void> _openFilter() async {
-    final result = await showPanel<({MealTime? meal})>(
-      context,
-      builder: (_) => _FilterPanel(meal: _meal),
-    );
-    if (!mounted || result == null || result.meal == _meal) return;
-    setState(() {
-      _meal = result.meal;
-      _tab = null;
-    });
-  }
+  /// 在 [tab] 栏的筛选里选了一项: 收起浮层; 和原来不同 ([changed]) 时生效, 并停在这一栏.
+  void _applyFilter(int tab, VoidCallback change, {required bool changed}) =>
+      setState(() {
+        if (changed) {
+          change();
+          _tab = tab;
+        }
+        _filterOpen = false;
+      });
 
   void _useHistory(String word) {
     _input.text = word;
@@ -100,8 +112,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         autofocus: true,
         onChanged: _search,
         onSubmitted: _submit,
-        onFilter: _openFilter,
-        filterCount: _meal == null ? 0 : 1,
       ),
       slivers: [
         if (keyword.isEmpty)
@@ -114,7 +124,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   List<Widget> _results(String keyword) {
     final dishes = ref.watch(dishSearchProvider(keyword, _meal));
-    final shops = ref.watch(shopSearchProvider(keyword));
+    final shops = ref.watch(shopSearchProvider(keyword, _order));
     final dishCount = dishes.value?.length;
     final shopCount = shops.value?.length;
     final auto = dishCount == 0 && (shopCount ?? 0) > 0 ? 1 : 0;
@@ -125,13 +135,50 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       SliverToBoxAdapter(
         child: Transform.translate(
           offset: const Offset(0, -4),
-          child: EatTabs(
-            tabs: [
-              EatTabItem('菜', count: dishCount),
-              EatTabItem('店', count: shopCount),
-            ],
-            selected: tab,
-            onSelected: (i) => setState(() => _tab = i),
+          child: MorphPopover(
+            anchor: _filterOpen ? [_anchors[tab]] : null,
+            gap: EatSpace.s14,
+            label: tab == 0 ? '筛选菜' : '店的排序',
+            onDismiss: () => setState(() => _filterOpen = false),
+            builder: (_) => tab == 0
+                ? EatChoiceGroup(
+                    title: '吃哪顿',
+                    options: const [null, ...MealTime.values],
+                    selected: _meal,
+                    label: (meal) => meal?.label ?? '不限',
+                    onPick: (meal) => _applyFilter(
+                      0,
+                      () => _meal = meal,
+                      changed: meal != _meal,
+                    ),
+                  )
+                : EatChoiceGroup(
+                    title: '排序',
+                    options: ShopOrder.values,
+                    selected: _order,
+                    label: (order) => order.label,
+                    onPick: (order) => _applyFilter(
+                      1,
+                      () => _order = order,
+                      changed: order != _order,
+                    ),
+                  ),
+            child: EatTabs(
+              tabs: [
+                EatTabItem('菜', count: dishCount, indicator: _meal?.label),
+                EatTabItem(
+                  '店',
+                  count: shopCount,
+                  indicator: _order == ShopOrder.distance ? null : _order.label,
+                ),
+              ],
+              selected: tab,
+              onSelected: (i) => setState(() => _tab = i),
+              onReselect: (_) => setState(() => _filterOpen = !_filterOpen),
+              reselectHint: _filterOpen ? '收起筛选' : '筛选',
+              expanded: _filterOpen,
+              anchors: _anchors,
+            ),
           ),
         ),
       ),
@@ -166,7 +213,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         _resultSliver(
           shops,
           keyword,
-          retry: () => ref.invalidate(shopSearchProvider(keyword)),
+          retry: () => ref.invalidate(shopSearchProvider(keyword, _order)),
           builder: (items) => SliverList.separated(
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(height: 18),
@@ -253,78 +300,6 @@ class _History extends ConsumerWidget {
                   word,
                   selected: false,
                   onTap: () => onPick(word),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 搜菜的筛选面板, 只有一组饭点单选, 点选中的那项取消选择.
-///
-/// 面板内的选择先写入草稿, 点 "看结果" 后才生效.
-class _FilterPanel extends StatefulWidget {
-  const new({required this.meal});
-
-  /// 面板打开时已选的饭点, 作为草稿的初值.
-  final MealTime? meal;
-
-  @override
-  State<_FilterPanel> createState() => _FilterPanelState();
-}
-
-class _FilterPanelState extends State<_FilterPanel> {
-  late var _meal = widget.meal;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    return EatPanel(
-      title: '筛选',
-      actions: Row(
-        spacing: EatSpace.s10,
-        children: [
-          Expanded(
-            child: EatButton.mist(
-              '重置',
-              onPressed: _meal == null
-                  ? null
-                  : () => setState(() => _meal = null),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: EatButton.solid(
-              '看结果',
-              onPressed: () => Navigator.of(context).pop((meal: _meal)),
-            ),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: EatSpace.s8, bottom: 4),
-            child: Text(
-              '吃哪顿',
-              style: eat.text.meta.copyWith(
-                fontWeight: FontWeight.w600,
-                color: eat.colors.inkMuted,
-              ),
-            ),
-          ),
-          Wrap(
-            spacing: EatSpace.s8,
-            children: [
-              for (final meal in MealTime.values)
-                EatChip.choice(
-                  meal.label,
-                  selected: _meal == meal,
-                  onTap: () =>
-                      setState(() => _meal = _meal == meal ? null : meal),
                 ),
             ],
           ),

@@ -254,6 +254,7 @@ class PlaceRepository {
   /// - [radius] 单位为米, 需配合 [near] 使用, 为 null 时不限制半径.
   /// - [categories] 和 [tastes] 各自满足任一取值即可命中; [delivery] 为 true 时仅保留支持外卖或有外卖评价的店铺.
   /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
+  /// - [scene] 是 [ShopSort.rating] 按哪个场景的推荐率排, 不传按堂食; 其他排序不发送.
   ///
   /// 若未传入 [near], 则不发送 [radius] 和 [ShopSort.distance], 避免后端因缺少坐标而返回参数错误.
   Future<Paged<Shop>> searchShops({
@@ -269,6 +270,7 @@ class PlaceRepository {
     bool recommendedOnly = false,
     bool favoritesOnly = false,
     ShopSort? sort,
+    RatingScene? scene,
     int page = 1,
     int pageSize = 30,
     CancelToken? cancelToken,
@@ -289,6 +291,7 @@ class PlaceRepository {
       recommendedOnly: recommendedOnly ? true : null,
       favoritesOnly: favoritesOnly ? true : null,
       sort: near == null && sort == ShopSort.distance ? null : sort,
+      scene: sort == ShopSort.rating ? scene?.api : null,
       page: page,
       pageSize: pageSize,
       cancelToken: cancelToken,

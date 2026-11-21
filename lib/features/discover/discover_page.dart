@@ -21,12 +21,14 @@ import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_choice_group.dart';
 import 'package:eat/design/widgets/eat_option.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/morph_popover.dart';
 import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
@@ -56,6 +58,8 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 美食店推荐转盘, 支持拖动或点击 "换一个" 切换店铺, 点击 "就它了" 进入餐厅详情, 或标记 "不想去这家".
 /// - 抽屉: 包含分类栏 ("美食", "甜点饮品", "自助") 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
+///   再点一次选中的分类, 从这一项长出排序浮层: 推荐 (默认), 推荐率, 离我近, 最新. 三个分类共用一个排序,
+///   浮层开着时点别的分类, 浮层跟过去. 不是推荐时列表改走逛店接口, 选中的分类旁带小圆点.
 /// - 顶栏: 左侧显示当前地点, 饭点与用餐场景, 右侧为搜索和消息入口.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -67,6 +71,19 @@ class DiscoverPage extends ConsumerStatefulWidget {
 class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   /// 抽屉列表的类型.
   var _kind = ShopKind.food;
+
+  /// 抽屉列表的排序, 三个分类共用.
+  var _order = DiscoverOrder.recommend;
+
+  /// 排序浮层是否开着; 开着时挂在当前选中的分类上.
+  var _sortOpen = false;
+
+  /// 分类栏各项的位置. 分类栏有两份: 抽屉里的一份和吸顶的副本, 浮层挂在看得见的那份上.
+  final _inlineAnchors = [for (final _ in ShopKind.values) GlobalKey()];
+  final _pinnedAnchors = [for (final _ in ShopKind.values) GlobalKey()];
+
+  /// 两份分类栏和浮层同属一个点击分组, 点哪份分类栏都不算点浮层外面.
+  final _sortGroup = Object();
   late final AppLifecycleListener _lifecycle;
   var _staleNoticed = false;
   var _explaining = false;
@@ -182,7 +199,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent = const StagePlaceholder();
     }
 
-    final tabs = EatTabs(
+    final selected = ShopKind.values.indexOf(_kind);
+    EatTabs tabsAt(List<GlobalKey> anchors) => EatTabs(
       tabs: [
         for (final kind in ShopKind.values)
           EatTabItem(
@@ -192,11 +210,38 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
               ShopKind.drink => EatIcons.drink,
               ShopKind.buffet => EatIcons.buffet,
             },
+            indicator: kind == _kind && _order != DiscoverOrder.recommend
+                ? _order.label
+                : null,
           ),
       ],
-      selected: ShopKind.values.indexOf(_kind),
+      selected: selected,
       onSelected: (i) => setState(() => _kind = ShopKind.values[i]),
+      onReselect: (_) => setState(() => _sortOpen = !_sortOpen),
+      reselectHint: _sortOpen ? '收起排序' : '排序',
+      expanded: _sortOpen,
+      anchors: anchors,
       padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    );
+    final tabs = MorphPopover(
+      anchor: _sortOpen
+          ? [_pinnedAnchors[selected], _inlineAnchors[selected]]
+          : null,
+      groupId: _sortGroup,
+      gap: EatSpace.s14,
+      label: '店的排序',
+      onDismiss: () => setState(() => _sortOpen = false),
+      builder: (_) => EatChoiceGroup(
+        title: '排序',
+        options: DiscoverOrder.values,
+        selected: _order,
+        label: (order) => order.label,
+        onPick: (order) => setState(() {
+          _order = order;
+          _sortOpen = false;
+        }),
+      ),
+      child: tabsAt(_inlineAnchors),
     );
 
     return StageScaffold(
@@ -204,7 +249,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       topBar: const _TopBar(),
       stageContent: stageContent,
       // 分类栏滚动到顶栏下方后固定显示. 浏览列表的任意位置都可以切换分类.
-      pinnedBottom: tabs,
+      pinnedBottom: TapRegion(
+        groupId: _sortGroup,
+        child: tabsAt(_pinnedAnchors),
+      ),
       // 转盘固定在底层, 上滑时推荐流从下方盖上来.
       fixedStage: true,
       onRefresh: _refresh,
@@ -213,12 +261,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
         SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         // 不加左右边距: 店铺条目自己留边距, 横排的菜要能滑出右边距.
-        _ShopList(kind: _kind),
+        _ShopList(kind: _kind, order: _order),
       ],
     );
   }
 
-  /// 下拉刷新当前抽屉分类列表与未读消息数.
+  /// 下拉刷新当前抽屉分类 (按当前排序) 的列表与未读消息数.
   ///
   /// 当转盘已有正常推荐数据时不刷新转盘 (切店由 "换一个" 完成); 仅在转盘为空, 加载失败或正展示过期缓存批次时一并重新请求转盘.
   Future<void> _refresh() async {
@@ -229,9 +277,15 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       ref.invalidate(turntableQueueProvider);
     }
     try {
-      final provider = discoverShopsProvider(_kind);
-      ref.invalidate(provider);
-      await ref.read(provider.future);
+      if (_order == DiscoverOrder.recommend) {
+        final provider = discoverShopsProvider(_kind);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      } else {
+        final provider = sortedShopsProvider(_kind, _order);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      }
     } on AppFailure catch (e) {
       if (mounted) showToast(context, e.message);
     }
@@ -1048,16 +1102,32 @@ class _StageFailure extends StatelessWidget {
   }
 }
 
-/// 抽屉中 [kind] 分类的推荐店铺列表, 支持触底分页加载与点击跳转餐厅详情.
+/// 抽屉中 [kind] 分类的店铺列表, 支持触底分页加载与点击跳转餐厅详情.
+///
+/// [order] 为推荐时列推荐的店, 否则按排序逛店. 逛店接口不带招牌菜, 这时店名一栏右边放门头小图, 不排菜.
 class _ShopList extends ConsumerWidget {
-  const new({required this.kind});
+  const new({required this.kind, required this.order});
 
   final ShopKind kind;
+  final DiscoverOrder order;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = discoverShopsProvider(kind);
-    final list = ref.watch(provider);
+    final recommended = order == DiscoverOrder.recommend;
+    final AsyncValue<ShopFeed> list;
+    final VoidCallback retry;
+    final VoidCallback loadMore;
+    if (recommended) {
+      final provider = discoverShopsProvider(kind);
+      list = ref.watch(provider);
+      retry = () => ref.invalidate(provider);
+      loadMore = () => ref.read(provider.notifier).loadMore();
+    } else {
+      final provider = sortedShopsProvider(kind, order);
+      list = ref.watch(provider);
+      retry = () => ref.invalidate(provider);
+      loadMore = () => ref.read(provider.notifier).loadMore();
+    }
     final feed = list.value;
     if (feed == null) {
       if (list.hasError && !list.isLoading) {
@@ -1067,10 +1137,7 @@ class _ShopList extends ConsumerWidget {
               horizontal: EatSpace.s20,
               vertical: EatSpace.s24,
             ),
-            child: FailureState(
-              error: list.error,
-              onRetry: () => ref.invalidate(provider),
-            ),
+            child: FailureState(error: list.error, onRetry: retry),
           ),
         );
       }
@@ -1090,12 +1157,16 @@ class _ShopList extends ConsumerWidget {
           ),
           child: EmptyState(
             icon: EatIcons.store,
-            title: switch (kind) {
-              ShopKind.food => '还没有推荐的店',
-              ShopKind.drink => '还没有推荐的甜点饮品店',
-              ShopKind.buffet => '还没有推荐的自助店',
+            title: switch ((kind, recommended)) {
+              (ShopKind.food, true) => '还没有推荐的店',
+              (ShopKind.drink, true) => '还没有推荐的甜点饮品店',
+              (ShopKind.buffet, true) => '还没有推荐的自助店',
+              (ShopKind.food, false) => '还没有美食店',
+              (ShopKind.drink, false) => '还没有甜点饮品店',
+              (ShopKind.buffet, false) => '还没有自助店',
             },
-            message: '换个饭点或校区看看，也可以发布第一道菜。',
+            // 逛店不按饭点筛, 换饭点没有用.
+            message: recommended ? '换个饭点或校区看看，也可以发布第一道菜。' : '换个校区看看，也可以发布第一道菜。',
           ),
         ),
       );
@@ -1112,6 +1183,7 @@ class _ShopList extends ConsumerWidget {
               index: i,
               onTap: () => context.push(Paths.shop(feed.shops[i].id)),
               onDishTap: (dish) => context.push(Paths.dish(dish.id)),
+              dishes: recommended || feed.shops[i].signatures.isNotEmpty,
             ),
           ),
         ),
@@ -1120,7 +1192,7 @@ class _ShopList extends ConsumerWidget {
             child: LoadMoreTrigger(
               generation: feed.shops.length,
               failed: feed.moreError != null,
-              onVisible: () => ref.read(provider.notifier).loadMore(),
+              onVisible: loadMore,
             ),
           ),
       ],

@@ -13,7 +13,10 @@ enum ShopSort {
   distance('DISTANCE'),
 
   /// 按创建时间倒序排列.
-  newest('NEWEST');
+  newest('NEWEST'),
+
+  /// 按一个场景的推荐率倒序排列, 场景由 `scene` 参数给出, 不传按堂食. 推荐率相同时评价多的在前, 没有评价的排在最后.
+  rating('RATING');
 
   const new(this.api);
 
@@ -125,6 +128,7 @@ class PlaceApi {
   /// - [keyword] 匹配店名, 地址和店内菜品名称, 因菜名命中的店铺会附带 `matchedFood`.
   /// - 坐标可选但必须成对传入; 未指定 [sort] 时, 传坐标按距离升序排列, 否则按创建时间倒序.
   /// - [radius] 和 [ShopSort.distance] 均需配合坐标使用.
+  /// - [scene] 只配合 [ShopSort.rating] 使用, 取 `dine_in` 或 `delivery`, 不传按堂食.
   /// - [categories] 和 [tags] 各自满足任一取值即可命中.
   /// - [delivery] 为 true 时仅保留支持外卖或存在外卖评价的店铺.
   /// - [recommendedOnly] 为 true 时仅保留任一场景至少有 3 条评价且推荐率不低于 70% 的店铺.
@@ -143,6 +147,7 @@ class PlaceApi {
     bool? recommendedOnly,
     bool? favoritesOnly,
     ShopSort? sort,
+    String? scene,
     int page = 1,
     int pageSize = 30,
     CancelToken? cancelToken,
@@ -165,6 +170,7 @@ class PlaceApi {
         'recommendedOnly': ?recommendedOnly,
         'favoritesOnly': ?favoritesOnly,
         'sort': ?sort?.api,
+        'scene': ?scene,
         'page': page,
         'pageSize': pageSize,
       },
