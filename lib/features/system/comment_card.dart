@@ -817,7 +817,7 @@ class _Photos extends StatelessWidget {
 
 /// 主评论下方的回复列表, 默认展示最早的 2 条并将剩余回复折叠为 "展开 N 条回复".
 ///
-/// 当主评论回复数为 0 时不会请求回复列表.
+/// 当主评论回复数为 0 时不会请求回复列表. 起初只请求这 2 条, 点 "展开" 后才加载完整的第 1 页.
 class _Replies extends ConsumerStatefulWidget {
   const new({required this.comment});
 
@@ -833,15 +833,12 @@ class _RepliesState extends ConsumerState<_Replies> {
   @override
   Widget build(BuildContext context) {
     if (widget.comment.replyCount <= 0) return const SizedBox.shrink();
-    final replies = ref.watch(commentRepliesProvider(widget.comment.id));
+    final provider = commentRepliesProvider(widget.comment.id);
+    final replies = ref.watch(provider);
     final list = replies.value;
     if (list == null) {
       if (replies.hasError && !replies.isLoading) {
-        return _TextAction(
-          '回复加载失败，重试',
-          onTap: () =>
-              ref.invalidate(commentRepliesProvider(widget.comment.id)),
-        );
+        return _TextAction('回复加载失败，重试', onTap: () => ref.invalidate(provider));
       }
       return const SizedBox.shrink();
     }
@@ -856,17 +853,23 @@ class _RepliesState extends ConsumerState<_Replies> {
       children: [
         for (final reply in shown)
           _ReplyLine(root: widget.comment, reply: reply),
-        if (!_expanded && hidden > 0)
+        // 完整的第 1 页加载完之前仍是预览, 按钮保持 "展开 N 条回复", 不闪成 "展开更多".
+        if ((!_expanded || list.preview) && hidden > 0)
           _ExpandButton(
-            label: '展开 $hidden 条回复',
-            onTap: () => setState(() => _expanded = true),
+            label: _expanded && list.moreError != null
+                ? '加载失败，重试'
+                : '展开 $hidden 条回复',
+            onTap: () {
+              setState(() => _expanded = true);
+              if (list.preview) {
+                unawaited(ref.read(provider.notifier).loadMore());
+              }
+            },
           )
         else if (more)
           _ExpandButton(
             label: list.moreError == null ? '展开更多' : '加载失败，重试',
-            onTap: () => ref
-                .read(commentRepliesProvider(widget.comment.id).notifier)
-                .loadMore(),
+            onTap: () => ref.read(provider.notifier).loadMore(),
           )
         else if (_expanded && list.items.length > CommentRules.replyPreview)
           _ExpandButton(

@@ -8,6 +8,18 @@ import '../../support/comment_fixtures.dart';
 import '../../support/eat_test_app.dart';
 import '../../support/fakes.dart';
 
+final replies = [
+  replyJson(id: 21, author: '阿哲', text: '同意，加个炸蛋更香', ageMinutes: 20),
+  replyJson(id: 22, author: 'Momo', text: '汤底够酸', ageMinutes: 10),
+  replyJson(
+    id: 23,
+    replyTo: '阿哲',
+    author: '天凉被破王',
+    text: '炸蛋要早点说',
+    ageMinutes: 5,
+  ),
+];
+
 void main() {
   late TestEnv env;
 
@@ -39,18 +51,9 @@ void main() {
       ])
       ..on('GET /comments/11/replies', [
         FakeAdapter.ok(
-          commentPageJson([
-            replyJson(id: 21, author: '阿哲', text: '同意，加个炸蛋更香', ageMinutes: 20),
-            replyJson(id: 22, author: 'Momo', text: '汤底够酸', ageMinutes: 10),
-            replyJson(
-              id: 23,
-              replyTo: '阿哲',
-              author: '天凉被破王',
-              text: '炸蛋要早点说',
-              ageMinutes: 5,
-            ),
-          ], total: 3),
+          commentPageJson(replies.take(2).toList(), total: 3, hasNext: true),
         ),
+        FakeAdapter.ok(commentPageJson(replies, total: 3)),
       ]);
   });
 
@@ -81,6 +84,144 @@ void main() {
     expect(find.textContaining('阿哲'), findsNWidgets(2));
     expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
     await unmountApp(tester, container);
+  });
+
+  group('回复分页', () {
+    List<Map<String, dynamic>> sentReplies() => [
+      for (final r in env.adapter.sent('GET /comments/11/replies')) r.query,
+    ];
+
+    testWidgets('起初只取预览的 2 条；展开时重新取第 1 页的 20 条换掉预览', (tester) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+      expect(sentReplies(), [
+        {'page': 1, 'pageSize': 2},
+      ]);
+
+      await tester.tap(find.text('展开 1 条回复'));
+      await tester.pumpAndSettle();
+      expect(sentReplies(), [
+        {'page': 1, 'pageSize': 2},
+        {'page': 1, 'pageSize': 20},
+      ]);
+      expect(find.textContaining('同意，加个炸蛋更香'), findsOneWidget);
+      expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+      expect(find.text('收起'), findsOneWidget);
+
+      await tester.tap(find.text('收起'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('炸蛋要早点说'), findsNothing);
+      expect(find.text('展开 1 条回复'), findsOneWidget);
+      await tester.tap(find.text('展开 1 条回复'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+      expect(sentReplies(), hasLength(2), reason: '收起再展开不重新请求');
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('展开后的「展开更多」取第 2 页追加', (tester) async {
+      env.adapter.on('GET /comments/11/replies', [
+        FakeAdapter.ok(
+          commentPageJson(replies.take(2).toList(), total: 23, hasNext: true),
+        ),
+        FakeAdapter.ok(
+          commentPageJson(replies.take(2).toList(), total: 23, hasNext: true),
+        ),
+        FakeAdapter.ok(commentPageJson([replies[2]], page: 2, total: 23)),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('展开 21 条回复'));
+      await tester.pumpAndSettle();
+      expect(find.text('展开更多'), findsOneWidget);
+      await tester.tap(find.text('展开更多'));
+      await tester.pumpAndSettle();
+      expect(sentReplies(), [
+        {'page': 1, 'pageSize': 2},
+        {'page': 1, 'pageSize': 20},
+        {'page': 2, 'pageSize': 20},
+      ]);
+      expect(find.textContaining('同意，加个炸蛋更香'), findsOneWidget);
+      expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('展开时加载失败，预览留着，按钮变成重试', (tester) async {
+      env.adapter.on('GET /comments/11/replies', [
+        FakeAdapter.ok(
+          commentPageJson(replies.take(2).toList(), total: 3, hasNext: true),
+        ),
+        const FakeResponse.offline(),
+        FakeAdapter.ok(commentPageJson(replies, total: 3)),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('展开 1 条回复'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('同意，加个炸蛋更香'), findsOneWidget);
+      expect(find.textContaining('汤底够酸'), findsOneWidget);
+      expect(find.text('加载失败，重试'), findsOneWidget);
+
+      await tester.tap(find.text('加载失败，重试'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+      expect(find.text('收起'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('展开着发回复，重新取完整的第 1 页，新回复留在眼前', (tester) async {
+      env.adapter
+        ..on('POST /foods/1/comments/11/replies', [
+          FakeAdapter.ok(createdJson(id: 30)),
+        ])
+        ..on('GET /comments/11/replies', [
+          FakeAdapter.ok(
+            commentPageJson(replies.take(2).toList(), total: 3, hasNext: true),
+          ),
+          FakeAdapter.ok(commentPageJson(replies, total: 3)),
+          FakeAdapter.ok(
+            commentPageJson([
+              ...replies,
+              replyJson(id: 30, author: '小鱼', text: '我也觉得'),
+            ], total: 4),
+          ),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+      await tester.tap(find.text('展开 1 条回复'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('酸笋给得很大方'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText), '我也觉得');
+      await tester.pump();
+      await tester.tap(find.text('发送'));
+      await tester.pumpAndSettle();
+
+      expect(sentReplies().last, {'page': 1, 'pageSize': 20});
+      expect(find.textContaining('我也觉得'), findsOneWidget);
+      expect(find.textContaining('炸蛋要早点说'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
   });
 
   testWidgets('点正文是回复，长按打开「更多」的菜单', (tester) async {
