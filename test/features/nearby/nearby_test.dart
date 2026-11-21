@@ -1,9 +1,9 @@
-import 'dart:ui' show Brightness;
-
 import 'package:eat/core/platform/map/eat_map.dart';
+import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/features/shop/shop_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,7 +40,7 @@ void main() {
     final near = tester.getTopLeft(find.text('近一点的店'));
     final far = tester.getTopLeft(find.text('远一点的店'));
     expect(near.dy, lessThan(far.dy));
-    expect(near.dy, lessThan(300), reason: '没有地图时不留空白的地图区域, 列表从搜索和商圈下面开始');
+    expect(near.dy, lessThan(300), reason: '没有地图时不留空白的地图区域, 列表从搜索框下面开始');
     await unmountApp(tester, container);
   });
 
@@ -86,8 +86,9 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('商圈胶囊：只显示离所选校区不远的商圈', (tester) async {
-    final env = TestEnv();
+  group('选商圈', () {
+    late TestEnv env;
+
     Map<String, Object?> hub(int id, String name, double lat, double lng) => {
       'id': id,
       'name': name,
@@ -95,29 +96,136 @@ void main() {
       'gcjLat': lat,
       'boundary': null,
     };
-    env.adapter
-      ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
-      ..on('GET /hub/list', [
-        FakeAdapter.ok(
-          pageJson([
-            hub(1, '舜泰广场', 36.6681, 117.1412),
-            hub(2, '西门小吃街', 36.6900, 117.1700),
-            hub(3, '洪家楼', 36.687406, 117.068225),
-          ]),
-        ),
-      ])
-      ..on('GET /restaurant/browse', [FakeAdapter.ok(pageJson([]))]);
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.nearby,
+
+    Future<ProviderContainer> open(WidgetTester tester) async {
+      env = TestEnv();
+      env.adapter
+        ..on('GET /campus/list', [FakeAdapter.ok(campusListJson)])
+        ..on('GET /hub/list', [
+          FakeAdapter.ok(
+            pageJson([
+              hub(2, '西门小吃街', 36.6900, 117.1700),
+              hub(1, '舜泰广场', 36.6681, 117.1412),
+              hub(3, '洪家楼', 36.687406, 117.068225),
+            ]),
+          ),
+        ])
+        ..on('GET /restaurant/browse', [
+          FakeAdapter.ok(
+            pageJson([
+              restaurantJson(id: 1, name: '远一点的店', lat: 36.6760),
+              restaurantJson(id: 2, name: '近一点的店', lat: 36.6680),
+            ]),
+          ),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.nearby,
+      );
+      return container;
+    }
+
+    Finder panelField() => find.descendant(
+      of: find.byType(EatPanel),
+      matching: find.byType(EditableText),
     );
 
-    expect(find.text('舜泰广场'), findsOneWidget);
-    expect(find.text('西门小吃街'), findsOneWidget);
-    expect(find.text('洪家楼'), findsNothing);
-    await unmountApp(tester, container);
+    Future<void> openPanel(WidgetTester tester, String current) async {
+      await tester.tap(find.bySemanticsLabel('商圈，$current'));
+      await _settle(tester);
+      expect(find.text('选商圈'), findsOneWidget);
+    }
+
+    testWidgets('没选商圈时按钮写「附近」；面板里「附近」在前，商圈按离校区中心的距离排并写距离', (tester) async {
+      final container = await open(tester);
+      expect(find.bySemanticsLabel('商圈，附近'), findsOneWidget);
+      expect(find.text('舜泰广场'), findsNothing, reason: '商圈不再横排在搜索框下面');
+
+      await openPanel(tester, '附近');
+      expect(find.text('最近'), findsNothing, reason: '还没选过商圈');
+      expect(find.text('全部'), findsOneWidget);
+      expect(find.text('130 m'), findsOneWidget);
+      expect(find.text('3.7 km'), findsOneWidget);
+      expect(find.text('洪家楼'), findsNothing, reason: '不搜时只列离校区不远的商圈');
+      final panel = find.byType(EatPanel);
+      final nearby = tester.getTopLeft(
+        find.descendant(of: panel, matching: find.text('附近')),
+      );
+      final near = tester.getTopLeft(find.text('舜泰广场'));
+      final far = tester.getTopLeft(find.text('西门小吃街'));
+      expect(
+        nearby.dy < near.dy || (nearby.dy == near.dy && nearby.dx < near.dx),
+        isTrue,
+      );
+      expect(
+        near.dy < far.dy || (near.dy == far.dy && near.dx < far.dx),
+        isTrue,
+      );
+      await expectAccessible(tester);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('按名字搜：校区外的商圈也能搜到并选中，没有结果时写明', (tester) async {
+      final container = await open(tester);
+      await openPanel(tester, '附近');
+
+      await tester.enterText(panelField(), '洪家');
+      await _settle(tester);
+      expect(find.text('洪家楼'), findsOneWidget);
+      expect(find.text('舜泰广场'), findsNothing);
+      expect(find.text('全部'), findsNothing);
+
+      await tester.enterText(panelField(), '万达');
+      await _settle(tester);
+      expect(find.text('没找到「万达」'), findsOneWidget);
+
+      await tester.enterText(panelField(), '洪家');
+      await _settle(tester);
+      await tester.tap(find.text('洪家楼'));
+      await _settle(tester);
+      expect(find.text('洪家楼 2 家', findRichText: true), findsOneWidget);
+      expect(
+        env.adapter.sent('GET /restaurant/browse').last.query,
+        containsPair('hubId', 3),
+      );
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('选商圈后关上面板，列表只看这个商圈；再打开有「最近」；选「附近」回到按地图中心找', (tester) async {
+      final container = await open(tester);
+      await openPanel(tester, '附近');
+      await tester.tap(find.text('舜泰广场'));
+      await _settle(tester);
+
+      expect(find.text('选商圈'), findsNothing);
+      expect(find.bySemanticsLabel('商圈，舜泰广场'), findsOneWidget);
+      expect(find.text('舜泰广场 2 家', findRichText: true), findsOneWidget);
+      var query = env.adapter.sent('GET /restaurant/browse').last.query;
+      expect(query, containsPair('hubId', 1));
+      expect(query.containsKey('radius'), isFalse);
+
+      await openPanel(tester, '舜泰广场');
+      expect(find.text('最近'), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(EatPanel), matching: find.text('舜泰广场')),
+        findsNWidgets(2),
+        reason: '最近和全部里各一个',
+      );
+      await tester.tap(
+        find.descendant(of: find.byType(EatPanel), matching: find.text('附近')),
+      );
+      await _settle(tester);
+
+      expect(find.text('选商圈'), findsNothing);
+      expect(find.bySemanticsLabel('商圈，附近'), findsOneWidget);
+      expect(find.text('附近 2 家', findRichText: true), findsOneWidget);
+      query = env.adapter.sent('GET /restaurant/browse').last.query;
+      expect(query.containsKey('hubId'), isFalse);
+      expect(query['radius'], 3000);
+      await unmountApp(tester, container);
+    });
   });
 
   testWidgets('有地图时朗读店数；地图加载失败后提示并只显示列表', (tester) async {

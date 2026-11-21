@@ -51,7 +51,8 @@ import 'package:go_router/go_router.dart';
 /// 若地图服务不可用 (未配置 AK), 则直接进入手动添加表单.
 ///
 /// 表单字段说明:
-/// - 必填项包括店名, 类型 (美食, 甜点饮品或自助), 地图选点与地址描述, 所属商圈根据地图中心位置自动判定.
+/// - 必填项包括店名, 类型 (美食, 甜点饮品或自助), 地图选点与地址描述, 所属商圈根据选定的位置自动判定.
+/// - 地图默认锁定, 防止滑动页面时误触移动位置; 点 "调整位置" 后才能拖动, "用这个位置" 确认, "取消" 放弃.
 /// - 选填项包括门头照片, 品类, 口味, 适合饭点 (默认午饭和晚饭) 与价位, 保持默认即可提交. 能不能点外卖在菜品上设置.
 ///
 /// 重复店铺提示机制: 当选定地点已建店或 200 m 内存在同名店铺 (忽略空白与大小写) 时, 由服务端返回提示;
@@ -101,9 +102,15 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
   /// 提交时若服务端判定疑似重复, 记录响应返回的候选店铺列表, 修改店名或位置后清空.
   List<ShopDuplicate>? _rejected;
 
+  /// 是否正在调整位置. 只有调整时地图才接收手势.
+  var _adjusting = false;
+
+  /// 调整位置时拖到的点, 点 "用这个位置" 后才写入 [_center]; 还没拖过时为 null.
+  GcjPoint? _pending;
+
   /// 指针当前是否按在地图区域上.
   ///
-  /// 触摸地图时需禁用外层页面滚动, 避免纵向拖动手势被页面滚动容器拦截而导致地图无法平移.
+  /// 调整位置时触摸地图需禁用外层页面滚动, 避免纵向拖动手势被页面滚动容器拦截而导致地图无法平移.
   var _onMap = false;
   var _busy = false;
 
@@ -144,6 +151,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _keepNew = false;
     _rejected = null;
     _mapFailed = false;
+    _stopAdjusting();
     _editing = true;
   });
 
@@ -157,8 +165,38 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
     _keepNew = false;
     _rejected = null;
     _mapFailed = false;
+    _stopAdjusting();
     _editing = true;
   });
+
+  /// 退出调整位置, 丢掉拖到的点. 只改字段, 由调用方负责 setState.
+  void _stopAdjusting() {
+    _adjusting = false;
+    _pending = null;
+    _onMap = false;
+  }
+
+  /// 采用调整时拖到的点; 没拖过时位置不变.
+  void _usePending() => setState(() {
+    if (_pending case final pending?) {
+      _center = pending;
+      _rejected = null;
+    }
+    _stopAdjusting();
+  });
+
+  /// 放弃调整, 地图移回原来的点. 代码移动的视角不算手势, 不会再写入 [_pending].
+  void _cancelAdjusting() {
+    final point = _point;
+    if (_pending != null && point != null) {
+      unawaited(_map.moveTo(mapPoint(point)));
+    }
+    setState(_stopAdjusting);
+  }
+
+  void _leaveMap() {
+    if (_onMap) setState(() => _onMap = false);
+  }
 
   /// 从表单视图退回至地图候选列表.
   void _backToCandidates() => setState(() => _editing = false);
@@ -425,25 +463,60 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                     ),
                   ),
                   const SizedBox(height: EatSpace.s24),
-                  Text(mapReady ? '位置，拖动地图将标记对准店门口' : '位置', style: label),
+                  Text(
+                    mapReady && _adjusting ? '拖动地图，让标记对准店门口' : '位置',
+                    style: label,
+                  ),
                   const SizedBox(height: EatSpace.s8),
-                  if (mapReady && point != null)
+                  if (mapReady && point != null) ...[
                     Listener(
-                      onPointerDown: (_) => setState(() => _onMap = true),
-                      onPointerUp: (_) => setState(() => _onMap = false),
-                      onPointerCancel: (_) => setState(() => _onMap = false),
+                      onPointerDown: (_) {
+                        if (_adjusting) setState(() => _onMap = true);
+                      },
+                      onPointerUp: (_) => _leaveMap(),
+                      onPointerCancel: (_) => _leaveMap(),
                       child: _PickMap(
                         key: ValueKey(place?.uid),
                         controller: _map,
                         initial: point,
-                        onMoved: (center) => setState(() {
-                          _center = center;
-                          _rejected = null;
+                        locked: !_adjusting,
+                        onMoved: (center) {
+                          if (_adjusting) setState(() => _pending = center);
+                        },
+                        onFailed: () => setState(() {
+                          _mapFailed = true;
+                          _stopAdjusting();
                         }),
-                        onFailed: () => setState(() => _mapFailed = true),
                       ),
-                    )
-                  else
+                    ),
+                    const SizedBox(height: EatSpace.s8),
+                    if (_adjusting)
+                      Row(
+                        spacing: EatSpace.s10,
+                        children: [
+                          Expanded(
+                            child: EatButton.outline(
+                              '取消',
+                              height: 36,
+                              onPressed: _cancelAdjusting,
+                            ),
+                          ),
+                          Expanded(
+                            child: EatButton.solid(
+                              '用这个位置',
+                              height: 36,
+                              onPressed: _usePending,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      EatButton.outline(
+                        '调整位置',
+                        height: 36,
+                        onPressed: () => setState(() => _adjusting = true),
+                      ),
+                  ] else
                     Text(
                       point == null ? '正在获取位置' : '地图暂不可用，先用当前位置',
                       style: eat.text.body.copyWith(color: c.inkSoft),
@@ -457,6 +530,7 @@ class _NewShopPageState extends ConsumerState<NewShopPage> {
                           text: switch (hub) {
                             AsyncData(:final value?) => value.name,
                             AsyncData() => '不在已有商圈内',
+                            AsyncError() => '暂时无法判断',
                             _ => '判断中',
                           },
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -656,18 +730,21 @@ class _ExistingNotice extends StatelessWidget {
 
 /// 地图选点组件: 在地图中心固定定位针, 用户拖动地图使针尖对准店铺位置.
 ///
-/// 拖动停止后, 地图中心坐标通过 [onMoved] 回调传出.
+/// [locked] 时地图不接收手势. 手势拖动停止后, 地图中心坐标通过 [onMoved] 回调传出;
+/// 地图初始化, 设内边距和代码移动视角引起的变化不传出, 这时的中心可能还没算准.
 class _PickMap extends StatelessWidget {
   const new({
     super.key,
     required this.controller,
     required this.initial,
+    required this.locked,
     required this.onMoved,
     required this.onFailed,
   });
 
   final EatMapController controller;
   final GcjPoint initial;
+  final bool locked;
   final ValueChanged<GcjPoint> onMoved;
   final VoidCallback onFailed;
 
@@ -680,17 +757,22 @@ class _PickMap extends StatelessWidget {
         borderRadius: const BorderRadius.all(EatRadius.tile),
         child: Stack(
           children: [
-            EatMap(
-              controller: controller,
-              initialCenter: mapPoint(initial),
-              initialZoom: 17,
-              minZoom: 13,
-              // 地图容器四角被圆角裁剪, 通过四边相等的内边距将 logo 与比例尺向内推移, 同时保持地图中心不变.
-              insets: const EdgeInsets.all(EatSpace.s10),
-              dark: eat.colors.isDark,
-              onCameraIdle: (camera, _) => onMoved(gcjOf(camera.center)),
-              onFailed: onFailed,
-              semanticLabel: '地图选点',
+            IgnorePointer(
+              ignoring: locked,
+              child: EatMap(
+                controller: controller,
+                initialCenter: mapPoint(initial),
+                initialZoom: 17,
+                minZoom: 13,
+                // 地图容器四角被圆角裁剪, 通过四边相等的内边距将 logo 与比例尺向内推移, 同时保持地图中心不变.
+                insets: const EdgeInsets.all(EatSpace.s10),
+                dark: eat.colors.isDark,
+                onCameraIdle: (camera, byGesture) {
+                  if (byGesture) onMoved(gcjOf(camera.center));
+                },
+                onFailed: onFailed,
+                semanticLabel: '地图选点',
+              ),
             ),
             // 针尖位于图标底部. 图标上移半个自身高度, 使针尖对准地图中心.
             IgnorePointer(

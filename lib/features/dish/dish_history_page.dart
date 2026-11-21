@@ -145,7 +145,7 @@ class _RevisionRowState extends ConsumerState<_RevisionRow> {
     } on AppFailure catch (e) {
       if (!mounted) return;
       if (e.code == BizCodes.stateNotAllowed) {
-        showToast(context, '已经是这个版本');
+        showToast(context, e.userMessage ?? '已经是这个版本');
         return;
       }
       await reportActionFailure(

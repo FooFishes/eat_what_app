@@ -2,11 +2,19 @@ import 'dart:math' as math;
 
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
+import 'package:eat/design/widgets/eat_choice_group.dart';
+import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
+import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/domain/rules/meal_rules.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
+import 'package:eat/domain/models/geo.dart';
+import 'package:eat/core/platform/location.dart';
 import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
@@ -527,10 +535,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('在哪吃？'), findsOneWidget);
     expect(find.text('吃哪顿？'), findsOneWidget);
+    expect(find.textContaining('现在是${_mealLabel()}，到 '), findsOneWidget);
     final other = _mealLabel() == '夜宵' ? '早饭' : '夜宵';
     final api = other == '夜宵' ? 'night' : 'breakfast';
     await tester.tap(find.text(other));
     await tester.pumpAndSettle();
+    expect(_weight(tester, '按现在的时间'), FontWeight.w400);
+    expect(find.textContaining('恢复按现在的时间'), findsOneWidget);
     expect(env.kv.values['prefs.meal'], isNull);
 
     await tester.tap(find.text('确定'));
@@ -570,6 +581,258 @@ void main() {
     expect(scenes.last, 'delivery');
     expect(env.kv.values['prefs.scene'], 'delivery');
   });
+
+  group('分类栏的排序', () {
+    setUp(() {
+      env.adapter.on('GET /restaurant/browse', [
+        FakeAdapter.ok(pageJson([restaurantJson(id: 22, name: '杨国福麻辣烫')])),
+      ]);
+    });
+
+    /// 浮层里的选项, 和页面别处的同名文字分开.
+    Finder option(String label) => find.descendant(
+      of: find.byType(EatChoiceGroup<DiscoverOrder>),
+      matching: find.text(label),
+    );
+
+    Future<void> chooseDelivery(WidgetTester tester) async {
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('点外卖'));
+      await tester.tap(find.text('点外卖'));
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('再点一次选中的分类长出排序；开着时换分类，浮层跟过去，排序不变', (tester) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      expect(find.text('排序'), findsNothing);
+
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget);
+      for (final label in ['推荐', '推荐率', '离我近', '最新']) {
+        expect(option(label), findsOneWidget);
+      }
+      expect(
+        tester.getTopLeft(find.text('排序')).dy,
+        greaterThan(tester.getBottomLeft(find.text('美食')).dy),
+      );
+      await expectAccessible(tester);
+
+      await tester.tap(find.text('甜点饮品'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget, reason: '浮层开着时换分类不收起');
+      expect(
+        env.adapter.sent('GET /recommend').map((r) => r.query['kind']),
+        contains('drink'),
+      );
+
+      await tester.tap(option('最新'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsNothing);
+      expect(
+        env.adapter.sent('GET /restaurant/browse').last.query,
+        allOf(containsPair('kind', 'drink'), containsPair('sort', 'NEWEST')),
+      );
+      expect(find.bySemanticsLabel(RegExp('最新')), findsOneWidget);
+
+      await tester.tap(find.text('自助'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('GET /restaurant/browse').last.query,
+        allOf(containsPair('kind', 'buffet'), containsPair('sort', 'NEWEST')),
+        reason: '三个分类共用一个排序',
+      );
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('外卖时选推荐率：逛店按外卖推荐率排、只列能点外卖的店，不列已关门的；选回推荐走推荐', (tester) async {
+      env.adapter.on('GET /restaurant/browse', [
+        FakeAdapter.ok(
+          pageJson([
+            {...restaurantJson(id: 21, name: '老店'), 'permanentlyClosed': true},
+            restaurantJson(id: 22, name: '杨国福麻辣烫'),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      await chooseDelivery(tester);
+
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      await tester.tap(option('推荐率'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      final query = env.adapter.sent('GET /restaurant/browse').last.query;
+      expect(query, containsPair('kind', 'food'));
+      expect(query, containsPair('sort', 'RATING'));
+      expect(query, containsPair('scene', 'delivery'));
+      expect(query, containsPair('delivery', true));
+      expect(query.containsKey('gcjLat'), isTrue, reason: '和推荐用同一个位置');
+      expect(find.text('杨国福麻辣烫'), findsOneWidget);
+      expect(find.text('老店'), findsNothing);
+
+      final recommends = env.adapter.sent('GET /recommend').length;
+      await tester.tap(find.text('美食'));
+      await tester.pumpAndSettle();
+      await tester.tap(option('推荐'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter
+            .sent('GET /recommend')
+            .skip(recommends)
+            .map((r) => r.query['kind']),
+        contains('food'),
+      );
+      expect(find.text('杨国福麻辣烫'), findsNothing);
+      expect(find.text('一碗面'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('分类栏吸顶时从顶上那份长出来；滑动抽屉收起', (tester) async {
+      env.adapter.on('GET /recommend', [
+        FakeAdapter.ok(
+          feedJson([
+            for (var i = 1; i <= 10; i++) cardJson(id: i, name: '店$i'),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+      );
+      await tester.dragFrom(const Offset(195, 700), const Offset(0, -560));
+      await tester.pumpAndSettle();
+      final pinned = find.text('美食').hitTestable();
+      final top = tester.getBottomLeft(pinned.first).dy;
+      expect(top, lessThan(120));
+
+      await tester.tap(pinned.first);
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsOneWidget);
+      final y = tester.getTopLeft(find.text('排序')).dy;
+      expect(y, greaterThan(top));
+      expect(y, lessThan(top + 60), reason: '挂在吸顶的那份分类栏下面');
+
+      await tester.dragFrom(const Offset(195, 600), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expect(find.text('排序'), findsNothing);
+      await unmountApp(tester, container);
+    });
+  });
+  group('在哪吃面板的校区', () {
+    setUp(() {
+      env.adapter.on('GET /campus/list', [FakeAdapter.ok(_twoCampuses)]);
+    });
+
+    testWidgets('没选过时「按定位」打开；没有定位时选默认校区，不写距离', (tester) async {
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '按定位'), FontWeight.w600);
+      expect(find.text('没有定位，用默认校区'), findsOneWidget);
+      expect(_weight(tester, '软件园'), FontWeight.w600);
+      expect(_weight(tester, '中心校区'), FontWeight.w400);
+      expect(find.textContaining(' km'), findsNothing);
+    });
+
+    testWidgets('选一个校区后记住；再打开「按定位」恢复自动', (tester) async {
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('中心校区'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '按定位'), FontWeight.w400);
+      expect(find.text('没有定位，用默认校区'), findsNothing);
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values['prefs.campus'], '2');
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '中心校区'), FontWeight.w600);
+      await tester.tap(find.text('按定位'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '软件园'), FontWeight.w600);
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values.containsKey('prefs.campus'), isFalse);
+      expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
+    });
+
+    testWidgets('有定位时按定位选最近的校区，每个校区写出距离；关掉面板不保存', (tester) async {
+      env.location
+        ..state = LocationAccess.granted
+        ..point = _nearCenter;
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(find.text('按定位选离你最近的校区'), findsOneWidget);
+      expect(_weight(tester, '中心校区'), FontWeight.w600);
+      final me = GeoRules.toGcj(WgsPoint(_nearCenter.lat, _nearCenter.lng));
+      for (final campus in _twoCampuses) {
+        final center = GcjPoint(
+          campus['gcjLat']! as double,
+          campus['gcjLng']! as double,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(EatPanel),
+            matching: find.text(
+              GeoRules.formatDistance(GeoRules.distance(me, center)),
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+
+      await tester.tap(find.text('软件园'));
+      await tester.tap(find.bySemanticsLabel('关闭'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values.containsKey('prefs.campus'), isFalse);
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+    });
+
+    testWidgets('360 宽的手机上字放大到两倍也排得下', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      // 只看面板, 抽屉里不放店.
+      env.adapter.on('GET /recommend', [FakeAdapter.ok(feedJson([]))]);
+      env.location
+        ..state = LocationAccess.granted
+        ..point = _nearCenter;
+      await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        size: const Size(360, 740),
+      );
+
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('确定'), findsOneWidget);
+    });
+  });
 }
 
 /// 等轻提示消失. 提示的计时器未结束时卸载页面, 测试框架会报告未完成的定时器.
@@ -578,12 +841,29 @@ Future<void> _waitToast(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-String _mealLabel() {
-  final now = DateTime.now();
-  final minute = now.hour * 60 + now.minute;
-  if (minute < 300) return '夜宵';
-  if (minute < 630) return '早饭';
-  if (minute < 870) return '午饭';
-  if (minute < 1230) return '晚饭';
-  return '夜宵';
-}
+String _mealLabel() => switch (MealRules.at(DateTime.now())) {
+  MealTime.breakfast => '早饭',
+  MealTime.lunch => '午饭',
+  MealTime.dinner => '晚饭',
+  MealTime.night => '夜宵',
+};
+
+/// 两个校区: 默认的软件园和中心校区.
+final _twoCampuses = [
+  ...campusListJson,
+  {
+    'id': 2,
+    'name': '中心校区',
+    'gcjLng': 117.025,
+    'gcjLat': 36.672,
+    'isDefault': false,
+    'sort': 1,
+  },
+];
+
+/// 中心校区旁的定位 (WGS-84).
+const _nearCenter = (lat: 36.6705, lng: 117.0195);
+
+/// 文字为 [text] 的字重, 选中项加粗.
+FontWeight? _weight(WidgetTester tester, String text) =>
+    tester.widget<Text>(find.text(text)).style?.fontWeight;

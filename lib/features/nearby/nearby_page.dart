@@ -10,6 +10,7 @@ import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_option.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_search_field.dart';
@@ -42,7 +43,7 @@ import 'package:go_router/go_router.dart';
 
 /// 附近页, 以地图作为舞台并在下方可拖动抽屉中列出附近店铺.
 ///
-/// - 顶部: 搜索框, 筛选按钮和商圈胶囊.
+/// - 顶部: 商圈按钮, 搜索框和筛选按钮. 点商圈按钮打开 "选商圈" 面板.
 /// - 地图: 每家店对应一个圆形标记, 右下角提供 "回到我的位置" 按钮; 拖动地图停止后按新中心点重新查询店铺.
 /// - 排序与筛选: 店铺固定按距离升序排列, 筛选条件同时作用于地图标记与抽屉列表.
 ///
@@ -67,7 +68,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   GcjPoint? _center;
   Timer? _moveDebounce;
 
-  /// 用户在商圈胶囊中选中的商圈.
+  /// 用户在 "选商圈" 面板里选中的商圈, 为 null 时是 "附近", 不限商圈.
   ///
   /// [_hubTouched] 为 false 时不使用该值, 选中的商圈跟随 "我所在的商圈".
   int? _hubId;
@@ -149,14 +150,17 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     }
   }
 
-  void _selectHub(Hub hub) {
-    final selected = _hubId == hub.id && _hubTouched;
+  /// 选中商圈 [hub]: 地图移到商圈并画出范围, 列表只看这个商圈的店.
+  ///
+  /// [hub] 为 null 时是 "附近": 不限商圈, 按当前地图中心找, 地图不动.
+  void _selectHub(Hub? hub) {
     setState(() {
       _hubTouched = true;
-      _hubId = selected ? null : hub.id;
+      _hubId = hub?.id;
       _selectedShopId = null;
     });
-    if (selected) return;
+    if (hub == null) return;
+    unawaited(ref.read(recentHubsProvider.notifier).add(hub.id));
     if (_hasMap && hub.boundary.isNotEmpty) {
       unawaited(
         _map.fit([
@@ -168,6 +172,19 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     } else {
       _moveTo(hub.center);
     }
+  }
+
+  Future<void> _openHubs({
+    required int? selectedId,
+    required Campus? campus,
+    required GcjPoint? me,
+  }) async {
+    final pick = await showPanel<({Hub? hub})>(
+      context,
+      builder: (_) => _HubPanel(selectedId: selectedId, campus: campus, me: me),
+    );
+    if (!mounted || pick == null) return;
+    _selectHub(pick.hub);
   }
 
   Future<void> _openFilter(NearbyQuery query) async {
@@ -224,14 +241,7 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     final campus = ref.watch(currentPlaceProvider.select((p) => p.campus));
     final me = ref.watch(currentLocationProvider.select((s) => s.point));
     final myHub = ref.watch(myHubProvider).value;
-    // 商圈不属于校区, 只显示离所选校区不远的商圈.
-    final hubs = [
-      for (final hub in ref.watch(hubsProvider).value ?? const <Hub>[])
-        if (campus == null ||
-            GeoRules.distance(hub.center, campus.center) <=
-                GeoRules.maxDistanceFromCampus)
-          hub,
-    ];
+    final hubs = ref.watch(hubsProvider).value ?? const <Hub>[];
     final hubId = _hubTouched ? _hubId : myHub?.id;
     final center = _center ?? me ?? campus?.center;
     if (center == null) {
@@ -259,18 +269,21 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
     // 新结果回来之前接着显示上一次的店, 不退回骨架.
     final stale = !shops.hasValue && shops.isLoading && last != null;
     final list = shops.value ?? (stale ? last : const <Shop>[]);
-    final selectedHub = hubs.where((h) => h.id == hubId).firstOrNull;
+    // 搜索能选到离校区远的商圈, 所以在全部商圈里找.
+    final selectedHub =
+        hubs.where((h) => h.id == hubId).firstOrNull ??
+        (myHub?.id == hubId ? myHub : null);
 
     final safe = MediaQuery.viewPaddingOf(context);
     final screen = MediaQuery.sizeOf(context);
-    // 地图被搜索框, 商圈胶囊和抽屉 (宽屏是左侧面板) 盖住的部分.
+    // 地图被搜索框和抽屉 (宽屏是左侧面板) 盖住的部分.
     final insets = layout.isWide
         ? EdgeInsets.only(
             left: EatLayout.widePanelInset + EatLayout.widePanelWidth,
-            top: safe.top + EatSpace.s16 + EatSize.touch,
+            top: safe.top,
           )
         : EdgeInsets.only(
-            top: safe.top + 8 + 48 + EatSpace.s10 + EatSize.touch,
+            top: _searchBottom(safe),
             bottom: screen.height * _sheetInitial,
           );
     final map = _hasMap
@@ -289,44 +302,33 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
           )
         : ColoredBox(color: context.eat.colors.mapGround);
 
-    final search = EatSearchField(
-      hintText: '搜店名或地址',
-      controller: _keywordInput,
-      floating: _hasMap,
-      onSubmitted: (value) => setState(() {
-        _keyword = value.trim();
-        _selectedShopId = null;
-      }),
-      onChanged: (value) {
-        if (value.isEmpty && _keyword.isNotEmpty) setState(() => _keyword = '');
-      },
-      onFilter: () => _openFilter(query),
-      filterCount: _filter.count,
-    );
-    final chips = SizedBox(
-      height: EatSize.touch,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.only(
-          left: layout.isWide
-              ? EatLayout.widePanelInset +
-                    EatLayout.widePanelWidth +
-                    EatSpace.s24
-              : EatSpace.s16,
-          right: EatSpace.s16,
+    final search = Row(
+      spacing: EatSpace.s8,
+      children: [
+        _HubButton(
+          name: selectedHub?.name,
+          floating: _hasMap,
+          onTap: () => _openHubs(selectedId: hubId, campus: campus, me: me),
         ),
-        children: [
-          for (final hub in hubs)
-            Padding(
-              padding: const EdgeInsets.only(right: EatSpace.s8),
-              child: (_hasMap ? EatChip.district : EatChip.choice)(
-                hub.name,
-                selected: hub.id == hubId,
-                onTap: () => _selectHub(hub),
-              ),
-            ),
-        ],
-      ),
+        Expanded(
+          child: EatSearchField(
+            hintText: '搜店名或地址',
+            controller: _keywordInput,
+            floating: _hasMap,
+            onSubmitted: (value) => setState(() {
+              _keyword = value.trim();
+              _selectedShopId = null;
+            }),
+            onChanged: (value) {
+              if (value.isEmpty && _keyword.isNotEmpty) {
+                setState(() => _keyword = '');
+              }
+            },
+            onFilter: () => _openFilter(query),
+            filterCount: _filter.count,
+          ),
+        ),
+      ],
     );
     final locate = EatTappable(
       onTap: _backToMe,
@@ -350,23 +352,17 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       ),
     );
     final header = _ListHeader(
+      title: selectedHub?.name ?? '附近',
       count: shops.hasValue || stale ? list.length : null,
       loading: shops.isLoading && (shops.hasValue || stale),
     );
     final rows = _rows(shops, list, stale: stale);
 
     if (layout.isWide) {
-      final top = MediaQuery.paddingOf(context).top;
       return StageScaffold.map(
         map: Stack(
           children: [
             Positioned.fill(child: map),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: top + EatSpace.s16,
-              child: chips,
-            ),
             Positioned(
               right: EatSpace.s24,
               bottom: EatSpace.s24,
@@ -405,7 +401,6 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
                 ),
                 child: search,
               ),
-              chips,
               Expanded(
                 child: RemovePadding(
                   removeTop: true,
@@ -454,15 +449,9 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
               top: safe.top + 8,
               child: search,
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              top: safe.top + 8 + 48 + EatSpace.s10,
-              child: chips,
-            ),
-            // 抽屉拉高后按钮放不下 (会压到搜索框和商圈胶囊), 就收起来.
+            // 抽屉拉高后按钮放不下 (会压到搜索框), 就收起来.
             if (height * (1 - _sheetExtent) - EatSpace.s14 - 48 >
-                safe.top + 8 + 48 + EatSpace.s10 + EatSize.touch + EatSpace.s10)
+                _searchBottom(safe))
               Positioned(
                 right: EatSpace.s16,
                 bottom: height * _sheetExtent + EatSpace.s14,
@@ -516,6 +505,10 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
       ),
     );
   }
+
+  /// 窄屏有地图时, 浮在地图上的搜索框这一行的下沿再留一段间距.
+  static double _searchBottom(EdgeInsets safe) =>
+      safe.top + 8 + 48 + EatSpace.s10;
 
   /// 店铺列表, 连同加载, 失败和空列表, 左右留页面边距.
   Widget _rows(
@@ -602,10 +595,11 @@ class _NearbyPageState extends ConsumerState<NearbyPage> {
   }
 }
 
-/// 列表头: 店铺数量. 店铺只按距离排列, 不提供排序选项.
+/// 列表头: "附近" 或选中的商圈名, 后面是店铺数量. 店铺只按距离排列, 不提供排序选项.
 class _ListHeader extends StatelessWidget {
-  const new({required this.count, this.loading = false});
+  const new({required this.title, required this.count, this.loading = false});
 
+  final String title;
   final int? count;
 
   /// 正在按新的查询条件加载, 列表里还是上一次的店. 标题下面走一条加载条.
@@ -633,7 +627,7 @@ class _ListHeader extends StatelessWidget {
                 child: Text.rich(
                   TextSpan(
                     children: [
-                      const TextSpan(text: '附近 '),
+                      TextSpan(text: '$title '),
                       TextSpan(
                         text: count == null ? '' : '$count',
                         style: eat.text.stat.copyWith(fontSize: 20, height: 1),
@@ -642,6 +636,8 @@ class _ListHeader extends StatelessWidget {
                     ],
                   ),
                   style: eat.text.heading,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -914,6 +910,195 @@ class _FilterPanelState extends ConsumerState<_FilterPanel> {
             onChanged: _setFavoritesOnly,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 搜索框左边的商圈按钮: 选中的商圈名, 没选时写 "附近", 后面一个下拉箭头.
+///
+/// 和搜索框等高. 名字太长时省略, 宽度封顶, 给搜索框留出地方.
+class _HubButton extends StatelessWidget {
+  const new({required this.name, required this.floating, required this.onTap});
+
+  /// 选中的商圈名. 为 null 时是 "附近".
+  final String? name;
+
+  /// 浮在地图上时 `paper` 底加 `shadow-float`, 和搜索框一致; 否则 `mist` 底.
+  final bool floating;
+  final VoidCallback onTap;
+
+  static const _maxWidth = 128.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final label = name ?? '附近';
+    return EatTappable(
+      onTap: onTap,
+      label: '商圈，$label',
+      focusShape: const StadiumBorder(),
+      builder: (context, _) => Container(
+        height: 48,
+        constraints: const BoxConstraints(maxWidth: _maxWidth),
+        padding: const EdgeInsets.only(left: EatSpace.s16, right: 10),
+        decoration: ShapeDecoration(
+          shape: const StadiumBorder(),
+          color: floating ? c.paper : c.mist,
+          shadows: floating ? eat.shadows.float.outer : null,
+        ),
+        child: ExcludeSemantics(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 2,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: eat.text.subhead.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: c.ink,
+                  ),
+                ),
+              ),
+              EatIcon(EatIcons.chevronDown, size: 18, color: c.ink),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "选商圈" 面板: 顶部按名字搜, 下面是 "最近" 和 "全部" 两组胶囊. 点一个就关上面板, 返回选中的商圈, "附近" 返回 null.
+///
+/// - 没输入时只列离校区不远的商圈; 输入后在全部商圈里找, 校区外的也能搜到.
+/// - 商圈按离我的距离排, 没有定位时按离校区中心排.
+class _HubPanel extends ConsumerStatefulWidget {
+  const new({required this.selectedId, required this.campus, required this.me});
+
+  /// 当前选中的商圈, 为 null 时是 "附近".
+  final int? selectedId;
+  final Campus? campus;
+  final GcjPoint? me;
+
+  @override
+  ConsumerState<_HubPanel> createState() => _HubPanelState();
+}
+
+class _HubPanelState extends ConsumerState<_HubPanel> {
+  var _query = '';
+
+  void _pick(Hub? hub) => Navigator.of(context).pop((hub: hub));
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final campus = widget.campus;
+    final origin = widget.me ?? campus?.center;
+    final all = ref.watch(hubsProvider).value ?? const <Hub>[];
+    final recentIds = ref.watch(recentHubsProvider).value ?? const <int>[];
+    final query = _query.trim();
+    double? distance(Hub hub) =>
+        origin == null ? null : GeoRules.distance(origin, hub.center);
+    final hubs = [
+      for (final hub in all)
+        if (query.isEmpty
+            ? campus == null ||
+                  GeoRules.distance(hub.center, campus.center) <=
+                      GeoRules.maxDistanceFromCampus
+            : hub.name.contains(query))
+          hub,
+    ];
+    if (origin != null) {
+      hubs.sort((a, b) => distance(a)!.compareTo(distance(b)!));
+    }
+    final byId = {for (final hub in all) hub.id: hub};
+    final recent = [for (final id in recentIds) ?byId[id]];
+
+    Widget option(Hub hub) => EatOption(
+      label: hub.name,
+      detail: switch (distance(hub)) {
+        final meters? => GeoRules.formatDistance(meters),
+        null => null,
+      },
+      pill: true,
+      selected: hub.id == widget.selectedId,
+      onTap: () => _pick(hub),
+    );
+    Widget group(String label, List<Widget> children) => EatRadioGroup(
+      label: label,
+      child: Wrap(
+        spacing: EatSpace.s8,
+        runSpacing: EatSpace.s8,
+        children: children,
+      ),
+    );
+
+    return EatPanel(
+      title: '选商圈',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EatSearchField(
+            hintText: '搜商圈',
+            onChanged: (value) => setState(() => _query = value),
+            onSubmitted: (value) => setState(() => _query = value),
+          ),
+          if (query.isNotEmpty) ...[
+            const SizedBox(height: EatSpace.s16),
+            if (hubs.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: EatSpace.s8),
+                child: Text(
+                  '没找到「$query」',
+                  style: eat.text.body.copyWith(color: eat.colors.inkMuted),
+                ),
+              )
+            else
+              group('搜索结果', [for (final hub in hubs) option(hub)]),
+          ] else ...[
+            if (recent.isNotEmpty) ...[
+              const _HubGroupTitle('最近'),
+              group('最近', [for (final hub in recent) option(hub)]),
+            ],
+            const _HubGroupTitle('全部'),
+            group('全部', [
+              EatOption(
+                label: '附近',
+                pill: true,
+                selected: widget.selectedId == null,
+                onTap: () => _pick(null),
+              ),
+              for (final hub in hubs) option(hub),
+            ]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "选商圈" 面板里一组胶囊的标题.
+class _HubGroupTitle extends StatelessWidget {
+  const new(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return Padding(
+      padding: const EdgeInsets.only(top: EatSpace.s16, bottom: EatSpace.s8),
+      child: Semantics(
+        header: true,
+        child: Text(
+          text,
+          style: eat.text.subhead.copyWith(color: eat.colors.ink),
+        ),
       ),
     );
   }

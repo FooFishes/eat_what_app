@@ -158,4 +158,74 @@ void main() {
     );
     expect(env.adapter.sent('POST /upload/complete'), isEmpty);
   });
+
+  group('上传接口被拒时的提示', () {
+    Future<AppFailure> failWith(String route, Object code, String msg) async {
+      env.adapter
+        ..on('POST /upload/presign', [FakeAdapter.ok(_presigned('a'))])
+        ..on(route, [FakeAdapter.fail(code, msg)]);
+      final container = await env.container();
+      try {
+        await container
+            .read(uploaderProvider)
+            .upload(_files(1).single, biz: UploadBiz.foods);
+      } on AppFailure catch (e) {
+        return e;
+      }
+      fail('没有失败');
+    }
+
+    test('文件不合规、内容检查未通过、还在检查时显示服务端的原因', () async {
+      for (final (route, code, msg) in [
+        ('POST /upload/presign', 10001, '文件不能超过 10MB'),
+        ('POST /upload/complete', 10001, '这张照片未通过内容检查：照片里有二维码，请更换'),
+        ('POST /upload/complete', 40001, '文件还没有上传完成'),
+        ('POST /upload/complete', 40004, '图片正在检查，请稍后重试'),
+      ]) {
+        final failure = await failWith(route, code, msg);
+        expect(failure.kind, FailureKind.business);
+        expect(failure.message, msg);
+      }
+    });
+
+    test('字段校验和只有默认文案的 msg 不显示，用客户端的提示', () async {
+      final field = await failWith(
+        'POST /upload/presign',
+        10001,
+        'contentType不能为空',
+      );
+      expect(field.message, '提交的内容有误，请检查后重试');
+      final generic = await failWith('POST /upload/complete', 40001, '操作失败');
+      expect(generic.userMessage, isNull);
+      expect(generic.kind, FailureKind.unknown);
+    });
+
+    test('没权限和限流照旧处理，不显示服务端的 msg', () async {
+      final forbidden = await failWith(
+        'POST /upload/presign',
+        20004,
+        '请先完成身份认证',
+      );
+      expect(forbidden.kind, FailureKind.forbidden);
+      expect(forbidden.userMessage, isNull);
+      final frequent = await failWith('POST /upload/presign', 10003, '请求频率过高');
+      expect(frequent.kind, FailureKind.tooFrequent);
+      expect(frequent.message, '操作过于频繁，请稍后再试');
+    });
+
+    test('客户端自己发现的问题不显示内部说明', () async {
+      env.adapter.on('POST /upload/presign', [
+        FakeAdapter.ok({'key': 'foods/a.jpg', 'expireAt': _later}),
+      ]);
+      final container = await env.container();
+      await expectLater(
+        container
+            .read(uploaderProvider)
+            .upload(_files(1).single, biz: UploadBiz.foods),
+        throwsA(
+          isA<AppFailure>().having((e) => e.message, 'message', '操作失败，请重试'),
+        ),
+      );
+    });
+  });
 }

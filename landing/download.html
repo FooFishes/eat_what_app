@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>下载沙软今天吃什么</title>
+<meta name="description" content="校园觅食 App。饭点不知道吃什么，转一转就定了。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="沙软今天吃什么">
+<meta property="og:title" content="下载沙软今天吃什么">
+<meta property="og:description" content="校园觅食 App。饭点不知道吃什么，转一转就定了。">
+<meta property="og:image" content="/app/icon-192.png">
+<meta name="theme-color" content="#ffcb45" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#d9ad3b" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="/app/icon-192.png">
+<link rel="apple-touch-icon" href="/app/icon-192.png">
+<style>
+/* 令牌: 取自 lib/design/tokens/eat_palette.dart, eat_dimensions.dart, lib/design/theme/eat_text_styles.dart, 正本在 App 里. */
+:root {
+  --ink: #231c18;
+  --ink-top: #3b312b;
+  --ink-muted: #6e625b;
+  --ink-soft: #4a3c31;
+  --paper: #ffffff;
+  --mist: #f3f2f0;
+  --hairline: #efe9e4;
+  --handle: #e6ded8;
+  --scrim: rgba(35, 28, 24, 0.45);
+  --line-strong: #9a8b80;
+  --disabled-bg: #efeeec;
+  --disabled-fg: #8a7e76;
+  --plate-rim: #ffffff;
+  --shade: #231c18;
+
+  --stage-broth: #f3c46e;
+  --stage-mango: #ffcb45;
+  --stage-bamboo: #d8b27a;
+  --stage-chili: #d9632b;
+  --stage-tomato: #c9442b;
+  --stage-redoil: #a8321c;
+  --stage-soy: #8f5b24;
+  --stage-porcelain: #9db8d9;
+  --stage-matcha: #9dbf7a;
+  --stage-ghost-light: rgba(255, 255, 255, 0.42);
+  --stage-ghost-dark: rgba(255, 255, 255, 0.18);
+  --paper-85: rgba(255, 255, 255, 0.85);
+
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+
+  --radius-pill: 999px;
+  --radius-sheet: 28px;
+  --radius-tile: 22px;
+  --radius-thumb-lg: 18px;
+  --radius-thumb: 16px;
+  --radius-icon: 12px;
+  --radius-photo: 10px;
+  --radius-joined: 6px;
+  --sheet-overlap: 32px;
+  --joined-gap: 2px;
+  --thumb: 52px;
+
+  --shadow-button: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -2px 0 rgba(0, 0, 0, 0.28), 0 1px 2px rgba(35, 28, 24, 0.2), 0 6px 14px rgba(35, 28, 24, 0.16);
+  --shadow-button-pressed: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.24), 0 1px 1px rgba(35, 28, 24, 0.2);
+  --shadow-button-light: inset 0 -3px 0 rgba(35, 28, 24, 0.06), inset 0 0 0 1px var(--handle);
+  --shadow-button-light-pressed: inset 0 0 0 1px var(--handle);
+  --shadow-button-outline: inset 0 0 0 1.5px var(--ink), 0 4px 10px -6px rgba(35, 28, 24, 0.25);
+
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-num: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, Roboto, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+
+  --stage-switch: 500ms;
+  --panel-in: 240ms;
+  --tap: 44px;
+  --page-max: 480px;
+
+  /* 当前舞台, 由 JS 按主角改写 data-stage. */
+  --stage: var(--stage-mango);
+  --on-stage: var(--ink);
+  --on-stage-soft: var(--ink-soft);
+  color-scheme: light;
+}
+/* 系统深色模式: 抽屉和文字变暗, 舞台换成 App 里压暗的那一档, 舞台上的文字色不变. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f2f2f3;
+    --ink-top: #ffffff;
+    --ink-muted: #a0a0a5;
+    --ink-soft: #cfcfd3;
+    --paper: #161618;
+    --mist: #262629;
+    --hairline: #2c2c30;
+    --handle: #3d3d42;
+    --scrim: rgba(0, 0, 0, 0.6);
+    --line-strong: #808086;
+    --disabled-bg: #232326;
+    --disabled-fg: #8a8a90;
+    --stage-broth: #cfa75e;
+    --stage-mango: #d9ad3b;
+    --stage-bamboo: #c7a470;
+    --stage-tomato: #ab3a25;
+    --stage-redoil: #8f2a18;
+    --stage-soy: #7a4d1f;
+    --stage-porcelain: #94adcc;
+    --stage-matcha: #94b473;
+    color-scheme: dark;
+  }
+}
+/* 舞台上的文字色固定在浅色值, 不随深色模式变化. */
+:root { --stage-fg-dark: #231c18; --stage-fg-dark-soft: #4a3c31; --stage-fg-light: #ffffff; }
+[data-stage] { --on-stage: var(--stage-fg-dark); --on-stage-soft: var(--stage-fg-dark-soft); --ghost: var(--stage-ghost-light); }
+[data-stage="broth"] { --stage: var(--stage-broth); }
+[data-stage="mango"] { --stage: var(--stage-mango); }
+[data-stage="bamboo"] { --stage: var(--stage-bamboo); }
+[data-stage="chili"] { --stage: var(--stage-chili); --on-stage-soft: var(--on-stage); }
+[data-stage="porcelain"] { --stage: var(--stage-porcelain); }
+[data-stage="matcha"] { --stage: var(--stage-matcha); }
+[data-stage="tomato"] { --stage: var(--stage-tomato); --on-stage: var(--stage-fg-light); --on-stage-soft: var(--stage-fg-light); --ghost: var(--stage-ghost-dark); }
+[data-stage="redoil"] { --stage: var(--stage-redoil); --on-stage: var(--stage-fg-light); --on-stage-soft: var(--paper-85); --ghost: var(--stage-ghost-dark); }
+[data-stage="soy"] { --stage: var(--stage-soy); --on-stage: var(--stage-fg-light); --on-stage-soft: var(--paper-85); --ghost: var(--stage-ghost-dark); }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body.locked { overflow: hidden; }
+@media (min-width: 520px) {
+  body { background: var(--mist); }
+}
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(var(--tap) * 2 + var(--space-24) + env(safe-area-inset-bottom));
+}
+main { flex: 1; display: flex; flex-direction: column; }
+button { font: inherit; color: inherit; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.icon { width: 18px; height: 18px; flex: none; display: inline-block; vertical-align: -3px; }
+.icon svg { width: 100%; height: 100%; display: block; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--ink-muted); }
+
+/* 按钮: 能点的都是胶囊 */
+.btn {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  min-height: var(--tap);
+  padding: 0 var(--space-20);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.btn:focus-visible, .tap:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.btn-solid {
+  background: linear-gradient(var(--ink-top), var(--ink));
+  color: var(--paper);
+  box-shadow: var(--shadow-button);
+}
+.btn-solid:active { transform: translateY(1px); box-shadow: var(--shadow-button-pressed); }
+.btn-small { min-height: 36px; padding: 0 var(--space-16); font-size: 14px; position: relative; }
+/* 小按钮看上去 36px, 点击区域仍有 44px. */
+.btn-small::after { content: ""; position: absolute; inset: -4px -2px; }
+.btn-mist { background: var(--mist); color: var(--ink); box-shadow: var(--shadow-button-light); }
+.btn-mist:active { transform: translateY(1px); box-shadow: var(--shadow-button-light-pressed); }
+.btn-outline { background: var(--paper); color: var(--ink); box-shadow: var(--shadow-button-outline); }
+.btn-outline:active { transform: translateY(1px); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.btn-disabled, .btn-disabled:active { background: var(--disabled-bg); color: var(--disabled-fg); cursor: default; transform: none; box-shadow: none; }
+.btn-block { width: 100%; }
+.btn-52 { min-height: 52px; font-size: 16px; }
+.btn-48 { min-height: 48px; font-size: 15px; font-weight: 600; }
+
+.chip-pending {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-8);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* 舞台 + 抽屉 */
+.stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--stage);
+  color: var(--on-stage);
+  transition: background-color var(--stage-switch) ease;
+}
+
+.plate {
+  --size: min(62vw, 240px);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  background: var(--ghost);
+  flex: none;
+}
+.stage-center .plate { box-shadow: 0 0 0 8px var(--plate-rim), 0 22px 40px rgba(0, 0, 0, 0.3); margin: var(--space-8) 0 var(--space-4); }
+.plate img { position: absolute; display: block; max-width: none; }
+.plate.bare { box-shadow: none !important; background: transparent; overflow: visible; }
+.plate.bare svg { width: 100%; height: 100%; display: block; }
+
+.sheet {
+  position: relative;
+  margin-top: calc(var(--sheet-overlap) * -1);
+  background: var(--paper);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  padding: 10px calc(var(--space-20) + env(safe-area-inset-right)) var(--space-24) calc(var(--space-20) + env(safe-area-inset-left));
+  flex: 1;
+}
+.handle { width: 36px; height: 4px; border-radius: 2px; background: var(--handle); margin: 0 auto 22px; }
+
+/* 轻提示 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 70;
+  max-width: calc(min(100vw, var(--page-max)) - var(--space-20) * 2);
+  padding: var(--space-10) var(--space-16);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.toast.show { opacity: 1; }
+
+/* 微信, QQ 内置浏览器的引导蒙层 */
+.guide {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--scrim);
+  display: none;
+  color: #ffffff;
+}
+.guide.show { display: block; }
+.guide-inner {
+  position: absolute;
+  top: calc(var(--space-16) + env(safe-area-inset-top));
+  right: calc(var(--space-20) + env(safe-area-inset-right));
+  left: var(--space-20);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-14);
+  text-align: right;
+}
+.guide-arrow { width: 72px; height: 88px; margin-right: var(--space-4); }
+.guide-text { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.4; }
+.guide-sub { margin: 0; font-size: 14px; opacity: 0.9; }
+.guide .btn { background: var(--stage-ghost-dark); color: #ffffff; margin-top: var(--space-8); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .viewer-track { scroll-behavior: auto; }
+}
+
+/* 下载页 */
+.page { padding-bottom: env(safe-area-inset-bottom); }
+.hero {
+  padding: calc(40px + env(safe-area-inset-top)) calc(var(--space-20) + env(safe-area-inset-right)) calc(var(--sheet-overlap) + 28px) calc(var(--space-20) + env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.app-icon { width: 72px; height: 72px; border-radius: var(--radius-thumb-lg); display: block; }
+.app-name { margin: var(--space-16) 0 0; font-size: 28px; line-height: 36px; font-weight: 800; letter-spacing: -0.5px; color: var(--on-stage); }
+.hero .plate { --size: min(52vw, 200px); margin-top: var(--space-24); }
+
+.sheet { display: flex; flex-direction: column; }
+.desktop-hint { margin: 0 0 var(--space-14); text-align: center; font-size: 14px; line-height: 22px; font-weight: 600; color: var(--ink-soft); }
+
+/* 下载入口: 每个平台一块大圆角按钮, 左边平台标志, 右边两行字. 当前平台 ink 实心, 另一个平台 mist 底, 电脑上两块一样. */
+.downloads { display: grid; grid-template-columns: 1fr; gap: var(--space-10); }
+.downloads.equal { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.dl {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14);
+  min-height: 68px;
+  padding: var(--space-10) var(--space-20) var(--space-10) var(--space-16);
+  border-radius: var(--radius-tile);
+  text-decoration: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+a.dl { cursor: pointer; }
+a.dl:active { transform: translateY(1px); }
+a.dl:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dl-primary { background: linear-gradient(var(--ink-top), var(--ink)); color: var(--paper); }
+.dl-secondary { min-height: 60px; background: var(--mist); color: var(--ink); }
+.dl-off, .dl-off.dl-primary, .dl-off.dl-secondary { background: var(--disabled-bg); color: var(--ink-muted); cursor: default; }
+.dl-logo { width: 32px; height: 32px; flex: none; }
+.dl-secondary .dl-logo { width: 28px; height: 28px; }
+.dl-logo svg { width: 100%; height: 100%; display: block; }
+.dl-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dl-small { display: flex; align-items: center; gap: var(--space-8); font-size: 12px; line-height: 16px; font-weight: 600; }
+.dl-small .chip-pending { height: 18px; font-size: 11px; padding: 0 6px; }
+.dl-big { font-size: 20px; line-height: 26px; font-weight: 700; }
+.dl-secondary .dl-big { font-size: 17px; line-height: 22px; }
+.dl-version { font-family: var(--font-num); font-size: 12px; line-height: 16px; font-weight: 400; }
+.dl-off .chip-pending { color: var(--ink-muted); border-color: var(--ink-muted); }
+.dl-note { margin: 0; text-align: center; font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+
+/* 已经装了: 按钮下面的次要文字链接 */
+.open-app { display: flex; justify-content: center; margin-top: var(--space-8); }
+.open-app a { min-height: var(--tap); padding: 0 var(--space-10); display: inline-flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.open-app a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: var(--radius-joined); }
+
+.foot { margin: auto 0 0; padding-top: 56px; text-align: center; font-size: 12px; line-height: 20px; color: var(--ink-muted); }
+.foot p { margin: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <main>
+    <section class="stage hero" data-stage="mango">
+      <img class="app-icon" src="/app/icon-192.png" alt="" width="72" height="72">
+      <h1 class="app-name">沙软今天吃什么</h1>
+      <div class="plate bare" id="hero-plate" aria-hidden="true"></div>
+    </section>
+    <section class="sheet">
+      <div class="handle"></div>
+      <p class="desktop-hint" id="desktop-hint" hidden>请在手机上打开这个页面</p>
+      <div class="downloads" id="downloads"></div>
+      <div class="open-app" id="open-app" hidden>
+        <a id="open-app-link" href="/">已经装了，打开 App</a>
+      </div>
+      <footer class="foot">
+        <p>安卓 <span class="num">8.0</span> 及以上<span id="ios-req">，iOS <span class="num">15</span> 及以上</span></p>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="guide" id="guide" role="dialog" aria-modal="true" aria-labelledby="guide-text">
+  <div class="guide-inner">
+    <svg class="guide-arrow" viewBox="0 0 72 88" fill="none" aria-hidden="true">
+      <path d="M10 84C14 46 34 22 60 10" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M44 6 62 9 57 26" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="guide-text" id="guide-text">点右上角，选择在浏览器打开</p>
+    <p class="guide-sub" id="guide-sub">在浏览器里才能下载</p>
+    <button type="button" class="btn" id="guide-close">知道了</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---- 可配置常量 ----
+  /** 安卓安装包 (APK) 直链. 为空时安卓的下载入口显示为待接入. */
+  var DOWNLOAD_URL_ANDROID = 'https://eat.v50to.you/downloads/android';
+  /** 是否提供 iPhone 版. 为 false 时 iOS 的下载入口置灰, 写「暂不支持」, iPhone 上也不显示「打开 App」. */
+  var IOS_SUPPORTED = false;
+  /** App Store 或 TestFlight 地址. 为空时 iOS 的下载入口显示为待接入; 是 TestFlight 地址时入口写「TestFlight」. */
+  var DOWNLOAD_URL_IOS = '';
+  /** 安卓版本说明, 如「版本 1.2.3」, 显示在安卓下载入口里. 为空时不显示. */
+  var ANDROID_VERSION_TEXT = '';
+  /** 唤起 App 用的第二个主机名, 和 index.html 的 OPEN_HOST 一致. 页面在它上面打开时不显示「打开 App」. */
+  var OPEN_HOST = 'open.eat.v50to.you';
+  /** 安卓包名, 与 applicationId 一致. */
+  var ANDROID_PACKAGE = 'you.v50to.eat';
+  /** 「打开 App」的目标路径. */
+  var OPEN_PATH = '/app/discover';
+
+  // ---- 平台标志 (MingCute 官方 @mingcute/svg 3.1.0 的 core-regular: android-2, apple) ----
+  var LOGOS = {
+    "android": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"m15.975 12.064.418.216c.985.72.742 2.274-.418 2.656l-.475.077-.475-.077-.418-.216c-.985-.72-.742-2.274.418-2.656l.475-.077Zm-7 0 .418.216c.985.72.742 2.274-.418 2.656l-.475.077-.475-.077-.418-.216c-.985-.72-.742-2.274.418-2.656l.475-.077Zm8.744-4.266c1.172.872 2.173 1.885 2.916 3.154.9 1.538 1.331 3.254 1.365 5.029.003.174.04 1.108-.046 1.477-.21.9-.995 1.49-1.897 1.542H3.943c-.326-.019-.524-.051-.825-.198a2 2 0 0 1-.683-.547c-.532-.664-.45-1.471-.435-2.274l.029-.761a10.04 10.04 0 0 1 3.163-6.545c.466-.434.59-.506 1.089-.877L5.106 5.447c-.294-.697.15-1.493.954-1.445a1 1 0 0 1 .491.163c.168.112.243.216.343.388l1.137 2.272c2.482-1.105 5.456-1.105 7.938 0l1.137-2.272c.1-.172.175-.276.343-.388.22-.145.493-.198.751-.145.666.136.943.837.694 1.427ZM4.006 16.994h15.988c.051-1.36-.056-2.697-.566-3.97-2.084-5.197-8.771-6.699-12.874-2.884a8.03 8.03 0 0 0-2.458 4.621c-.114.734-.118 1.494-.09 2.233\"/></svg>",
+    "apple": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"currentColor\" d=\"M8.867 6.024c.47.046.922.198 1.358.37.57.224 1.146.538 1.775.538.914 0 1.762-.623 2.65-.824 1.897-.431 3.97.592 5.098 2.107.202.272.443.589.473.942.076.923-.85 1.002-1.384 1.479a2.52 2.52 0 0 0-.814 2.193 2.52 2.52 0 0 0 1.409 1.93c.367.174.71.254.891.658.216.478-.04.974-.212 1.419l-.294.696c-.785 1.734-2.074 3.6-3.885 4.37-.891.379-1.862.096-2.747-.15-.38-.106-.785-.251-1.185-.251s-.805.145-1.185.251c-.747.208-1.554.454-2.334.279-.658-.147-1.254-.548-1.765-.974-2.015-1.675-3.225-4.618-3.608-7.152-.446-2.952.449-6.186 3.39-7.46.736-.318 1.566-.5 2.369-.421m9.285 10.313c-2.668-1.709-2.91-5.403-.412-7.384a3.4 3.4 0 0 0-1.068-.686c-.349-.141-.744-.258-1.124-.264-.594-.009-1.153.308-1.688.519-.449.177-.914.331-1.396.383-.95.101-1.8-.168-2.665-.524-.36-.148-.726-.316-1.115-.364-.463-.058-.952.085-1.376.258a3.36 3.36 0 0 0-1.499 1.202 4.4 4.4 0 0 0-.634 1.465 6.6 6.6 0 0 0-.171 1.748c.067 2.296 1.449 6.075 3.583 7.245.089.049.217.12.332.143.33.067.735-.082 1.047-.166.536-.144 1.07-.325 1.625-.386.598-.066 1.169.04 1.746.192.436.115 1.299.451 1.744.36.566-.116 1.339-.92 1.686-1.348a8 8 0 0 0 .645-.921c.288-.472.524-.964.74-1.472M14.165 1.95c1.243.514.325 2.388-.341 2.998a3.24 3.24 0 0 1-1.515.778c-.362.078-.734.087-1.043-.15-.886-.68-.062-2.293.567-2.868a3.24 3.24 0 0 1 1.515-.778c.27-.058.553-.089.817.02\"/></svg>"
+  };
+  /** 盘子插画, 取自 assets/illustrations/luosifen.svg. */
+  var HERO_PLATE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" aria-hidden="true"><circle cx="103" cy="105" r="92" fill="#000000" fill-opacity="0.12"></circle><circle cx="100" cy="100" r="92" fill="#F7F3EC"></circle><circle cx="100" cy="100" r="91" fill="none" stroke="#E2DBCF" stroke-width="2"></circle><circle cx="100" cy="100" r="85" fill="none" stroke="#B5301C" stroke-width="3" stroke-dasharray="7 5"></circle><circle cx="100" cy="100" r="76" fill="#C23A1F"></circle><circle cx="100" cy="100" r="76" fill="none" stroke="#A82E17" stroke-width="5"></circle><g fill="#DA5530" opacity="0.9"><circle cx="70" cy="70" r="6"></circle><circle cx="136" cy="146" r="5"></circle><circle cx="58" cy="132" r="4"></circle><circle cx="150" cy="66" r="4"></circle></g><g fill="none" stroke="#F4E6C6" stroke-width="5" stroke-linecap="round"><path d="M56 96c8-8 16 8 24 0s16 8 24 0 16 8 24 0 16 8 22 0"></path><path d="M60 108c8-8 16 8 24 0s16 8 24 0 16 8 24 0 12 6 18 0"></path><path d="M66 84c8-8 16 8 24 0s16 8 24 0 16 8 22 0"></path><path d="M70 120c8-8 16 8 24 0s16 8 24 0 16 8 20 0"></path></g><g fill="#D89A5C" stroke="#B87A40" stroke-width="1"><ellipse cx="128" cy="66" rx="5" ry="3.5" transform="rotate(20 128 66)"></ellipse><ellipse cx="138" cy="72" rx="5" ry="3.5" transform="rotate(-30 138 72)"></ellipse><ellipse cx="124" cy="75" rx="5" ry="3.5"></ellipse><ellipse cx="76" cy="138" rx="5" ry="3.5" transform="rotate(40 76 138)"></ellipse><ellipse cx="86" cy="143" rx="5" ry="3.5"></ellipse></g><g fill="#EDD07A"><rect x="56" y="62" width="22" height="5" rx="2.5" transform="rotate(35 67 64)"></rect><rect x="62" y="56" width="18" height="5" rx="2.5" transform="rotate(20 71 58)"></rect><rect x="116" y="134" width="22" height="5" rx="2.5" transform="rotate(-25 127 136)"></rect></g><g fill="#E3A043"><rect x="134" y="94" width="20" height="12" rx="5" transform="rotate(15 144 100)"></rect><rect x="100" y="140" width="18" height="11" rx="5" transform="rotate(-20 109 145)"></rect></g><g fill="#4D9A3C"><path d="M90 58c6-6 16-4 18 2-6 4-14 4-18-2z"></path><path d="M146 118c4-6 12-6 14-1-4 5-10 5-14 1z"></path><path d="M48 112c4-6 12-6 14-1-4 5-10 5-14 1z"></path></g></svg>';
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+  /** 只放行 http(s) 地址, 防止常量里填了 javascript: 之类. */
+  function safeUrl(url) {
+    if (typeof url !== 'string' || !url) return '';
+    try {
+      var u = new URL(url, location.href);
+      return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : '';
+    } catch (e) { return ''; }
+  }
+
+  var ua = navigator.userAgent || '';
+  var isAndroid = /Android/i.test(ua);
+  var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  /** 微信, QQ 的内置浏览器不让下载 APK, 也不能跳 App Store. QQ 浏览器 (MQQBrowser 且无 " QQ/") 是普通浏览器. */
+  var inBlockedWebView = /MicroMessenger/i.test(ua) || /\sQQ\/[\d.]+/i.test(ua);
+  var openHost = OPEN_HOST || location.host;
+  /** 本页是在 OPEN_HOST 上打开的: 系统没把链接交给 App, 再链回 OPEN_HOST 也唤不起来. */
+  var onOpenHost = !!OPEN_HOST && location.host === OPEN_HOST;
+
+  var iosUrl = IOS_SUPPORTED ? safeUrl(DOWNLOAD_URL_IOS) : '';
+  var iosIsTestFlight = /^https?:\/\/testflight\.apple\.com\//i.test(iosUrl);
+  var androidVersion = typeof ANDROID_VERSION_TEXT === 'string' ? ANDROID_VERSION_TEXT.trim() : '';
+  var PLATFORMS = {
+    android: { logo: 'android', small: '安卓版', big: '下载', label: '下载安卓版', url: safeUrl(DOWNLOAD_URL_ANDROID), version: androidVersion },
+    ios: {
+      logo: 'apple',
+      small: 'iPhone 版',
+      big: iosIsTestFlight ? 'TestFlight' : 'App Store',
+      label: iosIsTestFlight ? '在 TestFlight 下载 iPhone 版' : '在 App Store 下载 iPhone 版',
+      url: iosUrl,
+      version: '',
+      offText: IOS_SUPPORTED ? '待接入' : '暂不支持'
+    }
+  };
+
+  var toastTimer;
+  function toast(message) {
+    var node = document.getElementById('toast');
+    node.textContent = message;
+    node.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { node.classList.remove('show'); }, 3000);
+  }
+
+  var guide = document.getElementById('guide');
+  var guideReturn = null;
+  function showGuide(sub) {
+    guideReturn = document.activeElement;
+    document.getElementById('guide-sub').textContent = sub;
+    guide.classList.add('show');
+    document.body.classList.add('locked');
+    document.getElementById('guide-close').focus();
+  }
+  function hideGuide() {
+    if (!guide.classList.contains('show')) return;
+    guide.classList.remove('show');
+    document.body.classList.remove('locked');
+    if (guideReturn && guideReturn.focus) guideReturn.focus();
+    guideReturn = null;
+  }
+  document.getElementById('guide-close').addEventListener('click', hideGuide);
+  guide.addEventListener('click', function (e) { if (e.target === guide) hideGuide(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideGuide(); });
+
+  /** 一个平台的下载入口. 有地址时是链接, 没有时置灰, 不可点, 带「待接入」或「暂不支持」虚线标签. */
+  function downloadEntry(key, primary) {
+    var p = PLATFORMS[key];
+    var entry = el(p.url ? 'a' : 'div', 'dl ' + (primary ? 'dl-primary' : 'dl-secondary') + (p.url ? '' : ' dl-off'));
+    var logo = el('span', 'dl-logo');
+    logo.setAttribute('aria-hidden', 'true');
+    logo.innerHTML = LOGOS[p.logo];
+    var text = el('span', 'dl-text');
+    var small = el('span', 'dl-small');
+    small.appendChild(el('span', null, p.small));
+    if (!p.url) small.appendChild(el('span', 'chip-pending', p.offText || '待接入'));
+    text.appendChild(small);
+    text.appendChild(el('span', 'dl-big', p.big));
+    if (p.version) text.appendChild(el('span', 'dl-version', p.version));
+    entry.appendChild(logo);
+    entry.appendChild(text);
+    if (p.url) {
+      entry.href = p.url;
+      entry.rel = 'noopener';
+      entry.setAttribute('aria-label', p.label + (p.version ? '，' + p.version : ''));
+      if (inBlockedWebView) entry.addEventListener('click', function (e) { e.preventDefault(); showGuide('在浏览器里才能下载'); });
+    } else {
+      entry.setAttribute('role', 'link');
+      entry.setAttribute('aria-disabled', 'true');
+      entry.setAttribute('aria-label', p.label + '，' + (p.offText || '待接入'));
+    }
+    return entry;
+  }
+
+  (function renderDownloads() {
+    var box = document.getElementById('downloads');
+    if (isAndroid) {
+      box.appendChild(downloadEntry('android', true));
+      box.appendChild(downloadEntry('ios', false));
+    } else if (isIOS) {
+      box.appendChild(downloadEntry('ios', true));
+      if (iosUrl && iosIsTestFlight) box.appendChild(el('p', 'dl-note', '需要先在 App Store 安装 TestFlight'));
+      box.appendChild(downloadEntry('android', false));
+    } else {
+      document.getElementById('desktop-hint').hidden = false;
+      box.classList.add('equal');
+      box.appendChild(downloadEntry('android', true));
+      box.appendChild(downloadEntry('ios', true));
+    }
+  })();
+
+  /**
+   * iOS: 不拦截, 由 <a href> 跳到 OPEN_HOST, 系统按 Universal Links 交给 App.
+   * Android: 发一个 https 的 intent, 走 App Links 的 intent-filter; 没装时 Chrome 回到本页.
+   */
+  function openApp(e) {
+    if (inBlockedWebView) { e.preventDefault(); showGuide('在浏览器里才能打开 App'); return; }
+    if (isIOS) return;
+    e.preventDefault();
+    if (!isAndroid) { toast('请在手机上打开这个页面'); return; }
+    var fallback = 'https://' + location.host + '/app/download';
+    location.href = 'intent://' + openHost + OPEN_PATH + '#Intent;scheme=https;package=' + ANDROID_PACKAGE +
+      ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
+  }
+
+  if (!onOpenHost && !(isIOS && !IOS_SUPPORTED)) {
+    var openLink = document.getElementById('open-app-link');
+    openLink.href = 'https://' + openHost + OPEN_PATH;
+    openLink.addEventListener('click', openApp);
+    document.getElementById('open-app').hidden = false;
+  }
+
+  if (!IOS_SUPPORTED) document.getElementById('ios-req').hidden = true;
+  document.getElementById('hero-plate').innerHTML = HERO_PLATE;
+})();
+</script>
+</body>
+</html>

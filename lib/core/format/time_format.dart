@@ -21,4 +21,11 @@ abstract final class TimeFormat {
   static String date(DateTime time, DateTime now) => time.year == now.year
       ? '${time.month} 月 ${time.day} 日'
       : '${time.year} 年 ${time.month} 月 ${time.day} 日';
+
+  /// 格式化一天中的时刻 (如 "05:00"), [minuteOfDay] 为从零点起的分钟数.
+  static String clock(int minuteOfDay) {
+    final h = (minuteOfDay ~/ 60) % 24;
+    final m = minuteOfDay % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+  }
 }

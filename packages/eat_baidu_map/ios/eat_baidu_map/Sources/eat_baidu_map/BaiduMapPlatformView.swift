@@ -171,7 +171,7 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
   func moveCamera(center: LatLngMessage, zoom: Double?, animated: Bool) {
     let status = mapView.getMapStatus()
     status.targetGeoPt = center.coordinate
-    status.targetScreenPt = visibleCenter
+    if let point = visibleCenter { status.targetScreenPt = point }
     if let zoom { status.fLevel = Float(zoom) }
     mapView.setMapStatus(status, withAnimation: animated)
   }
@@ -212,17 +212,25 @@ final class BaiduMapPlatformView: NSObject, FlutterPlatformView, BMKMapViewDeleg
     mapView.setCustomMapStyleEnable(true)
   }
 
+  /// 地图没加载完或视图还没有尺寸时, 屏幕坐标换算不可靠 (Flutter 以零尺寸创建平台视图,
+  /// 这时换算出来接近 (0, 0)), 改用地图状态里的中心点.
   func camera() -> CameraMessage {
-    let center = mapView.convert(visibleCenter, toCoordinateFrom: mapView)
+    let center: CLLocationCoordinate2D
+    if loaded, let point = visibleCenter {
+      center = mapView.convert(point, toCoordinateFrom: mapView)
+    } else {
+      center = mapView.getMapStatus().targetGeoPt
+    }
     return CameraMessage(
       center: LatLngMessage(lat: center.latitude, lng: center.longitude),
       zoom: Double(mapView.zoomLevel)
     )
   }
 
-  /// 可见区域中心在地图视图里的位置.
-  private var visibleCenter: CGPoint {
+  /// 可见区域中心在地图视图里的位置. 视图还没有尺寸时为 nil.
+  private var visibleCenter: CGPoint? {
     let b = mapView.bounds
+    if b.width == 0 || b.height == 0 { return nil }
     return CGPoint(
       x: insets.left + (b.width - insets.left - insets.right) / 2,
       y: insets.top + (b.height - insets.top - insets.bottom) / 2

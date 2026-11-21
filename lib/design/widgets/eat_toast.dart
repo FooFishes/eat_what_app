@@ -29,11 +29,7 @@ void showToast(BuildContext context, String message) {
     _entry = null;
     _toasts.value = const [];
   }
-  final bottom =
-      NavBarInset.of(context) +
-      MediaQuery.paddingOf(context).bottom +
-      MediaQuery.viewInsetsOf(context).bottom +
-      24;
+  final navInset = NavBarInset.of(context);
   final alive = _toasts.value.where((t) => !t.leaving).toList();
   if (alive.where((t) => t.message == message).firstOrNull case final same?) {
     _toasts.value = [..._toasts.value.where((t) => t != same), same];
@@ -41,7 +37,7 @@ void showToast(BuildContext context, String message) {
     return;
   }
   if (alive.length >= _maxAlive) alive.first.key.currentState?.leave();
-  _toasts.value = [..._toasts.value, _ToastData(message, bottom)];
+  _toasts.value = [..._toasts.value, _ToastData(message, navInset)];
   if (_entry == null) {
     _overlay = overlay;
     _entry = OverlayEntry(builder: (_) => const _ToastStack());
@@ -79,10 +75,12 @@ OverlayEntry? _entry;
 OverlayState? _overlay;
 
 class _ToastData {
-  _ToastData(this.message, this.bottom);
+  _ToastData(this.message, this.navInset);
 
   final String message;
-  final double bottom;
+
+  /// 弹出处的 [NavBarInset]. 浮层在导航外壳外面, 读不到它, 只能从调用处带过来.
+  final double navInset;
   final key = GlobalKey<_ToastViewState>();
 
   /// 是否已开始退场. 退场中的提示不算在叠放的层数里, 也不再接受操作.
@@ -302,10 +300,20 @@ class _ToastViewState extends State<_ToastView> with TickerProviderStateMixin {
         ),
       ),
     );
+    // 安全区和键盘从浮层自己的 MediaQuery 读: 调用处的可能被 RemovePadding, KeyboardInset 去掉了.
+    // 键盘从屏幕底边量起, 已经盖住安全区, 所以和安全区取较大的一边而不是相加.
+    final navInset = widget.toast.navInset;
+    final floor = navInset > 0
+        ? navInset + EatSpace.s8
+        : MediaQuery.viewPaddingOf(context).bottom + EatSpace.s24;
+    final bottom = math.max(
+      floor,
+      MediaQuery.viewInsetsOf(context).bottom + EatSpace.s24,
+    );
     return Positioned(
       left: EatSpace.s20,
       right: EatSpace.s20,
-      bottom: widget.toast.bottom,
+      bottom: bottom,
       child: Align(
         alignment: Alignment.bottomCenter,
         heightFactor: 1,

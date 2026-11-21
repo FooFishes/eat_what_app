@@ -4,6 +4,7 @@ info:
   description: |-
     单站业务后端（feat/eatwhat-v2）由代码生成的接口文档。
     所有接口返回 HTTP 200 + Result{code,data,msg,timestamp}，code=0 为成功，业务码见 docs/legacy-api/biz-codes.md。
+    code=10001 时，msg 直接给出具体原因，可向用户展示。没有具体原因时返回“参数非法”。
     公网经 nginx 访问，路径前加 /api。登录后在请求头 satoken 里带 "Bearer <tokenValue>"。
     已登录但没同意当前隐私政策版本时，除标注"同意前可用"的接口外都返回 20009。
   version: v2
@@ -2855,6 +2856,21 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - DISTANCE
+              - NEWEST
+              - FAVORITED_AT
+              - RATING
+          description: DISTANCE 需坐标，NEWEST 按新建时间，FAVORITED_AT 仅限收藏列表。RATING 按场景推荐率降序，同率按该场景评价数降序，再按店铺 ID 升序，未评价排最后。
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - dine_in
+              - delivery
+          description: 仅用于 sort=RATING，省略按堂食。delivery 表示按外卖评价排序。
         - name: page
           in: query
           required: false
@@ -2972,6 +2988,21 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - DISTANCE
+              - NEWEST
+              - FAVORITED_AT
+              - RATING
+          description: DISTANCE 需坐标，NEWEST 按新建时间，FAVORITED_AT 仅限收藏列表。RATING 按场景推荐率降序，同率按该场景评价数降序，再按店铺 ID 升序，未评价排最后。
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - dine_in
+              - delivery
+          description: 仅用于 sort=RATING，省略按堂食。delivery 表示按外卖评价排序。
         - name: favoritesOnly
           in: query
           required: false
@@ -3071,6 +3102,21 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - DISTANCE
+              - NEWEST
+              - FAVORITED_AT
+              - RATING
+          description: DISTANCE 需坐标，NEWEST 按新建时间，FAVORITED_AT 仅限收藏列表。RATING 按场景推荐率降序，同率按该场景评价数降序，再按店铺 ID 升序，未评价排最后。
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - dine_in
+              - delivery
+          description: 仅用于 sort=RATING，省略按堂食。delivery 表示按外卖评价排序。
         - name: favoritesOnly
           in: query
           required: false
@@ -3556,6 +3602,70 @@ paths:
       summary: 【需登录】我的分享：我首次发布的菜品
       operationId: my
       parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPageResultFoodView'
+      security:
+        - satoken: []
+  /admin/foods/list:
+    get:
+      tags:
+        - food · Food
+      summary: 【需角色：admin】后台菜品列表（省略 mealTime 时查询全部饭点）
+      operationId: adminList
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: signatureOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mealTime
+          in: query
+          required: false
+          schema:
+            type: string
         - name: page
           in: query
           required: false
@@ -4610,6 +4720,8 @@ components:
           type: string
         address:
           type: string
+          maxLength: 50
+          description: 去除首尾空白后按 Unicode 码点计数，地址不能为空。
         gcjLng:
           type: number
           format: double
@@ -5206,6 +5318,8 @@ components:
           type: string
         address:
           type: string
+          maxLength: 50
+          description: 去除首尾空白后按 Unicode 码点计数，地址不能为空。
         gcjLng:
           type: number
           format: double

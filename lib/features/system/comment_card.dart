@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
@@ -32,6 +33,7 @@ import 'package:eat/features/system/guard.dart';
 import 'package:eat/features/system/report_panel.dart';
 import 'package:eat/state/comments.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -304,8 +306,11 @@ class _Body extends StatelessWidget {
   }
 }
 
-/// 最下面一行: 时间, "回应", 有人回应过时接着是各种回应的胶囊 (放不下时横着滑); 右边是赞和 "更多".
+/// 正文和附图下面: 有人回应过时先是各种回应的胶囊, 放不下再折行; 最下面一行是时间和 "回应", 右边是赞和 "更多".
 /// 回复在正文右边的箭头上.
+///
+/// 有胶囊时, 胶囊和最下面一行露出来的都比 44px 矮, 排紧以后点击区上下压着. 两者都套在 [_TouchBand] 里,
+/// 版面上只占看得见的那一截, 点击区照旧是 44px; 交叠的地方由 [_TouchScope] 分配.
 class _Actions extends ConsumerWidget {
   const new({required this.comment, required this.reactions});
 
@@ -316,7 +321,8 @@ class _Actions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
-    return Row(
+    final timeStyle = eat.text.meta.copyWith(fontSize: 12, color: c.inkMuted);
+    final row = Row(
       children: [
         Expanded(
           child: Row(
@@ -326,21 +332,11 @@ class _Actions extends ConsumerWidget {
                   TimeFormat.relative(comment.createdAt, clock.now()),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: eat.text.meta.copyWith(
-                    fontSize: 12,
-                    color: c.inkMuted,
-                  ),
+                  style: timeStyle,
                 ),
               ),
               const SizedBox(width: EatSpace.s8),
               _ReactButton(comment: comment),
-              if (reactions.isNotEmpty)
-                Flexible(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: _ReactionBar(comment: comment, reactions: reactions),
-                  ),
-                ),
             ],
           ),
         ),
@@ -357,6 +353,202 @@ class _Actions extends ConsumerWidget {
         ),
       ],
     );
+    if (reactions.isEmpty) return row;
+    return _TouchScope(
+      child: Padding(
+        padding: const EdgeInsets.only(top: EatSpace.s4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: EatSpace.s4,
+          children: [
+            _ReactionBar(comment: comment, reactions: reactions),
+            // 这一行下面的留白隔开下一条, 只裁上面.
+            _TouchBand(
+              visual: math.max(
+                _lineHeight(context, timeStyle),
+                _lineHeight(context, eat.text.count),
+              ),
+              trimBottom: false,
+              yields: true,
+              child: row,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// [style] 的一行字在当前字号缩放下的高度.
+double _lineHeight(BuildContext context, TextStyle style) =>
+    MediaQuery.textScalerOf(context).scale(style.fontSize!) *
+    (style.height ?? 1);
+
+/// 看得见的部分比点击区矮的一块: 子组件照常排成 44px 高, 看得见的部分在中间; 版面上上下各裁掉多出来的一截,
+/// 只占 [visual] 那么高, 子组件伸出去画. [trimBottom] 为 false 时只裁上面.
+///
+/// Flutter 只在一块自己的大小里找点中的东西, 伸出去的那截收不到点击, 由外层的 [_TouchScope] 绕过这一层直接交给子组件.
+/// 读屏的框仍是子组件的 44px.
+class _TouchBand extends SingleChildRenderObjectWidget {
+  const new({
+    required this.visual,
+    this.trimBottom = true,
+    this.yields = false,
+    required super.child,
+  });
+
+  final double visual;
+  final bool trimBottom;
+
+  /// 伸出去的点击区和别的交叠时让给别的. 最下面一行让着胶囊, 两者之间的空隙归胶囊.
+  final bool yields;
+
+  @override
+  _RenderTouchBand createRenderObject(BuildContext context) =>
+      _RenderTouchBand(visual: visual, trimBottom: trimBottom, yields: yields);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderTouchBand renderObject) {
+    renderObject
+      ..visual = visual
+      ..trimBottom = trimBottom
+      ..yields = yields;
+  }
+}
+
+class _RenderTouchBand extends RenderShiftedBox {
+  _RenderTouchBand({
+    required this._visual,
+    required this._trimBottom,
+    required this.yields,
+  }) : super(null);
+
+  double _visual;
+  set visual(double value) {
+    if (value == _visual) return;
+    _visual = value;
+    markNeedsLayout();
+  }
+
+  bool _trimBottom;
+  set trimBottom(bool value) {
+    if (value == _trimBottom) return;
+    _trimBottom = value;
+    markNeedsLayout();
+  }
+
+  bool yields;
+
+  ({double top, double bottom}) _trim(double height) {
+    final overhang = math.max(0.0, (height - _visual) / 2);
+    return (top: overhang, bottom: _trimBottom ? overhang : 0.0);
+  }
+
+  double _trimmed(double height) {
+    final trim = _trim(height);
+    return height - trim.top - trim.bottom;
+  }
+
+  /// 高度不设限, 子组件按自己的点击区排.
+  BoxConstraints _childConstraints(BoxConstraints constraints) =>
+      BoxConstraints(
+        minWidth: constraints.minWidth,
+        maxWidth: constraints.maxWidth,
+      );
+
+  @override
+  double computeMinIntrinsicHeight(double width) =>
+      _trimmed(child?.getMinIntrinsicHeight(width) ?? 0);
+
+  @override
+  double computeMaxIntrinsicHeight(double width) =>
+      _trimmed(child?.getMaxIntrinsicHeight(width) ?? 0);
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final child = this.child;
+    if (child == null) return constraints.smallest;
+    final full = child.getDryLayout(_childConstraints(constraints));
+    return constraints.constrain(Size(full.width, _trimmed(full.height)));
+  }
+
+  @override
+  void performLayout() {
+    final child = this.child;
+    if (child == null) {
+      size = constraints.smallest;
+      return;
+    }
+    child.layout(_childConstraints(constraints), parentUsesSize: true);
+    final trim = _trim(child.size.height);
+    (child.parentData! as BoxParentData).offset = Offset(0, -trim.top);
+    size = constraints.constrain(
+      Size(child.size.width, child.size.height - trim.top - trim.bottom),
+    );
+  }
+
+  /// [position] 落在点击区里时离看得见的部分有多远, 不在点击区里时为 null.
+  double? reach(Offset position) {
+    final child = this.child;
+    if (child == null) return null;
+    final touch = (child.parentData! as BoxParentData).offset & child.size;
+    if (!touch.contains(position)) return null;
+    final dx = math.max(0.0, math.max(-position.dx, position.dx - size.width));
+    final dy = math.max(0.0, math.max(-position.dy, position.dy - size.height));
+    return Offset(dx, dy).distance;
+  }
+
+  /// 不看自己的大小, 在整个点击区里找点中的东西.
+  bool hitTestTouch(BoxHitTestResult result, Offset position) {
+    if (!hitTestChildren(result, position: position)) return false;
+    result.add(BoxHitTestEntry(this, position));
+    return true;
+  }
+}
+
+/// 收着几块 [_TouchBand]. 先照常找点中的东西, 看得见的部分优先, 正文在这一块外面, 也优先;
+/// 都没点中时交给点击区罩着这一点的那块, 几块都罩着时给看得见的部分离得最近的, [_TouchBand.yields] 的排在最后.
+class _TouchScope extends SingleChildRenderObjectWidget {
+  const new({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderTouchScope();
+}
+
+class _RenderTouchScope extends RenderProxyBox {
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    if (super.hitTestChildren(result, position: position)) return true;
+    final candidates = <(_RenderTouchBand, Matrix4, double)>[];
+    void collect(RenderObject node) {
+      if (node is! _RenderTouchBand) {
+        node.visitChildren(collect);
+        return;
+      }
+      final transform = node.getTransformTo(this);
+      final inverse = Matrix4.tryInvert(transform);
+      if (inverse == null) return;
+      final distance = node.reach(
+        MatrixUtils.transformPoint(inverse, position),
+      );
+      if (distance != null) candidates.add((node, transform, distance));
+    }
+
+    visitChildren(collect);
+    candidates.sort(
+      (a, b) => a.$1.yields != b.$1.yields
+          ? (a.$1.yields ? 1 : -1)
+          : a.$3.compareTo(b.$3),
+    );
+    for (final (band, transform, _) in candidates) {
+      final hit = result.addWithPaintTransform(
+        transform: transform,
+        position: position,
+        hitTest: (result, local) => band.hitTestTouch(result, local),
+      );
+      if (hit) return true;
+    }
+    return false;
   }
 }
 
@@ -517,23 +709,61 @@ class _ReactButtonState extends ConsumerState<_ReactButton> {
       height: 148 * scale,
       barrierLabel: widget.comment.isReply ? '回应这条回复' : '回应这条评论',
       face: (_) => const _TextActionFace('回应'),
-      builder: (_) => _ReactionCard(comment: widget.comment),
+      builder: (_) => _ReactionCard(comment: widget.comment, onPick: _pick),
     );
   }
+
+  /// 卡片选完就收回, 请求的结果晚于卡片回来, 失败时用评论这边的 context 和 ref 提示.
+  void _pick(CommentReaction reaction) =>
+      unawaited(_react(context, ref, widget.comment, reaction));
 
   @override
   Widget build(BuildContext context) =>
       _TextAction('回应', key: _origin, onTap: _open);
 }
 
-/// 回应卡片: 六种表情排成一行, 下面是各自的人数, 自己选的那种带底色. 点一种就选上 (再点取消), 卡片不关.
-class _ReactionCard extends ConsumerWidget {
-  const new({required this.comment});
+/// 回应卡片: 六种表情排成一行, 下面是各自的人数, 自己选的那种带底色. 点一种就选上 (再点取消),
+/// 停一拍让选中的样子露出来, 卡片随即收回.
+class _ReactionCard extends ConsumerStatefulWidget {
+  const new({required this.comment, required this.onPick});
 
   final Comment comment;
 
+  /// 选上或取消一种回应. 卡片随后就关, 请求和失败提示交给打开卡片的那一边.
+  final ValueChanged<CommentReaction> onPick;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ReactionCard> createState() => _ReactionCardState();
+}
+
+class _ReactionCardState extends ConsumerState<_ReactionCard> {
+  Timer? _close;
+
+  @override
+  void dispose() {
+    _close?.cancel();
+    super.dispose();
+  }
+
+  void _pick(CommentReaction reaction) {
+    if (_close != null) return;
+    widget.onPick(reaction);
+    _close = Timer(context.motion(EatMotion.select), () {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isActive) return;
+      // 失败的提示可能已经盖在卡片上面, 这时只拿掉卡片.
+      if (route.isCurrent) {
+        Navigator.of(context).pop();
+      } else {
+        Navigator.of(context).removeRoute(route);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final comment = widget.comment;
     final eat = context.eat;
     final c = eat.colors;
     final current = _reactionsOf(ref, comment);
@@ -584,7 +814,7 @@ class _ReactionCard extends ConsumerWidget {
                     selected: current.any(
                       (r) => r.reaction == reaction && r.selected,
                     ),
-                    onTap: () => _react(context, ref, comment, reaction),
+                    onTap: () => _pick(reaction),
                   ),
               ],
             ),
@@ -660,62 +890,73 @@ class _ReactionOption extends StatelessWidget {
 }
 
 /// 有人选过的表情回应, 每种一个 "表情 人数" 胶囊, 自己选的那种描边, 人数加粗. 点胶囊选上或取消这一种.
+/// 胶囊各自带 44px 的点击区, 套在 [_TouchBand] 里只占看得见的高度, 折行后上下两行也挨得近.
 class _ReactionBar extends ConsumerWidget {
   const new({required this.comment, required this.reactions});
 
   final Comment comment;
   final List<ReactionCount> reactions;
 
+  static const _emoji = 16.0;
+  static const _padding = EdgeInsets.symmetric(horizontal: 10, vertical: 5);
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eat = context.eat;
     final c = eat.colors;
+    final visual =
+        math.max(_emoji, _lineHeight(context, eat.text.count)) +
+        _padding.vertical;
     return Wrap(
       spacing: 6,
+      runSpacing: EatSpace.s4,
       children: [
         for (final r in reactions)
-          EatTappable(
-            onTap: () => _react(context, ref, comment, r.reaction),
-            label: '${r.reaction.label}，${r.count}',
-            toggled: r.selected,
-            focusShape: const StadiumBorder(),
-            builder: (context, _) => ExcludeSemantics(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minWidth: EatSize.touch,
-                  minHeight: EatSize.touch,
-                ),
-                child: Center(
-                  widthFactor: 1,
-                  child: DecoratedBox(
-                    decoration: ShapeDecoration(
-                      color: c.mist,
-                      shape: StadiumBorder(
-                        side: r.selected
-                            ? BorderSide(color: c.ink, width: 1.5)
-                            : BorderSide.none,
+          _TouchBand(
+            visual: visual,
+            child: EatTappable(
+              onTap: () => _react(context, ref, comment, r.reaction),
+              label: '${r.reaction.label}，${r.count}',
+              toggled: r.selected,
+              focusShape: const StadiumBorder(),
+              builder: (context, _) => ExcludeSemantics(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: EatSize.touch,
+                    minHeight: EatSize.touch,
+                  ),
+                  child: Center(
+                    widthFactor: 1,
+                    child: DecoratedBox(
+                      decoration: ShapeDecoration(
+                        color: c.mist,
+                        shape: StadiumBorder(
+                          side: r.selected
+                              ? BorderSide(color: c.ink, width: 1.5)
+                              : BorderSide.none,
+                        ),
                       ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        spacing: 4,
-                        children: [
-                          ReactionEmojiImage(_emojiOf(r.reaction), size: 16),
-                          Text(
-                            '${r.count}',
-                            style: eat.text.count.copyWith(
-                              color: c.ink,
-                              fontWeight: r.selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
+                      child: Padding(
+                        padding: _padding,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 4,
+                          children: [
+                            ReactionEmojiImage(
+                              _emojiOf(r.reaction),
+                              size: _emoji,
                             ),
-                          ),
-                        ],
+                            Text(
+                              '${r.count}',
+                              style: eat.text.count.copyWith(
+                                color: c.ink,
+                                fontWeight: r.selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -817,7 +1058,7 @@ class _Photos extends StatelessWidget {
 
 /// 主评论下方的回复列表, 默认展示最早的 2 条并将剩余回复折叠为 "展开 N 条回复".
 ///
-/// 当主评论回复数为 0 时不会请求回复列表.
+/// 当主评论回复数为 0 时不会请求回复列表. 起初只请求这 2 条, 点 "展开" 后才加载完整的第 1 页.
 class _Replies extends ConsumerStatefulWidget {
   const new({required this.comment});
 
@@ -833,15 +1074,12 @@ class _RepliesState extends ConsumerState<_Replies> {
   @override
   Widget build(BuildContext context) {
     if (widget.comment.replyCount <= 0) return const SizedBox.shrink();
-    final replies = ref.watch(commentRepliesProvider(widget.comment.id));
+    final provider = commentRepliesProvider(widget.comment.id);
+    final replies = ref.watch(provider);
     final list = replies.value;
     if (list == null) {
       if (replies.hasError && !replies.isLoading) {
-        return _TextAction(
-          '回复加载失败，重试',
-          onTap: () =>
-              ref.invalidate(commentRepliesProvider(widget.comment.id)),
-        );
+        return _TextAction('回复加载失败，重试', onTap: () => ref.invalidate(provider));
       }
       return const SizedBox.shrink();
     }
@@ -856,17 +1094,23 @@ class _RepliesState extends ConsumerState<_Replies> {
       children: [
         for (final reply in shown)
           _ReplyLine(root: widget.comment, reply: reply),
-        if (!_expanded && hidden > 0)
+        // 完整的第 1 页加载完之前仍是预览, 按钮保持 "展开 N 条回复", 不闪成 "展开更多".
+        if ((!_expanded || list.preview) && hidden > 0)
           _ExpandButton(
-            label: '展开 $hidden 条回复',
-            onTap: () => setState(() => _expanded = true),
+            label: _expanded && list.moreError != null
+                ? '加载失败，重试'
+                : '展开 $hidden 条回复',
+            onTap: () {
+              setState(() => _expanded = true);
+              if (list.preview) {
+                unawaited(ref.read(provider.notifier).loadMore());
+              }
+            },
           )
         else if (more)
           _ExpandButton(
             label: list.moreError == null ? '展开更多' : '加载失败，重试',
-            onTap: () => ref
-                .read(commentRepliesProvider(widget.comment.id).notifier)
-                .loadMore(),
+            onTap: () => ref.read(provider.notifier).loadMore(),
           )
         else if (_expanded && list.items.length > CommentRules.replyPreview)
           _ExpandButton(

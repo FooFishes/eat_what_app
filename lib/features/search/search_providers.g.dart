@@ -8,16 +8,20 @@ part of 'search_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 选了 [meal] 时只搜这一顿的菜.
 
 @ProviderFor(dishSearch)
 final dishSearchProvider = DishSearchFamily._();
 
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 选了 [meal] 时只搜这一顿的菜.
 
 final class DishSearchProvider
     extends
@@ -27,12 +31,14 @@ final class DishSearchProvider
           FutureOr<List<Dish>>
         >
     with $FutureModifier<List<Dish>>, $FutureProvider<List<Dish>> {
-  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
   ///
-  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+  /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+  ///
+  /// 选了 [meal] 时只搜这一顿的菜.
   DishSearchProvider._({
     required DishSearchFamily super.from,
-    required String super.argument,
+    required (String, MealTime?) super.argument,
   }) : super(
          retry: null,
          name: r'dishSearchProvider',
@@ -48,7 +54,7 @@ final class DishSearchProvider
   String toString() {
     return r'dishSearchProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -58,8 +64,8 @@ final class DishSearchProvider
 
   @override
   FutureOr<List<Dish>> create(Ref ref) {
-    final argument = this.argument as String;
-    return dishSearch(ref, argument);
+    final argument = this.argument as (String, MealTime?);
+    return dishSearch(ref, argument.$1, argument.$2);
   }
 
   @override
@@ -73,14 +79,16 @@ final class DishSearchProvider
   }
 }
 
-String _$dishSearchHash() => r'ec86a862df1cd4593476a9b2e73b80e8ca5a73ef';
+String _$dishSearchHash() => r'4cb32076e9643d277cd8ad42b468ef4950ca71ff';
 
-/// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+/// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
 ///
-/// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+/// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+///
+/// 选了 [meal] 时只搜这一顿的菜.
 
 final class DishSearchFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Dish>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<List<Dish>>, (String, MealTime?)> {
   DishSearchFamily._()
     : super(
         retry: null,
@@ -90,27 +98,29 @@ final class DishSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按菜名在当前校区内跨店搜索菜品列表, 按发布时间倒序排列.
+  /// 按菜名跨店搜索菜品列表, 不限校区, 按发布时间倒序排列.
   ///
-  /// 校区列表没加载出来时不限校区. 带校区时服务端排除已关门的店.
+  /// 请求固定带堂食场景, 因为服务端只在带场景时排除已关门的店. 堂食不按外卖状态筛菜, 所以不会漏掉不能点外卖的菜.
+  ///
+  /// 选了 [meal] 时只搜这一顿的菜.
 
-  DishSearchProvider call(String keyword) =>
-      DishSearchProvider._(argument: keyword, from: this);
+  DishSearchProvider call(String keyword, MealTime? meal) =>
+      DishSearchProvider._(argument: (keyword, meal), from: this);
 
   @override
   String toString() => r'dishSearchProvider';
 }
 
-/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+/// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
 ///
-/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+/// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
 
 @ProviderFor(shopSearch)
 final shopSearchProvider = ShopSearchFamily._();
 
-/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+/// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
 ///
-/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+/// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
 
 final class ShopSearchProvider
     extends
@@ -120,12 +130,12 @@ final class ShopSearchProvider
           FutureOr<List<Shop>>
         >
     with $FutureModifier<List<Shop>>, $FutureProvider<List<Shop>> {
-  /// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+  /// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
   ///
-  /// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+  /// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
   ShopSearchProvider._({
     required ShopSearchFamily super.from,
-    required String super.argument,
+    required (String, ShopOrder) super.argument,
   }) : super(
          retry: null,
          name: r'shopSearchProvider',
@@ -141,7 +151,7 @@ final class ShopSearchProvider
   String toString() {
     return r'shopSearchProvider'
         ''
-        '($argument)';
+        '$argument';
   }
 
   @$internal
@@ -151,8 +161,8 @@ final class ShopSearchProvider
 
   @override
   FutureOr<List<Shop>> create(Ref ref) {
-    final argument = this.argument as String;
-    return shopSearch(ref, argument);
+    final argument = this.argument as (String, ShopOrder);
+    return shopSearch(ref, argument.$1, argument.$2);
   }
 
   @override
@@ -166,14 +176,14 @@ final class ShopSearchProvider
   }
 }
 
-String _$shopSearchHash() => r'b0d4e1250799ba4ca523ba724a7c2649db54ed1a';
+String _$shopSearchHash() => r'9a1cbfe859653c8d1d00c2e8decf4d3c56471253';
 
-/// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+/// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
 ///
-/// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+/// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
 
 final class ShopSearchFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<Shop>>, String> {
+    with $FunctionalFamilyOverride<FutureOr<List<Shop>>, (String, ShopOrder)> {
   ShopSearchFamily._()
     : super(
         retry: null,
@@ -183,12 +193,12 @@ final class ShopSearchFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 按店名或地址搜索当前校区内的店铺 (含已关门店铺).
+  /// 按店名, 地址或店里的菜名搜索店铺 (含已关门店铺), 按 [order] 排序.
   ///
-  /// 结果按与当前定位的距离升序排列, 无定位时按与校区中心的距离排列; 已关门店铺统一置于末尾并保持原有距离顺序.
+  /// 已关门店铺不论哪种排序都统一置于末尾, 并保持服务端给的顺序.
 
-  ShopSearchProvider call(String keyword) =>
-      ShopSearchProvider._(argument: keyword, from: this);
+  ShopSearchProvider call(String keyword, ShopOrder order) =>
+      ShopSearchProvider._(argument: (keyword, order), from: this);
 
   @override
   String toString() => r'shopSearchProvider';

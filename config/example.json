@@ -1,7 +1,7 @@
 {
   "ENV_NAME": "dev",
   "API_BASE_URL": "https://example.com/api",
-  "WEB_BASE_URL": "https://example.com",
+  "WEB_BASE_URL": "https://example.com/app",
   "SENTRY_DSN": "",
   "BAIDU_MAP_AK_ANDROID": "",
   "BAIDU_MAP_AK_IOS": "",

@@ -186,7 +186,7 @@ class _RevisionRow extends ConsumerWidget {
     } on AppFailure catch (e) {
       if (!context.mounted) return;
       if (e.code == BizCodes.stateNotAllowed) {
-        showToast(context, '已经是这个版本');
+        showToast(context, e.userMessage ?? '已经是这个版本');
         return;
       }
       await reportActionFailure(

@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:eat/core/network/ref_extensions.dart';
+import 'package:eat/core/storage/kv_store.dart';
 import 'package:eat/data/place/place_api.dart';
 import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
 import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/state/location.dart';
+import 'package:eat/state/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -134,4 +138,47 @@ Future<Hub?> myHub(Ref ref) async {
   final me = ref.watch(currentLocationProvider.select((s) => s.point));
   if (me == null) return null;
   return ref.watch(placeRepositoryProvider).locateHub(me);
+}
+
+/// 最近在 "选商圈" 面板里选过的商圈 ID, 最近选的在前, 最多 [max] 个. "附近" 不记.
+///
+/// 和最近搜索一样按账号存在 `cache.` 前缀下, 退出登录时随账号缓存清除.
+/// 游客不落盘, 只在这次打开 App 期间记着; 因此保持存活, 关上面板不丢.
+@Riverpod(keepAlive: true)
+class RecentHubs extends _$RecentHubs {
+  static const max = 4;
+
+  /// 本地缓存键名. 未登录或游客为 null, 不读写本地.
+  String? _key;
+
+  @override
+  Future<List<int>> build() async {
+    final key = _key = ref.watch(
+      sessionProvider.select(
+        (s) => switch (s) {
+          SignedIn(:final user) => 'cache.nearby.hubs.${user?.id ?? 0}',
+          SignedOut() || Guest() => null,
+        },
+      ),
+    );
+    if (key == null) return const [];
+    final raw = await ref.watch(kvStoreProvider).read(key);
+    if (raw == null) return const [];
+    try {
+      return (jsonDecode(raw) as List<dynamic>).cast<int>();
+    } on Object {
+      return const [];
+    }
+  }
+
+  Future<void> add(int hubId) async {
+    final ids = [
+      hubId,
+      ...?state.value?.where((id) => id != hubId),
+    ].take(max).toList();
+    state = AsyncData(ids);
+    if (_key case final key?) {
+      await ref.read(kvStoreProvider).write(key, jsonEncode(ids));
+    }
+  }
 }

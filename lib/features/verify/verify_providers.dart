@@ -136,7 +136,9 @@ class Verify extends _$Verify {
       if (!ref.mounted) return;
       state = _copy(
         busy: false,
-        notice: e.code == BizCodes.opFailed ? '该邮箱已认证其他账号' : _noticeOf(e),
+        notice: e.code == BizCodes.opFailed && e.userMessage == null
+            ? '该邮箱已认证其他账号'
+            : _noticeOf(e),
       );
     }
   }

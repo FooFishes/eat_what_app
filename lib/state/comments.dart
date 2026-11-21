@@ -4,6 +4,8 @@
 /// 因此集中维护在 `state` 中.
 library;
 
+import 'dart:async';
+
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
 import 'package:eat/core/network/ref_extensions.dart';
@@ -25,6 +27,9 @@ part 'comments.g.dart';
 class const CommentList({
   required final CommentPage data,
   final AppFailure? moreError,
+
+  /// 只取了预览用的前几条回复, 见 [CommentReplies].
+  final bool preview = false,
 }) {
   List<Comment> get items => data.page.items;
 }
@@ -92,9 +97,14 @@ class DishComments extends _$DishComments {
   }
 }
 
-/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+/// 单条评论下的回复列表状态, 按时间正序排列.
+///
+/// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+/// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 @riverpod
 class CommentReplies extends _$CommentReplies {
+  static const _pageSize = 20;
+
   @override
   Future<CommentList> build(int commentId) async {
     ref.cacheFor(const Duration(minutes: 5));
@@ -102,29 +112,73 @@ class CommentReplies extends _$CommentReplies {
     return CommentList(
       data: await ref
           .watch(commentRepositoryProvider)
-          .replies(commentId, cancelToken: ref.cancelToken()),
+          .replies(
+            commentId,
+            pageSize: CommentRules.replyPreview,
+            cancelToken: ref.cancelToken(),
+          ),
+      preview: true,
     );
   }
 
   var _loading = false;
 
+  /// 预览时取第 1 页替换预览, 否则取下一页追加.
   Future<void> loadMore() async {
     final current = state.value;
     if (current == null || !current.data.page.hasNext || _loading) return;
     _loading = true;
     try {
-      final next = await ref
-          .read(commentRepositoryProvider)
-          .replies(commentId, page: current.data.page.page + 1);
-      if (ref.mounted) {
-        state = AsyncData(CommentList(data: current.data.append(next)));
+      final repo = ref.read(commentRepositoryProvider);
+      final next = current.preview
+          ? await repo.replies(commentId, pageSize: _pageSize)
+          : await repo.replies(
+              commentId,
+              page: current.data.page.page + 1,
+              pageSize: _pageSize,
+            );
+      // 请求期间列表被 [reload] 或 [removeLocal] 换过时丢弃结果, 否则会盖掉更新的列表.
+      if (ref.mounted && identical(state.value, current)) {
+        state = AsyncData(
+          CommentList(data: current.preview ? next : current.data.append(next)),
+        );
       }
     } on AppFailure catch (e) {
-      if (ref.mounted) {
-        state = AsyncData(CommentList(data: current.data, moreError: e));
+      if (ref.mounted && identical(state.value, current)) {
+        state = AsyncData(
+          CommentList(
+            data: current.data,
+            moreError: e,
+            preview: current.preview,
+          ),
+        );
       }
     } finally {
       _loading = false;
+    }
+  }
+
+  /// 按当前的条数重新取第 1 页: 预览时取预览条数, 展开后取一整页. 发表回复后由 [CommentWriter] 调用.
+  ///
+  /// 不用失效, 因为失效会退回预览, 展开时发的回复就看不到了. 失败时保留原列表.
+  Future<void> reload() async {
+    final current = state.value;
+    if (current == null) {
+      ref.invalidateSelf();
+      return;
+    }
+    try {
+      final first = await ref
+          .read(commentRepositoryProvider)
+          .replies(
+            commentId,
+            pageSize: current.preview ? CommentRules.replyPreview : _pageSize,
+          );
+      if (ref.mounted) {
+        state = AsyncData(CommentList(data: first, preview: current.preview));
+      }
+    } on AppFailure {
+      return;
     }
   }
 
@@ -132,7 +186,12 @@ class CommentReplies extends _$CommentReplies {
   void removeLocal(int replyId) {
     final current = state.value;
     if (current == null) return;
-    state = AsyncData(CommentList(data: current.data.without(replyId)));
+    state = AsyncData(
+      CommentList(
+        data: current.data.without(replyId),
+        preview: current.preview,
+      ),
+    );
   }
 }
 
@@ -164,7 +223,8 @@ class CommentWriter extends _$CommentWriter {
     ref.read(analyticsProvider).track(const CommentSuccessEvent());
     ref.invalidate(myCommentsProvider);
     if (rootId != null) {
-      ref.invalidate(commentRepliesProvider(rootId));
+      final replies = commentRepliesProvider(rootId);
+      if (ref.exists(replies)) unawaited(ref.read(replies.notifier).reload());
       _adjustReplies(dishId, rootId, 1);
     } else {
       for (final sort in CommentSort.values) {
@@ -231,7 +291,13 @@ class CommentWriter extends _$CommentWriter {
 
 // TODO: 评论不存在时服务端返回参数错误 10001, 与填写错误共用一个码. 后端提供单独的业务码后改为判断该码.
 /// 判断对已有评论的操作 (赞, 回复, 删除, 举报) 失败的原因是否为评论已被删除.
-bool isCommentGone(AppFailure failure) => failure.code == BizCodes.paramInvalid;
+///
+/// 10001 也用于内容被拦 (如评论里有联系方式), 因此还要看 `msg` 是不是后端说评论不存在的文案.
+bool isCommentGone(AppFailure failure) =>
+    failure.code == BizCodes.paramInvalid &&
+    _goneTexts.contains(failure.serverMessage?.trim());
+
+const _goneTexts = {'评论不存在', '被回复的评论不存在', '这条评论已删除或不可见'};
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
 ///

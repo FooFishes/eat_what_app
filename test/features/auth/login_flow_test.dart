@@ -158,7 +158,11 @@ void main() {
     expect(locationOf(router), Paths.discover);
     expect(find.byType(DiscoverPage), findsOneWidget);
     expect(env.secure.values['auth.tokenValue'], 'tk');
-    expect(env.kv.values[PrivacyConsentStore.key], contains('2026-10'));
+    expect(
+      jsonDecode(env.kv.values[PrivacyConsentStore.key]!),
+      containsPair('version', 'v3'),
+      reason: '本机记录登录时同意的服务端版本',
+    );
   });
 
   testWidgets('人机验证打开时，票据随发码请求一起发出', (tester) async {

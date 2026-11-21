@@ -135,7 +135,7 @@ String _priceInput(double? price) => price == null
     ? ''
     : price.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
-/// 店铺招牌菜数量已达上限时的就地提示文案.
+/// 店铺招牌菜数量已达上限时的就地提示文案, 服务端没说明原因时用.
 String _signatureFullText(int max) => '这家店已有 $max 道招牌菜，先取消一道';
 
 class _DishForm extends ConsumerStatefulWidget {
@@ -172,8 +172,8 @@ class _DishFormState extends ConsumerState<_DishForm> {
   /// 发布或保存时若服务端判定菜名重复, 记录返回的已有菜品 id.
   int? _duplicateId;
 
-  /// 标记提交时服务端是否返回招牌菜已满错误, 用户重新切换招牌菜开关后清除.
-  var _signatureFull = false;
+  /// 提交时服务端返回招牌菜已满时的提示, 用户重新切换招牌菜开关后清除.
+  String? _signatureFull;
   Timer? _suggestTimer;
   late final AppLifecycleListener _lifecycle;
 
@@ -183,6 +183,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(
+      onHide: () => ref.read(_draft.notifier).enterBackground(),
       onResume: () => ref.read(_draft.notifier).retryFailedOnce(),
     );
   }
@@ -199,6 +200,14 @@ class _DishFormState extends ConsumerState<_DishForm> {
 
   /// 价格在编辑模式下是否保持未改动.
   bool get _priceUnchanged => _editing && _price.text == _initialPrice;
+
+  /// 价格输入框的错误提示, 合法时为 null. 未改动的原价不校验.
+  String? get _priceError => _priceUnchanged
+      ? null
+      : PublishRules.priceError(
+          _price.text,
+          keep: widget.original?.price != null,
+        );
 
   /// 计算编辑模式下相对原菜品的变更内容, 无改动或处于发布模式时返回 null.
   DishChange? _change(PublishDraft draft) {
@@ -317,6 +326,9 @@ class _DishFormState extends ConsumerState<_DishForm> {
 
         return EatPanel(
           title: cover ? '封面' : '这张照片',
+          subtitle: photo.status == UploadStatus.failed
+              ? photo.failure?.message
+              : null,
           actions: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: EatSpace.s10,
@@ -359,7 +371,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
     final draft = ref.read(_draft);
     final price = PublishRules.parsePrice(_price.text);
     final category = draft.category;
-    if (price == null || category == null || draft.uploading) return;
+    if (_priceError != null || category == null || draft.uploading) return;
     if (draft.hasFailedUpload) {
       showToast(context, '有照片未上传成功，请重试或删除');
       return;
@@ -406,7 +418,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
       return;
     }
     final draft = ref.read(_draft);
-    if (draft.uploading) return;
+    if (_priceError != null || draft.uploading) return;
     if (draft.hasFailedUpload) {
       showToast(context, '有照片未上传成功，请重试或删除');
       return;
@@ -447,7 +459,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
         showToast(context, e.message);
         return true;
       case BizCodes.stateNotAllowed when ref.read(_draft).signature:
-        setState(() => _signatureFull = true);
+        setState(
+          () => _signatureFull =
+              e.userMessage ?? _signatureFullText(_options.signaturesMax),
+        );
         return true;
     }
     return false;
@@ -487,7 +502,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
   }
 
   void _setSignature(bool value) {
-    setState(() => _signatureFull = false);
+    setState(() => _signatureFull = null);
     ref.read(_draft.notifier).setSignature(value);
   }
 
@@ -549,12 +564,11 @@ class _DishFormState extends ConsumerState<_DishForm> {
     final missing = PublishRules.missingText(
       photo: original != null || draft.photos.isNotEmpty,
       name: name.isNotEmpty,
-      price: price != null || _priceUnchanged,
       category:
           draft.category != null ||
           (original != null && original.category == null),
     );
-    final signatureFull = _signatureFull && draft.signature;
+    final signatureFull = draft.signature ? _signatureFull : null;
     final replacing = draft.photos.isNotEmpty;
 
     String? note;
@@ -563,17 +577,21 @@ class _DishFormState extends ConsumerState<_DishForm> {
       final original? => () => unawaited(_save(original)),
       null => _publish,
     };
+    final priceError = _priceError;
     if (missing != null) {
       note = missing;
+      onPressed = null;
+    } else if (priceError != null) {
+      note = priceError;
       onPressed = null;
     } else if (duplicateId != null) {
       note = original == null ? '这家店已有这道菜，去看看再说两句' : '这家店已有同名的菜，换个菜名';
       onPressed = null;
-    } else if (signatureFull) {
-      note = _signatureFullText(options.signaturesMax);
+    } else if (signatureFull != null) {
+      note = signatureFull;
       onPressed = null;
     } else if (draft.hasFailedUpload) {
-      note = '有照片未上传成功，点照片重试或删除';
+      note = draft.failedUploadMessage ?? '有照片未上传成功，点照片重试或删除';
       onPressed = null;
     } else if (draft.uploading) {
       label = '照片上传中 ${(draft.uploadProgress * 100).round()}%';
@@ -676,12 +694,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
                             ),
                           const SizedBox(height: EatSpace.s16),
                           EatFormField.price(
-                            label: '价格',
+                            label: '价格，选填',
                             controller: _price,
                             hintText: '0',
-                            errorText: _priceUnchanged
-                                ? null
-                                : PublishRules.priceError(_price.text),
+                            errorText: priceError,
                             textInputAction: TextInputAction.done,
                             onChanged: (_) => setState(() {}),
                           ),
@@ -1406,7 +1422,7 @@ class _Tastes extends StatelessWidget {
   );
 }
 
-/// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 为 true) 时在开关下方显示提示.
+/// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 不为空) 时在开关下方显示该提示.
 class _Signature extends StatelessWidget {
   const new({
     required this.value,
@@ -1419,7 +1435,7 @@ class _Signature extends StatelessWidget {
 
   /// 每家店最多几道招牌菜.
   final int max;
-  final bool full;
+  final String? full;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -1434,11 +1450,11 @@ class _Signature extends StatelessWidget {
           value: value,
           onChanged: onChanged,
         ),
-        if (full)
+        if (full case final full?)
           Semantics(
             liveRegion: true,
             child: Text(
-              _signatureFullText(max),
+              full,
               style: eat.text.meta.copyWith(color: eat.colors.warn),
             ),
           ),

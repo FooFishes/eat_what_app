@@ -334,17 +334,20 @@ class OneClickLogin extends _$OneClickLogin {
 ///
 /// 服务端在核销验证码之前校验同意状态, 因此重试无需重新获取验证码.
 /// 若用户拒绝同意, 则抛出业务码为 [BizCodes.consentRequired] 的 [AppFailure].
-Future<SignInResult> _withConsent(
+/// 返回登录结果和登录成功时携带的政策版本, 后者写入本机同意记录.
+Future<({SignInResult result, String? version})> _withConsent(
   Ref ref,
   ConsentPresenter present,
   Future<SignInResult> Function(String? policyVersion) login,
 ) async {
   final consent = ref.read(crossBorderConsentProvider);
+  final current = await consent.currentVersion();
   try {
-    return await login(await consent.currentVersion());
+    return (result: await login(current), version: current);
   } on AppFailure catch (e) {
     if (!BizCodes.consentCodes.contains(e.code)) rethrow;
-    return login(await consent.confirm(present));
+    final confirmed = await consent.confirm(present);
+    return (result: await login(confirmed), version: confirmed);
   }
 }
 
@@ -361,8 +364,12 @@ Future<String?> _deletionKey(Ref ref) async {
 ///
 /// 若为首次同意, 会在此处启动崩溃上报等依赖同意的服务.
 /// 若登录账号曾在本机申请注销, 此时注销已随登录撤销, 需清除本机的撤销凭据.
-Future<void> _signIn(Ref ref, SignInResult result) async {
-  await ref.read(privacyConsentStoreProvider).record();
+Future<void> _signIn(
+  Ref ref,
+  ({SignInResult result, String? version}) signedIn,
+) async {
+  final (:result, :version) = signedIn;
+  await ref.read(privacyConsentStoreProvider).record(version);
   unawaited(ref.read(consentedServicesProvider.notifier).start());
   await ref.read(sessionProvider.notifier).signIn(result);
   if (ref.read(sessionProvider) case SignedIn(user: final user?)) {

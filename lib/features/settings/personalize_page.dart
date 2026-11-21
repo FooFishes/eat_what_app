@@ -1,7 +1,7 @@
-import 'package:eat/design/icons/illustrations.dart';
-
 import 'dart:async';
 
+import 'package:eat/core/platform/app_icon.dart';
+import 'package:eat/design/icons/illustrations.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
@@ -12,15 +12,17 @@ import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
 import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
+import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/eat_slider.dart';
 import 'package:eat/design/widgets/plain_scaffold.dart';
 import 'package:eat/design/widgets/theme_cross_fade.dart';
 import 'package:eat/features/settings/widgets/settings_group.dart';
 import 'package:eat/state/appearance.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 个性化设置页面: 切换界面深浅色, 调节底部导航栏液态玻璃透明度并实时预览效果.
+/// 个性化设置页面: 切换界面深浅色, 调节底部导航栏液态玻璃透明度并实时预览效果, 换桌面图标.
 class PersonalizePage extends ConsumerWidget {
   const new({super.key});
 
@@ -68,6 +70,7 @@ class PersonalizePage extends ConsumerWidget {
               onChangeEnd: (_) => notifier.save(),
             ),
             const SizedBox(height: EatSpace.s24),
+            const _AppIconOptions(),
           ],
         ),
       ],
@@ -174,7 +177,7 @@ class _AppearanceOptionsState extends ConsumerState<_AppearanceOptions> {
           (Appearance.light, '浅色'),
           (Appearance.dark, '深色'),
         ])
-          _AppearanceRow(
+          _OptionRow(
             label: label,
             selected: option == shown,
             onTap: () => _pick(option),
@@ -184,11 +187,93 @@ class _AppearanceOptionsState extends ConsumerState<_AppearanceOptions> {
   }
 }
 
-/// 外观卡片里的一行: 名称, 选中时右侧打勾并加粗.
-class _AppearanceRow extends StatelessWidget {
-  const new({required this.label, required this.selected, required this.onTap});
+/// App 图标的两个选项. 不支持换图标时 (Web) 整组不显示.
+///
+/// 点了先在本页打勾, 换不成再退回原来的选项.
+class _AppIconOptions extends ConsumerStatefulWidget {
+  const new();
+
+  @override
+  ConsumerState<_AppIconOptions> createState() => _AppIconOptionsState();
+}
+
+class _AppIconOptionsState extends ConsumerState<_AppIconOptions> {
+  LauncherIcon? _picked;
+
+  Future<void> _pick(LauncherIcon icon, LauncherIcon current) async {
+    if (icon == (_picked ?? current)) return;
+    setState(() => _picked = icon);
+    final ok = await ref.read(appIconProvider).select(icon);
+    if (!mounted) return;
+    if (ok) {
+      ref.invalidate(launcherIconProvider);
+    } else {
+      setState(() => _picked = null);
+      showToast(context, '更换失败，请重试');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = ref.watch(launcherIconProvider).value;
+    if (current == null) return const SizedBox.shrink();
+    final shown = _picked ?? current;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: EatSpace.s24),
+      child: SettingsGroup(
+        title: 'App 图标',
+        note: defaultTargetPlatform == TargetPlatform.android
+            ? const Text('回到桌面后更换')
+            : null,
+        dividerIndent: 0,
+        children: [
+          for (final (icon, label) in const [
+            (LauncherIcon.pig, '猪猪'),
+            (LauncherIcon.bun, '饭饭'),
+          ])
+            _OptionRow(
+              label: label,
+              leading: _IconPreview(icon),
+              selected: icon == shown,
+              onTap: () => unawaited(_pick(icon, current)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 图标的预览小图, 圆角接近桌面上的样子.
+class _IconPreview extends StatelessWidget {
+  const new(this.icon);
+
+  final LauncherIcon icon;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: const BorderRadius.all(EatRadius.photo),
+    child: Image.asset(
+      'assets/app_icons/${icon.name}.png',
+      width: EatSize.avatar,
+      height: EatSize.avatar,
+      cacheWidth: (EatSize.avatar * MediaQuery.devicePixelRatioOf(context))
+          .round(),
+      excludeFromSemantics: true,
+    ),
+  );
+}
+
+/// 选项卡片里的一行: 可选的图片, 名称, 选中时右侧打勾并加粗.
+class _OptionRow extends StatelessWidget {
+  const new({
+    required this.label,
+    this.leading,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
+  final Widget? leading;
   final bool selected;
   final VoidCallback onTap;
 
@@ -209,9 +294,13 @@ class _AppearanceRow extends StatelessWidget {
         borderRadius: BorderRadius.all(EatRadius.thumb),
       ),
       builder: (context, _) => SizedBox(
-        height: 52,
+        height: leading == null ? 52 : 64,
         child: Row(
           children: [
+            if (leading case final leading?) ...[
+              leading,
+              const SizedBox(width: EatSpace.s14),
+            ],
             Expanded(
               child: Text(
                 label,

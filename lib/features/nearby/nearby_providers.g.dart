@@ -149,3 +149,65 @@ final class MyHubProvider
 }
 
 String _$myHubHash() => r'30801ea7c162f9ef6f0eb76904ef25536364c232';
+
+/// 最近在 "选商圈" 面板里选过的商圈 ID, 最近选的在前, 最多 [max] 个. "附近" 不记.
+///
+/// 和最近搜索一样按账号存在 `cache.` 前缀下, 退出登录时随账号缓存清除.
+/// 游客不落盘, 只在这次打开 App 期间记着; 因此保持存活, 关上面板不丢.
+
+@ProviderFor(RecentHubs)
+final recentHubsProvider = RecentHubsProvider._();
+
+/// 最近在 "选商圈" 面板里选过的商圈 ID, 最近选的在前, 最多 [max] 个. "附近" 不记.
+///
+/// 和最近搜索一样按账号存在 `cache.` 前缀下, 退出登录时随账号缓存清除.
+/// 游客不落盘, 只在这次打开 App 期间记着; 因此保持存活, 关上面板不丢.
+final class RecentHubsProvider
+    extends $AsyncNotifierProvider<RecentHubs, List<int>> {
+  /// 最近在 "选商圈" 面板里选过的商圈 ID, 最近选的在前, 最多 [max] 个. "附近" 不记.
+  ///
+  /// 和最近搜索一样按账号存在 `cache.` 前缀下, 退出登录时随账号缓存清除.
+  /// 游客不落盘, 只在这次打开 App 期间记着; 因此保持存活, 关上面板不丢.
+  RecentHubsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recentHubsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recentHubsHash();
+
+  @$internal
+  @override
+  RecentHubs create() => RecentHubs();
+}
+
+String _$recentHubsHash() => r'd75ffdf3bc058864f82ca6a3c6ac82196bb2a276';
+
+/// 最近在 "选商圈" 面板里选过的商圈 ID, 最近选的在前, 最多 [max] 个. "附近" 不记.
+///
+/// 和最近搜索一样按账号存在 `cache.` 前缀下, 退出登录时随账号缓存清除.
+/// 游客不落盘, 只在这次打开 App 期间记着; 因此保持存活, 关上面板不丢.
+
+abstract class _$RecentHubs extends $AsyncNotifier<List<int>> {
+  FutureOr<List<int>> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<List<int>>, List<int>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<int>>, List<int>>,
+              AsyncValue<List<int>>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

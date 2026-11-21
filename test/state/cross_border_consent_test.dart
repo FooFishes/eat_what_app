@@ -106,7 +106,7 @@ void main() {
       });
       expect(
         await container.read(privacyConsentStoreProvider).agreedVersion(),
-        isNotNull,
+        'v3',
       );
     });
 

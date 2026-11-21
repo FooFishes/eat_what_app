@@ -474,7 +474,7 @@ void main() {
         ),
       ])
       ..on('POST /notification/cards/$_likeId/read', [FakeAdapter.ok()])
-      ..on('GET /comments/302', [FakeAdapter.fail(10001)]);
+      ..on('GET /comments/302', [FakeAdapter.fail(10001, '这条评论已删除或不可见')]);
     final (container, router) = await pumpApp(
       tester,
       env,

@@ -221,4 +221,136 @@ void main() {
     expect(find.text('袁记云饺(舜泰店)'), findsOneWidget);
     await unmountApp(tester, container);
   });
+
+  group('调整位置', () {
+    /// 查商圈时带的纬度, 按请求顺序.
+    List<Object?> hubLats() => [
+      for (final r in env.adapter.sent('GET /hub/locate')) r.query['gcjLat'],
+    ];
+
+    bool mapLocked(WidgetTester tester) => tester
+        .widget<IgnorePointer>(
+          find
+              .ancestor(
+                of: find.byType(EatMap, skipOffstage: false),
+                matching: find.byType(IgnorePointer, skipOffstage: false),
+              )
+              .first,
+        )
+        .ignoring;
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
+
+    /// 把地图滚到屏幕中间, 上面的标题和下面的按钮, 商圈都在屏幕上.
+    Future<void> showMap(WidgetTester tester) async {
+      await Scrollable.ensureVisible(
+        tester.element(find.byType(EatMap, skipOffstage: false)),
+        alignment: 0.5,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    /// 选中候选进入表单, 等商圈查完.
+    Future<dynamic> openForm(WidgetTester tester) async {
+      map.places = [place];
+      env.adapter.on('GET /hub/locate', [
+        FakeAdapter.ok({
+          'id': 1,
+          'name': '舜泰广场',
+          'gcjLat': 36.6681,
+          'gcjLng': 117.1412,
+          'boundary': null,
+        }),
+      ]);
+      final (container, _) = await open(tester, '袁记');
+      await tester.tap(find.text('袁记云饺(舜泰店)'));
+      await settle(tester);
+      await showMap(tester);
+      return container;
+    }
+
+    void idle(double lat, double lng, {required bool byGesture}) =>
+        map.last!.onCameraIdle!(
+          MapCamera(center: MapLatLng(lat, lng), zoom: 17),
+          byGesture,
+        );
+
+    /// 点地图下面的按钮. [showMap] 已把它们留在屏幕上, 不再滚动.
+    Future<void> tapText(WidgetTester tester, String text) async {
+      await tester.tap(find.text(text));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('地图默认锁定，点「调整位置」后才能拖', (tester) async {
+      final container = await openForm(tester);
+      expect(find.text('位置'), findsOneWidget);
+      expect(mapLocked(tester), isTrue);
+      expect(find.text('用这个位置'), findsNothing);
+
+      await tapText(tester, '调整位置');
+      expect(mapLocked(tester), isFalse);
+      expect(find.text('拖动地图，让标记对准店门口'), findsOneWidget);
+      expect(find.text('取消'), findsOneWidget);
+      expect(find.text('用这个位置'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('不是手势引起的视角变化不改位置', (tester) async {
+      final container = await openForm(tester);
+      idle(0.0001, 0.0001, byGesture: false);
+      await tapText(tester, '调整位置');
+      idle(0.0001, 0.0001, byGesture: false);
+      await tapText(tester, '用这个位置');
+      await settle(tester);
+
+      expect(hubLats(), isNotEmpty);
+      expect(hubLats(), everyElement(36.6681));
+      expect(find.textContaining('属于 舜泰广场'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('拖动后点「用这个位置」才按新位置查商圈', (tester) async {
+      final container = await openForm(tester);
+      await tapText(tester, '调整位置');
+      idle(36.6700, 117.1500, byGesture: true);
+      await settle(tester);
+      expect(hubLats(), everyElement(36.6681), reason: '确认之前不按拖到的点查');
+
+      await tapText(tester, '用这个位置');
+      await settle(tester);
+      expect(hubLats().last, 36.6700);
+      expect(mapLocked(tester), isTrue);
+      expect(find.text('调整位置'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('拖动后点「取消」位置不变', (tester) async {
+      final container = await openForm(tester);
+      await tapText(tester, '调整位置');
+      idle(36.6700, 117.1500, byGesture: true);
+      await tapText(tester, '取消');
+      await settle(tester);
+
+      expect(hubLats(), everyElement(36.6681));
+      expect(mapLocked(tester), isTrue);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('查商圈失败时显示「暂时无法判断」', (tester) async {
+      map.places = [place];
+      env.adapter.on('GET /hub/locate', [FakeAdapter.fail(10001)]);
+      final (container, _) = await open(tester, '袁记');
+      await tester.tap(find.text('袁记云饺(舜泰店)'));
+      await settle(tester);
+      await showMap(tester);
+      await settle(tester);
+
+      expect(find.textContaining('暂时无法判断'), findsOneWidget);
+      expect(find.textContaining('判断中'), findsNothing);
+      await unmountApp(tester, container);
+    });
+  });
 }

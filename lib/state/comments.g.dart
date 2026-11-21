@@ -120,15 +120,24 @@ abstract class _$DishComments extends $AsyncNotifier<CommentList> {
   }
 }
 
-/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+/// 单条评论下的回复列表状态, 按时间正序排列.
+///
+/// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+/// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 
 @ProviderFor(CommentReplies)
 final commentRepliesProvider = CommentRepliesFamily._();
 
-/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+/// 单条评论下的回复列表状态, 按时间正序排列.
+///
+/// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+/// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 final class CommentRepliesProvider
     extends $AsyncNotifierProvider<CommentReplies, CommentList> {
-  /// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+  /// 单条评论下的回复列表状态, 按时间正序排列.
+  ///
+  /// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+  /// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
   CommentRepliesProvider._({
     required CommentRepliesFamily super.from,
     required int super.argument,
@@ -165,9 +174,12 @@ final class CommentRepliesProvider
   }
 }
 
-String _$commentRepliesHash() => r'9cb593f31113c0f0312050d0dc66f1fb5949f31b';
+String _$commentRepliesHash() => r'1a3af3ef046b5311983e199b65c74c415e8e7a70';
 
-/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+/// 单条评论下的回复列表状态, 按时间正序排列.
+///
+/// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+/// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 
 final class CommentRepliesFamily extends $Family
     with
@@ -187,7 +199,10 @@ final class CommentRepliesFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+  /// 单条评论下的回复列表状态, 按时间正序排列.
+  ///
+  /// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+  /// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 
   CommentRepliesProvider call(int commentId) =>
       CommentRepliesProvider._(argument: commentId, from: this);
@@ -196,7 +211,10 @@ final class CommentRepliesFamily extends $Family
   String toString() => r'commentRepliesProvider';
 }
 
-/// 单条评论下的回复列表状态, 按时间正序分页加载, 每页 20 条.
+/// 单条评论下的回复列表状态, 按时间正序排列.
+///
+/// 先只取 [CommentRules.replyPreview] 条作为预览, 展开后每页 20 条.
+/// 接口按页码分页, 预览之后无法接着第 3 条取下一页, 所以第一次 [loadMore] 重新取第 1 页并替换预览.
 
 abstract class _$CommentReplies extends $AsyncNotifier<CommentList> {
   late final _$args = ref.$arg as int;
@@ -255,7 +273,7 @@ final class CommentWriterProvider
   }
 }
 
-String _$commentWriterHash() => r'779e4f1000a80b4a9e717a50d1eed4c84a865b56';
+String _$commentWriterHash() => r'fe7e0436a55efa81e4a1d1f11d82b307ebe1854b';
 
 /// 评论与回复的写操作管理器, 在发表或删除成功后同步更新已加载的列表并刷新 "我的评论".
 

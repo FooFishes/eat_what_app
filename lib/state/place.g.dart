@@ -212,7 +212,7 @@ final class PlaceAndMealProvider
   }
 }
 
-String _$placeAndMealHash() => r'e679bb39834227ba4c8038e3207bf5cf65ba4eb3';
+String _$placeAndMealHash() => r'25f312f24d2fa48bd80bd61644ec372741aeb545';
 
 /// 管理持久化在本机的校区, 饭点与用餐场景选择.
 ///
@@ -238,7 +238,7 @@ abstract class _$PlaceAndMeal extends $Notifier<PlaceChoice> {
 
 /// 计算当前生效的校区, 饭点与用餐场景.
 ///
-/// - 校区: 依次优先采用上次选择的校区, 离当前定位最近的校区, 默认校区.
+/// - 校区: 手动选择的校区仍在列表中时使用它, 否则按定位自动选择 ([CampusRules.nearest]).
 /// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间推算.
 /// - 场景: 采用上次选择, 没选过时为堂食.
 ///
@@ -250,7 +250,7 @@ final currentPlaceProvider = CurrentPlaceProvider._();
 
 /// 计算当前生效的校区, 饭点与用餐场景.
 ///
-/// - 校区: 依次优先采用上次选择的校区, 离当前定位最近的校区, 默认校区.
+/// - 校区: 手动选择的校区仍在列表中时使用它, 否则按定位自动选择 ([CampusRules.nearest]).
 /// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间推算.
 /// - 场景: 采用上次选择, 没选过时为堂食.
 ///
@@ -262,7 +262,7 @@ final class CurrentPlaceProvider
     with $Provider<CurrentPlace> {
   /// 计算当前生效的校区, 饭点与用餐场景.
   ///
-  /// - 校区: 依次优先采用上次选择的校区, 离当前定位最近的校区, 默认校区.
+  /// - 校区: 手动选择的校区仍在列表中时使用它, 否则按定位自动选择 ([CampusRules.nearest]).
   /// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间推算.
   /// - 场景: 采用上次选择, 没选过时为堂食.
   ///
@@ -301,4 +301,4 @@ final class CurrentPlaceProvider
   }
 }
 
-String _$currentPlaceHash() => r'fa584c95955166fcbed11fcfc3c0ccae61a8988f';
+String _$currentPlaceHash() => r'f6f6802ff22cc71fa84c720019bde2fe9368b390';

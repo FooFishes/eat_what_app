@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/format/time_format.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icon.dart';
@@ -19,18 +20,23 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
-import 'package:eat/design/widgets/eat_radio_row.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_choice_group.dart';
+import 'package:eat/design/widgets/eat_option.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/load_states.dart';
+import 'package:eat/design/widgets/morph_popover.dart';
 import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/campus_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
@@ -52,6 +58,8 @@ import 'package:go_router/go_router.dart';
 ///
 /// - 舞台: 美食店推荐转盘, 支持拖动或点击 "换一个" 切换店铺, 点击 "就它了" 进入餐厅详情, 或标记 "不想去这家".
 /// - 抽屉: 包含分类栏 ("美食", "甜点饮品", "自助") 与推荐店铺列表; 分类切换仅影响抽屉列表, 不影响转盘.
+///   再点一次选中的分类, 从这一项长出排序浮层: 推荐 (默认), 推荐率, 离我近, 最新. 三个分类共用一个排序,
+///   浮层开着时点别的分类, 浮层跟过去. 不是推荐时列表改走逛店接口, 选中的分类旁带小圆点.
 /// - 顶栏: 左侧显示当前地点, 饭点与用餐场景, 右侧为搜索和消息入口.
 class DiscoverPage extends ConsumerStatefulWidget {
   const new({super.key});
@@ -63,6 +71,19 @@ class DiscoverPage extends ConsumerStatefulWidget {
 class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   /// 抽屉列表的类型.
   var _kind = ShopKind.food;
+
+  /// 抽屉列表的排序, 三个分类共用.
+  var _order = DiscoverOrder.recommend;
+
+  /// 排序浮层是否开着; 开着时挂在当前选中的分类上.
+  var _sortOpen = false;
+
+  /// 分类栏各项的位置. 分类栏有两份: 抽屉里的一份和吸顶的副本, 浮层挂在看得见的那份上.
+  final _inlineAnchors = [for (final _ in ShopKind.values) GlobalKey()];
+  final _pinnedAnchors = [for (final _ in ShopKind.values) GlobalKey()];
+
+  /// 两份分类栏和浮层同属一个点击分组, 点哪份分类栏都不算点浮层外面.
+  final _sortGroup = Object();
   late final AppLifecycleListener _lifecycle;
   var _staleNoticed = false;
   var _explaining = false;
@@ -178,7 +199,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       stageContent = const StagePlaceholder();
     }
 
-    final tabs = EatTabs(
+    final selected = ShopKind.values.indexOf(_kind);
+    EatTabs tabsAt(List<GlobalKey> anchors) => EatTabs(
       tabs: [
         for (final kind in ShopKind.values)
           EatTabItem(
@@ -188,11 +210,38 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
               ShopKind.drink => EatIcons.drink,
               ShopKind.buffet => EatIcons.buffet,
             },
+            indicator: kind == _kind && _order != DiscoverOrder.recommend
+                ? _order.label
+                : null,
           ),
       ],
-      selected: ShopKind.values.indexOf(_kind),
+      selected: selected,
       onSelected: (i) => setState(() => _kind = ShopKind.values[i]),
+      onReselect: (_) => setState(() => _sortOpen = !_sortOpen),
+      reselectHint: _sortOpen ? '收起排序' : '排序',
+      expanded: _sortOpen,
+      anchors: anchors,
       padding: const EdgeInsets.symmetric(horizontal: EatSpace.s20),
+    );
+    final tabs = MorphPopover(
+      anchor: _sortOpen
+          ? [_pinnedAnchors[selected], _inlineAnchors[selected]]
+          : null,
+      groupId: _sortGroup,
+      gap: EatSpace.s14,
+      label: '店的排序',
+      onDismiss: () => setState(() => _sortOpen = false),
+      builder: (_) => EatChoiceGroup(
+        title: '排序',
+        options: DiscoverOrder.values,
+        selected: _order,
+        label: (order) => order.label,
+        onPick: (order) => setState(() {
+          _order = order;
+          _sortOpen = false;
+        }),
+      ),
+      child: tabsAt(_inlineAnchors),
     );
 
     return StageScaffold(
@@ -200,7 +249,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       topBar: const _TopBar(),
       stageContent: stageContent,
       // 分类栏滚动到顶栏下方后固定显示. 浏览列表的任意位置都可以切换分类.
-      pinnedBottom: tabs,
+      pinnedBottom: TapRegion(
+        groupId: _sortGroup,
+        child: tabsAt(_pinnedAnchors),
+      ),
       // 转盘固定在底层, 上滑时推荐流从下方盖上来.
       fixedStage: true,
       onRefresh: _refresh,
@@ -209,12 +261,12 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
         SliverToBoxAdapter(child: tabs),
         const SliverToBoxAdapter(child: SizedBox(height: EatSpace.s14)),
         // 不加左右边距: 店铺条目自己留边距, 横排的菜要能滑出右边距.
-        _ShopList(kind: _kind),
+        _ShopList(kind: _kind, order: _order),
       ],
     );
   }
 
-  /// 下拉刷新当前抽屉分类列表与未读消息数.
+  /// 下拉刷新当前抽屉分类 (按当前排序) 的列表与未读消息数.
   ///
   /// 当转盘已有正常推荐数据时不刷新转盘 (切店由 "换一个" 完成); 仅在转盘为空, 加载失败或正展示过期缓存批次时一并重新请求转盘.
   Future<void> _refresh() async {
@@ -225,9 +277,15 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> {
       ref.invalidate(turntableQueueProvider);
     }
     try {
-      final provider = discoverShopsProvider(_kind);
-      ref.invalidate(provider);
-      await ref.read(provider.future);
+      if (_order == DiscoverOrder.recommend) {
+        final provider = discoverShopsProvider(_kind);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      } else {
+        final provider = sortedShopsProvider(_kind, _order);
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+      }
     } on AppFailure catch (e) {
       if (mounted) showToast(context, e.message);
     }
@@ -322,8 +380,10 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// "在哪吃" 切换面板, 包含校区, 饭点与用餐场景三组单选以及 "按现在的时间" 快捷操作.
+/// "在哪吃" 切换面板, 包含校区, 饭点与用餐场景三组单选.
 ///
+/// 校区和饭点各有一个自动选项, 放在组标题右侧: 校区按定位选最近的, 饭点按现在的时间.
+/// 自动选项打开时, 它算出来的那一项也显示为选中.
 /// 面板内的变更仅在本地暂存, 点击 "确定" 后才生效, 直接关闭则放弃修改.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
     showPanel<void>(context, builder: (panel) => const _PlacePanel());
@@ -336,6 +396,7 @@ class _PlacePanel extends ConsumerStatefulWidget {
 }
 
 class _PlacePanelState extends ConsumerState<_PlacePanel> {
+  /// 手动选择的校区. 为 null 时按定位自动选择.
   late int? _campusId;
 
   /// 手动选择的饭点. 为 null 时按当前时间自动选择.
@@ -346,16 +407,23 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
   void initState() {
     super.initState();
     final place = ref.read(currentPlaceProvider);
-    _campusId = place.campus?.id;
+    _campusId = ref.read(placeAndMealProvider).campusId;
     _meal = place.autoMeal ? null : place.meal;
     _scene = place.scene;
+    // 让校区旁的距离用上最新的位置. 没有定位权限时什么也不做, 面板里不申请权限.
+    unawaited(ref.read(currentLocationProvider.notifier).refresh());
   }
 
   void _confirm() {
     final place = ref.read(currentPlaceProvider);
+    final stored = ref.read(placeAndMealProvider).campusId;
     final notifier = ref.read(placeAndMealProvider.notifier);
-    if (_campusId case final id? when id != place.campus?.id) {
-      unawaited(notifier.selectCampus(id));
+    switch (_campusId) {
+      case null when stored != null:
+        unawaited(notifier.autoCampus());
+      case final id? when id != stored:
+        unawaited(notifier.selectCampus(id));
+      default:
     }
     switch (_meal) {
       case null when !place.autoMeal:
@@ -370,59 +438,184 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final campuses = ref.watch(campusesProvider).value ?? const [];
-    final meal = _meal ?? MealRules.at(clock.now());
+    final campuses = ref.watch(campusesProvider).value ?? const <Campus>[];
+    final me = ref.watch(currentLocationProvider.select((s) => s.point));
+    final campusId = campuses.any((c) => c.id == _campusId)
+        ? _campusId
+        : CampusRules.nearest(campuses, me)?.id;
+    final now = clock.now();
+    final meal = _meal ?? MealRules.at(now);
+    final end = MealRules.periodEnd(now);
+    final endText = TimeFormat.clock(end.hour * 60 + end.minute);
     return EatPanel(
       title: '在哪吃？',
-      actions: Row(
-        spacing: EatSpace.s10,
-        children: [
-          Expanded(
-            child: EatButton.mist(
-              '按现在的时间',
-              icon: EatIcons.time,
-              onPressed: _meal == null
-                  ? null
-                  : () => setState(() => _meal = null),
-            ),
-          ),
-          Expanded(child: EatButton.solid('确定', onPressed: _confirm)),
-        ],
-      ),
+      actions: EatButton.solid('确定', onPressed: _confirm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final campus in campuses)
-            EatRadioRow(
-              title: campus.name,
-              selected: campus.id == _campusId,
-              onSelected: () => setState(() => _campusId = campus.id),
+          if (campuses.isNotEmpty) ...[
+            _GroupTitle(
+              '哪个校区？',
+              first: true,
+              auto: EatChip.tag(
+                '按定位',
+                selected: _campusId == null,
+                onTap: () => setState(
+                  () => _campusId = _campusId == null ? campusId : null,
+                ),
+              ),
             ),
-          const _GroupTitle('吃哪顿？'),
-          for (final m in MealTime.values)
-            EatRadioRow(
-              title: m.label,
-              selected: m == meal,
-              onSelected: () => setState(() => _meal = m),
+            EatRadioGroup(
+              label: '校区',
+              child: Wrap(
+                spacing: EatSpace.s8,
+                runSpacing: EatSpace.s8,
+                children: [
+                  for (final campus in campuses)
+                    EatOption(
+                      label: campus.name,
+                      detail: me == null
+                          ? null
+                          : GeoRules.formatDistance(
+                              GeoRules.distance(me, campus.center),
+                            ),
+                      pill: true,
+                      selected: campus.id == campusId,
+                      onTap: () => setState(() => _campusId = campus.id),
+                    ),
+                ],
+              ),
             ),
+            if (_campusId == null)
+              _Caption(me == null ? '没有定位，用默认校区' : '按定位选离你最近的校区'),
+          ],
+          _GroupTitle(
+            '吃哪顿？',
+            first: campuses.isEmpty,
+            auto: EatChip.tag(
+              '按现在的时间',
+              selected: _meal == null,
+              onTap: () => setState(() => _meal = _meal == null ? meal : null),
+            ),
+          ),
+          EatRadioGroup(
+            label: '饭点',
+            child: _Grid(
+              children: [
+                for (final m in MealTime.values)
+                  EatOption(
+                    label: m.label,
+                    detail: _mealSpan(m),
+                    selected: m == meal,
+                    onTap: () => setState(() => _meal = m),
+                  ),
+              ],
+            ),
+          ),
+          _Caption(
+            _meal == null
+                ? '现在是${meal.label}，到 $endText 自动换'
+                : '到 $endText 恢复按现在的时间',
+          ),
           const _GroupTitle('怎么吃？'),
-          for (final scene in RatingScene.values)
-            EatRadioRow(
-              title: switch (scene) {
-                RatingScene.dineIn => '去店里吃',
-                RatingScene.delivery => '点外卖',
-              },
-              selected: scene == _scene,
-              onSelected: () => setState(() => _scene = scene),
+          EatRadioGroup(
+            label: '用餐方式',
+            child: _Grid(
+              children: [
+                for (final scene in RatingScene.values)
+                  EatOption(
+                    label: switch (scene) {
+                      RatingScene.dineIn => '去店里吃',
+                      RatingScene.delivery => '点外卖',
+                    },
+                    icon: switch (scene) {
+                      RatingScene.dineIn => EatIcons.utensils,
+                      RatingScene.delivery => EatIcons.bike,
+                    },
+                    selected: scene == _scene,
+                    onTap: () => setState(() => _scene = scene),
+                  ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _mealSpan(MealTime meal) {
+    final span = MealRules.span(meal);
+    return '${TimeFormat.clock(span.start)}–${TimeFormat.clock(span.end)}';
+  }
+}
+
+/// 面板中一组单选的标题, 如 "吃哪顿？", 右侧可放这组的自动选项.
+class _GroupTitle extends StatelessWidget {
+  const new(this.text, {this.auto, this.first = false});
+
+  final String text;
+  final Widget? auto;
+
+  /// 是否为面板里的第一组. 第一组紧贴面板标题, 不留组间距.
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return Padding(
+      padding: EdgeInsets.only(
+        top: first ? 0 : EatSpace.s16,
+        bottom: auto == null ? EatSpace.s8 : 0,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                text,
+                style: eat.text.subhead.copyWith(color: eat.colors.ink),
+              ),
+            ),
+          ),
+          ?auto,
         ],
       ),
     );
   }
 }
 
-/// 面板中一组单选的标题, 如 "吃哪顿？".
-class _GroupTitle extends StatelessWidget {
+/// 每行两项的等宽网格, 同一行的两项等高.
+class _Grid extends StatelessWidget {
+  const new({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    spacing: EatSpace.s8,
+    children: [
+      for (var i = 0; i < children.length; i += 2)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: EatSpace.s8,
+            children: [
+              Expanded(child: children[i]),
+              Expanded(
+                child: i + 1 < children.length
+                    ? children[i + 1]
+                    : const SizedBox(),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+/// 组下方的一行说明, 如自动选项现在选了什么.
+class _Caption extends StatelessWidget {
   const new(this.text);
 
   final String text;
@@ -431,13 +624,10 @@ class _GroupTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     return Padding(
-      padding: const EdgeInsets.only(top: EatSpace.s20, bottom: 4),
-      child: Semantics(
-        header: true,
-        child: Text(
-          text,
-          style: eat.text.heading.copyWith(color: eat.colors.ink),
-        ),
+      padding: const EdgeInsets.only(top: EatSpace.s8),
+      child: Text(
+        text,
+        style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
       ),
     );
   }
@@ -912,16 +1102,32 @@ class _StageFailure extends StatelessWidget {
   }
 }
 
-/// 抽屉中 [kind] 分类的推荐店铺列表, 支持触底分页加载与点击跳转餐厅详情.
+/// 抽屉中 [kind] 分类的店铺列表, 支持触底分页加载与点击跳转餐厅详情.
+///
+/// [order] 为推荐时列推荐的店, 否则按排序逛店. 逛店接口不带招牌菜, 这时店名一栏右边放门头小图, 不排菜.
 class _ShopList extends ConsumerWidget {
-  const new({required this.kind});
+  const new({required this.kind, required this.order});
 
   final ShopKind kind;
+  final DiscoverOrder order;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = discoverShopsProvider(kind);
-    final list = ref.watch(provider);
+    final recommended = order == DiscoverOrder.recommend;
+    final AsyncValue<ShopFeed> list;
+    final VoidCallback retry;
+    final VoidCallback loadMore;
+    if (recommended) {
+      final provider = discoverShopsProvider(kind);
+      list = ref.watch(provider);
+      retry = () => ref.invalidate(provider);
+      loadMore = () => ref.read(provider.notifier).loadMore();
+    } else {
+      final provider = sortedShopsProvider(kind, order);
+      list = ref.watch(provider);
+      retry = () => ref.invalidate(provider);
+      loadMore = () => ref.read(provider.notifier).loadMore();
+    }
     final feed = list.value;
     if (feed == null) {
       if (list.hasError && !list.isLoading) {
@@ -931,10 +1137,7 @@ class _ShopList extends ConsumerWidget {
               horizontal: EatSpace.s20,
               vertical: EatSpace.s24,
             ),
-            child: FailureState(
-              error: list.error,
-              onRetry: () => ref.invalidate(provider),
-            ),
+            child: FailureState(error: list.error, onRetry: retry),
           ),
         );
       }
@@ -954,12 +1157,16 @@ class _ShopList extends ConsumerWidget {
           ),
           child: EmptyState(
             icon: EatIcons.store,
-            title: switch (kind) {
-              ShopKind.food => '还没有推荐的店',
-              ShopKind.drink => '还没有推荐的甜点饮品店',
-              ShopKind.buffet => '还没有推荐的自助店',
+            title: switch ((kind, recommended)) {
+              (ShopKind.food, true) => '还没有推荐的店',
+              (ShopKind.drink, true) => '还没有推荐的甜点饮品店',
+              (ShopKind.buffet, true) => '还没有推荐的自助店',
+              (ShopKind.food, false) => '还没有美食店',
+              (ShopKind.drink, false) => '还没有甜点饮品店',
+              (ShopKind.buffet, false) => '还没有自助店',
             },
-            message: '换个饭点或校区看看，也可以发布第一道菜。',
+            // 逛店不按饭点筛, 换饭点没有用.
+            message: recommended ? '换个饭点或校区看看，也可以发布第一道菜。' : '换个校区看看，也可以发布第一道菜。',
           ),
         ),
       );
@@ -976,6 +1183,7 @@ class _ShopList extends ConsumerWidget {
               index: i,
               onTap: () => context.push(Paths.shop(feed.shops[i].id)),
               onDishTap: (dish) => context.push(Paths.dish(dish.id)),
+              dishes: recommended || feed.shops[i].signatures.isNotEmpty,
             ),
           ),
         ),
@@ -984,7 +1192,7 @@ class _ShopList extends ConsumerWidget {
             child: LoadMoreTrigger(
               generation: feed.shops.length,
               failed: feed.moreError != null,
-              onVisible: () => ref.read(provider.notifier).loadMore(),
+              onVisible: loadMore,
             ),
           ),
       ],

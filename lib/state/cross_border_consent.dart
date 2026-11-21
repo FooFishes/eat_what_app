@@ -58,7 +58,7 @@ class CrossBorderConsent {
     final version = await confirm(present);
     if (version == null) throw AppFailure.fromCode(BizCodes.consentRequired);
     await _api.grant(policyVersion: version);
-    await _local.record();
+    await _local.record(version);
   }
 
   /// 登录后和启动时核对本人在服务端的同意状态.

@@ -97,10 +97,10 @@ class _PasswordPageState extends ConsumerState<PasswordPage> {
         _submitting = false;
         switch (e.code) {
           case BizCodes.wrongPassword:
-            _oldError = '旧密码错误，请重新输入';
+            _oldError = e.userMessage ?? '旧密码错误，请重新输入';
           case BizCodes.passwordNotSet:
             _byCode = true;
-            showToast(context, '该账号还没设过密码，请用验证码设置');
+            showToast(context, e.userMessage ?? '该账号还没设过密码，请用验证码设置');
           case BizCodes.wrongCode:
             _codeError = e.message;
           default:

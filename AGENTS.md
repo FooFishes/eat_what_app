@@ -1,6 +1,6 @@
 # AGENTS.md
 
-沙软今天吃什么（EatWhat）：校园觅食 App 的 Flutter 客户端，目标平台 Android、iOS、Web。应用 ID `you.v50to.eat`，Dart 包名 `eat`。
+沙软今天吃什么（EatWhat）：校园觅食 App 的 Flutter 客户端，目标平台 Android、iOS；Web 只作开发和适配的目标，不上线。应用 ID `you.v50to.eat`，Dart 包名 `eat`。
 
 `main` 上是重写后的 App，开发计划的阶段一到四和阶段六已基本完成，阶段五在进行中；旧实现归档在 `legacy` 分支。
 
@@ -16,7 +16,7 @@
 | `docs/EatWhat_依赖选型.md` | 装哪个包、哪条版本线、为什么 | 初稿 |
 | `docs/EatWhat_开发计划.md` | 七个阶段，每个阶段要做的事和做完是什么样 | 已有 |
 | `docs/api.openapi.yml` | 业务后端接口（OpenAPI 3.1） | 已有 |
-| `docs/EatWhat_后端反馈.md` | 客户端对后端的反馈：要修的问题、希望调整的接口、部署配置、文档问题，以及每次同步接口后各条的处理 | 持续更新 |
+| `docs/EatWhat_后端反馈.md` | 客户端对后端的反馈：要修的问题、希望调整的接口、部署配置、文档问题，以及每次同步接口后各条的处理（每次同步补一节，和现状差距一起改） | 持续更新 |
 | `docs/EatWhat_设计与实现.md` | 设计稿和 App 的关系：设计稿是方向不是规格，正本在 App 里，哪些要守、哪些 App 自己定 | 初稿 |
 | `docs/guideline/COMMENT-STYLE.md` | 代码注释风格：What 与 Why 各写在哪、篇幅、语体、格式、不要写的东西 | 已有 |
 | `prototype/design-system/README.md` | 舞台设计规范：页面结构、颜色、字体、间距、动效、文案、无障碍 | 快照（2026-10-22），不再更新 |
@@ -37,8 +37,9 @@ lib/
   app.dart           EatApp（MaterialApp.router 根组件）
 test/                Widget 测试与单元测试，文件名以 _test.dart 结尾
 config/              环境配置，只有 example.json 入库
-assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图；reactions/ 是评论的表情回应，取自 @twemoji/svg 15.0.0；署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）、illustrations/（菜品插画，复制自 prototype/assets/dishes/，只用于空状态、引导和演示）、config/（remote_defaults.json，远程配置拿不到时的内置默认值）、map/（深色底图样式：dark.sty 给 App 的百度 SDK，dark_style.json 给 Web 的 JS API）
-tool/                开发机和 CI 上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）、build_number.sh（从 App Store Connect 查出下一个构建号，所有平台共用）、asc_api.sh（App Store Connect API 的公共部分，供 build_number.sh 和 testflight_upload.sh 引入）、ios_signing.sh（在 CI 上导入 iOS 发布证书和描述文件，生成签名配置）、testflight_upload.sh（把签好名的 IPA 上传到 TestFlight）、sentry_symbols.sh（把 Dart 符号表、混淆映射和 iOS 的 dSYM 上传到 Sentry，缺文件或没传上就失败，CI 的发版构建和补丁会调用）
+assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图；reactions/ 是评论的表情回应，取自 @twemoji/svg 15.0.0；署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）、illustrations/（菜品插画，复制自 prototype/assets/dishes/，只用于空状态、引导和演示）、config/（remote_defaults.json，远程配置拿不到时的内置默认值）、map/（深色底图样式：dark.sty 给 App 的百度 SDK，dark_style.json 给 Web 的 JS API）、app_icons/（个性化页面里两套 App 图标的预览图，由 tool/app_icons.py 生成）
+tool/                开发机和 CI 上跑的脚本：subset_fonts.py（字体子集化）、app_icons.py（把 App 图标原稿整理成输入图和预览图）、app_icons/（App 图标的原稿、输入图和 flutter_launcher_icons 的配置）、launcher_icons.dart（用 flutter_launcher_icons 生成两套 App 图标，见技术架构 16.4）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）、build_number.sh（从 App Store Connect 查出下一个构建号，所有平台共用）、asc_api.sh（App Store Connect API 的公共部分，供 build_number.sh 和 testflight_upload.sh 引入）、ios_signing.sh（在 CI 上导入 iOS 发布证书和描述文件，生成签名配置）、testflight_upload.sh（把签好名的 IPA 上传到 TestFlight）、sentry_symbols.sh（把 Dart 符号表、混淆映射和 iOS 的 dSYM 上传到 Sentry，缺文件或没传上就失败，CI 的发版构建和补丁会调用）
+landing/             分享落地页（index.html）和下载页（download.html），单文件静态页面，不经过 Flutter；部署见 landing/README.md
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
   eat_number_auth/   本地插件：运营商一键登录的原生桥（Kotlin、Swift），包着阿里云号码认证 SDK，SDK 的二进制随插件入库，见技术架构 18.4
@@ -165,7 +166,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 构建号由 `tool/build_number.sh` 从 App Store Connect 查出：这个 App 用过的最大构建号加 1，所有平台共用，Android 的 versionCode 也用它；`pubspec.yaml` 里的 `+1` 只是本地构建的占位。没有 App Store Connect 密钥时（如来自 fork 的 PR）用这个占位，这样的构建不上传 TestFlight。`main` 和发版 tag 的构建共用一个并发组，一次只跑一个，避免两次构建拿到同一个号。
 
-PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
+PR（目标为 `main`）只构建和检查，不上传。`main` 的 push 和 PR 如果没有改动进产物的文件（只改了文档、测试、画板、落地页等），只跑 `check`，不构建；发版 tag 和手动运行总是构建。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
 
 `.github/workflows/build.yml`：
 
@@ -175,9 +176,11 @@ PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式
    - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存）。有发布证书和描述文件时签名打 IPA（`tool/ios_signing.sh`），`main` 和发版 tag 的 IPA 上传 TestFlight（`tool/testflight_upload.sh`）；没有证书时出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
 3. Release 构建另外：Android 和 iOS 混淆 Dart 代码，符号表和混淆映射上传到 Sentry，iOS 另传 dSYM（`tool/sentry_symbols.sh`，缺了就失败；未签名的 iOS 构建不传），Web 生成 source map 上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
-4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
+4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。Release 构建的 arm64-v8a APK 另外上传到雨云对象存储（桶 `release`，`https://release.cn-nb2.rains3.com`），再把边缘节点 `/downloads/android` 的 302 跳转改到它。
 
 `.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁都发到 stable 轨道，用 Shorebird 的按比例放量（`--rollout`）分灰度和全量：补丁 tag 触发时两个平台都直接全量推送；手动触发时可以只选一个平台，默认只试跑，放量比例默认 10%。灰度补丁之后用 `.github/workflows/patch-rollout.yml`（或本地 `shorebird patches rollout`）按补丁号提高比例，比例只能调高，有问题的补丁在 Shorebird 控制台回滚。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
+
+`.github/workflows/claude-review.yml` 在指向 `main` 的 PR 新建、更新、重开时用 Claude（claude-code-action 加官方 code-review 插件）审查，意见作为行内评论写在 PR 上；来自 fork 的 PR 跳过。
 
 iOS 构建必须带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`：geolocator 只在构建时从环境变量读它，用来去掉申请「始终定位」的代码，留着这段代码会因 Info.plist 没有始终定位的用途说明被 App Store 拒收（ITMS-90683）。`build.yml` 和 `patch.yml` 的 iOS 任务都设了；补丁要和发版的原生部分一致，否则 Shorebird 拒绝打补丁，所以新加的 iOS 构建路径也要设。
 
@@ -190,9 +193,12 @@ iOS 构建必须带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`：geolocat
 | `SENTRY_AUTH_TOKEN` | Secret | 上传符号表、混淆映射和 source map |
 | `SENTRY_URL`、`SENTRY_ORG`、`SENTRY_PROJECT` | Variable | Sentry 服务地址、组织和项目 |
 | `SHOREBIRD_TOKEN` | Secret | `shorebird release` 和 `shorebird patch` |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Secret | Claude 审查 PR，用 `claude setup-token` 生成，走 Claude 订阅的额度；另需在仓库装 Claude GitHub App |
 | `ASC_KEY_ID`、`ASC_ISSUER_ID`、`ASC_KEY_P8` | Secret | App Store Connect API 密钥（App Manager 权限即可），用来查构建号和上传 TestFlight |
 | `ASC_APP_ID` | Variable | App 的 Apple ID（数字） |
 | `IOS_DIST_CERT_P12_BASE64`、`IOS_DIST_CERT_PASSWORD`、`IOS_PROFILE_BASE64` | Secret | iOS 发布证书（.p12）和 App Store 描述文件，都是 base64；缺了 iOS 只做未签名构建，也不能用 Shorebird 发版 |
 | `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET` | 环境 `Cloudflare R2` 的 Secret | 产物上传到 R2 |
+| `RAINS3_ACCESS_KEY_ID`、`RAINS3_SECRET_ACCESS_KEY` | Secret | Release 构建的 arm64-v8a APK 另外上传到雨云对象存储；缺了不上传 |
+| `AXISNOW_API_TOKEN` | Secret | 上传到雨云后把边缘节点 `/downloads/android` 的跳转改到这个 APK；缺了不改 |
 
-还没有部署 Web 和上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight；R2 上的 Web 产物只是 zip 包，不能直接访问。
+还没有上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight。Web 不上线，先不做部署；R2 上的 Web 产物只是 zip 包，不能直接访问。

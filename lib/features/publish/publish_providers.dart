@@ -242,6 +242,13 @@ class const PublishDraft({
   bool get hasFailedUpload =>
       photos.any((p) => p.status == UploadStatus.failed);
 
+  /// 第一张上传失败的照片里服务端说明的原因 (如照片未通过内容检查), 没有时返回 null.
+  String? get failedUploadMessage => photos
+      .where((p) => p.status == UploadStatus.failed)
+      .map((p) => p.failure?.userMessage)
+      .nonNulls
+      .firstOrNull;
+
   /// 全部照片的平均上传进度, 范围 0–1.
   double get uploadProgress => photos.isEmpty
       ? 0
@@ -334,6 +341,7 @@ class const PublishDraft({
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
 /// - 应用从后台恢复至前台时, 对尚未自动重试过的失败照片触发一次自动重试.
+/// - 进入后台时仍在排队或上传的照片, 回到前台后才失败的, 也自动重试一次.
 @riverpod
 class Draft extends _$Draft {
   static const _parallel = 2;
@@ -343,6 +351,17 @@ class Draft extends _$Draft {
   /// 按照片 id 存放一次添加多张时预先申请的上传地址, 每个地址只在首次上传时使用.
   final _presigned = <int, Future<PresignDto>>{};
   var _nextId = 0;
+
+  /// 进入后台时仍在排队或上传的照片 id, 由 [enterBackground] 记下.
+  ///
+  /// iOS 挂起的请求通常在 App 回到前台后才报告连接中断或超时, 此时 [retryFailedOnce] 已执行完毕.
+  /// 若这些照片的失败结果在 [retryFailedOnce] 之后到达, 则由 [_upload] 触发一次自动重试.
+  final _inFlightAtHide = <int>{};
+
+  /// 标记 App 是否处于后台阶段, 从进入后台到恢复至 resumed 之前为 true.
+  ///
+  /// 该阶段内失败的照片由回到前台时的 [retryFailedOnce] 统一处理.
+  var _hidden = false;
 
   /// 封面图片解码后的取色缩略图缓存, 供 "调整照片" 拖动时快速重算推荐色.
   Future<StageSample>? _coverSample;
@@ -400,6 +419,7 @@ class Draft extends _$Draft {
   void remove(int id) {
     _tokens.remove(id)?.cancel();
     _presigned.remove(id);
+    _inFlightAtHide.remove(id);
     final wasCover = state.photos.firstOrNull?.id == id;
     state = state.copy(photos: [...state.photos.where((p) => p.id != id)]);
     if (wasCover) _resetCover();
@@ -421,25 +441,37 @@ class Draft extends _$Draft {
     _pump();
   }
 
-  // TODO: "后台上传" 的范围未经产品确认, 目前按不保证后台继续上传处理. 确认后按结论调整重试策略.
+  /// App 进入后台时记下仍在排队或上传的照片, 见 [_inFlightAtHide].
+  ///
+  /// 打开系统相册等操作同样会触发记录, 误记的照片至多产生一次额外的自动重试.
+  void enterBackground() {
+    _hidden = true;
+    _inFlightAtHide
+      ..clear()
+      ..addAll([
+        for (final p in state.photos)
+          if (p.status == UploadStatus.waiting ||
+              p.status == UploadStatus.uploading)
+            p.id,
+      ]);
+  }
+
   /// 回到前台时, 每张失败的照片自动重试一次.
   ///
   /// iOS 可能在 App 进入后台后挂起请求, 导致上传失败.
   void retryFailedOnce() {
+    _hidden = false;
     for (final photo in state.photos) {
       if (photo.status == UploadStatus.failed && !photo.autoRetried) {
-        _update(
-          photo.id,
-          (p) => p.copy(
-            status: UploadStatus.waiting,
-            progress: 0,
-            autoRetried: true,
-          ),
-        );
+        _inFlightAtHide.remove(photo.id);
+        _update(photo.id, _autoRetry);
       }
     }
     _pump();
   }
+
+  DraftPhoto _autoRetry(DraftPhoto p) =>
+      p.copy(status: UploadStatus.waiting, progress: 0, autoRetried: true);
 
   /// 获取封面的取色缩略图供 "调整照片" 使用; 无封面时返回 null, 且同一封面仅解码一次.
   Future<StageSample>? coverSample() {
@@ -499,6 +531,7 @@ class Draft extends _$Draft {
       token.cancel();
     }
     _tokens.clear();
+    _inFlightAtHide.clear();
     state = state.copy(photos: const []);
     _resetCover();
   }
@@ -618,13 +651,20 @@ class Draft extends _$Draft {
             },
           );
       if (!ref.mounted) return;
+      _inFlightAtHide.remove(photo.id);
       _update(
         photo.id,
         (p) => p.copy(status: UploadStatus.done, progress: 1, key: key),
       );
     } on AppFailure catch (e) {
       if (!ref.mounted || e.kind == FailureKind.cancelled) return;
-      _update(photo.id, (p) => p.copy(status: UploadStatus.failed, failure: e));
+      final retryNow = !_hidden && _inFlightAtHide.remove(photo.id);
+      _update(
+        photo.id,
+        (p) => retryNow && !p.autoRetried
+            ? _autoRetry(p)
+            : p.copy(status: UploadStatus.failed, failure: e),
+      );
     } finally {
       if (identical(_tokens[photo.id], token)) _tokens.remove(photo.id);
       if (ref.mounted) _pump();

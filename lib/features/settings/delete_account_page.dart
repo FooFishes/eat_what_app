@@ -192,7 +192,7 @@ class _DeleteAccountPageState extends ConsumerState<DeleteAccountPage> {
       case BizCodes.wrongCode:
         setState(() => _codeError = failure.message);
       case BizCodes.wrongPassword:
-        setState(() => _passwordError = '密码错误，请重新输入');
+        setState(() => _passwordError = failure.userMessage ?? '密码错误，请重新输入');
       default:
         showToast(
           context,

@@ -147,7 +147,7 @@ class _PasswordLoginPageState extends ConsumerState<PasswordLoginPage> {
                   },
                   // 只有账号或密码错误时下划线显示 `warn` 色.
                   // 网络不可达等错误与输入无关, 提示显示在表单下方.
-                  errorText: wrong ? '账号或密码错误' : null,
+                  errorText: wrong ? failure.userMessage ?? '账号或密码错误' : null,
                   trailing: EatIconButton(
                     _showPassword ? EatIcons.eye : EatIcons.eyeOff,
                     label: _showPassword ? '隐藏密码' : '显示密码',

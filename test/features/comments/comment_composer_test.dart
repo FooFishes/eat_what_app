@@ -276,9 +276,28 @@ void main() {
     await unmountApp(tester, container);
   });
 
+  testWidgets('回复里有联系方式：提示服务端说的原因，回复框和内容都保留', (tester) async {
+    env.adapter.on('POST /foods/1/comments/11/replies', [
+      FakeAdapter.fail(10001, '评论里不能放链接和联系方式'),
+    ]);
+    final container = await open(tester);
+    await tester.tap(find.bySemanticsLabel('回复').first);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText), '加我微信');
+    await tester.pump();
+    await tester.tap(find.text('发送'));
+    await tester.pumpAndSettle();
+    expect(find.text('评论里不能放链接和联系方式'), findsOneWidget);
+    expect(find.text('回复 安安'), findsOneWidget);
+    expect(find.text('加我微信'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await unmountApp(tester, container);
+  });
+
   testWidgets('回复时评论已删除：提示已删除，收起回复框并刷新评论', (tester) async {
     env.adapter.on('POST /foods/1/comments/11/replies', [
-      FakeAdapter.fail(10001),
+      FakeAdapter.fail(10001, '被回复的评论不存在'),
     ]);
     final container = await open(tester);
     final before = env.adapter.sent('GET /foods/1/comments').length;

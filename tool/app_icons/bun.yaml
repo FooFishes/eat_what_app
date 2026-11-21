@@ -1,0 +1,11 @@
+# 备选图标 (饭饭): 安卓的 ic_launcher_bun, iOS 的 AppIcon-Bun.
+# 不要单独运行, 由 tool/launcher_icons.dart 调用: 插件会把它写进默认图标的位置, 脚本再挪走.
+flutter_launcher_icons:
+  image_path: tool/app_icons/bun.png
+  android: ic_launcher_bun
+  min_sdk_android: 26
+  adaptive_icon_background: "#F8D347"
+  adaptive_icon_foreground: tool/app_icons/bun_foreground.png
+  adaptive_icon_foreground_inset: 0
+  ios: true
+  remove_alpha_ios: true

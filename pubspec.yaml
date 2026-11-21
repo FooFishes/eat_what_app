@@ -53,6 +53,7 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.16.2
+  flutter_launcher_icons: ^0.14.4
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
@@ -90,6 +91,9 @@ flutter:
     - path: assets/fonts/OFL-NotoSansSC.txt
       platforms: [android]
     - assets/config/remote_defaults.json
+    # 个性化页面里 App 图标的预览, 由 tool/app_icons.py 生成. Web 不能换图标, 不打进去.
+    - path: assets/app_icons/
+      platforms: [android, ios]
     # 深色地图样式: 正本是 JSON (Web 直接用), App 用百度个性化地图编辑器从它导出的 .sty. 见技术架构 14.4.
     - path: assets/map/dark_style.json
       platforms: [web]

@@ -75,10 +75,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         !ref.read(loginAgreementProvider)) {
       return;
     }
-    final version = await ref.read(privacyConsentStoreProvider).agreedVersion();
-    if (mounted &&
-        version == PrivacyConsentStore.currentVersion &&
-        ref.read(loginAgreementProvider)) {
+    final agreed = await ref.read(privacyConsentStoreProvider).agreed();
+    if (mounted && agreed && ref.read(loginAgreementProvider)) {
       widget.preloadBrowseTarget?.call();
     }
   }
@@ -185,7 +183,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     double releaseVelocity,
   ) async {
     if (!await _ensureAgreed() || !mounted) return false;
-    await ref.read(privacyConsentStoreProvider).record();
+    // 先逛逛时没有请求服务端的政策版本, 同意记录只记时间.
+    await ref.read(privacyConsentStoreProvider).record(null);
     if (!mounted) return false;
     widget.preloadBrowseTarget?.call();
     ui.Image? image;

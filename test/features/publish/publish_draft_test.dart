@@ -1,9 +1,18 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/platform/photo_picker.dart';
+import 'package:eat/data/upload/upload_api.dart';
+import 'package:eat/data/upload/upload_dto.dart';
+import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/taste.dart';
 import 'package:eat/features/publish/publish_providers.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fakes.dart';
@@ -119,4 +128,165 @@ void main() {
       ['foods/a.jpg', 'foods/b.jpg', 'foods/c.jpg'],
     );
   });
+
+  group('回到前台后的自动重试', () {
+    late List<Completer<String>> calls;
+    late ProviderContainer container;
+    final provider = draftProvider();
+
+    setUp(() async {
+      calls = [];
+      container = await TestEnv().container(
+        overrides: [uploaderProvider.overrideWithValue(_HeldUploader(calls))],
+      );
+      final sub = container.listen(provider, (_, _) {});
+      addTearDown(sub.close);
+    });
+
+    Draft draft() => container.read(provider.notifier);
+    List<UploadStatus> statuses() => [
+      for (final p in container.read(provider).photos) p.status,
+    ];
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+    void add(int count) => draft().addPhotos([
+      for (var i = 0; i < count; i++)
+        PickedPhoto(bytes: transparentImage, width: 1, height: 1),
+    ]);
+
+    test('进后台时在途、回前台后才失败的照片立即重试一次', () async {
+      add(1);
+      await settle();
+      expect(calls, hasLength(1));
+
+      draft().enterBackground();
+      draft().retryFailedOnce();
+      calls[0].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(2));
+      expect(statuses(), [UploadStatus.uploading]);
+      expect(container.read(provider).photos.single.autoRetried, isTrue);
+
+      calls[1].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(2));
+      expect(statuses(), [UploadStatus.failed]);
+
+      draft().enterBackground();
+      draft().retryFailedOnce();
+      await settle();
+      expect(calls, hasLength(2));
+      expect(statuses(), [UploadStatus.failed]);
+    });
+
+    test('后台期间就失败的照片只在回前台时重试一次', () async {
+      add(1);
+      await settle();
+      draft().enterBackground();
+      calls[0].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(1));
+      expect(statuses(), [UploadStatus.failed]);
+
+      draft().retryFailedOnce();
+      await settle();
+      expect(calls, hasLength(2));
+      calls[1].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(2));
+      expect(statuses(), [UploadStatus.failed]);
+    });
+
+    test('进后台时不在途的照片失败后不自动重试', () async {
+      draft().enterBackground();
+      draft().retryFailedOnce();
+      add(1);
+      await settle();
+      calls[0].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(1));
+      expect(statuses(), [UploadStatus.failed]);
+      expect(container.read(provider).photos.single.autoRetried, isFalse);
+    });
+
+    test('进后台时在途、回前台后上传成功的照片正常完成', () async {
+      add(1);
+      await settle();
+      draft().enterBackground();
+      draft().retryFailedOnce();
+      calls[0].complete('foods/a.jpg');
+      await settle();
+      expect(statuses(), [UploadStatus.done]);
+    });
+
+    for (final (action, drop) in <(String, void Function(Draft, int))>[
+      ('删除', (d, id) => d.remove(id)),
+      ('清空', (d, _) => d.clearPhotos()),
+    ]) {
+      test('进后台时在途的照片被$action后，回前台新加的照片失败不自动重试', () async {
+        add(1);
+        await settle();
+        draft().enterBackground();
+        drop(draft(), container.read(provider).photos.single.id);
+        calls[0].completeError(const AppFailure.cancelled());
+        await settle();
+        expect(statuses(), isEmpty);
+
+        draft().retryFailedOnce();
+        add(1);
+        await settle();
+        expect(calls, hasLength(2));
+        calls[1].completeError(const AppFailure.network());
+        await settle();
+        expect(calls, hasLength(2));
+        expect(statuses(), [UploadStatus.failed]);
+        expect(container.read(provider).photos.single.autoRetried, isFalse);
+      });
+    }
+
+    test('自动重试过的照片手动重试再失败时不再自动重试', () async {
+      add(1);
+      await settle();
+      draft().enterBackground();
+      draft().retryFailedOnce();
+      calls[0].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(2));
+      calls[1].completeError(const AppFailure.network());
+      await settle();
+      expect(statuses(), [UploadStatus.failed]);
+
+      draft().retry(container.read(provider).photos.single.id);
+      await settle();
+      expect(calls, hasLength(3));
+      expect(statuses(), [UploadStatus.uploading]);
+      calls[2].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(3));
+      expect(statuses(), [UploadStatus.failed]);
+      expect(container.read(provider).photos.single.autoRetried, isTrue);
+    });
+  });
+}
+
+/// 每次上传都挂起, 由测试通过 [calls] 里的 [Completer] 决定何时以何种结果结束.
+class _HeldUploader implements Uploader {
+  _HeldUploader(this.calls);
+
+  final List<Completer<String>> calls;
+
+  @override
+  Future<String> upload(
+    Uint8List jpeg, {
+    required UploadBiz biz,
+    PresignDto? presigned,
+    void Function(double progress)? onProgress,
+    CancelToken? cancelToken,
+  }) {
+    final call = Completer<String>();
+    calls.add(call);
+    return call.future;
+  }
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
