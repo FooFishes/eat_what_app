@@ -21,7 +21,7 @@ import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
-import 'package:eat/design/widgets/eat_haptics.dart';
+import 'package:eat/design/widgets/eat_option.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -48,7 +48,6 @@ import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/shops.dart';
 import 'package:eat/state/unread_count.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -412,14 +411,14 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
                 ),
               ),
             ),
-            _RadioGroup(
+            EatRadioGroup(
               label: '校区',
               child: Wrap(
                 spacing: EatSpace.s8,
                 runSpacing: EatSpace.s8,
                 children: [
                   for (final campus in campuses)
-                    _Option(
+                    EatOption(
                       label: campus.name,
                       detail: me == null
                           ? null
@@ -445,12 +444,12 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
               onTap: () => setState(() => _meal = _meal == null ? meal : null),
             ),
           ),
-          _RadioGroup(
+          EatRadioGroup(
             label: '饭点',
             child: _Grid(
               children: [
                 for (final m in MealTime.values)
-                  _Option(
+                  EatOption(
                     label: m.label,
                     detail: _mealSpan(m),
                     selected: m == meal,
@@ -465,12 +464,12 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
                 : '到 $endText 恢复按现在的时间',
           ),
           const _GroupTitle('怎么吃？'),
-          _RadioGroup(
+          EatRadioGroup(
             label: '用餐方式',
             child: _Grid(
               children: [
                 for (final scene in RatingScene.values)
-                  _Option(
+                  EatOption(
                     label: switch (scene) {
                       RatingScene.dineIn => '去店里吃',
                       RatingScene.delivery => '点外卖',
@@ -532,23 +531,6 @@ class _GroupTitle extends StatelessWidget {
   }
 }
 
-/// 一组单选的读屏外壳, 把组内选项归为一个单选组.
-class _RadioGroup extends StatelessWidget {
-  const new({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    container: true,
-    explicitChildNodes: true,
-    role: SemanticsRole.radioGroup,
-    label: label,
-    child: child,
-  );
-}
-
 /// 每行两项的等宽网格, 同一行的两项等高.
 class _Grid extends StatelessWidget {
   const new({required this.children});
@@ -576,96 +558,6 @@ class _Grid extends StatelessWidget {
         ),
     ],
   );
-}
-
-/// 面板里的一个单选项. 未选中时 `mist` 底, 选中时 `ink` 实心底 `paper` 字, 文字加粗.
-///
-/// [detail] 是名字旁的数字信息, 如距离和时间段, 用数字字体.
-/// [pill] 为 true 时是胶囊, 宽度随内容, 名字和 [detail] 排成一行; 否则是填满格子的圆角方块, [detail] 在名字下方.
-class _Option extends StatelessWidget {
-  const new({
-    required this.label,
-    this.detail,
-    this.icon,
-    this.pill = false,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final String? detail;
-  final EatIcons? icon;
-  final bool pill;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    final c = eat.colors;
-    final foreground = selected ? c.paper : c.ink;
-    final muted = selected ? c.paper.withValues(alpha: 0.72) : c.inkMuted;
-    final radius = pill ? EatRadius.pill : EatRadius.tile;
-    final duration = context.motion(EatMotion.select);
-    final name = Text(
-      label,
-      style: eat.text.subhead.copyWith(
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-        color: foreground,
-      ),
-    );
-    final detail = switch (this.detail) {
-      final text? => Text(text, style: eat.text.count.copyWith(color: muted)),
-      null => null,
-    };
-    return EatTappable(
-      onTap: () {
-        if (!selected) EatHaptics.selection();
-        onTap();
-      },
-      button: false,
-      checked: selected,
-      inMutuallyExclusiveGroup: true,
-      focusShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(radius),
-      ),
-      builder: (context, _) => AnimatedContainer(
-        duration: duration,
-        curve: EatMotion.select.curve,
-        constraints: BoxConstraints(
-          minHeight: pill ? EatSize.touch : EatSize.button,
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: pill ? EatSpace.s16 : EatSpace.s14,
-          vertical: pill ? EatSpace.s4 : EatSpace.s10,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? c.ink : c.mist,
-          borderRadius: BorderRadius.all(radius),
-        ),
-        child: pill
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                spacing: EatSpace.s8,
-                children: [name, ?detail],
-              )
-            : Row(
-                spacing: EatSpace.s8,
-                children: [
-                  if (icon case final icon?)
-                    EatIcon(icon, size: 20, color: foreground),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [name, ?detail],
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
 }
 
 /// 组下方的一行说明, 如自动选项现在选了什么.
