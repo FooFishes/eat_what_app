@@ -48,6 +48,7 @@
 | 46 | `/foods/list` 不收坐标，不返回距离 | 搜菜不限校区（产品 6.8，2026-11-21），结果里看不出菜离人多远 | 像 `/restaurant/search` 一样收 `gcjLng`、`gcjLat`，带坐标时每道菜返回到所在店的距离 |
 | 47 | `/foods/list` 不传 `restaurantId` 时，不传 `mealTime` 就按北京时间的当前饭点筛（`FoodService.search` 调 `RestaurantTraits.currentMealTime()`），没有不按饭点筛的取值 | 搜菜默认不限饭点（产品 6.8，2026-11-21）做不到，默认只能搜到当前饭点的菜 | 不传 `mealTime` 时不按饭点筛。目前不传 `mealTime`、不传 `restaurantId` 的只有搜菜，店内菜单带 `restaurantId`，本来就不按饭点筛，不受影响；如果要保留按当前饭点筛，就提供一个表示「全部」的取值 |
 | 48 | 搜菜带 `scene` 时，先用 `RestaurantService.scopeIds` 查出所有没关门的店，再以 `restaurant_id IN (...)` 长列表筛菜；按饭点筛时（不传 `mealTime` 时按当前饭点）同样先用 `restaurants.mealTimeIds(meal)` 查出这一顿营业的店，作为 `inheritedMealRestaurantIds` 长列表传进查菜的 SQL，给没单独设饭点的菜继承店铺饭点 | 店越多，这两个列表越长，每次搜菜都要先查一遍再传一长串参数。按目前校园规模不急 | 在查菜的 SQL 里直接关联 `restaurants` 表：按 `permanently_closed` 过滤没关门的店，按店铺的 `meal_times` 判断继承的饭点 |
+| 49 | 根评论列表（`/foods/{foodId}/comments`）只带 `replyCount`，不带回复 | 卡片收起时显示最早的 2 条回复，客户端只能给每条有回复的根评论单独请求一次 `/comments/{commentId}/replies`（`pageSize=2`），一页 20 条评论最多另发 20 个请求 | 根评论带上按时间正序的前 2 条回复，条目字段和回复列表相同；客户端拿到后不再单独请求预览 |
 
 ## 3. 部署配置
 
