@@ -1,11 +1,14 @@
 import 'package:eat/design/icons/eat_icon.dart';
 import 'package:eat/design/icons/eat_icons.dart';
+import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
+import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -309,6 +312,78 @@ void main() {
       await tester.drag(find.text('已收藏'), const Offset(0, 80));
       await tester.pumpAndSettle();
       expect(find.text('已收藏'), findsNothing);
+    });
+
+    group('位置', () {
+      const safe = 34.0;
+
+      /// 胶囊底边离屏幕底边多远. [keyboard] 是键盘高度, 和真机一样从屏幕底边量起.
+      Future<double> pillBottom(
+        WidgetTester tester,
+        Widget Function(Widget) wrap, {
+        double keyboard = 0,
+      }) async {
+        final dpr = tester.view.devicePixelRatio;
+        tester.view.viewPadding = FakeViewPadding(bottom: safe * dpr);
+        tester.view.padding = FakeViewPadding(
+          bottom: keyboard > 0 ? 0 : safe * dpr,
+        );
+        tester.view.viewInsets = FakeViewPadding(bottom: keyboard * dpr);
+        addTearDown(tester.view.reset);
+        await pumpEat(
+          tester,
+          wrap(
+            Builder(
+              builder: (c) {
+                context = c;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+        showToast(context, '已收藏');
+        await tester.pumpAndSettle();
+        final bottom = tester
+            .getBottomLeft(
+              find
+                  .ancestor(
+                    of: find.text('已收藏'),
+                    matching: find.byType(DecoratedBox),
+                  )
+                  .first,
+            )
+            .dy;
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        return tester.view.physicalSize.height / dpr - bottom;
+      }
+
+      testWidgets('调用处去掉了底部安全区时，仍停在安全区上方', (tester) async {
+        final offset = await pillBottom(
+          tester,
+          (child) => RemovePadding(removeBottom: true, child: child),
+        );
+        expect(offset, moreOrLessEquals(safe + EatSpace.s24, epsilon: 0.5));
+      });
+
+      testWidgets('主页面上停在导航上方，安全区不重复计算', (tester) async {
+        const inset = 120.0;
+        final offset = await pillBottom(
+          tester,
+          (child) => NavBarInset(bottom: inset, child: child),
+        );
+        expect(offset, moreOrLessEquals(inset + EatSpace.s8, epsilon: 0.5));
+      });
+
+      testWidgets('键盘弹出时停在键盘上方，不再加安全区', (tester) async {
+        const keyboard = 300.0;
+        final offset = await pillBottom(
+          tester,
+          (child) => RemovePadding(removeBottom: true, child: child),
+          keyboard: keyboard,
+        );
+        expect(offset, moreOrLessEquals(keyboard + EatSpace.s24, epsilon: 0.5));
+      });
     });
   });
 
