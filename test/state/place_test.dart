@@ -71,6 +71,37 @@ void main() {
     expect(place.scene, RatingScene.dineIn);
   });
 
+  test('选了校区后记在本机；恢复按定位后清掉，换回默认校区', () async {
+    env.adapter.on('GET /campus/list', [
+      FakeAdapter.ok([
+        ...campusListJson,
+        {
+          'id': 2,
+          'name': '中心校区',
+          'gcjLng': 117.025,
+          'gcjLat': 36.672,
+          'isDefault': false,
+          'sort': 1,
+        },
+      ]),
+    ]);
+    env.kv.values['prefs.scene'] = 'delivery';
+    final container = await start(env);
+    final notifier = container.read(placeAndMealProvider.notifier);
+    expect(container.read(currentPlaceProvider).campus?.id, 1);
+
+    await notifier.selectCampus(2);
+    expect(container.read(currentPlaceProvider).campus?.id, 2);
+    expect(env.kv.values['prefs.campus'], '2');
+
+    await notifier.autoCampus();
+    expect(container.read(placeAndMealProvider).campusId, isNull);
+    expect(env.kv.values.containsKey('prefs.campus'), isFalse);
+    final place = container.read(currentPlaceProvider);
+    expect(place.campus?.id, 1);
+    expect(place.scene, RatingScene.delivery);
+  });
+
   group('商圈', () {
     Map<String, Object?> hub(int id, String name) => {
       'id': id,

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:eat/core/failure/app_failure.dart';
+import 'package:eat/core/format/time_format.dart';
 import 'package:eat/core/platform/location.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/icons/eat_icon.dart';
@@ -19,7 +20,8 @@ import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_dialog.dart';
 import 'package:eat/design/widgets/eat_icon_button.dart';
 import 'package:eat/design/widgets/eat_panel.dart';
-import 'package:eat/design/widgets/eat_radio_row.dart';
+import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/eat_haptics.dart';
 import 'package:eat/design/widgets/eat_tabs.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
@@ -30,7 +32,9 @@ import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/place.dart';
+import 'package:eat/domain/rules/campus_rules.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/domain/rules/permission_policy.dart';
 import 'package:eat/domain/rules/shop_rules.dart';
@@ -44,6 +48,7 @@ import 'package:eat/state/location.dart';
 import 'package:eat/state/place.dart';
 import 'package:eat/state/shops.dart';
 import 'package:eat/state/unread_count.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -322,8 +327,10 @@ class _TopBar extends ConsumerWidget {
   }
 }
 
-/// "在哪吃" 切换面板, 包含校区, 饭点与用餐场景三组单选以及 "按现在的时间" 快捷操作.
+/// "在哪吃" 切换面板, 包含校区, 饭点与用餐场景三组单选.
 ///
+/// 校区和饭点各有一个自动选项, 放在组标题右侧: 校区按定位选最近的, 饭点按现在的时间.
+/// 自动选项打开时, 它算出来的那一项也显示为选中.
 /// 面板内的变更仅在本地暂存, 点击 "确定" 后才生效, 直接关闭则放弃修改.
 Future<void> _showPlacePanel(BuildContext context, WidgetRef ref) =>
     showPanel<void>(context, builder: (panel) => const _PlacePanel());
@@ -336,6 +343,7 @@ class _PlacePanel extends ConsumerStatefulWidget {
 }
 
 class _PlacePanelState extends ConsumerState<_PlacePanel> {
+  /// 手动选择的校区. 为 null 时按定位自动选择.
   late int? _campusId;
 
   /// 手动选择的饭点. 为 null 时按当前时间自动选择.
@@ -346,16 +354,23 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
   void initState() {
     super.initState();
     final place = ref.read(currentPlaceProvider);
-    _campusId = place.campus?.id;
+    _campusId = ref.read(placeAndMealProvider).campusId;
     _meal = place.autoMeal ? null : place.meal;
     _scene = place.scene;
+    // 让校区旁的距离用上最新的位置. 没有定位权限时什么也不做, 面板里不申请权限.
+    unawaited(ref.read(currentLocationProvider.notifier).refresh());
   }
 
   void _confirm() {
     final place = ref.read(currentPlaceProvider);
+    final stored = ref.read(placeAndMealProvider).campusId;
     final notifier = ref.read(placeAndMealProvider.notifier);
-    if (_campusId case final id? when id != place.campus?.id) {
-      unawaited(notifier.selectCampus(id));
+    switch (_campusId) {
+      case null when stored != null:
+        unawaited(notifier.autoCampus());
+      case final id? when id != stored:
+        unawaited(notifier.selectCampus(id));
+      default:
     }
     switch (_meal) {
       case null when !place.autoMeal:
@@ -370,59 +385,291 @@ class _PlacePanelState extends ConsumerState<_PlacePanel> {
 
   @override
   Widget build(BuildContext context) {
-    final campuses = ref.watch(campusesProvider).value ?? const [];
-    final meal = _meal ?? MealRules.at(clock.now());
+    final campuses = ref.watch(campusesProvider).value ?? const <Campus>[];
+    final me = ref.watch(currentLocationProvider.select((s) => s.point));
+    final campusId = campuses.any((c) => c.id == _campusId)
+        ? _campusId
+        : CampusRules.nearest(campuses, me)?.id;
+    final now = clock.now();
+    final meal = _meal ?? MealRules.at(now);
+    final end = MealRules.periodEnd(now);
+    final endText = TimeFormat.clock(end.hour * 60 + end.minute);
     return EatPanel(
       title: '在哪吃？',
-      actions: Row(
-        spacing: EatSpace.s10,
-        children: [
-          Expanded(
-            child: EatButton.mist(
-              '按现在的时间',
-              icon: EatIcons.time,
-              onPressed: _meal == null
-                  ? null
-                  : () => setState(() => _meal = null),
-            ),
-          ),
-          Expanded(child: EatButton.solid('确定', onPressed: _confirm)),
-        ],
-      ),
+      actions: EatButton.solid('确定', onPressed: _confirm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final campus in campuses)
-            EatRadioRow(
-              title: campus.name,
-              selected: campus.id == _campusId,
-              onSelected: () => setState(() => _campusId = campus.id),
+          if (campuses.isNotEmpty) ...[
+            _GroupTitle(
+              '哪个校区？',
+              first: true,
+              auto: EatChip.tag(
+                '按定位',
+                selected: _campusId == null,
+                onTap: () => setState(
+                  () => _campusId = _campusId == null ? campusId : null,
+                ),
+              ),
             ),
-          const _GroupTitle('吃哪顿？'),
-          for (final m in MealTime.values)
-            EatRadioRow(
-              title: m.label,
-              selected: m == meal,
-              onSelected: () => setState(() => _meal = m),
+            _RadioGroup(
+              label: '校区',
+              child: Wrap(
+                spacing: EatSpace.s8,
+                runSpacing: EatSpace.s8,
+                children: [
+                  for (final campus in campuses)
+                    _Option(
+                      label: campus.name,
+                      detail: me == null
+                          ? null
+                          : GeoRules.formatDistance(
+                              GeoRules.distance(me, campus.center),
+                            ),
+                      pill: true,
+                      selected: campus.id == campusId,
+                      onTap: () => setState(() => _campusId = campus.id),
+                    ),
+                ],
+              ),
             ),
+            if (_campusId == null)
+              _Caption(me == null ? '没有定位，用默认校区' : '按定位选离你最近的校区'),
+          ],
+          _GroupTitle(
+            '吃哪顿？',
+            first: campuses.isEmpty,
+            auto: EatChip.tag(
+              '按现在的时间',
+              selected: _meal == null,
+              onTap: () => setState(() => _meal = _meal == null ? meal : null),
+            ),
+          ),
+          _RadioGroup(
+            label: '饭点',
+            child: _Grid(
+              children: [
+                for (final m in MealTime.values)
+                  _Option(
+                    label: m.label,
+                    detail: _mealSpan(m),
+                    selected: m == meal,
+                    onTap: () => setState(() => _meal = m),
+                  ),
+              ],
+            ),
+          ),
+          _Caption(
+            _meal == null
+                ? '现在是${meal.label}，到 $endText 自动换'
+                : '到 $endText 恢复按现在的时间',
+          ),
           const _GroupTitle('怎么吃？'),
-          for (final scene in RatingScene.values)
-            EatRadioRow(
-              title: switch (scene) {
-                RatingScene.dineIn => '去店里吃',
-                RatingScene.delivery => '点外卖',
-              },
-              selected: scene == _scene,
-              onSelected: () => setState(() => _scene = scene),
+          _RadioGroup(
+            label: '用餐方式',
+            child: _Grid(
+              children: [
+                for (final scene in RatingScene.values)
+                  _Option(
+                    label: switch (scene) {
+                      RatingScene.dineIn => '去店里吃',
+                      RatingScene.delivery => '点外卖',
+                    },
+                    icon: switch (scene) {
+                      RatingScene.dineIn => EatIcons.utensils,
+                      RatingScene.delivery => EatIcons.bike,
+                    },
+                    selected: scene == _scene,
+                    onTap: () => setState(() => _scene = scene),
+                  ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _mealSpan(MealTime meal) {
+    final span = MealRules.span(meal);
+    return '${TimeFormat.clock(span.start)}–${TimeFormat.clock(span.end)}';
+  }
+}
+
+/// 面板中一组单选的标题, 如 "吃哪顿？", 右侧可放这组的自动选项.
+class _GroupTitle extends StatelessWidget {
+  const new(this.text, {this.auto, this.first = false});
+
+  final String text;
+  final Widget? auto;
+
+  /// 是否为面板里的第一组. 第一组紧贴面板标题, 不留组间距.
+  final bool first;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    return Padding(
+      padding: EdgeInsets.only(
+        top: first ? 0 : EatSpace.s16,
+        bottom: auto == null ? EatSpace.s8 : 0,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                text,
+                style: eat.text.subhead.copyWith(color: eat.colors.ink),
+              ),
+            ),
+          ),
+          ?auto,
         ],
       ),
     );
   }
 }
 
-/// 面板中一组单选的标题, 如 "吃哪顿？".
-class _GroupTitle extends StatelessWidget {
+/// 一组单选的读屏外壳, 把组内选项归为一个单选组.
+class _RadioGroup extends StatelessWidget {
+  const new({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    container: true,
+    explicitChildNodes: true,
+    role: SemanticsRole.radioGroup,
+    label: label,
+    child: child,
+  );
+}
+
+/// 每行两项的等宽网格, 同一行的两项等高.
+class _Grid extends StatelessWidget {
+  const new({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    spacing: EatSpace.s8,
+    children: [
+      for (var i = 0; i < children.length; i += 2)
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: EatSpace.s8,
+            children: [
+              Expanded(child: children[i]),
+              Expanded(
+                child: i + 1 < children.length
+                    ? children[i + 1]
+                    : const SizedBox(),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+/// 面板里的一个单选项. 未选中时 `mist` 底, 选中时 `ink` 实心底 `paper` 字, 文字加粗.
+///
+/// [detail] 是名字旁的数字信息, 如距离和时间段, 用数字字体.
+/// [pill] 为 true 时是胶囊, 宽度随内容, 名字和 [detail] 排成一行; 否则是填满格子的圆角方块, [detail] 在名字下方.
+class _Option extends StatelessWidget {
+  const new({
+    required this.label,
+    this.detail,
+    this.icon,
+    this.pill = false,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String? detail;
+  final EatIcons? icon;
+  final bool pill;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final eat = context.eat;
+    final c = eat.colors;
+    final foreground = selected ? c.paper : c.ink;
+    final muted = selected ? c.paper.withValues(alpha: 0.72) : c.inkMuted;
+    final radius = pill ? EatRadius.pill : EatRadius.tile;
+    final duration = context.motion(EatMotion.select);
+    final name = Text(
+      label,
+      style: eat.text.subhead.copyWith(
+        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        color: foreground,
+      ),
+    );
+    final detail = switch (this.detail) {
+      final text? => Text(text, style: eat.text.count.copyWith(color: muted)),
+      null => null,
+    };
+    return EatTappable(
+      onTap: () {
+        if (!selected) EatHaptics.selection();
+        onTap();
+      },
+      button: false,
+      checked: selected,
+      inMutuallyExclusiveGroup: true,
+      focusShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(radius),
+      ),
+      builder: (context, _) => AnimatedContainer(
+        duration: duration,
+        curve: EatMotion.select.curve,
+        constraints: BoxConstraints(
+          minHeight: pill ? EatSize.touch : EatSize.button,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: pill ? EatSpace.s16 : EatSpace.s14,
+          vertical: pill ? EatSpace.s4 : EatSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? c.ink : c.mist,
+          borderRadius: BorderRadius.all(radius),
+        ),
+        child: pill
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: EatSpace.s8,
+                children: [name, ?detail],
+              )
+            : Row(
+                spacing: EatSpace.s8,
+                children: [
+                  if (icon case final icon?)
+                    EatIcon(icon, size: 20, color: foreground),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [name, ?detail],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// 组下方的一行说明, 如自动选项现在选了什么.
+class _Caption extends StatelessWidget {
   const new(this.text);
 
   final String text;
@@ -431,13 +678,10 @@ class _GroupTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     return Padding(
-      padding: const EdgeInsets.only(top: EatSpace.s20, bottom: 4),
-      child: Semantics(
-        header: true,
-        child: Text(
-          text,
-          style: eat.text.heading.copyWith(color: eat.colors.ink),
-        ),
+      padding: const EdgeInsets.only(top: EatSpace.s8),
+      child: Text(
+        text,
+        style: eat.text.meta.copyWith(color: eat.colors.inkMuted),
       ),
     );
   }

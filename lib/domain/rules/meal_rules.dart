@@ -13,6 +13,12 @@ abstract final class MealRules {
     MealTime.night: 21 * 60,
   };
 
+  /// [meal] 的时间段, 以一天中的分钟数表示. 夜宵跨过零点, 结束时刻小于开始时刻.
+  static ({int start, int end}) span(MealTime meal) {
+    final next = MealTime.values[(meal.index + 1) % MealTime.values.length];
+    return (start: _starts[meal]!, end: _starts[next]!);
+  }
+
   static MealTime at(DateTime time) {
     final minute = time.hour * 60 + time.minute;
     if (minute < _starts[MealTime.breakfast]!) return MealTime.night;

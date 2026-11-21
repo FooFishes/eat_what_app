@@ -4,11 +4,15 @@ import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/eat_button.dart';
+import 'package:eat/design/widgets/eat_panel.dart';
 import 'package:eat/design/widgets/turntable.dart';
 import 'package:eat/design/widgets/eat_list_row.dart';
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/rules/dish_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
+import 'package:eat/domain/rules/geo_rules.dart';
+import 'package:eat/domain/models/geo.dart';
+import 'package:eat/core/platform/location.dart';
 import 'package:eat/features/system/shop_entry.dart';
 import 'package:eat/features/dish/dish_page.dart';
 import 'package:eat/features/shop/shop_page.dart';
@@ -529,10 +533,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('在哪吃？'), findsOneWidget);
     expect(find.text('吃哪顿？'), findsOneWidget);
+    expect(find.textContaining('现在是${_mealLabel()}，到 '), findsOneWidget);
     final other = _mealLabel() == '夜宵' ? '早饭' : '夜宵';
     final api = other == '夜宵' ? 'night' : 'breakfast';
     await tester.tap(find.text(other));
     await tester.pumpAndSettle();
+    expect(_weight(tester, '按现在的时间'), FontWeight.w400);
+    expect(find.textContaining('恢复按现在的时间'), findsOneWidget);
     expect(env.kv.values['prefs.meal'], isNull);
 
     await tester.tap(find.text('确定'));
@@ -572,6 +579,106 @@ void main() {
     expect(scenes.last, 'delivery');
     expect(env.kv.values['prefs.scene'], 'delivery');
   });
+
+  group('在哪吃面板的校区', () {
+    setUp(() {
+      env.adapter.on('GET /campus/list', [FakeAdapter.ok(_twoCampuses)]);
+    });
+
+    testWidgets('没选过时「按定位」打开；没有定位时选默认校区，不写距离', (tester) async {
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '按定位'), FontWeight.w600);
+      expect(find.text('没有定位，用默认校区'), findsOneWidget);
+      expect(_weight(tester, '软件园'), FontWeight.w600);
+      expect(_weight(tester, '中心校区'), FontWeight.w400);
+      expect(find.textContaining(' km'), findsNothing);
+    });
+
+    testWidgets('选一个校区后记住；再打开「按定位」恢复自动', (tester) async {
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      await tester.tap(find.textContaining('软件园'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('中心校区'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '按定位'), FontWeight.w400);
+      expect(find.text('没有定位，用默认校区'), findsNothing);
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values['prefs.campus'], '2');
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '中心校区'), FontWeight.w600);
+      await tester.tap(find.text('按定位'));
+      await tester.pumpAndSettle();
+      expect(_weight(tester, '软件园'), FontWeight.w600);
+      await tester.tap(find.text('确定'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values.containsKey('prefs.campus'), isFalse);
+      expect(find.text('在 软件园 吃 ${_mealLabel()}'), findsOneWidget);
+    });
+
+    testWidgets('有定位时按定位选最近的校区，每个校区写出距离；关掉面板不保存', (tester) async {
+      env.location
+        ..state = LocationAccess.granted
+        ..point = _nearCenter;
+      await pumpApp(tester, env, session: const SignedIn(user: verifiedUser));
+
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(find.text('按定位选离你最近的校区'), findsOneWidget);
+      expect(_weight(tester, '中心校区'), FontWeight.w600);
+      final me = GeoRules.toGcj(WgsPoint(_nearCenter.lat, _nearCenter.lng));
+      for (final campus in _twoCampuses) {
+        final center = GcjPoint(
+          campus['gcjLat']! as double,
+          campus['gcjLng']! as double,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(EatPanel),
+            matching: find.text(
+              GeoRules.formatDistance(GeoRules.distance(me, center)),
+            ),
+          ),
+          findsOneWidget,
+        );
+      }
+
+      await tester.tap(find.text('软件园'));
+      await tester.tap(find.bySemanticsLabel('关闭'));
+      await tester.pumpAndSettle();
+      expect(env.kv.values.containsKey('prefs.campus'), isFalse);
+      expect(find.text('在 中心校区 吃 ${_mealLabel()}'), findsOneWidget);
+    });
+
+    testWidgets('360 宽的手机上字放大到两倍也排得下', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      // 只看面板, 抽屉里不放店.
+      env.adapter.on('GET /recommend', [FakeAdapter.ok(feedJson([]))]);
+      env.location
+        ..state = LocationAccess.granted
+        ..point = _nearCenter;
+      await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        size: const Size(360, 740),
+      );
+
+      await tester.tap(find.textContaining('中心校区'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('确定'), findsOneWidget);
+    });
+  });
 }
 
 /// 等轻提示消失. 提示的计时器未结束时卸载页面, 测试框架会报告未完成的定时器.
@@ -586,3 +693,23 @@ String _mealLabel() => switch (MealRules.at(DateTime.now())) {
   MealTime.dinner => '晚饭',
   MealTime.night => '夜宵',
 };
+
+/// 两个校区: 默认的软件园和中心校区.
+final _twoCampuses = [
+  ...campusListJson,
+  {
+    'id': 2,
+    'name': '中心校区',
+    'gcjLng': 117.025,
+    'gcjLat': 36.672,
+    'isDefault': false,
+    'sort': 1,
+  },
+];
+
+/// 中心校区旁的定位 (WGS-84).
+const _nearCenter = (lat: 36.6705, lng: 117.0195);
+
+/// 文字为 [text] 的字重, 选中项加粗.
+FontWeight? _weight(WidgetTester tester, String text) =>
+    tester.widget<Text>(find.text(text)).style?.fontWeight;

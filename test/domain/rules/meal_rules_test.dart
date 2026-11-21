@@ -29,4 +29,11 @@ void main() {
     expect(MealRules.periodEnd(_at(0, 0)), _at(5, 0));
     expect(MealRules.periodEnd(_at(4, 59)), _at(5, 0));
   });
+
+  test('每顿的时间段接着下一顿的开始，夜宵跨过零点', () {
+    expect(MealRules.span(MealTime.breakfast), (start: 5 * 60, end: 10 * 60));
+    expect(MealRules.span(MealTime.lunch), (start: 10 * 60, end: 15 * 60));
+    expect(MealRules.span(MealTime.dinner), (start: 15 * 60, end: 21 * 60));
+    expect(MealRules.span(MealTime.night), (start: 21 * 60, end: 5 * 60));
+  });
 }

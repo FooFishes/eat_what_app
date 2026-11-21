@@ -8,7 +8,7 @@ import 'package:eat/data/place/place_repository.dart';
 import 'package:eat/domain/models/meal_time.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/place.dart';
-import 'package:eat/domain/rules/geo_rules.dart';
+import 'package:eat/domain/rules/campus_rules.dart';
 import 'package:eat/domain/rules/meal_rules.dart';
 import 'package:eat/state/location.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +41,7 @@ Future<Hub?> hub(Ref ref, int id) async {
       .hub(id, cancelToken: ref.cancelToken());
 }
 
-/// 用户在 "在哪吃" 面板中的选择: 校区, 手动选择的饭点及其失效时间, 堂食还是外卖.
+/// 用户在 "在哪吃" 面板中的选择: 手动选择的校区 (为 null 时按定位自动选择), 手动选择的饭点及其失效时间, 堂食还是外卖.
 class const PlaceChoice({
   final int? campusId,
   final MealTime? manualMeal,
@@ -103,6 +103,17 @@ class PlaceAndMeal extends _$PlaceAndMeal {
       restored: true,
     );
     await _kv.write(campusKey, '$id');
+  }
+
+  /// 恢复为按定位自动选择校区, 见 [CampusRules.nearest].
+  Future<void> autoCampus() async {
+    state = PlaceChoice(
+      manualMeal: state.manualMeal,
+      manualUntil: state.manualUntil,
+      scene: state.scene,
+      restored: true,
+    );
+    await _kv.delete(campusKey);
   }
 
   /// 手动选择饭点, 有效期到当前时间段结束.
@@ -170,7 +181,7 @@ class const CurrentPlace({
 
 /// 计算当前生效的校区, 饭点与用餐场景.
 ///
-/// - 校区: 依次优先采用上次选择的校区, 离当前定位最近的校区, 默认校区.
+/// - 校区: 手动选择的校区仍在列表中时使用它, 否则按定位自动选择 ([CampusRules.nearest]).
 /// - 饭点: 手动选择且未过期时使用手动选择, 否则按当前时间推算.
 /// - 场景: 采用上次选择, 没选过时为堂食.
 ///
@@ -188,23 +199,7 @@ CurrentPlace currentPlace(Ref ref) {
   for (final c in campuses) {
     if (c.id == choice.campusId) campus = c;
   }
-  if (campus == null && campuses.isNotEmpty) {
-    if (me != null) {
-      final sorted = [...campuses]
-        ..sort(
-          (a, b) => GeoRules.distance(
-            me,
-            a.center,
-          ).compareTo(GeoRules.distance(me, b.center)),
-        );
-      campus = sorted.first;
-    } else {
-      campus = campuses.firstWhere(
-        (c) => c.isDefault,
-        orElse: () => campuses.first,
-      );
-    }
-  }
+  campus ??= CampusRules.nearest(campuses, me);
 
   final until = choice.manualUntil;
   final manual =
