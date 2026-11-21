@@ -1,0 +1,17 @@
+# 默认图标 (猪猪): 安卓的 ic_launcher, iOS 的 AppIcon, Web 的图标.
+# 不要单独运行, 由 tool/launcher_icons.dart 调用.
+flutter_launcher_icons:
+  image_path: tool/app_icons/pig.png
+  android: true
+  min_sdk_android: 26
+  adaptive_icon_background: "#F8D347"
+  adaptive_icon_foreground: tool/app_icons/pig_foreground.png
+  # 前景图里主角已经缩在安全圆内, 不再内缩.
+  adaptive_icon_foreground_inset: 0
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: tool/app_icons/pig.png
+    background_color: "#F8D347"
+    theme_color: "#F8D347"

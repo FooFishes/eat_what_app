@@ -1326,6 +1326,15 @@ class PushNotice({
 
 先不做，Web 不上线（2026-11-21）。
 
+### 16.4 App 图标
+
+两套桌面图标：默认的猪猪（`pig`）和备选的饭饭（`bun`），在设置 → 个性化里换（产品 6.12）。当前用哪个以系统为准，本地不另存。Dart 侧是 `core/platform/app_icon.dart`，经 `MethodChannel('you.v50to.eat/app_icon')` 的 `get`、`set` 调 Runner 里的原生代码，不另建插件。
+
+- **Android**：启动入口从 `MainActivity` 挪到两个 `activity-alias`（`.PigLauncher` 默认启用，`.BunLauncher` 默认停用），各带自己的图标，换图标就是启用一个、停用另一个（`setComponentEnabledSetting`，`DONT_KILL_APP`）。停用正在运行的那个入口时，有些厂商系统会结束 App 或清掉任务，所以选了以后先记下，等 `MainActivity` 的 `onStop` 再换；在那之前 `get` 返回刚选的图标。从别名启动时 Flutter 读的是别名的 meta-data，`MainActivity` 重写 `getMetaData` 改读自己的，启动主题和关闭 Flutter 深链的设置仍只写在 `MainActivity` 上。别名停用后，`flutter run` 按清单启动 `.PigLauncher` 会失败，调试前先换回猪猪。
+- **iOS**：备选图标是资源目录里的 `AppIcon-Bun`，Runner 的构建设置 `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` 把它打进包里，不用在 `Info.plist` 写 `CFBundleIcons`。换图标用 `setAlternateIconName`，系统会弹出提示。
+- **Web**：不支持，个性化里不显示这一组。
+- **生成**：`tool/app_icons.py` 把原稿整理成输入图（`tool/app_icons/`）和个性化页面的预览图（`assets/app_icons/`）；`fvm dart run tool/launcher_icons.dart` 用 `flutter_launcher_icons` 按 `tool/app_icons/pig.yaml`、`bun.yaml` 生成两个平台的图标，Web 的图标也从猪猪生成。插件只认一套图标，脚本补位：安卓饭饭的自适应前景改名为 `ic_launcher_bun_foreground`；iOS 饭饭先按默认图标生成，再复制成 `AppIcon-Bun.appiconset`；插件改写的 `project.pbxproj` 运行后还原。生成的文件入库，CI 不运行。
+
 ## 17. 远程配置与 A/B 测试
 
 ### 17.1 接口
@@ -1561,6 +1570,7 @@ class PushNotice({
 | 项 | Android | iOS | Web |
 | --- | --- | --- | --- |
 | 热更新 | Shorebird | Shorebird | 不需要 |
+| 换 App 图标（16.4） | `activity-alias`，离开前台时生效 | 备选图标集 `AppIcon-Bun` | 不支持 |
 | 登录态 | Keystore | Keychain（卸载重装后残留，首次启动清理） | localStorage 加密存储（A10） |
 | 安装 ID（9.4） | 安全存储，卸载重装会变 | Keychain，卸载重装后大概率不变（首次启动清理登录态时不清它） | localStorage，可被清 |
 | 硬件标识 | ANDROID_ID（按签名和用户隔离，卸载重装不变） | `identifierForVendor`（同厂商 App 全部卸载后才变） | 没有 |

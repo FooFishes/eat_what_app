@@ -83,6 +83,7 @@
 | JSON 生成 | `json_serializable` | `^6.15.2` | 2026-10-20 | 已引入（阶段二） |
 | 测试 mock | `mocktail` | `^1.0.5` | 2026-04-10 | 第一次需要 mock 时。阶段二的测试用 `test/support/fakes.dart` 里的内存实现和假网络适配器就够了，没有加 |
 | 上传符号表、source map | `sentry_dart_plugin` | `^3.4.0` | 2026-05-28 | 已引入（阶段五），只在 CI 的发版构建运行 |
+| 生成 App 图标 | `flutter_launcher_icons` | `^0.14.4` | 2025-06-10 | 已引入（2026-11-21），由 `tool/launcher_icons.dart` 调用，只在开发机运行（技术架构 16.4） |
 | 热更新命令行 | Shorebird CLI（不进 pubspec） | 跟随 `.fvmrc` 的 Flutter 版本 | — | 已引入（阶段五），CI 用 `shorebirdtech/setup-shorebird` 安装 |
 | Golden 测试 | `alchemist` | `^0.14.1` | 2026-10-08 | 组件稳定后（见技术架构「测试策略」） |
 
@@ -508,6 +509,7 @@ Flutter 3.44 起冻结了框架里的 `package:flutter/material.dart`，3.47 起
 | `alchemist` | `^0.14.1` | 以后做 golden 测试时用，它的「CI golden」模式不受操作系统字体渲染差异影响 |
 | `integration_test` | SDK | 以后做端到端测试时用 |
 | fonttools `pyftsubset` | 不锁 | 字体子集化脚本 |
+| `flutter_launcher_icons` | `^0.14.4` | 生成两套 App 图标；不直接运行，用 `fvm dart run tool/launcher_icons.dart`（技术架构 16.4） |
 
 不加 `very_good_analysis` 等更严的规则集，先守住 `flutter_lints` 零问题。
 

@@ -28,14 +28,34 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
             <!-- 外部链接一律由 app_links 接收, 交给 lib/router/deep_links.dart 按白名单处理.
                  Flutter 自带的深链会把链接直接交给路由, 绕过白名单. 以后接入厂商通道推送时, 离线推送点开也会被它当成深链而白屏. -->
             <meta-data android:name="flutter_deeplinking_enabled" android:value="false"/>
         </activity>
+        <!-- 桌面图标: 每个图标一个启动入口, 同时只启用一个. 个性化页面切换, 由 MainActivity 启用和停用 (技术架构 16.4).
+             Flutter 读的 meta-data 仍写在 MainActivity 上, 见 MainActivity.getMetaData. -->
+        <activity-alias
+            android:name=".PigLauncher"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
+        <activity-alias
+            android:name=".BunLauncher"
+            android:targetActivity=".MainActivity"
+            android:icon="@mipmap/ic_launcher_bun"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <!-- 统一认证的回跳: 后端重定向到 you.v50to.eat://auth/callback, 由 flutter_web_auth_2 交回发起认证的调用.
              scheme 与 lib/core/platform/browser.dart 的 ssoCallbackScheme 一致. -->
         <activity
