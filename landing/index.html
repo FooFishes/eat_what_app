@@ -9,11 +9,11 @@
 <meta property="og:site_name" content="沙软今天吃什么">
 <meta property="og:title" content="沙软今天吃什么">
 <meta property="og:description" content="校园觅食 App。同学们拍的菜和店，打开 App 看看今天吃什么。">
-<meta property="og:image" content="/icon-192.png">
+<meta property="og:image" content="/app/icon-192.png">
 <meta name="theme-color" content="#ffffff">
 <meta name="format-detection" content="telephone=no">
-<link rel="icon" href="/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/app/icon-192.png">
+<link rel="apple-touch-icon" href="/app/icon-192.png">
 <style>
 /* 令牌: 取自 lib/design/tokens/eat_palette.dart, eat_dimensions.dart, lib/design/theme/eat_text_styles.dart, 正本在 App 里. */
 :root {
@@ -680,7 +680,7 @@ button.stage-plate { cursor: pointer; }
 <body>
 <div class="page">
   <header class="banner">
-    <img src="/icon-192.png" alt="" width="40" height="40">
+    <img src="/app/icon-192.png" alt="" width="40" height="40">
     <div class="banner-text">
       <p class="banner-title">沙软今天吃什么</p>
       <p class="banner-sub">同学们拍的菜和店，都在这里</p>
@@ -752,15 +752,17 @@ button.stage-plate { cursor: pointer; }
   // ---- 可配置常量 ----
   /** 业务接口前缀, 和页面同域的反代. */
   var API_BASE = '/api';
+  /** 分享链接的路径前缀, 分享链接形如 https://eat.v50to.you/app/dishes/123. */
+  var BASE_PATH = '/app';
   /** 下载页的路径, 和本页同主机名. 下载地址在 download.html 里配. */
-  var DOWNLOAD_PATH = '/download';
+  var DOWNLOAD_PATH = BASE_PATH + '/download';
   /** 分享链接所在的主机名, 本页部署在这里. 目前只用于说明和判断, 留空不影响运行. */
-  var SHARE_HOST = '';
+  var SHARE_HOST = 'eat.v50to.you';
   /**
-   * 唤起 App 用的第二个主机名 (如 open.<域名>), 同样配 AASA / assetlinks 并部署本页.
+   * 唤起 App 用的第二个主机名, 同样配 AASA / assetlinks 并部署本页.
    * iOS 在 Safari 里点同域链接不会触发 Universal Links, 必须跨主机名. 留空时退回当前主机名, 只是占位, 多半唤不起来.
    */
-  var OPEN_HOST = '';
+  var OPEN_HOST = 'open.eat.v50to.you';
   /** 安卓包名, 与 applicationId 一致. */
   var ANDROID_PACKAGE = 'you.v50to.eat';
   var APP_NAME = '沙软今天吃什么';
@@ -1871,13 +1873,15 @@ button.stage-plate { cursor: pointer; }
     shops: { api: function (id) { return '/restaurant/detail/' + id; }, render: renderShop },
     topics: { api: function (id) { return '/topics/' + id; }, render: renderTopic }
   };
-  var match = /^\/(dishes|shops|topics)\/(\d+)\/?$/.exec(location.pathname);
+  var match = location.pathname.indexOf(BASE_PATH + '/') === 0
+    ? /^\/(dishes|shops|topics)\/(\d+)\/?$/.exec(location.pathname.slice(BASE_PATH.length))
+    : null;
   /** 唤起 App 的目标路径, 和分享链接一致, 保留 comment 等参数. */
   var targetPath = (function () {
-    if (!match) return '/';
+    if (!match) return BASE_PATH + '/';
     var params = new URLSearchParams(location.search);
     var query = params.toString();
-    return '/' + match[1] + '/' + match[2] + (query ? '?' + query : '');
+    return BASE_PATH + '/' + match[1] + '/' + match[2] + (query ? '?' + query : '');
   })();
 
   function load() {

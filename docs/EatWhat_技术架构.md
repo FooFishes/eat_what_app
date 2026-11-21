@@ -115,6 +115,7 @@ config/
   example.json              环境配置样例（真实的 dev.json、staging.json、prod.json 不入库）
 tool/                       开发机和 CI 上跑的脚本：字体子集化、按 EatIcons 生成图标、同步接口定义、装号码认证 SDK、
                             准备百度地图 iOS SDK、拆单架构 APK、查构建号、iOS 签名、上传 TestFlight（各脚本见 AGENTS.md「目录」）
+landing/                    分享落地页和下载页，静态页面，不经过 Flutter（6.5）
 packages/
   eat_baidu_map/            本地插件：Kotlin、Swift 包百度地图 SDK，只给 core/platform/map/ 用（14.4）；
                             pigeons/ 里是 Pigeon 接口定义，生成的三端文件入库
@@ -193,7 +194,7 @@ test/                       与 lib/ 同构；另有 support/（假实现）、f
 | `appGateProvider` | 路由守卫要的强制更新和停服维护状态；`appUpdateProvider` 是本机构建号和版本线比较的结果 | 由 `remoteConfigProvider` 和构建号派生 |
 | `noticesProvider` | 本机关掉的普通公告、看过的重要公告、提示过建议更新的构建号（`prefs.notice.*`、`prefs.update.prompted`）；`bannerNoticeProvider`、`importantNoticeProvider`、`updatePromptProvider` 由它和配置派生 | 公告条、公告弹窗、建议更新 |
 | `currentLocationProvider` | 定位权限状态、最近一次位置（GCJ-02，只在内存） | 发现页、附近页 |
-| `placeAndMealProvider` | 当前校区；饭点是自动还是手动，手动的到哪个时间段结束；堂食还是外卖（`scene`，`RatingScene`，存 `prefs.scene`，没选过按堂食，退出登录不清）。`currentPlaceProvider` 由它和校区列表派生，本机的选择读出来之前标为未就绪 | 在哪吃面板 |
+| `placeAndMealProvider` | 手动选的校区（存 `prefs.campus`，没有时按定位自动选，`autoCampus()` 切回自动，最近校区的算法在 `CampusRules`）；饭点是自动还是手动，手动的到哪个时间段结束；堂食还是外卖（`scene`，`RatingScene`，存 `prefs.scene`，没选过按堂食，退出登录不清）。`currentPlaceProvider` 由它和校区列表派生，本机的选择读出来之前标为未就绪 | 在哪吃面板 |
 | `dishInteractionsProvider` | 菜的赞、收藏、赞数的本地覆盖值，按菜 id | 赞、收藏按钮 |
 | `unreadCountProvider` | 有未读的消息行数（`/notification/cards/unread/count` 的 `cards`，不是未读条数），发现页铃铛和消息页「N 条未读」共用 | 回到前台、回到发现页时重新拉；点一行减 1；全部已读后重新拉（15.5） |
 | `navGlassTransparencyProvider` | 底部导航液态玻璃的透明度（存 `prefs.appearance.navGlass`，退出登录不清）；`MainShell` 读它传给 `EatNavBar` | 设置 → 个性化 |
@@ -344,7 +345,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 5.6 Web 的 URL 策略
 
-- 用 path 策略（`usePathUrlStrategy()`），地址形如 `https://<域名>/dishes/123`，和分享链接、App Links 共用一套路径。
+- 用 path 策略（`usePathUrlStrategy()`），地址形如 `https://<域名>/dishes/123`。分享链接在这套路径前多一段 `/app`（6.1），深链处理去掉它再匹配。
 - 服务器把所有非静态文件的路径回落到 `index.html`；`/.well-known/` 下的文件和 `/api` 不回落。
 - 浏览器后退等于路由后退。`GoRouter.optionURLReflectsImperativeAPIs` 打开：`push` 打开的页面也写进地址栏，刷新、复制链接都回到同一页。
 - 返回的兜底：页面左上角的 `EatBackButton` 调 `BackFallback.back`，有上一页就回去（和系统返回一样走 `maybePop`，页面里的 `PopScope` 能先拦下来确认，如没发出的评论），没有（直接打开的链接、刷新后的 Web 页面）就走 App 根部给的兜底，回到 `/discover`。`design/` 不知道兜底去哪，由 `app.dart` 提供。
@@ -355,7 +356,8 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 ### 6.1 链接格式
 
-- 分享链接是 HTTPS 地址：`https://<域名>/dishes/<id>`、`/shops/<id>`、`/topics/<id>`。域名待确认 A1。
+- 分享链接是 HTTPS 地址，放在 `https://eat.v50to.you/app` 下：`https://eat.v50to.you/app/dishes/<id>`、`/app/shops/<id>`、`/app/topics/<id>`。
+- 唤起 App 用另一个主机名 `open.eat.v50to.you`：落地页上的「打开 App」把分享链接的主机名换成它，路径不变。iOS 在 Safari 里点同一主机名的链接不会触发 Universal Links，必须跨主机名。
 - 自定义 Scheme `you.v50to.eat://` 只用于统一认证回跳（18.1），由认证会话直接收下，不经过 `DeepLinkHandler`，不对外分享。
 
 ### 6.2 装了 App 打开 App
@@ -364,16 +366,16 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- |
 | Android | App Links：`AndroidManifest.xml` 里给分享路径加 `autoVerify` 的 intent-filter；分享链接的域名下放 `/.well-known/assetlinks.json`，写正式签名证书的 SHA-256（商店重签名时把商店的证书也写上） |
 | iOS | Universal Links：开启 Associated Domains（`applinks:<域名>`）；分享链接的域名下放 `/.well-known/apple-app-site-association`，限定分享路径 |
-| 没装 App | 系统在浏览器打开同一个地址，打开一个轻量的分享页面 |
+| 没装 App | 系统在浏览器打开同一个地址，打开一个轻量的分享页面（`landing/`，6.5） |
 
-需要正式签名密钥和 Apple 开发者账号，见待确认 A1。
+两个主机名 `eat.v50to.you` 和 `open.eat.v50to.you` 都要配：安卓的 intent-filter、iOS 的 `applinks:`，两个主机名下都放校验文件。需要正式签名密钥和 Apple 开发者账号，见待确认 A1。
 
 ### 6.3 统一入口：DeepLinkHandler
 
 - 关闭 Flutter 自带的深链处理（安卓 `flutter_deeplinking_enabled=false`、iOS `FlutterDeepLinkingEnabled=false`），所有外部来的链接由 `app_links` 收下，交给 `router/deep_links.dart` 的 `DeepLinkHandler`。原因：统一入口方便做白名单和埋点；以后接远程推送时，安卓厂商通道的离线推送点开会被 Flutter 当成深链而白屏，现在关掉可以提前避开（依赖选型第 10 节）。
 - 来源：App Links / Universal Links、通知点击。链接从 `linkSourceProvider` 来（App 上是 `app_links`，Web 上为空，地址直接由路由表解析），测试里换成假的来源。
 - 处理：
-  1. 只接受 `https://<分享链接的域名>/...`，取出路径和参数。
+  1. 只接受 `https://eat.v50to.you/app/...` 和 `https://open.eat.v50to.you/app/...`，取出 `/app` 后面的路径和参数。
   2. 按白名单匹配：`/dishes/:id`（可带 `comment`）、`/shops/:id`、`/topics/:id`、`/users/:id`、`/inbox`、`/verify`、`/me`、`/settings/account/devices`。匹配不上就去 `/discover`。
      - 白名单目前是空的，随分享链接一起接（安卓清单的 intent-filter、iOS 的 Associated Domains 和 `Runner.entitlements` 也那时再加）。统一认证回跳原先走这里（`https://eat.v50to.you/app/auth/callback`），2026-11-05 改成认证会话加自定义 Scheme（18.1），因为国内机型上 App Links 的域名校验靠不住。Web 上 `/app/auth/callback` 仍是一条路由，转成 `/verify?sso=..&code=..&ticket=..`。以后做 App Links 时把邮箱认证的 `/verify/email` 也加进白名单（18.2）。
      - 域名校验文件（`/.well-known/assetlinks.json`、`/.well-known/apple-app-site-association`）放在链接所在的主机名上（根域名上的文件不起作用），接分享链接时再请后端放。国内的安卓机上 App Links 校验经常过不了：装了 GMS 的手机由 GMS 访问 `digitalassetlinks.googleapis.com` 校验，大陆访问不到；没有 GMS 的手机各家厂商自己处理。分享链接校验失败时和没装 App 一样，在浏览器里打开轻量的分享页面（6.2）；需要必达的跳转不能依赖它。
@@ -385,6 +387,14 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 
 先不做，Web 不上线（2026-11-21）。
 
+### 6.5 分享落地页
+
+- 没装 App、或系统没把链接交给 App 时，浏览器打开的是 `landing/` 里的静态页面，不是 Flutter Web。部署和配置见 `landing/README.md`。
+- `index.html`：分享页，照 App 的菜品详情、店铺详情和专题页排布，只调游客能用的接口；要用 App 的操作点了弹面板，引导「打开 App」或「下载 App」。
+- `download.html`：下载页 `/app/download`，安卓给安装包，iPhone 版暂不支持。
+- 打开 App：iOS 是指向 `open.eat.v50to.you` 的普通链接，交给 Universal Links；安卓用 `intent://…;scheme=https;package=you.v50to.eat`，走 App Links 的 https 入口，不依赖域名校验，没装时回到下载页。页面在 `open.eat.v50to.you` 上打开时说明没交给 App，改成以下载为主。
+- 微信、QQ 内置浏览器里不尝试唤起，提示到浏览器打开。
+
 ## 7. 网络层
 
 ### 7.1 环境配置
@@ -395,7 +405,7 @@ GoRouter 的顶层 `redirect` 调用一个纯函数 `resolveRedirect(输入) →
 | --- | --- | --- |
 | `ENV_NAME` | `dev` / `staging` / `prod` | `prod` |
 | `API_BASE_URL` | 业务接口前缀，对应接口文档 `servers` 第一项的反代 `/api` | `https://<域名>/api` |
-| `WEB_BASE_URL` | 分享链接的地址 | `https://<域名>` |
+| `WEB_BASE_URL` | 分享链接的地址 | `https://eat.v50to.you/app` |
 | `SENTRY_DSN` | 为空就不启用崩溃上报 | — |
 | `BAIDU_MAP_AK_ANDROID`、`BAIDU_MAP_AK_IOS`、`BAIDU_MAP_AK_WEB` | 百度地图的三个 AK，各端只读自己那个，初始化 SDK 时传入（依赖选型 7.1）。为空时不显示地图，附近页只有列表 | — |
 | `NUMBER_AUTH_KEY_ANDROID`、`NUMBER_AUTH_KEY_IOS` | 阿里云号码认证的方案密钥，各端只读自己那个（依赖选型 15.1）。为空时没有一键登录，「手机注册 / 登录」直接去手机号登录页（18.4） | — |
@@ -1605,7 +1615,7 @@ class PushNotice({
 
 | 编号 | 事项 | 推荐 | 需要谁 |
 | --- | --- | --- | --- |
-| A1 | 分享链接的域名 | 一个 HTTPS 域名放 `/.well-known/` 的 App Links / Universal Links 文件。Web 不上线（2026-11-21），不托管 Web。要确认：域名；正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
+| A1 | 分享链接的域名 | 已定（2026-11-21）：分享用 `eat.v50to.you/app`，唤起 App 用 `open.eat.v50to.you`（6.1），两个主机名都放 `/.well-known/` 的 App Links / Universal Links 文件。Web 不上线（2026-11-21），不托管 Web。还要确认：正式的安卓签名密钥（App Links 要它的指纹）；Apple 开发者账号（Universal Links、推送、TestFlight） | 产品负责人、后端 |
 | A2 | 后端的业务码和约定 | v2 已对齐：沿用旧码值，客户端码表见 7.4。还差：功能已关闭、只读维护、操作受限、内容违规（后端还没做这些功能）；推送附带数据里的 `link` 字段格式（推送还不投递） | 后端 |
 | A3 | 后端数据格式和存储 | 已定：GeoJSON 是 GCJ-02（14.1）；图片字段是公开的稳定地址（7.7）；菜的舞台色、备选色和封面裁切随菜保存，推荐卡片的招牌菜带封面裁切（13.6）。还差：图片服务能否出缩略图；对象存储允许 Web 域名跨域 `PUT`，图片返回长缓存头 | 后端 |
 | A4 | 统一认证的跳转 | 已对齐：`/auth/sdu` 给带一次性 state 的地址，App 用系统认证会话打开，成功、失败都跳回预设链接，成功带 `ticket`，由发起账号 `POST /auth/sdu/confirm`（18.1）。还差：部署时配好 App 的回跳地址（后端反馈第 27 条） | 后端 |

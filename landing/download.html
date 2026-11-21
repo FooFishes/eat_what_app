@@ -9,12 +9,12 @@
 <meta property="og:site_name" content="沙软今天吃什么">
 <meta property="og:title" content="下载沙软今天吃什么">
 <meta property="og:description" content="校园觅食 App。饭点不知道吃什么，转一转就定了。">
-<meta property="og:image" content="/icon-192.png">
+<meta property="og:image" content="/app/icon-192.png">
 <meta name="theme-color" content="#ffcb45" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#d9ad3b" media="(prefers-color-scheme: dark)">
 <meta name="format-detection" content="telephone=no">
-<link rel="icon" href="/icon-192.png">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" href="/app/icon-192.png">
+<link rel="apple-touch-icon" href="/app/icon-192.png">
 <style>
 /* 令牌: 取自 lib/design/tokens/eat_palette.dart, eat_dimensions.dart, lib/design/theme/eat_text_styles.dart, 正本在 App 里. */
 :root {
@@ -358,7 +358,7 @@ a.dl:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 <div class="page">
   <main>
     <section class="stage hero" data-stage="mango">
-      <img class="app-icon" src="/icon-192.png" alt="" width="72" height="72">
+      <img class="app-icon" src="/app/icon-192.png" alt="" width="72" height="72">
       <h1 class="app-name">沙软今天吃什么</h1>
       <div class="plate bare" id="hero-plate" aria-hidden="true"></div>
     </section>
@@ -404,11 +404,11 @@ a.dl:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
   /** 安卓版本说明, 如「版本 1.2.3」, 显示在安卓下载入口里. 为空时不显示. */
   var ANDROID_VERSION_TEXT = '';
   /** 唤起 App 用的第二个主机名, 和 index.html 的 OPEN_HOST 一致. 页面在它上面打开时不显示「打开 App」. */
-  var OPEN_HOST = '';
+  var OPEN_HOST = 'open.eat.v50to.you';
   /** 安卓包名, 与 applicationId 一致. */
   var ANDROID_PACKAGE = 'you.v50to.eat';
   /** 「打开 App」的目标路径. */
-  var OPEN_PATH = '/discover';
+  var OPEN_PATH = '/app/discover';
 
   // ---- 平台标志 (MingCute 官方 @mingcute/svg 3.1.0 的 core-regular: android-2, apple) ----
   var LOGOS = {
@@ -542,7 +542,7 @@ a.dl:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     if (isIOS) return;
     e.preventDefault();
     if (!isAndroid) { toast('请在手机上打开这个页面'); return; }
-    var fallback = 'https://' + location.host + '/download';
+    var fallback = 'https://' + location.host + '/app/download';
     location.href = 'intent://' + openHost + OPEN_PATH + '#Intent;scheme=https;package=' + ANDROID_PACKAGE +
       ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
   }

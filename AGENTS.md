@@ -39,6 +39,7 @@ test/                Widget 测试与单元测试，文件名以 _test.dart 结�
 config/              环境配置，只有 example.json 入库
 assets/              进 App 的资源：fonts/（子集化的 Noto Sans SC、Inter 和许可证，Noto 只打进安卓包）、emoji/（登录页用的动画表情，改编自 Twemoji，CC BY 4.0，每个有一张动图和一张首帧静态图；reactions/ 是评论的表情回应，取自 @twemoji/svg 15.0.0；署名和许可证在 LICENSE-Twemoji.txt）、icons/（由 tool/icons.dart 从 MingCute 官方包生成，许可证在 assets/LICENSE-MingCute.txt）、illustrations/（菜品插画，复制自 prototype/assets/dishes/，只用于空状态、引导和演示）、config/（remote_defaults.json，远程配置拿不到时的内置默认值）、map/（深色底图样式：dark.sty 给 App 的百度 SDK，dark_style.json 给 Web 的 JS API）
 tool/                开发机和 CI 上跑的脚本：subset_fonts.py（字体子集化）、icons.dart（按 EatIcons 从 MingCute 官方的 @mingcute/svg 生成图标）、sync_api.sh（从 Apifox 同步接口定义）、baidu_ios_sdk.sh（下载百度地图 iOS SDK 并转成 xcframework，只能在 macOS 上跑，CI 的 iOS 构建会调用）、number_auth_sdk.py（把从阿里云控制台下载的号码认证 SDK 装进 packages/eat_number_auth/）、split_apk.sh（从通用 APK 拆出单架构 APK 并重签，CI 的 Android 构建会调用）、build_number.sh（从 App Store Connect 查出下一个构建号，所有平台共用）、asc_api.sh（App Store Connect API 的公共部分，供 build_number.sh 和 testflight_upload.sh 引入）、ios_signing.sh（在 CI 上导入 iOS 发布证书和描述文件，生成签名配置）、testflight_upload.sh（把签好名的 IPA 上传到 TestFlight）、sentry_symbols.sh（把 Dart 符号表、混淆映射和 iOS 的 dSYM 上传到 Sentry，缺文件或没传上就失败，CI 的发版构建和补丁会调用）
+landing/             分享落地页（index.html）和下载页（download.html），单文件静态页面，不经过 Flutter；部署见 landing/README.md
 packages/
   eat_baidu_map/     本地插件：百度地图原生桥（Kotlin、Swift），和 App 同在一个 pub workspace，见技术架构 14.4
   eat_number_auth/   本地插件：运营商一键登录的原生桥（Kotlin、Swift），包着阿里云号码认证 SDK，SDK 的二进制随插件入库，见技术架构 18.4
