@@ -176,7 +176,7 @@ PR（目标为 `main`）只构建和检查，不上传。`main` 的 push 和 PR 
    - `ios`（macOS）：先跑 `tool/baidu_ios_sdk.sh` 准备百度地图 SDK（按脚本内容缓存）。有发布证书和描述文件时签名打 IPA（`tool/ios_signing.sh`），`main` 和发版 tag 的 IPA 上传 TestFlight（`tool/testflight_upload.sh`）；没有证书时出未签名的 `Runner.app`，打包为 zip。
    - `web`（ubuntu）：`build/web`，带 `--no-web-resources-cdn`，不含 source map。
 3. Release 构建另外：Android 和 iOS 混淆 Dart 代码，符号表和混淆映射上传到 Sentry，iOS 另传 dSYM（`tool/sentry_symbols.sh`，缺了就失败；未签名的 iOS 构建不传），Web 生成 source map 上传到 Sentry；配了 `SHOREBIRD_TOKEN` 且仓库里有 `shorebird.yaml` 时，Android 改用 `shorebird release`，iOS 在有签名证书时也改用 `shorebird release`。
-4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。
+4. `publish`（ubuntu，环境 `Cloudflare R2`）：把构建成功的平台产物（通用和单架构 APK、AAB、IPA 或未签名 iOS zip、Web zip）上传到 R2，下载链接写在运行摘要里。Release 构建的 arm64-v8a APK 另外上传到雨云对象存储（桶 `release`，`https://release.cn-nb2.rains3.com`），再把边缘节点 `/downloads/android` 的 302 跳转改到它。
 
 `.github/workflows/patch.yml` 给已发布的 Android 和 iOS 版本推 Shorebird 补丁。补丁都发到 stable 轨道，用 Shorebird 的按比例放量（`--rollout`）分灰度和全量：补丁 tag 触发时两个平台都直接全量推送；手动触发时可以只选一个平台，默认只试跑，放量比例默认 10%。灰度补丁之后用 `.github/workflows/patch-rollout.yml`（或本地 `shorebird patches rollout`）按补丁号提高比例，比例只能调高，有问题的补丁在 Shorebird 控制台回滚。Android 正式推送后把构建出的 AAB、符号表和混淆映射上传到 R2，配了 `SENTRY_AUTH_TOKEN` 时符号表和映射也上传到 Sentry。iOS 补丁的选项和发版一样带混淆，正式推送后把补丁自己的符号表上传到 Sentry（没有补丁自己的 dSYM 和映射）。iOS 只能给用 `shorebird release` 发的版本打补丁。
 
@@ -198,5 +198,7 @@ iOS 构建必须带环境变量 `BYPASS_PERMISSION_LOCATION_ALWAYS=1`：geolocat
 | `ASC_APP_ID` | Variable | App 的 Apple ID（数字） |
 | `IOS_DIST_CERT_P12_BASE64`、`IOS_DIST_CERT_PASSWORD`、`IOS_PROFILE_BASE64` | Secret | iOS 发布证书（.p12）和 App Store 描述文件，都是 base64；缺了 iOS 只做未签名构建，也不能用 Shorebird 发版 |
 | `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`、`R2_BUCKET` | 环境 `Cloudflare R2` 的 Secret | 产物上传到 R2 |
+| `RAINS3_ACCESS_KEY_ID`、`RAINS3_SECRET_ACCESS_KEY` | Secret | Release 构建的 arm64-v8a APK 另外上传到雨云对象存储；缺了不上传 |
+| `AXISNOW_API_TOKEN` | Secret | 上传到雨云后把边缘节点 `/downloads/android` 的跳转改到这个 APK；缺了不改 |
 
 还没有上传应用商店（Google Play、App Store 正式发布）的步骤，iOS 只到 TestFlight。Web 不上线，先不做部署；R2 上的 Web 产物只是 zip 包，不能直接访问。

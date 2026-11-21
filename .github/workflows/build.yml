@@ -42,6 +42,8 @@ permissions:
 #   和 App 的 Apple ID. 用来查构建号和上传 TestFlight. 缺省时构建号用 pubspec.yaml 里的占位, 不上传.
 # - IOS_DIST_CERT_P12_BASE64, IOS_DIST_CERT_PASSWORD, IOS_PROFILE_BASE64: 发布证书 (.p12) 和 App Store 描述文件,
 #   都是 base64. 缺省时 iOS 只做未签名构建.
+# - RAINS3_ACCESS_KEY_ID, RAINS3_SECRET_ACCESS_KEY: Release 构建的 arm64-v8a APK 另外上传到雨云对象存储. 缺省时不上传.
+# - AXISNOW_API_TOKEN: 上传后把边缘节点 /downloads/android 的跳转改到这个 APK. 缺省时不改.
 env:
   APP_CONFIG: ${{ secrets.APP_CONFIG }}
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -552,6 +554,7 @@ jobs:
       PUBLIC_URL: https://release.foofish.work
       BUILD_NAME: ${{ needs.check.outputs.build-name }}
       R2_PREFIX: ${{ needs.check.outputs.r2-prefix }}
+      RAINS3_ACCESS_KEY_ID: ${{ secrets.RAINS3_ACCESS_KEY_ID }}
     steps:
       # 只下载构建成功的产物, 每个产物放在以名字命名的目录里.
       - uses: actions/download-artifact@v7
@@ -587,3 +590,58 @@ jobs:
               echo "- $PUBLIC_URL/$R2_PREFIX/$(basename "$f")"
             done
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Release 的 arm64-v8a APK 另外上传到雨云对象存储, 路径和 R2 上一样,
+      # 再把边缘节点 /downloads/android 的 302 跳转改到它. 没有 AXISNOW_API_TOKEN 时只上传, 不改跳转.
+      - name: Upload to Rain S3
+        if: >-
+          needs.check.outputs.release == 'true' && env.RAINS3_ACCESS_KEY_ID != ''
+          && hashFiles('dist/android/flutter-apk/app-arm64-v8a.apk') != ''
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RAINS3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RAINS3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          AXISNOW_API_TOKEN: ${{ secrets.AXISNOW_API_TOKEN }}
+          RAINS3_ENDPOINT: https://cn-nb2.rains3.com
+          RAINS3_BUCKET: release
+          RAINS3_PUBLIC_URL: https://release.cn-nb2.rains3.com
+        run: |
+          set -euo pipefail
+          key="$R2_PREFIX/eat-$BUILD_NAME-arm64-v8a.apk"
+          aws configure set default.s3.addressing_style path
+          aws s3 cp dist/android/flutter-apk/app-arm64-v8a.apk "s3://$RAINS3_BUCKET/$key" \
+            --endpoint-url "$RAINS3_ENDPOINT" --only-show-errors
+          url="$RAINS3_PUBLIC_URL/$key"
+          {
+            echo "### 雨云"
+            echo "- $url"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$AXISNOW_API_TOKEN" ]; then
+            echo "- 没有 AXISNOW_API_TOKEN, 边缘节点的 /downloads/android 没有更新." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # JSON 用单引号, 不经过 shell; 下载链接由 curl 的 {{apk:json}} 转义后填入, 它不带两边的引号.
+          curl --disable --silent --show-error --fail-with-body \
+            --request PUT \
+            --url 'https://api.axisnow.io/client/v1/policy/plugins/request_processing/rules/406ba6df-e2cd-4f23-9878-6774805c1ea9' \
+            --variable "apk=$url" \
+            --variable '%AXISNOW_API_TOKEN' \
+            --expand-header 'Authorization: Bearer {{AXISNOW_API_TOKEN}}' \
+            --header 'Content-Type: application/json' \
+            --expand-data '{
+              "name": "eatwhat安卓下载",
+              "description": "",
+              "enabled": true,
+              "plugin_identifier": "request_processing",
+              "method": "set_config",
+              "conditions": [{
+                "type": "dsl",
+                "field_group_name": "condition",
+                "expression": "(endpoint.domain in {\"04236b9c-3fad-4728-b72e-f7171bb7038d\"} and http.request.uri in {\"/downloads/android\"})"
+              }],
+              "actions": [{
+                "method": "redirect",
+                "conf": {"type": "static", "code": 302, "url": "{{apk:json}}"}
+              }]
+            }'
+          echo "- 边缘节点的 /downloads/android 已跳转到这个 APK." >> "$GITHUB_STEP_SUMMARY"
