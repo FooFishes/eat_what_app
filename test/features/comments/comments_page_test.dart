@@ -1,3 +1,5 @@
+import 'package:eat/design/tokens/eat_dimensions.dart';
+import 'package:eat/design/widgets/like_heart.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -501,7 +503,6 @@ void main() {
       expect(find.bySemanticsLabel('好吃，2'), findsOneWidget);
       await expectAccessible(tester);
 
-      // 胶囊排在最下面一行, 放不下的要横着滑过去.
       await tester.ensureVisible(find.bySemanticsLabel('好吃，2'));
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('好吃，2'));
@@ -537,7 +538,7 @@ void main() {
       await unmountApp(tester, container);
     });
 
-    testWidgets('「回应」从按钮展开成卡片选一种，卡片不关；回复也有「回应」', (tester) async {
+    testWidgets('「回应」从按钮展开成卡片，选一种卡片就收回；回复也有「回应」', (tester) async {
       env.adapter
         ..on('PUT /comments/11/reactions/SURPRISED', [
           FakeAdapter.ok([
@@ -561,22 +562,77 @@ void main() {
       await expectAccessible(tester);
       await tester.tap(find.bySemanticsLabel('惊讶，0'));
       await tester.pumpAndSettle();
-      expect(find.text('回应这条评论'), findsOneWidget, reason: '选完卡片不关');
-      expect(find.bySemanticsLabel('惊讶，1'), findsWidgets);
-      await tester.tap(find.bySemanticsLabel('关闭'));
-      await tester.pumpAndSettle();
-      expect(find.text('回应这条评论'), findsNothing);
+      expect(find.text('回应这条评论'), findsNothing, reason: '选完卡片收回');
+      expect(
+        env.adapter.sent('PUT /comments/11/reactions/SURPRISED'),
+        hasLength(1),
+      );
+      expect(find.bySemanticsLabel('惊讶，1'), findsOneWidget);
 
       await tester.tap(find.text('回应').last);
       await tester.pumpAndSettle();
       expect(find.text('回应这条回复'), findsOneWidget);
       await tester.tap(find.bySemanticsLabel('笑哭，0'));
       await tester.pumpAndSettle();
+      expect(find.text('回应这条回复'), findsNothing);
       expect(
         env.adapter.sent('PUT /comments/21/reactions/LAUGH'),
         hasLength(1),
       );
-      expect(find.bySemanticsLabel('笑哭，1'), findsWidgets);
+      expect(find.bySemanticsLabel('笑哭，1'), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('在卡片里取消自己选过的那种，卡片也收回；失败时照样恢复并提示', (tester) async {
+      env.adapter.on('DELETE /comments/11/reactions/HEART', [
+        FakeAdapter.fail(10002, '无法回应这条评论'),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('回应').first);
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('爱心，1').last);
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsNothing);
+      expect(
+        env.adapter.sent('DELETE /comments/11/reactions/HEART'),
+        hasLength(1),
+      );
+      expect(find.text('无法回应这条评论'), findsOneWidget);
+      expect(find.bySemanticsLabel('爱心，1'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('点在卡片外面或右上角关闭，什么都不选', (tester) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('回应').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('关闭'));
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsNothing);
+
+      await tester.tap(find.text('回应').first);
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsNothing);
+      expect(
+        env.adapter.requests.where((r) => r.route.contains('/reactions/')),
+        isEmpty,
+      );
       await unmountApp(tester, container);
     });
 
@@ -594,5 +650,176 @@ void main() {
       expect(find.text('回应这条评论'), findsNothing);
       await unmountApp(tester, container);
     });
+    testWidgets('回应胶囊排在正文下面、时间和赞上面，挨得紧，每个都完整露出', (tester) async {
+      const labels = ['大拇指，1', '爱心，2', '笑哭，3', '惊讶，4', '难过，5', '好吃，6'];
+      env.adapter.on('GET /foods/1/comments', [
+        FakeAdapter.ok(
+          commentPageJson([
+            commentJson(
+              id: 11,
+              reactions: [
+                reactionJson('THUMBS_UP', 1),
+                reactionJson('HEART', 2),
+                reactionJson('LAUGH', 3),
+                reactionJson('SURPRISED', 4),
+                reactionJson('SAD', 5),
+                reactionJson('YUMMY', 6),
+              ],
+            ),
+          ]),
+        ),
+      ]);
+      const screen = Size(375, 812);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+        size: screen,
+      );
+
+      final text = tester.getRect(find.text('酸笋给得很大方'));
+      final react = tester.getRect(find.text('回应').first);
+      final heart = tester.getRect(find.byType(LikeHeart).first);
+      final capsules = [for (final label in labels) _capsule(tester, label)];
+      for (final (i, capsule) in capsules.indexed) {
+        final label = labels[i];
+        expect(capsule.top, greaterThanOrEqualTo(text.bottom), reason: label);
+        expect(capsule.bottom, lessThanOrEqualTo(react.top), reason: label);
+        expect(capsule.bottom, lessThanOrEqualTo(heart.top), reason: label);
+        expect(capsule.left, greaterThanOrEqualTo(0), reason: label);
+        expect(capsule.right, lessThanOrEqualTo(screen.width), reason: label);
+      }
+
+      final runs = <(double, double)>{
+        for (final c in capsules) (c.top, c.bottom),
+      }.toList()..sort((a, b) => a.$1.compareTo(b.$1));
+      expect(runs.length, greaterThan(1), reason: '放不下时折行');
+      const tight = EatSpace.s8;
+      expect(runs.first.$1 - text.bottom, inInclusiveRange(0, tight));
+      expect(react.top - runs.last.$2, inInclusiveRange(0, tight));
+      for (var i = 1; i < runs.length; i++) {
+        expect(runs[i].$1 - runs[i - 1].$2, inInclusiveRange(0, tight));
+      }
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('胶囊看得见的边外面几 px 也能点中，不会点到下面的「回应」', (tester) async {
+      List<Map<String, Object?>> reactions(
+        int yummy, {
+        bool selected = false,
+      }) => [
+        reactionJson('THUMBS_UP', 1),
+        reactionJson('SAD', 1),
+        reactionJson('YUMMY', yummy, selected: selected),
+      ];
+      env.adapter
+        ..on('GET /foods/1/comments', [
+          FakeAdapter.ok(
+            commentPageJson([commentJson(id: 11, reactions: reactions(2))]),
+          ),
+        ])
+        ..on('PUT /comments/11/reactions/YUMMY', [
+          FakeAdapter.ok(reactions(3, selected: true)),
+        ])
+        ..on('DELETE /comments/11/reactions/YUMMY', [
+          FakeAdapter.ok(reactions(2)),
+        ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      // 第三个胶囊正好压在「回应」上面.
+      final below = _capsule(tester, '好吃，2');
+      final react = tester.getRect(find.text('回应').first);
+      expect(below.left, lessThan(react.right));
+      expect(below.right, greaterThan(react.left));
+      await tester.tapAt(Offset(below.center.dx, below.bottom + 3));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('PUT /comments/11/reactions/YUMMY'),
+        hasLength(1),
+      );
+      expect(find.text('回应这条评论'), findsNothing);
+
+      final above = _capsule(tester, '好吃，3');
+      await tester.tapAt(Offset(above.center.dx, above.top - 3));
+      await tester.pumpAndSettle();
+      expect(
+        env.adapter.sent('DELETE /comments/11/reactions/YUMMY'),
+        hasLength(1),
+      );
+      expect(find.byType(EditableText), findsNothing, reason: '没点到正文');
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('有胶囊时「回应」、赞和正文照常能点', (tester) async {
+      env.adapter.on('PUT /comments/11/like', [FakeAdapter.ok(null)]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+      );
+
+      await tester.tap(find.text('回应').first);
+      await tester.pumpAndSettle();
+      expect(find.text('回应这条评论'), findsOneWidget);
+      await tester.tap(find.bySemanticsLabel('关闭'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(LikeHeart).first);
+      await tester.pumpAndSettle();
+      expect(env.adapter.sent('PUT /comments/11/like'), hasLength(1));
+
+      await tester.tap(find.text('酸笋给得很大方'));
+      await tester.pumpAndSettle();
+      expect(find.byType(EditableText), findsOneWidget);
+      expect(
+        env.adapter.requests.where((r) => r.route.contains('/reactions/')),
+        isEmpty,
+      );
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('窄屏大字号下跨年的日期截断，不溢出', (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      env.adapter.on('GET /foods/1/comments', [
+        FakeAdapter.ok(
+          commentPageJson([
+            commentJson(
+              id: 11,
+              ageMinutes: 400 * 24 * 60,
+              reactions: [reactionJson('HEART', 1), reactionJson('YUMMY', 2)],
+            ),
+          ]),
+        ),
+      ]);
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.comments(1),
+        size: const Size(320, 640),
+      );
+
+      expect(find.textContaining(' 年 '), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await unmountApp(tester, container);
+    });
   });
 }
+
+/// 回应胶囊看得见的那一截, 它的点击区比这高.
+Rect _capsule(WidgetTester tester, String label) => tester.getRect(
+  find
+      .descendant(
+        of: find.bySemanticsLabel(label),
+        matching: find.byType(DecoratedBox),
+      )
+      .first,
+);
