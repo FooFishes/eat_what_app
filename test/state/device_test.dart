@@ -9,6 +9,8 @@ import '../support/fakes.dart';
 const _route = 'POST /device/register';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late TestEnv env;
 
   setUp(() {

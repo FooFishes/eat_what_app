@@ -7,7 +7,7 @@ import 'package:eat/state/device.dart';
 import 'package:eat/state/privacy_consent.dart';
 import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'consented_services.g.dart';
@@ -39,7 +39,12 @@ class ConsentedServices extends _$ConsentedServices {
       fireImmediately: true,
     );
     unawaited(ref.read(remoteConfigProvider.notifier).refresh());
-    unawaited(ref.read(hotUpdateProvider).downloadIfAvailable());
+    final hotUpdate = ref.read(hotUpdateProvider);
+    unawaited(hotUpdate.downloadIfAvailable());
+    final lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(hotUpdate.resume()),
+    );
+    ref.onDispose(lifecycle.dispose);
     unawaited(ref.read(deviceRegistrationProvider).register());
     // 等待使用统计读出本机开关, 首帧前记录的冷启动事件才不会被丢弃. 之后每次登录时同步服务端的开关.
     final analytics = ref.read(analyticsProvider);
