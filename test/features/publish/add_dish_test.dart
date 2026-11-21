@@ -386,7 +386,7 @@ void main() {
     final env = TestEnv();
     _routes(env, {'id': 99});
     env.adapter.on('POST /foods/upload', [
-      FakeAdapter.fail(40002, '每家店最多 3 个招牌菜，请先取消一个'),
+      FakeAdapter.fail(40002, '当前状态不允许该操作：每家店最多 3 个招牌菜，请先取消一个'),
       FakeAdapter.ok({'id': 99}),
     ]);
     final (container, router) = await pumpApp(
@@ -405,13 +405,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_published(env)['signature'], isTrue);
-    expect(find.text('这家店已有 3 道招牌菜，先取消一道'), findsWidgets);
+    expect(find.text('每家店最多 3 个招牌菜，请先取消一个'), findsWidgets);
     expect(locationOf(router), Paths.publishDish(7));
     final publish = find.widgetWithText(EatButton, '发布');
     expect(tester.widget<EatButton>(publish).onPressed, isNull);
 
     await _tapText(tester, '招牌菜');
-    expect(find.text('这家店已有 3 道招牌菜，先取消一道'), findsNothing);
+    expect(find.text('每家店最多 3 个招牌菜，请先取消一个'), findsNothing);
     await tester.tap(find.text('发布'));
     await tester.pumpAndSettle();
 

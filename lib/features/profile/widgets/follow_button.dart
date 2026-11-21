@@ -54,7 +54,7 @@ class FollowButton extends ConsumerWidget {
           .set(userId, following: following);
       if (failure == null || !context.mounted) return;
       if (following && failure.code == BizCodes.stateNotAllowed) {
-        showToast(context, '无法关注对方');
+        showToast(context, failure.userMessage ?? '无法关注对方');
       } else {
         await reportActionFailure(
           context,

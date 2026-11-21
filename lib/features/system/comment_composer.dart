@@ -235,7 +235,7 @@ class _CommentComposerState extends ConsumerState<CommentComposer>
     } on AppFailure catch (e) {
       if (!mounted) return false;
       if (reply != null && e.code == BizCodes.stateNotAllowed) {
-        showToast(context, '无法回复对方');
+        showToast(context, e.userMessage ?? '无法回复对方');
         return false;
       }
       if (reply != null && isCommentGone(e)) {

@@ -596,7 +596,7 @@ void main() {
           ),
         ])
         ..on('POST /restaurant/7/history/29/restore', [
-          FakeAdapter.fail(40002, '当前内容已经是这个版本'),
+          FakeAdapter.fail(40002, '当前状态不允许该操作：当前内容已经是这个版本'),
           FakeAdapter.ok({'id': 7, 'revisionId': 32}),
         ]);
       final (container, _) = await pumpApp(
@@ -624,7 +624,7 @@ void main() {
       );
 
       await restore();
-      expect(find.text('已经是这个版本'), findsOneWidget);
+      expect(find.text('当前内容已经是这个版本'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
 
       await restore();

@@ -343,7 +343,7 @@ void main() {
   });
 
   testWidgets('点赞时评论已删除：提示并从列表中去掉', (tester) async {
-    env.adapter.on('PUT /comments/12/like', [FakeAdapter.fail(10001)]);
+    env.adapter.on('PUT /comments/12/like', [FakeAdapter.fail(10001, '评论不存在')]);
     final (container, _) = await pumpApp(
       tester,
       env,
@@ -424,7 +424,9 @@ void main() {
   });
 
   testWidgets('举报时评论已删除：关闭面板，提示并从列表中去掉', (tester) async {
-    env.adapter.on('POST /feedback/reports', [FakeAdapter.fail(10001)]);
+    env.adapter.on('POST /feedback/reports', [
+      FakeAdapter.fail(10001, '评论不存在'),
+    ]);
     final (container, _) = await pumpApp(
       tester,
       env,

@@ -16,7 +16,7 @@ enum FailureKind {
 
   tooFrequent,
 
-  /// 码表中已登记的业务错误, 由 [AppFailure.message] 提供对应提示.
+  /// 码表中已登记的业务错误, 或服务端说明了原因 ([AppFailure.userMessage]) 的业务错误.
   business,
 
   /// 请求已取消 (例如用户已离开页面), 此时不展示提示.
@@ -29,7 +29,8 @@ enum FailureKind {
 /// 网络层抛出的唯一异常类型.
 ///
 /// 页面只读取 [kind] 和 [message]. 业务码仅用于就地提示, 例如验证码错误.
-/// 服务端的 `msg` 和错误码不展示给用户, [serverMessage] 仅用于调试和上报.
+/// 错误码不展示给用户. 服务端的 `msg` 原样放在 [serverMessage] 里, 用于调试和上报;
+/// 其中能给用户看的原因放进 [userMessage] (见 [userFacingMessage]).
 class const AppFailure(
   final FailureKind kind, {
   final Object? code,
@@ -37,6 +38,11 @@ class const AppFailure(
 
   /// 失败响应外壳中携带的 `data`, 例如发布重名菜品时已有菜品的 id.
   final Object? data,
+
+  /// 服务端写给用户的原因, 有值时 [message] 使用它, 码表和页面的提示只作兜底.
+  ///
+  /// 由 `ApiClient` 用 [userFacingMessage] 取出, 只在业务错误, 未知错误和限流时有值.
+  final String? userMessage,
 }) implements Exception {
   const AppFailure.network() : this(FailureKind.network);
 
@@ -55,15 +61,36 @@ class const AppFailure(
   );
 
   /// 展示给用户的提示.
-  String get message => switch (kind) {
-    FailureKind.network => '网络连接失败，请重试',
-    FailureKind.server => '服务器出错，请稍后再试',
-    FailureKind.sessionExpired => '登录已过期，请重新登录',
-    FailureKind.tooFrequent => '操作过于频繁，$retryHint',
-    FailureKind.business => failureMessages[code] ?? '操作失败，请重试',
-    FailureKind.forbidden => '当前账号暂无此权限',
-    FailureKind.cancelled || FailureKind.unknown => '操作失败，请重试',
-  };
+  ///
+  /// 限流时服务端说明的原因以 "请稍后再试" 结尾且给出了等待时间, 结尾换成 [retryHint].
+  String get message =>
+      _userMessage ??
+      switch (kind) {
+        FailureKind.network => '网络连接失败，请重试',
+        FailureKind.server => '服务器出错，请稍后再试',
+        FailureKind.sessionExpired => '登录已过期，请重新登录',
+        FailureKind.tooFrequent => '操作过于频繁，$retryHint',
+        FailureKind.business => failureMessages[code] ?? '操作失败，请重试',
+        FailureKind.forbidden => '当前账号暂无此权限',
+        FailureKind.cancelled || FailureKind.unknown => '操作失败，请重试',
+      };
+
+  String? get _userMessage {
+    const later = '请稍后再试';
+    final text = switch (kind) {
+      FailureKind.business ||
+      FailureKind.unknown ||
+      FailureKind.tooFrequent => userMessage,
+      _ => null,
+    };
+    if (text == null ||
+        kind != FailureKind.tooFrequent ||
+        retryAfter == null ||
+        !text.endsWith(later)) {
+      return text;
+    }
+    return text.substring(0, text.length - later.length) + retryHint;
+  }
 
   /// 限流响应中指定的等待时间, 取自 `data.retryAfterSeconds`, 未提供时返回 null.
   Duration? get retryAfter => switch (data) {

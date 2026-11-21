@@ -4,7 +4,6 @@ import 'package:eat/state/session.dart';
 import 'dart:ui' show CheckedState;
 
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/app.dart';

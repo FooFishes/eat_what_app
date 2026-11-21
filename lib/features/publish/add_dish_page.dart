@@ -135,7 +135,7 @@ String _priceInput(double? price) => price == null
     ? ''
     : price.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
 
-/// 店铺招牌菜数量已达上限时的就地提示文案.
+/// 店铺招牌菜数量已达上限时的就地提示文案, 服务端没说明原因时用.
 String _signatureFullText(int max) => '这家店已有 $max 道招牌菜，先取消一道';
 
 class _DishForm extends ConsumerStatefulWidget {
@@ -172,8 +172,8 @@ class _DishFormState extends ConsumerState<_DishForm> {
   /// 发布或保存时若服务端判定菜名重复, 记录返回的已有菜品 id.
   int? _duplicateId;
 
-  /// 标记提交时服务端是否返回招牌菜已满错误, 用户重新切换招牌菜开关后清除.
-  var _signatureFull = false;
+  /// 提交时服务端返回招牌菜已满时的提示, 用户重新切换招牌菜开关后清除.
+  String? _signatureFull;
   Timer? _suggestTimer;
   late final AppLifecycleListener _lifecycle;
 
@@ -318,6 +318,9 @@ class _DishFormState extends ConsumerState<_DishForm> {
 
         return EatPanel(
           title: cover ? '封面' : '这张照片',
+          subtitle: photo.status == UploadStatus.failed
+              ? photo.failure?.message
+              : null,
           actions: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: EatSpace.s10,
@@ -448,7 +451,10 @@ class _DishFormState extends ConsumerState<_DishForm> {
         showToast(context, e.message);
         return true;
       case BizCodes.stateNotAllowed when ref.read(_draft).signature:
-        setState(() => _signatureFull = true);
+        setState(
+          () => _signatureFull =
+              e.userMessage ?? _signatureFullText(_options.signaturesMax),
+        );
         return true;
     }
     return false;
@@ -488,7 +494,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
   }
 
   void _setSignature(bool value) {
-    setState(() => _signatureFull = false);
+    setState(() => _signatureFull = null);
     ref.read(_draft.notifier).setSignature(value);
   }
 
@@ -555,7 +561,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
           draft.category != null ||
           (original != null && original.category == null),
     );
-    final signatureFull = _signatureFull && draft.signature;
+    final signatureFull = draft.signature ? _signatureFull : null;
     final replacing = draft.photos.isNotEmpty;
 
     String? note;
@@ -570,11 +576,11 @@ class _DishFormState extends ConsumerState<_DishForm> {
     } else if (duplicateId != null) {
       note = original == null ? '这家店已有这道菜，去看看再说两句' : '这家店已有同名的菜，换个菜名';
       onPressed = null;
-    } else if (signatureFull) {
-      note = _signatureFullText(options.signaturesMax);
+    } else if (signatureFull != null) {
+      note = signatureFull;
       onPressed = null;
     } else if (draft.hasFailedUpload) {
-      note = '有照片未上传成功，点照片重试或删除';
+      note = draft.failedUploadMessage ?? '有照片未上传成功，点照片重试或删除';
       onPressed = null;
     } else if (draft.uploading) {
       label = '照片上传中 ${(draft.uploadProgress * 100).round()}%';
@@ -1407,7 +1413,7 @@ class _Tastes extends StatelessWidget {
   );
 }
 
-/// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 为 true) 时在开关下方显示提示.
+/// "招牌菜" 开关组件; 当店铺招牌菜已满 ([full] 不为空) 时在开关下方显示该提示.
 class _Signature extends StatelessWidget {
   const new({
     required this.value,
@@ -1420,7 +1426,7 @@ class _Signature extends StatelessWidget {
 
   /// 每家店最多几道招牌菜.
   final int max;
-  final bool full;
+  final String? full;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -1435,11 +1441,11 @@ class _Signature extends StatelessWidget {
           value: value,
           onChanged: onChanged,
         ),
-        if (full)
+        if (full case final full?)
           Semantics(
             liveRegion: true,
             child: Text(
-              _signatureFullText(max),
+              full,
               style: eat.text.meta.copyWith(color: eat.colors.warn),
             ),
           ),

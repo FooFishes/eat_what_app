@@ -207,11 +207,7 @@ class ApiClient {
           code: e.code,
           serverMessage: e.msg,
         ),
-        final Object code => AppFailure.fromCode(
-          code,
-          serverMessage: e.msg,
-          data: e.data,
-        ),
+        final Object code => _fromCode(code, e.msg, e.data),
         null => AppFailure(FailureKind.unknown, serverMessage: e.msg),
       };
       _notify(failure, token);
@@ -265,6 +261,27 @@ class ApiClient {
     throw _BizError(code, '${body['msg']}', body['data']);
   }
 
+  /// 按码表转换业务码. 业务错误, 未知错误和限流时, 服务端在 `msg` 里写了给用户看的原因就放进 [AppFailure.userMessage],
+  /// 码表里没有的码因此按 [FailureKind.business] 处理. 登录过期, 无权限和服务器出错另有流程和固定提示, 不看 `msg`.
+  static AppFailure _fromCode(Object code, String? msg, Object? data) {
+    final failure = AppFailure.fromCode(code, serverMessage: msg, data: data);
+    if (failure.kind
+        case FailureKind.sessionExpired ||
+            FailureKind.forbidden ||
+            FailureKind.server) {
+      return failure;
+    }
+    final userMessage = userFacingMessage(code, msg);
+    if (userMessage == null) return failure;
+    return AppFailure(
+      failure.kind == FailureKind.unknown ? FailureKind.business : failure.kind,
+      code: code,
+      serverMessage: msg,
+      data: data,
+      userMessage: userMessage,
+    );
+  }
+
   static AppFailure _fromDio(DioException e) {
     switch (e.type) {
       case DioExceptionType.cancel:
@@ -276,7 +293,7 @@ class ApiClient {
         if (body is Map) {
           final code = body['code'];
           if (code != null && code != BizCodes.success) {
-            return AppFailure.fromCode(code, serverMessage: '${body['msg']}');
+            return _fromCode(code, '${body['msg']}', null);
           }
         }
         return AppFailure(

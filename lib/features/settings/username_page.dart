@@ -98,7 +98,8 @@ class _UsernamePageState extends ConsumerState<UsernamePage> {
         _submitting = false;
         switch (e.code) {
           case BizCodes.usernameTaken:
-            _usernameError = '用户名已被占用，换一个试试';
+            _usernameError = e.userMessage ?? '用户名已被占用，换一个试试';
+          // 10001 也可能说的是密码或验证码, 不放在用户名下面; 这里的提示还写明了规则.
           case 10001:
             _usernameError = '用户名为 3–10 位字母、数字或下划线';
           case BizCodes.wrongCode:

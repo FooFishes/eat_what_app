@@ -59,9 +59,11 @@ void main() {
   });
 
   group('失败都转成 AppFailure', () {
-    test('HTTP 200 带非零 code 也是失败，按码表归类', () async {
+    test('HTTP 200 带非零 code 也是失败，按码表归类，msg 不能用时用码表的提示', () async {
       final (client, adapter, _) = await _client();
-      adapter.on('POST /auth/phone/login', [FakeAdapter.fail(30005, '验证码不对')]);
+      adapter.on('POST /auth/phone/login', [
+        FakeAdapter.fail(30005, 'wrong code'),
+      ]);
 
       final failure = await _failure(client.post('/auth/phone/login'));
       expect(failure.kind, FailureKind.business);
@@ -76,6 +78,64 @@ void main() {
       final failure = await _failure(client.get('/x'));
       expect(failure.kind, FailureKind.unknown);
       expect(failure.message, '操作失败，请重试');
+    });
+
+    test('服务端写了能用的原因就显示它，另有流程的失败不用 msg', () async {
+      final (client, adapter, _) = await _client();
+      adapter
+        ..on('POST /foods/upload', [
+          FakeAdapter.fail(40002, '当前状态不允许该操作：每家店最多 3 个招牌菜，请先取消一个'),
+        ])
+        ..on('POST /auth/phone/verification', [
+          FakeAdapter.fail(30018, '这个号码不是本机号码，请使用短信验证'),
+        ])
+        ..on('POST /foods/like', [FakeAdapter.fail(20004, '权限不足：用户未验证')])
+        ..on('POST /user/bindMobile', [FakeAdapter.fail(30005, '验证码错误')])
+        ..on('POST /user/follow', [
+          FakeAdapter.fail(30002, '账号封禁中，暂时不能进行这个操作', {
+            'reason': '广告',
+            'banUntil': 0,
+          }),
+        ])
+        ..on('GET /user/info', [
+          FakeAdapter.fail(30017, '账号注销中，在申请注销的设备上重新登录可以撤销'),
+        ])
+        ..on('GET /missing', [
+          const FakeResponse(
+            status: 404,
+            body: {'code': 40001, 'msg': '操作失败：文件不存在'},
+          ),
+        ]);
+
+      final signature = await _failure(client.post('/foods/upload'));
+      expect(signature.kind, FailureKind.business);
+      expect(signature.message, '每家店最多 3 个招牌菜，请先取消一个');
+      expect(signature.serverMessage, '当前状态不允许该操作：每家店最多 3 个招牌菜，请先取消一个');
+
+      final notLocal = await _failure(client.post('/auth/phone/verification'));
+      expect(notLocal.kind, FailureKind.business);
+      expect(notLocal.message, '这个号码不是本机号码，请使用短信验证');
+
+      final forbidden = await _failure(client.post('/foods/like'));
+      expect(forbidden.kind, FailureKind.forbidden);
+      expect(forbidden.userMessage, isNull);
+      expect(forbidden.message, '当前账号暂无此权限');
+
+      final wrongCode = await _failure(client.post('/user/bindMobile'));
+      expect(wrongCode.kind, FailureKind.business);
+      expect(wrongCode.message, '验证码错误');
+
+      final banned = await _failure(client.post('/user/follow'));
+      expect(banned.kind, FailureKind.forbidden);
+      expect(banned.userMessage, isNull);
+
+      final deleting = await _failure(client.get('/user/info'));
+      expect(deleting.kind, FailureKind.sessionExpired);
+      expect(deleting.userMessage, isNull);
+      expect(deleting.message, '登录已过期，请重新登录');
+
+      final nonOk = await _failure(client.get('/missing'));
+      expect(nonOk.message, '文件不存在');
     });
 
     test('9xxxx 和 HTTP 5xx 是服务器出错', () async {

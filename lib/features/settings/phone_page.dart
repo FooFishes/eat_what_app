@@ -113,21 +113,22 @@ class _PhonePageState extends ConsumerState<PhonePage> {
   /// 将服务端返回的错误映射并显示在对应输入框下方; [sendingNew] 表示错误发生于向新号码发送验证码阶段.
   ///
   /// 向新号码发送验证码时若返回验证码错误, 实际指当前手机号的验证码校验失效, 此时进度已自动退回第一步.
+  /// 服务端说明了原因时显示它, 否则用这里的提示.
   void _fail(AppFailure e, {required bool sendingNew}) => setState(() {
     switch (e.code) {
       case BizCodes.wrongCode when sendingNew:
         _oldCode.clear();
-        _oldError = '验证码错误，请重新输入';
+        _oldError = e.userMessage ?? '验证码错误，请重新输入';
       case BizCodes.wrongCode:
-        _newCodeError = '验证码错误，请重新输入';
+        _newCodeError = e.userMessage ?? '验证码错误，请重新输入';
       case BizCodes.paramMissing || BizCodes.stateNotAllowed
           when !ref.read(phoneChangeProvider).verifyingNew:
         _oldCode.clear();
-        _oldError = '请重新验证当前手机号';
+        _oldError = e.userMessage ?? '请重新验证当前手机号';
       case BizCodes.opFailed:
-        _mobileError = '这个号码已注册其他账号';
+        _mobileError = e.userMessage ?? '这个号码已注册其他账号';
       case BizCodes.paramInvalid:
-        _mobileError = '这就是现在绑定的号码';
+        _mobileError = e.userMessage ?? '这就是现在绑定的号码';
       default:
         if (e.kind != FailureKind.cancelled) showToast(context, e.message);
     }

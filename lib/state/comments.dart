@@ -291,7 +291,13 @@ class CommentWriter extends _$CommentWriter {
 
 // TODO: 评论不存在时服务端返回参数错误 10001, 与填写错误共用一个码. 后端提供单独的业务码后改为判断该码.
 /// 判断对已有评论的操作 (赞, 回复, 删除, 举报) 失败的原因是否为评论已被删除.
-bool isCommentGone(AppFailure failure) => failure.code == BizCodes.paramInvalid;
+///
+/// 10001 也用于内容被拦 (如评论里有联系方式), 因此还要看 `msg` 是不是后端说评论不存在的文案.
+bool isCommentGone(AppFailure failure) =>
+    failure.code == BizCodes.paramInvalid &&
+    _goneTexts.contains(failure.serverMessage?.trim());
+
+const _goneTexts = {'评论不存在', '被回复的评论不存在', '这条评论已删除或不可见'};
 
 /// 评论赞的本地覆盖值, 以评论 id 为键, 用于乐观更新. 切换账号时清空.
 ///

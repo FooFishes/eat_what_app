@@ -4,7 +4,7 @@ import 'package:eat/core/failure/app_failure.dart';
 abstract final class BizCodes {
   static const success = 0;
 
-  /// 参数不合法.
+  /// 参数不合法. 具体原因写在 `msg` 里, 有的写给用户 (如内容里有联系方式), 有的是客户端的问题 (如字段名).
   ///
   /// 对象不存在的部分情况也返回该码, 例如评论不存在, 被回复的评论不存在, 消息卡片不存在.
   static const paramInvalid = 10001;
@@ -91,7 +91,7 @@ abstract final class BizCodes {
 
   static const captchaUnavailable = 50004;
 
-  /// 操作失败. 含义随接口而定, 由页面就地说明, 不进入码表.
+  /// 操作失败. 含义随接口而定, 原因写在 `msg` 里 (见 [userFacingMessage]), 不进入码表.
   ///
   /// 例如号码或邮箱已被其他账号使用, 统一认证不是当前账号发起的, 要下线的设备不存在.
   static const opFailed = 40001;
@@ -102,7 +102,7 @@ abstract final class BizCodes {
   /// 因此不归为无权限, 不触发账号状态刷新.
   static const stateNotAllowed = 40002;
 
-  /// 重复提交. 推送等模块用该码, 含义随接口而定, 因此不登记全局提示, 由页面就地处理.
+  /// 重复提交. 推送, 上传等模块用该码, 含义随接口而定, 因此不登记全局提示.
   static const duplicateSubmit = 40004;
 
   static const foodNotFound = 40008;
@@ -162,4 +162,113 @@ FailureKind failureKindOf(Object code) {
   if (failureMessages.containsKey(code)) return FailureKind.business;
   if (code is int && code ~/ 10000 == 9) return FailureKind.server;
   return FailureKind.unknown;
+}
+
+/// 默认文案只是笼统说法的业务码在后端的默认文案 (后端 `BizCode`).
+///
+/// 后端带上具体原因时 `msg` 是 "默认文案：原因" (10001 除外, 原因直接替换默认文案), 前缀要去掉;
+/// 只有默认文案时说不清原因, 不如客户端的提示.
+const _genericTexts = <Object, String>{
+  BizCodes.paramInvalid: '参数非法',
+  BizCodes.paramMissing: '参数缺失',
+  BizCodes.tooFrequent: '请求频率过高',
+  BizCodes.opFailed: '操作失败',
+  BizCodes.stateNotAllowed: '当前状态不允许该操作',
+  BizCodes.duplicateSubmit: '重复提交',
+  BizCodes.thirdPartyUnavailable: '第三方服务不可用',
+  BizCodes.thirdPartyTimeout: '第三方接口超时',
+  BizCodes.thirdPartyBadResponse: '第三方返回异常',
+};
+
+/// 不用 `msg` 的业务码: 客户端另有流程, 或后端的文案放在客户端的场景里不对.
+///
+/// 未登录走登录流程; 20002 说的是取号或核验凭证, 文案是内部术语; 无权限弹拦截对话框;
+/// 一键登录不可用时静默改用短信; 30002 弹封禁对话框或按会话失效处理, 登录时说账号已被封禁;
+/// 店铺可能重复由新建店铺页按 `data.duplicates` 自己写提示; 接口不存在是客户端或版本的问题.
+const _clientOwnedCodes = {
+  BizCodes.notLoggedIn,
+  BizCodes.oneClickTokenInvalid,
+  BizCodes.permissionDenied,
+  BizCodes.oneClickUnavailable,
+  BizCodes.userDisabled,
+  BizCodes.shopMayExist,
+  BizCodes.notSupported,
+};
+
+/// `msg` 里允许出现的拉丁字母: 图片格式, 文件大小单位和山大邮箱的域名.
+/// 其余拉丁字母多是字段名, 枚举值或英文的校验默认文案.
+final _allowedLatin = RegExp(
+  r'JPEG|JPG|PNG|WebP|GIF|MB|KB|@mail\.sdu\.edu\.cn|@sdu\.edu\.cn',
+);
+final _latin = RegExp('[A-Za-z]');
+
+/// 不合文案规范的口语和感叹号 (设计规范「文案」).
+final _offStyle = RegExp('吧|一下|！|!');
+
+/// 后端确实会返回, 但不能给用户看的 `msg`.
+const _deniedTexts = {
+  /// 内部: Hibernate 的中文默认文案, 不说是哪一项.
+  '不能为空',
+
+  /// 内部: 客户端多传了手机号.
+  '此场景的手机号由服务器确定',
+
+  /// 内部: 要下线的设备已不在, 页面刷新列表.
+  '设备会话不存在',
+
+  /// 内部: 推送令牌的并发登记, 后台重试.
+  '设备令牌刚被登记，请重试',
+
+  /// 内部: 消息卡片已过期, 静默处理.
+  '通知不存在',
+
+  /// 内部: 客户端只传了一个坐标.
+  '缺少经纬度',
+
+  /// 内部: Web 一键登录的回跳地址配置.
+  '页面地址不合法',
+
+  /// 内部: 客户端同时传了验证码和核验凭证.
+  '短信验证码与号码核验凭据只能提供一种',
+
+  /// 内部: 客户端没传验证码也没传核验凭证.
+  '请提供短信验证码或号码核验凭据',
+
+  /// 用词: 产品里叫「菜」, 客户端说「这道菜已删除」.
+  '菜品不存在',
+
+  /// 用词: 产品里叫「店」, 客户端说「这家店已删除」.
+  '餐厅不存在',
+
+  /// 用词: 产品里叫「商圈」.
+  '商场不存在',
+
+  /// 笼统: 客户端的提示还说了怎么撤销.
+  '账号注销中',
+
+  /// 误导: 统一认证过的账号也返回 30006, 不一定是邮箱.
+  '该用户已通过邮箱验证',
+};
+
+/// 从服务端的 `msg` 取出可以直接给用户看的原因, 不能用时返回 null.
+///
+/// 后端的原因合适就用它, 码表和页面的提示只在不能用时兜底.
+/// [_clientOwnedCodes] 和系统错误 (9xxxx) 不看 `msg`.
+/// 去掉默认文案前缀后, 空的, 只剩默认文案的, 带拉丁字母的, 不合文案规范的, 以及 [_deniedTexts] 都不用.
+String? userFacingMessage(Object? code, String? msg) {
+  if (code is! int || _clientOwnedCodes.contains(code)) return null;
+  if (code ~/ 10000 == 9) return null;
+  var text = msg?.trim() ?? '';
+  final generic = _genericTexts[code];
+  if (generic != null && text.startsWith('$generic：')) {
+    text = text.substring(generic.length + 1).trim();
+  }
+  if (text.isEmpty ||
+      text == generic ||
+      text.replaceAll(_allowedLatin, '').contains(_latin) ||
+      text.contains(_offStyle) ||
+      _deniedTexts.contains(text)) {
+    return null;
+  }
+  return text;
 }

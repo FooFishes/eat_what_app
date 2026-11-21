@@ -64,7 +64,9 @@ class _AccountCodeFieldState extends ConsumerState<AccountCodeField> {
       if (failure.kind == FailureKind.cancelled) return;
       showToast(
         context,
-        failure.kind == FailureKind.tooFrequent
+        failure.userMessage != null
+            ? failure.message
+            : failure.kind == FailureKind.tooFrequent
             ? '发送太频繁，${failure.retryHint}'
             : failure.code == BizCodes.mobileNotBound
             ? '账号还没有绑定手机号'

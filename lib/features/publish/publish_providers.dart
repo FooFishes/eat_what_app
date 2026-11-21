@@ -242,6 +242,13 @@ class const PublishDraft({
   bool get hasFailedUpload =>
       photos.any((p) => p.status == UploadStatus.failed);
 
+  /// 第一张上传失败的照片里服务端说明的原因 (如照片未通过内容检查), 没有时返回 null.
+  String? get failedUploadMessage => photos
+      .where((p) => p.status == UploadStatus.failed)
+      .map((p) => p.failure?.userMessage)
+      .nonNulls
+      .firstOrNull;
+
   /// 全部照片的平均上传进度, 范围 0–1.
   double get uploadProgress => photos.isEmpty
       ? 0
