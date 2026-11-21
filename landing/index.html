@@ -224,18 +224,6 @@ button { font: inherit; color: inherit; }
 .btn-52 { min-height: 52px; font-size: 16px; }
 .btn-48 { min-height: 48px; font-size: 15px; font-weight: 600; }
 
-.chip-pending {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 var(--space-8);
-  border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-pill);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-muted);
-}
-
 /* 通用的可点区域: 没有按钮外观的整块点击 */
 .tap {
   appearance: none;
@@ -590,10 +578,9 @@ button.stage-plate { cursor: pointer; }
   gap: var(--space-10);
 }
 .actions .btn-primary { width: 100%; min-height: 52px; font-size: 17px; }
-.actions .btn-primary.btn-disabled { gap: var(--space-10); }
 .notice { margin: 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
 .actions .secondary { display: flex; justify-content: center; }
-.actions .btn-mist, .actions .btn-disabled { min-height: var(--tap); font-size: 15px; font-weight: 600; }
+.actions .btn-mist { min-height: var(--tap); font-size: 15px; font-weight: 600; }
 
 /* 底部面板 (EatPanel): scrim + 白色圆角面板 */
 .panel-layer { position: fixed; inset: 0; z-index: 50; display: none; }
@@ -765,10 +752,8 @@ button.stage-plate { cursor: pointer; }
   // ---- 可配置常量 ----
   /** 业务接口前缀, 和页面同域的反代. */
   var API_BASE = '/api';
-  /** 安卓安装包或应用商店地址. 为空时 "下载 App" 显示为待接入. */
-  var DOWNLOAD_URL_ANDROID = '';
-  /** App Store 或 TestFlight 地址. 为空时 "下载 App" 显示为待接入. */
-  var DOWNLOAD_URL_IOS = '';
+  /** 下载页的路径, 和本页同主机名. 下载地址在 download.html 里配. */
+  var DOWNLOAD_PATH = '/download';
   /** 分享链接所在的主机名, 本页部署在这里. 目前只用于说明和判断, 留空不影响运行. */
   var SHARE_HOST = '';
   /**
@@ -1912,8 +1897,6 @@ button.stage-plate { cursor: pointer; }
   var isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   /** 微信, QQ 的内置浏览器拦截 scheme 和 intent. QQ 浏览器 (MQQBrowser 且无 " QQ/") 是普通浏览器. */
   var inBlockedWebView = /MicroMessenger/i.test(ua) || /\sQQ\/[\d.]+/i.test(ua);
-  var downloadUrl = safeUrl(isIOS ? DOWNLOAD_URL_IOS : isAndroid ? DOWNLOAD_URL_ANDROID : '');
-  var anyDownload = downloadUrl || safeUrl(DOWNLOAD_URL_ANDROID) || safeUrl(DOWNLOAD_URL_IOS);
   var openHost = OPEN_HOST || location.host;
   /** 唤起用的 HTTPS 地址, 路径和参数与分享链接一致. */
   var openUrl = 'https://' + openHost + targetPath;
@@ -1931,14 +1914,14 @@ button.stage-plate { cursor: pointer; }
 
   /**
    * iOS: 不拦截, 由 <a href> 跳到 OPEN_HOST, 系统按 Universal Links 交给 App; 没装时 Safari 打开 OPEN_HOST 上的本页.
-   * Android: 发一个 https 的 intent, 走 App Links 的 intent-filter; 没装时 Chrome 打开 browser_fallback_url.
+   * Android: 发一个 https 的 intent, 走 App Links 的 intent-filter; 没装时 Chrome 打开 browser_fallback_url, 即本主机名的下载页.
    */
   function openApp(e) {
     if (inBlockedWebView) { e.preventDefault(); showGuide(); return; }
     if (isIOS) return;
     e.preventDefault();
     if (!isAndroid) { toast('请在手机上打开这个链接'); return; }
-    var fallback = downloadUrl || openUrl;
+    var fallback = 'https://' + location.host + DOWNLOAD_PATH;
     location.href = 'intent://' + openHost + targetPath + '#Intent;scheme=https;package=' + ANDROID_PACKAGE +
       ';S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
   }
@@ -1953,23 +1936,13 @@ button.stage-plate { cursor: pointer; }
   document.getElementById('guide-close').addEventListener('click', hideGuide);
   guide.addEventListener('click', function (e) { if (e.target === guide) hideGuide(); });
 
-  /** "下载 App": 有地址时是链接, 没有时是不可点的胶囊加「待接入」虚线标签. */
+  /** "下载 App": 跳到同主机名的下载页, 由下载页按平台给地址. */
   function downloadButton(cls) {
-    var url = downloadUrl || (!isAndroid && !isIOS ? anyDownload : null);
-    if (url) {
-      var link = el('a', 'btn ' + cls);
-      link.href = url;
-      link.rel = 'noopener';
-      link.appendChild(icon('download'));
-      link.appendChild(el('span', null, '下载 App'));
-      if (inBlockedWebView) link.addEventListener('click', function (e) { e.preventDefault(); showGuide(); });
-      return link;
-    }
-    var span = el('span', 'btn btn-disabled ' + cls.replace(/btn-(solid|mist)/g, ''));
-    span.setAttribute('aria-disabled', 'true');
-    span.appendChild(el('span', null, '下载 App'));
-    span.appendChild(el('span', 'chip-pending', '待接入'));
-    return span;
+    var link = el('a', 'btn ' + cls);
+    link.href = DOWNLOAD_PATH;
+    link.appendChild(icon('download'));
+    link.appendChild(el('span', null, '下载 App'));
+    return link;
   }
 
   (function renderActions() {
