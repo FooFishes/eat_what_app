@@ -166,7 +166,7 @@ fvm flutter run -d chrome                # 要调接口时加 --dart-define-from
 
 构建号由 `tool/build_number.sh` 从 App Store Connect 查出：这个 App 用过的最大构建号加 1，所有平台共用，Android 的 versionCode 也用它；`pubspec.yaml` 里的 `+1` 只是本地构建的占位。没有 App Store Connect 密钥时（如来自 fork 的 PR）用这个占位，这样的构建不上传 TestFlight。`main` 和发版 tag 的构建共用一个并发组，一次只跑一个，避免两次构建拿到同一个号。
 
-PR（目标为 `main`）只构建和检查，不上传。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
+PR（目标为 `main`）只构建和检查，不上传。`main` 的 push 和 PR 如果没有改动进产物的文件（只改了文档、测试、画板、落地页等），只跑 `check`，不构建；发版 tag 和手动运行总是构建。以 `v` 开头但格式不对的 tag 直接失败。产物上传到 R2 桶 `eat-what`（`https://release.foofish.work`），保留期由桶的生命周期规则按目录控制；旧实现留下的 `releases/` 不在规则内。
 
 `.github/workflows/build.yml`：
 
