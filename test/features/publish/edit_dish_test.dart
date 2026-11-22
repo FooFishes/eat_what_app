@@ -5,6 +5,7 @@ import 'package:eat/design/widgets/eat_form_field.dart';
 import 'package:eat/features/publish/add_dish_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -265,54 +266,208 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('照片只能整组换：不换时不提交照片，换了提交新照片、舞台色和取景', (tester) async {
-    final env = _env();
-    env.adapter.on('PUT /foods/edit/1', [
-      FakeAdapter.ok({'id': 1, 'revisionId': 5}),
-    ]);
-    final (container, _) = await pumpApp(
-      tester,
-      env,
-      session: const SignedIn(user: verifiedUser),
-      location: Paths.dishEdit(1),
-    );
+  group('照片', () {
+    /// 菜品 1 有两张照片, 带保存过的舞台色和取景.
+    TestEnv photosEnv({bool keys = true}) {
+      final env = _env();
+      final json = {
+        ...foodJson(
+          pictures: ['foods/1.jpg', 'foods/2.jpg'],
+          stageColor: 'soy',
+          alternates: ['mango', 'bamboo'],
+        ),
+        'coverCrop': {'centerX': 0.4, 'centerY': 0.5, 'diameter': 0.8},
+        if (!keys) 'pictureKeys': null,
+      };
+      env.adapter
+        ..on('GET /foods/detail/1', [FakeAdapter.ok(json)])
+        ..on('PUT /foods/edit/1', [
+          FakeAdapter.ok({'id': 1, 'revisionId': 5}),
+        ]);
+      return env;
+    }
 
-    expect(find.text('换照片会替换现有的全部照片'), findsOneWidget);
-    await tester.tap(find.widgetWithText(EatButton, '换照片'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('从相册选'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('完成'));
-    await tester.pumpAndSettle();
-    expect(find.text('保存后替换原有的 1 张照片'), findsOneWidget);
-    expect(_save(tester), isNotNull);
+    Future<ProviderContainer> open(WidgetTester tester, TestEnv env) async {
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.dish(1),
+      );
+      await tester.tap(find.bySemanticsLabel('编辑'));
+      await tester.pumpAndSettle();
+      return container;
+    }
 
-    await tester.tap(find.text('不换了'));
-    await tester.pumpAndSettle();
-    expect(find.text('换照片会替换现有的全部照片'), findsOneWidget);
-    expect(_save(tester), isNull);
+    Future<void> tapPhoto(WidgetTester tester, Pattern label) async {
+      await tester.tap(find.bySemanticsLabel(label));
+      await tester.pumpAndSettle();
+    }
 
-    await tester.tap(find.widgetWithText(EatButton, '换照片'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('从相册选'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('完成'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('保存'));
-    await tester.pumpAndSettle();
+    /// 等原有照片取色结束. 网络图片的解码要在真实的异步里完成.
+    Future<void> settleImages(WidgetTester tester) async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pumpAndSettle();
+    }
 
-    final body =
+    Map<String, dynamic> sentBody(TestEnv env) =>
         env.adapter.sent('PUT /foods/edit/1').single.body!
             as Map<String, dynamic>;
-    expect(body.keys, {
-      'pictures',
-      'stageColor',
-      'stageAlternates',
-      'coverCrop',
+
+    testWidgets('原有照片载入照片条；不动照片时不提交照片、舞台色和取景', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      expect(find.bySemanticsLabel(RegExp('^封面，已上传')), findsOneWidget);
+      expect(find.bySemanticsLabel('已上传'), findsOneWidget);
+      expect(find.text('照片暂时不能修改'), findsNothing);
+      expect(find.text('主色取自照片'), findsNothing);
+      expect(_save(tester), isNull);
+
+      await _enter(tester, _field('菜名'), '鲜虾云吞');
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(sentBody(env), {'name': '鲜虾云吞'});
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
     });
-    expect(body['pictures'], ['foods/a.jpg']);
-    expect(body['stageAlternates'], hasLength(2));
-    await tester.pump(const Duration(seconds: 3));
-    await unmountApp(tester, container);
+
+    testWidgets('删掉后面的一张：只提交剩下的 key', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      await tapPhoto(tester, '已上传');
+      await tester.tap(find.text('删掉这张'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('已上传'), findsNothing);
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(sentBody(env), {
+        'pictures': ['foods/1.jpg'],
+      });
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('追加一张：原图带原 key，新图排在后面，不重新调整封面', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      await tester.tap(find.bySemanticsLabel('再加一张照片'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('从相册选'));
+      await tester.pumpAndSettle();
+      expect(find.text('完成'), findsNothing, reason: '不是第一张，不进调整照片');
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(sentBody(env), {
+        'pictures': ['foods/1.jpg', 'foods/2.jpg', 'foods/a.jpg'],
+      });
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('把第二张设为封面：调整后提交新顺序、舞台色、备选色和取景', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      await tapPhoto(tester, '已上传');
+      await tester.tap(find.text('设为封面'));
+      await settleImages(tester);
+      await tester.tap(find.text('完成'));
+      await tester.pumpAndSettle();
+      expect(find.text('主色取自照片'), findsOneWidget);
+      await tester.tap(find.text('保存'));
+      await settleImages(tester);
+
+      final body = sentBody(env);
+      expect(body.keys, {
+        'pictures',
+        'stageColor',
+        'stageAlternates',
+        'coverCrop',
+      });
+      expect(body['pictures'], ['foods/2.jpg', 'foods/1.jpg']);
+      expect(body['stageAlternates'], hasLength(2));
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('删掉封面：第二张成为封面，取景回到居中，带上新的舞台色', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      await tapPhoto(tester, RegExp('^封面，已上传'));
+      await tester.tap(find.text('删掉这张'));
+      await settleImages(tester);
+      await tester.tap(find.text('保存'));
+      await settleImages(tester);
+
+      final body = sentBody(env);
+      expect(body['pictures'], ['foods/2.jpg']);
+      expect(body['stageColor'], isA<String>());
+      expect(body['stageAlternates'], hasLength(2));
+      expect(body['coverCrop'], {
+        'centerX': 0.5,
+        'centerY': 0.5,
+        'diameter': 1.0,
+      });
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('只调整原封面：不提交照片，提交舞台色和取景', (tester) async {
+      final env = photosEnv();
+      final container = await open(tester, env);
+
+      await tapPhoto(tester, RegExp('^封面，已上传'));
+      await tester.tap(find.text('调整照片'));
+      await settleImages(tester);
+      await tester.tap(find.text('完成'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('保存'));
+      await settleImages(tester);
+
+      final body = sentBody(env);
+      expect(body.keys, {'stageColor', 'stageAlternates', 'coverCrop'});
+      expect(body['coverCrop'], {
+        'centerX': 0.4,
+        'centerY': 0.5,
+        'diameter': 0.8,
+      });
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('带入的菜缺照片 key 时重新读取；仍然缺时照片只能看，保存不带照片', (tester) async {
+      final env = photosEnv(keys: false);
+      final container = await open(tester, env);
+
+      expect(
+        env.adapter.sent('GET /foods/detail/1'),
+        hasLength(2),
+        reason: '带入的菜没有照片 key，编辑页重新读取',
+      );
+      expect(find.text('照片暂时不能修改'), findsOneWidget);
+      expect(find.bySemanticsLabel('再加一张照片'), findsNothing);
+      expect(find.bySemanticsLabel(RegExp('^封面，已上传')), findsOneWidget);
+
+      await _enter(tester, _field('菜名'), '鲜虾云吞');
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(sentBody(env), {'name': '鲜虾云吞'});
+      await tester.pump(const Duration(seconds: 3));
+      await unmountApp(tester, container);
+    });
   });
 }

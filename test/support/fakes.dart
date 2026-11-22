@@ -517,10 +517,11 @@ class TestEnv {
   }
 }
 
-/// 菜品接口 (后端 `FoodDtos.Food`) 的响应样例.
+/// 菜品接口 (后端 `FoodDtos.FoodView`) 的响应样例.
 ///
 /// 后端 v2 不返回舞台色和备选色. 传入 [stageColor] 或 [alternates] 时才加上, 模拟后端恢复这两项后的响应.
 /// [uploaderId] 为 null 表示上传者账号已删除.
+/// [pictures] 是图片的存储 key, 默认一张 `foods/<id>.jpg`, 地址是 `https://img.test/<key>`.
 Map<String, Object?> foodJson({
   int id = 1,
   String name = '鲜虾蟹籽云吞',
@@ -536,6 +537,7 @@ Map<String, Object?> foodJson({
   bool liked = false,
   bool favorite = false,
   int? uploaderId = 9,
+  List<String>? pictures,
 }) => {
   'id': id,
   'restaurantId': restaurantId,
@@ -545,7 +547,10 @@ Map<String, Object?> foodJson({
   'category': category,
   'price': price,
   'description': '汤很鲜，虾仁很多',
-  'pictureUrls': ['https://img.test/foods/$id.jpg'],
+  'pictureUrls': [
+    for (final key in pictures ?? ['foods/$id.jpg']) 'https://img.test/$key',
+  ],
+  'pictureKeys': pictures ?? ['foods/$id.jpg'],
   'tags': tags,
   'signature': signature,
   'likeCount': likes,

@@ -441,7 +441,8 @@ Future<void> _openPhotos(BuildContext context, WidgetRef ref, Dish dish) async {
       ? ref.read(userProfileProvider(uploaderId)).value?.nickname
       : null;
   final photos = [
-    for (final url in dish.images) ViewerPhoto(url: url, credit: uploader),
+    for (final image in dish.images)
+      ViewerPhoto(url: image.url, credit: uploader),
     for (final photo in gallery)
       ViewerPhoto(url: photo.url, credit: photo.authorName),
   ];

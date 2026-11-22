@@ -20,8 +20,11 @@ class const FoodDto({
   final double? price,
   final String? description,
 
-  /// 图片的公开地址, 第一张是封面. 响应不带存储 key.
+  /// 图片的公开地址, 第一张是封面.
   final List<String>? pictureUrls,
+
+  /// 图片的存储 key, 与 [pictureUrls] 一一对应. 这个字段加入之前存下的缓存里没有.
+  final List<String>? pictureKeys,
 
   /// 口味的中文原值, 如 "辣", 最多 3 个.
   final List<String>? tags,
@@ -180,6 +183,19 @@ class const EditFoodDto({
   final bool? deliveryEnabled,
 }) {
   Map<String, dynamic> toJson() => _$EditFoodDtoToJson(this);
+}
+
+/// 编辑菜品的结果 (后端 `FoodDtos.FoodEditResult`).
+///
+/// [revisionId] 在内容没有变化时为 null. [pictureKeys] 是保存后的图片顺序, 第一张为封面, 没有变化时也返回.
+@JsonSerializable(createToJson: false)
+class const FoodEditResultDto({
+  final int? id,
+  final int? revisionId,
+  final List<String>? pictureKeys,
+}) {
+  factory FoodEditResultDto.fromJson(Map<String, dynamic> json) =>
+      _$FoodEditResultDtoFromJson(json);
 }
 
 /// `/foods/options` 的 `data` (后端 `FoodDtos.FoodOptions`).

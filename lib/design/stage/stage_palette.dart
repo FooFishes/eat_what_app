@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:flutter/painting.dart';
 
 /// 从照片推荐的舞台色.
 ///
@@ -97,6 +99,62 @@ abstract final class StagePalette {
       descriptor.dispose();
       buffer.dispose();
     }
+  }
+
+  /// 把 [provider] 加载出的图片缩成长边不超过 [sampleSide] 的取色小图, 用于编辑时已经上传的照片.
+  ///
+  /// 加载失败或读不出像素时抛出错误. Web 上跨域图片可能读不出像素.
+  static Future<StageSample> sampleImage(ImageProvider provider) async {
+    final image = await _load(provider);
+    ui.Picture? picture;
+    ui.Image? small;
+    try {
+      final scale = math.min(
+        1.0,
+        sampleSide / math.max(image.width, image.height),
+      );
+      final width = math.max(1, (image.width * scale).round());
+      final height = math.max(1, (image.height * scale).round());
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawImageRect(
+        image,
+        ui.Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+        ui.Paint()..filterQuality = ui.FilterQuality.medium,
+      );
+      picture = recorder.endRecording();
+      small = await picture.toImage(width, height);
+      final data = await small.toByteData();
+      if (data == null) throw StateError('no pixels');
+      return StageSample(
+        data.buffer.asUint8List(),
+        width: width,
+        height: height,
+      );
+    } finally {
+      small?.dispose();
+      picture?.dispose();
+      image.dispose();
+    }
+  }
+
+  static Future<ui.Image> _load(ImageProvider provider) {
+    final done = Completer<ui.Image>();
+    final stream = provider.resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        stream.removeListener(listener);
+        if (!done.isCompleted) done.complete(info.image.clone());
+        info.dispose();
+      },
+      onError: (error, stack) {
+        stream.removeListener(listener);
+        if (!done.isCompleted) done.completeError(error, stack);
+      },
+    );
+    stream.addListener(listener);
+    return done.future;
   }
 
   /// 根据 [width] × [height] 的 [rgba] 像素推荐舞台色.

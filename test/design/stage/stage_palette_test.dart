@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -23,6 +25,25 @@ void main() {
       expect(result.top3(StageColor.broth).first, stage);
     });
   }
+
+  testWidgets('从加载好的图片取色和从原始字节取色结果一致', (tester) async {
+    final bytes = File('test/fixtures/photos/sq_paigu.png').readAsBytesSync();
+    final sample = (await tester.runAsync(
+      () => StagePalette.sampleImage(MemoryImage(bytes)),
+    ))!;
+    expect(sample.width, lessThanOrEqualTo(StagePalette.sampleSide));
+    expect(sample.height, lessThanOrEqualTo(StagePalette.sampleSide));
+    expect(sample.suggest().top3(StageColor.broth).first, StageColor.bamboo);
+  });
+
+  testWidgets('图片加载失败时以错误结束', (tester) async {
+    final error = await tester.runAsync(
+      () =>
+          StagePalette.sampleImage(MemoryImage(Uint8List.fromList([1, 2, 3])))
+              .then<Object?>((_) => null, onError: (Object e) => e),
+    );
+    expect(error, isNotNull);
+  });
 
   test('太灰时第一个换成分类默认色，后两个取排序里的前两个', () {
     const suggestion = StageSuggestion(

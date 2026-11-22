@@ -24,14 +24,42 @@ void main() {
     shopId: 7,
     price: 18,
     category: DishCategory.staple,
-    stage: StageColor.broth,
+    images: [
+      DishImage(url: 'https://img.test/foods/a.jpg', key: 'foods/a.jpg'),
+      DishImage(url: 'https://img.test/foods/b.jpg', key: 'foods/b.jpg'),
+    ],
+    stage: StageColor.soy,
+    crop: CoverCrop(centerX: 0.4, diameter: 0.8),
     tags: [Taste.spicy, Taste.sweet],
     description: '汤很鲜',
   );
 
-  const unchanged = PublishDraft(
+  DraftPhoto existing(int id, String key) => DraftPhoto(
+    id: id,
+    image: MemoryImage(transparentImage),
+    status: UploadStatus.done,
+    progress: 1,
+    key: key,
+  );
+
+  DraftPhoto added(int id, String? key) => DraftPhoto(
+    id: id,
+    photo: PickedPhoto(bytes: transparentImage, width: 1, height: 1),
+    image: MemoryImage(transparentImage),
+    status: key == null ? UploadStatus.uploading : UploadStatus.done,
+    progress: key == null ? 0.5 : 1,
+    key: key,
+  );
+
+  final a = existing(0, 'foods/a.jpg');
+  final b = existing(1, 'foods/b.jpg');
+
+  final unchanged = PublishDraft(
+    photos: [a, b],
+    crop: original.crop,
+    pickedStage: original.stage,
     category: DishCategory.staple,
-    tastes: {Taste.sweet, Taste.spicy},
+    tastes: const {Taste.sweet, Taste.spicy},
   );
 
   DishChange? change(
@@ -39,8 +67,9 @@ void main() {
     String name = '鲜虾云吞',
     double? price,
     String description = '汤很鲜',
+    Dish dish = original,
   }) => draft.changeFrom(
-    original,
+    dish,
     name: name,
     price: price,
     description: description,
@@ -68,23 +97,153 @@ void main() {
     expect(result.crop, isNull);
   });
 
-  test('换了照片时带上整组新照片和新封面的舞台色、备选色、取景', () {
-    final photo = DraftPhoto(
-      id: 0,
-      photo: PickedPhoto(bytes: transparentImage, width: 1, height: 1),
-      image: MemoryImage(transparentImage),
-      status: UploadStatus.done,
-      progress: 1,
-      key: 'foods/a.jpg',
-    );
-    final result = change(
-      unchanged.copy(photos: [photo], pickedStage: StageColor.chili),
-    )!;
+  test('删掉后面的一张：带剩下的 key，封面没变不带舞台色和取景', () {
+    final result = change(unchanged.copy(photos: [a]))!;
     expect(result.imageKeys, ['foods/a.jpg']);
+    expect(result.stage, isNull);
+    expect(result.stageAlternates, isNull);
+    expect(result.crop, isNull);
+  });
+
+  test('追加一张：原图带原 key，新图带上传得到的 key，没传完时也算改动', () {
+    final result = change(
+      unchanged.copy(photos: [a, b, added(2, 'foods/c.jpg')]),
+    )!;
+    expect(result.imageKeys, ['foods/a.jpg', 'foods/b.jpg', 'foods/c.jpg']);
+    expect(result.stage, isNull);
+    expect(result.crop, isNull);
+
+    expect(change(unchanged.copy(photos: [a, b, added(2, null)])), isNotNull);
+  });
+
+  test('换了封面：带新顺序和新封面的舞台色、备选色、取景', () {
+    final result = change(
+      unchanged.copy(
+        photos: [b, a],
+        coverEdited: true,
+        crop: const CoverCrop(),
+        pickedStage: StageColor.chili,
+      ),
+    )!;
+    expect(result.imageKeys, ['foods/b.jpg', 'foods/a.jpg']);
     expect(result.stage, StageColor.chili);
     expect(result.stageAlternates, hasLength(2));
+    expect(result.stageAlternates, isNot(contains(StageColor.chili)));
     expect(result.crop, isNotNull);
     expect(result.tags, isNull);
+  });
+
+  test('只调整了原封面的取景和颜色：不带照片，带舞台色和取景', () {
+    final result = change(
+      unchanged.copy(
+        coverEdited: true,
+        crop: const CoverCrop(centerY: 0.3),
+        pickedStage: StageColor.mango,
+      ),
+    )!;
+    expect(result.imageKeys, isNull);
+    expect(result.stage, StageColor.mango);
+    expect(result.crop?.centerY, 0.3);
+  });
+
+  test('换了封面但取色没有结果时用分类默认色', () {
+    final result = change(
+      unchanged.copy(photos: [b], coverEdited: true, clearPicked: true),
+    )!;
+    expect(result.stage, DishCategory.staple.stage);
+  });
+
+  test('原菜品缺照片 key 时照片锁住，不带照片和封面的任何字段', () {
+    const legacy = Dish(
+      id: 1,
+      name: '鲜虾云吞',
+      shopId: 7,
+      category: DishCategory.staple,
+      images: [DishImage(url: 'https://img.test/foods/a.jpg')],
+      stage: StageColor.soy,
+      tags: [Taste.spicy, Taste.sweet],
+      description: '汤很鲜',
+    );
+    final locked = PublishDraft(
+      photos: [
+        DraftPhoto(
+          id: 0,
+          image: MemoryImage(transparentImage),
+          status: UploadStatus.done,
+        ),
+      ],
+      photosLocked: true,
+      pickedStage: StageColor.soy,
+      category: DishCategory.staple,
+      tastes: const {Taste.sweet, Taste.spicy},
+    );
+    expect(change(locked, dish: legacy), isNull);
+    final result = change(
+      locked.copy(coverEdited: true),
+      dish: legacy,
+      name: '虾饺',
+    )!;
+    expect(result.name, '虾饺');
+    expect(result.imageKeys, isNull);
+    expect(result.stage, isNull);
+    expect(result.crop, isNull);
+  });
+
+  group('编辑时的草稿', () {
+    late ProviderContainer container;
+    final provider = draftProvider(original: original);
+
+    setUp(() async {
+      container = await TestEnv().container();
+      final sub = container.listen(provider, (_, _) {});
+      addTearDown(sub.close);
+    });
+
+    test('原有照片作为已上传的照片载入，带原 key；舞台色和取景沿用原值', () {
+      final draft = container.read(provider);
+      expect(
+        [for (final p in draft.photos) (p.photo, p.status, p.key)],
+        [
+          (null, UploadStatus.done, 'foods/a.jpg'),
+          (null, UploadStatus.done, 'foods/b.jpg'),
+        ],
+      );
+      expect(draft.stage, StageColor.soy);
+      expect(draft.crop.centerX, 0.4);
+      expect(draft.coverEdited, isFalse);
+      expect(draft.photosLocked, isFalse);
+    });
+
+    test('删掉封面后第二张成了封面，取景回到居中，要重新定舞台色', () {
+      final notifier = container.read(provider.notifier);
+      notifier.remove(container.read(provider).photos.first.id);
+      final draft = container.read(provider);
+      expect([for (final p in draft.photos) p.key], ['foods/b.jpg']);
+      expect(draft.coverEdited, isTrue);
+      expect(draft.pickedStage, isNull);
+      expect(draft.crop.centerX, 0.5);
+    });
+
+    test('删掉后面的一张不动封面', () {
+      final notifier = container.read(provider.notifier);
+      notifier.remove(container.read(provider).photos.last.id);
+      final draft = container.read(provider);
+      expect(draft.coverEdited, isFalse);
+      expect(draft.stage, StageColor.soy);
+    });
+
+    test('缺照片 key 的菜照片锁住', () async {
+      const legacy = Dish(
+        id: 2,
+        name: '虾饺',
+        shopId: 7,
+        images: [DishImage(url: 'https://img.test/foods/a.jpg')],
+        stage: StageColor.soy,
+      );
+      final draft = container.read(draftProvider(original: legacy));
+      expect(draft.photosLocked, isTrue);
+      expect(draft.photos, hasLength(1));
+    });
   });
 
   test('一次加多张照片时一次申请地址，再按并发上限逐张上传', () async {
@@ -218,30 +377,25 @@ void main() {
       expect(statuses(), [UploadStatus.done]);
     });
 
-    for (final (action, drop) in <(String, void Function(Draft, int))>[
-      ('删除', (d, id) => d.remove(id)),
-      ('清空', (d, _) => d.clearPhotos()),
-    ]) {
-      test('进后台时在途的照片被$action后，回前台新加的照片失败不自动重试', () async {
-        add(1);
-        await settle();
-        draft().enterBackground();
-        drop(draft(), container.read(provider).photos.single.id);
-        calls[0].completeError(const AppFailure.cancelled());
-        await settle();
-        expect(statuses(), isEmpty);
+    test('进后台时在途的照片被删除后，回前台新加的照片失败不自动重试', () async {
+      add(1);
+      await settle();
+      draft().enterBackground();
+      draft().remove(container.read(provider).photos.single.id);
+      calls[0].completeError(const AppFailure.cancelled());
+      await settle();
+      expect(statuses(), isEmpty);
 
-        draft().retryFailedOnce();
-        add(1);
-        await settle();
-        expect(calls, hasLength(2));
-        calls[1].completeError(const AppFailure.network());
-        await settle();
-        expect(calls, hasLength(2));
-        expect(statuses(), [UploadStatus.failed]);
-        expect(container.read(provider).photos.single.autoRetried, isFalse);
-      });
-    }
+      draft().retryFailedOnce();
+      add(1);
+      await settle();
+      expect(calls, hasLength(2));
+      calls[1].completeError(const AppFailure.network());
+      await settle();
+      expect(calls, hasLength(2));
+      expect(statuses(), [UploadStatus.failed]);
+      expect(container.read(provider).photos.single.autoRetried, isFalse);
+    });
 
     test('自动重试过的照片手动重试再失败时不再自动重试', () async {
       add(1);

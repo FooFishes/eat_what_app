@@ -11,6 +11,7 @@ import 'package:eat/data/upload/upload_dto.dart';
 import 'package:eat/data/upload/uploader.dart';
 import 'package:eat/design/stage/stage_palette.dart';
 import 'package:eat/design/tokens/stage_color.dart';
+import 'package:eat/design/widgets/images.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/domain/models/geo.dart';
 import 'package:eat/domain/models/meal_time.dart';
@@ -144,10 +145,12 @@ Future<Dish> dishToEdit(Ref ref, int dishId) => ref
 /// 照片在上传队列中的状态.
 enum UploadStatus { waiting, uploading, done, failed }
 
-/// 加菜页中的单张待上传照片模型, 包含本地图片数据, 上传状态, 进度及上传完成后的存储 key.
+/// 加菜页中的单张照片, 包含本地图片数据, 上传状态, 进度及上传完成后的存储 key.
+///
+/// 编辑时菜品原有的照片也是一张 [DraftPhoto]: [photo] 为 null, [image] 是网络图片, 已上传完成且带原有的 [key].
 class const DraftPhoto({
   required final int id,
-  required final PickedPhoto photo,
+  final PickedPhoto? photo,
   required final ImageProvider image,
   final UploadStatus status = UploadStatus.waiting,
   final double progress = 0,
@@ -177,15 +180,23 @@ class const DraftPhoto({
 
 /// 加菜页的表单草稿状态, 首张照片默认为封面, 裁切与舞台色均绑定于封面.
 ///
-/// 编辑已有菜品时, [photos] 仅保存待替换的新照片; 若为空则表示保留原有照片.
+/// 编辑已有菜品时, [photos] 先放入原有的照片, 之后可以逐张删除, 追加和换封面.
 class const PublishDraft({
   final List<DraftPhoto> photos = const [],
   final CoverCrop crop = const CoverCrop(),
 
+  /// 封面的舞台色和取景是否在这份草稿里重新定过: 换过封面或调整过照片.
+  ///
+  /// 编辑时为 false 表示沿用原菜品的舞台色, 备选色和取景, 保存时不提交.
+  final bool coverEdited = false,
+
+  /// 编辑时原菜品的照片缺少存储 key (如旧版本的缓存), 照片不能改动, 保存时不提交.
+  final bool photosLocked = false,
+
   /// 封面按 [crop] 取色的结果. 计算完成前为 null.
   final StageSuggestion? suggestion,
 
-  /// 用户在 "调整照片" 页面手动选定的舞台色.
+  /// 用户在 "调整照片" 页面手动选定的舞台色. 编辑时初始为原菜品的舞台色.
   ///
   /// 非 null 时优先级高于自动推荐色, 且后续更换分类也不会覆盖该颜色.
   final StageColor? pickedStage,
@@ -218,9 +229,12 @@ class const PublishDraft({
   List<StageColor> get candidates =>
       suggestion?.top3(category?.stage ?? StageColor.broth) ?? const [];
 
-  /// 当前使用的舞台色. 未手动选择且没有取色结果时为 [StageColor.broth].
+  /// 当前使用的舞台色. 未手动选择且没有取色结果时用分类默认色, 还没选分类时为 [StageColor.broth].
   StageColor get stage =>
-      pickedStage ?? candidates.firstOrNull ?? StageColor.broth;
+      pickedStage ??
+      candidates.firstOrNull ??
+      category?.stage ??
+      StageColor.broth;
 
   /// 随菜品保存的两个备选色. 接口要求恰好两个.
   ///
@@ -261,7 +275,9 @@ class const PublishDraft({
   ///
   /// - [name] 与 [description] 需传入去除首尾空白后的文本, 其中 [description] 为空字符串表示清空描述.
   /// - [price] 为 null 表示价格未修改, 因为接口不支持清空已有价格.
-  /// - 仅当更换过照片时才提交整组新照片及其封面舞台色, 备选色与取景参数.
+  /// - 照片的 key 列表和原菜品不同时提交整组 key, 保留的原图带原有的 key.
+  /// - 封面的舞台色, 备选色与取景只在 [coverEdited] 时提交, 否则服务端保留原值.
+  /// - 原菜品缺少照片 key 时不提交照片和封面的任何字段.
   DishChange? changeFrom(
     Dish original, {
     required String name,
@@ -272,7 +288,14 @@ class const PublishDraft({
     final tagsChanged =
         tags.length != original.tags.toSet().length ||
         !tags.every(original.tags.contains);
-    final replacing = photos.isNotEmpty;
+    final originalKeys = original.imageKeys;
+    final keys = [for (final p in photos) p.key];
+    final photosEditable = !photosLocked && originalKeys != null;
+    final imagesChanged =
+        photosEditable &&
+        (keys.length != originalKeys.length ||
+            keys.indexed.any((e) => e.$2 != originalKeys[e.$1]));
+    final coverChanged = photosEditable && coverEdited && photos.isNotEmpty;
     final mealsChanged =
         mealTimes.length != original.mealTimes.toSet().length ||
         !mealTimes.every(original.mealTimes.contains);
@@ -285,10 +308,10 @@ class const PublishDraft({
           : null,
       tags: tagsChanged ? tags : null,
       signature: signature != original.signature ? signature : null,
-      imageKeys: replacing ? [for (final p in photos) ?p.key] : null,
-      stage: replacing ? stage : null,
-      stageAlternates: replacing ? alternates : null,
-      crop: replacing ? crop : null,
+      imageKeys: imagesChanged ? [for (final p in photos) ?p.key] : null,
+      stage: coverChanged ? stage : null,
+      stageAlternates: coverChanged ? alternates : null,
+      crop: coverChanged ? crop : null,
       mealTimes: mealsChanged ? mealList : null,
       deliveryEnabled: deliveryEnabled != original.deliveryEnabled
           ? deliveryEnabled
@@ -302,6 +325,7 @@ class const PublishDraft({
         change.tags == null &&
         change.signature == null &&
         change.imageKeys == null &&
+        change.stage == null &&
         change.mealTimes == null &&
         change.deliveryEnabled == null;
     return empty ? null : change;
@@ -310,6 +334,7 @@ class const PublishDraft({
   PublishDraft copy({
     List<DraftPhoto>? photos,
     CoverCrop? crop,
+    bool? coverEdited,
     StageSuggestion? suggestion,
     bool clearSuggestion = false,
     StageColor? pickedStage,
@@ -323,6 +348,8 @@ class const PublishDraft({
   }) => PublishDraft(
     photos: photos ?? this.photos,
     crop: crop ?? this.crop,
+    coverEdited: coverEdited ?? this.coverEdited,
+    photosLocked: photosLocked,
     suggestion: clearSuggestion ? null : suggestion ?? this.suggestion,
     pickedStage: clearPicked ? null : pickedStage ?? this.pickedStage,
     category: category ?? this.category,
@@ -336,7 +363,7 @@ class const PublishDraft({
 
 /// 管理加菜页表单草稿及照片上传队列的控制器, 随页面销毁而释放且不持久化.
 ///
-/// - 编辑模式下传入 [original] 以预填分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
+/// - 编辑模式下传入 [original] 以预填照片, 封面的舞台色和取景, 分类, 口味, 招牌菜, 饭点与外卖; 发布新菜时该参数为 null.
 /// - 照片和口味的上限取自 [dishOptionsProvider], 由页面保持其存活.
 /// - 添加照片后立即按并发上限在后台排队上传, 失败的照片支持单张重试.
 /// - 一次添加多张照片时一次申请这些照片的上传地址.
@@ -345,6 +372,12 @@ class const PublishDraft({
 @riverpod
 class Draft extends _$Draft {
   static const _parallel = 2;
+
+  /// 保存前等待封面取色的最长时间, 超时后按分类默认色提交.
+  static const _suggestWait = Duration(seconds: 5);
+
+  /// 原有照片解码的逻辑宽度, 乘以 3 倍屏幕密度是 1080 像素, 和新选的照片一样.
+  static const _existingWidth = 360.0;
 
   final _tokens = <int, CancelToken>{};
 
@@ -367,6 +400,9 @@ class Draft extends _$Draft {
   Future<StageSample>? _coverSample;
   int? _coverSampleId;
 
+  /// 正在进行的按居中裁切为封面取色, 保存前等它结束, 见 [coverSuggested].
+  Future<void>? _suggesting;
+
   /// 标记当前草稿是否已请求过标签识别; 因后端按用户按天限制调用次数, 每份草稿最多请求一次.
   var _suggestAsked = false;
 
@@ -383,6 +419,19 @@ class Draft extends _$Draft {
     });
     if (original == null) return const PublishDraft();
     return PublishDraft(
+      photos: [
+        for (final image in original.images)
+          DraftPhoto(
+            id: _nextId++,
+            image: networkImage(image.url, width: _existingWidth)!,
+            status: UploadStatus.done,
+            progress: 1,
+            key: image.key,
+          ),
+      ],
+      crop: original.crop,
+      pickedStage: original.stage,
+      photosLocked: original.imageKeys == null,
       category: original.category,
       tastes: original.tags.toSet(),
       signature: original.signature,
@@ -410,7 +459,7 @@ class Draft extends _$Draft {
         ),
     ];
     state = state.copy(photos: [...state.photos, ...added]);
-    if (first) unawaited(_suggestForCover());
+    if (first) _resetCover();
     if (added.length > 1) _presign(added);
     _pump();
     return first;
@@ -474,14 +523,31 @@ class Draft extends _$Draft {
       p.copy(status: UploadStatus.waiting, progress: 0, autoRetried: true);
 
   /// 获取封面的取色缩略图供 "调整照片" 使用; 无封面时返回 null, 且同一封面仅解码一次.
+  ///
+  /// 原有照片从网络图片取色, 取不到 (如加载失败, Web 上跨域读不出像素) 时返回的 Future 以错误结束, 下次调用重新取.
   Future<StageSample>? coverSample() {
     final cover = state.photos.firstOrNull;
     if (cover == null) return null;
     if (_coverSampleId != cover.id) {
       _coverSampleId = cover.id;
-      _coverSample = StagePalette.sample(cover.photo.bytes);
+      final sample = _coverSample = switch (cover.photo) {
+        final photo? => StagePalette.sample(photo.bytes),
+        null => StagePalette.sampleImage(cover.image),
+      };
+      sample.then<void>(
+        (_) {},
+        onError: (Object _) {
+          // 网络图片可能只是一时没加载出来, 下次再取.
+          if (identical(_coverSample, sample)) _coverSampleId = null;
+        },
+      );
     }
     return _coverSample;
+  }
+
+  /// 等待正在进行的封面取色结束, 最多等 [_suggestWait]. 保存前调用, 避免提交还没取到的舞台色.
+  Future<void> coverSuggested() async {
+    await _suggesting?.timeout(_suggestWait, onTimeout: () {});
   }
 
   /// 应用 "调整照片" 返回的裁切与取色结果; [picked] 为用户手动选定的舞台色, 未选择时为 null.
@@ -491,6 +557,7 @@ class Draft extends _$Draft {
     StageColor? picked,
   }) => state = state.copy(
     crop: crop,
+    coverEdited: true,
     suggestion: suggestion,
     pickedStage: picked,
     clearPicked: picked == null,
@@ -524,17 +591,6 @@ class Draft extends _$Draft {
 
   void setDelivery(bool enabled) =>
       state = state.copy(deliveryEnabled: enabled);
-
-  /// 撤销更换照片操作, 取消未完成的上传任务并清空所有新照片, 编辑模式下恢复展示原有照片.
-  void clearPhotos() {
-    for (final token in _tokens.values) {
-      token.cancel();
-    }
-    _tokens.clear();
-    _inFlightAtHide.clear();
-    state = state.copy(photos: const []);
-    _resetCover();
-  }
 
   /// 根据菜名, 描述及已上传照片识别菜品分类与口味, 并预选至草稿中.
   ///
@@ -576,13 +632,18 @@ class Draft extends _$Draft {
     }
   }
 
+  /// 封面换了: 取景回到居中, 舞台色按新封面重新取.
   void _resetCover() {
     state = state.copy(
       crop: const CoverCrop(),
+      coverEdited: true,
       clearSuggestion: true,
       clearPicked: true,
     );
-    if (state.photos.isNotEmpty) unawaited(_suggestForCover());
+    if (state.photos.isNotEmpty) {
+      final suggesting = _suggesting = _suggestForCover();
+      unawaited(suggesting);
+    }
   }
 
   /// 按默认居中裁切区域为封面提取推荐色.
@@ -599,8 +660,8 @@ class Draft extends _$Draft {
         state = state.copy(suggestion: suggestion);
       }
     } on Object {
-      // 无法解码的图片在选图时已被拦截. 此处取色失败时保持无推荐色.
-      // TODO: 取色失败时舞台色为 `broth`, 没有按分类默认色回落. 改为取色失败时使用 `category.stage`.
+      // 新选的照片无法解码时在选图时已被拦截; 原有照片可能加载失败或读不出像素.
+      // 取色失败时保持无推荐色, 舞台色用分类默认色.
     }
   }
 
@@ -612,7 +673,7 @@ class Draft extends _$Draft {
 
   void _presign(List<DraftPhoto> photos) {
     final batch = ref.read(uploaderProvider).presignAll([
-      for (final p in photos) p.photo.bytes,
+      for (final p in photos) ?p.photo?.bytes,
     ], biz: UploadBiz.foods);
     for (final (i, photo) in photos.indexed) {
       _presigned[photo.id] = batch.then((list) => list[i])..ignore();
@@ -632,6 +693,8 @@ class Draft extends _$Draft {
   }
 
   Future<void> _upload(DraftPhoto photo) async {
+    final picked = photo.photo;
+    if (picked == null) return;
     final token = CancelToken();
     _tokens[photo.id] = token;
     _update(photo.id, (p) => p.copy(status: UploadStatus.uploading));
@@ -640,7 +703,7 @@ class Draft extends _$Draft {
       final key = await ref
           .read(uploaderProvider)
           .upload(
-            photo.photo.bytes,
+            picked.bytes,
             biz: UploadBiz.foods,
             presigned: presigned,
             cancelToken: token,

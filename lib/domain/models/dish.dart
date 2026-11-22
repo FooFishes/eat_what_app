@@ -73,6 +73,11 @@ class const MyTag({
   final int? usage,
 });
 
+/// 菜品的一张照片. [url] 是公开地址, 不为空; [key] 是存储 key, 编辑时保留这张照片要传回 [key].
+///
+/// 接口没给 key 或 key 和地址对不上时 (如旧版本留下的缓存), [key] 为 null.
+class const DishImage({required final String url, final String? key});
+
 /// 菜品信息, 供菜品方块, 店铺菜单与详情页共用.
 ///
 /// - [images] 的第一张是封面.
@@ -85,7 +90,7 @@ class const Dish({
   final String? shopName,
   final double? price,
   final DishCategory? category,
-  final List<String> images = const [],
+  final List<DishImage> images = const [],
   required final StageColor stage,
   final List<StageColor> stageAlternates = const [],
   final CoverCrop crop = const CoverCrop(),
@@ -117,7 +122,13 @@ class const Dish({
   /// 当前用户打的分 (1–5). 游客或没打过分时为 null.
   final int? myRating,
 }) {
-  String? get cover => images.isEmpty ? null : images.first;
+  String? get cover => images.firstOrNull?.url;
+
+  /// 各张照片的存储 key, 与 [images] 同序. 有一张缺 key 时为 null, 这时编辑不能改照片.
+  List<String>? get imageKeys {
+    final keys = [for (final image in images) ?image.key];
+    return keys.length == images.length ? keys : null;
+  }
 }
 
 /// 发布菜品时填写的内容.
@@ -165,6 +176,15 @@ class const DishChange({
   final CoverCrop? crop,
   final List<MealTime>? mealTimes,
   final bool? deliveryEnabled,
+});
+
+/// 编辑菜品后服务端返回的结果.
+///
+/// [revisionId] 是本次修改的记录 id, 内容没有变化时为 null.
+/// [imageKeys] 是保存后的图片顺序, 第一张是封面; 没有变化时也返回当前的图片.
+class const DishEdited({
+  final int? revisionId,
+  final List<String> imageKeys = const [],
 });
 
 /// 发布前查重得到的已有菜品, 是这家店里菜名包含输入的菜.

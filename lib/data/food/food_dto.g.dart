@@ -18,6 +18,9 @@ FoodDto _$FoodDtoFromJson(Map<String, dynamic> json) => FoodDto(
   pictureUrls: (json['pictureUrls'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
+  pictureKeys: (json['pictureKeys'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
   tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
   signature: json['signature'] as bool?,
   likeCount: (json['likeCount'] as num?)?.toInt(),
@@ -56,6 +59,7 @@ Map<String, dynamic> _$FoodDtoToJson(FoodDto instance) => <String, dynamic>{
   'price': ?instance.price,
   'description': ?instance.description,
   'pictureUrls': ?instance.pictureUrls,
+  'pictureKeys': ?instance.pictureKeys,
   'tags': ?instance.tags,
   'signature': ?instance.signature,
   'likeCount': ?instance.likeCount,
@@ -164,6 +168,15 @@ Map<String, dynamic> _$EditFoodDtoToJson(EditFoodDto instance) =>
       'mealTimes': ?instance.mealTimes,
       'deliveryEnabled': ?instance.deliveryEnabled,
     };
+
+FoodEditResultDto _$FoodEditResultDtoFromJson(Map<String, dynamic> json) =>
+    FoodEditResultDto(
+      id: (json['id'] as num?)?.toInt(),
+      revisionId: (json['revisionId'] as num?)?.toInt(),
+      pictureKeys: (json['pictureKeys'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+    );
 
 FoodOptionsDto _$FoodOptionsDtoFromJson(Map<String, dynamic> json) =>
     FoodOptionsDto(

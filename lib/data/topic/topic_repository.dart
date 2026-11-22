@@ -88,7 +88,8 @@ class TopicRepository {
       price: dto.price,
       category: category,
       images: [
-        for (final url in dto.pictureUrl ?? const <String>[]) ?imageUrl(url),
+        for (final url in dto.pictureUrl ?? const <String>[])
+          if (imageUrl(url) case final url?) DishImage(url: url),
       ],
       stage: stages[dto.stageColor] ?? category?.stage ?? StageColor.broth,
       stageAlternates: [

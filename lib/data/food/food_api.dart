@@ -174,14 +174,13 @@ class FoodApi {
     await _client.post(FoodEndpoints.upload, body: body.toJson()),
   );
 
-  /// 编辑菜品, 返回本次修改的记录 id. 内容没有变化时返回 null.
+  /// 编辑菜品, 返回修改记录 id 和保存后的图片 key.
   ///
   /// 改名后与同一店铺的菜品重名, 或招牌菜已满时, 业务码与 [create] 相同.
-  Future<int?> edit(int id, EditFoodDto body) async {
-    final data = await _client.put(FoodEndpoints.edit(id), body: body.toJson());
-    final revision = data is Map ? data['revisionId'] : null;
-    return revision is num ? revision.toInt() : null;
-  }
+  Future<FoodEditResultDto> edit(int id, EditFoodDto body) async => decodeJson(
+    await _client.put(FoodEndpoints.edit(id), body: body.toJson()),
+    FoodEditResultDto.fromJson,
+  );
 
   /// 获取菜品的修改历史记录, 按时间倒序排列, 无需登录.
   Future<Paged<FoodRevisionDto>> history(

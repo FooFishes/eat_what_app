@@ -146,14 +146,14 @@ void main() {
   });
 
   group('编辑', () {
-    test('只发出改动的字段；空说明、空照片和空口味表示清除；返回修改记录 id', () async {
+    test('只发出改动的字段；空说明、空照片和空口味表示清除；返回修改记录 id 和保存后的照片', () async {
       final env = TestEnv();
       env.adapter.on('PUT /foods/edit/1', [
-        FakeAdapter.ok({'id': 1, 'revisionId': 31}),
+        FakeAdapter.ok({'id': 1, 'revisionId': 31, 'pictureKeys': <String>[]}),
       ]);
       final container = await env.container();
 
-      final revision = await container
+      final edited = await container
           .read(foodRepositoryProvider)
           .edit(
             1,
@@ -166,7 +166,8 @@ void main() {
             ),
           );
 
-      expect(revision, 31);
+      expect(edited.revisionId, 31);
+      expect(edited.imageKeys, isEmpty);
       expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
         'price': 16.0,
         'description': '',
@@ -224,18 +225,50 @@ void main() {
       });
     });
 
-    test('内容没有变化时返回 null', () async {
+    test('保留的原图和新图按顺序发出 key；返回保存后的照片顺序', () async {
       final env = TestEnv();
       env.adapter.on('PUT /foods/edit/1', [
-        FakeAdapter.ok({'id': 1, 'revisionId': null}),
+        FakeAdapter.ok({
+          'id': 1,
+          'revisionId': 34,
+          'pictureKeys': ['foods/b.jpg', 'foods/a.jpg', 'foods/c.jpg'],
+        }),
       ]);
       final container = await env.container();
 
-      final revision = await container
+      final edited = await container
+          .read(foodRepositoryProvider)
+          .edit(
+            1,
+            const DishChange(
+              imageKeys: ['foods/b.jpg', 'foods/a.jpg', 'foods/c.jpg'],
+            ),
+          );
+
+      expect(env.adapter.sent('PUT /foods/edit/1').single.body, {
+        'pictures': ['foods/b.jpg', 'foods/a.jpg', 'foods/c.jpg'],
+      });
+      expect(edited.revisionId, 34);
+      expect(edited.imageKeys, ['foods/b.jpg', 'foods/a.jpg', 'foods/c.jpg']);
+    });
+
+    test('内容没有变化时修改记录 id 为 null，照片仍是当前的', () async {
+      final env = TestEnv();
+      env.adapter.on('PUT /foods/edit/1', [
+        FakeAdapter.ok({
+          'id': 1,
+          'revisionId': null,
+          'pictureKeys': ['foods/1.jpg'],
+        }),
+      ]);
+      final container = await env.container();
+
+      final edited = await container
           .read(foodRepositoryProvider)
           .edit(1, const DishChange(name: '鲜虾蟹籽云吞'));
 
-      expect(revision, isNull);
+      expect(edited.revisionId, isNull);
+      expect(edited.imageKeys, ['foods/1.jpg']);
     });
   });
 
@@ -436,6 +469,61 @@ void main() {
     expect(dish.uploaderId, 9);
     expect(dish.cover, 'https://img.test/foods/1.jpg');
     expect(dish.price, 18);
+  });
+
+  group('照片的 key', () {
+    Future<Dish> dishOf(Map<String, Object?> json) async {
+      final container = await TestEnv().container();
+      return container
+          .read(foodRepositoryProvider)
+          .toDish(FoodDto.fromJson(json));
+    }
+
+    test('地址和 key 按位置配对', () async {
+      final dish = await dishOf(
+        foodJson(pictures: ['foods/a.jpg', 'foods/b.jpg']),
+      );
+      expect(
+        [for (final image in dish.images) (image.url, image.key)],
+        [
+          ('https://img.test/foods/a.jpg', 'foods/a.jpg'),
+          ('https://img.test/foods/b.jpg', 'foods/b.jpg'),
+        ],
+      );
+      expect(dish.imageKeys, ['foods/a.jpg', 'foods/b.jpg']);
+    });
+
+    test('没有 key（旧缓存）时照片照常显示，但不带 key', () async {
+      final dish = await dishOf({...foodJson(), 'pictureKeys': null});
+      expect(dish.cover, 'https://img.test/foods/1.jpg');
+      expect(dish.images.single.key, isNull);
+      expect(dish.imageKeys, isNull);
+    });
+
+    test('key 和地址数量对不上，或有空地址、空 key 时都不带 key', () async {
+      for (final (urls, keys) in [
+        (['https://img.test/a.jpg', 'https://img.test/b.jpg'], ['a.jpg']),
+        (['https://img.test/a.jpg', ''], ['a.jpg', 'b.jpg']),
+        (['https://img.test/a.jpg'], ['']),
+      ]) {
+        final dish = await dishOf({
+          ...foodJson(),
+          'pictureUrls': urls,
+          'pictureKeys': keys,
+        });
+        expect(dish.images.map((i) => i.url), [
+          for (final url in urls)
+            if (url.isNotEmpty) url,
+        ]);
+        expect(dish.imageKeys, isNull, reason: '$urls $keys');
+      }
+    });
+
+    test('没有照片时 key 列表为空', () async {
+      final dish = await dishOf(foodJson(pictures: []));
+      expect(dish.images, isEmpty);
+      expect(dish.imageKeys, isEmpty);
+    });
   });
 
   test('DTO 转成菜：饭点、外卖、评分和我的评分，不认识的饭点跳过', () async {
@@ -708,7 +796,9 @@ void main() {
 
     await repo.detail(1);
 
-    expect((await repo.cachedDetail(1))?.name, '鲜虾蟹籽云吞');
+    final cached = await repo.cachedDetail(1);
+    expect(cached?.name, '鲜虾蟹籽云吞');
+    expect(cached?.imageKeys, ['foods/1.jpg'], reason: '缓存里带上照片的 key');
     expect(await repo.cachedDetail(2), isNull);
   });
   group('评分', () {

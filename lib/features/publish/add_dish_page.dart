@@ -64,8 +64,10 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// 编辑菜品流程:
 /// - 预填现有内容且不允许更换店铺; 提交时仅发送改动字段, 无改动时禁止保存.
-/// - 照片仅支持整组更换, 若未更换照片则不提交照片, 舞台色, 备选色与取景参数.
+/// - 原有照片和新照片在同一个照片条里, 可以逐张删除, 追加和换封面; 照片没变时不提交照片.
+/// - 封面没换也没调整过时不提交舞台色, 备选色与取景, 服务端保留原值.
 /// - 未从详情页带入菜品对象时 (如在 Web 端刷新页面), 根据 id 重新请求详情.
+///   带入的菜品缺少照片 key 时 (如旧版本的缓存) 也重新请求; 请求到的仍然缺少时照片只能看, 不能改.
 ///
 /// 若表单已有输入或改动, 返回前需弹出确认弹窗; 页面退出后不持久化草稿.
 class AddDishPage extends ConsumerWidget {
@@ -89,7 +91,7 @@ class AddDishPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dishId = this.dishId;
     if (dishId == null) return _DishForm(shopId: shopId!);
-    if (initial case final dish?) {
+    if (initial case final dish? when dish.imageKeys != null) {
       return _DishForm(shopId: dish.shopId, original: dish);
     }
     final detail = ref.watch(dishToEditProvider(dishId));
@@ -282,17 +284,34 @@ class _DishFormState extends ConsumerState<_DishForm> {
   }
 
   /// 打开 "调整照片" 页面以调整封面取景与舞台色.
+  ///
+  /// 原有照片不知道原图尺寸, 等取色小图出来后按它的宽高比打开; 取不到时提示失败, 不打开.
   Future<void> _crop() async {
     final notifier = ref.read(_draft.notifier);
-    final draft = ref.read(_draft);
-    final cover = draft.photos.firstOrNull;
+    final cover = ref.read(_draft).photos.firstOrNull;
     final sample = notifier.coverSample();
     if (cover == null || sample == null) return;
+    final (int, int) size;
+    if (cover.photo case final photo?) {
+      size = (photo.width, photo.height);
+    } else {
+      try {
+        final small = await sample;
+        size = (small.width, small.height);
+      } on Object {
+        if (mounted) showToast(context, '照片读取失败，请重试');
+        return;
+      }
+      if (!mounted || ref.read(_draft).photos.firstOrNull?.id != cover.id) {
+        return;
+      }
+    }
+    final draft = ref.read(_draft);
     final result = await Navigator.of(context, rootNavigator: true).push(
       CropPage.route(
         image: cover.image,
-        width: cover.photo.width,
-        height: cover.photo.height,
+        width: size.$1,
+        height: size.$2,
         sample: sample,
         crop: draft.crop,
         fallback: draft.category?.stage ?? StageColor.broth,
@@ -417,15 +436,21 @@ class _DishFormState extends ConsumerState<_DishForm> {
     if (!await guardAction(context, ref, Capability.editDish) || !mounted) {
       return;
     }
-    final draft = ref.read(_draft);
+    var draft = ref.read(_draft);
     if (_priceError != null || draft.uploading) return;
     if (draft.hasFailedUpload) {
       showToast(context, '有照片未上传成功，请重试或删除');
       return;
     }
-    final change = _change(draft);
-    if (change == null) return;
     setState(() => _busy = true);
+    await ref.read(_draft.notifier).coverSuggested();
+    if (!mounted) return;
+    draft = ref.read(_draft);
+    final change = _change(draft);
+    if (change == null) {
+      setState(() => _busy = false);
+      return;
+    }
     try {
       await ref.read(foodRepositoryProvider).edit(original.id, change);
       ref.read(publishedCountProvider.notifier).published();
@@ -562,14 +587,16 @@ class _DishFormState extends ConsumerState<_DishForm> {
             : null) ??
         _duplicateId;
     final missing = PublishRules.missingText(
-      photo: original != null || draft.photos.isNotEmpty,
+      photo:
+          draft.photos.isNotEmpty ||
+          (original != null && original.images.isEmpty),
       name: name.isNotEmpty,
       category:
           draft.category != null ||
           (original != null && original.category == null),
     );
     final signatureFull = draft.signature ? _signatureFull : null;
-    final replacing = draft.photos.isNotEmpty;
+    final locked = draft.photosLocked;
 
     String? note;
     var label = original == null ? '发布' : '保存';
@@ -600,19 +627,6 @@ class _DishFormState extends ConsumerState<_DishForm> {
       onPressed = null;
     }
 
-    final ImageProvider? cover;
-    final CoverCrop crop;
-    final StageColor stage;
-    if (original != null && !replacing) {
-      cover = networkImage(original.cover);
-      crop = original.crop;
-      stage = original.stage;
-    } else {
-      cover = draft.photos.firstOrNull?.image;
-      crop = draft.crop;
-      stage = draft.stage;
-    }
-
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) {
@@ -628,18 +642,19 @@ class _DishFormState extends ConsumerState<_DishForm> {
               child: RemovePadding(
                 removeBottom: true,
                 child: StageScaffold(
-                  stage: stage,
+                  stage: draft.stage,
                   topBar: _TopBar(onBack: _leave, step: original == null),
                   stageContent: _StageContent(
-                    cover: cover,
-                    crop: crop,
-                    sampled: replacing,
+                    cover: draft.photos.firstOrNull?.image,
+                    crop: draft.crop,
+                    sampled:
+                        draft.photos.isNotEmpty &&
+                        (original == null || draft.coverEdited),
                     category: draft.category,
                     name: name,
                     price: price,
                     onAdd: _addPhotos,
-                    onCover: replacing ? _crop : _addPhotos,
-                    coverLabel: replacing ? '调整照片' : '换照片',
+                    onCover: locked ? null : _crop,
                   ),
                   sheetSlivers: [
                     SliverPadding(
@@ -648,22 +663,21 @@ class _DishFormState extends ConsumerState<_DishForm> {
                       ),
                       sliver: SliverList.list(
                         children: [
-                          if (original != null && !replacing)
-                            _ExistingPhotos(
-                              images: original.images,
-                              onReplace: _addPhotos,
-                            )
-                          else
-                            _PhotoStrip(
-                              photos: draft.photos,
-                              max: options.photosMax,
-                              onAdd: _addPhotos,
-                              onTap: _photoActions,
-                            ),
-                          if (original != null && replacing)
-                            _ReplacingNote(
-                              count: original.images.length,
-                              onUndo: ref.read(_draft.notifier).clearPhotos,
+                          _PhotoStrip(
+                            photos: draft.photos,
+                            max: options.photosMax,
+                            onAdd: locked ? null : _addPhotos,
+                            onTap: locked ? null : _photoActions,
+                          ),
+                          if (locked)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                '照片暂时不能修改',
+                                style: context.eat.text.caption.copyWith(
+                                  color: context.eat.colors.inkMuted,
+                                ),
+                              ),
                             ),
                           const SizedBox(height: EatSpace.s16),
                           _ShopLine(
@@ -843,23 +857,21 @@ class _StageContent extends StatelessWidget {
     required this.price,
     required this.onAdd,
     required this.onCover,
-    required this.coverLabel,
   });
 
   /// 封面图片提供器, 未添加照片时为 null.
   final ImageProvider? cover;
   final CoverCrop crop;
 
-  /// 舞台色是否提取自当前 [cover]; 编辑模式若未更换照片则沿用原有舞台色, 不显示 "主色取自照片".
+  /// 舞台色是否提取自当前 [cover]; 编辑时封面没换也没调整过则沿用原有舞台色, 不显示 "主色取自照片".
   final bool sampled;
   final DishCategory? category;
   final String name;
   final double? price;
   final VoidCallback onAdd;
 
-  /// 点击封面餐盘的回调: 若为新添加照片则打开 "调整照片", 若为编辑模式下的原图则触发换图.
-  final VoidCallback onCover;
-  final String coverLabel;
+  /// 点击封面餐盘打开 "调整照片". 为 null 时不能点, 用于照片不能修改的编辑.
+  final VoidCallback? onCover;
 
   @override
   Widget build(BuildContext context) {
@@ -887,7 +899,7 @@ class _StageContent extends StatelessWidget {
                   ? _AddPlate(size: plate, onTap: onAdd)
                   : EatTappable(
                       onTap: onCover,
-                      label: coverLabel,
+                      label: '调整照片',
                       focusShape: const CircleBorder(),
                       builder: (context, _) => DishPlate(
                         image: cover,
@@ -1014,8 +1026,10 @@ class _PhotoStrip extends StatelessWidget {
 
   /// 最多几张照片.
   final int max;
-  final VoidCallback onAdd;
-  final void Function(DraftPhoto photo, {required bool cover}) onTap;
+
+  /// [onAdd] 和 [onTap] 为 null 时照片只能看: 不显示添加按钮, 点照片没有反应.
+  final VoidCallback? onAdd;
+  final void Function(DraftPhoto photo, {required bool cover})? onTap;
 
   static const _size = 64.0;
 
@@ -1023,6 +1037,8 @@ class _PhotoStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final eat = context.eat;
     final c = eat.colors;
+    final onAdd = this.onAdd;
+    final onTap = this.onTap;
     final full = photos.length >= max;
     return SizedBox(
       height: _size + 4,
@@ -1039,10 +1055,12 @@ class _PhotoStrip extends StatelessWidget {
                       photo: photo,
                       cover: i == 0,
                       size: _size,
-                      onTap: () => onTap(photo, cover: i == 0),
+                      onTap: onTap == null
+                          ? null
+                          : () => onTap(photo, cover: i == 0),
                     ),
                   ),
-                if (!full)
+                if (!full && onAdd != null)
                   EatTappable(
                     onTap: onAdd,
                     label: '再加一张照片',
@@ -1098,7 +1116,7 @@ class _PhotoThumb extends StatelessWidget {
   final DraftPhoto photo;
   final bool cover;
   final double size;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1136,12 +1154,15 @@ class _PhotoThumb extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image(
-                image: photo.image,
-                fit: BoxFit.cover,
-                excludeFromSemantics: true,
-                gaplessPlayback: true,
-              ),
+              if (photo.photo == null)
+                CoverImage(image: photo.image)
+              else
+                Image(
+                  image: photo.image,
+                  fit: BoxFit.cover,
+                  excludeFromSemantics: true,
+                  gaplessPlayback: true,
+                ),
               if (photo.status != UploadStatus.done)
                 ColoredBox(
                   color: photo.status == UploadStatus.failed
@@ -1177,103 +1198,6 @@ class _CoverBadge extends StatelessWidget {
           textAlign: TextAlign.center,
           style: eat.text.caption.copyWith(color: c.white),
         ),
-      ),
-    );
-  }
-}
-
-// TODO: 菜品响应只有图片地址, 没有存储 key, 编辑时无法提交保留的原图, 照片只能整组更换. 后端在响应中提供 key 后改为可以单张增删和调整原有照片.
-/// 编辑模式下展示原有照片及 "换照片" 入口的组件.
-///
-/// 原有照片仅支持预览而不能单张删改, 选择新照片后将整组替换现有照片.
-class _ExistingPhotos extends StatelessWidget {
-  const new({required this.images, required this.onReplace});
-
-  final List<String> images;
-  final VoidCallback onReplace;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    const size = _PhotoStrip._size;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: 6,
-      children: [
-        SizedBox(
-          height: size + 4,
-          child: Row(
-            children: [
-              Expanded(
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    for (final (i, url) in images.indexed)
-                      Padding(
-                        padding: const EdgeInsets.only(right: EatSpace.s8),
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.all(
-                            EatRadius.thumbLg,
-                          ),
-                          child: SizedBox.square(
-                            dimension: size,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                CoverImage(
-                                  image: networkImage(url, width: size),
-                                ),
-                                if (i == 0) const _CoverBadge(),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: EatSpace.s10),
-              EatButton.outline(
-                images.isEmpty ? '加照片' : '换照片',
-                height: 36,
-                onPressed: onReplace,
-              ),
-            ],
-          ),
-        ),
-        if (images.isNotEmpty)
-          Text(
-            '换照片会替换现有的全部照片',
-            style: eat.text.caption.copyWith(color: eat.colors.inkMuted),
-          ),
-      ],
-    );
-  }
-}
-
-/// 编辑模式下选定新照片后的提示条, 说明提交后将替换原有照片并提供 "不换了" 撤销按钮.
-class _ReplacingNote extends StatelessWidget {
-  const new({required this.count, required this.onUndo});
-
-  /// 原有照片的张数.
-  final int count;
-  final VoidCallback onUndo;
-
-  @override
-  Widget build(BuildContext context) {
-    final eat = context.eat;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              count == 0 ? '保存后加上这些照片' : '保存后替换原有的 $count 张照片',
-              style: eat.text.caption.copyWith(color: eat.colors.inkMuted),
-            ),
-          ),
-          EatButton.outline('不换了', height: 36, onPressed: onUndo),
-        ],
       ),
     );
   }

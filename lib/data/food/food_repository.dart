@@ -165,30 +165,35 @@ class FoodRepository {
     ),
   );
 
-  // TODO: 菜品响应只有图片地址, 没有存储 key, 编辑时无法提交保留的原图. 后端在响应中提供 key 或允许提交原图地址后补充保留原图的方式.
-  /// 编辑菜品, 返回本次修改的记录 id. 内容没有变化时返回 null, 不产生修改记录.
+  /// 编辑菜品. 内容没有变化时不产生修改记录, 返回的 [DishEdited.revisionId] 为 null.
   ///
   /// 失败时的业务码与 [publish] 相同: 改名后与同一店铺的菜品重名, 或招牌菜已满.
-  Future<int?> edit(int id, DishChange change) => _api.edit(
-    id,
-    EditFoodDto(
-      name: change.name,
-      category: change.category?.api,
-      price: change.price,
-      description: change.description,
-      pictures: change.imageKeys,
-      tags: change.tags?.map((taste) => taste.api).toList(),
-      signature: change.signature,
-      stageColor: change.stage?.name,
-      stageAlternates: change.stageAlternates?.map((c) => c.name).toList(),
-      coverCrop: switch (change.crop) {
-        final crop? => _cropDto(roundCrop(crop)),
-        null => null,
-      },
-      mealTimes: change.mealTimes?.map((m) => m.api).toList(),
-      deliveryEnabled: change.deliveryEnabled,
-    ),
-  );
+  Future<DishEdited> edit(int id, DishChange change) async {
+    final dto = await _api.edit(
+      id,
+      EditFoodDto(
+        name: change.name,
+        category: change.category?.api,
+        price: change.price,
+        description: change.description,
+        pictures: change.imageKeys,
+        tags: change.tags?.map((taste) => taste.api).toList(),
+        signature: change.signature,
+        stageColor: change.stage?.name,
+        stageAlternates: change.stageAlternates?.map((c) => c.name).toList(),
+        coverCrop: switch (change.crop) {
+          final crop? => _cropDto(roundCrop(crop)),
+          null => null,
+        },
+        mealTimes: change.mealTimes?.map((m) => m.api).toList(),
+        deliveryEnabled: change.deliveryEnabled,
+      ),
+    );
+    return DishEdited(
+      revisionId: dto.revisionId,
+      imageKeys: dto.pictureKeys ?? const [],
+    );
+  }
 
   /// 获取发布和编辑菜品时可选的分类, 口味, 饭点和数量上限.
   ///
@@ -454,9 +459,7 @@ class FoodRepository {
   Dish toDish(FoodDto dto) {
     final category = DishCategory.fromApi(dto.category);
     final stages = StageColor.values.asNameMap();
-    final images = [
-      for (final url in dto.pictureUrls ?? const <String>[]) ?imageUrl(url),
-    ];
+    final images = _images(dto.pictureUrls, dto.pictureKeys);
     final crop = images.isEmpty ? null : dto.coverCrop;
     return Dish(
       id: dto.id ?? 0,
@@ -495,6 +498,24 @@ class FoodRepository {
       ),
       myRating: dto.myRating,
     );
+  }
+
+  /// 把图片地址和 key 配成对, 空地址丢掉.
+  ///
+  /// 只有 key 和地址数量相同, 每个 key 都不为空, 且没有空地址时才带上 key, 否则所有照片都不带 key.
+  /// 有空地址时那张照片在编辑页里显示不出来, 提交的 key 会少一张, 服务端会删掉它.
+  static List<DishImage> _images(List<String>? urls, List<String>? keys) {
+    final all = urls ?? const <String>[];
+    final paired =
+        keys != null &&
+        keys.length == all.length &&
+        keys.every((k) => k.isNotEmpty) &&
+        all.every((u) => imageUrl(u) != null);
+    return [
+      for (final (i, url) in all.indexed)
+        if (imageUrl(url) case final url?)
+          DishImage(url: url, key: paired ? keys[i] : null),
+    ];
   }
 
   static List<MealTime> _meals(List<String>? values) => [
