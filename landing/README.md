@@ -26,7 +26,7 @@
 两个主机名上都这样配：
 
 - `index.html`、`download.html` 和 `icon-192.png` 放在 `/app/` 下。
-- `/app/dishes/*`、`/app/shops/*`、`/app/topics/*` 回落到 `/app/index.html`（不重定向，地址栏保持原路径）。
+- `/app/` 下除了静态文件和 `/app/download` 之外的路径都回落到 `/app/index.html`（不重定向，地址栏保持原路径）。分享路径显示预览，其他路径（如下载页唤起用的 `/app/discover`）显示通用介绍；在 `open.eat.v50to.you` 上打开时以下载为主，这就是唤起失败时的回退页面。
 - `/app/download` 返回 `/app/download.html`（同样不重定向）。
 - `/.well-known/` 和 `/api` 不回落：`/.well-known/apple-app-site-association`、`/.well-known/assetlinks.json` 原样返回（AASA 用 `application/json`，不能重定向），`/api` 反代到业务后端。`open.eat.v50to.you` 上也要有 `/api`，否则在它上面打开的页面只显示通用介绍。
 
@@ -36,7 +36,7 @@ nginx 示例：
 location /api/ { proxy_pass http://backend; }
 location /.well-known/ { default_type application/json; }
 location = /app/download { try_files /app/download.html =404; }
-location ~ ^/app/(dishes|shops|topics)/ { try_files $uri /app/index.html; }
+location /app/ { try_files $uri /app/index.html; }
 ```
 
 ## 可配置常量
