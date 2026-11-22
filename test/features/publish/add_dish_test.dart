@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:eat/core/platform/photo_picker.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/eat_button.dart';
@@ -8,7 +10,10 @@ import 'package:eat/state/session.dart';
 import 'package:eat/design/widgets/keyboard_inset.dart';
 import 'package:eat/design/tokens/eat_palette.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
+import 'package:eat/features/publish/add_dish_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../support/analytics.dart';
@@ -472,6 +477,65 @@ void main() {
     expect(locationOf(router), Paths.dish(99));
     await tester.pump(const Duration(seconds: 3));
     await unmountApp(tester, container);
+  });
+
+  group('填了内容后返回', () {
+    /// 从「我的」打开加菜页并填上菜名.
+    Future<(ProviderContainer, GoRouter)> openDirty(
+      WidgetTester tester,
+      TestEnv env,
+    ) async {
+      _routes(env, {'id': 99});
+      env.adapter.on('GET /foods/my', [FakeAdapter.ok(pageJson([]))]);
+      final (container, router) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.me,
+      );
+      unawaited(router.push(Paths.publishDish(7)));
+      await tester.pumpAndSettle();
+      await _enterName(tester, '鲜虾云吞');
+      return (container, router);
+    }
+
+    testWidgets('点返回确认放弃后离开加菜页，不再弹确认', (tester) async {
+      final env = TestEnv();
+      final (container, router) = await openDirty(tester, env);
+
+      await tester.tap(find.bySemanticsLabel('返回'));
+      await tester.pumpAndSettle();
+      expect(find.text('放弃发布这道菜？'), findsOneWidget);
+      await tester.tap(find.text('放弃'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('放弃发布这道菜？'), findsNothing);
+      expect(find.byType(AddDishPage), findsNothing);
+      expect(locationOf(router), Paths.me);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('系统返回确认放弃后离开加菜页；选继续编辑时留下', (tester) async {
+      final env = TestEnv();
+      final (container, router) = await openDirty(tester, env);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('放弃发布这道菜？'), findsOneWidget);
+      await tester.tap(find.text('继续编辑'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddDishPage), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('放弃'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('放弃发布这道菜？'), findsNothing);
+      expect(find.byType(AddDishPage), findsNothing);
+      expect(locationOf(router), Paths.me);
+      await unmountApp(tester, container);
+    });
   });
 
   group('按照片预选', () {

@@ -171,6 +171,9 @@ class _DishFormState extends ConsumerState<_DishForm> {
   late final _note = TextEditingController(text: widget.original?.description);
   var _busy = false;
 
+  /// 用户已确认离开; 置位后不再拦截返回.
+  var _leaving = false;
+
   /// 发布或保存时若服务端判定菜名重复, 记录返回的已有菜品 id.
   int? _duplicateId;
 
@@ -232,15 +235,24 @@ class _DishFormState extends ConsumerState<_DishForm> {
         _note.text.trim().isNotEmpty;
   }
 
-  Future<void> _leave() async {
+  /// 处理返回操作: 内容有修改时需先确认是否放弃.
+  Future<void> _back() async {
     if (_dirty && !await _confirmLeave()) return;
-    if (!mounted) return;
-    switch (widget.original) {
-      case final original?:
-        _backToDish(context, original.id);
-      case null:
-        BackFallback.back(context);
-    }
+    if (mounted) _leave();
+  }
+
+  /// 解除返回拦截后离开页面. 拦截在下一帧重建后才解除, 因此在该帧结束后返回.
+  void _leave() {
+    setState(() => _leaving = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      switch (widget.original) {
+        case final original?:
+          _backToDish(context, original.id);
+        case null:
+          BackFallback.back(context);
+      }
+    });
   }
 
   Future<bool> _confirmLeave() async =>
@@ -628,9 +640,9 @@ class _DishFormState extends ConsumerState<_DishForm> {
     }
 
     return PopScope(
-      canPop: !_dirty,
+      canPop: _leaving || !_dirty,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) unawaited(_leave());
+        if (!didPop) unawaited(_back());
       },
       // 只有这一层跟着键盘动画每帧重建, 加菜页其余部分不重建.
       // 键盘后面铺白底: 外面没有别的底色, iOS 26 半透明的圆角键盘后面会透出黑色.
@@ -643,7 +655,7 @@ class _DishFormState extends ConsumerState<_DishForm> {
                 removeBottom: true,
                 child: StageScaffold(
                   stage: draft.stage,
-                  topBar: _TopBar(onBack: _leave, step: original == null),
+                  topBar: _TopBar(onBack: _back, step: original == null),
                   stageContent: _StageContent(
                     cover: draft.photos.firstOrNull?.image,
                     crop: draft.crop,
