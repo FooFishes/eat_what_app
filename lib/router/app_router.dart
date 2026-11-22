@@ -5,8 +5,10 @@ import 'package:eat/features/auth/phone_login_page.dart';
 import 'package:eat/domain/models/dish.dart';
 import 'package:eat/features/comments/comments_page.dart';
 import 'package:eat/features/discover/discover_page.dart';
+import 'package:eat/features/discover/discover_providers.dart';
 import 'package:eat/features/dish/dish_history_page.dart';
 import 'package:eat/features/dish/dish_page.dart';
+import 'package:eat/features/dish/dish_providers.dart';
 import 'package:eat/features/inbox/inbox_page.dart';
 import 'package:eat/features/kit/kit_page.dart';
 import 'package:eat/features/nearby/nearby_page.dart';
@@ -46,6 +48,7 @@ import 'package:eat/features/system/blocking_pages.dart';
 import 'package:eat/features/system/not_found_page.dart';
 import 'package:eat/features/topic/topic_archive_page.dart';
 import 'package:eat/features/topic/topic_page.dart';
+import 'package:eat/features/topic/topic_providers.dart';
 import 'package:eat/features/verify/verify_email_page.dart';
 import 'package:eat/features/verify/verify_page.dart';
 import 'package:eat/router/deep_links.dart';
@@ -54,6 +57,7 @@ import 'package:eat/router/main_shell.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/remote_config.dart';
 import 'package:eat/state/session.dart';
+import 'package:eat/state/shops.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -130,13 +134,20 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: Paths.login,
         metadata: publicRoute,
-        builder: (_, state) => LoginPage(
-          query: _loginQuery(state),
-          browseTarget: browseTarget(
+        builder: (_, state) {
+          final target = browseTarget(
             state.uri.queryParameters['from'],
             (uri) => _accessOf(router.configuration.findMatch(uri)),
-          ),
-        ),
+          );
+          return LoginPage(
+            query: _loginQuery(state),
+            browseTarget: target,
+            preloadBrowseTarget: () => _preloadBrowseTarget(
+              ref,
+              router.configuration.findMatch(Uri.parse(target)),
+            ),
+          );
+        },
         routes: [
           GoRoute(
             path: _child(Paths.loginPhone, Paths.login),
@@ -449,6 +460,23 @@ GoRouter appRouter(Ref ref) {
     gate.dispose();
   });
   return router;
+}
+
+/// 预取目标页可复用的首屏数据. 页面自身的定位、键盘等行为随路由正常启动.
+void _preloadBrowseTarget(Ref ref, RouteMatchList match) {
+  int? id(String name) => int.tryParse(match.pathParameters[name] ?? '');
+  switch (match.fullPath) {
+    case Paths.discover:
+      ref.read(turntableQueueProvider);
+    case Paths.dishPattern:
+      if (id('dishId') case final dishId?) ref.read(dishDetailProvider(dishId));
+    case Paths.shopPattern:
+      if (id('shopId') case final shopId?) ref.read(shopProvider(shopId));
+    case Paths.topicPattern:
+      if (id('topicId') case final topicId?) {
+        ref.read(topicDetailProvider(topicId));
+      }
+  }
 }
 
 /// 解析匹配结果中页面的访问权限. 子路由继承父路由权限, 若子路由自身已显式声明则以其为准.
