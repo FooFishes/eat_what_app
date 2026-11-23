@@ -51,8 +51,8 @@ abstract final class EatFonts {
 
 /// 文字样式表.
 ///
-/// 中文分为 8 级字号, 数字分为 4 级并沿用中文的字号. 字重只用 400, 600, 700, 800:
-/// 800 只给舞台上的主角, 标题 700, 强调 600, 正文 400.
+/// 中文分为 8 级字号, 数字分为 4 级并沿用中文的字号. 字重只用 400, 600, 700, 780:
+/// 780 ([heavyWeight]) 只给舞台上的主角, 标题 700, 强调 600, 正文 400.
 /// 优先使用预设; 若与预设相差不大, 应改用预设而非另写字号.
 ///
 /// 样式不含颜色. 同一样式在白底上用 `ink`, 在舞台上用舞台文字色, 颜色由所在组件指定.
@@ -95,9 +95,17 @@ class EatTextStyles({
   /// 距离和跟在文字后面的计数. 距离的数字和单位之间留一个空格.
   required final TextStyle count,
 }) {
+  /// 舞台主角等特粗中文使用的字重.
+  ///
+  /// 取值略低于 800 而非 [FontWeight.w800]: iOS 系统的苹方最粗只有 Semibold (600),
+  /// 当请求字重与字体字重相差达到 200 时, SkParagraph 会启用假粗体并通过路径描边加填充模拟加粗;
+  /// 部分汉字轮廓 (如 "隆") 会因路径绕向误判而在笔画内部出现镂空缝隙.
+  /// 降至 780 可避免触发假粗体, 同时在安卓内置的可变字体上保持接近原 800 映射的层次.
+  static const heavyWeight = FontWeight(780);
+
   static final standard = EatTextStyles(
-    display: _sans(56, 60, 800, letterSpacing: -1.5),
-    stage: _sans(44, 48, 800, letterSpacing: -1),
+    display: _sans(56, 60, heavyWeight.value, letterSpacing: -1.5),
+    stage: _sans(44, 48, heavyWeight.value, letterSpacing: -1),
     title: _sans(26, 34, 700, letterSpacing: -0.5),
     heading: _sans(20, 28, 700),
     subhead: _sans(16, 24, 600),

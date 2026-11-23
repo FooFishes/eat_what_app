@@ -15,4 +15,27 @@ void main() {
     expect(EatFonts.sansFor(TargetPlatform.android, isWeb: true), isNull);
     expect(EatFonts.sansFor(TargetPlatform.iOS, isWeb: true), isNull);
   });
+
+  test('预设字重均低于 800，避免在 iOS 苹方上触发假粗体', () {
+    final t = EatTextStyles.standard;
+    final styles = [
+      t.display,
+      t.stage,
+      t.title,
+      t.heading,
+      t.subhead,
+      t.body,
+      t.meta,
+      t.caption,
+      t.priceHero,
+      t.stat,
+      t.priceInline,
+      t.count,
+    ];
+    expect(EatTextStyles.heavyWeight.value, lessThan(800));
+    expect(EatTextStyles.heavyWeight.value, greaterThan(700));
+    for (final style in styles) {
+      expect(style.fontWeight!.value, lessThan(800));
+    }
+  });
 }

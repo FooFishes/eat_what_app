@@ -816,9 +816,9 @@ extension RefCache on Ref {
 
 - 字体文件、子集化见依赖选型第 9 节。文字样式只设 `fontWeight`：Inter 是可变字体，Flutter 3.47 起 `FontWeight` 会直接设置它的 `wght` 轴，不用再写 `FontVariation.weight`。
 - 中文样式的字体族取 `EatFonts.sans`：安卓是内置的 `NotoSansSC`，回落到 `Inter`（只为半宽的间隔号「·」）；iOS 和 Web 为空，iOS 用 SF 加苹方，Web 用引擎的回落字体。`ThemeData` 的 `fontFamily` 和 `textTheme` 同样设成它，`textTheme` 按平台取 `Typography`，`locale` 固定 `zh_CN`，汉字按简体字形回落。
-- 安卓的 Noto 在子集化时改写了字重映射，400 / 600 / 700 / 800 实际取 wght 400 / 560 / 600 / 640，粗细接近 iOS 的苹方（苹方最粗只到 Semibold，600–800 在 iOS 上都是它）。原因和数值见依赖选型 9.1。
+- 安卓的 Noto 在子集化时改写了字重映射，400 / 600 / 700 / 800 实际取 wght 400 / 560 / 600 / 640，粗细接近 iOS 的苹方（苹方最粗只到 Semibold 600；请求 800 时差值达到 200 会在 iOS 触发 Skia 假粗体并在部分汉字轮廓上产生镂空缝隙，因此代码里用 `EatTextStyles.heavyWeight` = 780 代替 800，安卓上对应 wght 632）。原因和数值见依赖选型 9.1。
 - 数字样式（`priceHero`、`priceInline`、`stat`、`count`）用内置的 `Inter`，缺字时回落到中文字体。
-- 字号分 8 级：`display` 56、`stage` 44、`title` 26、`heading` 20、`subhead` 16、`body` 15、`meta` 13、`caption` 12；数字样式沿用这几级（56、26、16、13）。字重只用 400、600、700、800：800 只给舞台上的主角，标题 700，强调 600，正文 400。先用预设，偏差不大的地方改用预设，不另写字号。
+- 字号分 8 级：`display` 56、`stage` 44、`title` 26、`heading` 20、`subhead` 16、`body` 15、`meta` 13、`caption` 12；数字样式沿用这几级（56、26、16、13）。字重只用 400、600、700、780：780（`EatTextStyles.heavyWeight`）只给舞台上的主角，标题 700，强调 600，正文 400。先用预设，偏差不大的地方改用预设，不另写字号。
 - Inter 还有光学尺寸轴 `opsz`，范围 14 到 32：数字样式把 `opsz` 设成字号，超出范围的取两端，大字号的价格用的是显示用的紧凑字形。
 - `count` 用等宽数字（`FontFeature.tabularFigures()`），未读数、点赞数这类原地变化的数字宽度不跳；其他数字样式用默认的比例数字。
 - Inter 和 Noto 都由 `tool/subset_fonts.py` 生成，许可证随字体放在 `assets/fonts/`，启动时登记到 `LicenseRegistry`。Inter 三端都在 `pubspec.yaml` 的 `fonts` 里声明。Noto 只在安卓用：`fonts` 里的字体 Web 会在首帧前全部下载，所以它作为普通资源声明并限定 `platforms: [android]`，`bootstrap` 里和读取本地数据并行调用 `EatFonts.loadSans` 注册，首帧前完成；加载失败时上报错误，文字回落到系统字体。

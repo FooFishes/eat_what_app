@@ -1,4 +1,5 @@
 import 'package:eat/design/theme/eat_motion.dart';
+import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -147,7 +148,7 @@ class StageColorPicker extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: eat.text.heading.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: EatTextStyles.heavyWeight,
                       color: selected.foreground,
                     ),
                   ),

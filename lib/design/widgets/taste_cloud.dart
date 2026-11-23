@@ -1,3 +1,4 @@
+import 'package:eat/design/theme/eat_text_styles.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/widgets/eat_tappable.dart';
@@ -96,7 +97,9 @@ class TasteCloud extends StatelessWidget {
               style: eat.text.body.copyWith(
                 fontSize: tier.size,
                 height: 1.25,
-                fontWeight: word.selected ? FontWeight.w800 : tier.weight,
+                fontWeight: word.selected
+                    ? EatTextStyles.heavyWeight
+                    : tier.weight,
                 color: color,
                 decoration: word.selected ? TextDecoration.underline : null,
                 decorationThickness: 2,
