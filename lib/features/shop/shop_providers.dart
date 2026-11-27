@@ -70,25 +70,6 @@ class ShopMenu extends _$ShopMenu {
       _more.load(ref, state.value, _fetch, (next) => state = AsyncData(next));
 }
 
-/// 获取指定店铺的招牌菜 (最多 3 道, 按菜单顺序).
-///
-/// 由于店铺详情接口不返回招牌菜列表, 需单独请求. 发布新菜后会失效并重新请求, 离开页面后缓存保留 5 分钟.
-@riverpod
-Future<List<Dish>> shopSignatures(Ref ref, int shopId) async {
-  ref.cacheFor(const Duration(minutes: 5));
-  ref.watch(publishedCountProvider);
-  final page = await ref
-      .watch(foodRepositoryProvider)
-      .list(
-        restaurantId: shopId,
-        signatureOnly: true,
-        sort: FoodSort.menu,
-        pageSize: 3,
-        cancelToken: ref.cancelToken(),
-      );
-  return page.items;
-}
-
 /// 当前用户对指定店铺的评价与收藏状态.
 class const ShopMine({
   final MyShopRatings ratings = const MyShopRatings(),

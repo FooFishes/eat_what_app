@@ -63,6 +63,23 @@ class const EatLayout({
           EatSize.stageMax,
         );
 
+  /// 照片舞台最扁时的宽高比. 更扁的横图 (如 16:9) 按这个比例从两边裁掉.
+  static const photoStageMinAspect = 4 / 3;
+
+  /// 照片舞台 (如餐厅详情的门头照) 在手机上的高度.
+  ///
+  /// 按照片的宽高比 [aspectRatio] 铺满屏宽, 限制在 [photoStageMinHeight] 和 [stageHeight] 之间.
+  /// 还不知道宽高比 (照片没加载完, 没有照片) 时取最矮的高度, 门头照多是横图, 加载完大多不用再变.
+  double photoStageHeight(double? aspectRatio) {
+    final min = photoStageMinHeight;
+    if (aspectRatio == null || aspectRatio <= 0) return min;
+    return (screen.width / aspectRatio).clamp(min, math.max(min, stageHeight));
+  }
+
+  /// 照片舞台最矮的高度: 按 [photoStageMinAspect] 铺满屏宽, 不矮于 [EatSize.photoStageMin].
+  double get photoStageMinHeight =>
+      math.max(screen.width / photoStageMinAspect, EatSize.photoStageMin);
+
   /// 盘子和转盘随舞台高度等比缩放的系数.
   double get stageScale => stageHeight / EatSize.stage;
 

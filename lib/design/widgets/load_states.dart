@@ -209,7 +209,10 @@ class _LoadFailureReportState extends State<LoadFailureReport> {
 ///
 /// 仅能放置于 `StageScaffold` 的舞台内容中, 文字形状底部已自动预留被抽屉遮挡的高度.
 class StagePlaceholder extends StatelessWidget {
-  const new({super.key});
+  const new({super.key, this.plate = true});
+
+  /// 是否画右侧的盘子. 舞台上没有盘子的页面 (如餐厅详情) 传 false, 只留文字形状.
+  final bool plate;
 
   @override
   Widget build(BuildContext context) {
@@ -233,11 +236,12 @@ class StagePlaceholder extends StatelessWidget {
         builder: (context, constraints) => Stack(
           clipBehavior: Clip.hardEdge,
           children: [
-            Positioned(
-              right: -plate * 0.28,
-              top: (constraints.maxHeight - plate) / 2,
-              child: block(plate, plate, circle: true),
-            ),
+            if (this.plate)
+              Positioned(
+                right: -plate * 0.28,
+                top: (constraints.maxHeight - plate) / 2,
+                child: block(plate, plate, circle: true),
+              ),
             Positioned(
               left: EatSpace.s20,
               bottom: EatSize.sheetOverlap + EatSpace.s24,

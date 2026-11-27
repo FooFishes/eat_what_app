@@ -3,6 +3,7 @@ import 'package:eat/core/platform/external_maps.dart';
 import 'package:eat/core/platform/share.dart';
 import 'package:eat/core/telemetry/analytics_event.dart';
 import 'package:eat/design/widgets/eat_chip.dart';
+import 'package:eat/design/widgets/photo_stage.dart';
 import 'package:eat/features/shop/shop_edit_page.dart';
 import 'package:eat/router/paths.dart';
 import 'package:eat/state/session.dart';
@@ -38,7 +39,7 @@ void main() {
     (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
   );
 
-  /// 招牌菜和菜单都请求 `/foods/list`, 先后顺序不固定, 因此两者用同一份响应. 这家店共 13 道菜.
+  /// 菜单请求 `/foods/list`. 这家店共 13 道菜.
   TestEnv shopEnv({List<Object>? details}) {
     final env = TestEnv();
     env.adapter
@@ -111,9 +112,7 @@ void main() {
     await unmountApp(tester, container);
   });
 
-  testWidgets('舞台写店名和地址，盘子是招牌菜；数字条写堂食推荐率、菜数和商圈，下面是品类和口味；菜单按分类分组', (
-    tester,
-  ) async {
+  testWidgets('舞台写店名和地址；数字条写堂食推荐率、菜数和商圈，下面是品类和口味；菜单按分类分组', (tester) async {
     final env = shopEnv();
     final (container, _) = await pumpApp(
       tester,
@@ -130,16 +129,7 @@ void main() {
     expect(find.bySemanticsLabel('13 道菜'), findsOneWidget);
     expect(find.text('86%'), findsOneWidget);
     expect(find.text('32 人评过'), findsOneWidget);
-    expect(find.bySemanticsLabel('招牌菜 虾仁云吞'), findsOneWidget);
-    expect(find.bySemanticsLabel('招牌菜 牛肉饺子'), findsOneWidget);
-    final queries = [
-      for (final r in env.adapter.sent('GET /foods/list')) r.query,
-    ];
-    expect(queries, hasLength(2));
-    final signatures = queries.singleWhere((q) => q['signatureOnly'] == true);
-    final menu = queries.singleWhere((q) => q['signatureOnly'] == null);
-    expect(signatures, containsPair('restaurantId', 7));
-    expect(signatures, containsPair('pageSize', 3));
+    final menu = env.adapter.sent('GET /foods/list').single.query;
     expect(menu, containsPair('restaurantId', 7));
     expect(menu, containsPair('sort', 'MENU'));
     await expectAccessible(tester);
@@ -147,6 +137,100 @@ void main() {
     await scrollTo(tester, '牛肉饺子');
     expect(find.bySemanticsLabel('主食 2 道'), findsOneWidget);
     await unmountApp(tester, container);
+  });
+
+  group('门头照', () {
+    /// 舞台的高度, 即照片底图或舞台色块的高度.
+    double stageHeight(WidgetTester tester, Finder stage) =>
+        tester.getSize(stage).height;
+
+    testWidgets('有门头照时舞台是照片，店名压在照片下沿；高度按照片宽高比', (tester) async {
+      final env = shopEnv(
+        details: [
+          FakeAdapter.ok({
+            ...detail(),
+            'pictureUrl': 'https://img.test/shop.jpg?sig=1',
+          }),
+        ],
+      );
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.shop(7),
+      );
+
+      expect(find.byType(PhotoBackdrop), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PhotoCaption),
+          matching: find.text('袁记云饺'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(PhotoCaption),
+          matching: find.text('万达金街 1 层'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('暂无店铺照片'), findsNothing);
+      expect(
+        stageHeight(tester, find.byType(PhotoBackdrop)),
+        360,
+        reason: '照片解码出来之前取最矮的高度',
+      );
+
+      // 解码要走真实的异步, 放它跑完再等高度缓动结束.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        stageHeight(tester, find.byType(PhotoBackdrop)),
+        390,
+        reason: '测试图是 1×1 的方图, 390 宽的屏幕上舞台是 390 高, 在上下限之间',
+      );
+      await expectAccessible(tester);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('没有门头照时写「暂无店铺照片」，小按钮进编辑店铺', (tester) async {
+      final env = shopEnv();
+      final (container, _) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: verifiedUser),
+        location: Paths.shop(7),
+      );
+
+      expect(find.byType(PhotoBackdrop), findsNothing);
+      expect(find.text('暂无店铺照片'), findsOneWidget);
+      expect(find.text('袁记云饺'), findsOneWidget);
+      await expectAccessible(tester);
+
+      await tester.tap(find.text('补一张照片'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ShopEditPage), findsOneWidget);
+      await unmountApp(tester, container);
+    });
+
+    testWidgets('没认证时点「补一张照片」弹拦截对话框', (tester) async {
+      final env = shopEnv();
+      final (container, router) = await pumpApp(
+        tester,
+        env,
+        session: const SignedIn(user: testUser),
+        location: Paths.shop(7),
+      );
+
+      await tester.tap(find.text('补一张照片'));
+      await tester.pumpAndSettle();
+      expect(find.text('认证后才能编辑店铺'), findsOneWidget);
+      expect(locationOf(router), Paths.shop(7));
+      await unmountApp(tester, container);
+    });
   });
 
   testWidgets('堂食评价不满 3 条、外卖满 3 条时，写外卖的推荐率', (tester) async {

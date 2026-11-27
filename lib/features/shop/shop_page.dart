@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:eat/core/failure/app_failure.dart';
 import 'package:eat/core/failure/messages.dart';
@@ -9,11 +10,9 @@ import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/theme/stage_theme.dart';
 import 'package:eat/design/tokens/eat_dimensions.dart';
 import 'package:eat/design/tokens/stage_color.dart';
-import 'package:eat/design/widgets/dish_plate.dart';
 import 'package:eat/design/widgets/dish_tile.dart';
 import 'package:eat/design/widgets/eat_button.dart';
 import 'package:eat/design/widgets/eat_haptics.dart';
-import 'package:eat/design/widgets/eat_tappable.dart';
 import 'package:eat/design/widgets/eat_toast.dart';
 import 'package:eat/design/widgets/foot_links.dart';
 import 'package:eat/design/widgets/fact_list.dart';
@@ -21,6 +20,7 @@ import 'package:eat/design/widgets/images.dart';
 import 'package:eat/design/widgets/joined_group.dart';
 import 'package:eat/design/widgets/load_states.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/photo_stage.dart';
 import 'package:eat/design/widgets/stage_bar_action.dart';
 import 'package:eat/design/widgets/stage_scaffold.dart';
 import 'package:eat/design/widgets/stat_strip.dart';
@@ -43,11 +43,11 @@ import 'package:go_router/go_router.dart';
 
 /// 餐厅详情页, 分为顶部舞台与下方抽屉两部分. 菜品页看的是一道菜, 这里看的是一份菜单.
 ///
-/// - 舞台: 招牌菜的盘子扇形排开 (最多 3 只, 没有招牌时是一只装门头照的盘子), 左下是店名和地址.
+/// - 舞台: 门头照, 高度随照片的宽高比 ([StageScaffold.stagePhoto]), 店名和地址压在照片下沿的毛玻璃上.
+///   没有门头照时是一块店铺舞台色 (按类型与品类映射), 写 "暂无店铺照片" 和进编辑店铺的小按钮.
 /// - 抽屉: 数字条 (推荐率, 菜数, 距离) 和品类口味卡片连成一组 ([JoinedGroup]), 导航和加菜, 按分类分组的全部菜品, 页底的资料维护链接.
 ///
-/// 店铺详情接口不返回招牌菜与菜品总数, 因此招牌菜需单独请求, 菜品数取自全部菜品分页的总数.
-/// 舞台背景色根据店铺的类型与品类自动映射.
+/// 店铺详情接口不返回菜品总数, 菜品数取自全部菜品分页的总数.
 class ShopPage extends ConsumerWidget {
   const new({super.key, required this.shopId});
 
@@ -61,17 +61,26 @@ class ShopPage extends ConsumerWidget {
       return const _Deleted();
     }
 
+    final photo = networkImage(
+      shop.value?.photo,
+      width: MediaQuery.sizeOf(context).width,
+    );
     return StageScaffold(
       stage: switch (shop.value) {
         final shop? => ShopRules.stageOf(shop),
         null => StageColor.broth,
       },
+      stagePhoto: photo,
+      stageHeight: EatLayout.of(context).photoStageMinHeight,
       topBar: _TopBar(shop: shop.value),
       onRefresh: () => _refresh(context, ref),
       stageContent: switch (shop.value) {
-        final shop? => _StageContent(shop: shop),
+        final shop? when photo != null => PhotoCaption(
+          child: _StageTitle(shop: shop, onPhoto: true),
+        ),
+        final shop? => _NoPhoto(shop: shop),
         null when failure != null => const SizedBox(),
-        null => const StagePlaceholder(),
+        null => const StagePlaceholder(plate: false),
       },
       sheetSlivers: [
         if (failure != null)
@@ -134,11 +143,10 @@ class ShopPage extends ConsumerWidget {
     );
   }
 
-  /// 下拉刷新店铺详情, 招牌菜及菜单列表. 若刷新失败则保留页面现有内容并提示原因.
+  /// 下拉刷新店铺详情及菜单列表. 若刷新失败则保留页面现有内容并提示原因.
   Future<void> _refresh(BuildContext context, WidgetRef ref) async {
     ref
       ..invalidate(shopMenuProvider(shopId))
-      ..invalidate(shopSignaturesProvider(shopId))
       ..invalidate(shopProvider(shopId));
     try {
       await ref.read(shopProvider(shopId).future);
@@ -156,11 +164,12 @@ class _Deleted extends StatelessWidget {
   const new();
 
   @override
-  Widget build(BuildContext context) => const StageScaffold(
+  Widget build(BuildContext context) => StageScaffold(
     stage: StageColor.broth,
-    topBar: _TopBar(shop: null),
-    stageContent: SizedBox(),
-    sheetSlivers: [
+    stageHeight: EatLayout.of(context).photoStageMinHeight,
+    topBar: const _TopBar(shop: null),
+    stageContent: const SizedBox(),
+    sheetSlivers: const [
       SliverPadding(
         padding: EdgeInsets.symmetric(
           horizontal: EatSpace.s20,
@@ -461,12 +470,7 @@ class _TopBar extends ConsumerWidget {
                 icon: EatIcons.edit,
                 text: '编辑',
                 label: '编辑店铺',
-                onTap: () async {
-                  if (await guardAction(context, ref, Capability.editShop) &&
-                      context.mounted) {
-                    await context.push(Paths.shopEdit(shop.id));
-                  }
-                },
+                onTap: () => _editShop(context, ref, shop.id),
               ),
               _favoriteAction(context, ref, shop.id),
               StageBarAction(
@@ -484,6 +488,13 @@ class _TopBar extends ConsumerWidget {
           ),
       ],
     );
+  }
+}
+
+/// 进编辑店铺. 没认证时弹拦截对话框, 不跳页.
+Future<void> _editShop(BuildContext context, WidgetRef ref, int shopId) async {
+  if (await guardAction(context, ref, Capability.editShop) && context.mounted) {
+    await context.push(Paths.shopEdit(shopId));
   }
 }
 
@@ -523,20 +534,24 @@ StageBarAction _favoriteAction(
   );
 }
 
-/// 餐厅详情页的舞台内容.
+/// 舞台下沿的店名和地址, 店已关门时另起一行写 "这家店已关门".
 ///
-/// - 上方: 招牌菜的盘子扇形排开, 第一道在中间最大, 第二道在右, 第三道在左, 点了进那道菜. 没有招牌时是一只装门头照的盘子.
-///   门头照也没有时放菜单的第一道菜. 招牌菜请求完成前是一只空盘, 避免先出门头照再跳变.
-/// - 左下: 品类和口味, 店名 (占满一行宽, 最多两行, 放不下时缩小字号), 地址; 店已关门时另起一行写 "这家店已关门".
-///
-/// 招牌菜摘要接口不含封面取景框信息, 因此盘子以图片居中短边内切圆展示.
-class _StageContent extends ConsumerWidget {
-  const new({required this.shop});
+/// 店名占满一行宽, 最多两行, 放不下时缩小字号. [onPhoto] 为 true 时压在门头照的毛玻璃上, 文字用白色;
+/// 否则在舞台色上, 文字用舞台的文字色.
+class _StageTitle extends StatelessWidget {
+  const new({required this.shop, this.onPhoto = false});
 
   final Shop shop;
+  final bool onPhoto;
 
   /// 店名字号从大到小试, 取第一个两行放得下的.
   static const _nameSizes = [40.0, 36.0, 32.0, 28.0];
+
+  /// 宽屏上店名最宽占的宽度, 和舞台右侧的留白保持比例.
+  static const _wideNameWidth = 300.0;
+
+  /// 店名, 地址和 "这家店已关门" 之间的留白.
+  static const _lineGap = 6.0;
 
   double _nameSize(TextStyle style, double width, double scale) {
     for (final size in _nameSizes) {
@@ -559,152 +574,115 @@ class _StageContent extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final eat = context.eat;
-    final palette = StageTheme.of(context);
     final layout = EatLayout.of(context);
-    final scale = layout.stageScale;
-    final signatures = ref.watch(shopSignaturesProvider(shop.id));
-    final loading = signatures.isLoading && !signatures.hasValue;
-    final dishes = (signatures.value ?? const <Dish>[]).take(3).toList();
-    // 没有招牌也没有门头照时, 盘子里放菜单的第一道菜, 不留空盘.
-    final firstOnMenu = dishes.isEmpty && shop.photo == null
-        ? ref.watch(
-            shopMenuProvider(shop.id)
-                .select((m) => m.value?.pages.items.firstOrNull),
-          )
-        : null;
+    final palette = StageTheme.of(context);
+    final foreground = onPhoto ? eat.colors.white : palette.foreground;
+    final secondary = onPhoto ? eat.colors.white : palette.secondaryForeground;
     final address = shop.address;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = constraints.maxHeight;
-        final nameWidth = layout.isWide ? 300.0 : width - EatSpace.s20 * 2;
-        final nameStyle = eat.text.stage.copyWith(color: palette.foreground);
+        final nameWidth = layout.isWide
+            ? math.min(_wideNameWidth, constraints.maxWidth)
+            : constraints.maxWidth;
+        final nameStyle = eat.text.stage.copyWith(color: foreground);
         final nameSize = _nameSize(nameStyle, nameWidth, layout.stageTextScale);
-
-        // 中间那只盘子的大小和圆心, 两边的小一号, 往外错开并略微下沉.
-        final big = layout.isWide
-            ? (height * 0.42).clamp(220.0, 420.0)
-            : 196 * scale;
-        final small = big * 0.65;
-        final center = layout.isWide
-            ? Offset(width - big * 0.75, height * 0.42)
-            : Offset(width * 0.56, 205 * scale);
-        final spread = big * 0.68;
-        final sink = big * 0.14;
-
-        Widget plate(
-          Offset at,
-          double size,
-          String? image, {
-          Dish? dish,
-          String? label,
-        }) {
-          final child = DishPlate(
-            image: networkImage(image, width: size),
-            size: size,
-          );
-          return Positioned(
-            left: at.dx - size / 2,
-            top: at.dy - size / 2,
-            child: dish == null
-                ? child
-                : EatTappable(
-                    onTap: () => context.push(Paths.dish(dish.id), extra: dish),
-                    label: label,
-                    focusShape: const CircleBorder(),
-                    builder: (context, _) => child,
-                  ),
-          );
-        }
-
-        return Stack(
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (dishes.length > 2)
-              plate(
-                center + Offset(-spread, sink),
-                small,
-                dishes[2].cover,
-                dish: dishes[2],
-                label: '招牌菜 ${dishes[2].name}',
-              ),
-            if (dishes.length > 1)
-              plate(
-                center + Offset(spread, sink),
-                small,
-                dishes[1].cover,
-                dish: dishes[1],
-                label: '招牌菜 ${dishes[1].name}',
-              ),
-            plate(
-              center,
-              big,
-              loading
-                  ? null
-                  : dishes.firstOrNull?.cover ??
-                        shop.photo ??
-                        firstOnMenu?.cover,
-              dish: dishes.firstOrNull ?? firstOnMenu,
-              label: switch (dishes.firstOrNull) {
-                final hero? => '招牌菜 ${hero.name}',
-                null => firstOnMenu?.name,
-              },
-            ),
-            Positioned(
-              left: EatSpace.s20,
-              right: EatSpace.s20,
-              bottom: EatSize.sheetOverlap + (layout.isWide ? 40 : 28),
-              child: IgnorePointer(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: nameWidth,
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          shop.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textScaler: TextScaler.noScaling,
-                          style: nameStyle.copyWith(
-                            fontSize: nameSize,
-                            height: (nameSize + 4) / nameSize,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (address != null && address.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          address,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: eat.text.meta.copyWith(
-                            color: palette.secondaryForeground,
-                          ),
-                        ),
-                      ),
-                    if (shop.closed)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          '这家店已关门',
-                          style: eat.text.body.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: palette.foreground,
-                          ),
-                        ),
-                      ),
-                  ],
+            SizedBox(
+              width: nameWidth,
+              child: Semantics(
+                header: true,
+                child: Text(
+                  shop.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textScaler: TextScaler.noScaling,
+                  style: nameStyle.copyWith(
+                    fontSize: nameSize,
+                    height: (nameSize + 4) / nameSize,
+                  ),
                 ),
               ),
             ),
+            if (address != null && address.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: _lineGap),
+                child: Text(
+                  address,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: eat.text.meta.copyWith(color: secondary),
+                ),
+              ),
+            if (shop.closed)
+              Padding(
+                padding: const EdgeInsets.only(top: _lineGap),
+                child: Text(
+                  '这家店已关门',
+                  style: eat.text.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
+              ),
           ],
         );
       },
+    );
+  }
+}
+
+/// 没有门头照时的舞台: 店铺舞台色上写 "暂无店铺照片" 和进编辑店铺的小按钮, 下面照常是店名和地址.
+class _NoPhoto extends ConsumerWidget {
+  const new({required this.shop});
+
+  final Shop shop;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eat = context.eat;
+    final palette = StageTheme.of(context);
+    return Align(
+      alignment: Alignment.bottomLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          EatSpace.s20,
+          0,
+          EatSpace.s20,
+          EatSize.sheetOverlap + EatSpace.s20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              spacing: EatSpace.s10,
+              children: [
+                Flexible(
+                  child: Text(
+                    '暂无店铺照片',
+                    style: eat.text.meta.copyWith(
+                      color: palette.secondaryForeground,
+                    ),
+                  ),
+                ),
+                EatButton.stageGhost(
+                  '补一张照片',
+                  icon: EatIcons.camera,
+                  height: EatSize.chip,
+                  onPressed: () => _editShop(context, ref, shop.id),
+                ),
+              ],
+            ),
+            const SizedBox(height: EatSpace.s16),
+            _StageTitle(shop: shop),
+          ],
+        ),
+      ),
     );
   }
 }

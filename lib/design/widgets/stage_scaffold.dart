@@ -10,6 +10,7 @@ import 'package:eat/design/tokens/stage_color.dart';
 import 'package:eat/design/widgets/eat_refresh.dart';
 import 'package:eat/design/widgets/eat_sheet.dart';
 import 'package:eat/design/widgets/navigation.dart';
+import 'package:eat/design/widgets/photo_stage.dart';
 import 'package:eat/design/widgets/remove_padding.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -44,6 +45,7 @@ class StageScaffold extends StatefulWidget {
     this.onRefresh,
     this.fixedStage = false,
     this.stageHeight,
+    this.stagePhoto,
   }) : map = null;
 
   /// 构建以地图为舞台的页面骨架 (如附近页), 地图铺于底层而抽屉叠加阴影压在地图之上.
@@ -58,7 +60,8 @@ class StageScaffold extends StatefulWidget {
        pinnedBottom = null,
        pinnedAnchor = null,
        fixedStage = false,
-       stageHeight = null;
+       stageHeight = null,
+       stagePhoto = null;
 
   final StageColor? stage;
   final Widget? stageContent;
@@ -86,6 +89,13 @@ class StageScaffold extends StatefulWidget {
   /// 手机布局下舞台的高度, 不传时按 [EatLayout.stageHeight]. 舞台上没有主角菜的页面 (如个人主页) 按内容定高, 把空间让给抽屉.
   final double? stageHeight;
 
+  /// 铺在舞台底层的照片 (如餐厅详情的门头照), 取代舞台色. 舞台上的文字压在照片下沿时用 [PhotoCaption].
+  ///
+  /// - 手机布局下舞台高度按照片的宽高比定 ([EatLayout.photoStageHeight]), 不看 [stageHeight].
+  /// - 照片加载出来后高度变了, 舞台和抽屉按 [EatMotion.morph] 缓动到新高度, 照片同时淡入.
+  /// - 顶栏和舞台上的按钮用 [StagePalette.photo] 的白字和深色胶囊, 照片顶部压一道淡的暗色渐变.
+  final ImageProvider? stagePhoto;
+
   /// 手机布局下固定顶栏底边的纵坐标, 舞台内容应排布在该线以下.
   /// 顶栏从舞台样式过渡到白底样式的进度: 0 是舞台样式, 1 是吸顶后的白底样式, 随滚动连续变化.
   ///
@@ -112,6 +122,13 @@ class _StageScaffoldState extends State<StageScaffold>
 
   /// 舞台色顶栏背景生效的滚动阈值: 滚动超过该距离后顶栏铺设舞台底色, 避免上移的盘子和文字与顶栏图标重叠.
   static const _liftSpan = 16.0;
+
+  /// 照片舞台上, 顶栏铺底后是磨砂透明的: 照片模糊后透上来, 再压一层淡的深色, 让白色的按钮看得清.
+  static const _barBlur = 20.0;
+  static const _barPhotoTint = 0.24;
+
+  /// 磨砂层在顶栏下沿之外渐渐淡出的距离.
+  static const _barFade = 56.0;
 
   /// 抽屉顶边离顶栏底边不到 [_pinLead] 时顶栏过渡到白底样式;
   /// 拉回去时要再离开 [_pinHysteresis] 才退回舞台样式, 慢慢拖到分界处时不会来回切换.
@@ -146,6 +163,14 @@ class _StageScaffoldState extends State<StageScaffold>
   double? _stageHeight;
   double _barBottom = 0;
 
+  /// [StageScaffold.stagePhoto] 的加载流和量出的宽高比, 用来定舞台高度. 还没加载出来或加载失败时为 null.
+  ImageStream? _photoStream;
+  late final _photoListener = ImageStreamListener(_onPhoto, onError: (_, _) {});
+  double? _photoAspect;
+
+  /// 舞台高度变化时是否缓动过去. 只有照片舞台会在显示后变高度; 其他页面 (如个人主页) 照旧直接跳到新高度.
+  bool _easeHeight = false;
+
   @override
   void initState() {
     super.initState();
@@ -153,11 +178,49 @@ class _StageScaffoldState extends State<StageScaffold>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolvePhoto();
+  }
+
+  @override
+  void didUpdateWidget(StageScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _easeHeight = widget.stagePhoto != null || oldWidget.stagePhoto != null;
+    if (widget.stagePhoto != oldWidget.stagePhoto) _resolvePhoto();
+  }
+
+  @override
   void dispose() {
+    _photoStream?.removeListener(_photoListener);
     scrollController.removeListener(_onScroll);
     _pin.dispose();
     _bar.dispose();
     super.dispose();
+  }
+
+  /// 订阅照片的加载流以量出宽高比. 先挂新流再摘旧流, 同一张图换了实例时不会因暂时没有监听而被释放.
+  void _resolvePhoto() {
+    final photo = widget.stagePhoto;
+    final stream = photo?.resolve(createLocalImageConfiguration(context));
+    if (stream != null && stream.key == _photoStream?.key) return;
+    if (photo == null) _photoAspect = null;
+    stream?.addListener(_photoListener);
+    _photoStream?.removeListener(_photoListener);
+    _photoStream = stream;
+  }
+
+  void _onPhoto(ImageInfo info, bool synchronous) {
+    final image = info.image;
+    final aspect = image.height == 0 ? null : image.width / image.height;
+    info.dispose();
+    if (aspect == _photoAspect) return;
+    // 缓存里的图在订阅时同步回调, 这时还在构建中, 不能 setState; 直接记下, 本次构建就用上.
+    if (synchronous) {
+      _photoAspect = aspect;
+    } else if (mounted) {
+      setState(() => _photoAspect = aspect);
+    }
   }
 
   void _onScroll() {
@@ -209,6 +272,16 @@ class _StageScaffoldState extends State<StageScaffold>
     );
   }
 
+  /// 舞台高度缓动时逐帧记下当前高度. 页面已经滚动过时, 抽屉顶边跟着移动, 帧后按新位置重算一遍顶栏状态.
+  void _followStageHeight(double height) {
+    if (_stageHeight == height) return;
+    _stageHeight = height;
+    if (!scrollController.hasClients || scrollController.offset <= 0) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _onScroll();
+    });
+  }
+
   void _publish() => _bar.value = (
     lift: _lift,
     pin: _pin.value,
@@ -220,7 +293,11 @@ class _StageScaffoldState extends State<StageScaffold>
   Widget build(BuildContext context) {
     final stage = widget.stage;
     if (stage == null) return _build(context, null);
-    return AnimatedStageTheme(stage: stage, builder: _build);
+    return AnimatedStageTheme(
+      stage: stage,
+      onPhoto: widget.stagePhoto != null,
+      builder: _build,
+    );
   }
 
   Widget _build(BuildContext context, StagePalette? palette) {
@@ -229,9 +306,21 @@ class _StageScaffoldState extends State<StageScaffold>
     final safe = MediaQuery.viewPaddingOf(context);
     final navInset = NavBarInset.of(context);
     final bottomSpace = navInset > 0 ? navInset : safe.bottom + EatSpace.s24;
+    final photo = widget.stagePhoto;
     final backdrop =
         widget.map ??
-        ColoredBox(color: palette!.background, child: const SizedBox.expand());
+        switch (photo) {
+          final photo? => PhotoBackdrop(
+            image: photo,
+            topShade: layout.isWide
+                ? 0
+                : StageScaffold.barBottomOf(context) + EatSpace.s24,
+          ),
+          null => ColoredBox(
+            color: palette!.background,
+            child: const SizedBox.expand(),
+          ),
+        };
     final onMap = widget.map != null;
 
     Widget onStage(Widget child) => palette == null
@@ -317,7 +406,9 @@ class _StageScaffoldState extends State<StageScaffold>
         ],
       );
     } else {
-      final height = widget.stageHeight ?? layout.stageHeight;
+      final height = photo != null
+          ? layout.photoStageHeight(_photoAspect)
+          : widget.stageHeight ?? layout.stageHeight;
       final barTop = safe.top + 4;
       _stageHeight = height;
       _barBottom = barTop + _barHeight;
@@ -373,8 +464,16 @@ class _StageScaffoldState extends State<StageScaffold>
                 _OverlappedSliver(
                   overlap: EatSize.sheetOverlap,
                   pinned: widget.fixedStage,
-                  child: SizedBox(
-                    height: height,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: height),
+                    duration: _easeHeight
+                        ? context.motion(EatMotion.morph)
+                        : Duration.zero,
+                    curve: EatMotion.morph.curve,
+                    builder: (context, height, stage) {
+                      _followStageHeight(height);
+                      return SizedBox(height: height, child: stage);
+                    },
                     child: Stack(
                       children: [
                         Positioned.fill(child: backdrop),
@@ -462,24 +561,50 @@ class _StageScaffoldState extends State<StageScaffold>
             : StagePalette.lerp(palette, plain, pin);
         // 抽屉顶边以下画一块和抽屉一样带圆角的白底, 跟着抽屉的实际位置移动, 抽屉滑到顶栏下面时那里立刻是白的,
         // 不会在白底上再播一遍舞台色褪掉的过程. 只有抽屉顶边以上 (状态栏和顶栏露出舞台的那一段) 随 [pin] 从舞台色过渡到白.
+        // 照片舞台上顶栏不铺舞台色, 改由下面的磨砂层盖住照片, 这里只负责吸顶时过渡到白.
+        final frosted = palette != null && widget.stagePhoto != null;
         final stageFill = palette == null
             ? c.paper
             : Color.lerp(
-                palette.background.withValues(alpha: bar.lift),
+                frosted
+                    ? c.paper.withValues(alpha: 0)
+                    : palette.background.withValues(alpha: bar.lift),
                 c.paper,
                 pin,
               )!;
         final sheetTop = palette == null ? 0.0 : bar.sheetTop;
+        final frostHeight = _barBottom + _barFade;
         return AnnotatedRegion<SystemUiOverlayStyle>(
           value: colors.isDark
               ? SystemUiOverlayStyle.light
               : SystemUiOverlayStyle.dark,
           child: Stack(
+            clipBehavior: Clip.none,
             children: [
+              // 磨砂层比顶栏多出 [_barFade], 在这一段里渐渐淡出, 和下面的照片之间没有硬边.
+              if (frosted && bar.lift > 0 && pin < 1)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: frostHeight,
+                  child: IgnorePointer(
+                    child: ClipRect(
+                      clipper: _AboveClipper(sheetTop),
+                      child: FadingBlur(
+                        sigma: _barBlur * bar.lift,
+                        fade: _barFade,
+                        tint: c.shade.withValues(
+                          alpha: bar.lift * _barPhotoTint,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // 顶栏具有底色时拦截点击事件, 防止点击穿透至被遮挡的舞台内容.
               Positioned.fill(
                 child: IgnorePointer(
-                  ignoring: stageFill.a == 0 && sheetTop >= _barBottom,
+                  ignoring: bar.lift == 0 && pin == 0 && sheetTop >= _barBottom,
                   child: CustomPaint(
                     painter: _BarFillPainter(
                       stage: stageFill,
@@ -528,6 +653,20 @@ class _StageScaffoldState extends State<StageScaffold>
       },
     );
   }
+}
+
+/// 把子组件裁到 [bottom] 以上, 顶栏的毛玻璃只盖住抽屉顶边以上露出照片的那一段.
+class _AboveClipper extends CustomClipper<Rect> {
+  _AboveClipper(this.bottom);
+
+  final double bottom;
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(0, 0, size.width, bottom.clamp(0, size.height));
+
+  @override
+  bool shouldReclip(_AboveClipper old) => bottom != old.bottom;
 }
 
 /// 顶栏向白底样式过渡的进度值, 由 [StageScaffold] 注入给顶栏中的 [StageBarTitle].

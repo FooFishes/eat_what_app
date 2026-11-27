@@ -1,3 +1,4 @@
+import 'package:eat/design/theme/eat_colors.dart';
 import 'package:eat/design/theme/eat_motion.dart';
 import 'package:eat/design/theme/eat_theme.dart';
 import 'package:eat/design/tokens/stage_color.dart';
@@ -37,6 +38,27 @@ class const StagePalette({
         solidForeground: stage.colorIn(dark: dark),
         isDark: stage.isDark,
       );
+
+  /// 舞台铺着照片时的配色: 白字, 胶囊是半透明的深色. 照片的颜色不定, 白字压在深色渐变上最稳.
+  ///
+  /// [background] 是 `shade`, 照片加载出来之前和顶栏滚动时垫的都是它, 和照片顶部的暗色渐变接得上.
+  factory StagePalette.photo(EatColors c) {
+    final ghost = c.shade.withValues(alpha: photoGhostAlpha);
+    return StagePalette(
+      background: c.shade,
+      foreground: c.white,
+      secondaryForeground: c.white,
+      ghost: ghost,
+      table: ghost,
+      tableRing: ghost,
+      solid: c.white,
+      solidForeground: c.shade,
+      isDark: true,
+    );
+  }
+
+  /// 照片上胶囊底色的不透明度.
+  static const photoGhostAlpha = 0.32;
 
   static StagePalette lerp(StagePalette a, StagePalette b, double t) =>
       StagePalette(
@@ -108,16 +130,26 @@ class StageTheme extends InheritedWidget {
 ///
 /// 系统开启减少动态效果时直接切换.
 class AnimatedStageTheme extends StatelessWidget {
-  const new({super.key, required this.stage, required this.builder});
+  const new({
+    super.key,
+    required this.stage,
+    this.onPhoto = false,
+    required this.builder,
+  });
 
   final StageColor stage;
+
+  /// 舞台上是否铺着照片. 为 true 时用 [StagePalette.photo], 不用 [stage] 的配色.
+  final bool onPhoto;
 
   final Widget Function(BuildContext context, StagePalette palette) builder;
 
   @override
   Widget build(BuildContext context) => TweenAnimationBuilder<StagePalette>(
     tween: _StagePaletteTween(
-      end: StagePalette.of(stage, dark: context.eat.colors.isDark),
+      end: onPhoto
+          ? StagePalette.photo(context.eat.colors)
+          : StagePalette.of(stage, dark: context.eat.colors.isDark),
     ),
     duration: context.motion(EatMotion.stageColor),
     curve: EatMotion.stageColor.curve,

@@ -84,6 +84,12 @@ abstract final class EatSize {
   static const stageMin = 420.0;
   static const stageMax = 560.0;
 
+  /// 照片舞台 (如餐厅详情的门头照) 的最矮高度.
+  ///
+  /// 要放得下顶栏, 两行大字标题, 一行地址, "这家店已关门" 和 "暂无店铺照片" 那一行, 还要让出被抽屉压住的部分.
+  /// 刘海最高的手机上这些加起来约 360.
+  static const photoStageMin = 360.0;
+
   /// 抽屉向上覆盖舞台的高度.
   static const sheetOverlap = 32.0;
 
