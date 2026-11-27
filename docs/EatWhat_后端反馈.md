@@ -212,3 +212,24 @@
 | # | 条目 | 现在的情况 |
 | --- | --- | --- |
 | 6 | 菜品响应只有 `pictureUrls`，编辑时保留的旧图要传原 key | 已解决：`FoodView` 在 `pictureUrls` 后加了 `pictureKeys`，一一对应、同序；编辑接口返回 `FoodEditResult(id, revisionId, pictureKeys)`，`pictureKeys` 是保存后的图片顺序，第一张为封面，没有变化时 `revisionId` 为 null、`pictureKeys` 仍返回当前图片。客户端已接：编辑菜品时原有照片放进照片条，可以逐张删除、追加和换封面，保留的原图传原 key |
+
+## 14. 2026-11-27 同步后的处理
+
+按后端 `feat/eatwhat-v2`（fc70d6e0）同步，`docs/api.openapi.yml` 仍由后端仓库的 `docs/openapi.json` 转成 YAML，不经过 Apifox。第 13 节按源码接上的 `pictureKeys`、`FoodEditResult` 这次也写进了接口文件。
+
+| # | 条目 | 现在的情况 |
+| --- | --- | --- |
+| 32、40 | openapi 里同名的结构互相覆盖 | 部分解决：远程配置的设置改名为 `RemoteConfigSettings`。`Settings` 仍由个性化推荐开关、AI 设置和推送开关共用，其余几处不变 |
+| 36 | `scene`、`kind`、`mealTime`、`sort`、`category` 这些参数没写枚举值 | 部分解决：`mealTime` 和各处的 `mealTimes` 写上了取值。`kind`、`category` 和其余的 `sort`、`scene` 还没写 |
+
+这次的其他变化，客户端都还没接：
+
+- 饭点多了 `afternoon_tea`（下午茶，北京时间 14:00 至 17:00）；下午茶的推荐默认包括供应下午茶的美食和甜点饮品店（5bedbac9）。客户端的 `MealTime` 只有四个值，`fromApi` 不认识的值直接丢掉。编辑带下午茶的菜或店时，提交的饭点会少了下午茶。
+- 新增等级排行榜 `GET /user/level/leaderboard`，返回前 50 名，前三名带 `coverUrl`（ef8b52cf、522d4ebc）。
+- 新增称号：`GET /user/titles` 查已获得的称号，`PUT /user/titles/equipped/{code}` 佩戴，`DELETE /user/titles/equipped` 取消佩戴；首次获得自动佩戴（5bedbac9、8b11628d）。
+- `MyInfo`、`UpdateInfo` 加了 `coverFoodId`，可以选自己发布的一道菜作为个人主页背景（cd5d782b）；`/foods/my` 收 `foodId`。
+- 店铺加了简介 `description`，选填，最多 200 字；新增店铺评论 `GET`、`POST /restaurant/{restaurantId}/comments` 和回复 `POST /restaurant/{restaurantId}/comments/{commentId}/replies`。`Comment` 加了 `restaurantId`，和 `foodId` 二选一；`/comments/my` 传 `includeRestaurants=true` 时也返回店铺评论（87f45a72）。
+- 菜品说明上限从 200 改为 1000，按码点计数，保留换行（8d7b0931）。客户端按产品文档仍限 200 字。
+- 推荐接口的说明写明了第 1 页优先返回这一轮还没推荐过的店，不够时用推荐过的店补齐（47be8cc1）。
+- 门头图里有二维码、联系方式或广告时，照常上传，用到店铺上时自动生成一条待处理举报（fc70d6e0）。
+- 后台的活跃和遥测统计、注册网络统计、菜品转移所有权、`AdminFoodView`，以及 `AdminCase.submitterId` 可为 null，都是管理接口，客户端不涉及。

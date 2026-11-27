@@ -252,6 +252,28 @@ paths:
                 $ref: '#/components/schemas/ResultVoid'
       security:
         - satoken: []
+  /user/titles/equipped/{code}:
+    put:
+      tags:
+        - 用户 · User
+      summary: 【需登录】佩戴已获得的称号
+      operationId: equipTitle
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
+      security:
+        - satoken: []
+      description: 切换到本人已获得的称号。同时最多佩戴一个，未获得或不存在的称号返回业务码 10001。
   /user/recommendation-settings:
     get:
       tags:
@@ -671,7 +693,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultEdited'
+                $ref: '#/components/schemas/ResultFoodEditResult'
       security:
         - satoken: []
   /comments/{id}/reactions/{reaction}:
@@ -829,7 +851,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultSettings'
+                $ref: '#/components/schemas/ResultRemoteConfigSettings'
       security:
         - satoken: []
   /admin/remote-config/announcements/{id}:
@@ -1253,6 +1275,7 @@ paths:
                 $ref: '#/components/schemas/ResultCompletedResponse'
       security:
         - satoken: []
+      description: 门头图命中二维码、引流联系方式或广告时可正常上传，在店铺使用该图时生成待处理举报。
   /telemetry/events:
     post:
       tags:
@@ -1272,6 +1295,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultAccepted'
       summary: 上报使用统计事件（请求体最多 32 KiB，游客带安装 ID）
+  /restaurant/{restaurantId}/comments:
+    get:
+      tags:
+        - comment · Comment
+      operationId: listRestaurantComments
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPageResultComment'
+      summary: 获取店铺评论
+    post:
+      tags:
+        - comment · Comment
+      summary: 【需角色：verified 或 admin】发表店铺评论
+      operationId: postRestaurantComment
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultCreated'
+      security:
+        - satoken: []
+  /restaurant/{restaurantId}/comments/{commentId}/replies:
+    post:
+      tags:
+        - comment · Comment
+      summary: 【需角色：verified 或 admin】回复店铺评论
+      operationId: replyToRestaurantComment
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplyRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultCreated'
+      security:
+        - satoken: []
   /restaurant/{id}/history/{revisionId}/restore:
     post:
       tags:
@@ -2409,6 +2530,34 @@ paths:
                 $ref: '#/components/schemas/ResultAdminAnnouncement'
       security:
         - satoken: []
+  /admin/foods/{id}/owner:
+    post:
+      tags:
+        - food · Food
+      summary: 【需角色：admin】转移菜品所有权（迁移经验，缺少发布经验时补发）
+      operationId: transferOwner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerTransferRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultOwnerTransferResult'
+      security:
+        - satoken: []
   /admin/feedback/cases/{id}/resolution:
     post:
       tags:
@@ -2437,6 +2586,7 @@ paths:
                 $ref: '#/components/schemas/ResultResolved'
       security:
         - satoken: []
+      description: 采纳门头图自动举报时移除店铺正在使用的被举报照片，驳回则保留照片。自动举报没有用户提交人，notified 为 false。
   /admin/consent/policies:
     get:
       tags:
@@ -2527,6 +2677,22 @@ paths:
                 $ref: '#/components/schemas/ResultOtherInfo'
       security:
         - satoken: []
+  /user/titles:
+    get:
+      tags:
+        - 用户 · User
+      summary: 【需登录】获取我已获得的称号
+      operationId: myTitles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListUserTitle'
+      security:
+        - satoken: []
+      description: 只返回本人已获得的称号及佩戴状态，没有已获得的称号时返回空数组。首次达到经验门槛时永久获得，之后扣回经验仍保留。首次获得自动佩戴。
   /user/recommendation-profile/taste:
     get:
       tags:
@@ -2633,6 +2799,22 @@ paths:
                 $ref: '#/components/schemas/ResultPageResultExperienceLog'
       security:
         - satoken: []
+  /user/level/leaderboard:
+    get:
+      tags:
+        - 用户 · User
+      summary: 【需登录】获取用户等级排行榜前 50 名
+      operationId: levelLeaderboard
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultListLevelLeaderboardEntry'
+      security:
+        - satoken: []
+      description: 按累计经验降序、经验相同按用户 ID 升序，返回前 50 名，人数不足时返回全部。排除封禁中和注销冷静期账号。rank 从 1 连续编号，具体经验值仅本人可见。
   /user/info:
     get:
       tags:
@@ -3240,11 +3422,19 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+          description: afternoon_tea 表示下午茶，北京时间 14:00 至 17:00。
         - name: kind
           in: query
           required: false
           schema:
             type: string
+          description: 下午茶默认推荐供应下午茶的美食和甜点饮品店。其他饭点默认只推荐美食。
         - name: page
           in: query
           required: false
@@ -3264,6 +3454,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultFeed'
+      description: 个性化推荐按用户、日期、饭点记录已推荐店铺。第 1 页（含省略 page）优先返回本轮未推荐的店，不足时将历史店铺补在末尾，整页计入新一轮。第 2 页起只返回本轮剩余的店，耗尽时 hasNext=false。游客及关闭个性化的用户按普通分页。
       summary: 推荐店铺列表
   /recommend/tags:
     get:
@@ -3306,11 +3497,19 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+          description: afternoon_tea 表示下午茶，北京时间 14:00 至 17:00。
         - name: kind
           in: query
           required: false
           schema:
             type: string
+          description: 下午茶默认推荐供应下午茶的美食和甜点饮品店。其他饭点默认只推荐美食。
       responses:
         '200':
           description: OK
@@ -3425,6 +3624,18 @@ paths:
           required: false
           schema:
             type: string
+        - name: gcjLng
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+        - name: gcjLat
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
         - name: page
           in: query
           required: false
@@ -3602,70 +3813,12 @@ paths:
       summary: 【需登录】我的分享：我首次发布的菜品
       operationId: my
       parameters:
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-        - name: pageSize
-          in: query
-          required: false
-          schema:
-            type: integer
-            format: int32
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResultPageResultFoodView'
-      security:
-        - satoken: []
-  /admin/foods/list:
-    get:
-      tags:
-        - food · Food
-      summary: 【需角色：admin】后台菜品列表（省略 mealTime 时查询全部饭点）
-      operationId: adminList
-      parameters:
-        - name: restaurantId
+        - name: foodId
           in: query
           required: false
           schema:
             type: integer
             format: int64
-        - name: keyword
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: category
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: signatureOnly
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: sort
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: scene
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: mealTime
-          in: query
-          required: false
-          schema:
-            type: string
         - name: page
           in: query
           required: false
@@ -3729,6 +3882,13 @@ paths:
           required: false
           schema:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+          description: afternoon_tea 表示下午茶，北京时间 14:00 至 17:00。
         - name: page
           in: query
           required: false
@@ -4024,6 +4184,12 @@ paths:
       summary: 【需登录】获取我的评论和回复
       operationId: mine_1
       parameters:
+        - name: includeRestaurants
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
         - name: page
           in: query
           required: false
@@ -4045,6 +4211,7 @@ paths:
                 $ref: '#/components/schemas/ResultPageResultComment'
       security:
         - satoken: []
+      description: 默认只返回我的菜品评论和回复；传 includeRestaurants=true 同时返回店铺评论和回复。
   /campus/list:
     get:
       tags:
@@ -4184,6 +4351,160 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultPublicConfig'
       summary: 获取腾讯人机验证初始化参数
+  /admin/users/{userId}/network:
+    get:
+      tags:
+        - 账号 · AdminUser
+      summary: 【需角色：admin】查询注册与最近使用 IP、网络类型和运营商（教育网、移动、联通、电信、其他、未知）
+      operationId: network
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultUserNetworks'
+      security:
+        - satoken: []
+  /admin/telemetry/summary:
+    get:
+      tags:
+        - telemetry · AdminTelemetry
+      summary: 【需角色：admin】汇总遥测事件
+      operationId: telemetrySummary
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: event
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 如 app_open、page_view、dish_shuffle、dish_decide、navigate_shop，完整列表见上报遥测事件。
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - WEB
+              - IOS
+              - ANDROID
+              - APP
+              - UNKNOWN
+        - name: audience
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - SIGNED_IN
+              - GUEST
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultTelemetrySummary'
+      security:
+        - satoken: []
+      description: |
+        from、to 接收带时区偏移的 ISO 8601 时间，按服务端收到事件的时间查询，含 from、不含 to。
+        to 默认当前时间，from 默认 to 往前 7 天，跨度最多 7 天。统计只读取最近保留的 7 天。
+        window.observedFrom 为 null 表示区间已超出保留期。可按 event、platform 或 audience 筛选。
+        WEB、IOS、ANDROID 来自会话或安装登记。APP 表示未识别系统的移动端，UNKNOWN 包含无端信息的历史事件。
+        返回总计、各事件和各端的事件量、去重登录账号数和去重游客安装数。范围完全过期时 total 为 null。
+        同一账号或游客安装可出现在多个分组。统计使用现有同意和保留规则下收集的事件。
+  /admin/telemetry/events:
+    get:
+      tags:
+        - telemetry · AdminTelemetry
+      summary: 【需角色：admin】分页查询遥测事件
+      operationId: telemetryEvents
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: event
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 如 app_open、page_view、dish_shuffle、dish_decide、navigate_shop，完整列表见上报遥测事件。
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - WEB
+              - IOS
+              - ANDROID
+              - APP
+              - UNKNOWN
+        - name: audience
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - SIGNED_IN
+              - GUEST
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultTelemetryEventPage'
+      security:
+        - satoken: []
+      description: |
+        from、to 接收带时区偏移的 ISO 8601 时间，按服务端收到事件的时间查询，含 from、不含 to。
+        to 默认当前时间，from 默认 to 往前 7 天，跨度最多 7 天。统计只读取最近保留的 7 天。
+        window.observedFrom 为 null 表示区间已超出保留期。可按 event、platform 或 audience 筛选。
+        WEB、IOS、ANDROID 来自会话或安装登记。APP 表示未识别系统的移动端，UNKNOWN 包含无端信息的历史事件。
+        按接收时间从新到旧分页，同一时间按事件 ID 稳定排序。page 从 1 起，pageSize 默认 20、最多 100。
+        项目只含时间、端、事件类型、登录状态和白名单属性。翻页时可固定第一次响应返回的 window.to。
   /admin/summary:
     get:
       tags:
@@ -4219,6 +4540,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultSummaryTrend'
+      security:
+        - satoken: []
+  /admin/stats/user-networks:
+    get:
+      tags:
+        - 账号 · AdminUser
+      summary: 【需角色：admin】统计新增账号注册网络与活跃账号最近使用网络，otherBreakdown 细分 other 人数（北京时间，默认14天，最多92天）
+      operationId: networkSummary
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultNetworkSummary'
       security:
         - satoken: []
   /admin/remote-config:
@@ -4262,6 +4609,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultPageResultAudit'
+      security:
+        - satoken: []
+  /admin/foods/list:
+    get:
+      tags:
+        - food · Food
+      summary: 【需角色：admin】后台菜品列表（省略 mealTime 时查询全部饭点）
+      operationId: adminList
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: signatureOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: scene
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mealTime
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+          description: afternoon_tea 表示下午茶，北京时间 14:00 至 17:00。
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPageResultAdminFoodView'
       security:
         - satoken: []
   /admin/feedback/cases:
@@ -4406,6 +4824,51 @@ paths:
                 $ref: '#/components/schemas/ResultEngagementRange'
       security:
         - satoken: []
+  /admin/engagement/stats/breakdown:
+    get:
+      tags:
+        - 账号 · AdminUser
+      summary: 【需角色：admin】按客户端和时间段查询活跃用户
+      operationId: engagementBreakdown
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: granularity
+          in: query
+          required: false
+          schema:
+            type: string
+            default: DAY
+            enum:
+              - HOUR
+              - DAY
+              - MONTH
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultEngagementBreakdown'
+      security:
+        - satoken: []
+      description: |
+        按北京时间统计有效会话请求，管理端请求和游客不计。按 HOUR、DAY 或 MONTH 分桶。
+        from、to 支持 YYYY-MM-DD（包含所选日期）或北京时间 YYYY-MM-DDTHH:00（整点左闭右开）。
+        to 默认今天结束，from 默认取含结束日期的最近 14 天，HOUR 默认最近 7 天。最多 92 天，HOUR 最多 7 天。
+        请求区间转换为左闭右开的 from、to，observedFrom、observedTo 给出其实际覆盖部分。
+        新版上线前的分端和小时数据不可补算，详情仅保留最近 92 个自然日。完全未覆盖时，observedFrom、observedTo、total 为 null。
+        每桶和区间总计分别按账号去重。用户跨端会出现在多个端，平台人数之和可能大于整体。
+        WEB、IOS、ANDROID 来自会话，APP 表示未识别系统的移动端，UNKNOWN 表示无法判断客户端。
+        例如查询某天 18 点至 21 点，传 from=YYYY-MM-DDT18:00、to=YYYY-MM-DDT21:00、granularity=HOUR。
   /admin/content/stats:
     get:
       tags:
@@ -4448,6 +4911,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultConsentPolicy'
+      security:
+        - satoken: []
+  /user/titles/equipped:
+    delete:
+      tags:
+        - 用户 · User
+      summary: 【需登录】取消佩戴称号
+      operationId: clearTitle
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultVoid'
       security:
         - satoken: []
   /restaurant/delete/{id}:
@@ -4579,6 +5057,9 @@ components:
           type: string
         signature:
           type: string
+        coverFoodId:
+          type: integer
+          format: int64
     ResultVoid:
       type: object
       properties:
@@ -4740,6 +5221,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         priceBand:
           type: string
         categories:
@@ -4750,6 +5237,12 @@ components:
           type: array
           items:
             type: string
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+          description: 店铺简介，选填。编辑时省略或传 null 保留原值，传空字符串清除。
     Edited:
       type: object
       properties:
@@ -4835,6 +5328,8 @@ components:
           type: number
         description:
           type: string
+          maxLength: 1000
+          description: 去除首尾空白后按 Unicode 码点计数，保留正文换行。
         pictures:
           type: array
           items:
@@ -4857,8 +5352,40 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         deliveryEnabled:
           type: boolean
+    FoodEditResult:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        revisionId:
+          type: integer
+          format: int64
+        pictureKeys:
+          type: array
+          items:
+            type: string
+    ResultFoodEditResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/FoodEditResult'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     Reaction:
       type: object
       properties:
@@ -4980,6 +5507,48 @@ components:
         expectedRevision:
           type: integer
           format: int32
+        patchRollout:
+          type: object
+          additionalProperties: {}
+    RemoteConfigSettings:
+      type: object
+      properties:
+        revision:
+          type: integer
+          format: int32
+        flags:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Flag'
+        params:
+          type: object
+          additionalProperties: {}
+        maintenance:
+          $ref: '#/components/schemas/Maintenance'
+        patchRollout:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
+        updatedAt:
+          type: integer
+          format: int64
+        updatedBy:
+          type: integer
+          format: int64
+    ResultRemoteConfigSettings:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/RemoteConfigSettings'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     AnnouncementRequest:
       type: object
       properties:
@@ -5311,6 +5880,42 @@ components:
         timestamp:
           type: integer
           format: int64
+    CommentRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        pictureKeys:
+          type: array
+          items:
+            type: string
+    Created:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+    ResultCreated:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/Created'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    ReplyRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        replyToId:
+          type: integer
+          format: int64
     RestaurantAddRequest:
       type: object
       properties:
@@ -5336,6 +5941,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         priceBand:
           type: string
         categories:
@@ -5348,25 +5959,12 @@ components:
             type: string
         force:
           type: boolean
-    Created:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-    ResultCreated:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        data:
-          $ref: '#/components/schemas/Created'
-        msg:
-          type: string
-        timestamp:
-          type: integer
-          format: int64
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+          description: 店铺简介，选填。编辑时省略或传 null 保留原值，传空字符串清除。
     CategoryRequest:
       type: object
       properties:
@@ -5402,23 +6000,6 @@ components:
       properties:
         deviceToken:
           type: string
-    CommentRequest:
-      type: object
-      properties:
-        text:
-          type: string
-        pictureKeys:
-          type: array
-          items:
-            type: string
-    ReplyRequest:
-      type: object
-      properties:
-        text:
-          type: string
-        replyToId:
-          type: integer
-          format: int64
     FoodUploadRequest:
       type: object
       properties:
@@ -5433,6 +6014,8 @@ components:
           type: number
         description:
           type: string
+          maxLength: 1000
+          description: 去除首尾空白后按 Unicode 码点计数，保留正文换行。
         pictures:
           type: array
           items:
@@ -5455,6 +6038,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         deliveryEnabled:
           type: boolean
     SuggestRequest:
@@ -5470,6 +6059,8 @@ components:
           type: string
         description:
           type: string
+          maxLength: 1000
+          description: 去除首尾空白后按 Unicode 码点计数，保留正文换行。
         pictures:
           type: array
           items:
@@ -5936,6 +6527,45 @@ components:
         timestamp:
           type: integer
           format: int64
+    OwnerTransferRequest:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        reason:
+          type: string
+    OwnerTransferResult:
+      type: object
+      properties:
+        foodId:
+          type: integer
+          format: int64
+        fromUserId:
+          type: integer
+          format: int64
+        toUserId:
+          type: integer
+          format: int64
+        experience:
+          type: integer
+          format: int64
+        droppedExperience:
+          type: integer
+          format: int64
+    ResultOwnerTransferResult:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/OwnerTransferResult'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     ResolutionRequest:
       type: object
       properties:
@@ -6094,6 +6724,37 @@ components:
         timestamp:
           type: integer
           format: int64
+    ResultListUserTitle:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserTitle'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    UserTitle:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        requiredExperience:
+          type: integer
+          format: int64
+        acquiredAt:
+          type: integer
+          format: int64
+          description: 获得时间（Unix 毫秒）。旧账号补发时记录补发时间。
+        equipped:
+          type: boolean
     ResultTaste:
       type: object
       properties:
@@ -6308,6 +6969,47 @@ components:
         timestamp:
           type: integer
           format: int64
+    LevelLeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+          format: int32
+        id:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatar:
+          type:
+            - string
+            - 'null'
+        level:
+          type: integer
+          format: int32
+        title:
+          type:
+            - string
+            - 'null'
+        coverUrl:
+          type: string
+          format: uri
+          description: 个人主页背景图 URL。仅第 1–3 名有可用图片时返回。优先使用本人选定的菜品封面，其次取本人最近 12 道菜品中第一张可用封面。
+    ResultListLevelLeaderboardEntry:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelLeaderboardEntry'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     MyInfo:
       type: object
       properties:
@@ -6358,6 +7060,9 @@ components:
           type: string
         signature:
           type: string
+        coverFoodId:
+          type: integer
+          format: int64
         fansVisible:
           type: boolean
         followingsVisible:
@@ -6483,6 +7188,90 @@ components:
           format: int32
         data:
           $ref: '#/components/schemas/BlockStatus'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        displayName:
+          type: string
+        avatar:
+          type: string
+        title:
+          type: string
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        foodId:
+          type: integer
+          format: int64
+        restaurantId:
+          type: integer
+          format: int64
+          description: 仅店铺评论和回复返回，与 foodId 互斥。
+        rootId:
+          type: integer
+          format: int64
+        author:
+          $ref: '#/components/schemas/Author'
+        replyTo:
+          $ref: '#/components/schemas/Author'
+        text:
+          type: string
+        pictureUrls:
+          type: array
+          items:
+            type: string
+        likeCount:
+          type: integer
+          format: int64
+        replyCount:
+          type: integer
+          format: int64
+        isLiked:
+          type: boolean
+        createdAt:
+          type: integer
+          format: int64
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reaction'
+    PageResultComment:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+        totalPages:
+          type: integer
+          format: int64
+        totalItems:
+          type: integer
+          format: int64
+        hasNext:
+          type: boolean
+    ResultPageResultComment:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/PageResultComment'
         msg:
           type: string
         timestamp:
@@ -6627,6 +7416,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         priceBand:
           type: string
         categories:
@@ -6651,6 +7446,12 @@ components:
           format: int64
         matchedFood:
           $ref: '#/components/schemas/MatchedFood'
+        description:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+          description: 店铺简介，选填。编辑时省略或传 null 保留原值，传空字符串清除。
     ResultPageResultRestaurant:
       type: object
       properties:
@@ -6763,6 +7564,11 @@ components:
             $ref: '#/components/schemas/Version'
         update:
           $ref: '#/components/schemas/Update'
+        patchRollout:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int32
     ResultClientConfig:
       type: object
       properties:
@@ -6845,6 +7651,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         priceBand:
           type: string
         categories:
@@ -6883,6 +7695,12 @@ components:
       properties:
         mealTime:
           type: string
+          enum:
+            - breakfast
+            - lunch
+            - dinner
+            - night
+            - afternoon_tea
         currentPage:
           type: integer
           format: int64
@@ -6964,6 +7782,12 @@ components:
       properties:
         mealTime:
           type: string
+          enum:
+            - breakfast
+            - lunch
+            - dinner
+            - night
+            - afternoon_tea
         restaurant:
           $ref: '#/components/schemas/Card'
     ResultPick:
@@ -7063,6 +7887,9 @@ components:
         updatedAt:
           type: integer
           format: int64
+        distanceMeters:
+          type: number
+          format: double
     ResultHub:
       type: object
       properties:
@@ -7171,18 +7998,6 @@ components:
         timestamp:
           type: integer
           format: int64
-    Author:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        displayName:
-          type: string
-        avatar:
-          type: string
-        title:
-          type: string
     PageResultPicture:
       type: object
       properties:
@@ -7230,74 +8045,6 @@ components:
         timestamp:
           type: integer
           format: int64
-    Comment:
-      type: object
-      properties:
-        id:
-          type: integer
-          format: int64
-        foodId:
-          type: integer
-          format: int64
-        rootId:
-          type: integer
-          format: int64
-        author:
-          $ref: '#/components/schemas/Author'
-        replyTo:
-          $ref: '#/components/schemas/Author'
-        text:
-          type: string
-        pictureUrls:
-          type: array
-          items:
-            type: string
-        likeCount:
-          type: integer
-          format: int64
-        replyCount:
-          type: integer
-          format: int64
-        isLiked:
-          type: boolean
-        createdAt:
-          type: integer
-          format: int64
-        reactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Reaction'
-    PageResultComment:
-      type: object
-      properties:
-        currentPage:
-          type: integer
-          format: int64
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
-        totalPages:
-          type: integer
-          format: int64
-        totalItems:
-          type: integer
-          format: int64
-        hasNext:
-          type: boolean
-    ResultPageResultComment:
-      type: object
-      properties:
-        code:
-          type: integer
-          format: int32
-        data:
-          $ref: '#/components/schemas/PageResultComment'
-        msg:
-          type: string
-        timestamp:
-          type: integer
-          format: int64
     FoodOptions:
       type: object
       properties:
@@ -7326,6 +8073,12 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
     ResultFoodOptions:
       type: object
       properties:
@@ -7361,7 +8114,13 @@ components:
           type: number
         description:
           type: string
+          maxLength: 1000
+          description: 去除首尾空白后按 Unicode 码点计数，保留正文换行。
         pictureUrls:
+          type: array
+          items:
+            type: string
+        pictureKeys:
           type: array
           items:
             type: string
@@ -7399,10 +8158,22 @@ components:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         effectiveMealTimes:
           type: array
           items:
             type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
         deliveryEnabled:
           type: boolean
         rating:
@@ -7777,6 +8548,179 @@ components:
         timestamp:
           type: integer
           format: int64
+    ResultUserNetworks:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/UserNetworks'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    UserNetworks:
+      type: object
+      properties:
+        registrationIp:
+          type: string
+        registrationNetwork:
+          type: string
+        lastIp:
+          type: string
+        lastNetwork:
+          type: string
+        lastUsedAt:
+          type: integer
+          format: int64
+        registrationOperator:
+          type: string
+          enum:
+            - CERNET
+            - CHINA_MOBILE
+            - CHINA_UNICOM
+            - CHINA_TELECOM
+            - OTHER
+            - UNKNOWN
+        lastOperator:
+          type: string
+          enum:
+            - CERNET
+            - CHINA_MOBILE
+            - CHINA_UNICOM
+            - CHINA_TELECOM
+            - OTHER
+            - UNKNOWN
+    ResultTelemetrySummary:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/TelemetrySummary'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    TelemetryCounts:
+      type: object
+      properties:
+        events:
+          type: integer
+          format: int64
+        signedInUsers:
+          type: integer
+          format: int64
+        guestInstalls:
+          type: integer
+          format: int64
+    TelemetryGroup:
+      type: object
+      properties:
+        value:
+          type: string
+        counts:
+          $ref: '#/components/schemas/TelemetryCounts'
+    TelemetrySummary:
+      type: object
+      properties:
+        window:
+          $ref: '#/components/schemas/TelemetryWindow'
+        total:
+          anyOf:
+            - $ref: '#/components/schemas/TelemetryCounts'
+            - type: 'null'
+        byEvent:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryGroup'
+        byPlatform:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryGroup'
+    TelemetryWindow:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        retainedFrom:
+          type: string
+          format: date-time
+        observedFrom:
+          type:
+            - string
+            - 'null'
+          format: date-time
+    PageResultTelemetryEventView:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryEventView'
+        totalPages:
+          type: integer
+          format: int64
+        totalItems:
+          type: integer
+          format: int64
+        hasNext:
+          type: boolean
+    ResultTelemetryEventPage:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/TelemetryEventPage'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    TelemetryEventPage:
+      type: object
+      properties:
+        window:
+          $ref: '#/components/schemas/TelemetryWindow'
+        events:
+          $ref: '#/components/schemas/PageResultTelemetryEventView'
+    TelemetryEventView:
+      type: object
+      properties:
+        receivedAt:
+          type: string
+          format: date-time
+        event:
+          type: string
+        platform:
+          type: string
+          enum:
+            - WEB
+            - IOS
+            - ANDROID
+            - APP
+            - UNKNOWN
+        audience:
+          type: string
+          enum:
+            - SIGNED_IN
+            - GUEST
+        properties:
+          type: object
+          additionalProperties: {}
     ResultSummary:
       type: object
       properties:
@@ -7835,6 +8779,67 @@ components:
         newUsers:
           type: integer
           format: int64
+    NetworkCounts:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        cernet:
+          type: integer
+          format: int64
+        other:
+          type: integer
+          format: int64
+        unknown:
+          type: integer
+          format: int64
+        cernetRate:
+          type: number
+          format: double
+        otherBreakdown:
+          $ref: '#/components/schemas/OtherBreakdown'
+    NetworkSummary:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        timezone:
+          type: string
+        registered:
+          $ref: '#/components/schemas/NetworkCounts'
+        active:
+          $ref: '#/components/schemas/NetworkCounts'
+    OtherBreakdown:
+      type: object
+      properties:
+        chinaMobile:
+          type: integer
+          format: int64
+        chinaUnicom:
+          type: integer
+          format: int64
+        chinaTelecom:
+          type: integer
+          format: int64
+        remaining:
+          type: integer
+          format: int64
+    ResultNetworkSummary:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/NetworkSummary'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     AdminView:
       type: object
       properties:
@@ -7842,7 +8847,7 @@ components:
           type: integer
           format: int64
         settings:
-          $ref: '#/components/schemas/Settings'
+          $ref: '#/components/schemas/RemoteConfigSettings'
         versions:
           type: array
           items:
@@ -7951,14 +8956,140 @@ components:
         timestamp:
           type: integer
           format: int64
+    AdminFoodView:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        restaurantId:
+          type: integer
+          format: int64
+        restaurantName:
+          type: string
+        accountId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        category:
+          type: string
+        price:
+          type: number
+        description:
+          type: string
+        pictureUrls:
+          type: array
+          items:
+            type: string
+        pictureKeys:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        signature:
+          type: boolean
+        stageColor:
+          type: string
+        stageAlternates:
+          type: array
+          items:
+            type: string
+        coverCrop:
+          $ref: '#/components/schemas/CoverCrop'
+        likeCount:
+          type: integer
+          format: int64
+        favoriteCount:
+          type: integer
+          format: int64
+        isLiked:
+          type: boolean
+        isFavorite:
+          type: boolean
+        createdAt:
+          type: integer
+          format: int64
+        updatedAt:
+          type: integer
+          format: int64
+        mealTimes:
+          type: array
+          items:
+            type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+        effectiveMealTimes:
+          type: array
+          items:
+            type: string
+            enum:
+              - breakfast
+              - lunch
+              - dinner
+              - night
+              - afternoon_tea
+        deliveryEnabled:
+          type: boolean
+        rating:
+          $ref: '#/components/schemas/Rating'
+        myRating:
+          type: integer
+          format: int32
+        uploaderName:
+          type:
+            - string
+            - 'null'
+          description: 首次分享者的当前昵称；无可用昵称时为 null。
+    PageResultAdminFoodView:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminFoodView'
+        totalPages:
+          type: integer
+          format: int64
+        totalItems:
+          type: integer
+          format: int64
+        hasNext:
+          type: boolean
+    ResultPageResultAdminFoodView:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/PageResultAdminFoodView'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
     AdminCase:
       type: object
       properties:
         view:
           $ref: '#/components/schemas/CaseView'
         submitterId:
-          type: integer
+          type:
+            - integer
+            - 'null'
           format: int64
+          description: 系统自动举报的提交人 ID 为 null。门头图举报的 screenshots 包含待复核照片。
         submitterName:
           type: string
         targetName:
@@ -8123,6 +9254,79 @@ components:
           format: int32
         data:
           $ref: '#/components/schemas/EngagementRange'
+        msg:
+          type: string
+        timestamp:
+          type: integer
+          format: int64
+    EngagementBreakdown:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        granularity:
+          type: string
+          enum:
+            - HOUR
+            - DAY
+            - MONTH
+        timezone:
+          type: string
+        coverageFrom:
+          type: string
+          format: date-time
+        observedFrom:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        observedTo:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        total:
+          anyOf:
+            - $ref: '#/components/schemas/EngagementCounts'
+            - type: 'null'
+        buckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/EngagementBucket'
+    EngagementBucket:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+        end:
+          type: string
+          format: date-time
+        counts:
+          $ref: '#/components/schemas/EngagementCounts'
+    EngagementCounts:
+      type: object
+      properties:
+        activeUsers:
+          type: integer
+          format: int64
+        byPlatform:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+    ResultEngagementBreakdown:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        data:
+          $ref: '#/components/schemas/EngagementBreakdown'
         msg:
           type: string
         timestamp:
